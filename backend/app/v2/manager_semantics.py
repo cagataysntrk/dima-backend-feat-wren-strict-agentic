@@ -1,0 +1,1550 @@
+"""Governed semantic interpretation/binding adapter for the Day 6.5 bounded Manager.
+
+USER_SOURCE proposals must reference runtime-issued src_* spans. AGENT_DERIVED proposals
+must be tied to an accepted parent obligation and verified evidence by the executor.
+
+Manager regular semantics do NOT use deterministic fuzzy/morphological language matching:
+catalog candidate generation is deterministic, bounded candidate interpretation belongs
+to BoundedSemanticLinker, and only SemanticBindingGate may mint sem_* authority.
+
+Legacy SemanticResolver may remain for non-Manager compatibility paths, but this Manager semantic hot path has no import, constructor dependency, field, or fallback seam to it. Temporal normalization remains isolated in the typed temporal boundary.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field, replace
+import hashlib
+from typing import Any, Callable
+
+from app.v2.manager_models import SemanticHandle
+from app.v2.manager_tools import ResolveSemanticsArgs
+from app.v2.models import (
+    BoundedSemanticContextV0,
+    ClarificationState,
+    ConversationStateV2,
+    FrozenModel,
+    ResolvedPeriod,
+)
+from app.v2.semantic_linker import (
+    BoundedSemanticLinker,
+    BoundedSemanticSelection,
+    GovernedCurrentTurnCandidateGenerator,
+    GovernedSiblingScopeCandidateGenerator,
+    CandidateSet,
+    SemanticBindingGate,
+    SemanticCandidateDecisionProvider,
+    SemanticCandidateGenerator,
+    SemanticDecompositionRepairChoice,
+    SemanticDecompositionRepairProvider,
+    SemanticDecompositionRepairRequest,
+    SemanticRepairScopeGroupCard,
+    SemanticRepairSourceCard,
+)
+from app.v2.semantic_handles import SemanticHandleRegistry
+from app.v2.source_spans import SourceSpanRegistry
+from app.v2.temporal import TemporalResolutionError
+from app.v2.temporal_intent import (
+    TemporalBindingEngine,
+    TemporalNormalizationProvider,
+    TypedTemporalNormalizer,
+)
+
+
+class ManagerResolvedSemantic(FrozenModel):
+    source_ref: str | None = None
+    proposal_text: str | None = None
+    owner_id: str | None = None
+    provenance: str
+    handle: SemanticHandle
+
+
+class ManagerUnresolvedSemantic(FrozenModel):
+    source_ref: str
+    owner_id: str | None = None
+    kind_hint: str
+    status: str
+    candidate_ids: tuple[str, ...] = ()
+
+
+class ManagerSemanticResolutionResult(FrozenModel):
+    resolved: tuple[ManagerResolvedSemantic, ...] = ()
+    unresolved_source_refs: tuple[str, ...] = ()
+    unresolved_semantics: tuple[ManagerUnresolvedSemantic, ...] = ()
+    unresolved_proposals: tuple[str, ...] = ()
+    clarification: ClarificationState | None = None
+
+    @property
+    def clarification_required(self) -> bool:
+        return (
+            self.clarification is not None
+            or bool(self.unresolved_source_refs)
+            or bool(self.unresolved_proposals)
+        )
+
+
+@dataclass
+class PreAcceptanceSemanticDecisionSession:
+    """Ephemeral source-decision memory for one immutable Product user turn.
+
+    This is not a semantic authority registry and never stores sem_* handles.
+    It preserves only canonical source->candidate truth and exact negative
+    cognition receipts across finite preacceptance draft revisions.
+    """
+
+    tenant_binding: str
+    context_version: str
+    message_identity: tuple[str, str] | None = None
+    source_truth_by_key: dict[
+        tuple[str, str], BoundedSemanticSelection
+    ] = field(default_factory=dict)
+    negative_decision_by_key: dict[
+        tuple[
+            str,
+            str,
+            str,
+            str,
+            str,
+            tuple[str, ...],
+            str,
+            bool,
+            bool,
+            bool,
+        ],
+        BoundedSemanticSelection,
+    ] = field(default_factory=dict)
+
+    def bind_message(self, *, message_id: str, message_hash: str) -> None:
+        identity = (message_id, message_hash)
+        if self.message_identity is None:
+            self.message_identity = identity
+            return
+        if self.message_identity != identity:
+            raise ValueError(
+                "preacceptance semantic decision session cannot span user messages"
+            )
+
+
+class ManagerSemanticResolutionAdapter:
+    def __init__(
+        self,
+        *,
+        source_spans: SourceSpanRegistry,
+        semantic_handles: SemanticHandleRegistry,
+        semantic_context: BoundedSemanticContextV0,
+        conversation: ConversationStateV2,
+        schema: dict,
+        tenant_binding: str,
+        session_id: str | None,
+        thread_id: str | None,
+        semantic_decision_provider: SemanticCandidateDecisionProvider | None = None,
+        semantic_decomposition_repair_provider: SemanticDecompositionRepairProvider | None = None,
+        temporal_normalization_provider: TemporalNormalizationProvider | None = None,
+        semantic_diagnostic_sink: Callable[[dict[str, Any]], None] | None = None,
+    ) -> None:
+        self._source_spans = source_spans
+        self._handles = semantic_handles
+        self._semantic_context = semantic_context
+        self._conversation = conversation
+        self._schema = schema
+        self._tenant_binding = tenant_binding
+        self._session_id = session_id
+        self._thread_id = thread_id
+        self._temporal_normalizer = TypedTemporalNormalizer(
+            provider=temporal_normalization_provider,
+        )
+        self._temporal_engine = TemporalBindingEngine()
+        self._candidate_generator = SemanticCandidateGenerator(
+            semantic_context=semantic_context,
+            schema=schema,
+        )
+        self._binding_gate = SemanticBindingGate(
+            semantic_handles=semantic_handles,
+            tenant_binding=tenant_binding,
+            context_version=semantic_context.context_version.version,
+        )
+        self._semantic_decision_provider = semantic_decision_provider
+        self._semantic_decomposition_repair_provider = semantic_decomposition_repair_provider
+        self._semantic_diagnostic_sink = semantic_diagnostic_sink
+        self._semantic_linker = BoundedSemanticLinker(
+            generator=self._candidate_generator,
+            binding_gate=self._binding_gate,
+            provider=self._semantic_decision_provider,
+            diagnostic_sink=self._semantic_diagnostic_sink,
+        )
+        self._preacceptance_semantic_session: (
+            PreAcceptanceSemanticDecisionSession | None
+        ) = None
+
+    def begin_preacceptance_semantic_session(
+        self,
+        *,
+        message_id: str,
+        message_hash: str,
+    ) -> None:
+        """Start fresh ephemeral source-decision memory for one finite protocol."""
+
+        session = PreAcceptanceSemanticDecisionSession(
+            tenant_binding=self._tenant_binding,
+            context_version=self._semantic_context.context_version.version,
+        )
+        session.bind_message(
+            message_id=message_id,
+            message_hash=message_hash,
+        )
+        self._preacceptance_semantic_session = session
+
+    def _time_dimension(self, anchor_handle: str | None) -> str:
+        cube_names: set[str] = set()
+        if anchor_handle:
+            binding = self._handles.binding_for_execution(
+                anchor_handle,
+                tenant_binding=self._tenant_binding,
+                context_version=self._semantic_context.context_version.version,
+            )
+            target = binding.canonical_target
+            cube_names.update(getattr(target, "cube_names", ()) or ())
+
+        candidates: set[str] = set()
+        for cube in self._semantic_context.cubes:
+            if cube_names and cube.canonical_name not in cube_names:
+                continue
+            candidates.update(cube.time_dimensions)
+
+        if len(candidates) != 1:
+            raise TemporalResolutionError(
+                "temporal resolution exactly one governed time dimension requires"
+            )
+        return next(iter(candidates))
+
+    def _mint_temporal(
+        self,
+        *,
+        target_kind: str,
+        canonical_target,
+        temporal_provenance_id: str,
+        args: ResolveSemanticsArgs,
+    ) -> SemanticHandle:
+        return self._handles.mint_from_temporal_engine(
+            tenant_binding=self._tenant_binding,
+            context_version=self._semantic_context.context_version.version,
+            temporal_provenance_id=temporal_provenance_id,
+            target_kind=target_kind,
+            canonical_target=canonical_target,
+            provenance_type=args.provenance,
+            parent_obligation_id=args.parent_obligation_id,
+            trigger_evidence_ref=args.evidence_ref,
+        )
+
+    def _coherent_temporal_anchor(
+        self,
+        *,
+        resolved: tuple[ManagerResolvedSemantic, ...],
+        owner_id: str,
+    ) -> str | None:
+        """Choose an owner-local anchor only when its governed time dimension is coherent.
+
+        The handle itself remains semantic authority. This helper only prevents one
+        USER_MUST obligation from borrowing another obligation's semantic/time scope.
+        """
+        by_time_dimension: dict[str, list[str]] = {}
+        for item in resolved:
+            if item.owner_id != owner_id:
+                continue
+            if item.handle.target_kind not in {"metric", "kpi", "dimension"}:
+                continue
+            try:
+                time_dimension = self._time_dimension(item.handle.handle_id)
+            except (TemporalResolutionError, KeyError, ValueError):
+                continue
+            by_time_dimension.setdefault(time_dimension, []).append(
+                item.handle.handle_id
+            )
+
+        if len(by_time_dimension) != 1:
+            return None
+        handles = next(iter(by_time_dimension.values()))
+        return handles[0] if handles else None
+
+
+    def _resolve_temporal(
+        self,
+        *,
+        text: str,
+        hint: str,
+        args: ResolveSemanticsArgs,
+    ) -> SemanticHandle:
+        time_dimension = self._time_dimension(args.temporal_anchor_handle)
+        target = "PERIOD" if hint == "time" else "COMPARISON"
+        choice = self._temporal_normalizer.normalize(
+            (("temporal:0", text, target),)
+        )[0]
+        if choice.decision != "NORMALIZED":
+            raise TemporalResolutionError(
+                f"typed temporal normalizer abstained: {choice.reason}"
+            )
+
+        if hint == "time":
+            period = self._temporal_engine.period(
+                choice=choice,
+                source_text=text,
+                time_dimension=time_dimension,
+            )
+            return self._mint_temporal(
+                target_kind="period",
+                canonical_target=period,
+                temporal_provenance_id=(
+                    f"typed-period:{choice.period_kind}:{choice.n or ''}:"
+                    f"{period.start}:{period.end or ''}"
+                ),
+                args=args,
+            )
+
+        if hint == "comparison":
+            if args.base_period_handle:
+                binding = self._handles.binding_for_execution(
+                    args.base_period_handle,
+                    tenant_binding=self._tenant_binding,
+                    context_version=self._semantic_context.context_version.version,
+                )
+                if not isinstance(binding.canonical_target, ResolvedPeriod):
+                    raise TemporalResolutionError("base_period_handle period target değil")
+                base_period = binding.canonical_target
+            elif choice.implicit_base_period_kind is not None:
+                try:
+                    base_period = self._temporal_engine.implicit_base_period(
+                        choice=choice,
+                        source_text=text,
+                        time_dimension=time_dimension,
+                    )
+                except ValueError as exc:
+                    raise TemporalResolutionError(str(exc)) from exc
+            else:
+                raise TemporalResolutionError(
+                    "comparison requires governed or typed implicit base period"
+                )
+
+            comparison = self._temporal_engine.comparison(
+                choice=choice,
+                source_text=text,
+                time_dimension=time_dimension,
+                base_period=base_period,
+            )
+            return self._mint_temporal(
+                target_kind="comparison",
+                canonical_target=comparison,
+                temporal_provenance_id=(
+                    f"typed-comparison:{choice.comparison_kind}:"
+                    f"{choice.implicit_base_period_kind or 'explicit-base'}:"
+                    f"{choice.implicit_base_n or ''}:"
+                    f"{comparison.base_period.start}:"
+                    f"{comparison.reference_period.start}"
+                ),
+                args=args,
+            )
+
+        raise TemporalResolutionError(f"unsupported temporal hint: {hint}")
+
+    def _resolve_regular_once(
+        self,
+        *,
+        entries: list[tuple[str | None, str, str, str | None]],
+        args: ResolveSemanticsArgs,
+        linker: BoundedSemanticLinker | None = None,
+        discovery_pass: str = "pass1",
+        source_truth_by_key: dict[
+            tuple[str, str], BoundedSemanticSelection
+        ] | None = None,
+    ) -> tuple[ManagerSemanticResolutionResult, tuple[BoundedSemanticSelection, ...]]:
+        active_linker = linker or self._semantic_linker
+        source_truth = (
+            source_truth_by_key
+            if args.provenance == "USER_SOURCE"
+            and source_truth_by_key is not None
+            else {}
+        )
+
+        decision_context: str | None = None
+        source_contexts = {
+            self._source_spans.message_text_for(source_ref)
+            for source_ref, _, _, _ in entries
+            if source_ref is not None
+        }
+        if len(source_contexts) == 1:
+            decision_context = next(iter(source_contexts))
+
+        session = self._preacceptance_semantic_session
+        message_identity = (
+            session.message_identity if session is not None else None
+        )
+        message_id = message_identity[0] if message_identity is not None else ""
+        decision_context_fingerprint = hashlib.sha256(
+            (decision_context or "").encode("utf-8")
+        ).hexdigest()
+
+        grouped_entries: dict[
+            tuple[str, str], list[tuple[str | None, str, str, str | None]]
+        ] = {}
+        standalone: list[
+            tuple[int, tuple[str | None, str, str, str | None]]
+        ] = []
+        for index, entry in enumerate(entries):
+            source_ref, _text, kind_hint, _owner_id = entry
+            if args.provenance == "USER_SOURCE" and source_ref is not None:
+                key = (source_ref, self._normalized_target_kind(kind_hint))
+                grouped_entries.setdefault(key, []).append(entry)
+            else:
+                standalone.append((index, entry))
+
+        selection_by_source_key: dict[
+            tuple[str, str], BoundedSemanticSelection
+        ] = {}
+        request_key_by_id: dict[str, tuple[str, str]] = {}
+        cognition_requests: list[tuple[str, str, str]] = []
+        diagnostic_metadata: dict[str, dict[str, Any]] = {}
+
+        for key in sorted(grouped_entries):
+            source_ref, normalized_kind = key
+            members = grouped_entries[key]
+            representative = members[0]
+            _ref, text, kind_hint, _owner = representative
+            request_id = f"link:source:{source_ref}:{normalized_kind}"
+            owners = tuple(
+                sorted(
+                    {
+                        owner_id
+                        for _r, _t, _k, owner_id in members
+                        if owner_id is not None
+                    }
+                )
+            )
+
+            candidate_set = active_linker.preview_candidate_set(
+                request_id=request_id,
+                surface=text,
+                kind_hint=kind_hint,
+                decision_context=decision_context,
+            )
+            candidate_ids = tuple(
+                item.card.candidate_id for item in candidate_set.bindings
+            )
+
+            existing = source_truth.get(key)
+            if existing is not None and existing.binding is not None:
+                candidate_id = existing.binding.card.candidate_id
+                current_binding = candidate_set.binding(candidate_id)
+                if current_binding is not None:
+                    reused = replace(
+                        existing,
+                        request_id=request_id,
+                        surface=text,
+                        binding=current_binding,
+                        candidate_ids=candidate_ids,
+                        reason="SOURCE_TRUTH_REUSED",
+                    )
+                    selection_by_source_key[key] = reused
+                    source_truth[key] = reused
+                    if self._semantic_diagnostic_sink is not None:
+                        self._semantic_diagnostic_sink(
+                            {
+                                "kind": "semantic_source_truth_reuse",
+                                "source_ref": source_ref,
+                                "kind_hint": normalized_kind,
+                                "owner_obligation_ids": list(owners),
+                                "discovery_pass": discovery_pass,
+                                "candidate_ids": list(candidate_ids),
+                                "candidate_id": candidate_id,
+                                "status": "BOUND",
+                            }
+                        )
+                    continue
+
+                conflict = BoundedSemanticSelection(
+                    request_id=request_id,
+                    surface=text,
+                    status="SOURCE_TRUTH_CONTEXT_CONFLICT",
+                    mode="NONE",
+                    reason=(
+                        "existing canonical source truth is absent from the current "
+                        "governed candidate universe"
+                    ),
+                    candidate_ids=candidate_ids,
+                )
+                selection_by_source_key[key] = conflict
+                if self._semantic_diagnostic_sink is not None:
+                    self._semantic_diagnostic_sink(
+                        {
+                            "kind": "semantic_source_truth_context_conflict",
+                            "source_ref": source_ref,
+                            "kind_hint": normalized_kind,
+                            "owner_obligation_ids": list(owners),
+                            "discovery_pass": discovery_pass,
+                            "candidate_ids": list(candidate_ids),
+                            "canonical_candidate_id": candidate_id,
+                            "status": "SOURCE_TRUTH_CONTEXT_CONFLICT",
+                        }
+                    )
+                continue
+
+            generator = getattr(active_linker, "_generator", None)
+            candidate_source_class = type(generator).__qualname__
+            negative_key = (
+                message_id,
+                source_ref,
+                normalized_kind,
+                discovery_pass,
+                candidate_source_class,
+                tuple(sorted(candidate_ids)),
+                decision_context_fingerprint,
+                bool(candidate_set.too_broad),
+                bool(candidate_set.retrieval_exhaustive),
+                bool(candidate_set.retrieval_truncated),
+            )
+            memoized_negative = (
+                session.negative_decision_by_key.get(negative_key)
+                if session is not None
+                else None
+            )
+            if memoized_negative is not None:
+                replay = replace(
+                    memoized_negative,
+                    request_id=request_id,
+                    surface=text,
+                    candidate_ids=candidate_ids,
+                )
+                selection_by_source_key[key] = replay
+                if self._semantic_diagnostic_sink is not None:
+                    self._semantic_diagnostic_sink(
+                        {
+                            "kind": "semantic_negative_decision_reuse",
+                            "source_ref": source_ref,
+                            "kind_hint": normalized_kind,
+                            "owner_obligation_ids": list(owners),
+                            "discovery_pass": discovery_pass,
+                            "candidate_ids": list(candidate_ids),
+                            "status": replay.status,
+                        }
+                    )
+                continue
+
+            cognition_requests.append((request_id, text, kind_hint))
+            request_key_by_id[request_id] = key
+            diagnostic_metadata[request_id] = {
+                "negative_memo_key": negative_key,
+                "owner_obligation_id": (
+                    owners[0] if len(owners) == 1 else None
+                ),
+                "owner_obligation_ids": list(owners),
+                "source_ref": source_ref,
+                "source_truth_key_kind": normalized_kind,
+                "discovery_pass": discovery_pass,
+            }
+
+        standalone_request_ids: dict[int, str] = {}
+        for index, (original_index, entry) in enumerate(standalone):
+            source_ref, text, kind_hint, owner_id = entry
+            request_id = (
+                f"link:standalone:{original_index}:{source_ref or 'derived'}"
+            )
+            standalone_request_ids[original_index] = request_id
+            cognition_requests.append((request_id, text, kind_hint))
+            diagnostic_metadata[request_id] = {
+                "owner_obligation_id": owner_id,
+                "source_ref": source_ref,
+                "discovery_pass": discovery_pass,
+            }
+
+        selection_by_request_id: dict[str, BoundedSemanticSelection] = {}
+        if cognition_requests:
+            fresh = active_linker.resolve(
+                tuple(cognition_requests),
+                provenance_type=args.provenance,
+                decision_context=decision_context,
+                parent_obligation_id=args.parent_obligation_id,
+                trigger_evidence_ref=args.evidence_ref,
+                diagnostic_metadata=diagnostic_metadata,
+            )
+            selection_by_request_id = {
+                selection.request_id: selection for selection in fresh
+            }
+            for request_id, key in request_key_by_id.items():
+                selection = selection_by_request_id[request_id]
+                selection_by_source_key[key] = selection
+                if selection.status == "BOUND" and selection.binding is not None:
+                    source_truth[key] = selection
+                elif selection.status == "ABSTAIN":
+                    memo_key = diagnostic_metadata[request_id].get(
+                        "negative_memo_key"
+                    )
+                    if memo_key is not None:
+                        if session is not None:
+                            session.negative_decision_by_key[memo_key] = selection
+
+        resolved: list[ManagerResolvedSemantic] = []
+        unresolved_source_refs: list[str] = []
+        unresolved_semantics: list[ManagerUnresolvedSemantic] = []
+        unresolved_proposals: list[str] = []
+        ordered_selections: list[BoundedSemanticSelection] = []
+
+        for original_index, entry in enumerate(entries):
+            source_ref, proposal_text, kind_hint, owner_id = entry
+            if args.provenance == "USER_SOURCE" and source_ref is not None:
+                key = (source_ref, self._normalized_target_kind(kind_hint))
+                selection = selection_by_source_key[key]
+            else:
+                selection = selection_by_request_id[
+                    standalone_request_ids[original_index]
+                ]
+            ordered_selections.append(selection)
+
+            if selection.status != "BOUND":
+                if source_ref:
+                    unresolved_source_refs.append(source_ref)
+                    unresolved_semantics.append(
+                        ManagerUnresolvedSemantic(
+                            source_ref=source_ref,
+                            owner_id=owner_id,
+                            kind_hint=kind_hint,
+                            status=selection.status,
+                            candidate_ids=selection.candidate_ids,
+                        )
+                    )
+                else:
+                    unresolved_proposals.append(proposal_text)
+                continue
+
+            handle = active_linker.bind_selection(
+                selection,
+                provenance_type=args.provenance,
+                parent_obligation_id=(
+                    owner_id
+                    if args.provenance == "USER_SOURCE" and owner_id is not None
+                    else args.parent_obligation_id
+                ),
+                trigger_evidence_ref=args.evidence_ref,
+            )
+            resolved.append(
+                ManagerResolvedSemantic(
+                    source_ref=source_ref,
+                    proposal_text=None if source_ref else proposal_text,
+                    owner_id=owner_id,
+                    provenance=args.provenance,
+                    handle=handle,
+                )
+            )
+
+        return (
+            ManagerSemanticResolutionResult(
+                resolved=tuple(resolved),
+                unresolved_source_refs=tuple(dict.fromkeys(unresolved_source_refs)),
+                unresolved_semantics=tuple(unresolved_semantics),
+                unresolved_proposals=tuple(dict.fromkeys(unresolved_proposals)),
+                clarification=None,
+            ),
+            tuple(ordered_selections),
+        )
+
+    def _resolve_regular(
+        self,
+        *,
+        entries: list[tuple[str | None, str, str, str | None]],
+        args: ResolveSemanticsArgs,
+    ) -> ManagerSemanticResolutionResult:
+        result, _ = self._resolve_regular_once(entries=entries, args=args)
+        return result
+
+    @staticmethod
+    def _normalized_target_kind(kind: str) -> str:
+        return {
+            "kpi": "metric",
+            "entity_value": "filter",
+            "time": "period",
+        }.get(kind, kind)
+
+    def _current_turn_candidate_bindings(
+        self,
+        *,
+        resolved: tuple[ManagerResolvedSemantic, ...] | list[ManagerResolvedSemantic],
+        kind_hint: str,
+    ) -> tuple:
+        """Build bounded current-message applicability candidates.
+
+        Existing USER_SOURCE bindings remain context only. Candidate construction may
+        reuse their current governed cube metadata, but every unresolved source still
+        requires a fresh linker decision and BindingGate admission.
+        """
+        if kind_hint not in {"metric", "dimension"}:
+            return ()
+
+        direct_candidate_ids: set[str] = set()
+        cube_sets: list[frozenset[str]] = []
+        for item in resolved:
+            if item.source_ref is None or item.provenance != "USER_SOURCE":
+                continue
+            handle = item.handle
+            if handle.sensitive:
+                continue
+
+            binding = self._handles.binding_for_execution(
+                handle.handle_id,
+                tenant_binding=self._tenant_binding,
+                context_version=self._semantic_context.context_version.version,
+            )
+            cubes = frozenset(
+                str(value)
+                for value in tuple(
+                    getattr(binding.canonical_target, "cube_names", ()) or ()
+                )
+                if str(value)
+            )
+            if cubes:
+                cube_sets.append(cubes)
+
+            if self._normalized_target_kind(handle.target_kind) == kind_hint:
+                candidate_id = str(handle.resolver_provenance_id or "")
+                if candidate_id.startswith("cand_"):
+                    direct_candidate_ids.add(candidate_id)
+
+        coherent_scope: set[str] = set()
+        if cube_sets:
+            coherent_scope = set(cube_sets[0])
+            for cubes in cube_sets[1:]:
+                coherent_scope.intersection_update(cubes)
+                if not coherent_scope:
+                    break
+
+        out = []
+        for item in self._candidate_generator._governed_candidates(kind_hint):
+            if item.sensitive or not item.card.verified_aliases:
+                continue
+            candidate_cubes = {
+                str(value)
+                for value in tuple(
+                    getattr(item.canonical_target, "cube_names", ()) or ()
+                )
+                if str(value)
+            }
+            if (
+                item.card.candidate_id in direct_candidate_ids
+                or bool(coherent_scope.intersection(candidate_cubes))
+            ):
+                out.append(item)
+
+        out.sort(key=lambda item: item.card.candidate_id)
+        return tuple(out)
+
+    def _coherent_sibling_scope(
+        self,
+        *,
+        resolved: tuple[ManagerResolvedSemantic, ...],
+        owner_id: str,
+    ) -> tuple[str, ...]:
+        """Conservative same-obligation discovery scope from current governed handles."""
+        cube_sets: list[frozenset[str]] = []
+        for item in resolved:
+            if item.owner_id != owner_id:
+                continue
+            if item.handle.target_kind not in {
+                "metric",
+                "kpi",
+                "dimension",
+                "entity_value",
+            }:
+                continue
+            binding = self._handles.binding_for_execution(
+                item.handle.handle_id,
+                tenant_binding=self._tenant_binding,
+                context_version=self._semantic_context.context_version.version,
+            )
+            cubes = frozenset(
+                str(value)
+                for value in tuple(
+                    getattr(binding.canonical_target, "cube_names", ()) or ()
+                )
+                if str(value)
+            )
+            if cubes:
+                cube_sets.append(cubes)
+
+        if not cube_sets:
+            return ()
+        scope = set(cube_sets[0])
+        for cubes in cube_sets[1:]:
+            scope.intersection_update(cubes)
+            if not scope:
+                return ()
+        return tuple(sorted(scope))
+
+
+    def _governed_repair_source(
+        self,
+        *,
+        source_ref: str,
+        missing_kind: str,
+        runtime,
+        expected_message_hash: str,
+    ):
+        """Return one revalidated current governed source identity or None.
+
+        Runtime receipt proves this exact current source crossed the normal semantic path.
+        Current registry + catalog revalidation prevents stale handle/candidate reuse.
+        """
+        span = self._source_spans.validate(
+            source_ref,
+            expected_message_hash=expected_message_hash,
+        )
+        matches = []
+        for receipt in runtime.semantic_resolution_receipts:
+            if receipt.source_ref != source_ref:
+                continue
+            if self._normalized_target_kind(receipt.target_kind) != missing_kind:
+                continue
+            handle = self._handles.validate(
+                receipt.handle_id,
+                tenant_binding=self._tenant_binding,
+                context_version=self._semantic_context.context_version.version,
+            )
+            if handle.provenance_type != "USER_SOURCE" or handle.sensitive:
+                continue
+            candidate_id = str(handle.resolver_provenance_id or "")
+            if not candidate_id.startswith("cand_"):
+                continue
+            current = [
+                item
+                for item in self._candidate_generator._governed_candidates(missing_kind)
+                if item.card.candidate_id == candidate_id
+                and not item.sensitive
+                and self._normalized_target_kind(item.card.target_kind) == missing_kind
+            ]
+            if len(current) == 1:
+                matches.append((handle, current[0]))
+
+        unique = {
+            item.card.candidate_id: (handle, item)
+            for handle, item in matches
+        }
+        if len(unique) != 1:
+            return None
+        handle, binding = next(iter(unique.values()))
+        return span, handle, binding
+
+    @staticmethod
+    def _deterministic_unique_scope_group(
+        *,
+        eligible_tokens: set[str],
+        group_members: dict[str, tuple[str, ...]],
+    ) -> str | None:
+        """Return the sole full-cover scope group, otherwise require cognition.
+
+        This is control-plane determinism only. Eligibility has already been
+        established by governed source validation; semantic authority is still minted
+        later by SemanticBindingGate under the target obligation.
+        """
+        if not eligible_tokens or len(group_members) != 1:
+            return None
+        group_token, members = next(iter(group_members.items()))
+        if set(members) != set(eligible_tokens):
+            return None
+        return group_token
+
+    def _resolve_decomposition_repair(
+        self,
+        args: ResolveSemanticsArgs,
+        runtime,
+    ) -> ManagerSemanticResolutionResult:
+        if runtime is None:
+            raise ValueError("semantic decomposition repair requires ManagerRuntime")
+        gap_spans = [
+            self._source_spans.validate(ref)
+            for gap in args.decomposition_repair_gaps
+            for ref in gap.obligation_source_refs
+        ]
+        if not gap_spans:
+            return ManagerSemanticResolutionResult()
+        message_hashes = {item.message_hash for item in gap_spans}
+        message_ids = {item.message_id for item in gap_spans}
+        if len(message_hashes) != 1 or len(message_ids) != 1:
+            raise ValueError("semantic repair gaps must belong to one current message")
+        message_hash = next(iter(message_hashes))
+        user_message = self._source_spans.message_text_for(
+            args.decomposition_repair_gaps[0].obligation_source_refs[0]
+        )
+
+        source_refs = tuple(sorted(set(args.decomposition_repair_source_refs)))
+        token_by_ref_kind: dict[tuple[str, str], str] = {}
+        proof_by_token: dict[str, tuple[str, Any]] = {}
+        next_token = 1
+
+        requests: list[SemanticDecompositionRepairRequest] = []
+        allowed_tokens_by_gap: dict[str, set[str]] = {}
+        allowed_groups_by_gap: dict[str, dict[str, tuple[str, ...]]] = {}
+
+        for gap in args.decomposition_repair_gaps:
+            cards: list[SemanticRepairSourceCard] = []
+            allowed: set[str] = set()
+            for source_ref in source_refs:
+                proof = self._governed_repair_source(
+                    source_ref=source_ref,
+                    missing_kind=gap.missing_kind,
+                    runtime=runtime,
+                    expected_message_hash=message_hash,
+                )
+                if proof is None:
+                    continue
+                span, _source_handle, binding = proof
+                key = (source_ref, gap.missing_kind)
+                token = token_by_ref_kind.get(key)
+                if token is None:
+                    token = f"s{next_token}"
+                    next_token += 1
+                    token_by_ref_kind[key] = token
+                    proof_by_token[token] = (source_ref, binding)
+                cards.append(
+                    SemanticRepairSourceCard(
+                        source_token=token,
+                        surface=span.exact_surface,
+                        kind=gap.missing_kind,
+                        safe_label=binding.card.label,
+                    )
+                )
+                allowed.add(token)
+
+            if not cards:
+                continue
+
+            normalized_groups: dict[tuple[str, ...], set[str]] = {}
+            for group in args.decomposition_repair_scope_groups:
+                if group.kind != gap.missing_kind:
+                    continue
+                member_tokens: list[str] = []
+                for member_ref in sorted(group.member_source_refs):
+                    token = token_by_ref_kind.get((member_ref, gap.missing_kind))
+                    if token is None:
+                        member_tokens = []
+                        break
+                    member_tokens.append(token)
+                members = tuple(sorted(dict.fromkeys(member_tokens)))
+                if len(members) < 2:
+                    continue
+                normalized_groups.setdefault(members, set()).update(
+                    item.value for item in group.supporting_capabilities
+                )
+
+            group_cards: list[SemanticRepairScopeGroupCard] = []
+            group_members: dict[str, tuple[str, ...]] = {}
+            for index, (members, capabilities) in enumerate(
+                sorted(normalized_groups.items(), key=lambda item: item[0]),
+                start=1,
+            ):
+                group_token = f"g{index}"
+                group_cards.append(
+                    SemanticRepairScopeGroupCard(
+                        group_token=group_token,
+                        member_source_tokens=members,
+                        supporting_capabilities=tuple(sorted(capabilities)),
+                    )
+                )
+                group_members[group_token] = members
+
+            target_surfaces = tuple(
+                self._source_spans.validate(
+                    ref,
+                    expected_message_hash=message_hash,
+                ).exact_surface
+                for ref in gap.obligation_source_refs
+            )
+            requests.append(
+                SemanticDecompositionRepairRequest(
+                    gap_ref=gap.gap_ref,
+                    obligation_id=gap.obligation_id,
+                    capability_key=gap.capability_key.value,
+                    missing_kind=gap.missing_kind,
+                    obligation_source_surfaces=target_surfaces,
+                    available_user_source_concepts=tuple(cards),
+                    available_scope_groups=tuple(group_cards),
+                )
+            )
+            allowed_tokens_by_gap[gap.gap_ref] = allowed
+            allowed_groups_by_gap[gap.gap_ref] = group_members
+
+        if not requests:
+            return ManagerSemanticResolutionResult()
+
+        deterministic_choices: dict[str, SemanticDecompositionRepairChoice] = {}
+        cognition_requests: list[SemanticDecompositionRepairRequest] = []
+        for request in requests:
+            group_token = self._deterministic_unique_scope_group(
+                eligible_tokens=allowed_tokens_by_gap[request.gap_ref],
+                group_members=allowed_groups_by_gap[request.gap_ref],
+            )
+            if group_token is None:
+                cognition_requests.append(request)
+                continue
+            deterministic_choices[request.gap_ref] = (
+                SemanticDecompositionRepairChoice(
+                    gap_ref=request.gap_ref,
+                    decision="SELECT_SCOPE_GROUP",
+                    selected_source_tokens=(),
+                    selected_group_token=group_token,
+                    reason="SOURCE_SUPPORTS_SCOPE",
+                )
+            )
+
+        choices = dict(deterministic_choices)
+        if cognition_requests and self._semantic_decomposition_repair_provider is not None:
+            decision = self._semantic_decomposition_repair_provider.decide(
+                tuple(cognition_requests),
+                user_message=user_message,
+            )
+            cognition_choices = {
+                item.gap_ref: item for item in decision.choices
+            }
+            expected = {item.gap_ref for item in cognition_requests}
+            if set(cognition_choices) != expected:
+                raise ValueError(
+                    "semantic decomposition repair response gap refs do not match cognition batch"
+                )
+            choices.update(cognition_choices)
+
+        gap_by_ref = {
+            gap.gap_ref: gap for gap in args.decomposition_repair_gaps
+        }
+        resolved: list[ManagerResolvedSemantic] = []
+        diagnostic_choices: list[dict[str, Any]] = []
+
+        for request in requests:
+            choice = choices.get(request.gap_ref)
+            if choice is None:
+                continue
+            selected = tuple(dict.fromkeys(choice.selected_source_tokens))
+            selected_group_token = choice.selected_group_token
+
+            if choice.decision == "ABSTAIN":
+                selected = ()
+                selected_group_token = None
+            elif choice.decision == "SELECT_SCOPE_GROUP":
+                group_members = allowed_groups_by_gap[request.gap_ref]
+                if (
+                    selected_group_token is None
+                    or selected_group_token not in group_members
+                ):
+                    raise ValueError(
+                        "semantic decomposition repair selected unknown scope group"
+                    )
+                selected = group_members[selected_group_token]
+            elif not set(selected).issubset(allowed_tokens_by_gap[request.gap_ref]):
+                raise ValueError(
+                    "semantic decomposition repair selected unknown/wrong-kind source token"
+                )
+
+            # Revalidate every selected member before minting ANY target authority.
+            # This makes a selected group atomic with respect to stale/foreign/current-
+            # catalog failures. The existing BindingGate remains the only sem_* minter.
+            selected_proofs: dict[str, tuple[str, Any]] = {}
+            for token in selected:
+                if token not in proof_by_token:
+                    raise ValueError(
+                        "semantic decomposition repair selected unavailable source token"
+                    )
+                source_ref, original_binding = proof_by_token[token]
+                proof = self._governed_repair_source(
+                    source_ref=source_ref,
+                    missing_kind=request.missing_kind,
+                    runtime=runtime,
+                    expected_message_hash=message_hash,
+                )
+                if proof is None:
+                    raise ValueError(
+                        "semantic decomposition repair selected source failed revalidation"
+                    )
+                _span, _source_handle, current_binding = proof
+                if (
+                    current_binding.card.candidate_id
+                    != original_binding.card.candidate_id
+                ):
+                    raise ValueError(
+                        "semantic decomposition repair source identity changed during batch"
+                    )
+                selected_proofs[token] = (source_ref, current_binding)
+
+            gap = gap_by_ref[request.gap_ref]
+            diagnostic_choices.append(
+                {
+                    "gap_ref": request.gap_ref,
+                    "obligation_id": request.obligation_id,
+                    "missing_kind": request.missing_kind,
+                    "available_source_tokens": [
+                        item.source_token
+                        for item in request.available_user_source_concepts
+                    ],
+                    "available_scope_groups": [
+                        item.model_dump(mode="json")
+                        for item in request.available_scope_groups
+                    ],
+                    "decision": choice.decision,
+                    "decision_owner": (
+                        "SERVER_DETERMINISTIC_UNIQUE_SCOPE"
+                        if request.gap_ref in deterministic_choices
+                        else "BOUNDED_COGNITION"
+                    ),
+                    "selected_source_tokens": list(selected),
+                    "selected_group_token": selected_group_token,
+                    "reason": choice.reason,
+                }
+            )
+
+            for token in selected:
+                source_ref, binding = selected_proofs[token]
+                candidate_set = CandidateSet(
+                    request_id=f"repair:{request.gap_ref}:{token}",
+                    surface=self._source_spans.validate(
+                        source_ref,
+                        expected_message_hash=message_hash,
+                    ).exact_surface,
+                    kind_hint=request.missing_kind,
+                    bindings=(binding,),
+                    too_broad=False,
+                    retrieval_exhaustive=True,
+                    retrieval_backend="governed_decomposition_source_reuse_v1",
+                    retrieval_truncated=False,
+                )
+                handle = self._binding_gate.bind(
+                    candidate_set=candidate_set,
+                    candidate_id=binding.card.candidate_id,
+                    provenance_type="USER_SOURCE",
+                    parent_obligation_id=gap.obligation_id,
+                )
+                resolved.append(
+                    ManagerResolvedSemantic(
+                        source_ref=source_ref,
+                        proposal_text=None,
+                        owner_id=gap.obligation_id,
+                        provenance="USER_SOURCE",
+                        handle=handle,
+                    )
+                )
+
+        if self._semantic_diagnostic_sink is not None:
+            self._semantic_diagnostic_sink(
+                {
+                    "kind": "semantic_decomposition_repair",
+                    "schema_name": "dima_semantic_decomposition_repair_v1",
+                    "gap_count": len(requests),
+                    "choices": diagnostic_choices,
+                }
+            )
+
+        return ManagerSemanticResolutionResult(resolved=tuple(resolved))
+
+    def resolve(self, args: ResolveSemanticsArgs, runtime=None) -> ManagerSemanticResolutionResult:
+        if args.provenance == "USER_SOURCE" and args.decomposition_repair_gaps:
+            return self._resolve_decomposition_repair(args, runtime)
+
+        if args.provenance == "USER_SOURCE":
+            spans = [
+                self._source_spans.validate(source_ref)
+                for source_ref in args.source_refs
+            ]
+            session = self._preacceptance_semantic_session
+            if session is not None:
+                for span in spans:
+                    session.bind_message(
+                        message_id=span.message_id,
+                        message_hash=span.message_hash,
+                    )
+            hints = (
+                args.target_kind_hints
+                or tuple("unknown" for _ in args.source_refs)
+            )
+            owners: tuple[str | None, ...] = (
+                tuple(args.source_obligation_ids)
+                if args.source_obligation_ids
+                else tuple(None for _ in args.source_refs)
+            )
+
+            regular: list[tuple[str | None, str, str, str | None]] = []
+            time_entries: list[tuple[str, str, str | None]] = []
+            comparison_entries: list[tuple[str, str, str | None]] = []
+            for source_ref, hint, owner_id, span in zip(
+                args.source_refs,
+                hints,
+                owners,
+                spans,
+                strict=True,
+            ):
+                if hint == "time":
+                    time_entries.append(
+                        (source_ref, span.exact_surface, owner_id)
+                    )
+                elif hint == "comparison":
+                    comparison_entries.append(
+                        (source_ref, span.exact_surface, owner_id)
+                    )
+                else:
+                    regular.append(
+                        (source_ref, span.exact_surface, hint, owner_id)
+                    )
+
+            # One exact current-message source has one canonical source truth per
+            # semantic kind for the whole finite preacceptance protocol. Owner
+            # authority remains separately minted by BindingGate on every revision.
+            source_truth_by_key = (
+                session.source_truth_by_key
+                if session is not None
+                else {}
+            )
+
+            # Pass 1 is the existing bounded semantic path. It remains the owner whenever
+            # it has candidates, ambiguity, linker abstention/unavailability, or a
+            # globally exhaustive gap. Sibling-scope recovery is RETRIEVAL_MISS only.
+            if regular:
+                pass1_result, pass1_selections = self._resolve_regular_once(
+                    entries=regular,
+                    args=args,
+                    source_truth_by_key=source_truth_by_key,
+                )
+                recovered: list[ManagerResolvedSemantic] = list(
+                    pass1_result.resolved
+                )
+                status_by_key = {
+                    (item.owner_id, item.source_ref): item
+                    for item in pass1_result.unresolved_semantics
+                }
+
+                if args.source_obligation_ids:
+                    misses_by_owner: dict[
+                        str,
+                        list[tuple[str | None, str, str, str | None]],
+                    ] = {}
+                    for entry, selection in zip(
+                        regular,
+                        pass1_selections,
+                        strict=True,
+                    ):
+                        owner_id = entry[3]
+                        if (
+                            owner_id is not None
+                            and selection.status == "RETRIEVAL_MISS"
+                        ):
+                            misses_by_owner.setdefault(owner_id, []).append(
+                                entry
+                            )
+
+                    for owner_id in sorted(misses_by_owner):
+                        missed_entries = misses_by_owner[owner_id]
+                        scope = self._coherent_sibling_scope(
+                            resolved=pass1_result.resolved,
+                            owner_id=owner_id,
+                        )
+                        if not scope:
+                            continue
+
+                        scoped_linker = BoundedSemanticLinker(
+                            generator=GovernedSiblingScopeCandidateGenerator(
+                                base=self._candidate_generator,
+                                sibling_cube_names=scope,
+                            ),
+                            binding_gate=self._binding_gate,
+                            provider=self._semantic_decision_provider,
+                            diagnostic_sink=self._semantic_diagnostic_sink,
+                        )
+                        fallback_result, fallback_selections = self._resolve_regular_once(
+                            entries=missed_entries,
+                            args=args,
+                            linker=scoped_linker,
+                            discovery_pass="same_owner_sibling_scope",
+                            source_truth_by_key=source_truth_by_key,
+                        )
+                        recovered.extend(fallback_result.resolved)
+                        for entry, selection in zip(
+                            missed_entries,
+                            fallback_selections,
+                            strict=True,
+                        ):
+                            key = (entry[3], entry[0])
+                            if selection.status == "BOUND":
+                                status_by_key.pop(key, None)
+                            elif entry[0] is not None:
+                                status_by_key[key] = ManagerUnresolvedSemantic(
+                                    source_ref=entry[0],
+                                    owner_id=entry[3],
+                                    kind_hint=entry[2],
+                                    status=selection.status,
+                                    candidate_ids=selection.candidate_ids,
+                                )
+
+                # D10-N: if baseline discovery truly missed, a still-unresolved
+                # metric/dimension may see already-governed USER_SOURCE truth from this
+                # exact current batch as candidate applicability context. No handle is
+                # copied across obligations; the existing linker + BindingGate must make
+                # a fresh source->candidate admission.
+                already_resolved = {
+                    (item.owner_id, item.source_ref)
+                    for item in recovered
+                    if item.source_ref is not None
+                }
+                pass1_by_key = {
+                    (entry[3], entry[0]): selection
+                    for entry, selection in zip(
+                        regular,
+                        pass1_selections,
+                        strict=True,
+                    )
+                }
+                recovery_by_kind: dict[
+                    str,
+                    list[tuple[str | None, str, str, str | None]],
+                ] = {}
+                for entry in regular:
+                    source_ref, _, kind_hint, owner_id = entry
+                    if source_ref is None or (owner_id, source_ref) in already_resolved:
+                        continue
+                    selection = pass1_by_key.get((owner_id, source_ref))
+                    if (
+                        selection is None
+                        or selection.status not in {"RETRIEVAL_MISS", "ABSTAIN"}
+                        or kind_hint not in {"metric", "dimension"}
+                    ):
+                        continue
+                    recovery_by_kind.setdefault(kind_hint, []).append(entry)
+
+                for kind_hint, candidate_entries in recovery_by_kind.items():
+                    current_turn_bindings = self._current_turn_candidate_bindings(
+                        resolved=recovered,
+                        kind_hint=kind_hint,
+                    )
+                    if not current_turn_bindings:
+                        continue
+                    current_candidate_ids = {
+                        item.card.candidate_id for item in current_turn_bindings
+                    }
+                    missed_entries = [
+                        entry
+                        for entry in candidate_entries
+                        if (
+                            pass1_by_key[(entry[3], entry[0])].status
+                            == "RETRIEVAL_MISS"
+                            or set(
+                                pass1_by_key[(entry[3], entry[0])].candidate_ids
+                            )
+                            != current_candidate_ids
+                        )
+                    ]
+                    if not missed_entries:
+                        # An ABSTAIN over the exact same bounded candidate set is final;
+                        # repeating cognition would add cost without new information.
+                        continue
+                    current_turn_linker = BoundedSemanticLinker(
+                        generator=GovernedCurrentTurnCandidateGenerator(
+                            bindings=current_turn_bindings,
+                        ),
+                        binding_gate=self._binding_gate,
+                        provider=self._semantic_decision_provider,
+                        diagnostic_sink=self._semantic_diagnostic_sink,
+                    )
+                    current_turn_result, current_turn_selections = self._resolve_regular_once(
+                        entries=missed_entries,
+                        args=args,
+                        linker=current_turn_linker,
+                        discovery_pass="current_turn_applicability",
+                        source_truth_by_key=source_truth_by_key,
+                    )
+                    recovered.extend(current_turn_result.resolved)
+                    for entry, selection in zip(
+                        missed_entries,
+                        current_turn_selections,
+                        strict=True,
+                    ):
+                        key = (entry[3], entry[0])
+                        if selection.status == "BOUND":
+                            status_by_key.pop(key, None)
+                        elif entry[0] is not None:
+                            status_by_key[key] = ManagerUnresolvedSemantic(
+                                source_ref=entry[0],
+                                owner_id=entry[3],
+                                kind_hint=entry[2],
+                                status=selection.status,
+                                candidate_ids=selection.candidate_ids,
+                            )
+
+                resolved_keys = {
+                    (item.owner_id, item.source_ref)
+                    for item in recovered
+                    if item.source_ref is not None
+                }
+                unresolved_regular_refs = tuple(
+                    dict.fromkeys(
+                        source_ref
+                        for source_ref, _, _, owner_id in regular
+                        if (
+                            source_ref is not None
+                            and (owner_id, source_ref) not in resolved_keys
+                        )
+                    )
+                )
+                unresolved_keys = {
+                    (owner_id, source_ref)
+                    for source_ref, _, _, owner_id in regular
+                    if (
+                        source_ref is not None
+                        and (owner_id, source_ref) not in resolved_keys
+                    )
+                }
+                regular_result = ManagerSemanticResolutionResult(
+                    resolved=tuple(recovered),
+                    unresolved_source_refs=unresolved_regular_refs,
+                    unresolved_semantics=tuple(
+                        status_by_key[key]
+                        for key in status_by_key
+                        if key in unresolved_keys
+                    ),
+                    unresolved_proposals=pass1_result.unresolved_proposals,
+                    clarification=pass1_result.clarification,
+                )
+            else:
+                regular_result = ManagerSemanticResolutionResult()
+
+            resolved: list[ManagerResolvedSemantic] = list(
+                regular_result.resolved
+            )
+            unresolved_refs: list[str] = list(
+                regular_result.unresolved_source_refs
+            )
+
+            # Temporal normalization is typed cognition, but temporal authority must
+            # remain obligation-local. Grouped USER_SOURCE batches may never borrow a
+            # semantic anchor or explicit base period from another USER_MUST.
+            grouped_temporal_owners = {
+                owner_id
+                for _, _, owner_id in (*time_entries, *comparison_entries)
+                if owner_id is not None
+            }
+            grouped = bool(args.source_obligation_ids)
+
+            global_anchor = args.temporal_anchor_handle
+            if not grouped and global_anchor is None:
+                anchored = [
+                    item.handle.handle_id
+                    for item in regular_result.resolved
+                    if item.handle.target_kind
+                    in {"metric", "kpi", "dimension"}
+                ]
+                if anchored:
+                    global_anchor = anchored[0]
+
+            def anchor_for(owner_id: str | None) -> str | None:
+                if not grouped or owner_id is None:
+                    return global_anchor
+                local = self._coherent_temporal_anchor(
+                    resolved=regular_result.resolved,
+                    owner_id=owner_id,
+                )
+                if local is not None:
+                    return local
+                # Preserve an explicit caller-supplied anchor only when the batch has a
+                # single owner; it cannot be safely attributed in a multi-owner batch.
+                if len(grouped_temporal_owners) == 1:
+                    return args.temporal_anchor_handle
+                return None
+
+            period_handles_by_owner: dict[str | None, list[str]] = {}
+            for source_ref, text, owner_id in time_entries:
+                temporal_args = args.model_copy(
+                    update={"temporal_anchor_handle": anchor_for(owner_id)}
+                )
+                try:
+                    handle = self._resolve_temporal(
+                        text=text,
+                        hint="time",
+                        args=temporal_args,
+                    )
+                    period_handles_by_owner.setdefault(owner_id, []).append(
+                        handle.handle_id
+                    )
+                    resolved.append(
+                        ManagerResolvedSemantic(
+                            source_ref=source_ref,
+                            owner_id=owner_id,
+                            provenance="USER_SOURCE",
+                            handle=handle,
+                        )
+                    )
+                except (TemporalResolutionError, KeyError, ValueError):
+                    unresolved_refs.append(source_ref)
+
+            for source_ref, text, owner_id in comparison_entries:
+                local_periods = period_handles_by_owner.get(owner_id, [])
+                effective_base = args.base_period_handle
+                if grouped and owner_id is not None:
+                    if len(local_periods) == 1:
+                        effective_base = local_periods[0]
+                    elif len(grouped_temporal_owners) != 1:
+                        effective_base = None
+                elif effective_base is None:
+                    all_periods = [
+                        handle_id
+                        for values in period_handles_by_owner.values()
+                        for handle_id in values
+                    ]
+                    if len(all_periods) == 1:
+                        effective_base = all_periods[0]
+
+                comparison_args = args.model_copy(
+                    update={
+                        "temporal_anchor_handle": anchor_for(owner_id),
+                        "base_period_handle": effective_base,
+                    }
+                )
+                try:
+                    handle = self._resolve_temporal(
+                        text=text,
+                        hint="comparison",
+                        args=comparison_args,
+                    )
+                    resolved.append(
+                        ManagerResolvedSemantic(
+                            source_ref=source_ref,
+                            owner_id=owner_id,
+                            provenance="USER_SOURCE",
+                            handle=handle,
+                        )
+                    )
+                except (TemporalResolutionError, KeyError, ValueError):
+                    unresolved_refs.append(source_ref)
+
+            return ManagerSemanticResolutionResult(
+                resolved=tuple(resolved),
+                unresolved_source_refs=tuple(
+                    dict.fromkeys(unresolved_refs)
+                ),
+                unresolved_semantics=regular_result.unresolved_semantics,
+                unresolved_proposals=regular_result.unresolved_proposals,
+                clarification=regular_result.clarification,
+            )
+
+        assert args.natural_language_proposal is not None
+        hint = args.target_kind_hints[0]
+        if hint in {"time", "comparison"}:
+            try:
+                handle = self._resolve_temporal(
+                    text=args.natural_language_proposal,
+                    hint=hint,
+                    args=args,
+                )
+                return ManagerSemanticResolutionResult(
+                    resolved=(
+                        ManagerResolvedSemantic(
+                            proposal_text=args.natural_language_proposal,
+                            provenance="AGENT_DERIVED",
+                            handle=handle,
+                        ),
+                    ),
+                )
+            except (TemporalResolutionError, KeyError, ValueError):
+                return ManagerSemanticResolutionResult(
+                    unresolved_proposals=(args.natural_language_proposal,)
+                )
+
+        return self._resolve_regular(
+            entries=[(None, args.natural_language_proposal, hint, None)],
+            args=args,
+        )

@@ -1,0 +1,67 @@
+name: v2-day6-5-manager-eval
+
+"on":
+  workflow_dispatch:
+    inputs:
+      case_ids:
+        description: "Optional comma-separated DEV case ids"
+        required: false
+        default: ""
+      taxonomy:
+        description: "Optional comma-separated taxonomy filters"
+        required: false
+        default: ""
+      model:
+        description: "Optional RESEARCH_MANAGER model override"
+        required: false
+        default: ""
+      workers:
+        description: "Parallel case workers (1-8)"
+        required: false
+        default: "4"
+
+jobs:
+  manager-eval:
+    runs-on: ubuntu-latest
+    environment: DIMA_OPENROUTER_API_KEY
+    timeout-minutes: 30
+    env:
+      DIMA_LLM_PROVIDER: openrouter
+      DIMA_V2_RESEARCH_MANAGER_PROVIDER: openrouter
+      DIMA_OPENROUTER_API_KEY: ${{ secrets.DIMA_OPENROUTER_API_KEY || secrets.OPENROUTER_API_KEY }}
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_INTERACTION_LOG: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+      - name: Install backend eval dependencies
+        working-directory: backend
+        run: pip install -e ".[dev]"
+      - name: Day 6.5 Manager DEV evaluation
+        working-directory: backend
+        shell: bash
+        run: |
+          args=(--require-live --workers "${{ inputs.workers }}")
+          if [[ -n "${{ inputs.model }}" ]]; then
+            args+=(--model "${{ inputs.model }}")
+          fi
+          IFS=',' read -ra ids <<< "${{ inputs.case_ids }}"
+          for id in "${ids[@]}"; do
+            [[ -n "${id// /}" ]] && args+=(--case-id "${id// /}")
+          done
+          IFS=',' read -ra tax <<< "${{ inputs.taxonomy }}"
+          for tag in "${tax[@]}"; do
+            [[ -n "${tag// /}" ]] && args+=(--taxonomy "${tag// /}")
+          done
+          python lab/v2_day6_5_manager_eval.py "${args[@]}"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v2-day6-5-manager-eval
+          path: backend/lab/reports/v2_day6_5_manager_eval.json
+          retention-days: 30

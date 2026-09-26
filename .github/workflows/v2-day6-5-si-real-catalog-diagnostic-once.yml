@@ -1,0 +1,39 @@
+name: v2-day6-5-si-real-catalog-diagnostic-once
+
+"on":
+  push:
+    branches:
+      - feat/ask-v2-mvp
+    paths:
+      - ".github/workflows/v2-day6-5-si-real-catalog-diagnostic-once.yml"
+
+jobs:
+  diagnostic:
+    if: "github.event.head_commit.message == 'test(v2-day6.5): run real catalog diagnostic'"
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DIMA_D65_SI_REAL_CATALOG_DIAGNOSTIC: "1"
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_INTERACTION_LOG: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+      - name: Install backend
+        working-directory: backend
+        run: pip install -e ".[dev]"
+      - name: Run provider-free real-catalog diagnostic
+        working-directory: backend
+        run: pytest -q -s tests/test_v2_day6_5_si_real_catalog_diagnostic.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v2-day6-5-si-real-catalog-remaining-red
+          path: backend/lab/reports/v2_day6_5_si_real_catalog_remaining_red.json
+          retention-days: 90
+          if-no-files-found: error

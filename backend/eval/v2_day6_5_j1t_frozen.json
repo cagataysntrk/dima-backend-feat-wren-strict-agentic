@@ -1,0 +1,1836 @@
+{
+  "version": "d65-j1t-v1-frozen",
+  "track": "J1T",
+  "frozen_before_results": true,
+  "cases": [
+    {
+      "id": "j1t-001",
+      "surface": "bu ay",
+      "target": "PERIOD",
+      "options": [
+        {
+          "option_id": "P_THIS_MONTH",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "THIS_MONTH",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_PREVIOUS_MONTH",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "PREVIOUS_MONTH",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_THIS_YEAR",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "THIS_YEAR",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_PREVIOUS_YEAR",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "PREVIOUS_YEAR",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "ABSTAIN",
+          "target": null,
+          "decision": "ABSTAIN"
+        }
+      ],
+      "expected": "P_THIS_MONTH",
+      "abstain_reason": null,
+      "taxonomy": [
+        "period",
+        "THIS_MONTH",
+        "tr"
+      ],
+      "metamorphic_group": "mt-this-month"
+    },
+    {
+      "id": "j1t-002",
+      "surface": "içinde bulunduğumuz ay",
+      "target": "PERIOD",
+      "options": [
+        {
+          "option_id": "P_PREVIOUS_YEAR",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "PREVIOUS_YEAR",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_THIS_YEAR",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "THIS_YEAR",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_PREVIOUS_MONTH",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "PREVIOUS_MONTH",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_THIS_MONTH",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "THIS_MONTH",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "ABSTAIN",
+          "target": null,
+          "decision": "ABSTAIN"
+        }
+      ],
+      "expected": "P_THIS_MONTH",
+      "abstain_reason": null,
+      "taxonomy": [
+        "period",
+        "THIS_MONTH",
+        "paraphrase",
+        "tr"
+      ],
+      "metamorphic_group": "mt-this-month"
+    },
+    {
+      "id": "j1t-003",
+      "surface": "geçen ay",
+      "target": "PERIOD",
+      "options": [
+        {
+          "option_id": "P_THIS_MONTH",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "THIS_MONTH",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_PREVIOUS_MONTH",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "PREVIOUS_MONTH",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_THIS_YEAR",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "THIS_YEAR",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_PREVIOUS_YEAR",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "PREVIOUS_YEAR",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "ABSTAIN",
+          "target": null,
+          "decision": "ABSTAIN"
+        }
+      ],
+      "expected": "P_PREVIOUS_MONTH",
+      "abstain_reason": null,
+      "taxonomy": [
+        "period",
+        "PREVIOUS_MONTH",
+        "tr"
+      ],
+      "metamorphic_group": "mt-prev-month"
+    },
+    {
+      "id": "j1t-004",
+      "surface": "bir önceki ay",
+      "target": "PERIOD",
+      "options": [
+        {
+          "option_id": "P_PREVIOUS_YEAR",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "PREVIOUS_YEAR",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_THIS_YEAR",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "THIS_YEAR",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_PREVIOUS_MONTH",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "PREVIOUS_MONTH",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_THIS_MONTH",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "THIS_MONTH",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "ABSTAIN",
+          "target": null,
+          "decision": "ABSTAIN"
+        }
+      ],
+      "expected": "P_PREVIOUS_MONTH",
+      "abstain_reason": null,
+      "taxonomy": [
+        "period",
+        "PREVIOUS_MONTH",
+        "paraphrase",
+        "tr"
+      ],
+      "metamorphic_group": "mt-prev-month"
+    },
+    {
+      "id": "j1t-005",
+      "surface": "bu yıl",
+      "target": "PERIOD",
+      "options": [
+        {
+          "option_id": "P_THIS_MONTH",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "THIS_MONTH",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_PREVIOUS_MONTH",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "PREVIOUS_MONTH",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_THIS_YEAR",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "THIS_YEAR",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_PREVIOUS_YEAR",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "PREVIOUS_YEAR",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "ABSTAIN",
+          "target": null,
+          "decision": "ABSTAIN"
+        }
+      ],
+      "expected": "P_THIS_YEAR",
+      "abstain_reason": null,
+      "taxonomy": [
+        "period",
+        "THIS_YEAR",
+        "tr"
+      ],
+      "metamorphic_group": "mt-this-year"
+    },
+    {
+      "id": "j1t-006",
+      "surface": "içinde olduğumuz yıl",
+      "target": "PERIOD",
+      "options": [
+        {
+          "option_id": "P_PREVIOUS_YEAR",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "PREVIOUS_YEAR",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_THIS_YEAR",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "THIS_YEAR",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_PREVIOUS_MONTH",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "PREVIOUS_MONTH",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_THIS_MONTH",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "THIS_MONTH",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "ABSTAIN",
+          "target": null,
+          "decision": "ABSTAIN"
+        }
+      ],
+      "expected": "P_THIS_YEAR",
+      "abstain_reason": null,
+      "taxonomy": [
+        "period",
+        "THIS_YEAR",
+        "paraphrase",
+        "tr"
+      ],
+      "metamorphic_group": "mt-this-year"
+    },
+    {
+      "id": "j1t-007",
+      "surface": "geçen yıl",
+      "target": "PERIOD",
+      "options": [
+        {
+          "option_id": "P_THIS_MONTH",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "THIS_MONTH",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_PREVIOUS_MONTH",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "PREVIOUS_MONTH",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_THIS_YEAR",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "THIS_YEAR",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_PREVIOUS_YEAR",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "PREVIOUS_YEAR",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "ABSTAIN",
+          "target": null,
+          "decision": "ABSTAIN"
+        }
+      ],
+      "expected": "P_PREVIOUS_YEAR",
+      "abstain_reason": null,
+      "taxonomy": [
+        "period",
+        "PREVIOUS_YEAR",
+        "tr"
+      ],
+      "metamorphic_group": "mt-prev-year"
+    },
+    {
+      "id": "j1t-008",
+      "surface": "bir önceki yıl",
+      "target": "PERIOD",
+      "options": [
+        {
+          "option_id": "P_PREVIOUS_YEAR",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "PREVIOUS_YEAR",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_THIS_YEAR",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "THIS_YEAR",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_PREVIOUS_MONTH",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "PREVIOUS_MONTH",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_THIS_MONTH",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "THIS_MONTH",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "ABSTAIN",
+          "target": null,
+          "decision": "ABSTAIN"
+        }
+      ],
+      "expected": "P_PREVIOUS_YEAR",
+      "abstain_reason": null,
+      "taxonomy": [
+        "period",
+        "PREVIOUS_YEAR",
+        "paraphrase",
+        "tr"
+      ],
+      "metamorphic_group": "mt-prev-year"
+    },
+    {
+      "id": "j1t-009",
+      "surface": "bu hafta",
+      "target": "PERIOD",
+      "options": [
+        {
+          "option_id": "P_THIS_WEEK",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "THIS_WEEK",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_PREVIOUS_WEEK",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "PREVIOUS_WEEK",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_THIS_QUARTER",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "THIS_QUARTER",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_PREVIOUS_QUARTER",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "PREVIOUS_QUARTER",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "ABSTAIN",
+          "target": null,
+          "decision": "ABSTAIN"
+        }
+      ],
+      "expected": "P_THIS_WEEK",
+      "abstain_reason": null,
+      "taxonomy": [
+        "period",
+        "THIS_WEEK",
+        "tr"
+      ],
+      "metamorphic_group": null
+    },
+    {
+      "id": "j1t-010",
+      "surface": "geçen hafta",
+      "target": "PERIOD",
+      "options": [
+        {
+          "option_id": "P_THIS_WEEK",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "THIS_WEEK",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_PREVIOUS_WEEK",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "PREVIOUS_WEEK",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_THIS_QUARTER",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "THIS_QUARTER",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_PREVIOUS_QUARTER",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "PREVIOUS_QUARTER",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "ABSTAIN",
+          "target": null,
+          "decision": "ABSTAIN"
+        }
+      ],
+      "expected": "P_PREVIOUS_WEEK",
+      "abstain_reason": null,
+      "taxonomy": [
+        "period",
+        "PREVIOUS_WEEK",
+        "tr"
+      ],
+      "metamorphic_group": null
+    },
+    {
+      "id": "j1t-011",
+      "surface": "bu çeyrek",
+      "target": "PERIOD",
+      "options": [
+        {
+          "option_id": "P_THIS_WEEK",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "THIS_WEEK",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_PREVIOUS_WEEK",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "PREVIOUS_WEEK",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_THIS_QUARTER",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "THIS_QUARTER",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_PREVIOUS_QUARTER",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "PREVIOUS_QUARTER",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "ABSTAIN",
+          "target": null,
+          "decision": "ABSTAIN"
+        }
+      ],
+      "expected": "P_THIS_QUARTER",
+      "abstain_reason": null,
+      "taxonomy": [
+        "period",
+        "THIS_QUARTER",
+        "tr"
+      ],
+      "metamorphic_group": null
+    },
+    {
+      "id": "j1t-012",
+      "surface": "önceki çeyrek",
+      "target": "PERIOD",
+      "options": [
+        {
+          "option_id": "P_THIS_WEEK",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "THIS_WEEK",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_PREVIOUS_WEEK",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "PREVIOUS_WEEK",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_THIS_QUARTER",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "THIS_QUARTER",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_PREVIOUS_QUARTER",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "PREVIOUS_QUARTER",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "ABSTAIN",
+          "target": null,
+          "decision": "ABSTAIN"
+        }
+      ],
+      "expected": "P_PREVIOUS_QUARTER",
+      "abstain_reason": null,
+      "taxonomy": [
+        "period",
+        "PREVIOUS_QUARTER",
+        "tr"
+      ],
+      "metamorphic_group": null
+    },
+    {
+      "id": "j1t-013",
+      "surface": "son 7 gün",
+      "target": "PERIOD",
+      "options": [
+        {
+          "option_id": "P_LAST_N_DAYS_7",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "LAST_N_DAYS",
+          "comparison_kind": null,
+          "n": 7,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_LAST_N_DAYS_14",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "LAST_N_DAYS",
+          "comparison_kind": null,
+          "n": 14,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_LAST_N_DAYS_30",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "LAST_N_DAYS",
+          "comparison_kind": null,
+          "n": 30,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "ABSTAIN",
+          "target": null,
+          "decision": "ABSTAIN"
+        }
+      ],
+      "expected": "P_LAST_N_DAYS_7",
+      "abstain_reason": null,
+      "taxonomy": [
+        "period",
+        "LAST_N_DAYS",
+        "n",
+        "tr"
+      ],
+      "metamorphic_group": "mt-last7"
+    },
+    {
+      "id": "j1t-014",
+      "surface": "geride kalan 7 gün",
+      "target": "PERIOD",
+      "options": [
+        {
+          "option_id": "P_LAST_N_DAYS_30",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "LAST_N_DAYS",
+          "comparison_kind": null,
+          "n": 30,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_LAST_N_DAYS_14",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "LAST_N_DAYS",
+          "comparison_kind": null,
+          "n": 14,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_LAST_N_DAYS_7",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "LAST_N_DAYS",
+          "comparison_kind": null,
+          "n": 7,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "ABSTAIN",
+          "target": null,
+          "decision": "ABSTAIN"
+        }
+      ],
+      "expected": "P_LAST_N_DAYS_7",
+      "abstain_reason": null,
+      "taxonomy": [
+        "period",
+        "LAST_N_DAYS",
+        "n",
+        "paraphrase",
+        "tr"
+      ],
+      "metamorphic_group": "mt-last7"
+    },
+    {
+      "id": "j1t-015",
+      "surface": "son 30 gün",
+      "target": "PERIOD",
+      "options": [
+        {
+          "option_id": "P_LAST_N_DAYS_7",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "LAST_N_DAYS",
+          "comparison_kind": null,
+          "n": 7,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_LAST_N_DAYS_30",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "LAST_N_DAYS",
+          "comparison_kind": null,
+          "n": 30,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_LAST_N_DAYS_90",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "LAST_N_DAYS",
+          "comparison_kind": null,
+          "n": 90,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "ABSTAIN",
+          "target": null,
+          "decision": "ABSTAIN"
+        }
+      ],
+      "expected": "P_LAST_N_DAYS_30",
+      "abstain_reason": null,
+      "taxonomy": [
+        "period",
+        "LAST_N_DAYS",
+        "n",
+        "tr"
+      ],
+      "metamorphic_group": null
+    },
+    {
+      "id": "j1t-016",
+      "surface": "son 6 hafta",
+      "target": "PERIOD",
+      "options": [
+        {
+          "option_id": "P_LAST_N_WEEKS_4",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "LAST_N_WEEKS",
+          "comparison_kind": null,
+          "n": 4,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_LAST_N_WEEKS_6",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "LAST_N_WEEKS",
+          "comparison_kind": null,
+          "n": 6,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_LAST_N_WEEKS_8",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "LAST_N_WEEKS",
+          "comparison_kind": null,
+          "n": 8,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "ABSTAIN",
+          "target": null,
+          "decision": "ABSTAIN"
+        }
+      ],
+      "expected": "P_LAST_N_WEEKS_6",
+      "abstain_reason": null,
+      "taxonomy": [
+        "period",
+        "LAST_N_WEEKS",
+        "n",
+        "tr"
+      ],
+      "metamorphic_group": "mt-last6w"
+    },
+    {
+      "id": "j1t-017",
+      "surface": "geride kalan altı hafta",
+      "target": "PERIOD",
+      "options": [
+        {
+          "option_id": "P_LAST_N_WEEKS_8",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "LAST_N_WEEKS",
+          "comparison_kind": null,
+          "n": 8,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_LAST_N_WEEKS_6",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "LAST_N_WEEKS",
+          "comparison_kind": null,
+          "n": 6,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_LAST_N_WEEKS_4",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "LAST_N_WEEKS",
+          "comparison_kind": null,
+          "n": 4,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "ABSTAIN",
+          "target": null,
+          "decision": "ABSTAIN"
+        }
+      ],
+      "expected": "P_LAST_N_WEEKS_6",
+      "abstain_reason": null,
+      "taxonomy": [
+        "period",
+        "LAST_N_WEEKS",
+        "n",
+        "paraphrase",
+        "tr"
+      ],
+      "metamorphic_group": "mt-last6w"
+    },
+    {
+      "id": "j1t-018",
+      "surface": "son 3 ay",
+      "target": "PERIOD",
+      "options": [
+        {
+          "option_id": "P_LAST_N_MONTHS_3",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "LAST_N_MONTHS",
+          "comparison_kind": null,
+          "n": 3,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_LAST_N_MONTHS_6",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "LAST_N_MONTHS",
+          "comparison_kind": null,
+          "n": 6,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_LAST_N_MONTHS_12",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "LAST_N_MONTHS",
+          "comparison_kind": null,
+          "n": 12,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "ABSTAIN",
+          "target": null,
+          "decision": "ABSTAIN"
+        }
+      ],
+      "expected": "P_LAST_N_MONTHS_3",
+      "abstain_reason": null,
+      "taxonomy": [
+        "period",
+        "LAST_N_MONTHS",
+        "n",
+        "tr"
+      ],
+      "metamorphic_group": "mt-last3m"
+    },
+    {
+      "id": "j1t-019",
+      "surface": "geride kalan üç ay",
+      "target": "PERIOD",
+      "options": [
+        {
+          "option_id": "P_LAST_N_MONTHS_12",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "LAST_N_MONTHS",
+          "comparison_kind": null,
+          "n": 12,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_LAST_N_MONTHS_6",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "LAST_N_MONTHS",
+          "comparison_kind": null,
+          "n": 6,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_LAST_N_MONTHS_3",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "LAST_N_MONTHS",
+          "comparison_kind": null,
+          "n": 3,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "ABSTAIN",
+          "target": null,
+          "decision": "ABSTAIN"
+        }
+      ],
+      "expected": "P_LAST_N_MONTHS_3",
+      "abstain_reason": null,
+      "taxonomy": [
+        "period",
+        "LAST_N_MONTHS",
+        "n",
+        "paraphrase",
+        "tr"
+      ],
+      "metamorphic_group": "mt-last3m"
+    },
+    {
+      "id": "j1t-020",
+      "surface": "önceki dönemle karşılaştır",
+      "target": "COMPARISON",
+      "options": [
+        {
+          "option_id": "C_PREVIOUS_PERIOD",
+          "target": "COMPARISON",
+          "decision": "NORMALIZED",
+          "period_kind": null,
+          "comparison_kind": "PREVIOUS_PERIOD",
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "C_PREV_YEAR_ALIGNED",
+          "target": "COMPARISON",
+          "decision": "NORMALIZED",
+          "period_kind": null,
+          "comparison_kind": "PREVIOUS_YEAR_ALIGNED",
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "ABSTAIN",
+          "target": null,
+          "decision": "ABSTAIN"
+        }
+      ],
+      "expected": "C_PREVIOUS_PERIOD",
+      "abstain_reason": null,
+      "taxonomy": [
+        "comparison",
+        "PREVIOUS_PERIOD",
+        "tr"
+      ],
+      "metamorphic_group": "mt-prev-period"
+    },
+    {
+      "id": "j1t-021",
+      "surface": "bir önceki dönemle kıyasla",
+      "target": "COMPARISON",
+      "options": [
+        {
+          "option_id": "C_PREV_YEAR_ALIGNED",
+          "target": "COMPARISON",
+          "decision": "NORMALIZED",
+          "period_kind": null,
+          "comparison_kind": "PREVIOUS_YEAR_ALIGNED",
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "C_PREVIOUS_PERIOD",
+          "target": "COMPARISON",
+          "decision": "NORMALIZED",
+          "period_kind": null,
+          "comparison_kind": "PREVIOUS_PERIOD",
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "ABSTAIN",
+          "target": null,
+          "decision": "ABSTAIN"
+        }
+      ],
+      "expected": "C_PREVIOUS_PERIOD",
+      "abstain_reason": null,
+      "taxonomy": [
+        "comparison",
+        "PREVIOUS_PERIOD",
+        "paraphrase",
+        "tr"
+      ],
+      "metamorphic_group": "mt-prev-period"
+    },
+    {
+      "id": "j1t-022",
+      "surface": "geçen yılın aynı dönemiyle karşılaştır",
+      "target": "COMPARISON",
+      "options": [
+        {
+          "option_id": "C_PREVIOUS_PERIOD",
+          "target": "COMPARISON",
+          "decision": "NORMALIZED",
+          "period_kind": null,
+          "comparison_kind": "PREVIOUS_PERIOD",
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "C_PREV_YEAR_ALIGNED",
+          "target": "COMPARISON",
+          "decision": "NORMALIZED",
+          "period_kind": null,
+          "comparison_kind": "PREVIOUS_YEAR_ALIGNED",
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "ABSTAIN",
+          "target": null,
+          "decision": "ABSTAIN"
+        }
+      ],
+      "expected": "C_PREV_YEAR_ALIGNED",
+      "abstain_reason": null,
+      "taxonomy": [
+        "comparison",
+        "PREVIOUS_YEAR_ALIGNED",
+        "tr"
+      ],
+      "metamorphic_group": "mt-py"
+    },
+    {
+      "id": "j1t-023",
+      "surface": "bir yıl önceki aynı dönemle kıyasla",
+      "target": "COMPARISON",
+      "options": [
+        {
+          "option_id": "C_PREV_YEAR_ALIGNED",
+          "target": "COMPARISON",
+          "decision": "NORMALIZED",
+          "period_kind": null,
+          "comparison_kind": "PREVIOUS_YEAR_ALIGNED",
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "C_PREVIOUS_PERIOD",
+          "target": "COMPARISON",
+          "decision": "NORMALIZED",
+          "period_kind": null,
+          "comparison_kind": "PREVIOUS_PERIOD",
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "ABSTAIN",
+          "target": null,
+          "decision": "ABSTAIN"
+        }
+      ],
+      "expected": "C_PREV_YEAR_ALIGNED",
+      "abstain_reason": null,
+      "taxonomy": [
+        "comparison",
+        "PREVIOUS_YEAR_ALIGNED",
+        "paraphrase",
+        "tr"
+      ],
+      "metamorphic_group": "mt-py"
+    },
+    {
+      "id": "j1t-024",
+      "surface": "bu ayı geçen ayla karşılaştır",
+      "target": "COMPARISON",
+      "options": [
+        {
+          "option_id": "C_PP_THIS_MONTH",
+          "target": "COMPARISON",
+          "decision": "NORMALIZED",
+          "period_kind": null,
+          "comparison_kind": "PREVIOUS_PERIOD",
+          "n": null,
+          "implicit_base_period_kind": "THIS_MONTH",
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "C_PY_THIS_MONTH",
+          "target": "COMPARISON",
+          "decision": "NORMALIZED",
+          "period_kind": null,
+          "comparison_kind": "PREVIOUS_YEAR_ALIGNED",
+          "n": null,
+          "implicit_base_period_kind": "THIS_MONTH",
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "C_PP_THIS_YEAR",
+          "target": "COMPARISON",
+          "decision": "NORMALIZED",
+          "period_kind": null,
+          "comparison_kind": "PREVIOUS_PERIOD",
+          "n": null,
+          "implicit_base_period_kind": "THIS_YEAR",
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "ABSTAIN",
+          "target": null,
+          "decision": "ABSTAIN"
+        }
+      ],
+      "expected": "C_PP_THIS_MONTH",
+      "abstain_reason": null,
+      "taxonomy": [
+        "comparison",
+        "explicit_base",
+        "PREVIOUS_PERIOD",
+        "tr"
+      ],
+      "metamorphic_group": "mt-month-comp"
+    },
+    {
+      "id": "j1t-025",
+      "surface": "bu ay ile bir önceki ayı kıyasla",
+      "target": "COMPARISON",
+      "options": [
+        {
+          "option_id": "C_PP_THIS_YEAR",
+          "target": "COMPARISON",
+          "decision": "NORMALIZED",
+          "period_kind": null,
+          "comparison_kind": "PREVIOUS_PERIOD",
+          "n": null,
+          "implicit_base_period_kind": "THIS_YEAR",
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "C_PY_THIS_MONTH",
+          "target": "COMPARISON",
+          "decision": "NORMALIZED",
+          "period_kind": null,
+          "comparison_kind": "PREVIOUS_YEAR_ALIGNED",
+          "n": null,
+          "implicit_base_period_kind": "THIS_MONTH",
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "C_PP_THIS_MONTH",
+          "target": "COMPARISON",
+          "decision": "NORMALIZED",
+          "period_kind": null,
+          "comparison_kind": "PREVIOUS_PERIOD",
+          "n": null,
+          "implicit_base_period_kind": "THIS_MONTH",
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "ABSTAIN",
+          "target": null,
+          "decision": "ABSTAIN"
+        }
+      ],
+      "expected": "C_PP_THIS_MONTH",
+      "abstain_reason": null,
+      "taxonomy": [
+        "comparison",
+        "explicit_base",
+        "paraphrase",
+        "tr"
+      ],
+      "metamorphic_group": "mt-month-comp"
+    },
+    {
+      "id": "j1t-026",
+      "surface": "bu ayı geçen yılın aynı ayıyla karşılaştır",
+      "target": "COMPARISON",
+      "options": [
+        {
+          "option_id": "C_PP_THIS_MONTH",
+          "target": "COMPARISON",
+          "decision": "NORMALIZED",
+          "period_kind": null,
+          "comparison_kind": "PREVIOUS_PERIOD",
+          "n": null,
+          "implicit_base_period_kind": "THIS_MONTH",
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "C_PY_THIS_MONTH",
+          "target": "COMPARISON",
+          "decision": "NORMALIZED",
+          "period_kind": null,
+          "comparison_kind": "PREVIOUS_YEAR_ALIGNED",
+          "n": null,
+          "implicit_base_period_kind": "THIS_MONTH",
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "C_PP_THIS_YEAR",
+          "target": "COMPARISON",
+          "decision": "NORMALIZED",
+          "period_kind": null,
+          "comparison_kind": "PREVIOUS_PERIOD",
+          "n": null,
+          "implicit_base_period_kind": "THIS_YEAR",
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "ABSTAIN",
+          "target": null,
+          "decision": "ABSTAIN"
+        }
+      ],
+      "expected": "C_PY_THIS_MONTH",
+      "abstain_reason": null,
+      "taxonomy": [
+        "comparison",
+        "explicit_base",
+        "PREVIOUS_YEAR_ALIGNED",
+        "tr"
+      ],
+      "metamorphic_group": null
+    },
+    {
+      "id": "j1t-027",
+      "surface": "son 30 günü önceki 30 günle karşılaştır",
+      "target": "COMPARISON",
+      "options": [
+        {
+          "option_id": "C_PP_LAST30",
+          "target": "COMPARISON",
+          "decision": "NORMALIZED",
+          "period_kind": null,
+          "comparison_kind": "PREVIOUS_PERIOD",
+          "n": null,
+          "implicit_base_period_kind": "LAST_N_DAYS",
+          "implicit_base_n": 30
+        },
+        {
+          "option_id": "C_PY_LAST30",
+          "target": "COMPARISON",
+          "decision": "NORMALIZED",
+          "period_kind": null,
+          "comparison_kind": "PREVIOUS_YEAR_ALIGNED",
+          "n": null,
+          "implicit_base_period_kind": "LAST_N_DAYS",
+          "implicit_base_n": 30
+        },
+        {
+          "option_id": "C_PP_LAST7",
+          "target": "COMPARISON",
+          "decision": "NORMALIZED",
+          "period_kind": null,
+          "comparison_kind": "PREVIOUS_PERIOD",
+          "n": null,
+          "implicit_base_period_kind": "LAST_N_DAYS",
+          "implicit_base_n": 7
+        },
+        {
+          "option_id": "ABSTAIN",
+          "target": null,
+          "decision": "ABSTAIN"
+        }
+      ],
+      "expected": "C_PP_LAST30",
+      "abstain_reason": null,
+      "taxonomy": [
+        "comparison",
+        "implicit_base",
+        "LAST_N_DAYS",
+        "n",
+        "tr"
+      ],
+      "metamorphic_group": null
+    },
+    {
+      "id": "j1t-028",
+      "surface": "son dönem",
+      "target": "PERIOD",
+      "options": [
+        {
+          "option_id": "P_THIS_MONTH",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "THIS_MONTH",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_PREVIOUS_MONTH",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "PREVIOUS_MONTH",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_THIS_YEAR",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "THIS_YEAR",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_PREVIOUS_YEAR",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "PREVIOUS_YEAR",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "ABSTAIN",
+          "target": null,
+          "decision": "ABSTAIN"
+        }
+      ],
+      "expected": "ABSTAIN",
+      "abstain_reason": "AMBIGUOUS",
+      "taxonomy": [
+        "ambiguity",
+        "period",
+        "tr"
+      ],
+      "metamorphic_group": null
+    },
+    {
+      "id": "j1t-029",
+      "surface": "yakın zamanda",
+      "target": "PERIOD",
+      "options": [
+        {
+          "option_id": "P_THIS_MONTH",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "THIS_MONTH",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_PREVIOUS_MONTH",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "PREVIOUS_MONTH",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_THIS_YEAR",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "THIS_YEAR",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_PREVIOUS_YEAR",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "PREVIOUS_YEAR",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "ABSTAIN",
+          "target": null,
+          "decision": "ABSTAIN"
+        }
+      ],
+      "expected": "ABSTAIN",
+      "abstain_reason": "AMBIGUOUS",
+      "taxonomy": [
+        "ambiguity",
+        "period",
+        "tr"
+      ],
+      "metamorphic_group": null
+    },
+    {
+      "id": "j1t-030",
+      "surface": "2024 ile 2026 arasında",
+      "target": "PERIOD",
+      "options": [
+        {
+          "option_id": "P_THIS_MONTH",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "THIS_MONTH",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_PREVIOUS_MONTH",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "PREVIOUS_MONTH",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_THIS_YEAR",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "THIS_YEAR",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_PREVIOUS_YEAR",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "PREVIOUS_YEAR",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "ABSTAIN",
+          "target": null,
+          "decision": "ABSTAIN"
+        }
+      ],
+      "expected": "ABSTAIN",
+      "abstain_reason": "UNSUPPORTED",
+      "taxonomy": [
+        "unsupported",
+        "absolute_range",
+        "tr"
+      ],
+      "metamorphic_group": null
+    },
+    {
+      "id": "j1t-031",
+      "surface": "2025'in ilk iş günü",
+      "target": "PERIOD",
+      "options": [
+        {
+          "option_id": "P_THIS_MONTH",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "THIS_MONTH",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_PREVIOUS_MONTH",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "PREVIOUS_MONTH",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_THIS_YEAR",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "THIS_YEAR",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_PREVIOUS_YEAR",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "PREVIOUS_YEAR",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "ABSTAIN",
+          "target": null,
+          "decision": "ABSTAIN"
+        }
+      ],
+      "expected": "ABSTAIN",
+      "abstain_reason": "UNSUPPORTED",
+      "taxonomy": [
+        "unsupported",
+        "calendar_specific",
+        "tr"
+      ],
+      "metamorphic_group": null
+    },
+    {
+      "id": "j1t-032",
+      "surface": "Q1 2025",
+      "target": "PERIOD",
+      "options": [
+        {
+          "option_id": "P_THIS_WEEK",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "THIS_WEEK",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_PREVIOUS_WEEK",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "PREVIOUS_WEEK",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_THIS_QUARTER",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "THIS_QUARTER",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "P_PREVIOUS_QUARTER",
+          "target": "PERIOD",
+          "decision": "NORMALIZED",
+          "period_kind": "PREVIOUS_QUARTER",
+          "comparison_kind": null,
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "ABSTAIN",
+          "target": null,
+          "decision": "ABSTAIN"
+        }
+      ],
+      "expected": "ABSTAIN",
+      "abstain_reason": "UNSUPPORTED",
+      "taxonomy": [
+        "unsupported",
+        "absolute_quarter",
+        "tr"
+      ],
+      "metamorphic_group": null
+    },
+    {
+      "id": "j1t-033",
+      "surface": "compare with the previous period",
+      "target": "COMPARISON",
+      "options": [
+        {
+          "option_id": "C_PREVIOUS_PERIOD",
+          "target": "COMPARISON",
+          "decision": "NORMALIZED",
+          "period_kind": null,
+          "comparison_kind": "PREVIOUS_PERIOD",
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "C_PREV_YEAR_ALIGNED",
+          "target": "COMPARISON",
+          "decision": "NORMALIZED",
+          "period_kind": null,
+          "comparison_kind": "PREVIOUS_YEAR_ALIGNED",
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "ABSTAIN",
+          "target": null,
+          "decision": "ABSTAIN"
+        }
+      ],
+      "expected": "C_PREVIOUS_PERIOD",
+      "abstain_reason": null,
+      "taxonomy": [
+        "english_control",
+        "comparison"
+      ],
+      "metamorphic_group": null
+    },
+    {
+      "id": "j1t-034",
+      "surface": "same period last year",
+      "target": "COMPARISON",
+      "options": [
+        {
+          "option_id": "C_PREVIOUS_PERIOD",
+          "target": "COMPARISON",
+          "decision": "NORMALIZED",
+          "period_kind": null,
+          "comparison_kind": "PREVIOUS_PERIOD",
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "C_PREV_YEAR_ALIGNED",
+          "target": "COMPARISON",
+          "decision": "NORMALIZED",
+          "period_kind": null,
+          "comparison_kind": "PREVIOUS_YEAR_ALIGNED",
+          "n": null,
+          "implicit_base_period_kind": null,
+          "implicit_base_n": null
+        },
+        {
+          "option_id": "ABSTAIN",
+          "target": null,
+          "decision": "ABSTAIN"
+        }
+      ],
+      "expected": "C_PREV_YEAR_ALIGNED",
+      "abstain_reason": null,
+      "taxonomy": [
+        "english_control",
+        "comparison"
+      ],
+      "metamorphic_group": null
+    }
+  ]
+}

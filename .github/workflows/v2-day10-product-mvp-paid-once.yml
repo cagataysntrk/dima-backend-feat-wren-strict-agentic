@@ -1,0 +1,73 @@
+name: v2-day10-product-mvp-paid-once
+
+"on":
+  workflow_dispatch:
+    inputs:
+      scope:
+        description: "Explicit paid scenario scope"
+        required: true
+        type: choice
+        options:
+          - CANONICAL_NS4
+      confirm_expensive_run:
+        description: "Type DAY10_PAID_ONCE to authorize the one supervised paid gate"
+        required: true
+        default: ""
+        type: string
+      max_total_model_calls:
+        description: "Hard global provider-call ceiling; must be 1..20"
+        required: true
+        default: 20
+        type: number
+
+jobs:
+  canonical-product-mvp:
+    if: "${{ inputs.scope == 'CANONICAL_NS4' && inputs.confirm_expensive_run == 'DAY10_PAID_ONCE' && inputs.max_total_model_calls > 0 && inputs.max_total_model_calls <= 20 }}"
+    runs-on: ubuntu-latest
+    environment: DIMA_OPENROUTER_API_KEY
+    timeout-minutes: 35
+    env:
+      DIMA_OPENROUTER_API_KEY: ${{ secrets.DIMA_OPENROUTER_API_KEY || secrets.OPENROUTER_API_KEY }}
+      DIMA_LLM_PROVIDER: openrouter
+      DIMA_V2_FAST_LANGUAGE_PROVIDER: openrouter
+      DIMA_V2_FAST_LANGUAGE_MODEL: "google/gemini-2.5-flash-lite"
+      DIMA_V2_RESEARCH_MANAGER_PROVIDER: openrouter
+      DIMA_V2_RESEARCH_MANAGER_MODEL: "openai/gpt-5.6-sol"
+      DIMA_V2_SEMANTIC_LINKER_PROVIDER: openrouter
+      DIMA_V2_SEMANTIC_LINKER_MODEL: "openai/gpt-5.6-luna"
+      DIMA_V2_TEMPORAL_NORMALIZER_PROVIDER: openrouter
+      DIMA_V2_TEMPORAL_NORMALIZER_MODEL: "openai/gpt-5.6-sol"
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_INTERACTION_LOG: "false"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install backend
+        working-directory: backend
+        run: pip install -e ".[dev]"
+
+      - name: Deterministic preflight before provider access
+        working-directory: backend
+        run: |
+          python -m compileall -q             lab/v2_day10_product_mvp_live.py             lab/v2_day10_ns4_provider_free_rehearsal.py
+          pytest -q             tests/test_v2_day10_paid_harness_contract.py             tests/test_v2_day10_prepaid_hardening.py             tests/test_v2_day10_directive_lifecycle.py             tests/test_v2_day10_ns4_rehearsal.py             tests/test_v2_day10_real_wren_root_product.py
+
+      - name: ONE supervised paid Product-MVP gate
+        working-directory: backend
+        run: |
+          python lab/v2_day10_product_mvp_live.py             --scope "${{ inputs.scope }}"             --max-total-model-calls "${{ inputs.max_total_model_calls }}"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v2-day10-product-mvp-paid-${{ github.run_id }}
+          path: backend/lab/reports/v2_day10_product_mvp_live.json
+          retention-days: 90

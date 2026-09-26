@@ -1,3 +1,217 @@
+<!-- DIMA-V2-ACTIVE-OPERATION -->
+<!-- DIMA-V2-DAY7-CURRENT-OPERATION -->
+> ## 🔴 CURRENT OPERATION — P11 / DAY8 ROOT-CAUSE DESIGN
+>
+> **DAY7 / P10 CLOSED / SEALED.**
+> Canonical closure:
+> `belgeler/plan/DIMA_DAY7_FINAL_CLOSURE_AND_DAY8_HANDOFF.md`.
+>
+> Product behavior SHA:
+> `ce82d48bb8ab127a2dd5f7a63ebb25604a6557a6`.
+>
+> Provider-free final Day7 seal:
+> `35872766887 = GREEN`.
+>
+> Frozen13 `35855765109` is historical and MUST NOT rerun.
+> One-time micro `35873755069` is INCONCLUSIVE and deferred to Day11; no retry.
+>
+> Production `/ask-v2` = OFF.
+> DEV80 / Validation50 / Hidden50 = NOT RUN.
+>
+> Current ticket:
+> `P11 — DAY8 ROOT-CAUSE BRANCH`.
+> Active design receipt:
+> `belgeler/plan/DIMA_DAY8_ROOT_CAUSE_ARCHITECTURE_AND_PRIMITIVE_INVENTORY.md`.
+> Current subphase:
+> PROVIDER-FREE architecture + legacy primitive inventory only.
+>
+> Hard invariant:
+> `ASSOCIATION != CAUSATION`.
+>
+> No Day8 product implementation and no paid Day8 eval before the architecture/inventory
+> receipt is written and reviewed.
+>
+> Test economy remains permanent:
+> narrow provider-free proof first; paid widening only for one explicit uncertainty.
+
+<!-- SUPERSEDED/HISTORICAL — CURRENT-BRIDGE-ACTIVE -->
+> HEAD `6d65600842731112f2362261a30660217cbde05d`.
+> SI and M0E-DEEP-DELTA are SEALED.
+> Current ticket = `DIMA_DAY6_5_X0_BRIDGE_PREFLIGHT.md`.
+> Runtime/container OFF. Provider-free deterministic proof only.
+> Compare A/B/C, real sealed Standard artifacts, no fourth framework.
+> Thin/lossless → X0-REST; heavy semantic duplication → reject execution arm; authority change → STOP.
+
+<!-- SUPERSEDED/HISTORICAL — POST-ANALYST CURRENT AUTHORITY -->
+> D65-SI FINAL GREEN at `c72eb913...`.
+> Current authority: `belgeler/plan/DIMA_DAY6_5_SI_FINAL_SEAL.md` then
+> `DIMA_DAY6_5_M0E_DEEP_DELTA_CONTRACT.md`.
+> No semantic-discovery optimization without new P0 evidence.
+> X0 runtime remains blocked by M0E final + bridge preflight.
+
+> Read first: `belgeler/plan/DIMA_DAY6_5_POST_ANALYST_RECONCILED_HANDOFF.md`.
+>
+> Current: HEAD `3774484167...`; SI focused 25/25; Wren sentinels 2/2.
+> SI FINAL remains OPEN for semantic-surface completeness, shared cross-family authority,
+> Research temporal-role wiring and full-live Standard composition.
+>
+> M0E-v1 baseline is preserved; FINAL exhaustion reopened as M0E-DEEP-DELTA.
+> X0 runtime blocked by bridge preflight.
+>
+> Front-door ownership closure is a Day10 release blocker. Production /ask-v2 OFF.
+> Broad final gates forbidden.
+
+<!-- SUPERSEDED/HISTORICAL — POST-J1B CURRENT CONTINUATION -->
+> ## CURRENT CONTINUATION — POST-J1B
+>
+> **M0E-DEEP-DELTA FINAL GREEN / SEALED:** 25/25, all exit counters zero.
+> Current work = `D65-X0-BRIDGE-PREFLIGHT`; Metabase runtime OFF until bridge GREEN.
+> D65-SI remains sealed and must not be reopened without new P0.
+>
+> **PROVIDER TOPOLOGY P0 GREEN:** Luna semantic `20/20`; Sol temporal exact-SHA `8/8`.
+> Engineering topology = `Semantic Luna / Temporal Sol / Research Sol`.
+> BindingGate and TemporalBindingEngine unchanged. Production activation = NO.
+> Current blocker before D65-SI = M0E completion.
+>
+> Read first:
+> 1. `belgeler/plan/DIMA_V2_GELISTIRME_DURUM.md`
+> 2. `belgeler/plan/DIMA_DAY6_5_POST_J1B_LUNA_M0E_HANDOFF.md`
+> 3. `belgeler/plan/DIMA_DAY6_5_PREFREEZE_DECISION_GATE_J1_M0_X0.md`
+> 4. `belgeler/plan/DIMA_DAY6_5_J1B_REAL_FLOW_RECEIPT.md`
+> 5. `belgeler/plan/DIMA_DAY6_5_M0E_CAPABILITY_EXHAUSTION_BUILD_VS_BUY.md`
+> 6. `belgeler/plan/DIMA_DAY6_5_STANDARD_INTEGRATION_CLOSURE.md`
+> 7. `belgeler/plan/DIMA_DAY6_5_X0_THIN_FEASIBILITY_CONTRACT.md`
+>
+> Binding decision: Jev AS-IS semantic = REJECT; verifier/calibration = POST-MVP.
+> Run Luna on unchanged frozen J1B semantic+temporal cases. Failed role only → Sol ceiling.
+> No threshold/fallback/cascade/model shopping.
+>
+> In parallel finish M0 as D65-M0E classification/exhaustion. Do not rebuild generic Metabase
+> mechanisms merely to be native. Wren MDL/models/relationships/views/cubes/knowledge semantic
+> backbone is default-retained.
+>
+> D65-SI only after provider P0=0. X0 only after SI + real Wren Standard sentinel + M0E exit.
+> X0 asks residual runtime value above Dima + retained Wren semantics; it is not Wren-semantic removal.
+>
+> STOP/CONSULT on Sol P0, new verifier/calibration architecture, threshold/cascade, authority redesign,
+> full D65-X, Wren semantic removal, Metabase production dependency, FINAL FREEZE, DEV80, pilot.
+
+# HISTORICAL — DIMA V2 DAY 6.5 ENGINEERING CLOSURE
+
+> **Bu branch'te eski “aktif operasyon” bloklarının üstünde BU BLOK okunur.**
+> Branch: `feat/ask-v2-mvp`.
+>
+> Her geliştirme oturumunun ilk sırası:
+>
+> 1. `belgeler/plan/DIMA_V2_GELISTIRME_DURUM.md`
+> 2. `belgeler/plan/DIMA_RELEASE_FINAL_INTEGRATED_GATE.md`
+> 3. `belgeler/plan/DIMA_DAY6_5_PREFREEZE_DECISION_GATE_J1_M0_X0.md`
+> 4. `belgeler/plan/DIMA_DAY6_5_J1_BENCHMARK_CONTRACT.md`
+> 5. `belgeler/plan/DIMA_DAY6_5_STANDARD_INTEGRATION_CLOSURE.md`
+> 6. `belgeler/plan/DIMA_DAY6_5_METABASE_ADOPTION_MATRIX.md`
+> 6. `belgeler/plan/DIMA_DAY6_5_ENGINEERING_CLOSURE_PROTOCOL.md`
+> 7. `belgeler/plan/DIMA_DAY6_5_RUNTIME_KERNEL_AND_SUBSTRATE_DECISION.md`
+> 8. `belgeler/plan/DIMA_DAY6_5_MANAGER_ARCHITECTURE_VALIDATION.md`
+> 9. `belgeler/plan/DIMA_DAY6_5_MANAGER_CONTRACT_SPEC_V0.md`
+> 10. `belgeler/plan/DIMA_DAY6_5_COGNITION_AUTHORITY_BOUNDARY_ADR.md`
+> 11. `belgeler/plan/ADR_DAY6_5_ONE_SHOT_COMPLEX_INTENT_REJECTED.md`
+> 12. `eval/v2_day6_5_eval_manifest.yaml`
+> 13. `belgeler/plan/DIMA_NIHAI_UYGULAMA_YOL_HARITASI.md`
+> 14. `belgeler/plan/DIMA_NIHAI_DENETIM_VE_MIMARI_RAPORU.md`
+> 15. `AGENTS.md`
+> 16. `MIMARI.md` ve yalnız aktif ticket'ın kodu
+>
+> Nihai rapor ve roadmap **mühürlü / salt-okunur**. İlerleme, karar sonucu, commit SHA,
+> açık borç ve sonraki adım yalnız `DIMA_V2_GELISTIRME_DURUM.md` dosyasına yazılır.
+>
+> Koddan önce roadmap'teki aktif **P** bölümünü ve onun dayanak gösterdiği **R** bölümünü
+> birlikte oku. Rapor gerekçenin, roadmap icra sırasının authority'sidir.
+>
+> **Day 6.5 current state:** iki execution path (`STANDARD | RESEARCH`) trust-plane altında korunuyor. `DIRECT | BUILDER` aynı Standard engine/outcome ailesidir. D65-E3A-R minimal `BoundedAgentRuntimeKernel` realignment **COMPLETED/GREEN**. Corrected J1 freeze-v2 PRIMARY peers = Gemini Flash-Lite + Jev 1.13 + GPT-5.6 Luna; Sol reference ceiling, Terra consult-gated conditional. Corrected provider-free `35705204058=6/6`. M0 source audit X0 prep için yeterli; fakat execution sırası **J1 decision → D65-SI → real Standard Wren sentinel → X0**. Product `/ask-v2` OFF.
+>
+> **FAILURE TRIAGE RECEIPT:** RED live/canary/DEV/Validation/Hidden run sonrası semantic/product code'a dokunmadan önce `belgeler/plan/DIMA_DAY6_5_FAILURE_TRIAGE_RECEIPTS.md` zorunlu schema'sı doldurulur.
+> `failure_class + single_owner + root_cause` kapanmadan ve gerekli same-SHA A/B bitmeden product patch yasaktır. `ONE FAILURE ≠ ONE NEW RULE`.
+>
+> **TEST ECONOMY — PERMANENT:** smallest falsifying test first. Paid widening is
+> `1 LIVE → affected pair → 2-case micro → milestone → certification`; skipping tiers is
+> forbidden unless the narrower tier cannot answer the hypothesis. Paid workflows are
+> `workflow_dispatch` only, require explicit scope and hard model-call budget, and may not
+> interpret blank input as “run all”. Frozen/DEV80/Validation/Hidden are milestone resources.
+> Day7 total Manager cognition remains globally capped at 6 across preacceptance + research.
+>
+> **Kısa operasyon protokolü:** geliştirme/mimari doğrulama önceliklidir; büyük test kampanyası
+> yerine vertical slice. Normal loop `code → 3–15 sn focused/provider-free → devam`.
+> Workers=1 önce. Fail sınıflandırmadan patch yok:
+> `MODEL_COGNITION | CONTRACT/ARCHITECTURE | RESOLVER_TRUTH | EVAL_ORACLE | TRANSPORT/PROVIDER`.
+> Regex/morphology/keyword/case-derived prompt/resolver heuristic yasak. Önemli müdahale
+> öncesi checkpoint SHA; A/B exact same backend SHA. Hidden yalnız final seal blocker'ıdır.
+>
+> **Standard front-door:** retrieval/discovery authority değildir. DIRECT yalnız ilk-attempt seal outcome'udur; BUILDER aynı Standard engine'in bounded progress-driven repair outcome'udur. Standard loop generic kernel'i kullanır fakat kernel semantic/authority/research truth bilmez. `simple_standard_research_manager_loop = 0`.
+>
+> **FINAL RELEASE TEST TIMING:** `DIMA_RELEASE_FINAL_INTEGRATED_GATE.md` has precedence for final freeze/DEV80 timing.
+> DEV80 runs exactly once, after Day15 code + final rehearsal. Validation50/Hidden50 follow under code freeze with no tuning.
+> Development continues to use focused real-LLM, failure-family, metamorphic, canary and sentinel tests; broad 80/50/50 sets are end-only.
+> STOP/CONSULT before final freeze, DEV80, post-DEV80 behavior change and pilot activation.
+>> **J1 result STOP:** Jev semantic CandidateSet role is promising; Jev temporal role is not viable; Luna temporal evidence is promising but not sealed. J1B/D65-SI/X0 remain closed pending user approval.
+> Metabase Agent API does not imply Metabase Cloud; X0 default is self-hosted private service if/when approved.
+>> **Current pre-freeze gate:** J1S + J1T + M0/X0. Freeze/DEV80 is blocked.
+> Baseline proofs: provider-free `35696652502=102/102`, reference canary `35697064833=16/16`, Wren+Research sentinel `35697471863=2/2`, exact SHA `8dfde62d...`.
+> J1S = semantic candidate decision; J1T evidence = `J1T-CHOICE + J1T-CONTRACT-FIDELITY`. PRIMARY peers Gemini Flash-Lite vs pinned `typesafe/jev-1.13` vs GPT-5.6 Luna. Sol is REFERENCE_CEILING only; Terra is consult-gated conditional. Jev uses OpenRouter Decisions API, not chat/completions. Product semantic/temporal/authority code stays NO-TOUCH during benchmark.
+> M0 = Metabase source/adoption audit. D65-SI closes the actual pure Standard authority/execution chain after J1. X0 = thin separate-service Agent API feasibility only after D65-SI GREEN. Promising J1 or X0 result is a consultation gate, not automatic product integration.
+> Detailed authority: `belgeler/plan/DIMA_DAY6_5_PREFREEZE_DECISION_GATE_J1_M0_X0.md`.
+> Metabase deployment decision: `belgeler/plan/DIMA_DAY6_5_METABASE_DEPLOYMENT_TOPOLOGY_DECISION.md`.
+>> **Substrate kararı:** Wren current incumbent'tır. M0/X0/full-X (if needed) and one-primary-substrate selection happen before Day7–15 final integration and before the release final freeze/DEV80. Production'da Wren + Metabase equal truth engines yasaktır.
+> **METABASE SOURCE REFERENCE CONTRACT — ZORUNLU:**
+> Canonical upstream: `metabase/metabase`.
+> Current Day 6.5 reference SHA: `74216b30981d8310c4cf724d63ca282e2e63529d`.
+> Canonical pinned paths:
+> `src/metabase/metabot/agent/core.clj`,
+> `src/metabase/metabot/agent/profiles.clj`,
+> `src/metabase/agent_api/reference.md`,
+> `src/metabase/agent_api/api.clj`,
+> `src/metabase/agent_api/query_guards.clj`,
+> `src/metabase/mcp/v2/tools/query.clj`.
+>
+> `public/metabase/master` varsa yalnız **read-only convenience checkout**; canonical authority değildir. SHA doğrulanmadan kullanılmaz.
+> Source-copy / port / vendor / transliteration YASAK.
+> D65-X gerçek integration yalnız **separate-service Metabase Agent API** üzerinden thin adapter ile yapılır.
+>
+> Metabase'e dayanan her önemli architecture/implementation kararından önce `DIMA_DAY6_5_RUNTIME_KERNEL_AND_SUBSTRATE_DECISION.md §17A.5` mandatory source-control / analysis / research protocolü uygulanır:
+> source identity → exact pinned source reading → pattern/API/security/runtime classification → Dima trust-plane cross-check → current external verification where changeable → decision receipt.
+> Required source files okunmadan, query guards/permissions doğrulanmadan veya source/runtime kimliği pinlenmeden Metabase işi yapılmaz.
+>
+> Her D65-X execution receipt `source_reference_sha + runtime_version + immutable runtime_image_digest + Dima tested SHA + adapter SHA + corpus/version + permission context` taşır.
+> Bu protokol mevcut product development sequence'ini DEĞİŞTİRMEZ.
+
+>
+> **Runtime-kernel closure:** D65-E3A-R GREEN. Focused `35693039369` = **22/22 PASS**; runtime-aligned full provider-free family closure `35693146320` = **94/94 PASS**. Research remained NO-TOUCH. Next gate: workers=1 focused live architecture set.
+>
+> **Day 6.5 cognition/authority kuralı:** doğal dil yorumunu regex/morphology/fuzzy-score ile
+> deterministic semantic truth'a çevirmek yasaktır. Manager yolu:
+> `catalog candidates → bounded Semantic Linker → deterministic BindingGate`.
+> Coverage omission-only veto'dur; semantic/clarification authority değildir. Temporal
+> dil typed intent'e normalize edilir; tarih hesabı deterministic engine'dedir.
+>
+> **Test:** her küçük değişiklikte büyük kapı yok. Yalnız gerekli hedefli testler;
+> full/corpus gate milestone/demet sonunda; ağır suite nightly CI'da. Daily dikey demo
+> ve P0 invariant testleri önceliklidir.
+>
+> **Kalıcı operasyon notu:** ayrıntılı tekrar-etme kuralları `AGENTS.md §11`'dedir.
+> **Configuration/current-default notu:** `app/config.py` içinde current generic OpenRouter default
+> `google/gemini-2.5-flash-lite`'tır ve `DIMA_OPENROUTER_MODEL` ile override edilebilir.
+> Bu bir architecture/model-role authority değildir: aktif J1 benchmark'ında Gemini Flash-Lite,
+> pinned `typesafe/jev-1.13` ve Sol farklı bounded roles için ayrı challenger/reference olarak ölçülür.
+> Model adı business architecture truth gibi hard-code/belgeleme yapılmaz. Eski always-on
+> `backend-ci.yml` yeniden kurulmaz.
+>
+> **İlk 10 gün wholesale refactor yasağı:** `routers/ask.py`, `cube_router.py`,
+> `uyum.py`, `plan_tuketici.py`, `plan_semasi.py`.
+>
+> Eski öngörü/v1 operasyon kayıtları bu branch için “nerede kaldık?” authority'si değildir;
+> tarihsel/current-system bağlam olarak korunurlar, silinmezler.
+
+---
+
 # dima-backend — CLAUDE.md
 
 > 🔴🔴 **AKTİF OPERASYON (2026-08-13'ten): ÖNGÖRÜ KATMANI.** Bir geliştirme isteği

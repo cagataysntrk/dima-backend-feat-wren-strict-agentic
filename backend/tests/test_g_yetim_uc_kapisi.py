@@ -49,6 +49,8 @@ _FIILLER = {"get", "post", "put", "patch", "delete"}
 #: 🔴 **MEŞRU YETİM UÇLAR — ve her birinin ÇAĞIRANI.** Anahtar: statik yol öneki.
 #: Buraya bir yol girecekse **kim çağırıyor** da girer; boş gerekçe kabul edilmez.
 UC_YETIM_MESRU: dict[str, str] = {
+    "/ask-v2": "geliştirici acceptance çağırır: V2 Core feature-flag ile karanlık tutulur; "
+               "frontend tüketicisi Core MVP tamamlanınca bağlanacak",
     "/health": "altyapı yoklaması: konteyner sağlık kontrolü çağırır, ön uç değil",
     "/health/ready": "altyapı yoklaması: hazırlık probu (lifespan bitti mi) — ön uç değil",
     "/mcp/tools": "BAŞKA İSTEMCİ: MCP yüzeyi — çağıranı dış ajan, ön uç DEĞİL (§38.3 D13)",
@@ -65,8 +67,7 @@ UC_YETIM_MESRU: dict[str, str] = {
                  "backend'in kendi doğrulama yolu ve `lab/`, ön uç değil",
 }
 
-#: 🔴 **BORÇ TAVANI.** Bugün 8. Artış = *«bir uç daha açıldı, kimse çağırmıyor»*.
-AZAMI_YETIM_UC = 8
+#: 🔴 **BORÇ TAVANI.** V2 dark endpoint ile geçici olarak 9. `/ask-v2` UI'a bağlandığı\n#: Core MVP gününde tekrar 8'e indirilmek zorunda (V2-D006).\nAZAMI_YETIM_UC = 9
 
 _ONBELLEK: list[tuple[str, str, str]] | None = None
 

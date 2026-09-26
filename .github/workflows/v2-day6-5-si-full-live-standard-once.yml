@@ -1,0 +1,74 @@
+name: v2-day6-5-si-full-live-standard-ARCHIVED
+
+"on":
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Archived paid SI proof. Type ARCHIVED_SI_RERUN to override intentionally."
+        required: true
+        type: string
+
+jobs:
+  full-live-standard:
+    if: "inputs.confirm == 'ARCHIVED_SI_RERUN'"
+    runs-on: ubuntu-latest
+    environment: DIMA_OPENROUTER_API_KEY
+    timeout-minutes: 50
+    env:
+      DIMA_D65_SI_FULL_LIVE: "1"
+      DIMA_OPENROUTER_API_KEY: ${{ secrets.DIMA_OPENROUTER_API_KEY || secrets.OPENROUTER_API_KEY }}
+      DIMA_V2_REFERENCE_LANGUAGE_PROVIDER: "openrouter"
+      DIMA_V2_REFERENCE_LANGUAGE_MODEL: "openai/gpt-5.6-sol"
+      DIMA_V2_REFERENCE_LANGUAGE_REASONING: "true"
+      DIMA_V2_SEMANTIC_LINKER_PROVIDER: "openrouter"
+      DIMA_V2_SEMANTIC_LINKER_MODEL: "openai/gpt-5.6-luna"
+      DIMA_V2_SEMANTIC_LINKER_REASONING: "false"
+      DIMA_V2_TEMPORAL_NORMALIZER_PROVIDER: "openrouter"
+      DIMA_V2_TEMPORAL_NORMALIZER_MODEL: "openai/gpt-5.6-sol"
+      DIMA_V2_TEMPORAL_NORMALIZER_REASONING: "true"
+      DIMA_V2_STRUCTURED_MAX_TOKENS: "4096"
+      DIMA_RULE_FALLBACK: "false"
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_INTERACTION_LOG: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install backend
+        working-directory: backend
+        run: pip install -e ".[dev]"
+
+      - name: Prove frozen corpus and explicit role assembly
+        working-directory: backend
+        run: |
+          python -m py_compile \
+            app/v2/standard_lab.py \
+            app/v2/standard_lane.py \
+            app/v2/standard_execution.py \
+            app/v2/manager_semantics.py
+          pytest -q \
+            tests/test_v2_day6_5_model_roles.py \
+            tests/test_v2_day6_5_standard_lab.py
+
+      - name: Workers-1 frozen full-live Standard composition
+        working-directory: backend
+        run: pytest -q -s tests/test_v2_day6_5_si_full_live_standard.py
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v2-day6-5-si-full-live-standard
+          path: backend/lab/reports/v2_day6_5_si_full_live_standard.json
+          retention-days: 90
+
+# retry: bounded-retrieval-root-fix
+
+# retry: source-context-filter-contract
+
+# retry: final-six-after-focused-green
+

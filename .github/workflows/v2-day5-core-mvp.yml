@@ -1,0 +1,62 @@
+name: v2-day5-core-mvp
+
+"on":
+  workflow_dispatch:
+
+concurrency:
+  group: v2-day5-core-${{ github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  focused-core:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_LLM_PROVIDER: "rule"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Backend dependencies
+        working-directory: backend
+        run: pip install -e ".[dev]"
+
+      - name: Focused interpreter role contract
+        working-directory: backend
+        run: pytest -q tests/test_v2_day1.py -k "comparison_reference_overlap"
+
+      - name: Focused resolver morphology safety
+        working-directory: backend
+        run: pytest -q tests/test_v2_day2.py -k "turkish_inflection or fuzzy_only or unknown_surface or material_entity_ambiguity"
+
+      - name: Focused ranked comparison contract
+        working-directory: backend
+        run: pytest -q tests/test_v2_day3.py -k "ranked_comparison_reference"
+
+      - name: Focused Day4 + Day5 Core contracts
+        working-directory: backend
+        run: pytest -q tests/test_v2_day4.py tests/test_v2_day5.py tests/test_v2_day5_http.py
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Activate canonical pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.12.1 --activate
+
+      - name: Frontend dependencies
+        working-directory: dima-frontend-demo-master
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: V2 frontend contract typecheck
+        working-directory: dima-frontend-demo-master
+        run: pnpm exec tsc --noEmit

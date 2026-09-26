@@ -1,0 +1,280 @@
+# Final adaptive-handoff closure receipt: product=deba0432148beaa3910eb9fac534b959eedb2bb1
+# Final continuation-finding provenance closure receipt: product=0de015202ceea983fe08183f29264adc7703dce8
+# Final signed-continuation closure receipt: product=a5cac9c2b0ac7b90fbe403c4b01b9e9128c420d1
+name: v2-day7-focused
+
+"on":
+  push:
+    branches:
+      - feat/ask-v2-mvp
+    paths:
+      - "backend/app/wren_service.py"
+      - "backend/tests/test_v2_day7_fanout_certificate_version.py"
+      - "backend/app/fanout.py"
+      - "backend/app/v2/research_tools.py"
+      - "backend/app/v2/manager_tools.py"
+      - "backend/app/v2/manager_executor.py"
+      - "backend/app/v2/representability.py"
+      - "backend/tests/test_v2_day7_research_tool_contract.py"
+      - "backend/tests/test_v2_day7_research_wren_vertical.py"
+      - "backend/tests/test_v2_day7_wren_schema_grain_metadata.py"
+      - "backend/tests/test_v2_day7_real_adaptive_wren.py"
+      - "backend/app/v2/research_state.py"
+      - "backend/app/v2/research_tasks.py"
+      - "backend/app/v2/research_fanout.py"
+      - "backend/app/v2/cross_domain_join.py"
+      - "backend/app/v2/manager_runtime.py"
+      - "backend/app/v2/manager_models.py"
+      - "backend/app/v2/manager_loop.py"
+      - "backend/app/v2/manager_action_availability.py"
+      - "backend/app/v2/manager_action_set.py"
+      - "backend/app/v2/authority_invariants.py"
+      - "backend/lab/v2_manager_action_set_script_adapter.py"
+      - "backend/tests/helpers/manager_action_set_adapter.py"
+      - "backend/tests/test_v2_day6_5_preacceptance_protocol.py"
+      - "backend/app/v2/manager_preacceptance.py"
+      - "backend/app/v2/manager_policy.py"
+      - "backend/tests/test_v2_day7_deferred_capability_boundary.py"
+      - "backend/app/v2/capability_bindings.py"
+      - "backend/app/v2/manager_lab.py"
+      - "backend/app/v2/models.py"
+      - "backend/tests/test_v2_day7_research_task_lifecycle.py"
+      - "backend/tests/test_v2_day7_research_task_registry.py"
+      - "backend/tests/test_v2_day7_research_task_registry_execution.py"
+      - "backend/tests/test_v2_day7_research_principal_binding.py"
+      - "backend/tests/test_v2_day7_research_fanout.py"
+      - "backend/tests/test_v2_day7_seed_set.py"
+      - "backend/tests/test_v2_day7_same_domain_tools.py"
+      - "backend/tests/test_v2_day7_real_same_domain_wren.py"
+      - "backend/tests/test_v2_day7_cross_domain_join_gate.py"
+      - "backend/tests/test_v2_day7_research_manager_loop.py"
+      - "backend/tests/test_v2_day7_total_manager_budget.py"
+      - "backend/tests/test_v2_day7_result_aware_loop.py"
+      - "backend/app/v2/cross_domain_facts.py"
+      - "backend/tests/test_v2_day7_cross_domain_facts.py"
+      - "backend/app/v2/manager_core_adapter.py"
+      - "backend/app/v2/relationship_adapter.py"
+      - "backend/tests/test_v2_day7_real_relationship_vertical.py"
+      - "backend/app/v2/derived_evidence.py"
+      - "backend/tests/test_v2_day7_derived_evidence.py"
+      - "backend/lab/v2_day7_manager_live_sol.py"
+      - "backend/lab/v2_day7_capability_cognition_diagnostic.py"
+      - "backend/eval/v2_day7_live_sol_cases.yaml"
+      - "backend/eval/v2_day7_capability_cognition_diagnostic.yaml"
+      - "backend/tests/test_v2_day7_live_sol_contract.py"
+      - ".github/workflows/v2-day7-live-sol.yml"
+      - ".github/workflows/v2-day7-capability-cognition-diagnostic.yml"
+      - ".github/workflows/v2-day7-live-sol-once.yml"
+      - ".github/workflows/v2-day7-frozen13-once.yml"
+      - ".github/workflows/v2-day7-stable-no-extra-branch-once.yml"
+      - ".github/workflows/v2-day7-insufficient-evidence-once.yml"
+      - ".github/workflows/v2-day7-adaptive-material-once.yml"
+      - ".github/workflows/v2-day7-orchestration-micro.yml"
+      - "backend/tests/test_v2_day7_directive_contract.py"
+      - "backend/lab/v2_day7_capability_surface_receipt.py"
+      - "backend/tests/test_v2_day7_capability_surface_receipt.py"
+      - "backend/lab/v2_day7_semantic_surface_diagnostic.py"
+      - "backend/tests/test_v2_day7_semantic_surface_diagnostic.py"
+      - "backend/lab/v2_day7_relationship_action_diagnostic.py"
+      - "backend/tests/test_v2_day7_relationship_action_diagnostic.py"
+      - "backend/app/v2/semantic_linker.py"
+      - "backend/app/v2/semantic_retriever.py"
+      - "backend/app/v2/manager_semantics.py"
+      - "backend/tests/test_v2_day6_5_typed_temporal.py"
+      - "backend/tests/test_v2_day7_temporal_owner_isolation.py"
+      - "backend/lab/v2_day7_sibling_scope_live_luna.py"
+      - "backend/lab/v2_day7_governed_sibling_scope_discovery.py"
+      - "backend/tests/test_v2_day7_governed_sibling_scope_discovery.py"
+      - "backend/tests/test_v2_day7_obligation_local_semantic_recovery.py"
+      - "backend/tests/test_v2_day6_5_semantic_linker.py"
+      - "backend/lab/v2_day7_orchestration_ablation.py"
+      - "backend/eval/v2_day7_orchestration_ablation.yaml"
+      - "backend/tests/test_v2_day7_orchestration_ablation.py"
+      - ".github/workflows/v2-day7-focused.yml"
+  workflow_dispatch:
+
+jobs:
+  research-tool-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      DIMA_LLM_PROVIDER: "rule"
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_INTERACTION_LOG: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+      - name: Install backend
+        working-directory: backend
+        run: pip install -e ".[dev]"
+      - name: Compile Day7 slice
+        working-directory: backend
+        run: |
+          python -m py_compile \
+            app/v2/research_tools.py \
+            app/v2/research_state.py \
+            app/v2/research_tasks.py \
+            app/v2/research_fanout.py \
+            app/v2/cross_domain_join.py \
+            app/v2/cross_domain_facts.py \
+            app/v2/relationship_adapter.py \
+            app/v2/manager_core_adapter.py \
+            app/v2/manager_tools.py \
+            app/v2/manager_executor.py \
+            app/v2/manager_runtime.py \
+            app/v2/manager_preacceptance.py \
+            app/v2/manager_policy.py \
+            app/v2/capability_bindings.py \
+            app/v2/manager_models.py \
+            app/v2/manager_loop.py \
+            app/v2/manager_action_set.py \
+            app/v2/authority_invariants.py \
+            app/v2/manager_lab.py \
+            app/v2/models.py \
+            app/v2/semantic_linker.py \
+            app/v2/semantic_retriever.py \
+            app/v2/manager_semantics.py \
+            lab/v2_day7_governed_sibling_scope_discovery.py \
+            lab/v2_day7_sibling_scope_live_luna.py \
+            lab/v2_day7_manager_live_sol.py \
+            lab/v2_day7_capability_cognition_diagnostic.py \
+            lab/v2_day7_orchestration_ablation.py
+      - name: Focused provider-free Day7 test
+        working-directory: backend
+        run: pytest -q tests/test_v2_day7_research_tool_contract.py
+
+      - name: Research task lifecycle
+        working-directory: backend
+        run: pytest -q tests/test_v2_day7_research_task_lifecycle.py
+
+      - name: ResearchTaskRegistry lifecycle
+        working-directory: backend
+        run: pytest -q tests/test_v2_day7_research_task_registry.py
+
+      - name: ResearchTaskRegistry execution path
+        working-directory: backend
+        run: pytest -q tests/test_v2_day7_research_task_registry_execution.py
+
+      - name: Research principal binding
+        working-directory: backend
+        run: pytest -q tests/test_v2_day7_research_principal_binding.py
+
+      - name: Research directive capability contract
+        working-directory: backend
+        run: pytest -q tests/test_v2_day7_directive_contract.py
+
+      - name: Day6.5 preacceptance completeness regression
+        working-directory: backend
+        run: pytest -q tests/test_v2_day6_5_preacceptance_protocol.py
+
+      - name: Semantic linker authority + diagnostic attacks
+        working-directory: backend
+        run: pytest -q tests/test_v2_day6_5_semantic_linker.py
+
+      - name: Day7 capability surface consistency receipt
+        working-directory: backend
+        run: |
+          python lab/v2_day7_capability_surface_receipt.py
+          pytest -q \
+            tests/test_v2_day7_capability_surface_receipt.py \
+            tests/test_v2_day7_deferred_capability_boundary.py
+
+      - name: Day7 semantic surface diagnostic receipt
+        working-directory: backend
+        run: |
+          python lab/v2_day7_semantic_surface_diagnostic.py
+          pytest -q tests/test_v2_day7_semantic_surface_diagnostic.py
+
+      - name: Day7 governed sibling-scope discovery LAB
+        working-directory: backend
+        run: |
+          python lab/v2_day7_governed_sibling_scope_discovery.py
+          pytest -q tests/test_v2_day7_governed_sibling_scope_discovery.py
+
+      - name: Temporal USER_MUST owner isolation
+        working-directory: backend
+        run: |
+          pytest -q \
+            tests/test_v2_day7_temporal_owner_isolation.py \
+            tests/test_v2_day6_5_typed_temporal.py
+
+      - name: Obligation-local semantic retrieval recovery attacks
+        working-directory: backend
+        run: pytest -q tests/test_v2_day7_obligation_local_semantic_recovery.py
+
+      - name: Day7 relationship structured-action diagnostic
+        working-directory: backend
+        run: pytest -q tests/test_v2_day7_relationship_action_diagnostic.py
+
+      - name: Cardinality-aware Research fanout
+        working-directory: backend
+        run: pytest -q tests/test_v2_day7_research_fanout.py
+
+      - name: Bounded initial Research seed set
+        working-directory: backend
+        run: pytest -q tests/test_v2_day7_seed_set.py
+
+      - name: Day7 live Sol corpus contract
+        working-directory: backend
+        run: pytest -q tests/test_v2_day7_live_sol_contract.py
+
+      - name: Derived analytical Evidence primitives
+        working-directory: backend
+        run: pytest -q tests/test_v2_day7_derived_evidence.py
+
+      - name: Governed same-domain Research tools
+        working-directory: backend
+        run: pytest -q tests/test_v2_day7_same_domain_tools.py
+
+      - name: Real Wren COMPARE and RANK
+        working-directory: backend
+        run: pytest -q tests/test_v2_day7_real_same_domain_wren.py
+
+      - name: Governed cross-domain fact construction
+        working-directory: backend
+        run: pytest -q tests/test_v2_day7_cross_domain_facts.py
+
+      - name: CrossDomainJoinGate attacks
+        working-directory: backend
+        run: pytest -q tests/test_v2_day7_cross_domain_join_gate.py
+
+      - name: Fanout certificate MDL freshness
+        working-directory: backend
+        run: pytest -q tests/test_v2_day7_fanout_certificate_version.py
+
+      - name: Manager loop Research contract mode
+        working-directory: backend
+        run: pytest -q tests/test_v2_day7_research_manager_loop.py
+
+      - name: Global Manager total-turn budget
+        working-directory: backend
+        run: pytest -q tests/test_v2_day7_total_manager_budget.py
+
+      - name: Result-aware adaptive loop
+        working-directory: backend
+        run: pytest -q tests/test_v2_day7_result_aware_loop.py
+
+      - name: Real Wren schema grain metadata
+        working-directory: backend
+        run: pytest -q tests/test_v2_day7_wren_schema_grain_metadata.py
+
+      - name: Real Wren Day7 vertical
+        working-directory: backend
+        run: pytest -q tests/test_v2_day7_research_wren_vertical.py
+
+      - name: Real two-Wren adaptive Research vertical
+        working-directory: backend
+        run: pytest -q tests/test_v2_day7_real_adaptive_wren.py
+
+      - name: Real governed RELATIONSHIP vertical
+        working-directory: backend
+        run: pytest -q tests/test_v2_day7_real_relationship_vertical.py
+
+      - name: Day7 orchestration ablation contract
+        working-directory: backend
+        run: pytest -q tests/test_v2_day7_orchestration_ablation.py

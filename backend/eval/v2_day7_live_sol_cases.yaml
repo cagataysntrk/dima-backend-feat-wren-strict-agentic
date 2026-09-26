@@ -1,0 +1,102 @@
+version: day7-live-sol-v1
+policy:
+  workers: 1
+  manager_role: RESEARCH_MANAGER
+  model_ceiling: openai/gpt-5.6-sol
+  trust_plane: current-day7
+  derived_family_manager_coverage: false
+cases:
+  - id: simple-performance
+    question: "Net geliri incele."
+    kind: standard
+    expected_terminal: VERIFIED_COMPLETE
+    must_tools: [run_analytics]
+    max_queries: 1
+
+  - id: breakdown-region
+    question: "Net geliri bölgelere göre kır ve sonucu göster."
+    kind: breakdown
+    expected_terminal: VERIFIED_COMPLETE
+    must_tools: [run_analytics]
+    max_queries: 1
+
+  - id: rank-region-top2
+    question: "Bölgelerde en yüksek 2 net geliri sırala."
+    kind: rank
+    expected_terminal: VERIFIED_COMPLETE
+    must_tools: [run_analytics]
+    max_queries: 1
+
+  - id: comparison-period
+    question: "Son 12 ay net geliri geçen 12 ayla karşılaştır."
+    kind: compare
+    expected_terminal: VERIFIED_COMPLETE
+    must_tools: [run_analytics]
+    max_queries: 2
+
+  - id: multi-obligation
+    question: "Net geliri değerlendir; ayrıca sipariş sayısını geçen dönemle karşılaştır."
+    kind: multi_obligation
+    expected_preacceptance_state: NEEDS_CLARIFICATION
+    expected_observation_kind: material_grounding_gap
+    expect_no_ledger: true
+    max_queries: 0
+
+  - id: relationship-safe
+    question: "Duruş süresinin bölümlerle ilişkisini incele."
+    kind: relationship_safe
+    expected_terminal: VERIFIED_COMPLETE
+    must_tools: [run_relationship]
+    max_queries: 1
+
+  - id: relationship-unsafe
+    question: "Net gelir ile üretim bölümü arasındaki ilişkiyi incele."
+    kind: relationship_unsafe
+    expected_preacceptance_state: NEEDS_CLARIFICATION
+    expected_observation_kind: material_grounding_gap
+    expect_no_ledger: true
+    max_queries: 0
+
+  - id: adaptive-material
+    question: "Net geliri bölgelere göre araştır. Bir bölge belirgin ayrışırsa, kanıtı gördükten sonra uygun başka bir kırılımı yalnız gerekliyse aç."
+    kind: adaptive
+    must_tools: [run_analytics]
+    expect_evidence_inspection: true
+    max_queries: 3
+
+  - id: stable-no-extra-branch
+    question: "İstikrarlı marjı bölgelere göre incele. Fark küçükse gereksiz ek araştırma açma."
+    kind: no_unnecessary_branch
+    must_tools: [run_analytics]
+    max_queries: 2
+    max_derived_executions: 0
+
+  - id: high-cardinality-bounded
+    question: "Net geliri ürünlere göre incele. Sonuç bir alt araştırmayı haklı çıkarırsa yalnız kanıtlı ve bütçeli yönlere dallan; gereksiz genişleme yapma."
+    kind: high_cardinality
+    must_tools: [run_analytics]
+    max_fanout_selected: 2
+    max_queries: 3
+
+  - id: duplicate-side-effect
+    question: "Net geliri araştır. Aynı araştırma yönü yeni kanıt üretmiyorsa onu tekrar çalıştırma."
+    kind: duplicate_safety
+    must_tools: [run_analytics]
+    require_unique_task_side_effects: true
+    max_queries: 3
+
+  - id: insufficient-evidence
+    question: "Seyrek sinyali araştır. Kanıt yoksa yeni sonuç uydurma ve gereksiz dallanma açma."
+    kind: insufficient_evidence
+    must_tools: [run_analytics]
+    require_zero_row_observation: true
+    max_derived_executions: 0
+    max_queries: 1
+
+  - id: budget-pressure
+    question: "Net gelir, brüt gelir ve sipariş sayısını ayrı ayrı incele; ayrıca bölgelerde en yüksek 2 net geliri değerlendir. Bütçe yetmezse tamamlandı deme."
+    kind: budget_pressure
+    must_tools: [run_analytics]
+    min_user_must: 3
+    allow_budget_exhausted: true
+    max_queries: 8

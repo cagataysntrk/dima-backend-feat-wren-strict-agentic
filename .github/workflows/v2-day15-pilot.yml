@@ -1,0 +1,41 @@
+# Pre-comparison final Product receipt: product=495203f58556e0ff9571671478b7022d01afe2ab
+name: v2-day15-pilot
+
+"on":
+  push:
+    branches:
+      - feat/ask-v2-mvp
+    paths:
+      - "backend/app/config.py"
+      - "backend/app/v2/pilot.py"
+      - "backend/app/routers/ask_v2.py"
+      - "backend/tests/test_v2_day15_pilot_rollback.py"
+      - ".github/workflows/v2-day15-pilot.yml"
+  workflow_dispatch:
+
+jobs:
+  day15-provider-free:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+      - name: Install backend
+        working-directory: backend
+        run: pip install -e ".[dev]"
+      - name: Day15 pilot off / tenant switch / rollback
+        working-directory: backend
+        run: |
+          python -m compileall -q app/v2 app/routers/ask_v2.py
+          pytest -q tests/test_v2_day15_pilot_rollback.py
+      - name: Day15 frontdoor and control regressions
+        working-directory: backend
+        run: |
+          pytest -q \
+            tests/test_v2_day10_frontdoor.py \
+            tests/test_v2_day10_product_control.py \
+            tests/test_v2_day10_continuation.py

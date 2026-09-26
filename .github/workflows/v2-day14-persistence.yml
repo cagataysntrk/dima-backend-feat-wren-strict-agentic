@@ -1,0 +1,44 @@
+name: v2-day14-persistence
+
+"on":
+  push:
+    branches:
+      - feat/ask-v2-mvp
+    paths:
+      - "backend/app/v2/persistence.py"
+      - "backend/app/v2/semantic_handles.py"
+      - "backend/app/v2/manager_runtime.py"
+      - "backend/app/v2/manager_loop.py"
+      - "backend/app/v2/research_tasks.py"
+      - "backend/app/v2/product_coordinator.py"
+      - "backend/app/v2/report_continuation.py"
+      - "backend/tests/test_v2_day14_persistence_resume.py"
+      - ".github/workflows/v2-day14-persistence.yml"
+  workflow_dispatch:
+
+jobs:
+  day14-provider-free:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+      - name: Install backend
+        working-directory: backend
+        run: pip install -e ".[dev]"
+      - name: Day14 durable checkpoint CAS and restart
+        working-directory: backend
+        run: |
+          python -m compileall -q app/v2
+          pytest -q tests/test_v2_day14_persistence_resume.py
+      - name: Day14 task and continuation idempotency regressions
+        working-directory: backend
+        run: |
+          pytest -q \
+            tests/test_v2_day7_research_tool_contract.py \
+            tests/test_v2_day10_continuation.py \
+            tests/test_v2_day10_product_events.py

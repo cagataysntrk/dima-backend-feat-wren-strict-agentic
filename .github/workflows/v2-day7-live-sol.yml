@@ -1,0 +1,117 @@
+name: v2-day7-live-sol
+
+"on":
+  workflow_dispatch:
+    inputs:
+      manager_model:
+        description: "RESEARCH_MANAGER reference model"
+        required: true
+        default: "openai/gpt-5.6-sol"
+        type: string
+      linker_model:
+        description: "Semantic linker model; keep separate from Manager cognition"
+        required: true
+        default: "openai/gpt-5.6-luna"
+        type: string
+      temporal_model:
+        description: "Temporal normalizer model"
+        required: true
+        default: "openai/gpt-5.6-sol"
+        type: string
+      case_ids:
+        description: "Comma-separated case ids. Blank is forbidden unless full_corpus is explicitly confirmed."
+        required: false
+        default: ""
+        type: string
+      full_corpus:
+        description: "Explicitly request frozen13. Leave false for focused live probes."
+        required: true
+        default: false
+        type: boolean
+      confirm_expensive_run:
+        description: "Required only for frozen13: type FROZEN13"
+        required: false
+        default: ""
+        type: string
+      max_model_calls:
+        description: "Explicit hard paid-call ceiling; 0 is rejected before provider use"
+        required: true
+        default: 0
+        type: number
+
+jobs:
+  day7-live-sol:
+    runs-on: ubuntu-latest
+    environment: DIMA_OPENROUTER_API_KEY
+    timeout-minutes: 45
+    env:
+      DIMA_OPENROUTER_API_KEY: ${{ secrets.DIMA_OPENROUTER_API_KEY || secrets.OPENROUTER_API_KEY }}
+      DIMA_DAY7_LIVE_MANAGER_MODEL: ${{ inputs.manager_model }}
+      DIMA_DAY7_LIVE_LINKER_MODEL: ${{ inputs.linker_model }}
+      DIMA_DAY7_LIVE_TEMPORAL_MODEL: ${{ inputs.temporal_model }}
+      DIMA_LLM_PROVIDER: openrouter
+      DIMA_V2_RESEARCH_MANAGER_PROVIDER: openrouter
+      DIMA_V2_SEMANTIC_LINKER_PROVIDER: openrouter
+      DIMA_V2_TEMPORAL_NORMALIZER_PROVIDER: openrouter
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_INTERACTION_LOG: "false"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install backend live-eval dependencies
+        working-directory: backend
+        run: pip install -e ".[dev]"
+
+      - name: Provider-free Day7 live corpus contract
+        working-directory: backend
+        run: |
+          pytest -q \
+            tests/test_v2_day7_live_sol_contract.py \
+            tests/test_v2_day7_research_manager_loop.py \
+            tests/test_v2_day7_seed_set.py
+
+      - name: Workers=1 focused LIVE SOL
+        working-directory: backend
+        shell: bash
+        run: |
+          set -euo pipefail
+          args=()
+          raw_case_ids="${{ inputs.case_ids }}"
+          full_corpus="${{ inputs.full_corpus }}"
+          confirm="${{ inputs.confirm_expensive_run }}"
+
+          if [[ -z "${raw_case_ids// /}" ]]; then
+            if [[ "${full_corpus}" != "true" || "${confirm}" != "FROZEN13" ]]; then
+              echo "ERROR: blank case_ids cannot run a broad paid corpus." >&2
+              echo "Provide focused case_ids, or set full_corpus=true and confirm_expensive_run=FROZEN13." >&2
+              exit 64
+            fi
+          else
+            if [[ "${full_corpus}" == "true" ]]; then
+              echo "ERROR: choose focused case_ids OR full_corpus, not both." >&2
+              exit 64
+            fi
+            IFS=',' read -ra ids <<< "${raw_case_ids}"
+            for id in "${ids[@]}"; do
+              clean="${id// /}"
+              [[ -n "${clean}" ]] && args+=(--case-id "${clean}")
+            done
+          fi
+
+          python lab/v2_day7_manager_live_sol.py \
+            --max-model-calls "${{ inputs.max_model_calls }}" \
+            "${args[@]}"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v2-day7-live-sol-${{ github.run_id }}
+          path: backend/lab/reports/v2_day7_live_sol.json
+          retention-days: 90

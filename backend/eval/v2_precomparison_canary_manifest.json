@@ -1,0 +1,65 @@
+{
+  "version": "v2-precomparison-canary-v1",
+  "purpose": "Small continuous provider-free regression set for pre-comparison high-risk families.",
+  "case_count": 13,
+  "cases": [
+    {
+      "id": "source_truth_revision",
+      "node": "tests/test_v2_day6_5_preacceptance_protocol.py::test_revision_source_truth_survives_cross_cube_contract_revision_without_recognition"
+    },
+    {
+      "id": "actionset_materializability",
+      "node": "tests/test_v2_day10_s_action_availability.py::test_direct_actionset_materializability_positive_matrix_reaches_existing_tool_contract"
+    },
+    {
+      "id": "ready_identity_hydration",
+      "node": "tests/test_v2_day10_s_action_availability.py::test_ready_derived_analytics_hydration_is_lossless_across_all_bound_identity"
+    },
+    {
+      "id": "final_turn_starvation",
+      "node": "tests/test_v2_day10_s_action_availability.py::test_last_research_turn_with_executable_adapt_directive_is_completion_critical"
+    },
+    {
+      "id": "signed_continuation_authority",
+      "node": "tests/test_v2_day10_continuation.py::test_signed_section_authority_projection_uses_typed_provenance_not_random_active_ledger"
+    },
+    {
+      "id": "report_immutability",
+      "node": "tests/test_v2_day10_continuation.py::test_versioned_report_supersedes_without_mutating_prior_report"
+    },
+    {
+      "id": "foreign_evidence",
+      "node": "tests/test_v2_day8_hypothesis_proposals.py::test_foreign_run_evidence_is_rejected_even_if_marked_inspected"
+    },
+    {
+      "id": "query_contract_evidence_scope",
+      "node": "tests/test_v2_day12_contract_evidence_telemetry.py::test_evidence_store_rejects_same_artifact_identity_with_different_truth"
+    },
+    {
+      "id": "pii_egress",
+      "node": "tests/test_v2_day13_security.py::test_research_provider_delta_masks_pii_but_preserves_numeric_truth"
+    },
+    {
+      "id": "durable_cas",
+      "node": "tests/test_v2_day14_persistence_resume.py::test_stale_contract_or_report_writer_cannot_last_write_win"
+    },
+    {
+      "id": "restart_idempotency",
+      "node": "tests/test_v2_day14_persistence_resume.py::test_completed_research_task_after_restart_cannot_duplicate_side_effect"
+    },
+    {
+      "id": "pilot_rollback_dark",
+      "node": "tests/test_v2_day15_pilot_rollback.py::test_comparison_seal_configuration_is_dark_by_default"
+    },
+    {
+      "id": "nonterminal_resume",
+      "node": "tests/test_v2_day14_persistence_resume.py::test_crash_after_accepted_contract_restores_authority_without_fabricating_evidence"
+    }
+  ],
+  "forbidden": [
+    "DEV80",
+    "Validation50",
+    "Hidden50",
+    "live provider calls"
+  ]
+}

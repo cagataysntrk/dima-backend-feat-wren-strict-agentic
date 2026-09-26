@@ -1,0 +1,52 @@
+name: v2-day9-narration-live-sol-once
+
+"on":
+  push:
+    branches:
+      - feat/ask-v2-mvp
+    paths:
+      - ".github/workflows/v2-day9-narration-live-sol-once.yml"
+
+jobs:
+  live-sol-once:
+    if: "${{ github.event.head_commit.message == 'test(v2-day9): run one live Sol narration sentinel' }}"
+    runs-on: ubuntu-latest
+    environment: DIMA_OPENROUTER_API_KEY
+    timeout-minutes: 15
+    env:
+      DIMA_OPENROUTER_API_KEY: ${{ secrets.DIMA_OPENROUTER_API_KEY || secrets.OPENROUTER_API_KEY }}
+      DIMA_LLM_PROVIDER: openrouter
+      DIMA_V2_RESEARCH_MANAGER_PROVIDER: openrouter
+      DIMA_V2_RESEARCH_MANAGER_MODEL: "openai/gpt-5.6-sol"
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_INTERACTION_LOG: "false"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install backend
+        working-directory: backend
+        run: pip install -e ".[dev]"
+
+      - name: Provider-free narration preflight
+        working-directory: backend
+        run: |
+          python -m compileall -q app/v2/report_builder.py app/v2/report_narration.py lab/v2_day9_report_narration_live_sol.py
+          pytest -q tests/test_v2_day9_report_narration.py
+
+      - name: ONE live Sol structured narration plan
+        working-directory: backend
+        run: python lab/v2_day9_report_narration_live_sol.py
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v2-day9-narration-live-sol-${{ github.run_id }}
+          path: backend/lab/reports/v2_day9_report_narration_live_sol.json
+          retention-days: 90

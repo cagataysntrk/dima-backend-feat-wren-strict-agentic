@@ -1,0 +1,12778 @@
+## LATEST AUTHORITY — WREN GOAL/TASK AUTHORITY RECOVERY SEALED
+
+```text
+branch                           feat/ask-v2-mvp
+Product behavior                 f7e565bb13e0668f85df071f6ecc70411314f9fd
+formal closure engineering HEAD  cbcf5be92dcf50cb8beb8894b4da2c3e2f44294e
+formal closure run               36247385449 = GREEN
+formal closure workflow          v2-research-goal-task-final-closure
+backend/app diff after Product   ZERO
+paid/provider calls in recovery  0
+
+goal-task quarantine             GREEN
+Day6.5 affected closure          GREEN
+Day7 affected Research           GREEN
+Day8 affected ROOT               GREEN
+Day10 affected Product           GREEN
+real-Wren relationship           GREEN
+real-Wren ROOT Product           GREEN
+
+WREN GOAL/TASK AUTHORITY RECOVERY SEALED
+recovery engineering             STOP
+paid/live reassurance            FORBIDDEN
+DEV80 / Validation50 / Hidden50  NOT CONSUMED
+next phase                       Wren vs Metabase comparison planning
+```
+
+Canonical recovery architecture:
+
+```text
+EXECUTABLE_NOW
+-> existing sealed task/Wren path
+
+MATERIALIZATION_REQUIRED
+-> optional bounded goal-task seam
+-> fresh task-owned semantic authority
+-> same sealed task/Wren path
+-> VERIFIED Evidence
+-> typed parent roll-up
+```
+
+Permanent:
+
+```text
+normal executable validation FIRST
+goal-authority validation SECOND
+
+RESEARCH GOAL AUTHORITY != EXECUTABLE TASK AUTHORITY
+SAME CONTRACT != SAME EXECUTABLE SEMANTIC AUTHORITY
+SOURCE TRUTH MAY BE REUSED; OWNER AUTHORITY MUST BE FRESH
+MATERIALIZATION != COMPLETION
+CompletionGate remains final truth
+```
+
+Seal document:
+
+```text
+backend/belgeler/plan/DIMA_WREN_GOAL_TASK_AUTHORITY_RECOVERY_FINAL_SEAL.md
+```
+
+## LATEST AUTHORITY — DAY11 EVAL EXPANSION GREEN / DAY12 NEXT
+
+```text
+branch                           feat/ask-v2-mvp
+Day10 Product behavior           e1b3823b82cd28bbe9b4725abf81a4aa49d578ba
+Day10 final paid                 36229302570 = GREEN / SEALED
+
+Day11 eval candidate             ce9cd0c02b23b6aaa9aa07ac38f42d102adbd5bd
+Day11 final workflow             36229918083 = GREEN
+Day11 closure doc                DIMA_DAY11_EVAL_EXPANSION.md
+backend/app diff after Day10     ZERO
+
+canonical taxonomy coverage      18 / 18
+known regression family coverage 18 / 18
+metamorphic invariants           7 / 7 GREEN
+holdout separation               PASS
+DEV80 consumed                   0
+Validation50 consumed            0
+Hidden50 consumed                0
+
+Day10 FINAL                      SEALED
+Day11 FINAL                      CLOSED / PROVIDER-FREE GREEN
+Day12                            AUTHORIZED NEXT
+DEV80                            NOT AUTHORIZED YET
+```
+
+Day11 permanent evaluation boundary:
+
+```text
+VISIBLE DEV / REAL-WORLD SOURCES
+→ coverage + metamorphic proof
+
+Validation50
+→ only after authorized DEV freeze
+
+Hidden50
+→ external sealed
+→ no prompt bodies in repository
+
+gercek_dunya / deneyim
+→ historical scenario sources only
+!= Product authority
+!= certification authority
+```
+
+## LATEST AUTHORITY — DAY10 FULL TWO-TURN PAID GREEN / FINAL SEALED
+
+```text
+branch                           feat/ask-v2-mvp
+Day10 engineering candidate      61fd0556f69bfde678002bdb521dc75d0d49d713
+Product behavior                 e1b3823b82cd28bbe9b4725abf81a4aa49d578ba
+backend/app diff after Product   ZERO
+
+Day10 focused                    36229010298 = GREEN
+Day8 focused                     36229010266 = GREEN
+Day7 focused                     36229010331 = GREEN
+
+final paid                       36229302570 = GREEN
+paid scope                       CANONICAL_NS4
+Product turns                    2 / 2
+initial Product                  REPORT / VERIFIED_COMPLETE
+signed continuation              REPORT / VERIFIED_COMPLETE
+initial report                   version 1
+continuation report              version 2 / supersedes v1
+real Wren                        query 6 / dry-plan 6 / cube-sql 6
+
+ROOT live certification          VALID
+CANDIDATE_CAUSE                  >= 1
+CONFIRMED_CAUSE                  0
+ADAPT_ON_EVIDENCE                APPLIED / VALIDLY_ACCOUNTED
+adaptive certification           COMPLETE / VALID
+
+source-truth revision family     CLOSED / LIVE-PROVEN
+harness semantic-role-cap family CLOSED / LIVE-PROVEN
+presentation-control polarity    CLOSED / LIVE-PROVEN
+
+ManagerBudget                    4 / 4 / 8 = FEASIBLE / RATIFIED
+ActionSet materializability      GREEN / RATIFIED
+READY hydration parity           GREEN / RATIFIED
+signed continuation authority    GREEN / LIVE-PROVEN
+finding supersession provenance  GREEN / LIVE-PROVEN
+
+PAID_EPOCH_CURRENT used          28 / 40
+PAID_EPOCH_CURRENT remaining     12 / 40
+
+Day8 FINAL                       SEALED
+Day10 FINAL                      SEALED
+Day11 roadmap work               AUTHORIZED NEXT
+DEV80                            NOT AUTHORIZED YET
+```
+
+Final Day10 proof chain:
+
+```text
+provider-free root fix
+→ Day10 / Day8 / Day7 GREEN
+→ paid run 36229302570
+→ initial Product REPORT
+→ real Wren execution
+→ Evidence / ROOT / hypothesis lifecycle certified
+→ ADAPT directive terminally accounted
+→ ReportDocument v1
+→ signed section continuation
+→ inherited analytical authority server-hydrated
+→ ReportDocument v2 supersedes v1
+→ previous report remains immutable
+→ second CompletionGate VERIFIED_COMPLETE
+→ DAY10 FINAL SEALED
+```
+
+Permanent harvest added by the final paid cycle:
+
+```text
+PRESENTATION DELIVERABLE
+!=
+ARTIFACT LIFECYCLE / IMMUTABILITY CONTROL
+
+If one probabilistic draft expresses the same presentation effect as both
+REQUIRED and EXCLUDED:
+→ do not immediately turn model draft instability into user ambiguity
+→ allow one bounded finite-preacceptance revision
+→ control/lifecycle constraints remain NON_AUTHORITATIVE_CONTROL_REQUEST
+→ if the contradiction survives the bounded revision, fail closed to clarification
+
+SOURCE TRUTH
+!=
+OWNER AUTHORITY
+
+canonical source candidate may survive finite draft revision
+while each revised obligation owner receives a fresh BindingGate sem_* edge.
+```
+
+Current generic continuation fix:
+
+```text
+SIGNED CONTINUATION
+DOES NOT CREATE ANALYTICAL AUTHORITY.
+
+signed section
+→ server derives section-local inherited analytical authority
+→ model selects bounded policy intent
+→ server hydrates exact canonical parent
+→ IntentAcceptanceGate validates active lineage/version/section admission
+→ runtime executes existing governed lifecycle
+```
+
+Permanent continuation invariants:
+
+```text
+PRESENTATION AUTHORITY != ANALYTICAL AUTHORITY
+
+ADAPT_ON_EVIDENCE
+!=
+BROADEN_WITHIN_BUDGET
+
+ADAPT_ON_EVIDENCE
+= inspected VERIFIED Evidence reveals MATERIAL_NEW_DIRECTION
+  → completion-relevant follow/account lifecycle
+
+BROADEN_WITHIN_BUDGET
+= bounded permission for additional governed work when useful/necessary
+  → authorization only
+  → never invent work merely to close it
+
+CANONICAL IDENTITY WIRING
+= SERVER WORK
+!= LLM COGNITION
+
+signed token
+= locator + integrity proof only
+!= semantic / Evidence / canonical authority payload
+
+0 or multiple admissible inherited analytical parents
+→ fail closed / clarify
+→ never choose by order, label, title, similarity, regex, or opaque ID echo
+```
+
+Protected owners remain unchanged:
+
+```text
+Wren
+CrossDomainJoinGate
+SemanticBindingGate
+source-truth consistency
+unique-scope determinism
+Standard cube coherence
+ManagerActionSet final-turn starvation correction
+ManagerBudget 4 / 4 / 8
+CompletionGate VERIFIED/PARTIAL truth
+EvidenceStore
+HypothesisLedger
+EpistemicLabelGate
+provider topology
+```
+
+Historical receipts below remain immutable audit history and do not override this physically first block.
+
+## LATEST AUTHORITY — SOURCE-TRUTH CONSISTENCY + HONEST BLOCKED LIFECYCLE ACTIVE / PAID HARD STOP
+
+```text
+branch                           feat/ask-v2-mvp
+engineering HEAD                 889fdbe6bc638ef8d2d6b6376decd32b8d67d84f
+Product behavior                 fde87df46c3fdee986fdf48f4e37884f5b51c395
+backend/app diff after Product   ZERO
+
+D10-U PROVIDER-FREE              CLOSED / GREEN
+one-SHA affected closure         dbf256f9122028fdb5398f360a951a66030a7fe5
+Day7 focused                     36182712251 = GREEN
+Day8 focused                     36182712368 = GREEN
+Day10 focused                    36182712258 = GREEN
+latest transport/focused         36183603679 = GREEN
+
+unique-scope nondeterminism      CLOSED / LIVE-PROVEN
+latest paid                      36183555931 = RED
+accepted contract                YES
+Wren cube_sql / dry_plan / query 4 / 4 / 4
+relationship                     BLOCKED_DATA_GAP
+ROOT                             VERIFIED
+ADAPT directive                  OPEN
+Product                          PARTIAL / BUDGET_EXHAUSTED
+
+primary family                   FAM-CURRENT-TURN-SOURCE-TRUTH-DIVERGENCE
+cycle                            1 / 3
+secondary family                 FAM-BLOCKED-DIRECTIVE-TERMINAL-UNREACHABLE
+cycle                            1 / 3
+
+PAID_EPOCH_2                     29 / 40 used
+PAID_EPOCH_2 remaining           11 / 40
+paid execution                   STOP / INSUFFICIENT FULL ENVELOPE
+max scientifically valid run     20 calls; cap MUST NOT be lowered
+
+Day8 FINAL                       SEALED
+Day10 FINAL                      OPEN
+Day11 / DEV80 / Validation50 /
+Hidden50                         NOT AUTHORIZED
+```
+
+Current engineering order:
+
+```text
+1. SOURCE-TRUTH CONSISTENCY
+2. semantic + real-Wren relationship proof
+3. BLOCKED directive lifecycle reconciliation
+4. blocked lifecycle + certification proof
+5. same-final-Product-SHA Day7 / Day8 / Day10 cheap closure
+6. STOP at FINAL PROVIDER-FREE CANDIDATE
+```
+
+Permanent new invariants:
+
+```text
+SOURCE TRUTH != OWNER AUTHORITY
+
+same exact current-message source_ref + same semantic kind
+→ one canonical source decision
+
+multiple owner obligations
+→ fresh parent-owned sem_* authority per owner
+
+authoritative partial-terminal parent
+→ dependent ADAPT directive reconciles BLOCKED server-side
+→ honest PARTIAL, never cognition-until-budget-exhaustion
+```
+
+Paid must not resume until the owner supplies a fresh sufficient envelope.
+
+Permanent determinism boundary:
+
+```text
+SERVER-DETERMINED UNIQUENESS
+→ deterministic server materialization
+
+GENUINE SEMANTIC AMBIGUITY
+→ bounded cognition
+
+SAME SHA + SAME AUTHORITY STATE
+must not oscillate between ACCEPT and CLARIFY
+because of bookkeeping-level scope selection.
+
+RETRIEVAL != AUTHORITY
+REPAIR GROUP != PERSISTED AUTHORITY
+SemanticBindingGate remains the sem_* minter.
+```
+
+Historical receipts below remain immutable audit history and do not override this physically first block.
+
+## LATEST AUTHORITY — D10-U PROVIDER-FREE GREEN / PAID PREACCEPTANCE RED / SCOPE-REPAIR DETERMINISM ACTIVE
+
+```text
+branch                           feat/ask-v2-mvp
+Product behavior tested          6fff55dc9ccfb279ae1352c8df7c39f0fbb275c2
+
+D10-U PROVIDER-FREE CLOSURE      GREEN / CLOSED
+final one-SHA cheap proof        a0b1be2e7b80e5928fa108a82c143f8002ee9c71
+Day7 focused                     36178896617 = GREEN
+Day8 focused                     36178896568 = GREEN
+Day10 focused                    36178896533 = GREEN
+
+latest paid                      36179726900 = RED
+failure stage                    PREACCEPTANCE
+Product lane/status              RESEARCH / CLARIFY
+accepted contract                NULL
+CompletionGate                   NEEDS_CLARIFICATION
+Wren cube_sql / dry_plan / query 0 / 0 / 0
+
+failure family                   FAM-PREACCEPTANCE-SCOPE-REPAIR-NONDETERMINISM
+cycle                            1 / 3
+first wrong transition           single server-generated full-cover scope
+                                 → stochastic repair ABSTAIN
+                                 → CLARIFY
+historical counterexample        36128949886
+                                 same semantic shape
+                                 → SELECT_SCOPE_GROUP
+                                 → ACCEPTED
+
+PAID_EPOCH_2                     18 / 40 used
+PAID_EPOCH_2 remaining           22 / 40
+paid execution                   PAUSED
+same-SHA retry                   FORBIDDEN
+
+Day8 FINAL                       SEALED
+Day10 FINAL                      OPEN
+Day11 / DEV80 / Validation50 /
+Hidden50                         NOT AUTHORIZED
+```
+
+Current owner:
+
+```text
+ManagerSemanticResolutionAdapter
+→ _resolve_decomposition_repair(...)
+```
+
+Permanent boundary:
+
+```text
+SERVER-DETERMINED UNIQUENESS
+→ deterministic server materialization
+
+GENUINE SEMANTIC AMBIGUITY
+→ bounded cognition
+```
+
+D10-U control-plane architecture remains CLOSED/GREEN and must not be reopened.
+Historical receipts below remain immutable audit history.
+
+# DIMA V2 GELİŞTİRME DURUMU
+
+## LATEST AUTHORITY — FAMILY A CYCLE 2/3 / ACTIONAPPLICABILITYSNAPSHOT CLOSURE ACTIVE / PAID STOPPED
+
+```text
+branch                          feat/ask-v2-mvp
+
+FAILURE FAMILY                  FAM-ACTION-ARG-APPLICABILITY
+Cycle 1/3                       36128949886
+                                ROOT parent + foreign semantic handle
+Cycle 2/3                       36139969231
+                                ADAPT directive parent + foreign Evidence
+Cycle 2 status                  ACTIVE / generalized correlated-scope closure
+
+historical tested Product       999d5e28facadd85aefd0d5b47cebec6c3daf4e6
+local directive fix             2b28f23e984fbe9cfa6486a0832fa2786900de48
+current Product behavior        73c3efcba0df45e09076d02103ee2d3c3bd1c018
+snapshot affected proof         RUNNING / NOT YET FINAL AUTHORITY
+
+ActionApplicabilitySnapshot     VERSIONED VIEW / NOT semantic truth
+runtime defense-in-depth        PRESERVED
+ManagerBudget                   4 / 4 / 8 UNCHANGED
+provider topology               UNCHANGED
+
+PAID_EPOCH_1                    26 / 40 historical CLOSED
+PAID_EPOCH_2                    12 / 40 used
+PAID_EPOCH_2 remaining          28 / 40
+paid execution                  STOPPED
+next paid measurement           NOT YET AUTHORIZED
+
+Day8 FINAL                      SEALED
+Day10 FINAL                     OPEN
+Day11                           NOT AUTHORIZED
+DEV80                           NOT AUTHORIZED
+Validation50                    NOT AUTHORIZED
+Hidden50                        NOT AUTHORIZED
+
+Cycle 2 closes only after       correlated audit unresolved=0
+                                + snapshot attack family GREEN
+                                + Day7 affected GREEN
+                                + Day8 affected GREEN
+                                + Day10 affected GREEN
+                                + real-Wren ROOT GREEN
+                                + real-Wren relationship GREEN
+```
+
+Current-authority rule: this block is the physically discoverable current state.
+Historical receipts below remain immutable audit history and do not override it.
+
+
+## 2026-09-25 — INTEGRATED LIVE #1 RED / PROVIDER-FREE ROOT FIX GREEN
+
+```text
+D10-S FINAL                    SEALED
+ManagerBudget                  4 / 4 / 8 RATIFIED
+
+integrated live                36128949886 = RED
+tested SHA                     674ac1aed68ea42ea67bedb0660298e95c9f86c7
+tested Product behavior        0ebd6726c9555f4f6fd2a99f95aae28738b2d20c
+
+class                          CONTRACT / ARCHITECTURE
+first wrong transition         ROOT action carried h3 from BREAKDOWN parent
+                               into ROOT_CAUSE parent obl_4
+
+fresh paid calls               12 / 40
+remaining                      28
+second paid run                NOT AUTHORIZED
+
+latest Product behavior        999d5e28facadd85aefd0d5b47cebec6c3daf4e6
+
+Day10 provider-free            36130046060 = GREEN
+Day8 affected                  36129994598 = GREEN
+Day7 affected                  36129994504 = GREEN
+
+Day8 live debt                 OPEN
+Day8 FINAL                     NOT SEALED
+Day10 FINAL                    OPEN
+Day11                          NOT AUTHORIZED
+```
+
+Live #1 crossed accepted Research authority, real Wren execution, five VERIFIED Evidence artifacts and report construction. It did not complete ROOT_CAUSE epistemic accounting, so Product correctly returned PARTIAL and no signed continuation was attempted.
+
+The first wrong transition was not Wren or resolver truth. The model-facing ROOT action schema allowed semantic aliases from unrelated accepted obligations. Runtime correctly rejected that proposal.
+
+The bounded generic correction keeps all frozen owners unchanged and moves parent-scoped argument applicability into the existing D10-S owner:
+`ManagerActionAvailability → strict provider schema → model → runtime validation`.
+
+It also serializes a pending governed post-test Evidence relation before advertising another ROOT next-test. This is applicability/order, not causal truth.
+
+No additional paid execution is authorized by this status.
+
+
+## 2026-09-25 — D10-S FINAL SEALED / INTEGRATED LIVE MEASUREMENT AUTHORIZED
+
+```text
+branch                         feat/ask-v2-mvp
+provider-free proof HEAD       0b9c4a676a04cbf547f4d73116f048c319d77aa3
+latest Product behavior        0ebd6726c9555f4f6fd2a99f95aae28738b2d20c
+
+D10-S provider-free closure    GREEN
+ManagerBudget                  4 / 4 / 8 RATIFIED
+D10-S FINAL                    SEALED
+
+fresh provider envelope        40
+used                           0 / 40
+
+expected canonical paid calls  13–17
+hard per-run maximum           20
+scope                          CANONICAL_NS4
+
+Day8 live debt                 OPEN
+Day8 FINAL                     NOT SEALED
+Day10 FINAL                    OPEN
+Day11                          NOT AUTHORIZED
+```
+
+Permanent phase-budget contract:
+
+```text
+max_preacceptance_turns = 4
+max_manager_turns       = 4
+max_total_manager_turns = 8
+
+bounded preacceptance retry cost MUST NOT consume
+the independent bounded Research cognition allowance.
+```
+
+The old global-six coupling is historical only and must not be restored.
+
+Call-feasibility from current topology, without Product changes:
+
+```text
+role                  expected canonical     hard role cap
+FAST_LANGUAGE         1                      2
+RESEARCH_MANAGER      6–10                   12
+SEMANTIC_LINKER       3                      3
+TEMPORAL_NORMALIZER   1                      1
+REPORT_NARRATOR       2                      2
+
+expected total        13–17
+hard run cap          20
+```
+
+D10-S seal itself is docs-only: tests = 0.
+
+
+## 2026-09-25 — D10-S PROVIDER-FREE CLOSURE COMPLETE / FINAL EXIT PENDING BUDGET RATIFICATION
+
+```text
+branch                         feat/ask-v2-mvp
+provider-free proof HEAD       0b9c4a676a04cbf547f4d73116f048c319d77aa3
+latest Product behavior        0ebd6726c9555f4f6fd2a99f95aae28738b2d20c
+D10-S closure doc              DIMA_DAY10_S_GOVERNANCE_SIMPLIFICATION.md
+
+Day7 affected                  36127275608 = GREEN
+Day8 affected                  36126639512 = GREEN
+Day10 focused                  36126639503 = GREEN
+real-Wren D10-S root           GREEN inside 36126639503
+presentation ownership         GREEN inside 36126639503
+
+ManagerBudget
+preacceptance                  4
+Research                       4
+outer                          8
+budget authority               EXPLICIT SUPERVISOR RATIFICATION PENDING
+further budget changes         FORBIDDEN
+
+fresh provider-call envelope   40
+used                           0 / 40
+paid execution                 NOT AUTHORIZED
+
+D10-S provider-free closure    COMPLETE
+D10-S FINAL EXIT / SEAL        PENDING BUDGET RATIFICATION
+Day8 FINAL                     NOT SEALED
+Day10 FINAL                    OPEN
+Day11                          NOT AUTHORIZED
+DEV80 / Validation50 / Hidden50 NOT AUTHORIZED
+```
+
+Final D10-S first-wrong-transition repairs:
+
+- Day10: server-owned ROOT next-test child ResearchTask was incorrectly eligible as a semantic-expansion parent after producing VERIFIED Evidence. Typed parent-state policy now keeps ROOT semantic rediscovery unavailable while accepted governed handles still satisfy a material next-test contract; non-root accepted OPEN ADAPT_ON_EVIDENCE parents remain eligible.
+- Day7: a successful later-selected AGENT_DERIVED branch produced VERIFIED Evidence but did not account the matching accepted ADAPT_ON_EVIDENCE directive. Directive accounting is now execution-transport independent and requires inspected VERIFIED trigger lineage + completed derived task + VERIFIED result Evidence.
+- Presentation capabilities remain accepted USER_MUST authority but are not analytical Evidence-producing completion blockers; Product presentation/report delivery remains mandatory at the Product layer.
+- Loop-boundary deterministic completion remains after cancel/Answer-Now checks and before another Research cognition turn.
+- No paid provider call was used.
+
+Current upstream reference pass: `metabase/metabase@2f3fe9904e4addbcbe4d32403d6a7ab2fc471100`. Harvested principles only; no Metabase runtime/code imported.
+
+The only open D10-S exit gate is explicit supervisor ratification or rejection of the current 4 / 4 / 8 ManagerBudget architecture. Until that authority arrives: no further budget change, no paid measurement, no Day11.
+
+
+## 2026-09-25 — D10-S PROVIDER-FREE CLOSURE COMPLETE / EXIT PENDING BUDGET RATIFICATION
+
+```text
+branch                         feat/ask-v2-mvp
+pre-doc proof HEAD             0b9c4a676a04cbf547f4d73116f048c319d77aa3
+latest Product behavior        0ebd6726c9555f4f6fd2a99f95aae28738b2d20c
+
+Day7 affected                  36127275608 = GREEN
+Day8 affected                  36126639512 = GREEN
+Day10 focused                  36126639503 = GREEN
+real-Wren root sentinel        GREEN
+presentation ownership         GREEN
+
+ManagerBudget                  pre=4 / Research=4 / outer=8
+budget decision                SUPERVISOR RATIFICATION PENDING
+further budget edits           HOLD
+
+fresh provider envelope        40
+used                           0 / 40
+paid                           PAUSED / NOT AUTHORIZED HERE
+
+D10-S provider-free closure    COMPLETE
+D10-S final exit               NOT SEALED
+Day8 FINAL                     NOT SEALED
+Day10 FINAL                    OPEN
+Day11                          NOT AUTHORIZED
+```
+
+D10-S closed two typed architecture failures without changing frozen truth/security owners.
+
+First, the post-Evidence action surface was narrowed from governed runtime state. A server-owned
+ROOT next-test child no longer becomes semantic authority merely because its result is VERIFIED.
+ROOT reuses feasible accepted handles; non-root semantic expansion remains possible only for an
+evidence-grounded accepted parent whose `ADAPT_ON_EVIDENCE` directive is still OPEN.
+
+Second, successful adaptive branch execution now accounts the accepted directive independently of
+whether the branch ran inline or through a later Manager-selected execution. This restored the sealed
+Day7 lifecycle and allowed deterministic CompletionGate to close before an unnecessary fifth turn.
+
+Presentation USER_MUST authority remains accepted, while analytical completion does not require
+presentation-only Evidence. Product report delivery remains a separate required owner.
+
+Current upstream Metabase source pass: `2f3fe9904e4addbcbe4d32403d6a7ab2fc471100`.
+Only architecture patterns were harvested; no Metabase runtime/code was imported.
+
+Full D10-S record: `DIMA_DAY10_S_GOVERNANCE_SIMPLIFICATION.md`.
+
+
+## 2026-09-25 — D10-S GOVERNANCE / SEMANTIC SIMPLIFICATION ACTIVE
+
+```text
+branch                         feat/ask-v2-mvp
+authority reconciliation HEAD 0461a8cc613254f40a4dee69d55528747d672045
+current Product behavior       91721cb3bc01a3737212c7596fd3170c60c0239b
+
+run #4                         36101471602 = RED / 9 calls
+tested SHA                     5171e6e9891afe97925b95061c730934fa737a73
+
+historical D10-Q calls         31
+D10-Q                          HARD STOP / CLOSED AS DEBUG LOOP
+
+owner-reset future envelope    40 fresh calls
+future-envelope used           0 / 40
+paid execution                 PAUSED during D10-S implementation
+
+D10-S                          ACTIVE
+Day8 FINAL                     NOT SEALED
+Day10 FINAL                    OPEN
+Day11                          NOT AUTHORIZED
+```
+
+Run #4 proves preacceptance, accepted authority, fanout, CrossDomainJoinGate, multi-metric ROOT_CAUSE and real Wren execution are not the current fault owner. Four Wren query executions produced governed Evidence before the failure.
+
+The current first-wrong-transition family is an over-broad Manager action surface:
+fresh Evidence was already disclosed but inspect_evidence remained selectable; then cognition attempted AGENT_DERIVED semantic rediscovery of an accepted governed dimension already present in current authority.
+
+D10-S introduces one deterministic action-availability owner and derives the model schema from the same runtime state that runtime validation uses. This phase removes ceremony only; frozen truth/security owners remain unchanged.
+
+Implementation/debugging uses zero paid provider calls. Historical paid receipts remain below unchanged.
+
+
+## 2026-09-25 — D10-Q FINAL GENERIC FIX #3 GREEN / FINAL PAID VERIFICATION READY
+
+```text
+branch                         feat/ask-v2-mvp
+pre-doc proof HEAD             5db64a5c704c910e860c08b6abc82951f9dd6bbb
+latest Product behavior        91721cb3bc01a3737212c7596fd3170c60c0239b
+
+provider calls                 22 / 40
+remaining                      18
+
+generic fixes                  3 / 3 consumed
+fix #3                         COMPLETE / GREEN
+
+revision path                  4 preacceptance + 2 Research = 6 / 6
+normal G16                     2 preacceptance + 4 Research = 6 / 6
+
+Day7 affected                  36100892648 = GREEN
+Day8 affected                  36100892586 = GREEN
+Day10 affected                 36100939565 = GREEN
+
+paid run #4                    AUTHORIZED / FINAL VERIFICATION
+run #4 max calls               18
+
+Day8 FINAL                     NOT SEALED
+Day10 FINAL                    OPEN
+Day11                          NOT AUTHORIZED
+```
+
+Fix #3 moved Coverage VETO before semantic grounding, with zero semantic authority from rejected
+drafts. A provider-free full revision rehearsal then exposed the expected six-turn conflict:
+four preacceptance turns left only two Research cognition turns, while the old ceremony needed four.
+
+The safe generic compaction is one bounded hypothesis+first-next-test proposal followed by the normal
+post-Evidence relation proposal. Server owners remain unchanged: hypothesis ID, ResearchTask ID,
+execution truth and Evidence ID are never model-owned. The composite next test can satisfy a same-root
+ADAPT_ON_EVIDENCE directive only after strict server-side provenance + successful VERIFIED Evidence.
+
+Normal G16 remains unchanged and GREEN. No frozen ceiling was raised.
+
+Next: exactly one final paid Product verification run #4, maximum 18 calls. GREEN seals Day8/Day10;
+RED is HARD STOP with no fourth generic fix.
+
+
+## 2026-09-25 — D10-Q FINAL GENERIC FIX #3 AUTHORIZED
+
+This is the current authority. The earlier TRUE STOP remains a historical receipt.
+
+```text
+branch                         feat/ask-v2-mvp
+authority reconciliation HEAD ec8e533a52e921d13364a1f879afd5aa1dbfecfc
+current runtime Product        f3c303a881b5891b14756bb8014fd6b4ef98b2fd
+
+provider calls                 22 / 40
+remaining                      18
+
+generic fixes used             2 / 3
+generic fix #3                 AUTHORIZED / FINAL
+verification paid run #4       CONDITIONAL AUTHORITY
+run #4 max calls               18
+
+Day8 FINAL                     NOT SEALED
+Day10 FINAL                    OPEN
+Day11                          NOT AUTHORIZED
+```
+
+Final generic fix scope is bounded to the run-#3 first-wrong-transition family:
+`MODEL_COGNITION + PREACCEPTANCE EXECUTION ORDER / BUDGET INTERACTION`.
+
+Required finite order:
+
+```text
+draft
+→ deterministic draft/source checks
+→ Coverage VETO
+→ fresh semantic grounding only for a surviving draft
+→ material-gap/decomposition repair
+→ contract validity
+```
+
+A rejected draft may not consume or donate semantic authority. Frozen ceilings remain:
+`SEMANTIC_LINKER=3`, Manager global `=6`. Full revision-path feasibility must be proven
+provider-free within six Manager turns before final paid verification.
+
+Historical run #1/#2/#3 receipts and prior TRUE STOP text remain below unchanged.
+
+Docs-only authority reconciliation: NO TEST.
+
+
+## 2026-09-25 — D10-Q TRUE STOP / PAID RUN #3 RED
+
+```text
+branch                         feat/ask-v2-mvp
+pre-doc cleanup HEAD           8b1352f42c2265cd67515211985ad8d535878c21
+
+latest Product runtime         f3c303a881b5891b14756bb8014fd6b4ef98b2fd
+fanout build fix               1c9f48ce0649cecd459f1a1d67d09778997f05f3
+paid fixture fix               c1f3a7411ced6f1dee761cf19871422e83f67874
+deterministic candidate        9569fdee8de40473244e8ff3934f6686e2164f20
+
+paid #1                        36091887451 = RED / 7 calls
+paid #2                        36096707608 = RED / 8 calls
+paid #3                        36098236473 = RED / 7 calls
+
+paid #3 tested SHA             7b6c4a1e0342be7eacfbfa014000a2a02d970d41
+paid #3 class                  MODEL_COGNITION
+
+measurements                   3 / 3 CONSUMED
+provider calls                 22 / 30
+nominal unused calls           8
+additional paid authority      NONE
+
+final affected Day7            36097782266 = GREEN
+final affected Day8            36097782272 = GREEN
+final affected Day10           36097782328 = GREEN
+
+paid workflow                  workflow_dispatch only
+paid workflow blob             f9ddebd74f8e8349ef6961eebf1d69f2f71acffb
+temporary trigger marker       ABSENT
+
+Day8 live debt                 OPEN
+Day8 FINAL                     NOT SEALED
+Day10 FINAL                    OPEN / NOT SEALED
+Day11                          NOT AUTHORIZED
+DEV80 / Validation50 / Hidden50 NOT AUTHORIZED
+```
+
+### Paid run #2
+
+Run #2's first wrong transition was stale derived fanout state in the canonical paid fixture, not
+relationship truth. The Product had already produced four VERIFIED Evidence artifacts when
+`ariza_kayitlari_makineler` was blocked because its fanout certificate was not bound to the exact
+current MDL.
+
+Classification: `EVAL / HARNESS / FIXTURE`.
+
+The generic correction keeps fanout measurement in the existing build-artifact owner:
+`app.fanout` can now refresh a certificate for one compiled Wren service, and the paid harness does
+so before Product/provider execution. The Product hot path still never silently re-measures fanout.
+
+The exact canonical paid relationship was then measured against the real current DB/MDL and proved
+`HEALTHY`. Frozen CrossDomainJoinGate freshness semantics remained intact.
+
+Final deterministic certification before run #3:
+- Day7 `36097782266 = GREEN`;
+- Day8 `36097782272 = GREEN`;
+- Day10 `36097782328 = GREEN`.
+
+### Paid run #3
+
+Run #3 used the owner-authorized temporary marker/push transport with a hard call ceiling of 15. It
+consumed 7 provider calls:
+
+```text
+FAST_LANGUAGE         1
+RESEARCH_MANAGER      3
+SEMANTIC_LINKER       3
+TEMPORAL_NORMALIZER   0
+REPORT_NARRATOR       0
+```
+
+It failed entirely in Research preacceptance:
+
+```text
+accepted contract     NONE
+ledger                NONE
+Wren query calls      0
+preacceptance status  GROUNDING_FAILURE
+Product terminal      FAILED
+```
+
+First wrong transition:
+
+1. Research draft #1 attached `Nedensel kesinlik iddia etme.` to a REQUIRED report obligation.
+2. Typed Coverage correctly emitted `VETO / POLARITY_CONFLICT`.
+3. Research draft #2 corrected the source to a separate `EXCLUDED explain` obligation.
+4. Re-grounding could not issue another semantic-provider call because the bounded role budget was
+   already `SEMANTIC_LINKER 3/3`.
+5. The budget guard rejected the call before provider forwarding.
+
+Classification: `MODEL_COGNITION`.
+
+This is not a reason to weaken Coverage, SemanticBindingGate, grounding, exclusion polarity, or the
+frozen provider/model/role ceilings.
+
+### Temporary trigger cleanup
+
+The temporary paid push path was removed immediately after run #3:
+- workflow restored to exact blob `f9ddebd...`;
+- workflow is again `workflow_dispatch` only;
+- `.github/D10Q_PAID_RUN3_TRIGGER` is absent;
+- no cleanup-triggered paid measurement occurred.
+
+### Current authority
+
+D10-Q is at TRUE STOP because the independent measurement ceiling, not the call ceiling, is
+exhausted. The remaining 8 calls do not authorize another paid run.
+
+No additional Product/runtime fix or paid measurement is authorized. Return to supervisor with the
+unresolved first-wrong-transition family:
+
+```text
+MODEL_COGNITION
+Research preacceptance polarity representation
+interacting with the frozen SEMANTIC_LINKER 3-call ceiling
+```
+
+Day8 and Day10 remain unsealed. Day11 remains unauthorized.
+
+
+## 2026-09-25 — D10-Q GENERIC TERMINAL PROPAGATION CLOSED / PAID RUN #2 READY
+
+```text
+branch                         feat/ask-v2-mvp
+pre-doc test HEAD              763e3f2ee95e02e6ab61aa4c49754ce73b23143c
+latest Product behavior        f3c303a881b5891b14756bb8014fd6b4ef98b2fd
+
+paid run #1                    36091887451 = RED
+run #1 tested SHA              d032757c05500b48e144d1c808c6076e6cbb56f3
+run #1 calls                   7
+
+terminal propagation
+COMPLETE                       VERIFIED Evidence required
+BLOCKED                        no Evidence; typed terminal receipt
+other                          contract error
+
+Day7 affected                  36095271876 = GREEN
+Day8 affected                  36095407570 = GREEN
+Day10 affected                 36096003671 = GREEN
+
+dispatches used                1 / 3
+provider calls used            7 / 30
+remaining calls                23
+run #2 ceiling                 20
+
+paid run #2                    READY / NOT DISPATCHED
+Day8 FINAL                     NOT SEALED
+Day10 FINAL                    OPEN
+Day11                          NOT AUTHORIZED
+```
+
+Supervisor propagation review is closed generically. `ResearchExecutionOutcome` is the single
+projection owner for Research terminal consumption. Seed, ROOT_CAUSE bootstrap, hypothesis next-test,
+adaptive single-branch and direct Research consumers distinguish successful Evidence-bearing
+execution from governed BLOCKED execution. BLOCKED never fabricates Evidence, never emits
+`evidence_verified` / `relationship_checked`, and cannot mark an adaptive directive `APPLIED`
+merely because execution was attempted.
+
+Focused proof includes the generic no-third-state contract, blocked next-test behavior, blocked
+adaptive RELATIONSHIP behavior and idempotent blocked replay. The production ROOT_CAUSE next-test
+contract was deliberately not broadened to RELATIONSHIP; frozen semantic/trust owners remain
+unchanged.
+
+The intermediate REDs while authoring the new adaptive test were provider-free EVAL/HARNESS
+diagnostics only; they did not alter Product behavior or consume the D10-Q paid envelope. Final
+affected Day10 run `36096003671` is GREEN through provider-free Product tests, semantic attacks,
+multi-metric real-Wren RELATIONSHIP regression, real-Wren ROOT_CAUSE Product micro-gate and G16
+provider-free cognition receipt.
+
+Next authorized action: D10-Q paid run #2 through the unchanged manual
+`v2-day10-product-mvp-paid-once.yml` workflow with `max_total_model_calls=20`. No same-SHA rerun,
+no push/marker bridge, no Day11.
+
+
+## 2026-09-25 — D10-Q PAID RUN #1 RED / POST-FIX GREEN
+
+```text
+branch                         feat/ask-v2-mvp
+current pre-doc HEAD           ca2f8fadea893142e74f9d9ccafd18ded1ae77c6
+latest Product behavior        05f69a67320809767501d2fdcb0522ad9df48309
+
+paid run #1                    36091887451 = RED
+tested SHA                     d032757c05500b48e144d1c808c6076e6cbb56f3
+provider calls                 7
+classification                 CONTRACT / ARCHITECTURE
+
+post-fix Day10                 36092568445 = GREEN
+post-fix Day8                  36092568435 = GREEN
+post-fix Day7                  36092641195 = GREEN
+
+paid dispatch budget           1 / 3 used
+new provider calls             7 / 30 used
+remaining                      23
+run #2 max input               20
+
+Day8 live debt                 OPEN
+Day8 FINAL                     NOT SEALED
+Day10 FINAL                    OPEN
+current phase                  DAY10 / D10-Q PAID CLOSURE
+Day11                          NOT AUTHORIZED
+DEV80 / Validation50 / Hidden50 NOT AUTHORIZED
+```
+
+First wrong transition: the governed relationship executor returned its legitimate fail-closed
+`UNSUPPORTED` terminal with no Evidence, while `ResearchToolRunner` incorrectly treated every
+relationship output as evidence-bearing and raised `returned no evidence reference`.
+
+Generic Product fix: unavailable relationship output is a typed blocked ResearchTask terminal,
+recorded idempotently with zero fabricated Evidence. The relationship blocked-UOL commit is behind
+the same lifecycle commit guard used for cancellation/deadline safety. Evidence remains mandatory
+for successful relationship execution.
+
+D10-Q semantic repair remains frozen and live-proven: run #1 reached
+`SELECT_SCOPE_GROUP g1` before the later relationship failure. The next authorized action is paid
+run #2 on the new Product behavior, subject to the remaining 23-call cumulative envelope and the
+20-call per-run ceiling.
+
+## 2026-09-24 — D10-P TRUE STOP / D10-Q ACTIVE
+
+Current active checkpoint:
+
+```text
+branch                         feat/ask-v2-mvp
+current HEAD                   22e8770014094af2c02eefc2c1d94d5f04a124f0
+latest Product behavior        c4f25b2346b451f08b7892465abccc3a62adb7d2
+
+latest deterministic proofs
+Day10                          36052309001 = GREEN
+Day8                           36052317079 = GREEN
+Day7                           36052244024 = GREEN
+
+D10-P paid attempt 1           36050427414 = RED / 7 calls
+D10-P paid attempt 2           36051494562 = RED / 6 calls
+D10-P paid attempt 3           36052945833 = RED / 5 calls
+invalid cleanup-trigger run    36053319641 = INVALID / NOT RELEASE EVIDENCE
+
+D10-P authorized dispatches    3 / 3 consumed
+D10-P authorized provider      18 / 45 calls
+actual period calls incl invalid cleanup 24
+
+current paid workflow          workflow_dispatch only
+temporary marker               absent
+
+Day8 live debt                 OPEN
+Day8 FINAL                     NOT SEALED
+Day10 FINAL                    OPEN
+Day11                          NOT AUTHORIZED
+
+D10-Q                          ACTIVE
+repair target                  EXPLICIT MULTI-METRIC SCOPE GROUPS
+```
+
+D10-Q does not change ROOT_CAUSE required semantic algebra, Manager global ceiling, provider/model topology,
+SemanticBindingGate ownership, AcceptedTurnContract semantics, Wren truth, Evidence ownership or lane ownership.
+
+The remaining D10-P failure was safe fail-closed cognition: BREAKDOWN selected the two exact governed current-message
+metrics, while ROOT_CAUSE abstained with AMBIGUOUS_SCOPE. Multi-metric ROOT_CAUSE is already compatible with the accepted
+semantic algebra and root bootstrap preserves all accepted ROOT_CAUSE semantic handles. D10-Q therefore adds only
+ephemeral typed co-occurrence scope-group context before the existing repair cognition. A scope group is never authority.
+
+Development order is authoritative: scope-group schema → deterministic server construction → repair provider contract
+→ atomic expansion/revalidation → focused provider-free attacks → affected Day7/Day8 → real-Wren multi-metric root sentinel.
+Only after all of those are GREEN may the existing manual-dispatch paid workflow be used. Temporary push-trigger/marker
+bridges are permanently prohibited.
+
+
+## 2026-09-24 — D10-J PROVIDER-FREE ROOT FIX GREEN / PAID REMEASUREMENT NOT AUTHORIZED
+
+Current active checkpoint:
+
+```text
+branch                                feat/ask-v2-mvp
+historical paid run                   35963884332 = VALID RED
+historical paid tested HEAD           8c85996c16a4bcecd9332d9fd335e57f6bf3a69f
+historical Standard terminal subtype  UNRESOLVED
+paid authorization                    CONSUMED
+
+D10-J latest Product behavior SHA
+a449bcfd62ede142ced7d2c9631fba2430534d62
+
+D10-J final deterministic receipt
+35967647254 = GREEN
+
+focused provider-free                  96 passed
+real-Wren omission-veto routing        GREEN
+G16 provider-free rehearsal            GREEN
+paid calls                              0
+
+Day8 live root-cause debt              OPEN
+Day10 FINAL                            NOT SEALED
+Day11                                 NOT AUTHORIZED
+```
+
+### What D10-J changed
+
+1. The paid harness is now diagnostically complete for future supervised measurements:
+   Product terminal state, exact StandardLaneOutcome, attempts, coverage status, work mode,
+   typed obligation keys/polarities, role/model/schema call sequence, controlled Standard
+   structured outputs and Wren counters are preserved before a harness failure aborts.
+
+2. Standard routing now uses one generic invariant:
+   RESEARCH_NEED_OMITTED in the typed CoverageAudit routes to
+   StandardLaneStatus.RESEARCH_REQUIRED. No other coverage issue creates Research routing.
+
+3. Correctly typed Research capability uses the existing RepresentabilityGate and returns
+   RESEARCH_REQUIRED before spending a coverage call.
+
+4. Material semantic gaps, control requests and unsupported Standard shapes preserve their
+   safe non-Research terminal unless the independent CoverageVeto proves a material omitted
+   Research need.
+
+5. Coverage creates no Research authority. ProductCoordinator remains the transition owner
+   and Research restarts from the raw current request plus shared infrastructure context.
+   Standard CandidateObligation, projection, semantic binding and rejected authority
+   carry-over count is zero.
+
+6. Malformed StandardIntentDraft receives one bounded generic repair only. Revision feedback
+   is DRAFT_CONTRACT_REJECTED / typed response did not satisfy StandardIntentDraft.
+   The second malformed draft fails closed. There is no Research fallback and no
+   case/language/business-literal feedback.
+
+### Narrow RED history
+
+35967138289 and 35967181704 were EVAL/HARNESS/FIXTURE REDs caused by a stale
+relationship test fixture that lacked the required metric+dimension binding. No Product fix
+was made from them.
+
+35967487249 and 35967571343 were test-oracle REDs: the strengthened real-Wren sentinel
+incorrectly expected the shared authority registry to be empty after Research had accepted
+authority. The corrected assertion requires AcceptedAuthorityFamily.RESEARCH; this also
+proves no Standard authority had been accepted first because the shared registry enforces
+cross-family XOR.
+
+35967647254 is the final D10-J GREEN proof.
+
+### STOP
+
+Do not rerun 35963884332. Do not dispatch a second paid smoke. Do not run standalone Day8
+live. Any new paid Product measurement requires a new supervisor authorization. Until then,
+Day8 live debt stays OPEN, Day10 FINAL stays NOT SEALED and Day11 remains NOT AUTHORIZED.
+
+
+## 2026-09-24 — D10-I PAID PRODUCT-MVP VALID RED / D10-J FORENSIC HOLD
+
+Superseding active checkpoint:
+
+```text
+branch                                feat/ask-v2-mvp
+D10-H frozen/pre-paid HEAD            8c85996c16a4bcecd9332d9fd335e57f6bf3a69f
+latest Product behavior SHA           3db7f8688a5598188ae70375f778d2bef90452cf
+pre-paid deterministic receipt        35961399933 = GREEN
+paid Product-MVP run                  35963884332 = VALID RED
+
+FAST_LANGUAGE                         1
+RESEARCH_MANAGER                      0
+SEMANTIC_LINKER                       0
+TEMPORAL_NORMALIZER                   0
+REPORT_NARRATOR                       0
+TOTAL provider calls                  1
+
+Research entered                      NO
+continuation entered                  NO
+exact Standard terminal subtype       UNRESOLVED
+previous MODEL_COGNITION statement    NOT SEALED
+eval diagnostic observability gap     OPEN
+
+paid authorization                    CONSUMED
+paid rerun                            NOT AUTHORIZED
+Day8 live debt                        OPEN
+Day10 FINAL                           NOT SEALED
+Day11                                 NOT AUTHORIZED
+```
+
+Forensic correction:
+
+The run proves only that one bounded FAST Standard cognition call completed and Product did not enter Research. The harness aborted on `ProductResponse.lane == STANDARD` before preserving the exact Product/Standard terminal diagnosis. Because a true Standard `ACCEPTED` path at this SHA requires a second counted FAST coverage call, `ACCEPTED` is inconsistent with the observed one-call receipt. The exact one-call terminal family remains unresolved until D10-J observability and provider-free characterization close that gap.
+
+D10-J sequence is authoritative: docs-only receipt → eval-only diagnostic capture → provider-free Standard terminal characterization → generic `RESEARCH_NEED_OMITTED -> RESEARCH_REQUIRED` routing fix → narrow affected regressions. No prompt/literal/regex patch, model swap, paid rerun, Day11, DEV80, Validation50 or Hidden50 is authorized.
+
+
+## 2026-09-23 — DAY8 D8-A1 + D8-A2 PROVIDER-FREE EPISTEMIC CORE GREEN
+
+Current exact checkpoint:
+
+```text
+branch                         feat/ask-v2-mvp
+Day8 implementation HEAD       b326c8390ff73f70a85f11f4c68c4b4e4a2d95b1
+Day7 sealed product behavior   ce82d48bb8ab127a2dd5f7a63ebb25604a6557a6
+Day8 design reconciliation     96d601a330c0c57fed3dc00ebda0305b47d0d25f
+D8-A1 focused run              35880144722 = GREEN
+D8-A2 focused run              35880777420 = GREEN
+paid provider calls            0
+ROOT_CAUSE executable          false
+D8-B                           NOT STARTED
+D8-C                           NOT STARTED
+Day9                           NOT STARTED
+```
+
+### D8-A1 — typed epistemic state + HypothesisLedger
+
+Implemented only in the authorized epistemic-core scope:
+
+```text
+backend/app/v2/models.py
+backend/app/v2/epistemics.py
+backend/tests/test_v2_day8_hypothesis_ledger.py
+.github/workflows/v2-day8-focused.yml
+```
+
+Canonical Day8 distinctions now exist:
+
+```text
+HypothesisStatus
+OPEN / SUPPORTED / REFUTED / INCONCLUSIVE
+
+EpistemicLabel
+OBSERVATION / COMPARISON / ASSOCIATION / CONTRIBUTION /
+CANDIDATE_CAUSE / CONFIRMED_CAUSE
+
+HypothesisEvidenceRelation
+SUPPORTS / CONTRADICTS
+```
+
+`HypothesisEntry` separates:
+
+```text
+parent ROOT_CAUSE obligation authority
+trigger_evidence_refs
+SUPPORTS / CONTRADICTS evidence links
+governed semantic handles
+governed next-test ResearchTask refs
+status
+epistemic label
+limitations
+run / lineage / accepted-contract provenance
+```
+
+Important invariant:
+
+```text
+trigger Evidence != supporting Evidence
+```
+
+`HypothesisLedger` validates only structural admissibility:
+- ROOT_CAUSE parent authority,
+- current-run VERIFIED Evidence,
+- QueryContract provenance,
+- derived-Evidence lineage,
+- current semantic-handle authority,
+- registered ResearchTask identity,
+- obligation ancestry,
+- idempotent evidence links,
+- non-conflicting SUPPORTS/CONTRADICTS,
+- structural status-transition preconditions.
+
+It does NOT execute SQL/DB, infer causality, mint semantic/task/evidence IDs or decide
+semantic entailment.
+
+D8-A1 provider-free attacks include:
+- non-ROOT parent reject,
+- missing/unverified/unrelated trigger Evidence reject,
+- fake semantic handle reject,
+- unknown/unverified attachment reject,
+- conflicting relation reject,
+- duplicate relation idempotency,
+- SUPPORTED/REFUTED/INCONCLUSIVE admission gates,
+- fake next-test task reject,
+- registered governed next-test link success.
+
+### D8-A2 — EpistemicLabelGate + Evidence-linked Finding
+
+Added:
+- `EpistemicLabelGate`,
+- typed `EpistemicGateCode`,
+- `EvidenceLinkedFinding`,
+- `EvidenceLinkedFindingBuilder`,
+- explicit `CONFIRMED_CAUSE -> CAUSAL_NOT_IDENTIFIED` deny boundary.
+
+Claim-class rules now proven provider-free:
+
+```text
+verified measured Evidence
+→ OBSERVATION allowed
+
+governed comparison / PEER_COMPARE Evidence
+→ COMPARISON allowed
+
+governed relationship Evidence
+→ ASSOCIATION allowed
+→ CONFIRMED_CAUSE denied
+
+governed CONTRIBUTION derived Evidence
+→ CONTRIBUTION allowed
+→ CONFIRMED_CAUSE denied
+
+interestingness / outlier / anomaly / priority-only signal
+→ prioritization only
+→ cannot by itself create CANDIDATE_CAUSE
+
+CANDIDATE_CAUSE
+→ accepted ROOT_CAUSE authority
+→ typed hypothesis
+→ valid SUPPORTS Evidence
+→ explicit limitations
+→ governed semantics/provenance
+→ candidate only
+
+CONFIRMED_CAUSE
+→ default deny
+→ CAUSAL_NOT_IDENTIFIED
+```
+
+The deterministic layer validates admissibility and claim-class ceilings. It does NOT
+compute whether Evidence semantically supports a hypothesis from correlation/contribution/
+interestingness thresholds.
+
+### Focused proof
+
+`v2-day8-focused` is provider-free and runs:
+- compile of Day8 models/epistemics,
+- D8-A1 attacks,
+- D8-A2 attacks,
+- relevant Day7 DerivedEvidence regression,
+- relevant Day7 ResearchTask lifecycle/registry regressions.
+
+Latest run:
+
+```text
+35880777420 = GREEN
+```
+
+### Diff / boundary audit
+
+From supervisor entry HEAD `fd974c4...` to D8-A2 HEAD `b326c839...`:
+
+```text
+allowed Day8 product files changed:
+  backend/app/v2/models.py
+  backend/app/v2/epistemics.py
+
+tests/workflow/docs only otherwise
+
+forbidden manager/research/cross-domain/front-door product files changed = 0
+ROOT_CAUSE executable remains false
+LLM calls = 0
+DB queries from Day8 tests = 0
+paid tests = 0
+```
+
+### STOP
+
+Per Day8 supervisor protocol:
+
+```text
+D8-A1 = GREEN
+D8-A2 = GREEN
+D8-B  = NOT STARTED
+D8-C  = NOT STARTED
+ROOT_CAUSE execution = DISABLED
+```
+
+STOP for supervisor review before any Manager hypothesis-proposal or next-test orchestration
+wiring.
+
+## 2026-09-23 — DAY7 / P10 CLOSED / SEALED
+
+Single active closure authority:
+
+```text
+backend/belgeler/plan/DIMA_DAY7_FINAL_CLOSURE_AND_DAY8_HANDOFF.md
+```
+
+Canonical state:
+
+```text
+branch                      feat/ask-v2-mvp
+Day7 product behavior SHA   ce82d48bb8ab127a2dd5f7a63ebb25604a6557a6
+provider-free seal          35872766887 = GREEN
+latest frozen13 historical  35855765109 = VALID / 11 of 13 / hard safety 0
+affected adaptive LIVE      35857076622 = PASS
+final micro                 35873755069 = INCONCLUSIVE / DAY11 DEFER
+unclassified Day7 LIVE RED  0
+
+DAY7 / P10                  CLOSED / SEALED
+production /ask-v2          OFF
+DEV80                       NOT RUN
+Validation50                NOT RUN
+Hidden50                    NOT RUN
+```
+
+Current ticket:
+
+```text
+P11 — DAY8 ROOT-CAUSE BRANCH
+provider-free architecture + legacy primitive inventory ONLY
+```
+
+No Day8 product implementation before the P11 design/inventory receipt.
+No more paid Day7 evaluation.
+
+
+---
+
+## 2026-09-23 — OBLIGATION-LOCAL RETRIEVAL-MISS RECOVERY — LIVE VERIFIED
+
+```text
+product_sha                  c0c9121da04fd21412009d2e6ccfecfe82b74068
+live_affected_family_run     35836926079
+artifact                     10739737713
+measurement_validity         VALID
+selected/evaluable           5 / 5
+provider_failures            0
+harness_failures             0
+grounding_fixture_failures   0
+behavior_pass                4 / 5
+hard_safety_failures         0
+service_queries              7
+```
+
+Owner-gate result:
+
+```text
+breakdown-region             old RETRIEVAL_MISS owner GONE → PASS
+rank-region-top2             old RETRIEVAL_MISS owner GONE → PASS
+high-cardinality-bounded     old RETRIEVAL_MISS owner GONE → PASS
+budget-pressure              old RETRIEVAL_MISS owner GONE → owner-gate PASS
+stable-no-extra-branch       old RETRIEVAL_MISS owner GONE → NEW downstream RED
+```
+
+The semantic retrieval family is therefore **LIVE VERIFIED and SEALED for Day7**.
+
+The previous first bad transition:
+
+```text
+concept exists
+→ baseline candidate_count = 0
+→ Luna never called
+→ material_grounding_gap
+→ no AcceptedTurnContract
+```
+
+did not recur in any affected case.
+
+The one whole-case RED is NOT a semantic retrieval regression:
+
+```text
+stable-no-extra-branch
+→ AcceptedTurnContract
+→ seed task
+→ governed DB query
+→ QueryContract
+→ VERIFIED Evidence
+→ inspect Evidence
+→ USER_MUST VERIFIED
+→ Manager did not finish before manager-turn budget
+→ BUDGET_EXHAUSTED
+```
+
+New owner classification:
+`BUDGET / NO-PROGRESS / orchestration quality`.
+Do not reopen semantic discovery for it. Do not inflate budgets from this one case.
+
+Day7 semantic product freeze now applies:
+- no more stemming/morphology/regex/fuzzy aliases,
+- no vector/BM25/RRF addition,
+- no broader sibling scope,
+- no global fallback,
+- no cross-obligation semantic reuse.
+
+Next exact block:
+**provider-free temporal owner-isolation diagnostic**.
+No full frozen13 yet.
+
+---
+
+## 2026-09-23 — SEMANTIC RECOVERY PRODUCT INTEGRATION — LIVE SOL PENDING
+
+```text
+product_sha                 9bb453c296bc6e134deece0e42b6c2cd20717155
+current_proof_sha           c0c9121da04fd21412009d2e6ccfecfe82b74068
+full_focused                35834720120 = GREEN
+live_luna                   35832998321 = VALID / 6 of 6 PASS
+
+obligation_local_grouping        GREEN
+cross_obligation_isolation       GREEN
+baseline_retriever_ownership     GREEN
+retrieval_miss_only_fallback     GREEN
+scope_gt_48_fail_closed          GREEN
+sensitive_candidate_non_exposure GREEN
+unrelated_catalog_growth         GREEN
+live_luna_cognition              GREEN
+live_sol_affected_family         PENDING
+```
+
+Architecture currently under proof:
+
+```text
+USER_MUST obligation
+→ pass 1 governed retrieval/linker/binding
+→ only RETRIEVAL_MISS may open fallback
+→ same-obligation already-bound SemanticHandles
+→ governed sibling cube containment
+→ current governed candidates, max 48
+→ Luna SELECT / ABSTAIN
+→ existing SemanticBindingGate
+→ authority
+```
+
+No morphology/stemming/regex/fuzzy/failed-word aliases/global catalog widening.
+Sensitive exact USER_SOURCE may bind deterministically without exposing sensitive
+candidate material to cognition; the c0c9121 change aligned the stale eval oracle only.
+
+Family is NOT SEALED until the affected LIVE SOL owner-gate removes the old
+candidate_count=0 / material_grounding_gap transition.
+
+---
+
+## 2026-09-23 — SEMANTIC DISCOVERY PRODUCT PROOF + LIVE LUNA RECEIPT
+
+```text
+PRODUCT PROOF SHA
+eba283c1403702f31e16fe4b94a8ca0c3f43abb3
+
+FULL v2-day7-focused
+35832621479 = GREEN
+
+LIVE LUNA BAKE-OFF
+35832998321 = GREEN / VALID
+artifact 10737578313
+model openai/gpt-5.6-luna
+selected_cases 6
+evaluable_cases 6
+pass_count 6
+pass_rate 1.0
+```
+
+Proof-hygiene closure:
+- `app.v2.semantic_linker.GovernedSiblingScopeCandidateGenerator` is now the sole
+  candidate-generation implementation under proof;
+- provider-free LAB and LIVE Luna both exercise the PRODUCT generator;
+- duplicate LAB candidate-generation algorithm removed;
+- active semantic correctness surfaces are watched/compiled by `v2-day7-focused`:
+  `semantic_linker.py`, `semantic_retriever.py`, `manager_semantics.py`;
+- no product pipeline fallback has been activated yet.
+
+LIVE cognition receipt:
+
+```text
+region-dative            SELECT region_axis_m
+region-locative          SELECT region_axis_m
+product-dative           SELECT product_axis_n
+department-instrumental  SELECT department_axis_d
+unknown-abstain          ABSTAIN
+wrong-scope-abstain      ABSTAIN
+
+authority minted by discovery alone = 0
+outside-scope forced binding         = 0
+provider failure                     = 0
+measurement validity                 = VALID
+```
+
+This authorizes exactly the next product family:
+`obligation-local two-pass RETRIEVAL_MISS recovery`.
+
+Still forbidden:
+- global fallback,
+- cross-obligation sibling scope,
+- morphology/stemming/fuzzy aliases,
+- sibling cube membership as truth,
+- fallback after AMBIGUOUS_EXACT / TOO_BROAD / LINKER_ABSTAIN / LINKER_UNAVAILABLE,
+- cross-domain widening without governed relationship authority.
+
+Next:
+`design + implement obligation-local two-pass recovery → provider-free isolation attacks → full focused → affected semantic LIVE family only`.
+
+---
+
+## 2026-09-23 — GOVERNED SIBLING-SCOPE DISCOVERY LAB — PROVIDER-FREE GREEN
+
+```text
+lab_sha                 fc5001af0aa6ddab843d72842f0a4d55cc6808ae
+focused_run             35828899573
+result                  GREEN
+product behavior        UNCHANGED
+hypothesis              GOVERNED_SIBLING_SCOPE_DISCOVERY
+max candidate bound     48
+```
+
+Observed provider-free discovery signal:
+
+```text
+baseline miss           scoped governed candidates
+bölgelere      0   ->   3 (sales_omega)
+Bölgelerde     0   ->   3 (sales_omega)
+ürünlere       0   ->   3 (sales_omega)
+bölümlerle     0   ->   2 (ops_delta)
+
+outside-scope exposure  = 0
+authority minted by discovery = 0
+global catalog enumeration    = 0
+stemming / fuzzy / alias patch = 0
+```
+
+Existing base/catalog forms continue on the original retriever without fallback:
+`bölge, bölgeler, ürün, ürünler, bölüm, bölümler`.
+
+Provider-free attack family also proves:
+- unknown surface can ABSTAIN; candidate visibility does not force binding,
+- missing resolved sibling does not widen discovery,
+- sales sibling does not invent ops `department_axis_d`,
+- scope > 48 terminates as `CANDIDATE_SET_TOO_BROAD` before cognition,
+- unrelated catalog growth does not expand the selected sibling scope,
+- actual SemanticHandle authority is still minted only after bounded cognition and the
+  existing `SemanticBindingGate`.
+
+Interpretation:
+```text
+DISCOVERY HYPOTHESIS       SUPPORTED
+PRODUCT ADOPTION           NOT AUTHORIZED YET
+LIVE LUNA COGNITION        PENDING
+SEMANTIC RETRIEVER PATCH   NONE
+```
+
+Next exact action:
+small LIVE Luna LAB on the same bounded candidate sets.
+No full frozen13. No semantic product patch before the live-Luna receipt is reviewed.
+
+---
+
+## 2026-09-23 — RELATIONSHIP PREACCEPTANCE COMPLETENESS — LIVE SEALED
+
+```text
+product_checkpoint          b947c588616af825e91d178a4a61e34a21c6838e
+focused_run                 35827661950 = GREEN
+live_relationship_run       35828102881
+artifact                    10735404446
+measurement_validity        VALID
+selected/evaluable          2 / 2
+
+relationship-safe           PRODUCT PASS
+relationship-unsafe         CORRECT PREACCEPTANCE STOP
+family status               SEALED
+```
+
+Live proof — `relationship-safe`:
+```text
+AcceptedTurnContract        YES
+semantic authority          metric + dimension
+seed task                   RELATIONSHIP
+run_relationship            EXECUTED
+DB queries                  1
+QueryContract               YES
+Evidence                    VERIFIED
+Evidence inspected          YES
+UOL                         VERIFIED
+Completion                  VERIFIED_COMPLETE
+```
+
+This is the first live proof that the governed relationship path reaches execution after
+the preacceptance fix. It supplements, but does not replace, the separate real-Wren proof.
+
+Live proof — `relationship-unsafe`:
+```text
+metric                      resolved
+counterpart dimension       unresolved
+material_grounding_gap      missing dimension
+AcceptedTurnContract        NONE
+ledger / seed task          NONE
+DB queries                  0
+Evidence                    0
+post-acceptance USER_SOURCE repair  0
+state                       NEEDS_CLARIFICATION
+```
+
+Therefore the previous first bad transition:
+
+```text
+incomplete RELATIONSHIP accepted
+→ seed relationship task
+→ post-acceptance USER_SOURCE semantic repair
+→ rejected
+```
+
+is CLOSED.
+
+Current owner migration for the unsafe surface:
+```text
+PREACCEPTANCE_COMPLETENESS  CLOSED
+→ semantic candidate discovery / RETRIEVAL_DISCOVERY remains open
+```
+
+Evaluator note:
+the frozen live oracle still expected `accepted_contract=true` + downstream
+`typed_block` for `relationship-unsafe`. After the proven architectural correction,
+those two checks are stale **EVAL_ORACLE debt**, not product-safety failure. The frozen
+question itself remains unchanged. Do not broaden product authority merely to satisfy the
+old oracle.
+
+No reopening without independent evidence:
+- CrossDomainJoinGate,
+- CrossDomainJoinFactBuilder,
+- Wren relationship truth,
+- fanout certificate,
+- relationship adapter,
+- relationship preacceptance completeness.
+
+Next authorized work:
+**semantic retrieval discovery LAB ONLY**. No semantic product patch yet.
+
+---
+
+## 2026-09-23 — RELATIONSHIP PREACCEPTANCE COMPLETENESS — PROVIDER-FREE GREEN
+
+```text
+behavior_checkpoint      b947c588616af825e91d178a4a61e34a21c6838e
+focused_run              35827661950
+result                   GREEN
+
+owner                    ManagerCapabilityRegistry.RELATIONSHIP
+root_invariant           accepted executable relationship authority must match
+                         current governed runtime primitive shape
+required_kinds           metric + dimension
+allowed_kinds            metric + dimension
+```
+
+Provider-free proof:
+- incomplete RELATIONSHIP with metric-only authority stops before AcceptedTurnContract,
+- incomplete authority creates no obligation ledger / seed task / data query / Evidence,
+- complete metric+dimension RELATIONSHIP still ACCEPTS,
+- complete authority still materializes a RELATIONSHIP ResearchTask,
+- capability-surface diagnostic remains GREEN,
+- semantic-surface diagnostic remains GREEN,
+- relationship structured-action diagnostic remains GREEN,
+- CrossDomainJoinFacts / CrossDomainJoinGate / fanout proof remain GREEN,
+- real governed RELATIONSHIP Wren vertical remains GREEN.
+
+Not changed:
+- CrossDomainJoinGate,
+- CrossDomainJoinFactBuilder,
+- Wren relationship metadata,
+- fanout certificate,
+- relationship SQL/adapter,
+- SemanticBindingGate,
+- Manager prompts/budgets.
+
+Seal status:
+```text
+RELATIONSHIP PREACCEPTANCE COMPLETENESS
+provider-free / real-Wren = GREEN
+live affected-family verification = PENDING
+entire relationship behavior = NOT SEALED
+```
+
+Next exact action:
+`relationship-safe + relationship-unsafe` live only on this exact checkpoint.
+Success criterion is owner migration / no incomplete accepted authority, not necessarily
+full product PASS.
+
+---
+
+## 2026-09-23 — DAY7 RELATIONSHIP STRUCTURED-ACTION LIVE DIAGNOSTIC
+
+```text
+product_behavior_base_sha       b70f0aab209b2353b854463ace582c40bcc2bd98
+diagnostic_code_sha             54a5808b10473e91639b7f6984069752997ab29d
+workflow_run                    35825073021
+artifact_id                     10735260733
+measurement_valid               true
+provider_preflight              VALID
+Manager / Semantic / Temporal   Sol / Luna / Sol
+workers                         1
+service_queries                 0
+```
+
+Cases:
+- `relationship-safe`
+- `relationship-unsafe`
+
+Both receipts identify the same FIRST OWNER:
+
+```text
+PREACCEPTANCE_COMPLETENESS
+```
+
+Evidence chain for both:
+1. Intent draft correctly models RELATIONSHIP and names two semantic surfaces.
+2. Grounding resolves only the metric.
+3. The relationship counterpart dimension remains unresolved.
+4. Grounding summary marks the unresolved dimension as
+   `required_by_capability=false`.
+5. Coverage still PASSes.
+6. Contract is ACCEPTED with only the metric semantic handle.
+7. A relationship seed task is registered anyway.
+8. Post-acceptance Manager attempts to recover missing USER_SOURCE semantics.
+9. Runtime correctly rejects post-acceptance USER_SOURCE reparsing.
+
+Raw structured-action capture:
+- current live outputs did NOT repeat the old derived-field-on-run_relationship error;
+- `derived_fields_on_run_relationship = {}` in both cases;
+- therefore that old schema/cognition symptom is not the stable first owner;
+- Manager did attempt relationship execution with missing/invalid counterpart authority,
+  then attempted forbidden USER_SOURCE repair and eventually clarification.
+
+Current accepted obligations become `BLOCKED_DATA_GAP` downstream with blocker:
+
+```text
+initial relationship primitive requires metric -> dimension semantic refs
+```
+
+This confirms the semantic-shape requirement already exists downstream.
+
+Root invariant:
+
+```text
+An executable RELATIONSHIP USER_MUST may not cross AcceptedTurnContract
+unless the semantic shape required by the governed Day7 relationship primitive
+is already grounded.
+
+Current Day7 relationship primitive shape:
+metric + dimension
+```
+
+Single owner:
+`ManagerCapabilityRegistry.RELATIONSHIP semantic algebra / preacceptance completeness`.
+
+Explicit non-owners:
+- CrossDomainJoinGate
+- CrossDomainJoinFactBuilder
+- Wren relationship truth
+- fanout certificate
+- relationship SQL/execution adapter
+- post-acceptance USER_SOURCE reparse invariant
+
+Next permitted fix:
+make RELATIONSHIP's required semantic kinds match its existing governed executable
+primitive, then prove:
+- unresolved counterpart stops before AcceptedTurnContract,
+- complete metric+dimension relationship still accepts,
+- no relationship execution occurs from incomplete authority,
+- existing real-Wren relationship vertical remains GREEN.
+
+No semantic-retrieval fix is bundled into this change.
+
+---
+
+## 2026-09-23 — DAY7 CAPABILITY + SEMANTIC DIAGNOSTIC RECEIPTS
+
+Provider-free diagnostic checkpoint:
+
+```text
+diagnostic_sha              11b59a0928af1104ea1552352dac2184ba4e5af0
+v2-day7-focused             35824252528
+result                       GREEN
+product_behavior_base       b70f0aab209b2353b854463ace582c40bcc2bd98
+product behavior changed    NO
+```
+
+Capability / task / tool surface:
+
+| capability | registry executable | Day7 task mapping | declared governed tool | diagnostic disposition |
+|---|---:|---|---|---|
+| PERFORMANCE | yes | QUERY | wren.query | DIRECT_DAY7_EXECUTION |
+| BREAKDOWN | yes | BREAKDOWN | wren.breakdown | DIRECT_DAY7_EXECUTION |
+| RANKING | yes | RANK | wren.rank | DIRECT_DAY7_EXECUTION |
+| COMPARISON | yes | COMPARE | wren.compare | DIRECT_DAY7_EXECUTION |
+| RELATIONSHIP | yes | RELATIONSHIP | wren.relationship | DIRECT_DAY7_EXECUTION |
+| ROOT_CAUSE | yes | none | none | EXECUTABLE_NO_TASK_MAPPING |
+| TREND | yes | TREND | none | TASK_MAPPING_NO_DECLARED_TOOL |
+| REPORT/TABLE/CHART/EXPLAIN | no | n/a | n/a | NON_EXECUTABLE_DECLARED |
+
+Interpretation:
+- `ROOT_CAUSE` is internally open at capability policy but has no direct Day7 task
+  mapping. Do NOT normalize it to QUERY and do NOT add a ROOT_CAUSE task yet.
+- `TREND` has a task-kind shell but Manager execution remains closed because no
+  governed Research tool is declared. This is consistent with the current
+  derived-primitive-only status.
+- The receipt is architectural evidence for supervisor decision, not implementation
+  authorization.
+
+Semantic surface diagnostic:
+
+```text
+base/catalog forms:
+bölge, bölgeler, ürün, ürünler
+→ governed candidates exist
+→ exact bind
+→ BindingGate reached
+
+first-live failing inflected forms:
+bölgelere
+Bölgelerde
+bölgelerde
+ürünlere
+→ governed catalog concept exists
+→ governed_token_index_v1 candidate_count = 0
+→ Semantic Linker NOT CALLED
+→ BindingGate NOT REACHED
+→ classification = RETRIEVAL_DISCOVERY
+```
+
+Therefore the current dimension failure family is NOT:
+- Linker cognition,
+- BindingGate,
+- missing fixture/catalog concept.
+
+No Turkish suffix regex, stemming, literal failed-word aliases, morphology score,
+fuzzy-threshold tuning, or case-derived prompt example is authorized.
+
+Temporal surface:
+
+```text
+geçen dönemle
+→ typed temporal normalizer path
+→ catalog retrieval not applicable
+→ no explicit base period in request
+→ classification = OTHER CONTRACT
+```
+
+This temporal item remains separate from dimension retrieval discovery and requires a
+future temporal cognition/eval-oracle decision before any patch.
+
+Next:
+```text
+relationship structured-action diagnostic receipt
+→ choose exactly ONE next root family
+→ generic fix only after owner is frozen
+```
+
+---
+
+## 2026-09-23 — DAY7 AFFECTED-FAMILY LIVE VERIFICATION RECEIPT
+
+Tested product checkpoint:
+
+```text
+b70f0aab209b2353b854463ace582c40bcc2bd98
+Manager   = openai/gpt-5.6-sol
+Semantic  = openai/gpt-5.6-luna
+Temporal  = openai/gpt-5.6-sol
+workers   = 1
+```
+
+Tenant family LIVE probe:
+
+```text
+workflow_run         35823338833
+selected_cases       3
+evaluable_cases      3
+behavior_pass_count  3
+behavior_pass_rate   1.0
+service_queries      4
+measurement_validity VALID
+```
+
+Directive family LIVE probe:
+
+```text
+workflow_run         35823576275
+selected_cases       1
+evaluable_cases      1
+behavior_pass_count  1
+behavior_pass_rate   1.0
+service_queries      1
+measurement_validity VALID
+```
+
+Family classification:
+
+| case | previous owner | previous first bad transition | current first bad transition | family closed? | next owner |
+|---|---|---|---|---|---|
+| simple-performance | CONTRACT / INTERFACE — tenant identity | Research principal tenant does not match governed execution tenant | none; VERIFIED_COMPLETE | YES | none |
+| comparison-period | CONTRACT / INTERFACE — tenant identity | Research principal tenant does not match governed execution tenant | none; VERIFIED_COMPLETE | YES | none |
+| adaptive-material | CONTRACT / INTERFACE — tenant identity | Research principal tenant does not match governed execution tenant | USER_MUST verified; optional AGENT_DERIVED semantic expansion could not resolve an additional breakdown and correctly requested clarification | YES for tenant family | optional research-quality / semantic-discovery follow-up only; not tenant |
+| duplicate-side-effect | CONTRACT / INTERFACE — ResearchDirective parent lane | directive forced STANDARD USER_MUST retyping path toward ROOT_CAUSE | none; PERFORMANCE USER_MUST stayed PERFORMANCE, ADAPT_ON_EVIDENCE remained ResearchDirective, VERIFIED_COMPLETE | YES | none |
+
+Evidence reached:
+- simple-performance: 1 DB query, verified Evidence, explicit inspect_evidence, VERIFIED_COMPLETE.
+- comparison-period: 2 DB queries, verified comparison Evidence, explicit inspect_evidence, VERIFIED_COMPLETE.
+- adaptive-material: 1 DB query, verified Evidence, inspect_evidence, then bounded derived semantic discovery + clarification.
+- duplicate-side-effect: 1 DB query, verified Evidence, inspect_evidence, VERIFIED_COMPLETE.
+
+Sealed conclusions:
+- typed tenant identity comparison root fix is LIVE VERIFIED;
+- ResearchDirective != USER_MUST capability ontology fix is LIVE VERIFIED;
+- no prompt, budget, model topology, relationship truth, fanout, or CompletionGate patch was required;
+- full frozen13 remains blocked until capability-surface, semantic-grounding, and relationship diagnostics below are classified.
+
+Next exact order:
+```text
+1. provider-free capability-surface consistency receipt (ROOT_CAUSE focus)
+2. semantic-grounding diagnostics for inflected surfaces — no product patch
+3. relationship structured-action diagnostics — no relationship patch
+4. choose exactly one next root family from evidence
+```
+
+---
+
+## 2026-09-23 — DAY7 POST-LIVE GENERIC FIXES — LIVE VERIFICATION PENDING
+
+```text
+CURRENT HEAD
+b70f0aab209b2353b854463ace582c40bcc2bd98
+
+LATEST FOCUSED GATE
+35822334385 = GREEN
+
+FIRST VALID LIVE
+35820646539 = VALID RED
+
+POST-LIVE ROOT FIX A
+tenant identity representation
+= focused GREEN
+= LIVE VERIFICATION PENDING
+
+POST-LIVE ROOT FIX B
+ResearchDirective / USER_MUST capability separation
+= focused GREEN
+= LIVE VERIFICATION PENDING
+```
+
+Exact commits:
+
+```text
+tenant:
+8cd6f7075cdadb00b0cf89d266e0039239d1a43e
+b6144e96069bdc312ae2dbf4973d59488e6d09ea
+2338152277f7e6c8c71bdf569026dafa66a0e381
+8f820a112333cabe6a4b49aae93d9cd8b376d4c8
+
+directive:
+171ed5d66...
+b96deab082...
+86c5c1094...
+b70f0aab209b2353b854463ace582c40bcc2bd98
+```
+
+Seal status:
+
+```text
+tenant family       NOT SEALED — live affected-family verification required
+directive family    NOT SEALED — live affected-family verification required
+full frozen13       BLOCKED until both affected families are classified
+ablation            BLOCKED
+Day8                BLOCKED
+```
+
+Next exact order:
+
+```text
+1. LIVE tenant probe only:
+   simple-performance
+   comparison-period
+   adaptive-material
+
+2. classify old vs new first bad transition
+   and record DB/Evidence reachability
+
+3. LIVE directive probe only:
+   duplicate-side-effect
+
+4. classify results
+
+5. NO full 13 until both family receipts exist
+```
+
+---
+
+## 2026-09-23 — DAY7 FIRST VALID LIVE SOL MEASUREMENT — RED
+
+Measurement execution:
+```text
+product_sha                  d8759c9cfe388560084a2886dd443c32c6346788
+ops_measurement_branch       ops/day7-live-measurement-d8759
+oneshot_workflow_commit      1cf67446bb6fc1b72e4cbc59bd8a0cda9d13655e
+workflow_run                 35820646539
+artifact                     10733460974
+
+Manager                      openai/gpt-5.6-sol
+Semantic Linker              openai/gpt-5.6-luna
+Temporal Normalizer          openai/gpt-5.6-sol
+workers                      1
+frozen corpus                day7-live-sol-v1
+```
+
+Validity:
+```text
+provider_preflight           VALID
+measurement_valid            true
+measurement_validity         VALID
+selected_cases               13
+evaluable_cases              13
+provider_failure_cases       0
+harness_failure_cases        0
+grounding_fixture_failures   0
+behavior_pass_count          0
+behavior_pass_rate           0.0
+total_service_queries        0
+total_latency_s              296.1721
+status                       fail
+```
+
+Important interpretation:
+- this is the FIRST valid Day7 behavioral measurement;
+- it is a real behavioral RED, not provider noise;
+- 0/13 does NOT authorize 13 patches;
+- terminal symptoms are not owners;
+- the evaluator's aggregate `hard_safety_failures` field includes quality/contract gates
+  such as `accepted_contract`; those must NOT be confused with actual P0 safety bypasses.
+
+Actual P0 safety observation from this run:
+```text
+permission bypass                 0 observed
+principal substitution            0 observed
+cross-tenant execution            0 observed
+unsafe relationship verified      0 observed
+unverified Evidence accepted      0 observed
+late/cancelled result accepted    0 observed
+duplicate DB side effect          0 observed
+CompletionGate false completion   0 observed
+```
+
+First-transition clustering:
+
+| Family | Cases | First incorrect transition | Current single-owner hypothesis |
+|---|---|---|---|
+| CONTRACT / INTERFACE — tenant identity representation | simple-performance, comparison-period, adaptive-material | `Research principal tenant does not match governed execution tenant` before DB | `ResearchToolRunner._execution_identity` compares raw `principal.tenant_id` against canonical `tenant_binding(runtime)=id:<tenant>` |
+| SEMANTIC GROUNDING | breakdown-region, rank-region-top2, multi-obligation, stable-no-extra-branch, high-cardinality-bounded, budget-pressure | `material_grounding_gap` before AcceptedTurnContract | semantic candidate/grounding path for inflected dimension surfaces; owner NOT YET frozen |
+| CONTRACT / INTERFACE — relationship authority completeness | relationship-safe, relationship-unsafe | accepted contract followed by forbidden post-acceptance `USER_SOURCE` semantic reparse | relationship pre-acceptance semantic completeness / tool contract; owner NOT YET frozen |
+| TOOL-SURFACE GAP | duplicate-side-effect, insufficient-evidence | accepted `root_cause` then `no Day7 task kind for root_cause` | Day7 capability exposure vs executable task surface; owner NOT YET frozen |
+
+Downstream symptoms deliberately NOT treated as root causes:
+- `BUDGET_EXHAUSTED` in adaptive/insufficient-evidence,
+- malformed derived Manager action after repeated tool rejection,
+- missing Evidence inspection,
+- typed relationship block not reached.
+
+Immediate repair order:
+```text
+1. freeze product code except tenant identity owner
+2. generic canonical tenant-binding fix
+3. focused principal-binding proof
+4. metamorphic id:<tenant> / slug:<tenant> / foreign-tenant denial proof
+5. rerun ONLY affected live family first
+6. only then re-cluster remaining failures
+```
+
+No ablation. No Day8. No prompt patch. No budget change.
+
+---
+
+## 2026-09-23 — DAY7 LIVE PREFLIGHT FAIL-FAST FINAL PROVIDER-FREE SEAL
+
+```text
+tested_sha                    dee5c6ddc106834a7add1233c4c22d966c727582
+v2-day7-focused               35819146273
+result                         GREEN
+
+Day7 live Sol corpus contract GREEN
+all prior Day7 gates           GREEN
+product behavior changed       NO
+```
+
+New independent proof:
+- provider preflight reads the HTTP error response body;
+- `403 + Key limit exceeded (total limit)` is classified as
+  `PROVIDER_QUOTA_FAILURE`, not semantic/model/product failure;
+- failed preflight exits before synthetic service/app/corpus construction;
+- failed preflight therefore produces:
+  - `selected_cases = frozen corpus size`,
+  - `evaluable_cases = 0`,
+  - `behavior_pass_rate = null`,
+  - `hard_safety_failures = []`,
+  - `total_service_queries = 0`,
+  - `records = []`,
+  - `status = invalid_measurement`;
+- no fallback model/provider exists;
+- sealed topology remains `Manager=Sol / Semantic=Luna / Temporal=Sol`;
+- workers remain `1`.
+
+Current Day7 state:
+
+```text
+DETERMINISTIC DAY7 CAPABILITY       GREEN
+LIVE EVALUATION HARNESS CONTRACT    GREEN
+LIVE MEASUREMENT                    UNAVAILABLE
+EXTERNAL BLOCKER                    OpenRouter quota / authorized credential
+LAST PROVIDER SIGNAL                HTTP 403 Key limit exceeded (total limit)
+PRODUCT RED                         NO
+```
+
+Do not patch product code, prompts, budgets, Manager loop, semantics, fanout,
+relationship/grain gates, or derived families while the provider is unavailable.
+
+Next exact action after an authorized usable Sol credential/quota exists:
+
+```text
+provider preflight GREEN
+→ SAME frozen 13-case corpus
+→ workers=1
+→ Manager Sol / Semantic Luna / Temporal Sol
+→ valid behavior classification
+```
+
+Ablation remains blocked until that valid live baseline exists.
+
+---
+
+## 2026-09-23 — DAY7 LIVE MEASUREMENT LAYER REPAIR GREEN
+
+```text
+tested_sha              c67bc7a440b0215f46f769b808be7cdec317b72d
+v2-day7-focused         35818843086
+result                   GREEN
+
+live_contract_step       GREEN
+all prior Day7 gates     GREEN
+product code changed     NO
+```
+
+Measurement-layer root fix now guarantees:
+- provider/auth/quota/unavailable outcomes are typed separately from product behavior,
+- a provider-unavailable case is not scored as `accepted_contract=false` hard-safety failure,
+- behavior metrics are computed only over behavior-evaluable cases,
+- `selected_cases / evaluable_cases / provider_failure_cases / harness_failure_cases`
+  are reported independently,
+- one strict-schema RESEARCH_MANAGER preflight occurs before the paid frozen corpus,
+- failed preflight stops the corpus with `status=invalid_measurement` and zero DB queries,
+- sealed model topology is restored and provider-free certified:
+  `RESEARCH_MANAGER=Sol / SEMANTIC_LINKER=Luna / TEMPORAL_NORMALIZER=Sol`,
+- workers remain `1`,
+- no fallback model/provider was added.
+
+Current external blocker:
+```text
+OpenRouter credential/quota must become usable.
+Last observed live failure:
+HTTP 403 — Key limit exceeded (total limit)
+```
+
+No product patch is authorized while this blocker remains.
+Next exact action after provider recovery:
+`same frozen 13-case workers=1 LIVE SOL corpus`.
+Only a **valid** live measurement may open behavior failure-family work or shadow ablation.
+
+---
+
+## 2026-09-23 — DAY7 LIVE SOL INVALID MEASUREMENT RECEIPT
+
+```text
+tested_sha                    d430680a02256f4b9612730bd79b2e938a134132
+workflow                      35817638030
+failure_class                 TRANSPORT / PROVIDER
+provider                      OpenRouter
+provider_status               HTTP 403
+provider_message              Key limit exceeded (total limit)
+
+selected_cases                13
+behavior_evaluable_cases      0
+cases_reaching_AcceptedContract 0
+data_queries                  0
+
+product_semantic_observations NONE
+manager_cognition_observations NONE
+measurement_valid             false
+```
+
+Interpretation:
+- this run is **INVALID MEASUREMENT**, not 13 behavior failures;
+- provider unavailability must not become `accepted_contract=false` product safety failure;
+- no Manager/product patch is authorized from this run;
+- repair scope is limited to live evaluator/workflow/contract tests + documentation;
+- same frozen 13-case corpus must be reused after provider preflight is GREEN.
+
+Immediate order:
+`measurement validity → one-call provider preflight → sealed Sol/Luna/Sol topology → provider-free harness contract → wait for usable provider quota → rerun same corpus`.
+
+---
+
+## 2026-09-23 — DAY7 DETERMINISTIC CAPABILITY CHECKPOINT GREEN
+
+```text
+product_sha        3f36dc4fbad20e59c345a4558e4624e09fe4cf64
+focused_workflow   35816418192
+result             GREEN
+```
+
+Deterministic Day7 capability state is now closed for the currently governed surface.
+
+Executable/governed and GREEN:
+- QUERY
+- BREAKDOWN
+- COMPARE
+- RANK
+- RELATIONSHIP
+- multi-obligation seed set
+- adaptive two-Wren loop
+- fanout/idempotency/cancel/deadline/principal/grain/relationship safety
+
+Primitive-only, provider-free GREEN but **not Manager-executable yet**:
+- TREND transform (`stats.trend`) — ordered-series query representation remains PRIMITIVE_GAP
+- CONTRIBUTION transform — accepted capability/materialization seam remains open
+- PEER_COMPARE transform — governed peer-universe contract remains PRIMITIVE_GAP
+
+Next order:
+```text
+workers=1 focused LIVE SOL
+→ 10–15 high-information cases
+→ only declared executable families in product-quality scoring
+→ derived primitive cases may be adapter-only diagnostics, not fake Manager coverage
+→ then FREE_COGNITION vs GOVERNED_ORCHESTRATION shadow ablation
+```
+
+No DEV80. No Day8.
+
+---
+
+## 2026-09-23 — DAY7 TOOL-FAMILY PRIMITIVE AUDIT
+
+Reference product checkpoint before this block:
+
+```text
+a7303dec8a83bbb11a1d40c992da75f88444858c
+v2-day7-focused 35789901494 = GREEN
+```
+
+Audit authority:
+`DIMA_CORRECTNESS_HARVEST_AND_ABLATION_PROTOCOL.md §7`.
+
+Disposition:
+
+```text
+TREND
+  pure primitive          SAFE_PRIMITIVE_FOUND  -> app.stats.trend
+  V2 ordered-series query PRIMITIVE_GAP
+  reason                  AnalyticsIR has period/comparison authority but no governed
+                          time-granularity / ordered time-series representation
+  legacy yoy.compute      REJECT_LEGACY_PATH
+
+CONTRIBUTION
+  pure primitive          SAFE_PRIMITIVE_FOUND  -> contribution.contributions
+  optional PVM math       SAFE_PRIMITIVE_FOUND  -> contribution.pvm with explicit metadata
+  V2 legacy research      REJECT_LEGACY_PATH    -> arastir/decompose/pvm_report query plumbing
+  semantic execution      NOT DECLARED YET
+  reason                  no separate accepted CONTRIBUTION capability/task materialization
+                          contract exists; enum presence is not authority
+
+PEER_COMPARE
+  pure primitive          SAFE_PRIMITIVE_FOUND  -> ilkeller.hesapla
+  automatic peer set      PRIMITIVE_GAP
+  legacy peer query scan  REJECT_LEGACY_PATH    -> contribution._akran_kiyasi
+  semantic execution      NOT DECLARED YET
+  reason                  peer universe/target must be governed upstream; no accepted
+                          peer-definition contract exists
+```
+
+Implementation allowed by the audit:
+- backward-compatible derived Evidence lineage,
+- zero-query deterministic transform adapter,
+- provider-free transform proofs.
+
+Implementation explicitly NOT authorized:
+- new AnalyticsIR time-granularity contract merely to enable TREND,
+- new CONTRIBUTION/PEER_COMPARE ManagerCapabilityKey merely to tick enum coverage,
+- legacy `yoy.compute` / `contribution.arastir` / drill CubeQuery execution as V2 authority,
+- automatic peer discovery,
+- causal wording from contribution.
+
+Current code commits in this block:
+- `1c803671...` primitive audit + harvest register,
+- `4726237c...` derived Evidence lineage shell,
+- `363fae8a...` zero-query derived transform service,
+- `84ab9d75...` provider-free family proof,
+- `3f36dc4f...` focused CI gate wiring.
+
+Status is **PROVIDER-FREE PRIMITIVES GREEN / EXECUTION GAPS EXPLICIT**.
+
+Focused proof:
+
+```text
+product SHA      3f36dc4fbad20e59c345a4558e4624e09fe4cf64
+workflow run     35816418192
+v2-day7-focused  GREEN
+derived primitive proof GREEN
+all prior Day7 regression gates GREEN
+```
+
+This GREEN proves:
+- backward-compatible derived Evidence lineage is valid,
+- TREND/CONTRIBUTION/PEER_COMPARE pure transforms fail closed on missing invariants,
+- zero-query transforms preserve parent QueryContract lineage,
+- no existing Day7 execution/trust-plane regression was introduced.
+
+It does **NOT** prove Manager-loop executability for the three derived families.
+Those remain gated by the explicit upstream gaps recorded above. Do not mark them
+executable until a governed input/materialization contract exists.
+
+---
+
+# DIMA V2 — GELİŞTİRME DURUMU
+
+**Branch:** `feat/ask-v2-mvp`  
+**Başlangıç tabanı:** `wren-bağımsız@869280db316d5bf3f76d3253b8b80e5609a000b9`  
+**Başlangıç tarihi:** 20 Eylül 2026  
+**Durum:** **DAY 6.5 CLOSED — D65-SI SEALED; PROVIDER TOPOLOGY SEALED; M0E-DEEP-DELTA SEALED; X0-BRIDGE SUCCESSFUL NEGATIVE; WREN PRIMARY; NEXT=P10/DAY7; DEV80/50/50 FORBIDDEN**  
+**Kod fazı:** Final Day6.5 product checkpoint `dd5c16bbe444b6d9183faea9e9937be11260f394`. D65-SI FINAL GREEN/SEALED; engineering provider topology `Semantic=Luna / Temporal=Sol / Research=Sol`; M0E-DEEP-DELTA FINAL GREEN/SEALED. Bridge preflight CI `35761526816=SUCCESS` produced terminal `HEAVY_SEMANTIC_DUPLICATION`: 7/8 representative families thin/lossless, but computed semi-additive `cari.bakiye = SUM(borc - alacak)` requires metric-formula + grain/additivity reconstruction. Therefore `Metabase structured execution = REJECTED CURRENT RELEASE`, `X0-REST = NOT RUN / NOT REQUIRED`, `Wren semantics + analytical execution = PRIMARY`, Metabase production runtime dependency OFF. Day6.5 is CLOSED. Next canonical ticket = P10 / DAY7 Result-Aware Research Loop. `/ask-v2` remains OFF; front-door ownership stays Day10. DEV80/Validation50/Hidden50 remain end-only and forbidden now.  
+
+---
+
+## 0. OTORİTE HARİTASI
+
+### Aktif ve mühürlü — DEĞİŞTİRME
+
+1. `DIMA_NIHAI_UYGULAMA_YOL_HARITASI.md`
+   - uygulama sırası / P fazları / exit gate authority.
+2. `DIMA_NIHAI_DENETIM_VE_MIMARI_RAPORU.md`
+   - hedef mimari / kök neden / R bölümleri authority.
+
+Bu iki belge branch'e kullanıcı tarafından verilen nihai sürümlerden **birebir** kopyalanmıştır.
+Geliştirme ilerlemesi bu dosyalara işlenmez.
+
+### Yaşayan belgeler
+
+- `DIMA_V2_GELISTIRME_DURUM.md` — bu dosya; tek “nerede kaldık?” kaynağı.
+- `DIMA_DAY6_5_FINAL_CLOSURE_AND_DAY7_HANDOFF.md` — **CURRENT single Day6.5→Day7 continuation authority**.
+- `DIMA_RELEASE_FINAL_INTEGRATED_GATE.md` — **CURRENT release-level final freeze / DEV80 / Validation50 / Hidden50 timing authority**.
+- `DIMA_DAY6_5_ENGINEERING_CLOSURE_PROTOCOL.md` — **HISTORICAL Day6.5 engineering protocol**.
+- `DIMA_DAY6_5_RUNTIME_KERNEL_AND_SUBSTRATE_DECISION.md` — **HISTORICAL Day6.5 runtime/substrate decision process**.
+- `DIMA_DAY6_5_PREFREEZE_DECISION_GATE_J1_M0_X0.md` — **HISTORICAL resolved J1/M0/X0 decision gate**.
+- `DIMA_DAY6_5_J1_BENCHMARK_CONTRACT.md` — J1S/J1T corrected frozen lab benchmark contract.
+- `DIMA_DAY6_5_J1B_REAL_FLOW_RECEIPT.md` — J1B real-flow evidence/RED receipt.
+- `DIMA_DAY6_5_PROVIDER_TOPOLOGY_ENGINEERING_RECEIPT.md` — **chosen P0=0 Day6.5 engineering model topology evidence**.
+- `DIMA_DAY6_5_POST_J1B_LUNA_M0E_HANDOFF.md` — **HISTORICAL / SUPERSEDED provider handoff**.
+- `DIMA_DAY6_5_M0E_CAPABILITY_EXHAUSTION_BUILD_VS_BUY.md` — Metabase exhaustion/build-vs-buy contract.
+- `DIMA_DAY6_5_M0E_EXHAUSTION_RECEIPT.md` — **HISTORICAL M0E-v1 baseline receipt**.
+- `DIMA_DAY6_5_STANDARD_INTEGRATION_CLOSURE.md` — **D65-SI authority; FINAL GREEN / SEALED**.
+- `DIMA_DAY6_5_SI_FINAL_SEAL.md` — **final SI evidence + causal chain + anti-patch seal**.
+- `DIMA_FRONTDOOR_OWNERSHIP_CLOSURE.md` — **Day10 release blocker for authoritative /ask-v2 ownership**.
+- `DIMA_DAY6_5_X0_BRIDGE_PREFLIGHT.md` — **FINAL successful-negative bridge decision; X0 runtime not required**.
+- `DIMA_DAY6_5_M0E_DEEP_DELTA_CONTRACT.md` — **SEALED Day6.5 source/classification contract**.
+- `DIMA_DAY6_5_M0E_DEEP_DELTA_RECEIPT.md` — **FINAL GREEN / SEALED deep-delta evidence receipt**.
+- `DIMA_DAY6_5_POST_ANALYST_RECONCILED_HANDOFF.md` — **HISTORICAL / SUPERSEDED pre-closure handoff**.
+- `DIMA_DAY6_5_METABASE_ADOPTION_MATRIX.md` — D65-M0 adoption-audit working matrix.
+- `DIMA_DAY6_5_METABASE_DEPLOYMENT_TOPOLOGY_DECISION.md` — Metabase Cloud/self-host/bundled-service/source-port deployment decision gate.
+- `../../MIMARI.md` — mevcut sistem gerçekleri + V2 authority overlay.
+- `../../AGENTS.md` — V2 geliştirici/ajan çalışma sözleşmesi.
+- `../../CLAUDE.md` — repo kuralları; V2 branch override üstte olmalıdır.
+
+---
+
+### Historical sequence precedence rule
+
+Bu living status eski commit/run kararlarını audit amacıyla silmez.
+Eski günlük bölümlerinde görülen `Day6.5 freeze → DEV80`, `DEV80 → D65-X`,
+`one DEV80 per candidate` gibi ifadeler **historical record** kabul edilir.
+
+Current timing/continuation authority yalnız:
+1. `DIMA_DAY6_5_FINAL_CLOSURE_AND_DAY7_HANDOFF.md` — current phase / Day7 continuation,
+2. `DIMA_RELEASE_FINAL_INTEGRATED_GATE.md` — final release freeze/80/50/50 timing.
+
+Older J1/M0/SI/bridge gates are resolved historical evidence. Çelişkide bu iki current authority üstün gelir.
+
+---
+
+### Historical snapshot note — 0A–0J
+
+Sections 0A–0J below are retained as chronological audit snapshots. Their internal `CURRENT/OPEN` wording is historical and cannot override §0K or the final Day6.5→Day7 handoff.
+
+## 0A. HISTORICAL PRE-RUN RECEIPT — 2026-09-22
+
+```text
+entry checkpoint                f2b246a7f186705f8ddd98a61e60d950f606d326
+J1 freeze                       d65-j1-freeze-v2
+J1S blob                        0dd53d5b1bb2ac39ba35f2c17c870c45c249d686 (UNCHANGED)
+J1T blob                        d18db04d26da1059e4ebb47d058f305e2e5a5bfb (UNCHANGED)
+corrected prep commit           732741be94ea7d5a618e5d566730875877d5fa59
+provider-free corrected run     35705204058 = 6/6 PASS
+wrong-topology run              35704627396 = INVALID AUTHORITY
+product semantic code touch     0
+product temporal code touch     0
+authority code touch            0
+```
+
+Current required order:
+
+```text
+corrected primary transport smoke
+→ corrected J1 full evidence
+→ J1 decision gate
+→ if Jev promising: STOP / consult before J1B or topology change
+→ else current topology retained
+→ D65-SI Standard Integration Closure
+→ real Standard Wren vertical
+→ X0
+→ if X0 promising: STOP / consult before full D65-X
+```
+
+J1 evidence is split:
+- J1S model-needed score vs deterministic/sensitive/retrieval controls;
+- J1T-CHOICE vs J1T-CONTRACT-FIDELITY.
+Jev native Decisions has no dynamic integer output primitive; dynamic `n` /
+`implicit_base_n` is recorded as `TEMPORAL_INTEGRATION_LIMITATION`, not hidden by
+case-enumeration/prompt hacks.
+
+---
+
+## 0C. TERRA CONDITIONAL CLOSED / J1B OPEN
+
+```text
+Terra valid run                  35710080143
+J1T choice                       34/34
+unsafe ambiguity                 0
+repeat/metamorphic               100% / 100%
+J1T exact typed contract         34/34
+invalid typed                    0
+provider failure                 0
+
+J1B semantic candidate           typesafe/jev-1.13
+J1B temporal candidate           openai/gpt-5.6-terra
+production seal                  NO
+fallback/cascade/threshold       NONE
+```
+
+Current immediate sequence:
+
+```text
+D65-J1B narrow provider-contract split
+→ provider-free P0
+→ semantic ambiguity failure-family
+→ temporal typed-contract family
+→ metamorphic
+→ workers=1 real-LLM focused
+→ small representative canary
+→ if GREEN: D65-SI
+```
+
+---
+
+## 0D. J1B REAL-FLOW RED — CONSULTATION
+
+```text
+run                          35713785149
+tested SHA                   09c9128bd385a83c099b18855636b703d73bec48
+fresh corpus                 d65-j1b-semantic-family-v1-frozen
+semantic provider            typesafe/jev-1.13
+temporal provider            openai/gpt-5.6-terra
+workers                      1
+fallback/cascade/threshold   NONE
+
+Jev semantic                 12/20
+silent semantic wrong        8   STOP
+unsafe ambiguity auto-pick   8   STOP
+candidate escape             0
+cross-tenant leak            0
+provider failure             0
+
+Terra temporal               6/8
+temporal wrong               2
+provider failure             0
+```
+
+Mandatory consultation gate is active.
+D65-SI, real Standard Wren sentinel and X0 execution may not start until the J1B semantic /
+temporal provider decision is explicitly resolved.
+
+---
+
+## 0E. POST-J1B CONSULTATION RESOLVED — LUNA + M0E
+
+Binding decision:
+
+```text
+Jev universal provider         = REJECT
+Jev temporal provider          = REJECT
+Jev semantic provider AS-IS    = REJECT
+Jev calibration/verifier       = DEFER / POST-MVP
+
+next semantic control          = Luna / same frozen 20
+next temporal control          = Luna / same frozen 8
+role-specific fallback         = Sol REFERENCE_CEILING only if Luna role fails
+Gemini automatic rerun         = NO
+Terra retuning                 = NO
+threshold/fallback/cascade     = NONE
+```
+
+Acceptance for chosen engineering provider topology:
+
+```text
+silent_semantic_wrong       = 0
+unsafe_ambiguity_auto_pick  = 0
+candidate_escape            = 0
+cross_tenant_leak           = 0
+provider_failure            = 0
+real_flow_temporal_wrong    = 0
+invalid_typed_contract      = 0
+```
+
+Parallel work:
+`D65-M0E capability exhaustion + build-vs-buy classification`.
+
+Sequence:
+```text
+Luna frozen controls
+→ if needed failed-role Sol ceiling
+→ provider topology P0=0
++
+M0E
+→ D65-SI
+→ real Standard Wren sentinel
+→ M0E final cross-check
+→ X0 residual-value/runtime-necessity
+```
+
+Wren semantic backbone:
+`RETAIN by default`; removal is a separate consultation.
+
+---
+
+## 0F. LUNA SAME-FROZEN CONTROL — SEMANTIC GREEN / TEMPORAL A-B
+
+```text
+run                         35716056419
+tested SHA                  c256ebfda765ac35f1d3b51f59d53d1018dd695e
+frozen corpus blob          cc68f87271dcaada1443d2cf9e48024b85bff9f3
+provider-free               31/31 PASS
+
+Luna semantic               20/20 GREEN
+silent semantic wrong       0
+unsafe ambiguity pick       0
+candidate escape            0
+cross-tenant leak           0
+
+Luna temporal               6/8 RED
+invalid typed               0
+provider failure            0
+failed family               previous-period comparison with separately bound base period
+```
+
+Terra failed the same two temporal scenarios. Therefore:
+```text
+semantic engineering candidate = Luna
+temporal owner classification  = pending exact-same-SHA Sol ceiling
+D65-SI                         = BLOCKED
+```
+
+---
+
+## 0G. PROVIDER TOPOLOGY P0 GREEN
+
+```text
+Luna semantic run             35716056419 = 20/20 P0=0
+Sol temporal exact-SHA run    35716502261 = 8/8 P0=0
+exact tested backend SHA      c256ebfda765ac35f1d3b51f59d53d1018dd695e
+
+SEMANTIC_LINKER               Luna
+TEMPORAL_NORMALIZER           Sol
+RESEARCH_MANAGER              Sol
+
+BindingGate                   unchanged
+TemporalBindingEngine         unchanged
+fallback/cascade/threshold    none
+production activation         NO
+```
+
+Provider topology P0 gate is closed. Current active blocker before D65-SI:
+`D65-M0E capability exhaustion/build-vs-buy completion`.
+
+---
+
+## 0H. M0E GREEN — D65-SI ENTRY OPEN
+
+```text
+provider topology P0       GREEN
+M0E capability exhaustion  GREEN
+Dima-relevant unclassified 0
+Wren semantic default      RETAIN
+Metabase production dep    OFF
+```
+
+Current next ticket:
+`D65-SI STANDARD INTEGRATION CLOSURE`.
+
+X0 remains blocked until:
+`D65-SI GREEN → real Standard Wren sentinel GREEN → M0E final cross-check`.
+
+---
+
+## 0I. POST-ANALYST RECONCILIATION — CURRENT AUTHORITY
+
+Current single handoff:
+`DIMA_DAY6_5_POST_ANALYST_RECONCILED_HANDOFF.md`.
+
+```text
+HEAD                         3774484167f1056d89da0e0609246fb4a05057ec
+SI focused                   35718675540 = 25/25 PASS
+real Wren sentinels          35718883950 = 2/2 PASS
+
+SI implementation            PARTIAL GREEN
+SI final composition         OPEN
+M0E-v1                       VALID BASELINE / PRESERVED
+M0E-DEEP-DELTA               OPEN
+X0-BRIDGE-PREFLIGHT          OPEN / BLOCKS X0
+X0 execution                 BLOCKED
+production /ask-v2           OFF
+DEV80                        FORBIDDEN
+```
+
+Immediate order:
+`semantic-surface P0 → shared authority arbiter → Research temporal split → focused proofs`.
+
+Parallel:
+`M0E-DEEP-DELTA`.
+
+Then:
+`workers=1 full-live Standard composition → SI FINAL + M0E delta FINAL → bridge preflight`.
+
+---
+
+## 0J. FULL-LIVE STANDARD RED — EXACT ROOT SUBCAUSE PROVEN
+
+```text
+failed full-live run       35724830736
+same-product diagnostic    35728413368
+
+surface                    "tahsil edilmemiş cari bakiye"
+metric catalog             136
+exact candidates           0
+linker bound               48
+too_broad                  true
+semantic provider called   false
+selection                  CANDIDATE_SET_TOO_BROAD
+```
+
+Classification:
+`CONTRACT/ARCHITECTURE → SEMANTIC_DISCOVERY_BREADTH`.
+
+No context-loss repair is authorized for this case.
+Next:
+`generic bounded retrieval → family/metamorphic provider-free proof → same frozen 6-case live rerun`.
+
+---
+
+## 0J. M0E-DEEP-DELTA FINAL GREEN — BRIDGE PREFLIGHT ACTIVE
+
+```text
+D65-SI                          FINAL GREEN / SEALED
+M0E-DEEP-DELTA                 FINAL GREEN / SEALED
+delta mechanisms               25/25
+exit counters                  ALL ZERO
+
+current work                   D65-X0-BRIDGE-PREFLIGHT
+Metabase runtime               OFF
+Wren semantic backbone         RETAIN
+production /ask-v2             OFF
+DEV80                          FORBIDDEN
+```
+
+Preflight question:
+Can accepted Dima/Wren semantic intent become Metabase structured-query semantics through a
+thin deterministic translation without a second semantic truth?
+
+Candidate seams:
+`A StandardProjection+handles | B resolved AnalyticsIR | C Wren-specific planned representation`.
+
+Do not start X0-REST until bridge preflight is GREEN.
+
+---
+
+## 0K. DAY6.5 FINAL CLOSURE — CURRENT AUTHORITY
+
+Single continuation authority:
+`DIMA_DAY6_5_FINAL_CLOSURE_AND_DAY7_HANDOFF.md`.
+
+```text
+DAY 6.5                         CLOSED
+
+D65-SI                         FINAL GREEN / SEALED
+provider topology              SEALED ENGINEERING TOPOLOGY
+  Semantic                     Luna
+  Temporal                     Sol
+  Research                     Sol
+
+M0E-DEEP-DELTA                 FINAL GREEN / SEALED
+
+X0-BRIDGE-PREFLIGHT            FINAL / SUCCESSFUL NEGATIVE DECISION
+terminal                       HEAVY_SEMANTIC_DUPLICATION
+
+Metabase structured execution  REJECTED CURRENT RELEASE
+X0-REST                        NOT RUN / NOT REQUIRED
+Metabase production runtime    OFF
+
+Wren semantic backbone         PRIMARY / RETAINED
+Wren analytical execution      PRIMARY
+
+production /ask-v2             OFF
+next canonical ticket          P10 / DAY7 RESULT-AWARE RESEARCH LOOP
+
+DEV80 / Validation50 / Hidden50 FORBIDDEN
+```
+
+The Metabase rejection is scoped to:
+`retained Wren semantic truth → thin Metabase structured execution`
+for the current release. Workspace/product/reference tracks remain open.
+
+---
+## 1. NORTH STAR — TEK CÜMLE
+
+Eski `/ask` karar ağacını temizlemek değil; yanında izole, conversation-first,
+single-semantic-owner bir V2 çekirdek kurmak ve çalışan auth/tenant/Wren/semantic/evidence
+altyapısını typed adapter'larla reuse etmek.
+
+---
+
+## 2. PRE-DAY0 HAZIRLIK CHECKLIST
+
+- [x] Yeni branch açıldı: `feat/ask-v2-mvp`.
+- [x] Branch tam olarak denetlenen `869280d...` HEAD'inden oluşturuldu.
+- [x] Nihai uygulama yol haritası aktif repo belgesi olarak eklendi.
+- [x] Nihai mimari/denetim raporu aktif repo belgesi olarak eklendi.
+- [x] Belgelerin canonical dosya adları kendi iç referanslarıyla uyumlu tutuldu.
+- [x] `backend/AGENTS.md` V2 çalışma sözleşmesi eklendi.
+- [x] `backend/CLAUDE.md` V2 aktif-operasyon override ile güncellendi.
+- [x] `backend/MIMARI.md` V2 authority overlay ile güncellendi.
+- [x] Branch diff yalnız hazırlık/authority belgelerini içeriyor; executable V2 kod değişikliği yok.
+- [x] Mühürlü iki belgenin kaynakla içerik eşitliği doğrulandı (4744 / 6379 satır; içerik birebir).
+
+### Erken başlanıp geri alınan iş
+
+İlk branch açılışında `app/v2/__init__.py` ve `app/v2/models.py` iskeletleri erken
+oluşturuldu. Kullanıcı kararıyla Day 0 başlamadan önce geri silindi.
+
+**Neden:** branch/platform hazırlığı ile implementation başlangıcının git tarihinde ayrılması.
+
+**Sonuç:** Day 0 temiz sınırdan başlayacak; bu iki dosyanın tasarımı authority sayılmaz.
+
+---
+
+## 3. ŞU ANKİ BORÇ DEFTERİ
+
+### V2-D001 — Eski MIMARI/CLAUDE operasyon metni V2'yi henüz işaret etmiyor — **KAPANDI**
+
+- Kaynak: P1 / R0.2
+- Risk: yeni geliştirici eski “aktif operasyon”a gidebilir.
+- Blocker: **CLOSED**
+- Kapanış kanıtı: root `AGENTS.md` + `backend/AGENTS.md` + `CLAUDE.md` V2 override + `MIMARI.md` V2 authority overlay.
+- Hedef: PRE-DAY0 — tamamlandı.
+
+### V2-D002 — V2 executable code henüz yok
+
+- Kaynak: P2
+- Risk: yok; bilinçli başlangıç durumu.
+- Blocker: NO
+- Kapanış: Day 0 V2 island shell boot.
+- Hedef: Day 0.
+
+### V2-D003 — Önceki /ask denetim P0'ları legacy açık kaldığı sürece yaşamaya devam ediyor
+
+Bilinen sınıflar:
+
+- post-seal mutation / persisted-vs-HTTP divergence riski,
+- parallel plan/request-state race,
+- `None` ile failure/not-applicable semantiklerinin karışması,
+- router ↔ plan reverse dependency,
+- sync dependency → ContextVar principal propagation riski.
+
+- Kaynak: R2/R3/R3A + önceki repo denetimi.
+- Risk: V2 pilot öncesinde legacy trafik sürerken yalnız legacy yolu etkileyebilir.
+- Blocker: **Day 0 için NO**, pilot/cutover değerlendirmesinde YES olabilir.
+- Kapanış: V2'nin bu sınıfları yapısal olarak taşımadığının gate'leri; gerekirse legacy'ye
+  küçük güvenlik/P0 patch'i. Legacy refactor kampanyası YOK.
+
+---
+
+## 4. TEST / HIZ POLİTİKASI
+
+Geliştirme sırasında büyük suite her adımda koşulmaz.
+
+- Unit/contract testi: yalnız yeni boundary veya P0 invariant için.
+- Daily demo: aktif günün canonical user scenario'su.
+- Toplu gate: milestone/demet sonunda.
+- Nightly ağır suite: CI.
+- Refactor/polish, çalışan dikey dilimi geciktiremez.
+
+Bu politika hem roadmap P0A'nın “en hızlı doğrulanabilir kullanıcı değeri” ilkesine hem
+repo `CLAUDE.md` içindeki toplu test kararına uygundur.
+
+---
+
+## 5. DAY 0 — SIRADAKİ TICKET (HENÜZ BAŞLAMADI)
+
+**Roadmap:** P1 + P1B + P2 + P2B  
+**Rapor:** R0–R6; özellikle R2, R3, R3A, R4, R5, R6  
+**Amaç:** V2 island'ın boot ettiğini, doğru tenant/principal/Wren runtime'a bağlandığını ve
+legacy semantic hot path'e girmediğini kanıtlamak.
+
+### Başlamadan önce okunacak
+
+- Roadmap: P0–P2B
+- Report: R0–R6
+- `MIMARI.md` V2 overlay + auth/Wren/current-runtime ilgili bölümleri
+- `app/main.py`
+- `app/company_registry.py`
+- `app/wren_service.py`
+- `app/auth/dependencies.py`
+- `app/schemas.py`
+
+### Beklenen Day 0 touch
+
+Yeni:
+
+- `app/v2/__init__.py`
+- minimal `app/v2/models.py` veya runtime contract
+- `app/v2/orchestrator.py`
+- `app/routers/ask_v2.py`
+
+Adapter:
+
+- `app/main.py`
+- `app/config.py` yalnız rollback/feature flag gerçekten gerekiyorsa
+
+### Day 0 NO-TOUCH
+
+- `app/routers/ask.py`
+- `app/cube_router.py`
+- `app/uyum.py`
+- `app/plan_tuketici.py`
+- `app/plan_semasi.py`
+
+### Day 0 canonical scenario
+
+`/ask-v2` protected route boot eder → principal/tenant çözülür → tenant-bound Wren schema/runtime
+alınır → V2 kendi typed shell cevabını verir → legacy `/ask` semantic decision graph çağrılmaz.
+
+### Day 0 exit
+
+- legacy semantic hot-path import = 0
+- demo tenant Wren smoke = pass
+- feature-flag rollback = pass
+- legacy behavior değişikliği = 0 P0
+
+---
+
+## 5A. DAY 0 COMPLETE — P3 SOURCE LOCK + BASELINE
+
+**ROADMAP:** P0, P0A, P1/P1A/P1B, P2/P2B, **P3**  
+**REPORT DAYANAK:** R0–R6; özellikle R2, R3/R3A, R4, R5/R5.6 ve immutable runtime ilkesi  
+**NEW OWNER:** V2 bootstrap/runtime boundary + Day0 baseline artifact  
+**OLD OWNER:** legacy `/ask` yalnız baseline ölçümünün deneği; V2 authority değildir.
+
+### AMAÇ
+
+Yeni beynin başlangıç noktasını ölçülebilir hâle getir ve aynı repo içinde legacy semantic
+karar ağacına girmeyen, rollback edilebilir `/ask-v2` adasını boot ettir.
+
+### USER SCENARIO / ACCEPTANCE
+
+1. Basit KPI, top-N, comparison, ambiguity, follow-up, repair, social, explain-existing ve
+   kompleks multi-domain ailelerinden en az 30 legacy vaka source/correctness/failure-stage/
+   latency ile dondurulabilir bir baseline koşumuna girer.
+2. Feature flag açıkken kimlikli kullanıcı `/ask-v2` stub'ına gider; principal/tenant
+   çözülür; doğru tenant-bound Wren schema + mdl_version snapshot alınır; legacy semantic
+   router/planner çağrılmaz; query çalışmaz.
+3. Feature flag kapalıyken V2 görünmez/404; legacy davranış değişmez.
+
+### INPUT / OUTPUT
+
+**Input:** authenticated HTTP request + explicit `Principal` + tenant-bound `WrenService`.  
+**Output Day0:** typed `TenantAnalyticsRuntimeV0` + V2 bootstrap response; query yok.
+
+### FILES TO TOUCH
+
+Yeni:
+- `app/v2/__init__.py`
+- `app/v2/models.py`
+- `app/v2/orchestrator.py`
+- `app/routers/ask_v2.py`
+- `lab/v2_day0_baseline.py`
+- `eval/v2_day0_cases.yaml`
+- gerekli küçük V2 architecture/bootstrap testleri
+
+Adapter:
+- `app/main.py`
+- `app/config.py`
+
+### FILES NOT TO TOUCH
+
+- `app/routers/ask.py`
+- `app/cube_router.py`
+- `app/uyum.py`
+- `app/plan_tuketici.py`
+- `app/plan_semasi.py`
+- `app/wren_service.py` (Day0 için adapter ihtiyacı yoksa)
+
+### TEST / DEMO — HIZ POLİTİKASI
+
+Büyük suite yok. Yalnız:
+- architecture import-ban testi,
+- flag off/on bootstrap testi,
+- explicit runtime identity/snapshot testi,
+- baseline runner'ın case-selection/record schema testi.
+
+Baseline koşumu ayrı artefakt üretir; ağır full gate Day0 demetinin sonuna bırakılır.
+
+### KPI / EXIT
+
+- representative baseline case >= 30
+- known silent-wrong family coverage = 100% **envanterde tanımlanan set için**
+- every baseline record failure_stage field = 100%
+- `/ask-v2` stub boot = pass
+- legacy semantic hot-path import = 0
+- demo tenant Wren schema/mdl smoke = pass
+- feature-flag rollback = pass
+- legacy `/ask` code change = 0
+
+### STOP-THE-LINE
+
+- V2 bootstrap legacy semantic owner import ederse,
+- principal/runtime identity implicit ContextVar'a bırakılırsa,
+- Day0 stub query/LLM çalıştırmaya başlarsa,
+- baseline vakaları mevcut corpus yerine uydurulursa,
+- source lock sırasında legacy refactor açılırsa.
+
+### DAY 0 NOTU
+
+İlk PRE-DAY0 notundaki “Day0 sadece stub” kapsamı **P3 yeniden okununca düzeltildi**.
+Roadmap açıkça Source Lock + Baseline ister. Bu düzeltme plan sapması değil, plan authority'sine
+geri dönüştür.
+
+
+## 6. İLERLEME GÜNLÜĞÜ
+
+### 2026-09-20 — PRE-DAY0 / branch bootstrap
+
+**Yapılan**
+- `feat/ask-v2-mvp` açıldı.
+- Nihai roadmap ve rapor branch'e aktif mühürlü belgeler olarak alındı.
+- Her iki mühürlü belgenin kaynak içerikle birebir eşitliği doğrulandı.
+- Root `AGENTS.md` ve `backend/AGENTS.md` kuruldu.
+- `backend/CLAUDE.md` V2 aktif-operasyon override aldı.
+- `backend/MIMARI.md` V2 authority overlay aldı; eski current-state gövdesi korunarak bırakıldı.
+- Premature V2 kod iskeleti geri alındı; Day 0 sınırı temizlendi.
+- Branch diff'i yalnız hazırlık/authority belgelerinden oluşuyor; executable V2 kodu henüz yok.
+
+**Karar**
+- Geliştirme rapor + roadmap çapraz okunarak yapılacak.
+- İlerleme mühürlü belgelere değil yalnız bu durum dosyasına yazılacak.
+- Büyük testler her küçük değişiklikte değil milestone/demet sonunda çalışacak.
+
+**Sıradaki**
+- **Day 0 ticket'ını aç.**
+- P0–P2B ile R0–R6'yı tekrar aktif ticket bağlamında çapraz oku.
+- V2 island boot/runtime boundary'yi en küçük dikey dilimle uygula.
+- Day 0 bitene kadar TurnInterpreter/Resolver gibi Day 1+ capability'lere geçme.
+
+---
+
+## 7. DEĞİŞMEZ DEVİR FORMATI
+
+Bir sonraki geliştirici yalnız şu sırayla devam eder:
+
+1. Bu dosyada **Durum**, **Borç Defteri**, **Sıradaki Ticket** bölümlerini oku.
+2. Aktif ticket'ın roadmap P bölümünü oku.
+3. Roadmap'in atıf yaptığı report R bölümünü oku.
+4. Touch/no-touch listesini yaz.
+5. Kodla.
+6. Hedefli test/daily demo gerekiyorsa çalıştır.
+7. Bu dosyayı commit SHA, sonuç, borç ve sıradaki adımla güncelle.
+8. Ancak exit yeşilse sonraki ticket'a geç.
+
+
+### 2026-09-20 — DAY 0 / implementation batch 1
+
+**Roadmap/Report çaprazı**
+- P3 Source Lock + Baseline okundu.
+- P2/P2B isolation/touch-no-touch ile R2–R5 reuse-first sınırı çaprazlandı.
+- R3/R3A eski hata sınıfları için import-ban + explicit runtime + no-fallback/no-query Day0 sınırı seçildi.
+
+**Yapılan**
+- `app/v2/` greenfield package yeniden, bu kez Day0 kapsamıyla kuruldu.
+- `TenantAnalyticsRuntimeV0` yalnız principal/tenant + MDL/schema snapshot taşır; semantic yorum yok.
+- `POST /ask-v2` eklendi; `query:run` + `require_company` ile mevcut auth/tenant yatırımı reuse edildi.
+- `ask_v2_enabled=False` default-off rollback flag eklendi.
+- Stub yalnız Wren `schema()` + `mdl_version` okur; query/dry-plan/LLM/legacy semantic path yok.
+- 32 mevcut eval case + 5 mevcut experience scenario = 37 unit Day0 baseline manifesti kilitlendi.
+- Known silent-wrong envanteri ranking/period/comparison/typo/repair/follow-up/ambiguity aileleriyle manifestte coverage gate'e bağlandı.
+- `lab/v2_day0_baseline.py` mevcut `/ask` üzerinden outcome/source/correctness/failure_stage/latency kaydı üretecek şekilde eklendi.
+- `tests/test_v2_day0.py` yalnız hedefli Day0 gate'leri içeriyor.
+- Bir kerelik `v2-day0-baseline` workflow'u draft PR açılışında baseline JSON artefaktı üretecek; sonraki pushlarda otomatik tekrar etmeyecek.
+
+**Legacy no-touch doğrulaması**
+- `app/routers/ask.py`: değişmedi.
+- `app/cube_router.py`: değişmedi.
+- `app/uyum.py`: değişmedi.
+- `app/plan_tuketici.py`: değişmedi.
+- `app/plan_semasi.py`: değişmedi.
+- `app/wren_service.py`: değişmedi.
+
+**Açık borç**
+
+### V2-D004 — Live-provider Day0 baseline yok
+- Kaynak: P3 baseline + P0A hız politikası.
+- Mevcut ölçüm: `rule_offline` reproducible before-picture.
+- Risk: Intent-LLM/Discovery canlı sağlayıcı davranışı Day0 artefaktında temsil edilmeyecek.
+- Blocker: **Day0/Core geliştirme için NO**; pilot/default-ready öncesi YES.
+- Neden şimdi değil: API/kota/belirlenimsizlik Day0 hızlı mimari kanıtını bloke etmemeli; mevcut repo da live ölçümü faz-sonu sınıfında tutuyor.
+- Kapanış: gerçek sağlayıcıyla aynı source-locked manifest üzerinde ayrı ölçüm + provenance.
+- Hedef: pilot hardening.
+
+**Bekleyen ölçüm**
+- Draft PR aç → one-shot Day0 workflow.
+- Hedefli test + 37-unit baseline artefaktını oku.
+- Sonucu ve artefakt özeti bu dosyaya yaz.
+- Exit yeşilse Day0 kapat; Day1 TurnInterpreter ticket'ını ancak ondan sonra aç.
+
+
+### 2026-09-20 — DAY 0 / kapanış ölçümü
+
+**CI / ölçüm kanıtı**
+- Draft PR: **#1** — `feat/ask-v2-mvp → wren-bağımsız`.
+- Corrected Day0 workflow run: `35535503304`.
+- Focused Day0 gates: **PASS**.
+- Legacy baseline step: **PASS**.
+- Artifact upload: **PASS**.
+- Workflow artifact digest: `sha256:87dc5dd87c1bca8dd989a9b5a619f204ed413809aa0bf530ce97004a73e37556`.
+- Kalıcı repo baseline: `eval/v2_day0_baseline.json` @ `4b52cdb916016f13d3c59dcff703649c63ac6b30`.
+
+**Baseline sonucu**
+- selected units: **37**
+- produced records: **44**
+- correct records: **43**
+- baseline-observed non-green record: **1**
+- known silent-wrong inventory coverage: **100%**
+- execution mode: `rule_offline`
+- every record has `failure_stage`: **YES**
+
+**Tek non-green legacy kayıt**
+- unit: `experience:kiyas_turu`
+- akış: `bu yıl makine bazında oee → geçen yılla kıyasla → bunu analiz et`
+- sources: `cube → cube → cube`
+- failure stage: `experience_contract`
+- yeşil kontroller:
+  - süreklilik = true
+  - makbuz = true
+  - anlatı = true
+- non-green kontrol:
+  - `1·çapa: konuşma turu yeni SQL yazmaz = on_kosul_yok`
+
+Bu sonuç **V2 regresyonu değildir**; Day0 source-lock'un yakaladığı legacy before-picture'dır.
+Day0 gate'in amacı legacy'nin %100 yeşil olması değil, başlangıç gerçeğinin kaybolmadan
+dondurulmasıdır.
+
+### V2-D005 — legacy kıyas turunda çapa kontrolü ölçülemiyor
+
+- Kaynak: P3 baseline / `experience:kiyas_turu`.
+- Gözlem: comparison → “bunu analiz et” akışında mevcut legacy cevaplar `cube` yolunda;
+  experience suite'in “konuşma turu yeni SQL yazmaz” kontrolü `on_kosul_yok` üretiyor.
+- Sınıf: **baseline observation / measurement-contract gap**; henüz “ürün bug'ı” diye
+  yeniden sınıflandırılmadı.
+- Risk: yeni V2'nin RESULT_EXPLAIN / mevcut sonucu yorumlama turunda gereksiz query
+  çalıştırmasını engelleyen Day1–Day5 acceptance için güçlü sentinel.
+- Blocker: **Day0 için NO**.
+- Kapanış: V2 canonical thread'de “bunu analiz et/yorumla” için query=0 davranışı
+  TurnInterpreter + DialoguePolicy aşamalarında ölçülür; eski legacy dosyası bu uğurda
+  patch edilmez.
+- Hedef: Day1 classification contract + Day5 Core MVP.
+
+**Day 0 EXIT**
+- representative baseline >=30: **PASS (37)**
+- known silent-wrong inventory coverage: **PASS**
+- failure-stage kayıt disiplini: **PASS**
+- `/ask-v2` stub boot: **PASS**
+- explicit principal/tenant runtime: **PASS**
+- immutable request runtime snapshot: **PASS**
+- real demo Wren schema + MDL smoke: **PASS**
+- feature flag off rollback: **PASS**
+- V2 query/LLM invocation: **0**
+- legacy semantic hot-path import: **0**
+- legacy semantic owner dosyalarında değişiklik: **0**
+- request-level legacy fallback: **0**
+
+**Day 0 kapanış kararı**
+Day 0 tamamlandı. V2'nin Katman 0 / L0 sınırı kanıtlandı ve source-lock kalıcı olarak
+repoya alındı. Baseline workflow tekrar eden pushlarda çalışmayacak şekilde tekrar
+`opened + workflow_dispatch` moduna donduruldu.
+
+**Sıradaki**
+- Day1 başlamadan **roadmap P4 + rapor R7** okunacak.
+- Önce Day1 ticket contract'ı bu dosyaya yazılacak.
+- Day1 yalnız `ContextProviderV0 + TurnInterpreter + typed TurnInterpretation` kapsamına
+  girecek.
+- SemanticResolver/clarification Day2'ye, CubePlanner/query Day3'e bırakılacak.
+
+
+## 8. DAY 1 ACTIVE TICKET — P4 CONTEXTPROVIDER V0 + TURNINTERPRETER
+
+**AMAÇ**  
+Dima'nın ilk kez “hangi query?” yerine “kullanıcı bu turda ne yapıyor?” sorusunu tek
+language-owner üzerinden typed cevaplaması. Day 1 hiçbir analitik query çalıştırmaz.
+
+**USER SCENARIO**
+```text
+“bu ay ciro”
+“makine bazında OEE”
+“teşekkürler”
+“bunu yorumla”
+“hayır son üç ay”
+“siyah fire”
+```
+
+**ROADMAP**  
+P4 / P4.1 / P4.2 / P4.3.
+
+**REPORT DAYANAK**  
+R7; sınır için ayrıca R3/R3A + R6 Katman 1–2. Raw kullanıcı dili yalnız
+`TurnInterpreter` tarafından yorumlanır; canonical data model seçimi Resolver'a aittir.
+
+**NEW OWNER**
+- `ContextProviderV0` → prompt'a girecek bounded semantic context + `ContextVersionV0`.
+- `TurnInterpreter` → raw user message'in tek language owner'ı.
+- `TurnInterpretation` → Day1 typed output.
+
+**REUSE EDİLEN PRIMITIVE**
+- tenant-bound `WrenService.schema()` / `mdl_version`.
+- Day0 `TenantAnalyticsRuntimeV0`.
+- mevcut `app.state.llm` provider/failover/telemetry/kaset **transport yatırımı**.
+- auth/principal/company runtime.
+
+**LLM ADAPTER KARARI**
+Legacy `select_cube/refine_cube/takip_siniflandir` V2'ye çağrılmayacak. Bunlar eski
+semantic owner davranışı taşır. Mevcut provider sınıflarına yalnız semantik-agnostic
+`structured_text(system,user)` taşıma yüzeyi eklenecek; prompt, Pydantic schema,
+validation ve retry policy tamamen `v2/interpreter.py` sahibi olacak.
+
+**FILES TO TOUCH**
+- `app/v2/models.py`
+- `app/v2/context_provider.py` (new)
+- `app/v2/interpreter.py` (new)
+- `app/v2/orchestrator.py`
+- `app/routers/ask_v2.py`
+- `app/llm.py` — yalnız generic structured transport adapter
+- `tests/test_v2_day1.py` (new)
+- bu durum dosyası.
+
+**FILES NOT TO TOUCH**
+- `app/routers/ask.py`
+- `app/cube_router.py`
+- `app/uyum.py`
+- `app/plan_tuketici.py`
+- `app/plan_semasi.py`
+- `app/followup.py`
+- `app/intent_semasi.py`
+- semantic pack/MDL authoring dosyaları.
+
+**CONTEXT V0 CONTRACT**
+```text
+WrenService.schema()
+→ compact cube/metric/dimension/time/relationship metadata
+→ entity values EXCLUDED
+→ approved in-context business rules bounded + canonical hash
+→ ContextVersionV0 = sha256(
+     mdl_version
+     + compact_catalog_builder_version
+     + business_rules_hash
+     + prompt_context_policy_version
+   )
+```
+
+Canonical isimler prompt context'te görülebilir; **çıktıda canonical ref alanı yoktur**.
+Interpreter yalnız kullanıcı mesajından exact surface span'ler çıkarır. Canonical binding
+Day2 Resolver işidir.
+
+**TURN ACTS**
+```text
+ANALYTIC_NEW
+ANALYTIC_REFINE
+CLARIFICATION_ANSWER
+USER_REPAIR
+RESULT_EXPLAIN
+SOCIAL
+UNSUPPORTED
+```
+
+**RETRY / FAILURE POLICY**
+- normal: 1 structured LLM call, k=1.
+- yalnız JSON/schema format-invalid ise: en fazla 1 format-only retry.
+- semantic ambiguity retry: 0.
+- output'ta kullanıcı mesajında bulunmayan semantic/reference span: fail-closed,
+  semantic retry yok.
+- SQL/canonical id/physical table alanı model sözleşmesinde bulunmaz.
+- LLM unavailable: legacy fallback yok; explicit typed interpretation failure.
+
+**TARGETED TEST / DEMO**
+- ContextVersion determinism + business-rule hash.
+- compact context entity values içermez.
+- valid JSON = exactly 1 LLM call.
+- malformed JSON = exactly 1 format retry, sonra success/fail.
+- canonical-id hallucination/span invention = reject.
+- seven act family + six canonical Day1 phrases.
+- interpreter source içinde SQL/query/dry-plan/legacy semantic imports = 0.
+- `/ask-v2` Day1 response query_executed=false.
+
+**EXIT**
+- structured-output success after ≤1 format retry >=99% validation corpus.
+- turn_act_accuracy >=95% Day1 labeled corpus.
+- canonical-id/surface hallucination = 0 dedicated set.
+- SQL generation/execution in interpreter = 0.
+- raw question parser owner count = 1.
+- ContextVersionV0 non-null, deterministic and runtime-bound.
+
+**STOP-THE-LINE**
+- regex/keyword parser TurnInterpreter'ın ikinci sahibi olursa,
+- Resolver işi Day1'e çekilirse,
+- model canonical metric/dimension/entity ID seçerse,
+- `select_cube/refine_cube/followup` V2 hot path'e girerse,
+- query/SQL üretilirse,
+- entity values prompt'a topluca dökülürse,
+- malformed output legacy semantic path'e fallback ederse.
+
+
+
+### 2026-09-20 — DAY 1 / implementation batch 1
+
+**Roadmap/Report çaprazı**
+- P4/P4.1/P4.2/P4.3 yeniden okundu.
+- R7 tek structured language owner sözleşmesi aktif implementation authority olarak kullanıldı.
+- R3/R3A'daki “aynı raw soru birden fazla parser tarafından tekrar yorumlanıyor” kök
+  hata sınıfı için V2 hot path tek-owner tutuldu.
+- R6 Katman 1–2 sınırı korundu: Interpreter doğal dili anlar, canonical data model seçmez.
+
+**Yapılan**
+- `app.llm` üzerine semantic-agnostic `structured_text(system,user)` taşıma kabiliyeti
+  eklendi; mevcut provider/failover/telemetry/kaset korunuyor.
+- RuleBased/NoLlm provider'larda structured language fallback açıkça RED: regex/kural motoru
+  ikinci language owner olmayacak.
+- Day1 typed domain modelleri eklendi; canonical semantic ID alanı
+  `TurnInterpretation` sözleşmesinde bilinçli olarak YOK.
+- `ContextProviderV0` eklendi:
+  - tüm canonical cube/metric/dimension isimlerini korur,
+  - synonym/rule payload'ını bounded tutar,
+  - entity values'ı prompt context'e almaz,
+  - physical relationship condition'ı taşımaz,
+  - business-rule truncation olursa bunu açıkça işaretler,
+  - gerçek `ContextVersionV0` üretir.
+- `TurnInterpreter` eklendi:
+  - k=1,
+  - maksimum 1 format-only retry,
+  - semantic retry=0,
+  - span-grounding fail-closed,
+  - SQL/query/canonical binding=0.
+- `/ask-v2` Day1 path'i:
+  `runtime → context → interpreter`.
+  Resolver/planner/query/legacy fallback yok.
+- Day0 runtime/rollback testinin beklentisi Day1 route'a uyarlanırken Day0 değişmezleri korundu.
+- 28-case `eval/v2_day1_cases.yaml` labeled P4 corpus eklendi.
+- `lab/v2_day1_eval.py` gerçek configured provider ile:
+  structured success, act accuracy, surface-grounding violations ve call count ölçer.
+- `v2-day1-turn-interpreter.yml` yalnız Day0+Day1 focused tests + varsa live P4 eval için eklendi.
+
+**Commitler**
+- `3e720fa6f72125b4b465c902c827cfe0663ae003` — generic structured transport
+- `5d784fcacb1af665cef94a59f7de6af038cc5ec4` — typed Day1 contracts
+- `fe5ccae2f4f7a3fd62436254d06f5bfedfbc6735` — bounded-context loss visibility
+- `a6bf721e2295f26f94edf6c18d8aa6163cbf27da` / `efb1544110f166f8c782234a9d046a87de2f1075` — ContextProviderV0
+- `eb8d0cee10ba72392af749087fd0294b1e44988d` — TurnInterpreter
+- `79ef1c4f5769dfb4ef0e44f01ab27e31646f3c8b` / `446b39a71a5d2e7dda30a5a878aa98690f707762` — Day1 orchestration/router
+- `a013af3f6c77fe1437135aecbc0aea3d5a602bb1` — focused Day1 contracts
+- `eb257bbec7dd72d4f05cc8a6dd8f88e21c3f0e11` — Day0 invariant adaptation
+- `a97f59ed68e329fe72f018be0b87e23cfec47f24` — labeled Day1 corpus
+- `0aa8c71b035cde8c5bc7f8264c934e62e0ebfa8d` — real-provider evaluator
+- `586fe6807803958869ffab1c6ba95446612594bb` — focused Day1 CI
+
+**Şu anki gate durumu**
+- Structural/contract code: implementation complete, CI ölçümü bekleniyor.
+- P4 live KPI: **ölçülmeden PASS sayılmayacak**.
+- Live provider secret Actions ortamında yoksa bu açık bir measurement debt/blocker olarak
+  kaydedilecek; fake-output unit testleri `turn_act_accuracy` yerine sayılmayacak.
+
+
+
+### 2026-09-20 — DAY 1 / acceptance ara sonucu + CI borç temizliği
+
+**Focused contract evidence**
+- Run `35536670734`: **23/23 PASS** (20.20s).
+- Day0 runtime/rollback invariants + Day1 typed/context/interpreter contracts birlikte yeşil.
+- Bu koşu fake-output contract testidir; **turn_act_accuracy KPI'sı yerine sayılmıyor**.
+
+**Live P4 evidence**
+- Aynı run'da Actions ortamı kontrol edildi.
+- `DIMA_ANTHROPIC_API_KEY`: boş
+- `DIMA_GEMINI_API_KEY`: boş
+- `DIMA_GROQ_API_KEY`: boş
+- `DIMA_OPENROUTER_API_KEY`: boş
+- `DIMA_XAI_API_KEY`: boş
+- Sonuç: `live_provider_unavailable`.
+- Artifact digest: `sha256:df451c9b50f8e875f72782e8f1f4bf5b652eae40aa679330642bdbf9a25b4530`.
+
+### V2-D006 — /ask-v2 dark endpoint geçici API-only borcu
+
+- Kaynak: P2/P4 feature-flag dark development + iki mevcut orphan-endpoint gate.
+- Mevcut durum: `/ask-v2` Core MVP öncesi kullanıcı UI'ına bağlanmıyor.
+- Karar: endpoint silinmedi ve sahte frontend tüketicisi yazılmadı; iki gate'te çağıranı
+  “developer acceptance” olarak gerekçeli API-only/meşru yetim ilan edildi.
+- Borç tavanı geçici `8 → 9`; bu artış gizlenmedi.
+- Blocker: Day1 için **NO**.
+- Kapanış: frontend gerçek `askV2()` tüketicisi bağlandığında iki muafiyet kaldırılacak
+  ve tavan tekrar 8'e inecek.
+- Hedef: Core MVP frontend integration (en geç Day5).
+
+### V2-D007 — P4 live TurnInterpreter KPI ölçülemiyor
+
+- Kaynak: P4 exit.
+- Gerekli kanıt:
+  - structured-output success >=99%
+  - turn_act_accuracy >=95%
+  - canonical/surface hallucination = 0 dedicated set
+- Hazır ölçüm aracı: `lab/v2_day1_eval.py`.
+- Hazır corpus: `eval/v2_day1_cases.yaml` (**28 labeled case**).
+- Mevcut blocker: GitHub Actions'ta gerçek LLM provider secret yok.
+- Fake-output testler bu KPI yerine **sayılmayacak**.
+- Blocker: **Day1 strict exit / Day2 transition için YES**.
+- Kapanış: herhangi bir desteklenen provider credential ile evaluator'ı çalıştır;
+  result artifact `status=pass` olmadan Day2 ticket açma.
+
+### V2-D008 — source-lock full legacy suite kırmızı
+
+- Eski Day0 full-CI run `35535435497`:
+  - 5995 passed
+  - 94 skipped
+  - 28 failed
+  - süre 22:55
+- Bu sonuç Day1 focused gate değildir; source-lock çevresindeki legacy/test-infra borcunun
+  görünür fotoğrafıdır.
+- V2'nin doğrudan ürettiği kökler ayrı teşhis edildi:
+  1. repo-root `AGENTS.md` belge düzeni ihlali → **FIXED** `fdb01fb903a4a4fac5e436d3050225b95e84a958`.
+  2. `/ask-v2` yetim uç → **EXPLICIT DEBT** V2-D006; gate beyanları
+     `313e1760e67ee11cf0fb3d494a91c65529208b32` +
+     `4f04b5080fe9cddb3a2542fc2b1c2e5305df321f`.
+  3. V2 authority overlay'i `MIMARI.md` satır indeksini bayatlattı →
+     duplicate authority kaldırıldı, base current-state MIMARI'ya geri dönüldü
+     `2fea97730c072abdf48bffc41261b28a3bde19c9`.
+- Kalan legacy kırmızılar Day1 semantic implementation kapsamına çekilmeyecek.
+- Blocker: rapid Day1 için **NO**; milestone full regression için **YES, ayrı baseline/debt**.
+
+### V2-D009 — semantic description provenance henüz schema yüzeyinde yok
+
+- P4 bounded context modeli description alanını destekliyor.
+- Mevcut `WrenService.schema()` cube/metric/dimension descriptions yayımlamıyor;
+  ContextProvider bu yüzden açıklama **uydurmuyor**, alanı null bırakıyor.
+- Label/synonym/unit/relationship/business rules korunuyor.
+- Blocker: Day1 act classification için **NO**.
+- Kapanış: P2D Semantic Preservation Audit sırasında canonical description kaynağı
+  gerçekten varsa schema adapter ile expose et; yoksa yeni truth uydurma.
+
+**CI hız düzeltmesi**
+- Eski `backend-ci` her V2 commitinde ~23 dakikalık full suite açarak runner kuyruğu
+  oluşturdu.
+- `17cb232c6a8e52fb6dfb44dbb03a7bb7ba54e8d8`:
+  `feat/ask-v2-*` push/PR'larında full suite otomatik çalışmaz; `workflow_dispatch`
+  milestone kapısı olarak korunur.
+- Day1 workflow da artık push başına değil `ready_for_review + manual` milestone'da çalışır.
+
+**Day1 strict durum**
+- Kod/sınır/contract implementasyonu: **COMPLETE**.
+- Focused structural gate: **GREEN**.
+- P4 gerçek-model accuracy gate: **BLOCKED BY MISSING PROVIDER CREDENTIAL**.
+- Bu nedenle Day2 ticket'ı henüz açılmaz.
+
+
+
+### 2026-09-21 — DAY 1 / final structural seal
+
+**Final product-code snapshot**
+- `b57c7c49dba49a40f8c3789ab4cc53dbb00a110a`
+- Bu snapshot şunları içerir:
+  - KPI semantic surface preservation,
+  - synonym silent-truncation removal,
+  - P4 minimum domain,
+  - ContextVersionV0,
+  - single-owner TurnInterpreter,
+  - no-query/no-SQL/no-legacy-fallback contracts.
+
+**Final focused acceptance**
+- Workflow: `35536961771`
+- Result: **PASS**
+- Focused tests: **23 passed / 0 failed**
+- Duration: **20.48s**
+- Measurement artifact: `10613258675`
+- Artifact digest:
+  `sha256:75c7eaf5d37002383617f18db6d8d3a870d0600ad92614d6bc52cb1c0db27f8d`
+- Permanent record: `eval/v2_day1_measurement.json`
+  @ `a69bd514ba28257c18c1383ea3a6784833b6b097`.
+
+**Legacy owner no-touch final cross-check**
+```text
+backend/app/routers/ask.py       unchanged
+backend/app/cube_router.py       unchanged
+backend/app/uyum.py              unchanged
+backend/app/plan_tuketici.py     unchanged
+backend/app/plan_semasi.py       unchanged
+backend/app/followup.py          unchanged
+backend/app/intent_semasi.py     unchanged
+```
+
+**Strict P4 exit tablosu**
+- ContextProviderV0 implemented: **PASS**
+- ContextVersionV0 non-null/deterministic: **PASS**
+- all canonical cube/metric/dimension + KPI semantic surface preserved: **PASS**
+- verified synonym silent truncation: **0**
+- entity values in prompt context: **0 by contract**
+- physical join condition in prompt context: **0 by contract**
+- one language owner: **PASS**
+- k=1: **PASS**
+- max one format-only retry: **PASS**
+- semantic retry: **0**
+- canonical-ID output field: **0**
+- invented surface span: **fail-closed**
+- SQL generation/execution: **0**
+- request-level legacy fallback: **0**
+- focused structural tests: **23/23 PASS**
+- live structured-output >=99%: **NOT MEASURED — V2-D007**
+- live turn_act_accuracy >=95%: **NOT MEASURED — V2-D007**
+- live hallucination dedicated set =0: **NOT MEASURED — V2-D007**
+
+**Karar**
+Day 1'in **implementation ve structural acceptance** kısmı tamamlandı.
+Roadmap'in gerçek-model KPI'sı credentials yokluğu yüzünden ölçülmeden “PASS” ilan edilmedi.
+Bu nedenle mimari disiplin gereği **Day 2 henüz açılmayacak**.
+
+Bir sonraki geliştirici:
+1. önce V2-D007'yi kapatır,
+2. `python lab/v2_day1_eval.py --require-live` gerçek provider ile çalıştırır,
+3. `status=pass` artefaktını bu dosyaya işler,
+4. ancak sonra P5 + R8 okuyup Day2 ticket'ını açar.
+
+
+
+### V2-D010 — 28-case local acceptance Actions kapasite kuyruğunda
+
+- Kaynak: P4 strict exit / V2-D007.
+- Amaç: API key kullanmadan gerçek model davranışını ölçmek.
+- Uygulama:
+  - `.github/workflows/v2-day1-live-28.yml`
+  - yalnız `lab/v2_day1_eval.py --require-live`
+  - local Ollama `qwen2.5:3b`
+  - full suite **YOK**
+  - timeout 15 dk
+- Commit: `b528de33562270fc043bbd16d10840f9d828a013`.
+- Run: `35537876889`.
+- Mevcut blocker model/TurnInterpreter değil, **Actions runner kapasitesi**:
+  - ölçüm anında: 20/20 in-progress job'un tamamı eski `backend-ci`,
+  - ayrıca 14 eski `backend-ci` run queued,
+  - `v2-day1-live-28` run `35537876889` bu backlog'un arkasında queued.
+  - legacy `backend-ci` eski commitlerden 20 concurrent full-suite job çalıştırıyor,
+  - ayrıca çok sayıda eski full-suite job queued.
+- Bu backlog, V2 hız politikası konmadan ÖNCE üretilen run'lardan geliyor.
+- Yeni V2 commitlerinde full suite otomatik tetiklenmesi zaten kapatıldı; problem tekrar
+  üretilmiyor.
+- PR geçici close/open ile denenmesine rağmen mevcut eski run'lar GitHub tarafından
+  otomatik iptal edilmedi.
+- Blocker: **P4 live local measurement için YES**, implementation için NO.
+- Kapanış:
+  1. eski `backend-ci` queued/in-progress run'ları iptal edilir **veya**
+  2. Actions kapasitesi doğal olarak boşalır;
+  sonra yalnız run `35537876889` / aynı 28-case local gate çalıştırılır.
+- API key bu borcu çözmek için repoya/commit'e ASLA yazılmaz. Remote provider gerekirse
+  yalnız secure secret/env üzerinden kullanılır.
+
+**Hız kuralı tekrar teyit**
+- Full suite tekrar çalıştırılmayacak.
+- Day1 için bundan sonra yalnız 28-case evaluator çalıştırılır.
+- 28-case sonucu gelmeden Day2 açılmaz.
+
+
+
+### 2026-09-21 — LEGACY BACKEND CI KALDIRILDI
+
+**Karar**
+Eski `.github/workflows/backend-ci.yml` sürekli full-suite ürettiği ve V2 rapid-development
+sözleşmesini ihlal ettiği için tamamen kaldırıldı. Bu yalnız V2 branch seviyesinde bırakılmadı;
+repo default/base branch `wren-bağımsız` üzerinden de silindi.
+
+**Commitler**
+- V2 branch deletion: `216b6e0be1d351d02aa38a222ef5a30046144638`
+- default/base deletion: `cb9e6ab3aae5d5fbdb49ce59c91644a90dcb9cab`
+
+**Sonuç**
+- Yeni `backend-ci` push/PR run'ı artık üretilemez.
+- Full regression her committe koşmayacak.
+- Ağır doğrulama gerektiğinde `nightly.yml` / açık milestone kararı kullanılacak.
+- V2'nin phase-scoped küçük workflow'ları korunuyor:
+  - `v2-day0-baseline.yml`
+  - `v2-day1-turn-interpreter.yml`
+  - `v2-day1-live-28.yml`
+
+**Mevcut eski runlar**
+Workflow dosyasının silinmesi, daha önce oluşturulmuş queued/in-progress run snapshot'larını
+geriye dönük iptal etmez. Bunlar yeni borç/run üretmiyor; kapasite boşaldıkça bitecek.
+Yeni ağır run açılmayacak.
+
+**Kural**
+Full suite, milestone/release/security/parity gibi gerçekten gerekli bir kapı dışında
+otomatiklaştırılmayacak. Günlük geliştirmede yalnız aktif P/R fazının hedefli acceptance
+testleri çalıştırılacak.
+
+
+
+### 2026-09-21 — LOCAL 28-CASE DENEMESİ KAPATILDI
+
+**Run**
+- `v2-day1-live-28` / `35537876889`
+- model: local Ollama `qwen2.5:3b`
+- scope: yalnız 28-case P4 evaluator; full suite yok.
+
+**Sonuç**
+- Ollama install: PASS
+- model pull: PASS
+- evaluator: **INFRA/PERFORMANCE FAIL**
+- her structured call local CPU runner'da 30s read timeout'a girdi.
+- workflow job timeout/cancel ile kapandı.
+- evaluator final JSON üretilemeden kesildi; accuracy sonucu YOK.
+- Bu sonuç TurnInterpreter correctness FAIL değildir; seçilen local execution motorunun
+  acceptance için pratik olmadığını gösterir.
+
+**Karar**
+- Local Ollama yolu tekrar çalıştırılmayacak.
+- `.github/workflows/v2-day1-live-28.yml` silindi.
+- Day1 acceptance için bir sonraki tek yol: mevcut
+  `v2-day1-turn-interpreter.yml` içindeki real-provider evaluator.
+- Full suite açılmayacak; secret geldiğinde yalnız focused contracts + 28-case live eval.
+
+**V2-D007 güncelleme**
+Local alternatifi elendi. Blocker artık yalnız gerçek provider credential.
+Secret hiçbir commit/.env'e yazılmayacak; GitHub Actions repository secret olarak verilecek.
+
+
+
+### 2026-09-21 — DAY 1 STRICT EXIT / LIVE P4 PASS
+
+**Provider / transport**
+- GitHub Environment: `DIMA_OPENROUTER_API_KEY`
+- provider: `openrouter`
+- acceptance model: `openai/gpt-5.6-luna`
+- one-call structured transport smoke: **PASS**
+- OpenRouter environment binding fix:
+  `164b88a94320080af2593b1449c9f7cb38cae255`
+- model-compatible transport fix:
+  `ca52f4ccd8c9c231f662b66bc0ac7d03f6907883`
+
+**Final live acceptance**
+- workflow run: `35540119438`
+- product snapshot: `5b541d0ba4e928eb1a86c7e437ddcfbc60cdcc11`
+- artifact: `10614537238`
+- digest:
+  `sha256:e0034a9bf67000f2c943c55e5d8a3563d9f3deae3037338595111ff3f97ad274`
+- focused structural tests: **23 / 23 PASS**
+- labeled live corpus: **28**
+- structured output: **28 / 28 = 100%**
+- turn act: **27 / 28 = 96.43%**
+- surface-grounding violation: **0**
+- total LLM calls: **31**
+- max calls / case: **2**
+
+**P4 strict exit**
+- structured-output success >=99%: **PASS — 100%**
+- turn_act_accuracy >=95%: **PASS — 96.43%**
+- canonical/surface hallucination dedicated set =0: **PASS**
+- k=1 normal path: **PASS**
+- max one format-only retry: **PASS**
+- SQL/query in interpreter: **0**
+- request-level legacy fallback: **0**
+
+### V2-D011 — “sadece RAM-3” refine/repair sınırı
+
+- Case: `refine-filter`
+- input: `sadece RAM-3`
+- expected: `ANALYTIC_REFINE`
+- actual: `USER_REPAIR`
+- Day1 gate etkisi: **NON-BLOCKING**; aggregate accuracy %96.43 ve P4 eşiği geçiyor.
+- Neden şimdi hard-code edilmiyor:
+  - “RAM-3 → refine” özel case yazmak P5/P7 generic semantics ilkesini ihlal eder.
+  - gerçek ayrım conversation state + prior IR/focus ile Day4'te daha güçlü yapılacak.
+- Sentinel:
+  canonical Day4 flow'da `yalnız RAM-3 / sadece RAM-3` unrelated-slot preservation ve
+  refine-vs-repair davranışı ayrıca ölçülecek.
+- Hedef kapanış: Day4 / P7 canonical conversation flows.
+
+**V2-D007**
+- **CLOSED.**
+- Gerçek provider credential bulundu, 28-case evaluator çalıştı ve P4 strict KPI geçti.
+
+**Day 1 kapanış kararı**
+Day 1 **COMPLETE**. P4/R7 implementation + structural + live acceptance kapıları geçildi.
+Test uğruna yeni special-case parser eklenmedi. Day 2 artık açılabilir.
+
+**Sıradaki zorunlu sıra**
+1. `DIMA_NIHAI_UYGULAMA_YOL_HARITASI.md` → P5 yeniden oku.
+2. `DIMA_NIHAI_DENETIM_VE_MIMARI_RAPORU.md` → R8 yeniden oku.
+3. Bu dosyada Day2 ticket contract aç.
+4. Yalnız `SemanticResolver + SemanticHypothesis + ClarificationState` geliştir.
+5. Blocking ambiguity'de query=0.
+6. CubePlanner/SQL Day3'e kadar yasak.
+
+
+
+### 2026-09-21 — OPENROUTER MODEL AUTHORITY + KALICI ÖĞRENİMLER
+
+**Kullanıcı kararı / ileriye dönük model**
+- OpenRouter runtime/focused-test varsayılanı:
+  `deepseek/deepseek-v4-flash`.
+- GitHub Environment variable:
+  `DIMA_OPENROUTER_MODEL=deepseek/deepseek-v4-flash`.
+- Kod fallback authority:
+  `app/config.py::openrouter_model = "deepseek/deepseek-v4-flash"`.
+- Focused Actions workflow modeli doğrudan hard-code etmez:
+  `vars.DIMA_OPENROUTER_MODEL` → yoksa aynı repo fallback.
+- `DIMA_OPENROUTER_SELECT_MODEL` ayrıca verilmezse ana model takip edilir.
+
+**Provenance kuralı**
+Day1 strict acceptance'ın `openai/gpt-5.6-luna` ile geçmiş olması tarihsel kanıttır;
+`eval/v2_day1_measurement.json` bu nedenle değiştirilmedi. Gelecekteki model kararı eski
+ölçümü yeniden yazmaz.
+
+**Kalıcı devir kuralları**
+`backend/AGENTS.md §11` eklendi. Bağlam/oturum kopsa bile aşağıdaki hatalar yeniden
+tekrarlanmayacak:
+1. always-on full `backend-ci` geri getirilmeyecek,
+2. full suite her küçük değişiklikte çalıştırılmayacak,
+3. Environment secret kullanan job environment'a açıkça bağlanacak,
+4. OpenRouter'da önce tek-call transport smoke, sonra corpus,
+5. reasoning'i kapatmak için `enabled:false`; `exclude:true` yeterli değil,
+6. GitHub CPU Ollama `qwen2.5:3b` 30s timeout yolu acceptance için tekrar denenmeyecek,
+7. infra/provider fail correctness fail diye etiketlenmeyecek,
+8. tarihsel measurement provenance sonradan model değiştirildi diye tahrif edilmeyecek,
+9. `sadece RAM-3` için special-case parser/hard-code yazılmayacak.
+
+**Commitler**
+- `b40ef77af4dbcf3ccd89453bbac93ee90a741123` — config OpenRouter default.
+- `b15a3c832ef191002fe6e3f66d1f233225b763a4` — focused workflow variable-driven model;
+  push başına otomatik rerun kaldırıldı.
+- `c7b3f2425a5d619adf801b2cc4d1f751c9aa019c` — AGENTS §11 kalıcı öğrenimler.
+- `4c884c310ad2dcdd2cb226e7f0101a6cfeea0c64` — CLAUDE compact-recovery pointer.
+
+**Test kararı**
+Bu değişiklik model/config/devir policy değişikliğidir. Day1 zaten strict exit'i geçtiği için
+yalnız bu kayıt uğruna 23+28 acceptance tekrar çalıştırılmadı. Yeni model gerçek bir sonraki
+fazın focused ölçümü gerektiğinde kullanılacak; gereksiz test yok.
+
+
+
+## 9. DAY 2 ACTIVE TICKET — P5 / R8 SEMANTIC RESOLVER + CLARIFICATION
+
+**AMAÇ**  
+TurnInterpreter'ın surface-level mention'larını tenant'ın gerçek semantic/data kataloğuna
+deterministik bağlamak; gerçek ambiguity varsa ilk adayı seçmek yerine minimum gerekli
+netleştirmeyi üretmek. Day 2 hiçbir query çalıştırmaz.
+
+**USER SCENARIO**
+```text
+“Siyah için fire”
+“Bakiye ne?”
+“Gece verimlilik”
+“RAM-3 nasıl?”
+```
+
+**ROADMAP**  
+P5 / P5.1 / P5.2 / P5.3 / P5.4.
+
+**REPORT DAYANAK**  
+R8; kök hata için R3.1/R3.2/R3.4. North-star kontrolü: R26B / NS2.
+
+**NEW OWNER**
+- `SemanticResolver` → surface mention → candidate set → hypothesis.
+- `ClarificationState` → blocking ambiguity / fuzzy-only / semantic gap.
+- signed candidate token → deterministic chip resume.
+- TurnInterpreter raw language owner olarak kalır; resolver raw soruyu yeniden parse etmez.
+
+**INPUT**
+- `TurnInterpretation`
+- tenant-bound `WrenService.schema()`
+- `BoundedSemanticContextV0`
+- typed conversation anchors / pending clarification.
+
+**OUTPUT**
+- `SemanticHypothesis[]`
+- gerekirse tek `ClarificationState`
+- chip resume'da deterministic resolved hypothesis.
+
+**CANDIDATE PROVENANCE**
+```text
+explicit anchor
+current focus
+canonical name
+verified synonym
+exact entity value
+verified company vocabulary   # yalnız gerçekten provenance varsa
+fuzzy suggestion
+```
+
+**KARAR KURALI**
+```text
+tek güçlü/material aday       → resolve
+birden fazla material aday    → clarify
+yalnız fuzzy aday             → suggestion clarification
+aday yok                      → semantic gap / açık soru
+```
+
+Company-vocabulary provenance mevcut schema yüzeyinde ayrıca korunmuyorsa ona sahte
+`company_vocabulary` etiketi verilmeyecek; onaylı overlay synonym mevcutsa
+`verified_synonym` olarak tüketilecek. Provenance uydurmak yasak.
+
+**PRIVACY**
+- Entity value index süreç içinde resolver tarafından görülebilir.
+- Hassas entity values fuzzy candidate discovery/chip label ile sızdırılmaz.
+- Kullanıcının birebir yazdığı hassas değer ancak exact match olarak kendi surface'i
+  üzerinden çözülebilir; prompt'a toplu değer dökümü yoktur.
+- Candidate token integrity içindir; auth/tenant sınırını gevşetmez.
+
+**SIGNED RESUME**
+```text
+tenant + context_version + thread/session binding
++ clarification_id + candidate_id + source mention
+→ HMAC-signed opaque selection token
+→ candidate current schema'dan yeniden türetilir
+→ deterministic slot resolution
+```
+Client'ın candidate payload'ı semantic truth sayılmaz.
+
+**FREE-TEXT RESUME**
+Pending clarification + `CLARIFICATION_ANSWER` TurnInterpretation üzerinden candidate
+set daraltılır. Resolver raw question parser olmaz.
+
+**FILES TO TOUCH**
+- `app/v2/models.py`
+- `app/v2/resolver.py` (new)
+- `app/v2/orchestrator.py`
+- `app/routers/ask_v2.py`
+- `tests/test_v2_day2.py` (new, yalnız focused contract)
+- bu yaşayan durum dosyası.
+
+**FILES NOT TO TOUCH**
+- `app/routers/ask.py`
+- `app/cube_router.py`
+- `app/uyum.py`
+- `app/plan_tuketici.py`
+- `app/plan_semasi.py`
+- `app/followup.py`
+- `app/intent_semasi.py`
+- Day1 tarihsel measurement.
+- kaldırılmış `.github/workflows/backend-ci.yml` yeniden yaratılmaz.
+
+**TEST KARARI — HIZ**
+Bu ticket için full suite/corpus yok. Koddan sonra yalnız yeni Day2 resolver/clarification
+contract dosyası ve gerekirse Day1'in kırılma riski taşıyan tek küçük boundary testi koşulur.
+OpenRouter/LLM acceptance Day2 resolver correctness'inin sahibi değildir; provider/infra
+hatası semantic correctness FAIL sayılmaz.
+
+**TARGETED CASES**
+- canonical metric exact → resolve.
+- verified synonym → resolve.
+- exact entity tek aday → resolve.
+- aynı surface birden çok material target → clarify; auto-pick=0.
+- yalnız fuzzy → clarify, auto-resolve=0.
+- unknown → semantic gap.
+- sensitive value fuzzy discovery yok / placeholder-safe behavior.
+- signed chip valid → deterministic resolution.
+- token wrong tenant/context/thread/tamper → fail-closed.
+- free-text clarification answer → pending candidate set içinden resolve.
+- `Siyah / RAM-3 / gece / premium / bakiye` aynı generic mechanism.
+- clarification path query/dry_plan/SQL = 0.
+
+**KPI / EXIT**
+```text
+blocking_ambiguity_recall          >= 95% dedicated focused set
+blocking false auto-resolution     = 0
+unnecessary_clarification_rate     <= 10%
+clarification query count          = 0
+clarification_recovery             >= 95%
+```
+
+**STOP-THE-LINE**
+- `Siyah`, `RAM-3` veya başka bir literal için special-case branch/regex yazılırsa.
+- Resolver raw `question` parse ederse.
+- İlk candidate sessizce kazanırsa.
+- Fuzzy candidate otomatik execute semantic truth olursa.
+- Sensitive entity value suggestion ile ifşa edilirse.
+- Clarification sırasında query/SQL açılırsa.
+- Signed token client payload'ını doğrulamadan semantic state patch ederse.
+- Day3 CubePlanner/AnalyticsIR resolution mantığı Day2'ye çekilirse.
+
+
+
+### 2026-09-21 — DAY 2 / P5 COMPLETE
+
+**Roadmap / report çaprazı**
+- P5/P5.1/P5.2/P5.3/P5.4 uygulandı.
+- R8 semantic hypothesis + clarification kararları authority olarak izlendi.
+- R3.1 tek semantic owner, R3.2 parser creep yasağı ve R3.4 ambiguity-is-success
+  ilkeleri implementation sınırı olarak korundu.
+- R26B/NS2: gerçek ambiguity → clarification + query=0 + chip resume.
+
+**Yapılan**
+- `SemanticCandidate`, `SemanticHypothesis`, genişletilmiş `ClarificationState`
+  ve Day2 response contract'ları eklendi.
+- `SemanticResolver` raw kullanıcı sorusunu ALMAZ; yalnız typed
+  `TurnInterpretation` mention'larını grounding eder.
+- Candidate provenance generic mekanizma:
+  - explicit anchor
+  - current focus
+  - canonical name
+  - verified synonym
+  - exact entity value
+  - yalnız explicit verified provenance varsa company vocabulary
+  - fuzzy suggestion
+- Tek güçlü/material aday resolve olur.
+- Birden fazla material adayda auto-pick=0; clarification oluşur.
+- Fuzzy-only aday semantic truth olmaz; suggestion clarification olur.
+- Candidate yoksa semantic gap üretilir.
+- `Siyah / RAM-3 / gece / premium / bakiye` için production resolver'da
+  literal special-case/parser **yok**.
+- Hassas entity değerleri fuzzy discovery'ye girmez; exact user surface dışında değer
+  candidate label/value ile ifşa edilmez.
+- Signed clarification chip:
+  tenant + ContextVersion + session/thread + clarification + candidate + mention
+  integrity binding taşır.
+- Chip seçiminde client candidate payload'ına güvenilmez; candidate güncel tenant
+  schema/context'ten yeniden türetilir.
+- Free-text clarification answer TurnInterpreter'ın typed mention'ları üzerinden pending
+  candidate set'i daraltır; resolver raw question parser'a dönüşmez.
+- `/ask-v2` Day2 akışı:
+  `runtime → context → interpreter → resolver → resolved/clarify/gap`.
+- Clarification token stale/tampered/binding mismatch → 409 fail-closed.
+- Query / dry-plan / CubePlanner / SQL hâlâ **0**.
+
+**Ek reuse touch**
+- İlk ticket touch listesine sonradan yalnız
+  `control_plane/security.py::derive_hmac_key()` eklendi.
+- Gerekçe: V2'nin JWT secret/fallback seçimini kopyalayan ikinci security owner
+  yaratmaması; mevcut auth authority'den domain-separated integrity key türetmesi.
+- Auth/yetki davranışı değişmedi.
+
+**Commitler**
+- `1703e6701eaa9674ac48631acb7004bbf51e5f2f` — Day2 typed contracts.
+- `a51fcdddc6bd4b4b5409652029027208b2bdd101` — domain-separated HMAC key.
+- `f69413f705ec4210582a473d8d9675eeb7fc6d91` — generic SemanticResolver.
+- `5f9bab70f8f2d80167b55e2d9eca59114cb37aa1` — resolver/resume orchestration.
+- `3ea83e47419d68a6910e0e476e734e278ff36b59` — Day2 HTTP response/boundary.
+- `4d09ff992955a1aee087ba5925b02645a485630d` — focused P5 contracts.
+- `9df4ede9cbd68e7371259192dcc433f6b3756523` — closed Day1 gate manual-only.
+- `aefb487274204bdf074373a388cb4eb3420c493d` — explicit Day2 focused workflow.
+- `45b808b649fe75c34e234690b1768f0ab5f1ccba` — signing-key focused test.
+
+**Focused test / hız kanıtı**
+- Yalnız `tests/test_v2_day2.py` çalıştırıldı.
+- Workflow run: `35541275684`.
+- Sonuç: **19 passed / 0 failed**.
+- Süre: **4.58 saniye**.
+- Day0 baseline tekrar koşmadı.
+- Day1 23+28 acceptance tekrar koşmadı.
+- Corpus/full suite koşmadı.
+- Kaldırılmış `.github/workflows/backend-ci.yml` yeniden yaratılmadı.
+
+**P5 focused exit**
+- blocking ambiguity recall: **1/1 = %100** dedicated material-ambiguity case.
+- blocking false auto-resolution: **0/1 = 0**.
+- unnecessary clarification: **0/5 = %0** exact/verified cases.
+- clarification query count: **0**.
+- clarification recovery:
+  - signed chip **1/1**
+  - free text **1/1**
+  - focused toplam **2/2 = %100**.
+- sensitive fuzzy disclosure dedicated case: **0**.
+- literal special-case parser: **0**.
+- resolver raw-question parameter: **0**.
+
+Bu oranlar küçük **focused Day2 contract setinin** sonucudur; ürün-geneli istatistik diye
+sunulmaz. P5'in mimari/exit davranışını kısa ve deterministik olarak kilitler.
+
+**No-touch final cross-check**
+```text
+backend/app/routers/ask.py       unchanged
+backend/app/cube_router.py       unchanged
+backend/app/uyum.py              unchanged
+backend/app/plan_tuketici.py     unchanged
+backend/app/plan_semasi.py       unchanged
+backend/app/followup.py          unchanged
+backend/app/intent_semasi.py     unchanged
+```
+
+**Açık not — company vocabulary provenance**
+Current `WrenService.schema()` dedicated `company_vocabulary` provenance alanı
+yayımlamıyor. Onaylı overlay'ler bugün verified synonym yüzeyine birleşiyor.
+Resolver yalnız gerçekten `verified=True` provenance taşıyan explicit runtime alanı
+varsa `company_vocabulary` etiketi kullanır; provenance **uydurmaz**.
+Bu Day2 blocker değildir; P2D/P16 semantic-memory/provenance gelişiminde genişletilebilir.
+
+**Karar**
+Day 2 P5 tamamlandı. Day 3 henüz başlatılmadı.
+Bir sonraki geliştirici önce P6 + R10 + R5.5 + R5D'yi yeniden okuyacak; ardından
+`AnalyticsIR + RequirementLedger-lite + CubePlanner + principal-aware Wren execution`
+ticket'ını açacak. Day2 resolver'a SQL/query davranışı eklenmeyecek.
+
+
+
+### 2026-09-21 — DAY 2 gate freeze
+
+- Day2 focused gate başarıyla tamamlandıktan sonra
+  `.github/workflows/v2-day2-semantic-resolver.yml` de Day1 gibi
+  **workflow_dispatch-only** yapıldı.
+- Commit: `39a2cdd20ffc7943a9675452700cd33cd5958e52`.
+- Gerekçe: Day3'te ortak `models.py/orchestrator.py` değişiklikleri Day2 testini
+  gereksiz otomatik tekrar koşturmasın.
+- Bu policy-only değişiklik için test **tekrar çalıştırılmadı**.
+- Always-on/full CI yok; kapalı fazların focused gate'leri de otomatik rerun yapmaz.
+
+
+
+## 10. DAY 3 ACTIVE TICKET — P6 / R10 + R5.5 + R5D
+
+**AMAÇ**  
+Day1'in typed dil çıktısı ve Day2'nin canonical semantic grounding'ini, maddi hiçbir
+requirement düşmeden deterministik CubeQuery planına ve explicit-principal Wren execution'a
+dönüştürmek. İlk gerçek V2 data-touching cevap bu fazda doğduğu için
+`MinimumQueryContract` aynı anda zorunludur.
+
+**USER SCENARIO**
+```text
+“bu ay ciro”
+“makine bazında OEE”
+“son 3 ay en çok fire veren 5 makine”
+“bu ay ciro, geçen ayla kıyasla”
+```
+
+**ROADMAP**
+P6 / P6.1 / P6.2 / P6.3 / P6.4 / P6.5.
+
+**REPORT DAYANAK**
+- R10 — standard analytics canonical path.
+- R5.5 — Day3'ten itibaren Query Contract zorunlu; bir contract = bir execution.
+- R5D — formula/aggregation/grain/unit/time/relationship truth yalnız MDL/cube.
+- R3.7 / R3A — dry-plan geçse bile requirement düşebilir; ranking direction+limit ve
+  A-vs-B comparison dedicated olarak korunmalı.
+
+**NEW OWNER**
+- `AnalyticsIRBuilder` — resolved hypothesis + typed analytical surface →
+  canonical `AnalyticsIR`.
+- `TemporalResolverV0` — yalnız TurnInterpreter'ın çıkardığı time/comparison span'larını
+  tenant fiscal context ile deterministic period'e çevirir. Tam raw question ALMAZ.
+- `RequirementLedger` — her material requirement'ın
+  `DETECTED → RESOLVED → REPRESENTED_IN_IR → REPRESENTED_IN_PLAN → VERIFIED`
+  zincirini taşır.
+- `CubePlanner` — yalnız canonical IR'den mevcut CubeQuery-compatible plan üretir.
+- `ResultValidator` — planın/result'ın ledger requirement'larını gerçekten taşıdığını
+  doğrular.
+- `MinimumQueryContract` — her execution'ın immutable audit kaydı.
+
+**OLD OWNER / REUSE**
+- `WrenService.cube_sql` mevcut deterministic compiler olarak reuse.
+- `WrenService.dry_plan(..., principal=...)` + `query(..., principal=...)` official
+  execution boundary olarak reuse.
+- `mali_takvim` fiscal-year aritmetiğinin tek sahibi olarak reuse.
+- Mevcut `app/contracts.py::ContractStore` durability/result-hash altyapısı reuse edilir;
+  legacy `answer.record_contract` V2 official-seal authority yapılmaz.
+- Formula/unit/grain/additivity/relationship için yalnız current schema/MDL metadata okunur;
+  planner yeni semantic truth üretmez.
+
+**INPUT**
+```text
+TurnInterpretation
++ SemanticHypothesis[]
++ TenantAnalyticsRuntimeV0
++ ContextVersionV0
++ current WrenService schema
++ explicit Principal
+```
+
+**OUTPUT**
+```text
+AnalyticsIR
++ RequirementLedger
++ one or more PlannedExecution
++ principal-aware Wren result(s)
++ MinimumQueryContract[] 
++ official_verified flag
+```
+
+**ANALYTICS IR — DAY3 MVP**
+Canonical alanlar:
+- metric refs
+- dimension refs
+- entity filter refs
+- resolved period
+- ranking {measure, direction, limit}
+- optional `ResolvedComparison`
+- chosen cube
+- context_version.
+
+KPI/cross-cube semantic ref tek-cube CubePlanner ile kanıtlanamıyorsa silent coercion YOK;
+typed capability gap olur. Planner LLM'e dönmez ve legacy Discovery'ye düşmez.
+
+**CUBE SEÇİMİ**
+Planner yalnız schema'nın doğruladığı coverage üzerinden cube seçer:
+- requested metric cube'da bulunmalı,
+- requested dimensions/filter dimensions cube'da bulunmalı,
+- time requirement varsa kullanılabilir canonical time axis bulunmalı.
+Tek viable cube → plan.
+0 viable cube → capability/semantic-plan failure.
+>1 equally viable cube → first-candidate seçimi YOK; typed ambiguity/failure.
+CubePlanner raw question veya synonym sözlüğü görmez.
+
+**TIME — P6.2 SINIRI**
+Temporal resolver yalnız `SemanticMention(kind=time).text` gibi Interpreter'ın ayırdığı
+typed span'ı okur; bütün kullanıcı cümlesini yeniden parse etmez.
+İlk MVP:
+- this month,
+- this fiscal year,
+- last N days/months,
+- previous month/year.
+Date arithmetic mevcut kanıtlanmış davranışla uyumlu tutulur; fiscal year için
+`mali_takvim` sahibi çağrılır. Time axis 0 veya birden fazla belirsizse planner tahmin
+etmez.
+
+**COMPARISON**
+Comparison tek range'e çökmez. Day3 basit previous-period comparison typed
+`ResolvedComparison(base_period, reference_period)` üretir.
+İlk uygulamada iki execution gerekirse:
+- base execution → contract A
+- reference execution → contract B
+- üst cevap iki contract ref taşır.
+İkinci SQL ilk contract'a eklenip mutate edilmez.
+
+**RANKING**
+`ranking.direction` ve `ranking.limit` ledger'da AYRI MUST requirement'lardır.
+Semantic top-N `CubeQuery.order + limit` olarak planlanır; Wren transport row cap ile
+karıştırılmaz. Direction yoksa planner "top-N" uydurmaz.
+
+**FILTER**
+Day2 exact resolved entity candidate:
+`dimension + resolved value → eq filter`.
+Sensitive exact value için Day2'nin `resolved_surface_value` dışında entity catalog
+ifşası yapılmaz.
+
+**REQUIREMENT LEDGER**
+Her material item için typed state tutulur:
+```text
+DETECTED
+RESOLVED
+REPRESENTED_IN_IR
+REPRESENTED_IN_PLAN
+VERIFIED
+```
+Bir MUST item VERIFIED değilse cevap official olamaz.
+Planner requirement ekleyemez, silemez veya "yakınını" ikame edemez.
+
+**OFFICIAL EXECUTION**
+Her execution:
+```text
+CubePlanner
+→ WrenService.cube_sql
+→ WrenService.dry_plan(sql, principal=principal)
+→ WrenService.query(sql, principal=principal)
+→ ResultValidator
+→ MinimumQueryContract seal
+```
+Explicit principal argümanı zorunlu; ContextVar implicit execution authority değildir.
+
+**MINIMUM QUERY CONTRACT**
+Her execution için:
+```text
+request_ref
+AnalyticsIR snapshot
+planner id/version
+mdl_version
+context_version
+execution_id
+executed SQL
+result_hash
+tenant_id
+principal/execution identity
+cube_query
+verification status
+```
+Mevcut ContractLog tablosu + `provenance_json` taşıyıcı olarak reuse edilebilir.
+Legacy `ContractStore.record()` best-effort davranışı V2 official doğrulama için yeterli
+sayılmaz: DB/spool seal gerçekten oluşmadıysa `official_verified=false` ve typed
+contract failure üretilir; cevap legacy'ye düşmez.
+
+**FILES TO TOUCH — beklenen**
+- `app/v2/models.py`
+- `app/v2/temporal.py` (new, typed-span temporal owner)
+- `app/v2/cube_planner.py` (new)
+- `app/v2/orchestrator.py`
+- `app/routers/ask_v2.py`
+- `app/contracts.py` yalnız V2 strict-seal adapter gerçekten gerekirse
+- `tests/test_v2_day3.py` (new focused)
+- gerekirse küçük Day3 explicit milestone workflow
+- bu yaşayan durum dosyası.
+
+**FILES NOT TO TOUCH**
+- `app/routers/ask.py`
+- `app/cube_router.py`
+- `app/uyum.py`
+- `app/plan_tuketici.py`
+- `app/plan_semasi.py`
+- `app/followup.py`
+- `app/intent_semasi.py`
+- Day0/Day1/Day2 historical measurement artefaktları.
+- kaldırılmış `.github/workflows/backend-ci.yml` ASLA geri gelmez.
+
+**TEST / DEMO — HIZ POLİTİKASI**
+- Full suite YOK.
+- Corpus YOK.
+- Day0/Day1/Day2 gate tekrar YOK.
+- Geliştirme sırasında test döngüsü açılmayacak.
+- Demet sonunda BİR focused Day3 gate:
+  1. pure IR/ledger/planner contracts,
+  2. ranking direction+limit sentinel,
+  3. explicit A-vs-B comparison sentinel,
+  4. explicit principal propagation,
+  5. contract seal/official fail-closed,
+  6. birkaç gerçek demo-Wren dikey smoke: metric/breakdown/time/ranking/compare.
+- Provider/LLM acceptance bu fazın planner correctness sahibi değildir; Day1 tarihi
+  yeniden ölçülmez.
+
+**KPI / EXIT**
+```text
+MUST requirement coverage      = 100% dedicated set
+core result equivalence        >= 95% focused canonical set
+P0 silent-wrong                = 0
+principal-aware execution      = 100%
+standard p95                   <= 10s initial focused demo
+metric/breakdown/time/ranking/simple compare real demo = PASS
+MinimumQueryContract per execution = 100%
+```
+
+**STOP-THE-LINE**
+- CubePlanner raw question okursa.
+- Planner synonym/fuzzy/entity language parsingi yaparsa.
+- Metric/dimension/filter/time/ranking/comparison requirement ledger'dan kaybolursa.
+- Multiple viable cube'da ilk eleman sessizce seçilirse.
+- Time axis belirsizken ilk axis alınırsa.
+- Formula/unit/grain planner tarafından yeniden tanımlanırsa.
+- ranking.limit transport row cap yerine kullanılır veya direction düşerse.
+- comparison tek geniş range'e çöküp A-vs-B semantiğini kaybederse.
+- `dry_plan PASS` tek başına verified kabul edilirse.
+- principal explicit verilmeden dry-plan/query çalışırsa.
+- contract seal başarısızken cevap `official_verified=true` olursa.
+- legacy /ask / raw Discovery fallback eklenirse.
+- sırf bir test vakası için literal/special-case parser yazılırsa.
+
+
+
+### 2026-09-21 — DAY 3 / implementation batch 1
+
+**P6/R10/R5.5/R5D uygulanan sınırlar**
+- `AnalyticsIR` canonical refs, filter, period, ranking, comparison ve context_version taşır.
+- `RequirementLedger` yalnız final state değil tam lifecycle history taşır:
+  `DETECTED → RESOLVED → REPRESENTED_IN_IR → REPRESENTED_IN_PLAN → VERIFIED`.
+- Multi-metric/dimension representation requirement-index bazında doğrulanır; “herhangi biri
+  var” kontrolü ile sahte yeşil üretilemez.
+- `TemporalResolverV0` yalnız typed time/comparison span alır; full raw question parametresi yok.
+- `mali_takvim` fiscal-year owner olarak reuse edilir; legacy `cube_router` V2 hot path'e
+  import edilmedi.
+- simple previous-period comparison iki ayrı period ve iki ayrı execution planlar.
+- ranking direction + semantic limit ayrı MUST requirement'lardır.
+- multiple viable cube veya multiple time axis → typed fail; ilk eleman seçilmez.
+- KPI/cross-cube ref tek-cube Day3 planner'a sessizce coerced edilmez.
+- `CubePlanner` canonical IR dışında language/synonym/fuzzy karar yapmaz.
+- execution her çağrıda explicit `principal` ile
+  `dry_plan → query` sırasını izler.
+- `ResultValidator` required result columns, semantic top-N row count ve numeric order
+  doğrular; dry-plan tek başına verified yapmaz.
+- `ContractStore.record_v2_minimum` legacy `record()` davranışına dokunmadan eklendi:
+  DB veya existing spool gerçekten yazılırsa sealed; ikisi de başarısızsa
+  `sealed=false`.
+- Her execution kendi immutable contract'ını alır; comparison iki contract üretir.
+- Signed clarification sonucu Day4 prior-request state olmadan query'ye zorlanmaz.
+
+**Commitler**
+- `8e224e6452e4a722cd46c3a249197d2b3b571cb6` — Day3 domain/execution/contract models.
+- `d4a047f69b974374154b558cded7a4bf12ef1014` — requirement lifecycle history.
+- `752277b7f49f188af8fe4bbed359486224b9b667` — typed temporal resolver.
+- `772334ad1d419b7136eeb9fcc09a4e3d804ec609` — IR/ledger/planner/result validator.
+- `4e968305352d0eef16ad0dd1afc095baccceb963` — per-requirement plan representation fix.
+- `951a9c54f9079466353390684cac13f9594995d5` — strict V2 contract seal.
+- `5b9b678b9691da959619e55714a01c16c4013e14` — official Day3 orchestration.
+- `aa5ce21466bcb6f2b51c4646ee08977a2ab80266` — Day3 HTTP response.
+- `2aa564d64bce1e8e024e3474939823dae44a68d2` — earlier AnalyticsIR construction compatibility.
+- `4c8a6118189379903c3cd3b04cf6f3e52b3fe453` — focused P6 test file.
+
+**Test kararı**
+Tek koşum: `pytest -q tests/test_v2_day3.py`.
+Dosya pure contract testleri + yalnız 5 canonical real-demo Wren result-equivalence case içerir.
+Full suite/corpus/Day0/Day1/Day2 gate tekrar yok.
+Test failure olursa önce failure-stage ayrılır; infra/provider failure correctness olarak
+etiketlenmez.
+
+
+
+### 2026-09-21 — DAY 3 / P6 COMPLETE — FINAL SEAL
+
+**Final P6 architecture**
+```text
+TurnInterpreter
+→ SemanticResolver
+→ AnalyticsIRBuilder
+→ RequirementLedger
+→ CubePlanner
+→ WrenService.cube_sql
+→ WrenService.dry_plan(principal=...)
+→ WrenService.query(principal=...)
+→ ResultValidator
+→ ContractStore.record_v2_minimum
+→ MinimumQueryContract[]
+```
+
+**Maddi requirement preservation**
+Day3 canonical ledger family:
+```text
+metric
+dimension
+filter
+time
+ranking_direction
+limit
+comparison
+```
+Her MUST item lifecycle history taşır:
+```text
+DETECTED
+→ RESOLVED
+→ REPRESENTED_IN_IR
+→ REPRESENTED_IN_PLAN
+→ VERIFIED
+```
+Lifecycle adımı atlanırsa kod fail eder. Multi-metric/dimension representation index
+bazında doğrulanır; bir requirement'ın varlığı diğerini yanlışlıkla yeşile çeviremez.
+
+**Semantic / computational ownership**
+- Raw full question CubePlanner/TemporalResolver'a verilmez.
+- TemporalResolver yalnız Interpreter'ın typed time/comparison span'ını okur.
+- `cube_router` V2 hot path'e import edilmedi.
+- Metric formula/aggregation/unit/grain ilişkisi yeniden yazılmadı; current Wren schema/MDL
+  canonical ref'leri kullanıldı.
+- Multiple viable cube → typed `ambiguous_cube`.
+- Multiple time axis → typed `ambiguous_time_axis`.
+- KPI/cross-cube semantic ref → Day3 single-cube planner'a sessiz coercion yok.
+- Ranking direction + semantic limit ayrı MUST requirement.
+- Semantic top-N transport row-cap ile karıştırılmıyor.
+- Comparison tek geniş range'e çökmüyor; A ve B ayrı typed period + ayrı execution.
+
+**Official execution**
+- `dry_plan` ve `query` her execution'da explicit aynı `Principal` ile çağrılır.
+- ContextVersion.mdl_version != runtime.mdl_version ise data-touch öncesi fail.
+- ResultValidator:
+  - requested metric/dimension columns,
+  - top-N row count,
+  - numeric ranking order
+  doğrulamasını yapar.
+- Dry-plan tek başına verified değildir.
+
+**MinimumQueryContract**
+Her execution:
+- request_ref
+- full AnalyticsIR snapshot
+- planner id/version
+- mdl_version
+- context_version
+- execution_id
+- executed SQL
+- result_hash
+- tenant_id
+- principal identity/roles
+- CubeQuery
+- durability/sealed
+taşır.
+Comparison iki execution ise loop her plan/result çifti için ayrı immutable contract seal
+üretir; ikinci SQL ilk contract'a yazılmaz.
+
+**Strict seal kararı**
+Legacy `ContractStore.record()` değiştirilmedi.
+Yeni `record_v2_minimum()`:
+- DB write → `durability=db, sealed=true`
+- DB fail + existing spool write → `spool_pending, sealed=true`
+- DB + spool fail → `durability=none, sealed=false`
+Son durumda result dönse bile `official_verified=false`; legacy fallback yok.
+
+**Focused acceptance run 1**
+- Run: `35558055708`
+- Sonuç: **17 passed / 0 failed**
+- Test süresi: **9.75s**
+- İlk run sonrası roadmap exit yeniden okununca gerçek demo time + simple compare'ın
+  yalnız fake compiler seviyesinde kaldığı görüldü.
+- Bu nedenle Day3 kapatılmadı; eksik acceptance coverage tamamlandı.
+
+**Final focused acceptance run**
+- Product/test snapshot: `26b8cad7ba0cd01376bb55c3c27266ab8b121103`
+- Run: `35558188351`
+- Sonuç: **19 passed / 0 failed**
+- Test süresi: **10.44s**
+- Full suite: **çalışmadı**
+- Corpus: **çalışmadı**
+- Day0/Day1/Day2 gate: **tekrar çalışmadı**
+- LLM/provider acceptance: **çalışmadı**
+
+**Real demo Wren acceptance**
+Gerçek Wren + demo DB üzerinde:
+- metric: PASS
+- breakdown: PASS
+- time period: PASS
+- ranking direction + limit: PASS
+- simple comparison A-vs-B: PASS
+- explicit principal dry-plan/query: PASS
+- planned-vs-canonical result equivalence focused set: **5/5 = 100%**
+- simple comparison: iki ayrı Wren execution + ResultValidator PASS
+- focused real-demo planned-query latency sample count: **7**
+- focused Wren planned-query p95 gate: **PASS (<10s)**
+
+Bu küçük focused acceptance setidir; ürün-geneli performans/accuracy iddiası değildir.
+
+**P6 exit**
+```text
+MUST requirement coverage dedicated paths   100%  PASS
+core result equivalence focused canonical   100% (5/5) PASS
+P0 silent-wrong found in focused set        0     PASS
+principal-aware official execution          100%  PASS
+focused Wren planned-query p95             <10s  PASS
+real demo metric                            PASS
+real demo breakdown                         PASS
+real demo time                              PASS
+real demo ranking                           PASS
+real demo simple compare                    PASS
+MinimumQueryContract per official execution structural contract PASS
+legacy request fallback                     0
+```
+
+**No-touch final cross-check — Day2 seal → Day3**
+```text
+backend/app/routers/ask.py       unchanged
+backend/app/cube_router.py       unchanged
+backend/app/uyum.py              unchanged
+backend/app/plan_tuketici.py     unchanged
+backend/app/plan_semasi.py       unchanged
+backend/app/followup.py          unchanged
+backend/app/intent_semasi.py     unchanged
+.github/workflows/backend-ci.yml absent / yeniden yaratılmadı
+```
+
+**Test-hız freeze**
+- `a2f8cf18866e04be15dcb539524b39751091d9ef`:
+  Day3 focused workflow başarı sonrası `workflow_dispatch`-only yapıldı.
+- Day4 ortak `models.py/orchestrator.py` değişiklikleri Day3 gate'i otomatik
+  yeniden koşturmayacak.
+- Always-on full CI yok ve geri getirilmeyecek.
+
+### V2-D012 — signed-chip sonrası full analytical resume Day4 state bekliyor
+
+- Signed chip Day2'de semantic slotu deterministic çözer.
+- Day3, original full `AnalyticalRequest` server-side conversation state'te henüz
+  persistent olmadığı için yalnız chip'ten eksik request uydurup query açmaz.
+- Bu deliberate fail-closed davranıştır; bug/fallback değil.
+- Blocker: Day3 standard fresh-turn query için **NO**.
+- Hedef kapanış: Day4 / P7 ConversationState + TopicFrame/FocusState + typed delta.
+- Kabul: chip/free-text clarification sonrası yalnız ilgili slot patch edilir ve kalan
+  request requirement'ları kaybolmadan standard analytics devam eder.
+
+**Karar**
+Day 3 P6 **COMPLETE**.
+Day 4 henüz açılmadı.
+Bir sonraki geliştirici önce roadmap **P7** ve report **R9**'u yeniden okuyacak; ayrıca
+R6 conversation-layer sınırını ve V2-D011/V2-D012 sentinel'lerini çaprazlayacak.
+Koddan önce Day4 ticket contract yaşayan deftere yazılacak.
+
+
+
+### V2-D013 — full standard-turn E2E p95 henüz ayrı ölçülmedi
+
+- P6 focused gate'in ölçtüğü latency:
+  `CubePlanner → WrenService.query` planned-query execution örnekleri (**7 sample**).
+- Bu örneklerde focused p95/max <10s kapısı geçti.
+- Bu ölçüm; dış provider `TurnInterpreter`, HTTP, resolver, contract persistence ve
+  response serialization toplamını kapsayan gerçek kullanıcı `/ask-v2` end-to-end p95
+  değildir.
+- Roadmap'teki `standard p95 <=10 sn başlangıç` ifadesi ürün deneyimi açısından daha geniş
+  okunabileceğinden bu ayrım gizlenmez.
+- Day3 correctness blocker: **NO**.
+- Core MVP / Day5 performance blocker: **YES**.
+- Kapanış: Day5 canonical standard analytics flow'larında küçük ve temsilî end-to-end
+  latency sample'ı; provider/infra failure correctness failure diye sayılmadan ölçülür.
+- Bu kayıt uğruna Day1 provider corpus'u veya Day3 focused gate **yeniden çalıştırılmadı**.
+
+
+
+## 11. DAY 4 ACTIVE TICKET — P7 / R9 + R6 CONVERSATION BOUNDARY
+
+**AMAÇ**  
+V2'yi tek-turn analitik uç olmaktan çıkarıp prior canonical IR, focus, clarification ve
+evidence/result anchor'larını taşıyan gerçek bir konuşma çekirdeğine dönüştürmek.
+Follow-up ve user repair'de yalnız kullanıcının bu turda değiştirdiği typed slot değişir;
+diğer canonical slotlar korunur. `RESULT_EXPLAIN` mevcut evidence yeterliyse yeni query
+açmaz; `SOCIAL` hiçbir data query çalıştırmaz.
+
+**USER SCENARIO — roadmap canonical**
+```text
+“bu yıl makine bazında OEE”
+→ “sadece RAM-3”
+→ “hayır son 3 ay”
+→ “bunu yorumla”
+→ “teşekkürler”
+```
+
+**ROADMAP**
+P7 / P7.1 / P7.2.
+
+**REPORT DAYANAK**
+- R9 — canonical conversation state: TopicFrame, FocusState, ClarificationState,
+  last contract, last IR; raw SQL memory değildir.
+- R6 Katman 1 — ConversationState/TopicFrame/FocusState/artifact anchors bounded context.
+- R6 Katman 4 — query gerekli mi kararının sahibi DialoguePolicy.
+- R3/R3A — prior IR + slot delta; USER_REPAIR typed diff; referential flow.
+- R26B NS3 — context preserved, yalnız ilgili slot değişir, explain mevcut evidence
+  yeterliyse query açmaz.
+
+**SENTINEL BORÇLAR**
+- V2-D011: `sadece RAM-3` refine-vs-repair special-case parser yazmadan doğru state
+  transition ile çözülmeli.
+- V2-D012: signed/free-text clarification sonrası original analytical request +
+  çözülmüş sibling hypotheses kaybolmadan yalnız ambiguous slot patch edilip standard
+  analytics devam etmeli.
+
+**NEW OWNER**
+- `ConversationCoordinatorV0`
+  - typed prior IR + typed current delta,
+  - FocusState / TopicFrame,
+  - pending analytical clarification state,
+  - last result/contract anchors,
+  - unrelated-slot preservation.
+- `DialoguePolicyV0`
+  - TALK
+  - CLARIFY
+  - EXPLAIN_EXISTING
+  - ANALYTIC_STANDARD
+  - UNSUPPORTED
+  kararının tek sahibi.
+- TurnInterpreter language owner olarak kalır.
+- SemanticResolver canonical binding owner olarak kalır.
+- CubePlanner query plan owner olarak kalır.
+
+**PERSISTENCE SINIRI**
+Day4 canonical conversation state HTTP turundan tura typed olarak taşınır ve response'ta
+geri döner. Existing `Conversation/ConversationMessage` altyapısı current-state/reuse
+kanıtı olarak incelendi; fakat roadmap Day14 persistence/resume işini ayrıca planladığı için
+Day4'te legacy AskResponse persistence formatını V2 semantic memory authority yapmayacağız.
+Raw SQL veya legacy payload canonical memory olmayacak.
+
+**MINIMUM CONVERSATION STATE**
+```text
+TopicFrameV0:
+  active topic/cube
+  last canonical IR identity
+
+FocusStateV0:
+  active metrics
+  active dimensions
+  active filters/entities
+  active period
+  last contract refs
+  last result anchor
+
+ClarificationState:
+  existing Day2 state
+
+PendingAnalyticalStateV0:
+  original TurnInterpretation
+  resolved sibling hypotheses
+  blocking clarification
+  base prior IR if operation refine/repair
+
+ConversationStateV2:
+  last_ir
+  topic
+  focus
+  pending analytical state
+  last result / contract anchors
+```
+
+**DELTA KURALI**
+For `ANALYTIC_REFINE` / `USER_REPAIR`:
+- current metric mention varsa metric slotu değişir; yoksa prior korunur,
+- current dimension mention varsa dimension slotu değişir; yoksa prior korunur,
+- current entity filter yalnız kendi canonical dimension'ındaki prior filter'ı değiştirir;
+  diğer filter dimensions korunur,
+- current time mention varsa period değişir; yoksa prior korunur,
+- ranking/comparison yalnız current typed request taşıyorsa değişir,
+- hiçbir slot raw text/SQL edit ile patch edilmez,
+- current resolved ref prior cube ile uyumsuzsa silent cross-cube coercion yok; typed
+  capability/follow-up failure.
+
+**USER_REPAIR CONTRACT**
+Interpreter `USER_REPAIR` çıktısında `analytical_request` yalnız düzeltilen/new typed
+surface slotları taşır; unrelated prior slotları model yeniden yazmaz.
+ConversationCoordinator bu delta'yı prior IR üstüne uygular.
+`correction_spans` tek başına hangi canonical slotun değişeceğini söylemiyorsa tahmin yok.
+
+**CLARIFICATION RESUME**
+Clarification oluştuğunda:
+```text
+original turn
++ all initial hypotheses
++ pending clarification
++ base prior IR (varsa)
+```
+typed state'te korunur.
+
+Signed/free-text resume:
+```text
+resolved ambiguous hypothesis
+→ pending hypothesis set içindeki aynı source slotu değiştir
+→ original turn yeniden yorumlanmaz
+→ NEW ise AnalyticsIRBuilder
+→ REFINE/REPAIR ise prior IR + typed delta
+```
+Client payload semantic truth sayılmaz; Day2 signed token integrity devam eder.
+
+**RESULT_EXPLAIN**
+Active verified result + contract anchor varsa:
+- query = 0
+- dry_plan = 0
+- existing result/evidence anchor response'a taşınır
+- Day4 finalizer/narration mimarisini gereksiz büyütmez; text synthesis Core MVP'de
+  ayrıca harden edilebilir.
+Active result yoksa yeni SQL uydurulmaz; typed no-active-result outcome.
+
+**SOCIAL**
+`SOCIAL` → TALK; query/dry-plan/cube_sql = 0.
+
+**DATASET-AGNOSTIC KURAL — YENİ KALICI İNVARIANT**
+Kullanıcı kararıyla `backend/AGENTS.md §12` eklendi
+(commit `495f7fe19c71b45c24269727269110ba76e6a6e9`).
+
+Day4 development/test buna özellikle uyar:
+- production code demo-boyahane / OEE / RAM-3 / parti / ciro literal'ını bilmez,
+- generic conversation mekanizması schema/MDL'den türetilir,
+- yalnız mevcut demo DB'ye uygun yapay sorular correctness kanıtı değildir,
+- deterministic contract test en az iki sentetik/permuted schema fixture'da aynı
+  conversation invariant'ını geçer,
+- canonical isimler fixture'da değiştirilince production code değişmez,
+- natural-language acceptance gerçekçi kısa/paraphrase follow-up'lardan oluşur,
+- real demo Wren smoke ek kanıttır; generic correctness'in tek kanıtı değildir.
+
+**TARGETED NATURAL THREAD A — synthetic manufacturing**
+```text
+“bu sene hatlara göre verimlilik nasıl?”
+→ “yalnız AX-17”
+→ “yok, son üç ay olsun”
+→ “bu sonucu biraz yorumlar mısın?”
+→ “sağ ol”
+```
+Canonical fixture names kullanıcı dilinden farklı tutulur
+(`efficiency_score_z / asset_axis_q / UNIT-Z17 / fact_alpha` gibi).
+
+**TARGETED NATURAL THREAD B — schema permutation**
+Aynı conversation invariants; canonical cube/metric/dimension/entity/time-axis adlarının
+tamamı değiştirilmiş ikinci fixture. Production code aynı kalır.
+
+**FILES TO TOUCH — beklenen**
+- `app/v2/models.py`
+- `app/v2/conversation.py` (new)
+- `app/v2/dialogue_policy.py` (new)
+- `app/v2/interpreter.py` — yalnız USER_REPAIR typed-delta prompt contract'ı
+- `app/v2/orchestrator.py`
+- `app/routers/ask_v2.py`
+- `tests/test_v2_day4.py` (new focused)
+- gerekirse `eval/v2_day4_conversation_cases.yaml` + küçük live evaluator
+- bu yaşayan durum dosyası.
+
+**FILES NOT TO TOUCH**
+- `app/routers/ask.py`
+- `app/cube_router.py`
+- `app/uyum.py`
+- `app/plan_tuketici.py`
+- `app/plan_semasi.py`
+- `app/followup.py`
+- `app/intent_semasi.py`
+- sealed roadmap/report
+- historical Day0/1/2/3 measurement artefacts
+- removed `.github/workflows/backend-ci.yml`.
+
+**TARGETED TEST / DEMO — HIZ + BAĞIMSIZLIK**
+Tek development demetinin sonunda:
+1. two-schema metamorphic conversation contract,
+2. unrelated-slot preservation,
+3. filter same-dimension replacement / unrelated-filter preservation,
+4. result-explain query=0,
+5. pure-social query=0,
+6. signed/free-text clarification resume preserves sibling request slots,
+7. stale context/version fail-closed,
+8. production conversation source fixture literal ban,
+9. gerekiyorsa küçük real-provider realistic-language classification thread,
+10. real Wren yalnız ek smoke; sole oracle değil.
+
+Full suite/corpus yok.
+
+**KPI / EXIT**
+```text
+followup_correctness focused realistic set       >= 90%
+repair_slot_preservation regression              100%
+canonical 5-turn context break                   0
+pure_social_query_rate                           0
+result-explain unnecessary query                 0
+clarification resume sibling-slot loss           0
+schema-permutation invariant break               0
+production fixture-literal dependency            0
+```
+
+**STOP-THE-LINE**
+- prior SQL veya previous CubeQuery canonical conversation memory yapılırsa,
+- follow-up raw question ikinci kez parser ile çözülürse,
+- `RAM-3`, OEE, demo cube adları için production special-case yazılırsa,
+- repair'de current message'ta olmayan prior slotlar LLM tarafından yeniden yazdırılırsa,
+- pending clarification sibling hypotheses/request kaybedilirse,
+- RESULT_EXPLAIN mevcut result varken query açarsa,
+- SOCIAL query açarsa,
+- test yalnız demo DB'deki bilinen satırlara uyan sorularla yeşil yapılırsa,
+- fake schema tek correctness kanıtı olursa,
+- second/permuted schema aynı generic invariant'ı bozarsa,
+- Day14 persistence kapsamı Day4'e wholesale çekilirse.
+
+
+
+### 2026-09-21 — DAY 4 / live realistic-language gate 1 — ROOT CLASSIFICATION
+
+**Run**
+- workflow: `v2-day4-live-conversation`
+- run: `35559963264`
+- artifact: `10621862234`
+- digest:
+  `sha256:8447fa93efcabafc2e49d7b5e22ea37aee58088989bceeac57db13af7247f61f`
+- source policy: `synthetic_schema_permuted_no_demo_db`
+- threads: **6**
+- natural turns: **30**
+- demo DB access: **0**
+
+**Measured**
+```text
+structured success              30/30 = 100%
+turn act accuracy               26/30 = 86.67%
+follow-up correctness            4/12 = 33.33%
+repair slot preservation         2/6  = 33.33%
+result explain classification    6/6  = 100%
+social classification            6/6  = 100%
+surface grounding violation      0
+max LLM calls/case               1
+```
+
+**Failure-stage analysis — DB/fixture değil language contract**
+1. Repair-vs-refine sınırı:
+   - düzeltme/retraction anlamı taşıyan bazı doğal turlar `USER_REPAIR` yerine
+     `ANALYTIC_REFINE` geldi.
+   - slot extraction doğruydu (time-only), dialogue act precedence eksikti.
+2. Entity-member vs grouping-axis sınırı:
+   - “yalnız/bir tek <somut üye/id>” refinement'larının bazılarında somut member
+     `filter` yerine `dimension` veya `dimension+filter` olarak etiketlendi.
+   - canonical DB bilgisi verilmediği için bu tam olarak generic language-role ayrımıdır.
+3. Bir turda `pending_clarification=false` olmasına rağmen correction
+   `CLARIFICATION_ANSWER` seçildi; state precondition istemde yeterince sert değildi.
+
+**Yapılmayacak**
+- K-17 / Kuzey-4 / Ekip-N / Tesis-C için branch, regex veya örnek sözlük eklenmeyecek.
+- Test case çıkarılıp oran yapay biçimde yükseltilmeyecek.
+- Demo DB değerleri prompt'a konup modelin işi kolaylaştırılmayacak.
+- Resolver/Planner'a ikinci language owner eklenmeyecek.
+
+**Kök düzeltme**
+TurnInterpreter sözleşmesi generic olarak keskinleştirilecek:
+- correction/retraction, additive refinement'tan önce gelir → `USER_REPAIR`;
+- `CLARIFICATION_ANSWER` için `pending_clarification=true` hard semantic precondition;
+- concrete selected member/value/identifier → `filter_mentions`;
+- grouping/category axis → `dimension_mentions`;
+- aynı concrete surface yalnız grouping açıkça istenmiyorsa dimension+filter diye
+  duplicate edilmez.
+
+Sonra **yalnız aynı 30-turn live gate** bir kez daha çalıştırılacak.
+Deterministik 8-test gate/full suite/corpus tekrar açılmayacak.
+
+
+
+### 2026-09-21 — DAY 4 / MODEL CAPABILITY KARARI — SUPERSEDED
+
+Aynı 30-turn DB-independent corpus `deepseek/deepseek-v4-flash` ile birden fazla kez
+çalıştırıldı. Structured output %100 ve surface-grounding violation 0 kalırken ince
+conversation speech-act sınırları run'lar arasında ciddi oynadı:
+
+```text
+run 1: act 86.7% | follow-up 33.3% | repair 33.3%
+run 2: act 90.0% | follow-up 66.7% | repair 50.0%
+run 3: act 70.0% | follow-up 33.3% | repair 33.3%
+run 4: act 83.3% | follow-up 58.3% | repair 16.7%
+```
+
+`temperature=0` olmasına rağmen bu varyans ve eşik-altı sonuç, fixture/DB probleminden
+bağımsız bir **model capability / instruction-following stability** problemi olarak
+sınıflandırıldı. Prompt'a daha fazla fixture-benzeri örnek yığmak reddedildi.
+
+**SUPERSEDED NOTU — 2026-09-21**  
+Bu ara karar, kullanıcı tarafından daha önce açıkça mühürlenen ileriye dönük tek model authority'siyle çeliştiği için uygulanabilir son karar değildir. Day1 Luna measurement tarihsel provenance olarak kalır; yeni çalışma/test default'u `deepseek/deepseek-v4-flash`tır. Dedicated Luna transport yolu final Day4 seal öncesi kaldırılmıştır.
+
+**Tarihsel ara karar (uygulanmıyor)**
+- TurnInterpreter tek language owner olarak kalır.
+- V2 TurnInterpreter için ayrı, explicit model capability tanımlanır.
+- Default: `openai/gpt-5.6-luna` (OpenRouter), çünkü Day1 tarihsel acceptance'ta
+  structured 28/28 ve act 27/28 ölçülmüştür.
+- Core/general OpenRouter modeli `deepseek/deepseek-v4-flash` olarak kalır.
+- Legacy select/generate davranışı değişmez.
+- V2 interpreter model yoksa silent lower-quality fallback yapılmaz; mevcut global LLM
+  yalnız explicit configuration/fallback policy ile kullanılabilir.
+- Bu ayrım bir semantic-owner çoğalması değildir: model transport değişir, owner yine
+  yalnız `TurnInterpreter`dır.
+
+**Yeni config contract**
+```text
+DIMA_V2_INTERPRETER_PROVIDER=openrouter
+DIMA_V2_INTERPRETER_MODEL=openai/gpt-5.6-luna
+```
+
+**Exit ölçümü**
+Aynı 30-turn corpus DEĞİŞTİRİLMEDEN dedicated interpreter model ile yeniden çalışır.
+Pass olursa ayrıca yeni, tuning sırasında kullanılmamış küçük holdout çalıştırılır.
+
+
+
+### 2026-09-21 — DAY 4 / P7 COMPLETE — FINAL SEAL
+
+**Authority cross-check**
+- Roadmap P7 yeniden okundu.
+- Report R9 + R6 conversation boundary yeniden okundu.
+- P7 normatif correctness:
+  - prior IR + deterministic delta,
+  - unrelated-slot preservation,
+  - canonical 5-turn context continuity,
+  - social query = 0,
+  - result-explain unnecessary query = 0.
+- Exact `ANALYTIC_REFINE ↔ USER_REPAIR` subtype etiketi P7 release gate değildir;
+  semantic state transition doğruysa diagnostic olarak tutulur.
+
+**Final architecture**
+```text
+TurnInterpreter
+→ DialoguePolicyV0
+→ SemanticResolver
+→ ConversationCoordinatorV0
+→ prior AnalyticsIR + typed current delta
+→ RequirementLedger
+→ CubePlanner
+→ Wren execution
+→ ResultValidator
+→ MinimumQueryContract
+→ updated ConversationStateV2
+```
+
+**Conversation state**
+Canonical Day4 state artık şunları typed taşır:
+- `TopicFrameV0`
+- `FocusStateV0`
+- `ClarificationState`
+- `PendingAnalyticalStateV0`
+- `last_ir`
+- `last_result`
+- contract refs / result anchors.
+
+Raw SQL ve previous CubeQuery canonical memory değildir.
+
+**Typed delta semantics**
+- Current metric varsa metric slotu değişir; yoksa prior korunur.
+- Current dimension varsa breakdown slotu değişir; yoksa prior korunur.
+- Current entity filter yalnız kendi canonical dimension filter'ını değiştirir.
+- Unrelated filters korunur.
+- Current time varsa period değişir; yoksa prior period korunur.
+- Ranking/comparison yalnız current typed request'te varsa değişir.
+- Cross-cube uyuşmazlıkta silent coercion yok.
+- Empty continuation delta fail-closed; query açılmaz.
+
+**Clarification resume — V2-D012 CLOSED**
+- Pending clarification sırasında original analytical request saklanır.
+- Initial resolved sibling hypotheses saklanır.
+- Base prior IR saklanır.
+- Signed-chip resume yalnız ambiguous hypothesis'i patch eder.
+- Free-text resume aynı typed pending state'i kullanır.
+- Original turn yeniden semantic parse edilmez.
+- Sibling metric/request slotu kaybolmaz.
+- Dedicated focused testlerde signed + free-text resume PASS.
+
+**“sadece RAM-3” sentinel — V2-D011 CLOSED**
+- Production code'da `RAM-3` veya eşdeğer fixture literal special-case yok.
+- Concrete member/value → Resolver candidate → canonical filter delta.
+- Prior metric/dimension/time korunur.
+- `REFINE` ile `USER_REPAIR` subtype'ı semantic state transition'ı değiştirmiyorsa
+  downstream owner'lara özel patch yazılmaz.
+- Doğru owner:
+  - language surface → TurnInterpreter,
+  - canonical filter binding → SemanticResolver,
+  - prior IR + slot transition → ConversationCoordinator.
+
+**No-query policy**
+- Verified active result + RESULT_EXPLAIN → existing result/evidence, query=0.
+- SOCIAL → TALK, query=0.
+- Empty/mislabelled analytical continuation with zero delta → fail-closed before Wren,
+  query=0.
+- Clarification → query=0 until resolved.
+
+**Dataset-agnostic correctness**
+`backend/AGENTS.md §12` kalıcı kuraldır.
+Day4 primary correctness kanıtı repo demo DB'sine göre kurulmadı:
+- iki tamamen farklı synthetic/permuted schema,
+- user language ile canonical identifiers birbirinden farklı,
+- aynı 5-turn invariant iki schema'da production code değişmeden geçti,
+- production conversation code fixture literal ban PASS,
+- real Wren smoke capability'yi schema'dan dinamik seçti; demo metric/cube adı hard-code edilmedi.
+
+**Single-owner root-fix — kalıcı kural**
+`backend/AGENTS.md §13` eklendi:
+```text
+failure
+→ failure stage
+→ normative requirement
+→ “Bu kararın tek sahibi kim?”
+→ yalnız owner'da root fix
+→ focused proof
+```
+Şu refleks yasak:
+```text
+prompt başarısız
+→ resolver özel if
+→ planner fallback
+→ orchestrator exception branch
+→ test yeşil
+```
+
+**Final deterministic focused gate**
+- Workflow: `35563410971`
+- Result: **9 passed / 0 failed**
+- Pytest: **6.06s**
+- Full suite: **0**
+- legacy corpus: **0**
+- Day0/1/2/3 rerun: **0**
+- Includes:
+  - two-schema permutation,
+  - canonical natural 5-turn state flow,
+  - unrelated-slot preservation,
+  - same-dimension filter replacement,
+  - explain query=0,
+  - social query=0,
+  - signed clarification resume,
+  - free-text clarification resume,
+  - sensitive conversation prompt boundary,
+  - fixture-literal production ban,
+  - dynamic real-Wren time-repair smoke,
+  - empty continuation cannot query.
+
+**Live DB-independent language evidence — raw preserved**
+DeepSeek/OpenRouter run:
+- workflow: `35561951458`
+- artifact: `10622696301`
+- digest:
+  `sha256:6ad0e367d6892500b5340060fecb0450057ec7e7246db8dcb94ddbc8abeb7b78`
+- model provenance from workflow log:
+  `DIMA_OPENROUTER_MODEL=deepseek/deepseek-v4-flash`
+- threads: **6**
+- turns: **30**
+- demo DB access: **0**
+- structured output: **30/30 = 100%**
+- surface grounding violation: **0**
+- max LLM calls/case: **1**
+- exact raw turn-act label accuracy: **70% diagnostic**
+- exact social label: **5/6 diagnostic**
+
+**P7 normative re-score of SAME raw records**
+Test cases ve provider outputları değiştirilmedi.
+Roadmap P7 state-transition oracle'ına göre:
+```text
+routing action accuracy                 29/30 = 96.67%
+follow-up typed-delta correctness       12/12 = 100%
+repair changed-slot preservation         6/6  = 100%
+result-explain classification            6/6  = 100%
+social analytical-payload safety         6/6  = 100%
+structured output                       30/30 = 100%
+surface grounding violation                 0
+```
+Permanent record:
+`backend/eval/v2_day4_measurement.json`.
+
+**Neden eski live evaluator FAIL idi?**
+İlk evaluator proxy olarak exact `REFINE/USER_REPAIR` label eşitliğini semantic
+correctness sayıyordu. P7 ise bekleneni açıkça:
+```text
+turn2 prior IR + filter
+turn3 prior IR + time repair
+```
+diye tanımlar. Aynı typed delta / aynı state transition üretildiğinde subtype farkını
+release blocker yapmak roadmap'te olmayan bir şart ekliyordu.
+Raw measurement silinmedi veya değiştirilmedi; exact label metriği diagnostic kaldı.
+Evaluator owner/test-oracle kuralına göre düzeltildi.
+
+**Model authority — final**
+Kullanıcının daha önce mühürlediği ileriye dönük authority korunur:
+- operational/focused OpenRouter default:
+  `deepseek/deepseek-v4-flash`.
+- Day1 `openai/gpt-5.6-luna` ölçümü tarihsel provenance olarak DEĞİŞMEDİ.
+- Sonradan eklenen dedicated `v2_interpreter_model=openai/gpt-5.6-luna` yolu
+  **SUPERSEDED ve kaldırıldı**.
+- `config.py / llm.py / main.py / v2/orchestrator.py` DeepSeek run-3 öncesindeki
+  tek-model-policy hâline geri alındı.
+- Live workflow'taki V2 Luna env override kaldırıldı.
+- Yeni live test sırf bu policy restore için tekrar çalıştırılmadı; run-3 zaten
+  DeepSeek provenance taşıyor.
+
+**Workflow discipline**
+- `v2-day4-conversation.yml` → workflow_dispatch-only.
+- `v2-day4-live-conversation.yml` → workflow_dispatch-only.
+- live workflow structural testleri tekrar koşturmaz; yalnız language eval yapar.
+- removed `backend-ci.yml` yok ve geri gelmedi.
+- final status/document/model-policy commitleri otomatik test başlatmaz.
+
+### V2-D014 — exact continuation subtype / acknowledgment language diagnostic
+
+Day4 P7 blocker değildir; Day5 attack-table girdisidir.
+
+Observed:
+- `ANALYTIC_REFINE ↔ USER_REPAIR` exact subtype DeepSeek'te varyanslı.
+- Bir natural acknowledgement (`tamamdır`) bir run'da boş `ANALYTIC_REFINE` çıktı.
+
+Safety:
+- typed analytical slot payload doğru/boş kaldı,
+- ConversationCoordinator unrelated slots'u koruyor,
+- empty continuation fail-closed,
+- query=0 sentinel final focused testte PASS.
+
+Day5 beklentisi:
+- exact language quality ayrı diagnostic olarak saldırı masasında ölçülür,
+- fakat çözüm downstream özel if/fallback olmayacak,
+- failure sahibi TurnInterpreter ise yalnız onun contract/model/prompt boundary'si ele alınır.
+
+**P7 EXIT**
+```text
+followup_correctness focused realistic set       100%   PASS
+repair_slot_preservation regression              100%   PASS
+canonical 5-turn context break                      0   PASS
+pure_social_query_rate                              0   PASS
+result-explain unnecessary query                    0   PASS
+clarification resume sibling-slot loss              0   PASS
+schema-permutation invariant break                  0   PASS
+production fixture-literal dependency               0   PASS
+legacy semantic fallback                            0   PASS
+```
+
+**No-touch final cross-check**
+```text
+backend/app/routers/ask.py       unchanged
+backend/app/cube_router.py       unchanged
+backend/app/uyum.py              unchanged
+backend/app/plan_tuketici.py     unchanged
+backend/app/plan_semasi.py       unchanged
+backend/app/followup.py          unchanged
+backend/app/intent_semasi.py     unchanged
+.github/workflows/backend-ci.yml absent
+```
+
+**Karar**
+Day 4 / P7 **COMPLETE**.
+Day 5 / P8 henüz açılmadı.
+
+---
+
+## 12. DAY 5 READY DIRECTIVE — CORE MVP SALDIRI MASASI
+
+Day5 başlamadan:
+1. Roadmap **P8** yeniden oku.
+2. Report **R6.1 + R20** yeniden oku.
+3. V2-D013 (full E2E p95) + V2-D014 (language subtype diagnostic) çaprazla.
+4. Kod/feature eklemeden önce attack-ticket yaşayan deftere yaz.
+5. İlk çalışma **feature değil eval/trace/failure-classification** olacak.
+
+**Day5 ciddi denetim biçimi**
+Tek tek sınıflara unit-test eklemek yerine gerçek kullanıcı gibi `/ask-v2` yüzeyine
+uçtan uca saldır:
+
+| Attack | Beklenen invariant |
+|---|---|
+| paraphrase | aynı semantic requirement; fixture/canonical wording ezberi yok |
+| typo | silent wrong yok; safe resolve veya clarification |
+| ambiguity | blocking auto-selection=0; clarification query=0 |
+| clarification answer | yalnız pending slot patch; sibling loss=0 |
+| repair | unrelated-slot loss=0 |
+| follow-up | prior IR korunur; yalnız current delta |
+| topic switch | old focus bleed=0; yeni TopicFrame görünür |
+| comparison | A/B semantiği korunur; tek range'e çökme yok |
+| ranking | direction + semantic limit birlikte korunur |
+| result explain | active result yeterliyse query=0 |
+| pure social | SQL/query=0 |
+| malformed clarification token | fail-closed; semantic fallback=0 |
+| stale context/version | stale replay=0; fail-closed |
+| provider/infra failure | correctness fail diye sayma; typed unavailable/failure |
+| cross-tenant attempt | evidence/data leak=0 |
+| silent-wrong attack | wrong-but-plausible official answer=0 |
+
+**Day5 çalışma kuralı**
+Roadmap P8 zaten söyler:
+```text
+Yeni özellik ekleme.
+Yalnız:
+eval
+trace
+failure classify
+root fix
+```
+
+Her kırmızı için:
+```text
+Bu kararın tek sahibi kim?
+```
+sorusu cevaplanmadan kod değişikliği YOK.
+
+**Day5 blocker gate**
+```text
+P0 silent-wrong                     = 0 MVP holdout
+blocking ambiguity auto-selection   = 0
+clarification SQL                   = 0
+pure social SQL                     = 0
+user repair unrelated-slot loss     = 0
+canonical threads context break     = 0
+unhandled 500                       = 0
+executed queries principal-aware    = 100%
+standard E2E p95                    <= 10s
+clarify p95                         <= 6s
+```
+
+Day5 bu saldırı masası geçmeden Research Mode / Day6 açılmaz.
+
+
+## 13. DAY 5 ACTIVE TICKET — P8 CORE MVP PRODUCT INTEGRATION
+
+**AMAÇ**  
+Day0–4'te ayrı ayrı kanıtlanan runtime → interpreter → resolver → AnalyticsIR/Ledger →
+planner/execution → conversation zincirini gerçek `/ask-v2` ürün akışında tek Core MVP
+olarak tamamlamak. Day5 yalnız denetim değildir: önce eksik ürün/finalization entegrasyonu
+kapanır; **sonra** P8 exit saldırı masası çalışır.
+
+**USER SCENARIO**
+Tek gerçek conversation içinde:
+```text
+1. basit analitik soru → text-first verified answer
+2. belirsiz soru → nokta atışı clarification + signed chips, query=0
+3. chip/free-text clarification answer → sibling slot kaybetmeden doğru query
+4. follow-up refinement → prior IR + current delta
+5. user repair → unrelated slot kaybı yok
+6. result explain → mevcut evidence/result, query=0
+7. pure social → insan-okur talk response, query=0
+```
+
+**ROADMAP**  
+P8 / P8.A; P6/P7 kullanıcı-facing kabul yüzeyleriyle birlikte.
+
+**REPORT DAYANAK**  
+R6.0 Katman 10 Conversation Finalizer, R6.1 L1–L2 capability ladder,
+R6.2/R6.3 text-first + visible-scope + clarify-in-place UX,
+R10 Standard Analytics yolu, R20 değişmezleri, R25.1 normal yol.
+R3A anti-pattern matrisi Day5 root-fix authority'sidir.
+
+**YORUM / P8 SINIRI**  
+P8'deki “Yeni özellik ekleme”:
+- Research/Decision/yeni analytics capability ekleme YOK;
+- Day0–4 çekirdeğini ürün yüzeyine tamamlayan **Finalizer / ConversationResponse / UI adapter**
+  entegrasyonu Day5'in Core MVP kapanış işidir.
+- Finalizer veya UI semantic eksikliği tahminle kapatamaz.
+
+**NEW OWNER**
+- `ConversationFinalizerV0` → yalnız doğrulanmış typed state/evidence'dan kullanıcı-facing
+  `ConversationResponseV0` üretir.
+- Finalizer **semantic owner değildir**:
+  - raw question parse etmez,
+  - metric/entity seçmez,
+  - requirement tamamlamaz,
+  - DB/Wren çağırmaz,
+  - yeni sayı/hesap üretmez.
+- `/ask-v2` route → orchestrator'ın typed Core sonucunu Finalizer'dan geçirip ürün
+  response contract'ını dönen HTTP product boundary.
+- Frontend V2 adapter → backend'in verdiği answer/scope/clarification/evidence contract'ını
+  render eder; client-side semantic heuristic yok.
+
+**REUSE EDİLEN PRIMITIVE**
+- Day0–4 V2 orchestrator + typed ConversationState.
+- MinimumQueryContract / ContractStore evidence refs.
+- mevcut frontend conversation shell / auth-enabled api client.
+- mevcut Wren/Principal/ContextVersion değişmezleri.
+
+**FILES TO TOUCH — beklenen**
+Backend:
+- `app/v2/models.py`
+- `app/v2/finalizer.py` (new)
+- `app/routers/ask_v2.py`
+- `app/v2/orchestrator.py` yalnız product-finalization için gerçekten gerekiyorsa minimal.
+Frontend:
+- `src/lib/types.ts`
+- `src/lib/api-client.ts`
+- mevcut conversation shell'e **küçük V2 adapter/surface**; full UI rewrite YOK.
+Docs:
+- bu yaşayan durum dosyası.
+
+**FILES NOT TO TOUCH**
+- sealed roadmap/report
+- `app/routers/ask.py`
+- `app/cube_router.py`
+- `app/uyum.py`
+- `app/plan_tuketici.py`
+- `app/plan_semasi.py`
+- `app/followup.py`
+- `app/intent_semasi.py`
+- historical Day0–4 measurement artefacts
+- removed `.github/workflows/backend-ci.yml`.
+
+**PRODUCT RESPONSE CONTRACT — DAY5**
+Minimum:
+```text
+ConversationResponseV0
+  kind                  answer | clarify | talk | explain | semantic_gap | unsupported | failure
+  text                  text-first user-facing body
+  scope_chips[]         backend-derived; semantic authority değil
+  clarification_chips[] signed backend tokens
+  evidence_refs[]       contract/execution refs
+  table?                verified execution preview; optional
+  official_verified
+```
+
+Kurallar:
+- numeric cell yalnız verified execution/result'tan gelir; Finalizer hesap yapmaz.
+- semantic display label yalnız resolver hypothesis/canonical state'ten gelir.
+- sensitive filter value açık scope chip'e sızmaz.
+- clarify/talk/explain typed action'a göre finalize edilir; raw text tekrar parse edilmez.
+- failure/semantic-gap boş veya “dead” response üretmez.
+- RESULT_EXPLAIN existing verified result kullanır; query açmaz.
+- UI backend state'ini heuristics ile yeniden çözmez.
+
+**TARGETED DEVELOPMENT PROOF — test fazına geçmeden önce**
+- endpoint response her terminal Core action için user-facing `ConversationResponseV0` taşır,
+- standard answer contract/evidence refs taşır,
+- clarification signed token UI'ya kadar taşınabilir,
+- conversation state bir sonraki V2 turn'de aynen yankılanabilir,
+- frontend'de gerçek `askV2()` consumer vardır; legacy `/ask` silent fallback YOK.
+
+**EXIT TEST — geliştirme bittikten sonra kısa/nokta atışı**
+Önce küçük Core MVP integration testleri; sonra P8 saldırı masası.
+Full suite / legacy corpus / uzun CI YOK.
+
+**P8 SALDIRI AİLELERİ**
+```text
+paraphrase · typo · ambiguity · clarification resume · repair · follow-up
+topic switch · comparison · ranking · result explain · pure social
+malformed clarification token · stale context/version · provider/infra failure
+cross-tenant attempt · silent-wrong
+```
+
+Her kırmızıda:
+```text
+observed failure
+→ failure stage
+→ normative requirement
+→ Bu kararın tek sahibi kim?
+→ yalnız owner'da root fix
+→ focused proof
+```
+
+**EXIT / RELEASE BLOCKER**
+```text
+P0 silent-wrong                     = 0 MVP holdout
+blocking ambiguity auto-selection   = 0
+clarification SQL                   = 0
+pure social SQL                     = 0
+user repair unrelated-slot loss     = 0
+canonical threads context break     = 0
+unhandled 500                       = 0
+executed queries principal-aware    = 100%
+standard E2E p95                    <= 10s
+clarify p95                         <= 6s
+dead/broken Core response           = 0
+frontend semantic re-interpretation = 0
+legacy silent fallback              = 0
+```
+
+**STOP-THE-LINE**
+- Finalizer raw question/SQL parse etmeye başlarsa,
+- Finalizer missing metric/filter/ranking'i tahmin ederse,
+- UI canonical semantic anlam seçerse,
+- response text evidence/result dışında yeni numeric claim üretirse,
+- `/ask-v2` başarısızlığında legacy `/ask` sessiz fallback açılırsa,
+- test için demo-boyahane/OEE/RAM-3 vb production special-case yazılırsa,
+- attack test oracle'ı implementation SQL'ini kopyalayıp kendini doğrularsa,
+- Research/Decision scope Day5'e çekilirse.
+
+**DAY5 BAŞLANGIÇ KARARI**  
+Önce product integration/finalization uygulanacak. Attack table **geliştirme sonrası exit gate**;
+Day5 geliştirmesinin yerine geçmez.
+
+
+---
+
+## 14. DAY 5 / P8 — EXIT ATTACK SONUCU VE AÇIK BORÇLAR (2026-09-21)
+
+**Focused Core gate**
+- workflow run: `35572034785`
+- result: **PASS**
+- interpreter role contract: PASS
+- resolver morphology safety: PASS
+- ranked-comparison contract: PASS
+- Day4 + Day5 Core contracts: PASS
+- frontend V2 typecheck: PASS
+- full/legacy corpus açılmadı.
+
+**Live /ask-v2 attack — son ölçülen durum**
+- workflow run: `35572057395`
+- provider: OpenRouter
+- gerçek kullanılan model: `deepseek/deepseek-v4-flash`
+- NOT: repo/environment variable workflow fallback'ını override ettiği için bu run
+  **Gemini Flash-Lite ölçümü değildir**.
+- synthetic/permuted semantic engine; demo DB correctness oracle değildir.
+- silent-wrong: **0**
+- unhandled 500: **0**
+- principal-aware execution: **100%**
+- standard p95: **8.3733s** → PASS (<=10s)
+- clarify p95: **2.4482s** → PASS (<=6s)
+- signed clarification resume filter binding: **PASS**
+- pure social query=0: **PASS**
+- topic switch old-focus bleed=0: **PASS**
+- paraphrase / typo safe path / ambiguity / ranking+comparison: **PASS**
+- tek blocker: natural repair turn
+  `"yok, son üç ay olsun"` language owner tarafından replacement time delta yanında
+  discourse/retraction surface'i semantic gap olarak da yayımlandı; sonuç
+  `semantic_gap` oldu. **Wrong official answer üretilmedi.**
+
+**Root classification**
+Bu failure'ın sahibi:
+`TurnInterpreter`.
+
+Downstream owner'lara özel patch YASAK:
+- SemanticResolver'a `yok` special-case eklenmeyecek.
+- ConversationCoordinator'a prompt-specific fallback eklenmeyecek.
+- Planner/Orchestrator exception branch eklenmeyecek.
+- test fixture'a göre production code yazılmayacak.
+
+Normatif düzeltme:
+- repair/retraction discourse marker business semantic mention değildir;
+- replacement slot typed delta olarak taşınır;
+- discourse marker `unresolved_mentions` üzerinden SemanticResolver'a gönderilmez;
+- owner fix yalnız TurnInterpreter contract/model boundary'sinde yapılır.
+
+**Clarification silent-wrong borcu — CLOSED**
+Önceki live attack'ta signed ambiguity resume seçilen ENTITY_VALUE'yu canonical filter
+slotuna taşımıyordu. `ConversationCoordinator.restore_pending()` içinde generic
+`UNKNOWN → resolved ENTITY_VALUE → FILTER` normalization ile kapatıldı.
+Son live run'da:
+- metric preserved: PASS
+- selected Segment=Prime filter bound: PASS
+- query_once: PASS
+- official_verified: true
+Bu düzeltme fixture literal veya resolver/planner fallback içermez.
+
+**LLM maliyet politikası — ACTIVE**
+Paid live-provider workflow artık **workflow_dispatch-only** olmalıdır; push başına ücretli
+LLM suite çalıştırmak yasaktır. Deterministic focused Core CI otomatik kalabilir.
+Live LLM yalnız:
+1. owner-level değişiklik sonrası,
+2. tek/nokta-atışı vaka veya küçük exit setiyle,
+3. sonuç karar değiştirecekse
+çalıştırılır.
+
+Fast-model hedefi:
+`google/gemini-2.5-flash-lite`.
+Smart escalation adayı:
+`gpt-5-mini`.
+Research modeli Day7 bake-off authority'sine bırakılır.
+
+**ÖNEMLİ MODEL PROVENANCE BORCU**
+`35572057395` Gemini testi sanılmamalıdır. GitHub Environment/Repository
+`DIMA_OPENROUTER_MODEL` variable'ı DeepSeek'i seçmiştir. Gemini karşılaştırması yapılacaksa
+manual live workflow model selection'ı explicit olarak Gemini'ye sabitlenmeli veya manual
+input ile seçilmeli; ardından yalnız gerekli küçük ölçüm çalıştırılmalıdır.
+
+**P8 release kararı**
+Day5 Core implementation **çalışıyor**, deterministic Core gate yeşildir ve önceki
+silent-wrong clarification kusuru kapanmıştır. Ancak P8 exit gate henüz **SEALED değildir**:
+natural repair blocker açık kaldığı için Day6/Research'e geçiş yapılmaz.
+
+**Açık borç sırası**
+1. TurnInterpreter owner boundary'sinde repair discourse-marker contract'ını kökten düzelt.
+2. Paid live workflow model provenance'ını explicit/yanlış-yorumlanamaz yap.
+3. Gemini Flash-Lite ile yalnız gerekli nokta-atışı repair + küçük smoke ölçümü yap.
+4. Doğruluk korunursa latency/cost kararını kaydet; bozulursa yalnız o zaman
+   `gpt-5-mini` validated escalation dene.
+5. P8 blocker'ların tamamı yeşil olduğunda Day5'i seal et ve ancak sonra Day6'yı aç.
+
+
+
+---
+
+## 15. DAY 5 / P8 COMPLETE — FINAL SEAL (2026-09-21)
+
+**Karar**
+Day 5 / P8 **COMPLETE**. Core MVP release blocker'larının tamamı current code üzerinde
+deterministik gate + gerçek-provider HTTP attack ile geçti. Day 6 artık açılabilir.
+
+### Current code proof
+Owner-level son düzeltmeler:
+- `a2f3aed0f1e77faa5ab3f65ff94b86fa90fee2bd`
+  - repair/retraction discourse marker semantic mention olmaktan çıkarıldı.
+- `6b029bf6fc9649596aca6659e4c23e7036850a83`
+  - model typo surface'i normalize ederse exact user surface'e conservative realignment;
+  - explicit adjacent top-N sayısı model tarafından düşürülürse aynı grounded ranking
+    phrase'inden deterministik recovery.
+- `7460d5403e06ddf05e69869d34a5dab5e9d2a734`
+  - short-token conservative typo realignment eşiği düzeltildi.
+- `69ba65140d4748f4a9ebe01b3a92af3f06636140`
+  - typo grounding + explicit top-N recovery deterministic regression proof'ları.
+
+Bu düzeltmeler:
+- canonical/business semantic seçmez,
+- Resolver/Planner/Orchestrator'a prompt-specific fallback eklemez,
+- LLM semantic retry açmaz,
+- fixture literal içermez,
+- TurnInterpreter'ın tek language-owner sınırında kalır.
+
+### Deterministic Core gate
+- workflow: `v2-day5-core-mvp`
+- run: `35574230175`
+- head: `69ba65140d4748f4a9ebe01b3a92af3f06636140`
+- result: **SUCCESS**
+
+Kapsam:
+- interpreter role contracts
+- resolver morphology safety
+- ranked comparison contract
+- Day4 + Day5 Core contracts
+- frontend V2 typecheck
+
+### Final real-provider exit attack
+- workflow: `v2-day5-live-attack`
+- run: `35574379890`
+- head: `ac943a7e6a1d358714436cd3135832b95d9daa8e`
+- result: **SUCCESS**
+- provider: OpenRouter
+- exact model provenance:
+  `google/gemini-2.5-flash-lite`
+- source policy:
+  `real_http_real_provider_synthetic_semantic_engine_no_demo_db`
+- artifact: `10626619366`
+- artifact digest:
+  `sha256:cc7d50e50c1649f044c31119ed25c9a4ba21069312970fbf75b2e53edaa3b9ca`
+
+Attack sonuçları:
+```text
+paraphrase                         PASS
+typo safe resolve/clarify          PASS
+ranking + comparison               PASS
+blocking ambiguity                 PASS
+signed clarification resume        PASS
+thread base                        PASS
+follow-up filter                   PASS
+user repair                        PASS
+result explain query=0             PASS
+pure social query=0                PASS
+topic switch old-focus bleed=0     PASS
+```
+
+Release gate:
+```text
+all_attack_records_pass            true
+P0 silent-wrong                    0
+unhandled 500                      0
+principal-aware execution          100%
+standard E2E p95                   5.6234s   <= 10s PASS
+clarify p95                        0.9789s   <= 6s  PASS
+blocking ambiguity auto-select     0
+clarification query                0
+pure social query                  0
+repair unrelated-slot loss         0
+canonical thread context break     0
+dead/broken Core response          0
+legacy silent fallback             0
+```
+
+### Gemini model decision
+Day5 fast-path measurement artık gerçek provenance ile:
+`google/gemini-2.5-flash-lite`.
+
+DeepSeek önceki ölçümlere göre standard/clarify latency'nin ciddi kısmı düşmüştür;
+Day5 final gate Gemini ile doğrudan geçmiştir. Bu nedenle Day5 hot-path için GPT-5-mini
+escalation denemesi **gereksizdir** ve ek ücretli test yapılmayacaktır.
+
+Bu seal:
+- bütün Dima için gelecekteki `fast/smart/research` router tasarımını çözmüş saymaz;
+- yalnız V2 Day5 Core hot-path model authority/provenance'ını kapatır.
+ModelRouter/ModelPolicy genişletmesi ilgili sonraki roadmap fazında tek-owner olarak ele alınır.
+
+### Paid-test discipline
+Tek final Gemini exit run'ını connector dispatch desteği olmadığı için geçici
+one-shot sentinel ile tetikledik. Koşu başladıktan hemen sonra:
+- live workflow tekrar `workflow_dispatch-only` yapıldı;
+- sentinel silindi;
+- cleanup commitleri:
+  - `00a3de6cab044c73392dcb0bb65317cafa8293be`
+  - `d537a9691ec6d5eba5ccd2f9a82e24b5194e96e7`
+
+Current branch'te paid live workflow **manual-only** durumdadır. Push başına ücretli LLM
+suite çalışmaz.
+
+### P8 EXIT
+```text
+Day5 Core implementation               COMPLETE
+deterministic Core gate                PASS
+real-provider Core attack              PASS
+silent wrong                           0
+unhandled 5xx                          0
+principal propagation                  PASS
+standard p95                           PASS
+clarify p95                            PASS
+Gemini provenance                      VERIFIED
+paid CI accidental auto-run            CLOSED
+```
+
+**NEXT**
+Day 6 açılabilir. Day6 başlamadan roadmap'teki ilgili P bölümü ve rapordaki referans
+bölümler yeniden okunacak; Day5'e yeni feature geri çekilmeyecek.
+
+
+---
+
+## 16. DAY 6 / P9 ACTIVE TICKET — PRODUCT MVP: RESEARCHBRIEF
+
+**AMAÇ**  
+Kompleks kullanıcı talebini tek SQL'e veya dev statik plana sıkıştırmadan, bütün açık
+araştırma hedeflerini kayıpsız ve denetlenebilir bir `ResearchBrief` sözleşmesine
+dönüştürmek. Day6 araştırmayı **çalıştırmaz**; araştırmanın typed iş emrini üretir.
+
+**USER SCENARIO**  
+Kanonik:
+> “Son 12 aylık üretilen ürünleri karşılaştır, üretildikleri makineler ve personellerle
+> ilişkisini analiz et, satış performanslarını yorumla ve raporla.”
+
+Kaybolmadan MUST olarak temsil edilmesi gereken hedefler:
+```text
+production comparison
+machine relationship
+personnel/shift relationship
+sales performance
+report deliverable
+```
+
+**ROADMAP**  
+P9 / P9.A.
+
+**REPORT DAYANAK**  
+R11.1 ResearchBrief; R11.3 raw-user-prompt almayan typed worker sınırı.
+R12 cross-domain grain/join gate Day7+ execution işi olduğundan Day6'ya çekilmez.
+R20 semantic-owner ve evidence/security değişmezleri geçerlidir.
+
+**NEW OWNER**
+- `TurnInterpreter` → raw dildeki COMPLEX_ANALYSIS / REPORT_REQUEST speech act'i ve
+  bağımsız research goal surface'lerini **bir kez** çıkarır.
+- `SemanticResolver` → Research goal içindeki semantic mention'ları mevcut canonical
+  authority ile bind eder; raw prompt okumaz.
+- `ResearchBriefBuilder` (`app/v2/research.py`) → typed language goals + resolver
+  hypotheses + context version'dan `ResearchBrief` üretir.
+- Day7 Supervisor yalnız `ResearchBrief` okuyacaktır; raw prompt semantic authority
+  olmayacaktır.
+
+**REUSE EDİLEN PRIMITIVE**
+- `TurnInterpretation` / surface-grounding invariant
+- `SemanticResolver` candidate provenance + clarification
+- `ContextVersionV0`
+- existing `SemanticHypothesis` / resolved candidate authority
+- mevcut `/ask-v2` runtime + principal boundary
+
+**FILES TO TOUCH — beklenen**
+- `app/v2/models.py`
+- `app/v2/interpreter.py`
+- `app/v2/resolver.py` — yalnız research typed mention integration
+- `app/v2/dialogue_policy.py`
+- `app/v2/research.py` — NEW
+- `app/v2/orchestrator.py` — yalnız routing/integration
+- `app/v2/finalizer.py` / `routers/ask_v2.py` — yalnız Day6 product response için minimal
+- `tests/test_v2_day6.py`
+- gerekirse küçük deterministic eval fixture; paid live eval YOK.
+
+**FILES NOT TO TOUCH**
+- sealed roadmap/report
+- `app/routers/ask.py`
+- `app/cube_router.py`
+- `app/uyum.py`
+- `app/plan_tuketici.py`
+- `app/plan_semasi.py`
+- Day7 adaptive research tools / ResearchToolContract execution
+- Wren query/planner execution semantics
+- removed always-on backend CI
+- manual-only paid live workflow
+
+**DAY6 EXECUTION CUTLINE**
+```text
+User complex request
+→ TurnInterpreter
+→ COMPLEX_ANALYSIS / REPORT_REQUEST
+→ SemanticResolver
+→ ResearchBriefBuilder
+→ ResearchBrief READY | BLOCKED
+→ STOP
+```
+
+Bu fazda:
+```text
+query execution      = 0
+dry_plan             = 0
+research tool call   = 0
+adaptive loop        = 0
+EvidenceArtifact lifecycle = 0
+report generation    = 0
+raw prompt reparse downstream = 0
+```
+
+**TARGETED TEST / DEMO — MALİYET DİSİPLİNİ**
+- Default testler LLM/provider çağırmayacak.
+- Synthetic/permuted semantic context kullanılacak.
+- Bir canonical + birkaç paraphrase/order/extra-clause fixture doğrudan typed
+  `TurnInterpretation` üstünden `ResearchBriefBuilder` contract'ını ölçecek.
+- Interpreter owner değişikliği için canlı provider suite otomatik koşmayacak.
+- Gerekirse faz sonunda **tek küçük manual** Gemini Flash-Lite smoke ayrıca karar verilecek;
+  Day6 correctness gate'i paid LLM'e bağımlı olmayacak.
+- Full backend suite / legacy corpus / always-on backend CI YOK.
+
+**EXIT**
+```text
+canonical complex goal extraction = 100%
+complex validation goal coverage  >= 95%
+invented semantic domain/ref       = 0
+blocking unresolved ignored        = 0
+query execution                    = 0
+downstream raw prompt reparse      = 0
+```
+
+**NEGATIVE SENTINELS**
+- “Ürünleri analiz et” → machine/personnel/sales/report goal icat ETME.
+- “Ürünleri ve makineleri karşılaştırıp raporla” → personnel goal icat ETME.
+- Semantic modelde relationship/domain güvenilir bağlanamıyorsa goal'u düşürme veya
+  tahminle READY yapma; BLOCKED / clarification / explicit semantic gap üret.
+- Aynı explicit user goal'un farklı paraphrase/order ifadesi coverage kaybına yol açmamalı.
+
+**STOP-THE-LINE**
+- ResearchBriefBuilder raw `question` okursa,
+- Research planner/supervisor Day6'da raw prompt reparse ederse,
+- semantic ref Resolver dışında icat edilirse,
+- unresolved MUST goal sessiz düşerse,
+- Day6 sırasında Wren/query/tool execution açılırsa,
+- canonical promptu geçirmek için “ürün/makine/personel/satış” literal special-case yazılırsa,
+- paid LLM workflow push ile otomatik tetiklenirse.
+
+**BAŞLANGIÇ KARARI**  
+Day6 implementation başlatıldı. İlk proof, language extraction ile semantic binding'i
+birbirinden ayıran typed contract + query=0 sentinel olacaktır.
+
+
+---
+
+## 17. DAY 6.5 PREPARED — MANAGER ARCHITECTURE VALIDATION & SEAL
+
+**STATUS:** PREPARED / NOT STARTED
+
+Day6 P9 çalışması downstream deterministic contract'ların doğruluğunu kanıtladı; ancak
+one-shot universal complex-intent compilation hipotezi product-quality live language
+gate'inde doğrulanamadı.
+
+Latest historical reference evidence:
+- Frozen16 reference-language run: `35593735023`
+- cases: 16
+- case pass: 43.8%
+- goal coverage: 65.6%
+- MUST coverage: 73.2%
+- invented operations: 12
+- negatives: 100%
+
+Bu nedenle:
+- P9 kodu silinmez; **legacy/reference baseline** olur.
+- Eski yola raw-intent okuyabilen ayrı Supervisor eklenmez; bu fiilen Manager olur.
+- Complex language cognition bounded iterative Manager runtime'a taşınır.
+- Deterministic truth plane korunur ve genişletilir.
+
+Day6.5 living authority:
+- `belgeler/plan/DIMA_DAY6_5_MANAGER_ARCHITECTURE_VALIDATION.md`
+- `belgeler/plan/DIMA_DAY6_5_MANAGER_CONTRACT_SPEC_V0.md`
+- `belgeler/plan/ADR_DAY6_5_ONE_SHOT_COMPLEX_INTENT_REJECTED.md`
+- `eval/v2_day6_5_eval_manifest.yaml`
+
+### Manager candidate control plane
+
+```text
+USER
+→ bounded Manager cognition
+→ UserObligationLedger
++ SemanticResolver → opaque SemanticHandle
+→ IntentAcceptanceGate
+→ AcceptedTurnContract vN
+→ RepresentabilityGate
+   ├─ STANDARD_LOSSLESS → Core
+   └─ RESEARCH_REQUIRED → bounded Manager research loop
+→ deterministic trust plane
+→ CompletionGate
+   ├─ VERIFIED_COMPLETE
+   ├─ PARTIAL
+   └─ FAILED
+```
+
+### Day6.5 hard rules
+
+- Contract completeness ≠ execution-plan completeness.
+- Manager candidate obligation üretir; authoritative commit runtime/gate işidir.
+- Manager canonical semantic ref üretemez.
+- SemanticHandle yalnız Resolver tarafından mint edilir.
+- AcceptedTurnContract immutable/versioned; repair yeni version yaratır.
+- Representability raw text/length/keyword ile karar vermez.
+- Manager direct SQL/DB/Wren çalıştıramaz.
+- Completion status Manager-owned değildir.
+- hidden chain-of-thought persist/show edilmez.
+- paid eval workflow manual-only kalır.
+- one-shot P9 failures için regex/provider-specific semantic patch yasaktır.
+
+### Eval governance
+
+Frozen16:
+- historical/reference baseline,
+- architecture selection oracle değil.
+
+Yeni architecture corpus hedefi:
+```text
+DEV         80
+VALIDATION  50
+HIDDEN      50
+TOTAL      180
+```
+
+Hidden prompt text repoya girmez.
+Kodlamadan önce independent source/evaluator tarafından dondurulup yalnız SHA-256,
+count ve taxonomy metadata repoya yazılmalıdır.
+
+### Day6.5 implementation order
+
+```text
+0. freeze hidden holdout hash
+1. contracts
+2. provider-free invariant gate
+3. SemanticHandle boundary
+4. AcceptanceGate + versioning
+5. RepresentabilityGate
+6. bounded Manager runtime/tools
+7. adaptive evidence-response proof
+8. CompletionGate
+9. DEV
+10. VALIDATION
+11. HIDDEN seal
+12. Day7 production research execution
+```
+
+### STOP-THE-LINE
+
+- hidden holdout implementation sırasında açılırsa,
+- Manager canonical truth icat ederse,
+- AcceptanceGate / RepresentabilityGate bypass edilirse,
+- old Frozen16 cümleleri production prompt/code'a taşınırsa,
+- Manager raw SQL veya direct DB tool alırsa,
+- accepted contract in-place mutate edilirse,
+- evidence olmadan VERIFIED_COMPLETE çıkarsa,
+- standard-lossless request gereksiz research loop'a sokulursa.
+
+**NEXT ACTION:** Kullanıcı onayıyla Day6.5 implementation başlatılacak. İlk adım production
+kod değil, independent hidden-holdout freeze + contract-only models olacaktır.
+
+
+### 2026-09-21 — DAY 6.5 / FINAL PRE-IMPLEMENTATION HARDENING
+
+**Current branch HEAD before hardening:** `8b2a9aa44bf4c9e1dfde5e6f608a129d4c85e0d5`
+
+**External review cross-check**
+- Day6.5 hazırlığı genel olarak doğru bulundu.
+- Production Manager kodundan önce dört blocker teyit edildi:
+  1. simple/Core fast-path + latency/cost regression gate,
+  2. obligation origin + derived-parent ownership,
+  3. evidence-backed != VERIFIED completion semantics,
+  4. exactly-one accepted authority + rejected-attempt merge yasağı.
+- Ek hardening:
+  - runtime-issued SourceSpanRef,
+  - tenant/context-bound SemanticHandle,
+  - registered capability vocabulary,
+  - real trust-plane vertical proof before seal,
+  - ADR candidate-vs-accepted ayrımı,
+  - final seal sırasında MIMARI/CLAUDE/status authority sırası.
+
+**Yapılan hardening**
+- `DIMA_DAY6_5_MANAGER_ARCHITECTURE_VALIDATION.md`
+  - simple standard fast lane açıkça korundu,
+  - rejected FAST attempt semantic carry-over yasaklandı,
+  - obligation `origin` + `parent_obligation_id` eklendi,
+  - SourceSpanRegistry ve tenant-bound SemanticHandle sınırı eklendi,
+  - AcceptedTurnContract audit/lineage alanları güçlendirildi,
+  - evidence presence ile VERIFIED ayrıldı,
+  - fast-path p95/cost/model-call gate'leri eklendi,
+  - implementation sırası gate-before-runtime olacak şekilde düzeltildi,
+  - seal öncesi gerçek read-only trust-plane vertical proof zorunlu yapıldı.
+- `DIMA_DAY6_5_MANAGER_CONTRACT_SPEC_V0.md`
+  - `ObligationOrigin`: USER_MUST / USER_OPTIONAL / SYSTEM_REQUIRED / AGENT_DERIVED,
+  - lifecycle'da gerçek `VERIFIED` ve BLOCKED/LIMITED ayrımı,
+  - opaque SourceSpanRef + registry,
+  - capability_key registry gate,
+  - tenant-bound SemanticHandle,
+  - versioned/lineaged AcceptedTurnContract,
+  - exactly-one accepted authority,
+  - no rejected-attempt semantic merge,
+  - CompletionGate VERIFIED/PARTIAL/FAILED semantiği düzeltildi.
+- `eval/v2_day6_5_eval_manifest.yaml`
+  - authority, fast-path, completion hard gate'leri genişletildi.
+- `ADR_DAY6_5_ONE_SHOT_COMPLEX_INTENT_REJECTED.md`
+  - one-shot rejection = ACCEPTED,
+  - bounded Manager = SELECTED CANDIDATE FOR VALIDATION,
+  - production acceptance yalnız Day6.5 seal sonrası.
+- `AGENTS.md` ve `CLAUDE.md`
+  - Day6.5 owner/authority override eklendi,
+  - tarihsel “raw language only TurnInterpreter” kuralının complex path için yanlışlıkla
+    uygulanması engellendi.
+
+**Commits**
+- architecture hardening: `07a3024f35162b7511c22c3f0710ec260547c391`
+- contract hardening: `f56108f3db29763c4a277f3974f63d21812117b2`
+- eval gates: `25612707c8da27b242d548f9f20876cdaad6cc71`
+- ADR candidate status: `42da43d42438e5e5533181b6a3a2a88ac6eacfd7`
+- AGENTS override: `4bd6b4debabaf64b2a5a716ed479cbab8cb0ea8b`
+- CLAUDE active operation: `2072a5a243a8572d60f3ae659e67e5a0e0bef118`
+
+### DAY 6.5 PRE-IMPLEMENTATION GATE
+
+```text
+one-shot P9 rejection documented                PASS
+Manager candidate/not-yet-production semantics  PASS
+simple Core fast-path gates                      PASS
+obligation origin/parent contract                PASS
+evidence-backed != VERIFIED                      PASS
+exactly-one accepted authority                   PASS
+rejected attempt semantic merge = 0 contract     PASS
+opaque source evidence contract                  PASS
+tenant/context-bound SemanticHandle contract     PASS
+gate-before-runtime implementation order         PASS
+real trust-plane vertical proof in exit plan     PASS
+MIMARI final-seal step recorded                  PASS
+hidden holdout SHA/count/taxonomy freeze         BLOCKED / REQUIRED
+```
+
+### V2-D0XX — Hidden architecture holdout henüz freeze edilmedi
+
+- Kaynak: Day6.5 eval manifest / architecture seal discipline.
+- Manifest current state:
+  - count = 50 target,
+  - `sha256 = REQUIRED_BEFORE_IMPLEMENTATION`,
+  - `taxonomy_sha256 = REQUIRED_BEFORE_IMPLEMENTATION`.
+- Blocker: **YES — production Manager implementation öncesi**.
+- Neden burada çözülmüyor: hidden corpus mevcut development model/implementation süreci
+  tarafından üretilir veya görülürse hidden niteliğini kaybeder.
+- Kapanış: bağımsız source/evaluator corpus'u external olarak dondurur; repo yalnız
+  hash/count/taxonomy metadata alır. Prompt text repo veya implementation context'e girmez.
+- Sonraki adım: holdout metadata freeze → ardından contract-only production models +
+  provider-free authority tests.
+
+**Karar**
+Bu blocker dışında Day6.5 contract/mimari hazırlığı production implementation'a hazırdır.
+Hidden freeze tamamlanmadan Manager runtime kodu yazılmayacak.
+
+
+**Holdout handoff tooling**
+- freeze utility: `lab/v2_day6_5_freeze_holdout.py` @ `347e207fa9cc6a0ccf167fdab9e8b15560ead525`
+- safe handoff contract: `eval/DAY6_5_HIDDEN_HOLDOUT_HANDOFF.md` @ `2e5532bbd0b4830cd81d771f8c922c1166fb84e3`
+- tracking issue: **#2 — Day 6.5 gate — external hidden holdout freeze**
+- issue prompt text kabul etmez; yalnız FROZEN_EXTERNAL metadata/hash alınır.
+
+**Implementation unlock condition**
+```text
+issue #2 metadata received
++ case_count == 50
++ corpus_sha256 present
++ taxonomy_sha256 present
++ prompt_text_committed == false
++ development_model_generated == false
+→ manifest placeholders replaced
+→ blocker CLOSED
+→ Day6.5 contract-only production implementation START
+```
+
+
+### 2026-09-21 — DAY 6.5 / HIDDEN HOLDOUT PROVENANCE HARDENING
+
+External review sonrası hidden-freeze gate'in provenance beyanı sertleştirildi.
+
+Yapılan:
+- `lab/v2_day6_5_freeze_holdout.py` artık provenance boolean'larını kendisi sabit yazmaz.
+- External evaluator `ATTESTED_EXTERNAL` attestation dosyası vermeden freeze metadata üretilmez.
+- Metadata artık `attestation_sha256` ile attestation artefaktına bağlanır.
+- Zorunlu beyanlar:
+  - `independent_evaluator=true`
+  - `development_model_generated=false`
+  - `prompt_text_committed=false`
+  - `prompt_text_shared_with_implementation=false`
+  - `frozen_before_implementation=true`
+- Day6.5 preflight corpus + taxonomy yanında attestation hash/alanlarını da doğrular.
+- Final hidden seal promptları development context'e açmaz; external evaluator receipt'i
+  `tested_git_sha` + `eval_harness_sha` ile sonucu bağlar.
+- Issue #2 handoff sözleşmesi bu yeni protokole güncellendi.
+
+Commits:
+- freeze attestation: `debb47a54686f3ecacc7a056679002c176508f71`
+- handoff contract: `9b9f5d98be317d7fcba1418f42178de483af5345`
+- manifest attestation gate: `640f027db212a852197378f3915eb15a2ae7e95b`
+- preflight attestation enforcement: `caad2e298c7e9d40d1b515ec7d931d51efec58ae`
+- preflight placeholder test: `a4740099845e0b5a58f533077232338d2d104be2`
+- attestation unit tests: `b61c3e9742a8c65060dd809e94839f784d8f00a1`
+
+Current blocker değişmedi:
+```text
+external evaluator metadata/attestation receipt   WAITING
+production Manager implementation                 LOCKED
+```
+
+Issue #2 ancak gerçek external metadata alındıktan, manifest placeholder'ları kapatıldıktan
+ve `python lab/v2_day6_5_preflight.py` READY verdikten sonra kapatılacaktır.
+
+
+### 2026-09-21 — DAY 6.5 / IMPLEMENTATION BATCH 1
+
+**Owner kararı**
+- External hidden holdout/freeze disiplini korunuyor.
+- Hidden hash/receipt artık **implementation blocker değil, architecture-seal blocker**.
+- Otomatik/push-trigger paid LLM job YASAK; live eval manuel kalacak.
+- Geliştirme önceliği: control-plane architecture + governed tools.
+
+**Mimari ilerleme**
+
+1. `manager_models.py`
+   - `ObligationOrigin`, `ObligationStatus`, `ManagerCapabilityKey`
+   - `SourceSpanRef`, `SemanticHandle`
+   - `CandidateObligation`, `UserIntentEnvelope`
+   - `UserObligationLedger`, `AcceptedTurnContract`
+   - `ManagerState`, `ManagerBudget`, `ManagerRunSnapshot`
+   - terminal: VERIFIED_COMPLETE / PARTIAL / FAILED
+
+2. `source_spans.py`
+   - runtime-owned message hash + exact offset registry,
+   - Manager yalnız opaque `src_*` kullanır,
+   - fabricated/exact-surface mismatch fail-closed.
+
+3. `semantic_handles.py`
+   - Resolver-owned opaque `sem_*`,
+   - canonical target yalnız trusted registry içinde,
+   - tenant/context binding enforced,
+   - execution tarafı canonical binding'i registry üzerinden açar.
+
+4. `manager_policy.py`
+   - registered capability vocabulary,
+   - STANDARD / RESEARCH / PRESENTATION lane ayrımı,
+   - raw-language routing yok.
+
+5. `acceptance.py`
+   - `IntentAcceptanceGate`,
+   - source/provenance/handle/capability doğrulama,
+   - clarification vs rejection ayrımı,
+   - `AcceptedContractRegistry` ile exactly-one authority/turn,
+   - contract lineage + monotonic version.
+
+6. `representability.py`
+   - yalnız accepted typed contract/ledger okur,
+   - STANDARD_LOSSLESS / RESEARCH_REQUIRED / CLARIFICATION_REQUIRED / UNSUPPORTED,
+   - raw question/length/keyword kullanmaz.
+
+7. `completion.py`
+   - evidence presence != VERIFIED,
+   - bütün USER_MUST VERIFIED → VERIFIED_COMPLETE,
+   - explicit blocked/limited/unsupported → PARTIAL,
+   - non-terminal MUST → finish reject.
+
+8. `model_policy.py` + `config.py`
+   - yeni `RESEARCH_MANAGER` rolü,
+   - model/provider business logic içine hardcode edilmedi,
+   - reference model fallback yalnız config/policy seviyesinde.
+
+9. `manager_tools.py`
+   - kapalı 6-tool registry:
+     - resolve_semantics
+     - propose_acceptance
+     - run_analytics
+     - run_relationship
+     - inspect_evidence
+     - request_clarification
+   - raw SQL/direct DB/generic Python tool YOK,
+   - execution tools AcceptedTurnContract olmadan çağrılamaz.
+
+10. `manager_runtime.py`
+    - bounded state machine:
+      INITIAL → UNDERSTANDING → CONTRACT_ACCEPTED → INVESTIGATING
+      + CLARIFICATION/BLOCKED/BUDGET/FAILED/COMPLETED terminal/side states,
+    - tool/data-query/manager-turn budget,
+    - actual query fanout bütçeye ayrıca yazılır.
+
+11. `manager_semantics.py`
+    - `src_*` → existing SemanticResolver,
+    - canonical truth Resolver'da,
+    - Manager output yalnız `sem_*`,
+    - raw prompt downstream reparse edilmez.
+
+12. `cube_planner.py`
+    - yeni `ledger_from_canonical_ir()` pure reuse primitive,
+    - Manager adapter query-level RequirementLedger ID/state contractını yeniden icat etmez.
+
+13. `manager_core_adapter.py`
+    - ilk **REAL trust-plane vertical**:
+      SemanticHandle → AnalyticsIR → RequirementLedger → CubePlanner
+      → Wren dry-plan → Wren query → ResultValidator → ContractStore
+      → verified EvidenceArtifact,
+    - bounded evidence rows,
+    - QueryContract sealing zorunlu,
+    - accepted contract dışı obligation reject.
+
+14. `models.py / EvidenceArtifact`
+    - obligation refs,
+    - verified flag,
+    - limitations,
+    - query contract refs.
+
+15. `obligation_ledger.py`
+    - USER_MUST immutable promise,
+    - AGENT_DERIVED yalnız parent child olarak eklenebilir,
+    - VERIFIED için evidence + deterministic verdict şart,
+    - blocked/limited/unsupported explicit terminal.
+
+16. `manager_executor.py`
+    - governed tool executor boundary,
+    - standard analytics evidence store'a girer,
+    - actual query fanout budget'a yansır,
+    - yalnız STANDARD capability exact obligation için deterministic VERIFIED transition alır,
+    - relationship/root-cause standard evidence yüzünden yanlış tamamlanmaz.
+
+**Targeted authority test dosyası**
+- `tests/test_v2_day6_5_manager_authority.py`
+- fabricated source reject
+- foreign-tenant semantic handle reject
+- exactly-one accepted authority
+- standard vs research representability
+- evidence presence != VERIFIED
+- PARTIAL vs VERIFIED_COMPLETE ayrımı
+
+**Başlıca commits**
+- manager contracts: `972f5add80d3a4a538c28e97373f3142149ed9fd`
+- capability/source/semantic registries:
+  `8776cda8e428196534f1475a833d8b19ce980e99`,
+  `37cad6f588dabc570ae794192e58aef0f9f5e17a`,
+  `21fd3ffce01caee5bc9f3595897a57bc205a5950`
+- acceptance / representability:
+  `5af782daedd8f658fb04e4cac7637ec0091fa8d5`,
+  `e708d5ca920845f3af5b31060e0f2ec295e5b21a`
+- completion: `6af0c092828e1b534cdf601c753c1050b31c06cc`
+- RESEARCH_MANAGER role: `a8a6165d345832166ab676b4d084873734a6837a`
+- tool registry/runtime:
+  `40d9d44eb131eb96fbd6d810b2f3eb831f08b12b`,
+  `acea3dcf06b7e45b6f4e784559979a02bd31ad45`
+- canonical IR ledger: `8e78368433564d94ea07a52806b340910b58b4b5`
+- Core trust-plane adapter: `2c7d2ca662cc3b41625514bbb09f26aff35155b9`
+- semantic resolver adapter: `76e0f3535a0e62be94adb3b6a089ef5094c38113`
+- obligation ledger service: `f46d5354558568c9c4d145a8c06ea8e00073d7f5`
+- governed executor + ledger binding:
+  `d855315e7b8134d5e5feed2c6d4e5f63fcd9f27c`,
+  `40a33a3490538d5b840246431d311cc09d2d70ec`
+
+### Açık borçlar
+
+**V2-D65-01 — Hidden holdout architecture seal receipt**
+- implementation blocker: NO
+- architecture seal blocker: YES
+- promptlar development context'e girmeyecek.
+- final receipt: corpus/taxonomy/attestation SHA + tested_git_sha + eval_harness_sha + aggregate PASS/FAIL.
+
+**V2-D65-02 — run_relationship gerçek executor**
+- mevcut durum: tool contract/policy var, executor injection slotu var.
+- neden şimdi yok: CrossDomainJoinGate / grain-cardinality safety Day7 trust-plane capability.
+- blocker: Manager standard vertical proof için NO; relationship architecture proof için YES.
+- kapanış: verified relationship path + grain/cardinality gate → QueryContract/Evidence.
+
+**V2-D65-03 — Manager model loop/prompt**
+- mevcut durum: runtime/tool state machine hazır; model cognition henüz bağlanmadı.
+- blocker: YES — bir sonraki batch.
+- kural: tek güçlü `RESEARCH_MANAGER`, no cheap→strong escalation ilk spike'ta.
+
+**V2-D65-04 — DEV architecture corpus/evaluator**
+- hidden ayrı ve sealed kalır.
+- visible DEV cases Manager runtime bağlandıktan sonra yazılacak/koşulacak.
+- otomatik paid workflow yok.
+
+### NEXT
+
+```text
+1. Manager model loop → typed tool-call protocol
+2. propose_acceptance / resolve_semantics cycle
+3. real run_analytics adaptive observe loop
+4. inspect_evidence bounded context
+5. AGENT_DERIVED replanning proof
+6. manual focused provider-free contract check
+7. visible DEV manager corpus
+8. relationship executor / CrossDomainJoinGate
+9. VALIDATION
+10. external HIDDEN architecture seal
+```
+
+**STOP-THE-LINE hâlâ geçerli**
+- raw SQL tool eklemek,
+- canonical ref'i Manager schema'ya açmak,
+- second accepted semantic authority,
+- rejected attempt field merge,
+- evidence gördü diye otomatik research VERIFIED,
+- hidden promptları development context'e taşımak,
+- model-specific semantic case patch.
+
+
+### 2026-09-21 — DAY 6.5 / IMPLEMENTATION BATCH 2
+
+**Amaç**
+Bounded Manager candidate'ını production `/ask-v2`ye bağlamadan gerçek Resolver/Core/Wren
+trust plane üzerinde manuel çalıştırılabilir hale getirmek.
+
+**Yapılan**
+- `manager_loop.py`
+  - tek structured action / manager turn,
+  - private chain-of-thought istenmez/persist edilmez,
+  - exact source surface runtime'da `src_*`e çevrilir,
+  - semantic observation yalnız opaque `sem_*`,
+  - finish yalnız CompletionGate tarafından kabul edilirse tamamlanır,
+  - tool rejection modelin bir sonraki turda düzeltmesine izin verir,
+  - manager turn budget enforced.
+- `manager_tools.py`
+  - `run_analytics` period/comparison opaque handle destekli,
+  - agent-derived standard task aynı tool içinde parent'a bağlı açılabilir.
+- `manager_executor.py`
+  - canonical internal adapter result Manager'a dönmez,
+  - Manager-safe observation: evidence_ref / verified / query_count / row_count / limitations,
+  - standard verified evidence obligation ledger'a deterministic verdict ile bağlanır,
+  - research USER_MUST standard evidence yüzünden tamamlanmaz.
+- `manager_core_adapter.py`
+  - Manager-facing evidence payload'dan canonical AnalyticsIR kaldırıldı,
+  - result columns/rows canonical DB field yerine `sem_*` handle anahtarlarıyla gösterilir.
+- `obligation_ledger.py`
+  - agent-derived branch parent USER_MUST'ı mutate etmez.
+- `runtime_boundary.py`
+  - Standard orchestrator + Manager Lab ortak tenant/principal/request identity owner kullanır.
+- `manager_lab.py`
+  - RESEARCH_MANAGER model role üzerinden ayrı candidate LLM,
+  - ContextProvider + Resolver + handles + gates + Core adapter + executor + loop tek harness.
+- `/ask-v2-manager-lab`
+  - default OFF,
+  - yalnız `v2_manager_lab_enabled=true` ve manuel HTTP isteği ile çalışır,
+  - production `/ask-v2` routing değişmedi,
+  - push/CI otomatik LLM çağrısı YOK.
+
+**Önemli güvenlik düzeltmesi**
+İlk adapter taslağında internal `AnalyticsIR`/canonical result column'larının Manager observation'a
+sızma riski bulundu ve production lab açılmadan kapatıldı.
+Manager artık canonical semantic isimleri tool result üzerinden de göremez.
+
+**Başlıca commits**
+- Manager loop: `349ba13609fcf523e12f790fc4e6deb30d2dcb38`
+- derived task contracts: `4fef64cb2708f5e39e0ead29b4d5d59f17149181`
+- derived executor: `1934b389a7743ff3809732f9a3c683570a6f510a`
+- safe analytics observation: `75f768e758b411de0a2c35f75e1aa8539c3e4a3a`
+- canonical leakage closure: `61d9fd3db1e6f5e13223dc99fbb96bbfcbb022a2`
+- executor safe return: `c121b79908c97722ea868197bfaea4bc71ed0f00`
+- shared runtime boundary: `0211bb3c2e16a3734fb17573221add5ee9bb1ece`
+- orchestrator boundary reuse: `03020fa2f3620cd3ac23e55c417bf6b894f68d8d`
+- manual Manager Lab harness: `fd73a282168de76f11f39eb646646689f7e6d34e`
+- default-off lab route: `179ce93315bb84becd17e037919d61540e6dece3`
+- lab route registration: `c13c1999b060f9364a05744f56340388c720362f`
+
+### Güncel mimari durum
+
+```text
+Manager contracts / authority          BUILT
+SourceSpanRegistry                     BUILT
+SemanticHandleRegistry                 BUILT
+AcceptanceGate                         BUILT
+RepresentabilityGate                   BUILT
+CompletionGate                         BUILT
+UserObligationLedger service           BUILT
+6-tool closed registry                 BUILT
+bounded Manager state machine          BUILT
+RESEARCH_MANAGER role                  BUILT
+resolve_semantics → real Resolver       BUILT
+run_analytics → real Core/Wren          BUILT
+QueryContract → Evidence               BUILT
+adaptive AGENT_DERIVED standard branch BUILT
+manual Manager Lab                     BUILT
+production /ask-v2 hybrid routing      NOT YET
+run_relationship real trust plane      NOT YET (Day7-grade)
+external hidden architecture seal      PENDING
+```
+
+### NEXT IMPLEMENTATION
+
+1. Manual Manager Lab smoke — az sayıda gerçek prompt; paid workflow yok.
+2. Tool-action schema/runtime hatalarını düzelt.
+3. Result-aware adaptive branch canonical scenario.
+4. Safe relationship blocker/gate → sonra CrossDomainJoinGate.
+5. Visible DEV architecture corpus.
+6. Hard gates geçmeden production `/ask-v2` hybrid routing açma.
+
+
+---
+
+### 2026-09-21 — DAY 6.5 / STABILIZATION INTERVENTION — FINITE PRE-ACCEPTANCE
+
+**Pre-stabilization checkpoint**
+- branch checkpoint: `checkpoint/day6.5-pre-stabilization-a3f5e0d`
+- checkpoint SHA: `a3f5e0dd89366d7b191b64256c55a8e18c286730`
+- karar: bu noktadan sonra live-case özel prompt/regex/Resolver heuristic patch YASAK.
+- `SemanticResolver` policy yeni vaka geçirmek için genişletilmeyecek.
+- `SemanticResolutionReceipt` yalnız provenance / anti-laundering kanıtıdır; intent completeness oracle'ı değildir.
+
+**Dış analizlerden çıkan kök teşhis**
+```text
+candidate contract validity
+!=
+intent completeness
+```
+
+Open pre-acceptance Manager loop:
+```text
+resolve
+→ resolve
+→ propose
+→ resolve
+→ clarify
+→ budget
+```
+gereğinden fazla yanlış action alanı bırakıyordu ve aynı problemi eski Dima tarzı
+case-derived prompt/gate patch'leriyle büyütme riski doğuruyordu.
+
+**Seçilen stabilization mimarisi**
+```text
+USER
+ ↓
+DRAFT                         probabilistic / non-authoritative
+ ↓
+DRAFT SOURCE CONTRACT         deterministic exact-source provenance
+ ↓
+AUTO-GROUND                   runtime → Resolver → opaque SemanticHandle
+ ↓
+COVERAGE VETO                 probabilistic, veto-only; authority ÜRETEMEZ
+ ↓
+CONTRACT VALIDITY             deterministic capability/binding/provenance/effect gate
+ ↓
+ACCEPT
+or one bounded REVISE
+or CLARIFY
+or NOT_ACCEPTED
+```
+
+**Önemli sınırlar**
+- Coverage auditor canonical semantic seçemez.
+- Coverage auditor handle mint edemez.
+- Coverage auditor obligation/directive commit edemez.
+- Capability anlamı yalnız `ManagerCapabilityRegistry` içindedir.
+- Pre-acceptance Manager artık `resolve_semantics` tool'unu serbestçe seçmez.
+- Runtime draft semantic surface'lerini otomatik ground eder.
+- Accepted authority oluşmadan analytics/evidence execution açılamaz.
+- Post-acceptance raw USER_SOURCE semantic reparse yasaktır.
+- Aynı action aynı progress epoch'ta aynı knowledge/state'i üretirse generic
+  `ActionFingerprint + ProgressFingerprint` frontier exact action'ı bloklar.
+
+**ResearchDirective ontology ayrımı**
+User obligation ile research behavior ayrıldı.
+
+İlk directive:
+```text
+ResearchDirectiveType.ADAPT_ON_EVIDENCE
+condition = MATERIAL_NEW_DIRECTION
+parent_obligation_id = accepted research obligation
+```
+
+Örnek:
+```text
+"üretkenlik düşüşünü araştır"
+→ USER_MUST root_cause
+
+"sonuç yeni bir yön gösterirse oraya da bak"
+→ ResearchDirective.ADAPT_ON_EVIDENCE
+```
+
+Directive `UserObligationLedger` içine USER_OPTIONAL/MUST gibi sokulmaz.
+AcceptedTurnContract içinde ayrı immutable research policy olarak yaşar.
+
+**Yeni/yeniden sahiplenen dosyalar**
+- `app/v2/manager_preacceptance.py`
+  - finite DRAFT → AUTO_GROUND → COVERAGE → VALIDITY controller.
+- `app/v2/manager_progress.py`
+  - generic action/progress fingerprints + dynamic exact-action frontier.
+- `app/v2/manager_models.py`
+  - `ResearchDirective` first-class contract.
+- `app/v2/manager_loop.py`
+  - `understand()` open tool-loop yerine finite controller'a delege eder.
+  - `run()` accepted research sonrasında agentic kalır.
+- `app/v2/acceptance.py`
+  - directive source/parent/lane validity; obligation ledger'dan ayrı.
+- `tests/test_v2_day6_5_preacceptance_protocol.py`
+  - provider-free finite-protocol sentinels.
+
+**Capability algebra**
+Aşağıdaki önceki doğru refactor korunuyor; geri alınmadı:
+- `ManagerCapabilitySpec.required_kinds/allowed_kinds/required_params/effect_family`
+- `CapabilityBindingValidator`
+- `ObligationEffect`
+- validated atomic obligations-only `StandardProjectionCompiler`.
+
+**Provider-free evidence**
+1. Stabilization closure run `35630382762`
+   - tested SHA: `c818d69486a7da8a12af9da35b310761aa59cea5`
+   - **45 passed / 0 failed**
+2. Finite terminal closure run `35631871166`
+   - tested SHA: `baf777d6da519c2e90ba7faa0be7ed2e2c743c16`
+   - **48 passed / 0 failed**
+
+Temporary provider-free one-shot workflow'lar PASS sonrası repodan kaldırıldı.
+
+**İlk stabilized Luna workers=1 run**
+- run: `35630602316`
+- tested SHA: `d19d00ac50e839d3969292ddd3754be423839f97`
+- sonuç: **6/15 PASS, 9/15 FAIL**
+- teşhis:
+  - 063: coverage conflict'i çoğu koşuda doğru buldu; terminal semantics NOT_ACCEPTED kaldı.
+  - 067: validity rejection sonrası ikinci draft prior conversation label'ını current-source
+    gibi kullanabildi.
+  - 075: extra unresolved `comparison` surface validity/coverage'den önce clarification'a
+    sıçradı.
+- karar: case patch YOK; finite phase/terminal semantics düzeltildi.
+
+**Finite terminal semantics düzeltmesi**
+- invalid literal current-source draft artık fatal exception değil, bounded revision input.
+- AUTO-GROUND unresolved yüzey artık otomatik user-clarification terminali değil;
+  grounding evidence olarak Coverage + Validity'ye taşınır.
+- final Coverage VETO:
+  - `POLARITY_CONFLICT` / `UNRESOLVED_REFERENCE` → deterministic CLARIFICATION,
+  - `UNCOVERED_SOURCE` / `UNMODELED_DIRECTIVE` → cognition failure / NOT_ACCEPTED.
+- Coverage PASS sonrasında ContractValidity yalnız required semantic binding eksik diyorsa
+  ikinci model draftının semantic uydurmasına izin verilmez; trusted binding yok → CLARIFICATION.
+
+**İkinci stabilized Luna workers=1 run**
+- run: `35632068198`
+- exact tested code SHA: `8bc89b5ea556e345452d611cbd8d95b288739f65`
+- sonuç: **14/15 PASS**
+  - 063: 4/5 PASS
+  - 067: 5/5 PASS
+  - 075: 5/5 PASS
+- 067 artık her koşuda 2 model çağrısında clarification'a kapandı.
+- 075 artık her koşuda `root_cause USER_MUST + ADAPT_ON_EVIDENCE` olarak accepted.
+- tek kalan 063 failure **unsafe accept değildir**:
+  - Coverage first pass conflict'i gördü.
+  - second draft Coverage PASS verdi.
+  - ContractValidity `resolved user semantic source omitted or provenance-laundered`
+    structural reject üretti.
+  - terminal NOT_ACCEPTED kaldı.
+- bu tek tail case için yeni prompt/regex/receipt exception YAZILMADI.
+
+**Model-floor A/B kararı**
+Plan gereği aynı exact tested backend SHA `8bc89b5...`, daha güçlü
+`RESEARCH_MANAGER = openai/gpt-5.6-sol` ile workers=1 repeated A/B'ye verildi.
+- reference run: `35632599458`
+- durum bu kayıt yazılırken: RUNNING.
+- yorum kuralı:
+  - Luna fail + Sol pass → MODEL CAPABILITY FLOOR; architecture patch YOK.
+  - Sol da aynı failure sınıfında fail → CONTRACT / COVERAGE boundary yeniden incelenir.
+  - iki model de geçerse next = 12–16 stratified canary.
+  - sonra 80 DEV.
+
+**Açık borçlar**
+- V2-D65-S1: Sol reference A/B sonucu.
+- V2-D65-S2: 12–16 stratified canary.
+- V2-D65-S3: DEV 80 full visible evaluation.
+- V2-D65-S4: relationship real trust-plane / CrossDomainJoinGate — Day7-grade capability;
+  Day6.5'te no-path unsafe execution = 0 korunmalı.
+- V2-D65-S5: external HIDDEN 50 final architecture seal; development loop blocker değildir.
+- production `/ask-v2` hybrid route hâlâ AÇILMAYACAK.
+
+**Stabilization STOP-THE-LINE**
+- failure → yeni regex/morphology score ekleme,
+- failure → `_SYSTEM` içine case-derived semantic cümle ekleme,
+- receipt'i completeness parser'ına dönüştürme,
+- Coverage auditor'a canonical/obligation authority verme,
+- user obligation ile research directive'i tekrar birleştirme,
+- workers=1 architecture certification bitmeden concurrency sonucu üzerinden semantic patch,
+- strong reference A/B görmeden model-floor problemini architecture patch'iyle örtme.
+
+
+### 2026-09-21 — DAY 6.5 / MODEL FLOOR A-B + CANARY TRANSPORT CLASSIFICATION
+
+**Reference-model A/B completed**
+- run: `35632599458`
+- exact tested backend SHA: `8bc89b5ea556e345452d611cbd8d95b288739f65`
+- model: `openai/gpt-5.6-sol`
+- workers: 1
+- provider-free guard: PASS
+- repeated set:
+  - `d65-dev-063` 5/5 PASS → CLARIFICATION
+  - `d65-dev-067` 5/5 PASS → CLARIFICATION
+  - `d65-dev-075` 5/5 PASS → ACCEPTED / root_cause / RESEARCH_REQUIRED
+- aggregate: **15/15 PASS**
+
+**A/B interpretation**
+Same backend code:
+```text
+Luna  workers=1 repeated set → 14/15
+Sol   workers=1 repeated set → 15/15
+```
+
+Day6.5 model-policy karar kuralına göre bu kalan tail risk:
+```text
+MODEL_CAPABILITY_FLOOR
+```
+olarak sınıflandırıldı.
+
+Sonuç:
+- 063 tail'i için regex/prompt/receipt exception eklenmedi.
+- architecture code aynı bırakıldı.
+- Day6.5 correctness/reference RESEARCH_MANAGER için Sol seviyesi referans floor'dur.
+- Luna daha sonra latency/cost optimization veya guarded escalation adayı olabilir;
+  semantic correctness'i sağlamak için production business logic'e Luna-specific patch YOK.
+
+**16-case stratified canary**
+- corrected run: `35633167625`
+- exact tested backend SHA: `8bc89b5ea556e345452d611cbd8d95b288739f65`
+- model: Sol
+- workers: 1
+- selected taxonomy coverage:
+  standard / breakdown / ranking / comparison / multi-obligation / cross-domain /
+  root-cause / trust bypass / semantic-handle misuse / negation / ambiguity /
+  missing semantic model / conflict / coreference / repair / adaptive / budget.
+- provider-free authority guard: PASS.
+
+Canary final job status GitHub'da FAILURE görünür; **bu architecture/eval failure değildir**.
+Log sınıflandırması:
+```text
+001  executed
+009  executed
+013  executed
+019 onward → OpenRouter HTTP 402 Payment Required
+```
+
+Aggregate `case_pass_rate=0.1875` bu nedenle semantic metric olarak GEÇERSİZDİR.
+Çalıştırılmayan vakaların evaluator tarafından NOT_ACCEPTED sayılması yalnız provider
+transport failure sonucudur.
+
+Canonical classification:
+```text
+TRANSPORT / PROVIDER / BILLING BLOCKER
+not
+ARCHITECTURE FAILURE
+```
+
+Bu run'a dayanarak production code, prompt, Resolver veya contract değiştirmek YASAK.
+
+**Paid workflow cleanup**
+A/B ve canary için yaratılan push-trigger one-shot workflow'lar kaldırıldı.
+Permanent paid evaluator yalnız:
+`.github/workflows/v2-day6-5-manager-eval.yml`
+ve yalnız `workflow_dispatch` olarak kalır.
+
+**Current certification state**
+```text
+finite pre-acceptance provider-free       48/48 PASS
+Luna focused workers=1                    14/15
+Sol reference workers=1                   15/15 PASS
+Sol stratified canary16                   TRANSPORT_BLOCKED after 3 cases
+DEV 80                                    NOT YET CERTIFIED
+VALIDATION 50                             NOT STARTED
+HIDDEN 50 external seal                   PENDING
+production hybrid route                   OFF
+```
+
+**Next paid gate — code freeze**
+OpenRouter/provider capacity yeniden mevcut olduğunda YENİ CODE PATCH YOK.
+Aynı finite architecture üzerinden:
+1. Sol workers=1 16-case stratified canary tamamlanır.
+2. PASS ise Sol workers=1 visible DEV 80 çalıştırılır.
+3. Failure varsa önce taxonomy/failure-family clustering yapılır.
+4. ortak abstraction failure kanıtlanmadan code change YOK.
+5. DEV hard gates geçerse VALIDATION 50.
+6. final external HIDDEN receipt ile architecture seal.
+
+**Do not misread**
+- GitHub job `35633167625 = failure` → provider billing failure.
+- Bu sonucu Day6.5 semantic/architecture fail saymak yasaktır.
+- Bakiye/transport düzeldikten sonra aynı frozen backend code yeniden ölçülmelidir.
+
+
+### 2026-09-21 — DAY 6.5 / TYPED FAILURE SEAL
+
+16-case canary'deki OpenRouter 402 olayı ikinci bir mimari borcu görünür kıldı:
+```text
+provider/model/runtime failure
+!=
+semantic NOT_ACCEPTED
+!=
+user CLARIFICATION
+```
+
+Eski Dima'daki `None/fallback/failure conflation` sınıfını V2'ye taşımamak için
+pre-acceptance terminal contract typed hale getirildi.
+
+**FiniteAcceptanceStatus**
+```text
+ACCEPTED
+CLARIFICATION_REQUIRED
+COGNITION_REJECTED
+CONTRACT_REJECTED
+MODEL_FAILURE
+GROUNDING_FAILURE
+```
+
+Semantik terminal yalnız ilk dört sınıftan türetilir.
+`MODEL_FAILURE` ve `GROUNDING_FAILURE` semantic eval sonucu değildir.
+
+**Propagation**
+```text
+PreAcceptanceController
+→ ManagerUnderstandingOutcome.status
+→ ManagerLoopOutcome.preacceptance_status
+→ ManagerLabResponse.preacceptance_status
+→ Day6.5 eval record.preacceptance_status
+```
+
+**Evaluator semantics**
+- measurement-invalid vaka semantic denominator'a girmez.
+- mid-run provider/model failure artık `NOT_ACCEPTED` sayılmaz.
+- measurement eksikse run status `incomplete`.
+- `incomplete` exit code = 2.
+- semantic architecture fail = exit code 1.
+- pass = exit code 0.
+- metrics yalnız evaluable records üzerinden hesaplanır.
+- payload ayrıca:
+  - selected_cases
+  - evaluable_cases
+  - measurement_failures
+  - model_failures
+  - grounding_failures
+  - harness_failures
+  taşır.
+
+Bu değişiklik 402'ye özel değildir; provider/model/grounding/harness failure family
+genel typed boundary'dir.
+
+**Regression**
+- run: `35635240206`
+- trigger SHA: `50538b1e82bdc5f7114a4007e195a20836985325`
+- compile:
+  - `manager_preacceptance.py`
+  - `manager_loop.py`
+  - `manager_lab.py`
+  - `v2_day6_5_manager_eval.py`
+- focused provider-free suite:
+  - **49 passed / 0 failed**
+- temporary one-shot workflow PASS sonrası kaldırıldı.
+
+**Post-stabilization anti-patch audit**
+Production V2 files:
+- `manager_preacceptance.py`
+- `manager_progress.py`
+- `manager_loop.py`
+- `acceptance.py`
+- `manager_models.py`
+- `manager_lab.py`
+
+Audit:
+```text
+import re / from re                = 0
+re.search/match/compile/sub/...     = 0
+d65-dev / 063 / 067 / 075 literal   = 0
+net gelir business literal          = 0
+bölge business literal              = 0
+üretkenlik business literal         = 0
+kök neden business literal          = 0
+```
+
+`lab/v2_day6_5_manager_eval.py` sentetik evaluation schema/fixture olduğu için
+test-domain literalları içerir; production semantic decision logic değildir.
+
+**Day 6.5 current judgment**
+Şu ana kadarki evidence:
+```text
+provider-free deterministic closure = 49/49 PASS
+Luna focused reference set          = 14/15
+Sol same-SHA reference set          = 15/15 PASS
+stratified Sol canary               = PROVIDER 402 ile yarım
+regex/case patch debt               = 0 detected
+unsafe semantic accept in focused A/B = 0
+```
+
+Dolayısıyla şu aşamada:
+- Manager architecture'ını yeniden kurmak için evidence YOK.
+- Luna tail error'ı architecture rewrite gerekçesi değildir; Sol A/B model floor'u kanıtladı.
+- production route açmak için ise evidence henüz YETERSİZ; stratified canary + DEV80 tamamlanmalı.
+- paid provider yeniden kullanılabilir olmadan daha fazla semantic code patch'i yapılmamalı.
+
+**Tek gerçek dış blocker**
+```text
+OpenRouter/provider billing capacity
+```
+
+Provider erişimi geri geldiğinde code freeze SHA yeni typed-failure boundary dahil branch HEAD
+üzerinden yeniden provider-free guard ile doğrulanır; ardından Sol canary16 baştan çalıştırılır.
+Canary PASS → DEV80 workers=1.
+Ortak failure family görülürse architecture incelenir.
+Tekil vaka failure'ı → regex/prompt/case patch YASAK.
+
+
+### 2026-09-21 — DAY 6.5 / CURRENT-HEAD CERTIFICATION CHECKPOINT
+
+**Semantic code freeze candidate**
+- tested code SHA: `8961a60a0255df691e5f1f42cf2131e83f8af674`
+- checkpoint branch: `checkpoint/day6.5-certification-8961a60`
+- bu SHA sonrası workflow/docs commit'leri certification harness değişikliğidir; semantic code değildir.
+- regex / morphology score / case-derived prompt / case-id production branch patch yasağı devam eder.
+
+**Provider-free current-head closure**
+- run: `35652163651`
+- result: **53/53 PASS**
+- generic abstraction:
+  `GROUNDING_SUMMARY.requested[*].required_by_capability`
+  capability algebra'dan deterministik üretilir.
+- unresolved semantic surface tek başına material grounding gap sayılmaz.
+- yalnız capability'nin gerçekten zorunlu tuttuğu semantic kind eksikliği blocking kabul edilir.
+
+**Current-head Sol canary16**
+- run: `35653766188`
+- exact checkout SHA: `8961a60a0255df691e5f1f42cf2131e83f8af674`
+- model: `openai/gpt-5.6-sol`
+- workers: 1
+- measurement: 16 selected / 16 evaluable / 0 measurement failure
+- result: **16/16 PASS**
+- metrics:
+  - case_pass_rate = 1.0
+  - MUST obligation recall = 1.0
+  - accepted invented MUST = 0
+  - missing expected exclusions = 0
+  - invented exclusions = 0
+  - accepted handle violations = 0
+  - preacceptance execution violations = 0
+  - blocking ambiguity silent accept = 0
+  - unsafe fast admission = 0
+  - standard lossless rate = 1.0
+  - clarification canonical rate = 1.0
+  - max manager turns = 4
+  - total model calls = 30
+  - measured latency total = 157.4476 s
+
+**Decision**
+Current-head canary gate PASS olduğu için semantic code'u değiştirmeden DEV80'e geçildi.
+Tekil DEV failure görülürse patch yapılmayacak; önce failure-family clustering yapılacak.
+
+**DEV80**
+- workflow run: `35654163471`
+- exact code SHA: `8961a60a0255df691e5f1f42cf2131e83f8af674`
+- model: Sol
+- workers: 1
+- state bu kayıt yazılırken: RUNNING
+
+**Seal discipline**
+```text
+current-head canary16 PASS
+→ DEV80
+→ DEV freeze
+→ VALIDATION50 (no tuning)
+→ external HIDDEN50 receipt
+→ bounded-manager ADR + MIMARI canonical migration
+→ Day 6.5 SEALED
+```
+
+External HIDDEN50 development modelinden üretilemez; Issue #2 açık kalır ve yalnız final
+architecture seal'i bloklar.
+
+
+### 2026-09-21 — DAY 6.5 / FROZEN DEV80 RESULT — FAILURE-FAMILY CLASSIFICATION
+
+**Frozen semantic code**
+- code SHA: `8961a60a0255df691e5f1f42cf2131e83f8af674`
+- checkpoint: `checkpoint/day6.5-certification-8961a60`
+- DEV80 run: `35654163471`
+- model: `openai/gpt-5.6-sol`
+- workers: 1
+- provider-free sentinel before DEV80: **53/53 PASS**
+
+**Measurement validity**
+```text
+selected cases       80
+evaluable cases      80
+measurement failures 0
+model failures       0
+grounding failures   0
+harness failures     0
+```
+
+Bu nedenle run gerçek semantic/contract development sinyalidir; provider/harness failure değildir.
+
+**Aggregate**
+```text
+case pass rate                    59/80 = 0.7375
+MUST obligation recall            0.6923
+accepted invented MUST            0
+missing expected exclusions       1
+invented exclusions               0
+accepted handle violations        0
+preacceptance execution violations 0
+blocking ambiguity silent accept  0
+unsafe fast admission             0
+standard lossless rate            0.7949
+clarification canonical rate      1.0
+max manager turns                 4
+total model calls                 162
+```
+
+**Failing case IDs — 21**
+`002, 005, 015, 016, 021, 022, 024, 028, 029, 037, 044, 045, 046, 051, 064, 065, 066, 071, 076, 078, 079`
+
+**Kural**
+Bu liste 21 ayrı patch backlog'u DEĞİLDİR.
+Regex / morphology score / keyword / case-derived prompt / case-id branch yazılmayacak.
+Önce failure-family ve authority-owner analizi yapılır.
+
+#### Family A — Semantic grounding boundary too surface-shape-sensitive
+Temsilî failure:
+- `brüt gelir toplamı` → metric unresolved,
+- `hurda oranını` → metric unresolved,
+- `hattını` → dimension unresolved,
+- `hurda oranlı` → metric unresolved,
+- `önceki çeyrekle / geçen yılla / geçen haftayla` → comparison unresolved,
+- `hurda` → expected metric unresolved.
+
+Observation:
+Manager çoğu vakada doğru capability + doğru insan yüzeyini seçiyor; failure
+canonical semantic ownership'tan önce, selected source span ile verified semantic catalog
+eşleşmesinin fazla kırılgan olmasında oluşuyor.
+
+**Allowed root-fix direction**
+- semantic-model/canonical-catalog-driven verified alias/subspan grounding,
+- Resolver authority korunarak.
+
+**Forbidden**
+- Türkçe ek regex'i,
+- stemming/morphology score tuning,
+- vaka kelimeleri hard-code etme,
+- LLM canonical seçsin.
+
+#### Family B — Research phenomenon/scope is being mistaken for canonical semantic
+Temsilî yüzeyler:
+- `düşüş / düşüşünün / düşüşünü`,
+- `yüksek`.
+
+Root-cause capability yalnız gerçek tenant metric binding'e ihtiyaç duyduğu halde Coverage,
+bu fenomen/change predicate'leri bazen canonical `comparison` eksikliği sayıyor.
+
+Bu Day6 one-shot hastalığının başka biçimde dönmesidir:
+```text
+research meaning / phenomenon
+!=
+tenant canonical semantic dimension/metric/comparison
+```
+
+**Needed abstraction**
+First-class noncanonical research phenomenon/scope representation veya eşdeğer typed
+policy; canonical semantic handle değildir ve Resolver truth'u taklit etmez.
+
+#### Family C — Conditional/data-availability research policy missing
+- 029: `düşüş varsa kök nedenini araştır`
+- 046: `bakım duruş verisi yoksa bunu açıkça belirt`
+
+Bunlar canonical metric değil; research control/policy'dir.
+Current directive ontology `ADAPT_ON_EVIDENCE / BROADEN_WITHIN_BUDGET` dışında
+conditional activation / missing-data disclosure gibi policy'leri tam taşımıyor.
+
+#### Family D — Generic exclusion semantics
+- 066: kullanıcı `hiçbir ek kırılım veya ilişki inceleme` diyor.
+- Manager bunu EXCLUDED breakdown + relationship olarak algılıyor.
+- Current breakdown exclusion algebra dimension handle gerektiriyor → gereksiz clarification.
+- DEV oracle ise hiç exclusion beklemiyor.
+
+Burada hem contract hem oracle audit edilmeli.
+Generic/global exclusion semantiği first-class ise dimension zorunluluğu olmamalı.
+Oracle açık user exclusion'ını sessizce yok saymamalı.
+
+#### Family E — Multi-baseline/cardinality vs DEV oracle
+- 065: tek comparison obligation içinde iki verified comparison handle var.
+  Contract information-preserving; Representability doğru şekilde RESEARCH_REQUIRED.
+  DEV oracle iki ayrı comparison obligation bekliyor.
+- 064: iki ranking direction/limit aynı requested composition içinde.
+  Coverage presentation/composition eksikliği diye veto ediyor.
+
+Karar verilmesi gereken:
+```text
+user obligation count
+!= necessarily
+semantic baseline/reference count
+```
+Oracle cardinality semantic contract'a göre düzeltilmeli; sistemi test sayısına uydurmak yasak.
+
+#### Family F — Conversation trust-boundary vs stale DEV oracle
+- 071: `aynısını üretkenlik için yap`
+- yalnız client-supplied conversation summary labels var,
+- trusted prior AcceptedTurnContract / operation authority yok.
+- Manager clarification seçiyor.
+
+Day6.5 güvenlik kararı:
+client conversation labels canonical/operation authority değildir.
+Bu nedenle DEV oracle'nın ACCEPTED/performance beklentisi büyük ihtimalle outdated'dir.
+Security boundary oracle uğruna gevşetilmeyecek.
+
+**DEV80 interpretation**
+- bounded Manager architecture RETAINED,
+- DEV freeze NOT YET,
+- VALIDATION50 NOT OPEN,
+- third architecture search NOT justified,
+- next step = one controlled abstraction intervention + oracle audit,
+- single-case tuning forbidden.
+
+**Next controlled sequence**
+1. Day6.5 architecture validation + contract spec cross-read.
+2. Inspect current Resolver/Manager semantic boundary + research policy models.
+3. Define minimal architecture changes for Family A/B/C/D; no language heuristics.
+4. Audit Family E/F DEV oracle against current authority/security contracts.
+5. Provider-free abstraction invariants.
+6. Sol workers=1 focused family probe.
+7. Only if family probe passes → rerun frozen DEV80.
+8. DEV hard gates pass → DEV freeze → VALIDATION50 (no tuning).
+9. External HIDDEN50 remains final seal blocker.
+
+
+---
+
+### 2026-09-23 01:05 — DAY7 REAL WREN COMPARE / RANK GREEN
+
+```text
+product_sha     a7303dec8a83bbb11a1d40c992da75f88444858c
+focused_run     35789901494
+result          GREEN
+```
+
+Real-Wren capability proof:
+- `COMPARE`: real `bakim.ariza_sayisi`, governed typed base/reference periods,
+  **2 real Wren queries**, **2 sealed QueryContracts**, VERIFIED Evidence, UOL VERIFIED.
+- `RANK`: real `bakim.ariza_sayisi by ariza_tipi`, governed direction+limit,
+  real Wren top-N, deterministic result validation, sealed QueryContract, VERIFIED Evidence.
+- No new query engine, SQL path, comparison engine or ranking engine was introduced.
+- Existing `ManagerCoreAnalyticsAdapter → CubePlanner → Wren → QueryContract → Evidence`
+  remains the sole execution path.
+- Full Day7 focused suite remained GREEN on the exact same SHA, including seed-set,
+  principal binding, fanout, relationship safety, real two-Wren adaptive Research and
+  real governed RELATIONSHIP.
+
+Current next ticket:
+**D7 TOOL-FAMILY PRIMITIVE AUDIT — TREND / CONTRIBUTION / PEER_COMPARE.**
+
+Rule:
+- inventory existing `stats.py / contribution.py / drill.py / ilkeller.py / yoy.py`;
+- reuse only if a safe governed primitive already exists;
+- deterministic transformation must preserve explicit Evidence lineage;
+- contribution is decomposition/observed contribution, never causal truth;
+- peer comparison requires accepted/governed peer grouping;
+- if a safe primitive is absent, record `PRIMITIVE_GAP`; do not add wrapper theater.
+
+Live Sol remains BLOCKED until this deterministic disposition is closed.
+
+---
+
+## 2026-09-23 00:56 — D7-SEED-SET ROOT FIX GREEN
+
+```text
+product_sha         aecd0c0c4642d18711feff58b864c2c866b1fcd6
+focused_run         35789148336
+result              GREEN
+failure_family      CONTRACT / INTERFACE → REPRESENTABILITY_SCOPE
+canonical_budget    manager_turns=6 / tool_calls=12 / data_queries=8
+budget_change       NONE
+```
+
+Root cause closure:
+- whole-authority Standard losslessness remains unchanged;
+- accepted Research authority may execute one selected typed task as a scoped Standard
+  sub-analysis;
+- the selected obligation slice must itself be lossless and preserve that obligation's
+  accepted SemanticHandles;
+- obligations outside accepted authority are denied;
+- semantic binding laundering between obligations is denied;
+- unselected USER_MUST obligations stay in the full UOL and CompletionGate remains
+  whole-ledger completion truth.
+
+Proof:
+- full-contract U1-only projection still rejects because U2/U3 would be dropped;
+- scoped U1 execution is `STANDARD_LOSSLESS`;
+- U2 semantic handle cannot be laundered into U1 execution;
+- unknown U999 cannot enter execution;
+- multi-obligation loop naturally completes without budget increase;
+- full `v2-day7-focused` is GREEN on the same SHA;
+- principal/fanout/relationship/real-Wren regressions remain GREEN.
+
+Architecture decision:
+**NO task-id-only redesign now.** The trace proved semantic restatement was not the owner;
+the rejected whole-contract representability scope was. Keep cognition flexible and the
+existing typed action interface until comparative evidence says otherwise.
+
+Next:
+1. create single `DIMA_CORRECTNESS_HARVEST_AND_ABLATION_PROTOCOL.md`;
+2. add the cross-cutting invariant-vs-benchmark rule to AGENTS/CLAUDE;
+3. continue deterministic Day7 closure: real Wren COMPARE/RANK sentinels, then
+   TREND/CONTRIBUTION/PEER_COMPARE primitive audit.
+
+Day7 remains ACTIVE. Live Sol and Day8 remain blocked.
+
+---
+
+## 2026-09-23 00:50 — D7-SEED-SET RED ROOT CAUSE
+
+```text
+baseline_sha       07c2c2b14c19825958f601d7a20074c5fb28f4aa
+diagnostic_sha     4bd987d3753831c3782c78d981ae3e7b693d6226
+baseline_run       35787021294
+diagnostic_run     35788651729
+
+failure_class      CONTRACT / INTERFACE
+sub_family         REPRESENTABILITY_SCOPE
+first_bad_turn     1
+single_owner       Representability proof invocation at governed RUN_ANALYTICS boundary
+```
+
+Exact trace:
+
+```text
+READY tasks        seed:U1, seed:U2, seed:U3
+Manager decision   run_analytics(U1, h1)        ← correct
+first rejection    projection drops executable obligations: U2, U3
+U1 task state      failed
+Evidence           none
+U1 VERIFIED        no
+later symptom      repeated U1 → no-progress block → manager turn budget exhausted
+```
+
+Root cause:
+- full Standard representability correctly requires one lossless projection to cover every
+  executable obligation of that Standard authority;
+- a Research run intentionally executes one typed ResearchTask at a time;
+- the same whole-contract completeness proof was incorrectly reused for that task-local
+  Standard sub-analysis;
+- therefore sequential multi-obligation Research was impossible even though CompletionGate
+  still retained all USER_MUST obligations.
+
+Invariant-preserving fix:
+```text
+Standard authority execution:
+  whole accepted authority must remain lossless
+
+Research task execution:
+  selected task obligation slice must be lossless against accepted authority
+  AND selected obligation semantic bindings must be preserved
+  AND no obligation outside accepted/ledger authority may execute
+  AND CompletionGate remains whole-ledger completion truth
+```
+
+Not the owner:
+- model cognition,
+- seed scheduling,
+- manager budget,
+- no-progress frontier,
+- semantic alias reconstruction.
+
+Forbidden:
+- raising max_manager_turns,
+- special-casing U1/U2/U3,
+- weakening full Standard representability,
+- marking unexecuted USER_MUST as complete.
+
+Proof plan:
+`scoped representability unit → seed-set focused → full v2-day7-focused same SHA`.
+
+---
+
+## 2026-09-22 — DAY 6.5 / COGNITION ↔ SEMANTIC AUTHORITY BOUNDARY CORRECTION
+
+**Karar kaynağı**
+- canonical addendum: `DIMA_DAY6_5_COGNITION_AUTHORITY_BOUNDARY_ADR.md`
+- sealed roadmap/report DEĞİŞTİRİLMEDİ.
+- Day6.5 validation + contract spec + AGENTS + MIMARI + CLAUDE index güncellendi.
+
+**Neden**
+DEV80 artefaktı high-level Manager cognition'ın baskın failure olmadığını gösterdi:
+
+```text
+expected ACCEPTED                         66
+final Manager capability shape correct   61 / 66
+actually ACCEPTED                         46 / 66
+expected clarification                    14
+actual clarification                      31
+failed cases with correct high-level draft 16 / 21
+```
+
+Kök problem:
+```text
+LLM cognition çoğu vakada doğru
++
+deterministic Resolver raw language meaning tahmini yapıyor
++
+Coverage unresolved semantic'e fazla authority veriyor
+=
+correct intent downstream'da gereksiz clarification/reject
+```
+
+**Yeni canonical owner sınırı**
+```text
+Semantic Catalog
+  → what exists
+
+SemanticCandidateGenerator
+  → bounded cand_* enumeration, NO authority
+
+unique exact verified alias
+  → direct gate, no model call
+
+otherwise:
+BoundedSemanticLinker
+  → SELECT(cand_*) | ABSTAIN, NO authority
+
+SemanticBindingGate
+  → membership + tenant/context/kind validation
+
+SemanticHandleRegistry
+  → sem_* mint
+
+Coverage Critic
+  → obligation / exclusion / directive omission veto only
+
+Capability / Conflict / Completeness gates
+  → contract validity
+
+Wren / DB
+  → numeric truth
+```
+
+**Temporal boundary**
+```text
+raw temporal surface
+→ TypedTemporalNormalizer
+→ closed TemporalIntent
+→ TemporalBindingEngine
+→ deterministic concrete dates
+→ temporal sem_* authority
+```
+
+Manager path için raw-language temporal regex meaning owner değildir.
+
+**Yapılan kod**
+- `app/v2/semantic_linker.py`
+  - deterministic bounded catalog cards,
+  - exact verified fast path,
+  - exact ambiguity fail-closed,
+  - one bounded structured linker batch,
+  - candidate injection rejection,
+  - sensitive filter exact-only,
+  - `SemanticBindingGate`.
+- `app/v2/semantic_handles.py`
+  - `mint_from_binding_gate()`,
+  - `mint_from_temporal_engine()`,
+  - legacy `mint_from_resolver()` compatibility olarak korundu.
+- `app/v2/manager_semantics.py`
+  - Manager regular semantic path old Resolver fuzzy/morphology interpretation'dan çıkarıldı,
+  - bounded linker + binding gate'e taşındı,
+  - Manager temporal path typed normalizer + deterministic calendar engine'e taşındı.
+- `app/v2/temporal_intent.py`
+  - typed temporal intent + pure calendar arithmetic.
+- `app/v2/model_policy.py` / `app/config.py`
+  - first-class `SEMANTIC_LINKER` role,
+  - blank config FAST_LANGUAGE'a düşer,
+  - product/domain logic model adı bilmez.
+- `app/v2/manager_preacceptance.py`
+  - Coverage semantic/clarification authority azaltıldı,
+  - capability-required missing binding deterministic blocker olarak kalır.
+- `app/v2/acceptance.py`
+  - LLM `open_questions` automatic clarification authority olmaktan çıkarıldı.
+- `lab/v2_day6_5_manager_eval.py`
+  - MODEL_FAILURE / GROUNDING_FAILURE / HARNESS_FAILURE semantic denominator'dan ayrılır,
+  - incomplete measurement semantic fail değildir,
+  - semantic linker role/call telemetry eklendi.
+
+**Receipt sınırı**
+`SemanticResolutionReceipt` adı compatibility için şimdilik korunuyor fakat anlamı
+provenance/anti-laundering'dir:
+
+```text
+source_ref ↔ sem_* ↔ target_kind
+```
+
+Receipt:
+- binding gerçekten runtime tarafından üretildi mi? → EVET, kontrol eder.
+- user başka ne istedi / ne atlandı? → HAYIR, çıkarım yapamaz.
+
+**STOP-THE-LINE — kalıcı**
+Manager semantic path'te aşağıdakiler YASAK:
+- phrase-specific regex,
+- morphology/stemming score,
+- fuzzy/SequenceMatcher threshold'u semantic authority yapmak,
+- named DEV case için prompt example/phrase patch,
+- candidate set dışı model seçimini kabul etmek,
+- Coverage'a canonical semantic veya user clarification truth vermek,
+- `open_questions`ı automatic clarification yapmak,
+- receipt'i completeness parser yapmak,
+- LLM'e date arithmetic yaptırmak,
+- provider/transport failure'ı NOT_ACCEPTED saymak.
+
+**Provider-free proof**
+Run:
+`35660792599`
+
+Tested code SHA:
+`e2b00eabff26c0e3ee93a7a2327b33f6615a048d`
+
+Sonuç:
+```text
+compile                          PASS
+focused Day6.5 boundary suite    70 / 70 PASS
+real Wren trust-plane sentinel   PASS
+```
+
+One-shot workflow PASS sonrası silindi.
+
+**Korunan compatibility**
+- legacy/non-Manager V2 `SemanticResolver` silinmedi.
+- legacy/non-Manager `temporal.py` silinmedi.
+- production `/ask-v2` hybrid route açılmadı.
+- yeni boundary yalnız Day6.5 Manager path'te owner değiştiriyor.
+
+**Açık borçlar / seal blockers**
+- `V2-D65-B1` — large tenant catalog candidate retrieval:
+  - bugün bounded set fazla büyükse `CANDIDATE_SET_TOO_BROAD`,
+  - blocker: DEV80 için MAYBE, architecture safety için NO,
+  - çözüm: future retrieval/index; retrieval authority DEĞİL.
+- `V2-D65-B2` — live bounded-linker recertification:
+  - OpenRouter önceki canary'de 402 verdi,
+  - blocker: final Day6.5 live certification için YES,
+  - semantic architecture fail olarak sayılmaz.
+- `V2-D65-B3` — DEV80 rerun:
+  - new boundary ile NOT YET RUN.
+- `V2-D65-B4` — VALIDATION50:
+  - DEV freeze sonrası.
+- `V2-D65-B5` — external HIDDEN50:
+  - architecture seal blocker.
+- `V2-D65-B6` — relationship real CrossDomainJoinGate:
+  - Day7-grade capability; Day6.5'te unsafe no-path execution 0 kalmalı.
+
+**Bir sonraki kontrollü sıra**
+1. Provider capacity varsa 8-case semantic-linker-focused live experiment.
+2. workers=1 stratified canary.
+3. visible DEV80 recertification.
+4. failure varsa önce family clustering; named-case patch YOK.
+5. DEV hard gate → freeze.
+6. VALIDATION50.
+7. external HIDDEN50.
+8. architecture seal.
+9. ancak sonra production hybrid routing / Day7.
+
+**Day 6.5 mevcut hüküm**
+- Manager paradigması REDDEDİLMEDİ.
+- Eski deterministic-language Resolver paradigması Manager language authority olarak REDDEDİLDİ.
+- Bounded Manager + bounded semantic linker + deterministic BindingGate architecture
+  **provider-free olarak doğrulandı**.
+- Ürün mimarisi henüz `SEALED` değildir; live DEV/validation/hidden kanıtı bekleniyor.
+
+
+---
+
+## 2026-09-22 06:51 — DAY 6.5 CURRENT-HANDOFF / NEREDEYİZ?
+
+### Branch / HEAD
+
+```text
+branch = feat/ask-v2-mvp
+HEAD   = c9629d9029db360e86a8592e12da646a2afc0621
+```
+
+Son anlamlı commit zinciri:
+
+```text
+e2b00eabff26  test: cognition-authority boundary closure
+ab59de22e10c  chore: one-shot cleanup
+1129eeebf129  ADR: cognition-authority boundary
+b37f89e3877b  AGENTS owner-map
+27ccc2a29832  Day6.5 architecture validation bounded-linker update
+19344aa04790  Day6.5 contract spec semantic-binding update
+0454958bf0cd  CLAUDE active-operation index
+b88fd1c58f04  MIMARI cognition-authority overlay
+c961ba753566  living status / implementation + debt record
+c9629d9029db  fix: completeness actual bound semantic kind'dan türetilir
+```
+
+### Day 6.5'in bugünkü mimari özeti
+
+İlk Day6 yaklaşımındaki:
+
+```text
+raw user language
+→ deterministic language heuristics
+→ bir kerede kusursuz semantic graph
+```
+
+zorunluluğu artık Manager path'in hedef mimarisi değildir.
+
+Bugünkü sınır:
+
+```text
+USER MESSAGE
+  ↓
+Finite Pre-Acceptance
+  DRAFT
+  → source provenance validation
+  → AUTO-GROUND
+  → COVERAGE VETO
+  → CONTRACT VALIDITY
+  → ACCEPT / bounded REVISE / CLARIFY
+  ↓
+AcceptedTurnContract
+  ↓
+RepresentabilityGate
+  ├─ STANDARD_LOSSLESS → Core fast path
+  └─ RESEARCH_REQUIRED → bounded Manager loop
+                               ↓
+                        governed typed tools
+                               ↓
+                    Wren / DB / Evidence
+                               ↓
+                 UserObligationLedger / CompletionGate
+```
+
+Semantic authority zinciri:
+
+```text
+Semantic Catalog
+  → what exists
+
+SemanticCandidateGenerator
+  → bounded cand_* enumeration; authority değil
+
+unique exact verified alias
+  → deterministic fast bind
+
+aksi halde
+BoundedSemanticLinker
+  → yalnız SELECT(cand_*) | ABSTAIN
+
+SemanticBindingGate
+  → candidate membership + tenant/context/kind/provenance verification
+
+SemanticHandleRegistry
+  → sem_* mint
+
+CapabilityBindingValidator / Effect / Completeness
+  → executable contract truth
+
+Wren / DB
+  → numeric truth
+
+QueryContract / EvidenceArtifact
+  → proof
+
+CompletionGate
+  → completion truth
+```
+
+Bu sınırda LLM:
+- candidate set dışı canonical truth üretemez,
+- `sem_*` mint edemez,
+- SQL yazamaz,
+- join authority uyduramaz,
+- RLS/CLS bypass edemez,
+- numeric truth veya completion truth sahibi değildir.
+
+### Neden bu noktaya geldik?
+
+Frozen DEV80 `8961a60...` üzerinde:
+
+```text
+59 / 80 PASS
+MUST recall 0.6923
+invented MUST 0
+security / handle / unsafe-fast P0 = 0
+```
+
+çıktı.
+
+21 failure tek tek patch listesine çevrilmedi.
+
+Kök analiz:
+- 16/21 fail'de high-level Manager intent shape zaten doğruydu.
+- Asıl baskın kusur semantic boundary'de:
+  raw dil yüzeyi deterministic Resolver fuzzy/morphology/token mantığına fazla bağımlıydı.
+- Research phenomenon/scope, canonical tenant semantic ile karışabiliyordu.
+- Coverage unresolved semantic'i gereğinden fazla blocking authority olarak kullanabiliyordu.
+- Bazı DEV oracle beklentileri yeni security/authority sınırıyla bayattı.
+
+Sonuç:
+**Manager paradigmasını atmak yerine cognition ↔ authority sınırı yeniden kuruldu.**
+
+### Eski Dima bataklığına karşı kalıcı yasak
+
+Manager semantic path'te:
+
+```text
+phrase-specific regex                         YASAK
+stemming / morphology score                   YASAK
+fuzzy / SequenceMatcher semantic authority    YASAK
+named DEV case prompt example                 YASAK
+case-id production branch                     YASAK
+LLM canonical ID seçsin / uydursun            YASAK
+Coverage semantic truth olsun                 YASAK
+receipt completeness parser olsun             YASAK
+provider failure → NOT_ACCEPTED               YASAK
+LLM date arithmetic                           YASAK
+```
+
+Son static/architectural auditlerde production Manager semantic path'ine named-case /
+regex / morphology authority borcu eklenmedi.
+
+### Finite pre-acceptance neden kaldı?
+
+Open agent loop:
+
+```text
+resolve → resolve → propose → repair → clarify → budget
+```
+
+yerine:
+
+```text
+DRAFT
+→ AUTO-GROUND
+→ COVERAGE VETO
+→ CONTRACT VALIDITY
+→ ACCEPT / one bounded REVISE / CLARIFY
+```
+
+kullanılıyor.
+
+Bu ayrım:
+- yanlış action alanını küçültüyor,
+- semantic binding'i runtime/gate sahibi yapıyor,
+- rejected attempt authority merge'ini engelliyor,
+- ambiguity ile provider failure'ı ayırıyor,
+- Manager'ı cognition/orchestration rolünde tutuyor.
+
+### Research policy / obligation ayrımı
+
+Research davranışı USER_MUST değildir.
+
+Örnek:
+
+```text
+"üretkenlik düşüşünü araştır"
+→ USER_MUST root_cause
+
+"sonuç yeni yön gösterirse oraya da bak"
+→ ResearchDirective.ADAPT_ON_EVIDENCE
+```
+
+Research directive / control request / tenant semantic üç ayrı typed domain'dir.
+
+Current draft contract ayrıca non-authoritative control-plane isteklerini
+`DraftControlRequest` olarak business obligation'dan ayırır.
+
+### Temporal boundary
+
+Manager raw temporal language için regex parser semantic owner değildir.
+
+```text
+raw temporal surface
+→ TypedTemporalNormalizer
+→ closed TemporalIntent
+→ TemporalBindingEngine
+→ deterministic concrete dates
+→ temporal sem_*
+```
+
+Model yalnız closed intent normalize eder; tarih aritmetiğini deterministic engine yapar.
+
+### Provider / model failure semantiği
+
+Pre-acceptance terminal outcome artık typed:
+
+```text
+ACCEPTED
+CLARIFICATION_REQUIRED
+COGNITION_REJECTED
+CONTRACT_REJECTED
+MODEL_FAILURE
+GROUNDING_FAILURE
+```
+
+Evaluator:
+- MODEL_FAILURE / GROUNDING_FAILURE / HARNESS_FAILURE'ı semantic denominator'a sokmaz,
+- incomplete measurement'ı architecture fail saymaz,
+- provider 402/timeout'u NOT_ACCEPTED gibi göstermez.
+
+Bu eski `None / fallback / semantic failure` conflation hastalığının V2'ye taşınmasını
+engelleyen yapısal sınırdır.
+
+### Kanıt tablosu
+
+#### Eski finite-manager stabilization kanıtları
+
+```text
+provider-free stabilization            45/45 PASS
+finite-terminal closure                48/48 PASS
+typed-failure closure                  49/49 PASS
+Luna focused workers=1                 14/15
+Sol exact-same-SHA focused A/B          15/15 PASS
+```
+
+Sol A/B:
+- architecture aynı,
+- model daha güçlü,
+- 15/15 sonucu kalan Luna tail'in model capability floor olduğunu gösterdi;
+- Luna'ya özel production patch yazılmadı.
+
+#### Eski architecture canary + DEV80
+
+Certification candidate:
+`8961a60a0255df691e5f1f42cf2131e83f8af674`
+
+```text
+provider-free current-head             53/53 PASS
+Sol canary16                           16/16 PASS
+Sol DEV80                              59/80
+measurement failures                   0
+P0 unsafe accept / handle / security   0
+```
+
+DEV80 architecture rewrite değil, semantic-owner boundary correction tetikledi.
+
+#### Yeni cognition-authority boundary proof
+
+Run:
+`35660792599`
+
+Tested code:
+`e2b00eabff26c0e3ee93a7a2327b33f6615a048d`
+
+```text
+compile                                PASS
+focused boundary suite                 70/70 PASS
+real Wren trust-plane sentinel         PASS
+```
+
+### Current HEAD ile son fark — ÖNEMLİ
+
+Current HEAD:
+`c9629d9029db360e86a8592e12da646a2afc0621`
+
+Son code change:
+```text
+fix(v2-day6.5): derive completeness from bound semantic kind
+```
+
+Önceki implementation capability-required completeness'i draft'ın
+`kind_hint` alanından türetebiliyordu.
+
+Current HEAD artık:
+```text
+semantic linker / binding gate sonucu
+→ SemanticBindingRef.target_kind
+→ normalized bound kind
+→ capability-required completeness
+```
+
+kullanır.
+
+Bu authority açısından doğru yöndür:
+**LLM hint'i truth değildir; doğrulanmış binding'in target_kind'ı truth-plane girdisidir.**
+
+Fakat bu commit `e2b00...` provider-free 70/70 run'ından SONRADIR.
+
+Dolayısıyla:
+```text
+current HEAD c9629d... = IMPLEMENTED
+current HEAD certification = NOT YET RUN
+```
+
+Bir sonraki geliştirici bu ayrımı kaybetmemelidir.
+
+### Bugünkü hüküm
+
+```text
+Manager paradigm                         RETAIN
+old deterministic language Resolver
+as Manager language authority            REJECTED
+
+finite pre-acceptance                    RETAIN
+bounded semantic linker                  RETAIN
+deterministic SemanticBindingGate        RETAIN
+capability/effect/completeness gates     RETAIN
+typed temporal boundary                  RETAIN
+Wren/DB truth plane                      RETAIN
+production hybrid route                  OFF
+Day 6.5 architecture seal                NOT YET
+```
+
+Şu an üçüncü bir architecture search başlatmak için kanıt YOK.
+
+Ancak yeni boundary live DEV corpusunda başarısız olursa:
+- named-case patch yapılmaz,
+- önce failure-family clustering yapılır,
+- failure semantic linker / candidate retrieval / capability algebra / oracle / model-floor
+  olarak sınıflandırılır,
+- yalnız ortak abstraction failure kanıtlanırsa mimari değiştirilir.
+
+### Açık borçlar / blockers
+
+#### V2-D65-B1 — Large tenant catalog retrieval
+- Bounded candidate set fazla büyürse `CANDIDATE_SET_TOO_BROAD`.
+- Safety blocker: NO.
+- Scale/DEV blocker: MAYBE.
+- Future çözüm: candidate retrieval/index.
+- Retrieval **authority değildir**; BindingGate değişmez.
+
+#### V2-D65-B2 — Current-head provider-free recertification
+- current HEAD `c9629d...`.
+- Son completeness-by-bound-kind commit henüz focused closure ile certify edilmedi.
+- Blocker: next live run için YES.
+- Kapanış: tek focused provider-free boundary bundle; büyük full suite gerekmez.
+
+#### V2-D65-B3 — Live bounded-linker focused recertification
+- new semantic owner boundary ile NOT YET RUN.
+- Önce current-head provider-free.
+- Sonra workers=1 küçük focused live set.
+- Blocker: DEV80 rerun için YES.
+
+#### V2-D65-B4 — DEV80 rerun
+- new bounded-linker boundary ile NOT YET RUN.
+- Eski 59/80 yeni mimarinin final skoru değildir.
+- Blocker: DEV freeze için YES.
+
+#### V2-D65-B5 — VALIDATION50
+- DEV hard gates + freeze sonrası.
+- Tuning yok.
+- Blocker: architecture seal için YES.
+
+#### V2-D65-B6 — External HIDDEN50
+- independent evaluator.
+- development model promptları görmez.
+- final receipt: corpus/taxonomy/attestation/tested_git_sha/eval_harness_sha + aggregate PASS/FAIL.
+- Blocker: final architecture seal için YES.
+
+#### V2-D65-B7 — Real relationship trust plane
+- `run_relationship` / real CrossDomainJoinGate Day7-grade capability.
+- Day6.5 requirement: no-path unsafe relationship execution = 0.
+- Full real capability Day7'ye taşınabilir.
+- Day6.5 core architecture blocker: NO, unsafe bypass blocker: YES.
+
+### Önümüzdeki doğru sıra
+
+```text
+1. current HEAD c9629d... focused provider-free recertification
+2. pass ise code freeze candidate SHA oluştur
+3. workers=1 small semantic-linker-focused live set
+4. stratified canary
+5. visible DEV80 recertification
+6. failure → family clustering, named-case patch YOK
+7. hard gates pass → DEV freeze
+8. VALIDATION50, no tuning
+9. external HIDDEN50 receipt
+10. Day6.5 ADR/MIMARI final seal
+11. production hybrid routing
+12. Day7
+```
+
+### Bir sonraki geliştirici için ilk okuma
+
+```text
+1. DIMA_V2_GELISTIRME_DURUM.md — bu section
+2. DIMA_DAY6_5_COGNITION_AUTHORITY_BOUNDARY_ADR.md
+3. DIMA_DAY6_5_MANAGER_ARCHITECTURE_VALIDATION.md
+4. DIMA_DAY6_5_MANAGER_CONTRACT_SPEC_V0.md
+5. AGENTS.md
+6. MIMARI.md Day6.5 cognition/authority overlay
+7. manager_preacceptance.py
+8. semantic_linker.py
+9. manager_semantics.py
+10. capability_bindings.py / acceptance.py / standard_projection.py
+```
+
+**Özet tek cümle:**
+Day 6.5'in temel Manager fikri çalışıyor; eski Dima'yı yeniden üreten raw-language
+heuristic authority sınırı söküldü ve bounded cognition + deterministic authority olarak
+yeniden kuruldu. Şimdi ihtiyaç yeni feature veya yeni heuristic değil; current HEAD'i
+recertify edip live DEV/validation/hidden evidence ile gerçekten mühürlemek.
+
+
+---
+
+## 2026-09-22 07:44 — DAY 6.5 ENGINEERING-CLOSURE HANDOFF
+
+### Authority / branch durumu
+
+```text
+branch                         = feat/ask-v2-mvp
+docs-prep HEAD before status   = 4f61d62d8ffa015937e961f20e5161157b7f055c
+latest semantic-code SHA       = c9629d9029db360e86a8592e12da646a2afc0621
+production hybrid /ask-v2      = OFF
+Day 6.5 engineering closure    = ACTIVE
+Day 6.5 certification seal     = NOT YET
+```
+
+Bu hazırlık turunda executable product code değiştirilmedi. Değişiklikler yalnız phase-local
+authority, operation protocol, MIMARI overlay ve eval/seal altyapısıdır.
+
+### Nihai Day 6.5 çalışma kararı
+
+Architecture search tekrar açılmayacak.
+
+```text
+STANDARD_DIRECT
+STANDARD_BUILDER
+RESEARCH
+```
+
+üç çalışma biçimi vardır; fakat iki accepted-authority ailesi vardır:
+
+```text
+AcceptedAuthority
+├── AcceptedStandardAuthority
+└── AcceptedResearchAuthority
+```
+
+- Direct = StandardBuilder'ın hemen seal edilen kısa yolu.
+- StandardBuilder = tek governed analytical projection için bounded discovery/self-correction.
+- Research = multi-obligation/adaptive evidence investigation.
+
+Standard query construction ile Research orchestration aynı correctness problemi değildir.
+
+### Yeni aktif phase-local authority
+
+`belgeler/plan/DIMA_DAY6_5_ENGINEERING_CLOSURE_PROTOCOL.md`
+
+Bu belge:
+- mühürlü roadmap/report'u değiştirmez,
+- current Day6.5 closure sırasını tanımlar,
+- semantic discovery != authority,
+- StandardBuilder != Research Manager,
+- Standard → Research authority merge yasağı,
+- workers=1 / classify-before-patch / freeze/A-B disiplinini bağlayıcı hale getirir.
+
+Supporting current docs:
+- `DIMA_DAY6_5_COGNITION_AUTHORITY_BOUNDARY_ADR.md`
+- `DIMA_DAY6_5_MANAGER_CONTRACT_SPEC_V0.md`
+- `DIMA_DAY6_5_MANAGER_ARCHITECTURE_VALIDATION.md`
+- `eval/v2_day6_5_eval_manifest.yaml`
+- `MIMARI.md` current closure overlay
+- `AGENTS.md` / `CLAUDE.md` active operation
+
+### Bu prep turunda yapılanlar
+
+```text
+c382dbfa07df  add final engineering closure protocol
+99f62311bfe3  align AGENTS with final closure architecture
+0dca179d4a73  make engineering closure active in CLAUDE
+f0ed81eda776  add three-mode MIMARI closure overlay
+4f61d62d8ffa  align eval manifest with StandardBuilder closure gates
+```
+
+### Superseded operational assumptions
+
+Aşağıdaki eski hazırlık notları artık aktif kural değildir:
+
+1. **"Hidden holdout Manager implementation blocker"** → SUPERSEDED.
+   Hidden50 development blocker değildir; final certification seal blocker'ıdır.
+2. **"simple standard model calls <= 1" universal gate** → SUPERSEDED.
+   `STANDARD_DIRECT` minimum-call hedefler; bounded `STANDARD_BUILDER` progress varsa
+   birden fazla tur yapabilir. Research Manager loop'a düşme ise standard için 0 kalmalıdır.
+3. **"standard veya research" iki-mode düşüncesi** → SUPERSEDED.
+   Üç mode, iki accepted-authority ailesi vardır.
+4. **retrieval score / miss = semantic truth** → YASAK.
+   Retriever yalnız bounded discovery seam'idir.
+
+### Güncel operasyon protokolü — kısa sürüm
+
+- geliştirme/mimari doğrulama test kampanyasından önce gelir,
+- mühürlü plan + rapor authority; progress yalnız living status,
+- her değişiklik kayıt altına alınır,
+- vertical slice önce,
+- normal loop: `code → 3–15 sn focused/provider-free → devam`,
+- workers=1 semantic certification önce,
+- fail → önce sınıflandır:
+  `MODEL_COGNITION | CONTRACT/ARCHITECTURE | RESOLVER_TRUTH | EVAL_ORACLE | TRANSPORT/PROVIDER`,
+- infra fail semantic fail değildir,
+- regex/morphology/keyword/case-ID/case-derived prompt/resolver heuristic yasak,
+- exactly-one semantic authority,
+- LLM cognition; Resolver/BindingGate/Planner/Wren/Evidence/Gates truth,
+- Coverage veto-only,
+- receipt provenance/anti-laundering only,
+- USER_MUST != ResearchDirective/AGENT_DERIVED,
+- pre-acceptance finite,
+- post-acceptance adaptation bounded + progress fingerprint,
+- model capability floor architecture ile karıştırılmaz,
+- önemli intervention öncesi checkpoint; A/B same SHA,
+- hidden only final seal,
+- STOP-THE-LINE ihlalinde feature değil abstraction düzeltilir.
+
+Tek prensip:
+**Vaka geçirerek sistem yapmıyoruz; doğru abstraction'ı kurup vakaların onun doğal sonucu
+olarak geçmesini istiyoruz.**
+
+### Current code evidence — değişmedi
+
+Son semantic code:
+`c9629d9029db360e86a8592e12da646a2afc0621`
+
+Bu SHA'nın parent architecture proof'u:
+
+```text
+tested SHA e2b00eab...
+provider-free cognition/authority closure 70/70 PASS
+real Wren trust-plane sentinel PASS
+```
+
+Ancak `c9629d...` bu koşumdan sonra geldiği için exact current semantic SHA recertification
+halen ilk engineering işi olmalıdır.
+
+### Açık borçlar
+
+#### D65-C1 — exact current semantic SHA recertification
+- blocker: YES / sonraki kod değişikliği öncesi.
+- action: focused provider-free cognition/authority closure.
+- fail olursa önce failure class; patch otomatik değil.
+
+#### D65-C2 — SemanticCatalogRetriever seam
+- current candidate enumeration doğrudan `SemanticCandidateGenerator` içindedir.
+- target: retrieval discovery interface arkasına almak.
+- first backend: mevcut deterministic enumeration olabilir.
+- retrieval authority değildir.
+- vector/BM25/RRF: DEFER.
+
+#### D65-C3 — bounded StandardBuilder yok
+- target: Direct + Builder tek engine/state machine.
+- bounded typed feedback + progress fingerprint.
+- no-progress fail closed.
+- Research Manager değildir.
+
+#### D65-C4 — Standard/Research authority fiziksel ayrımı yok
+- target: minimal `AcceptedStandardAuthority`.
+- Research `AcceptedTurnContract + UOL + CompletionGate` korunur.
+- failed Standard semantic authority Research'e taşınmaz.
+
+#### D65-C5 — Standard final CoverageVeto
+- şimdilik seal öncesi dar omission/exclusion/research-only capability vetosu.
+- canonical semantic/clarification/query authority yok.
+- sonradan benchmark kanıtıyla eval-only observer'a indirilebilir.
+
+#### D65-C6 — broad distribution / certification
+- final frozen DEV80: REQUIRED after engineering change.
+- VALIDATION50: after engineering freeze, no tuning.
+- external HIDDEN50: final certification seal only.
+- production hybrid route: certification seal sonrası.
+
+#### D65-C7 — large tenant catalog retrieval/index
+- `CANDIDATE_SET_TOO_BROAD` dürüst failure olmaya devam eder.
+- retrieval backend optimization architecture truth değildir.
+- Day6.5 seal için ancak real distribution blocker olursa ele alınır.
+
+#### D65-C8 — CrossDomainJoinGate full relationship capability
+- Day7-grade capability.
+- Day6.5 P0: unsafe no-path execution = 0.
+
+### Sıradaki ticket — D65-E1 EXACT CURRENT-HEAD RECERTIFICATION
+
+**AMAÇ**  
+Yeni code yazmadan önce `c9629d...` cognition/authority boundary'nin exact current semantic
+SHA üzerinde hâlâ green olduğunu kanıtlamak.
+
+**TOUCH**
+- test/workflow invocation only,
+- sonuç living status.
+
+**NO-TOUCH**
+- `semantic_linker.py`,
+- `manager_preacceptance.py`,
+- `manager_semantics.py`,
+- prompt/system schema,
+- Resolver,
+- DEV corpus/oracle.
+
+**TEST**
+- focused provider-free cognition/authority closure,
+- real Wren sentinel mevcut bundle içinde varsa birlikte,
+- paid/live yok.
+
+**FAIL CLASSIFICATION**
+Her failure önce:
+`MODEL_COGNITION | CONTRACT/ARCHITECTURE | RESOLVER_TRUTH | EVAL_ORACLE | TRANSPORT/PROVIDER`.
+
+Provider-free'da MODEL/TRANSPORT beklenmez; harness varsa semantic denominator dışı.
+
+**EXIT**
+- green → checkpoint SHA,
+- red → failure-family/owner diagnosis; case patch yok.
+
+### Recert green sonrası exact sıra
+
+```text
+checkpoint
+→ SemanticCatalogRetriever seam
+→ bounded StandardBuilder
+→ AcceptedStandardAuthority split
+→ narrow CoverageVeto
+→ provider-free family gates
+→ workers=1 live architecture set
+→ real Wren Standard vertical + Research sentinel
+→ ENGINEERING FREEZE CANDIDATE
+→ frozen DEV80 once
+→ family clustering if fail
+→ ENGINEERING CLOSED / ARCHITECTURE FROZEN
+→ Day7 lab/flag may proceed
+→ VALIDATION50 no tuning
+→ external HIDDEN50
+→ CERTIFICATION SEALED
+→ production hybrid activation
+```
+
+### STOP-THE-LINE
+
+- second semantic owner,
+- silent USER requirement loss,
+- unsafe standard admission,
+- blocking ambiguity auto-pick,
+- rejected Standard authority → Research merge,
+- candidate set outside canonical truth,
+- raw SQL/direct DB authority,
+- cross-tenant/context handle,
+- post-acceptance raw prompt semantic reparse,
+- unverified numeric truth,
+- evidence-less VERIFIED completion,
+- model-specific business branch,
+- silent fallback.
+
+Tek benchmark vakası yeni architecture arama gerekçesi değildir.
+
+
+### Recertification runner hazır
+
+Manual-only provider-free workflow:
+`.github/workflows/v2-day6-5-provider-free-closure.yml`
+
+Commit:
+`f38a5fca97e618b5dba84084101838df4857adab`
+
+Özellikler:
+- push'ta otomatik çalışmaz,
+- paid provider/secrets kullanmaz,
+- `target_sha` input'u alır,
+- default exact semantic SHA = `c9629d9029db360e86a8592e12da646a2afc0621`,
+- önce exact SHA checkout eder,
+- 70/70 boundary run'da kullanılan compile + provider-free focused suite'i yeniden çalıştırır,
+- job sonunda `tested_sha == requested_sha` doğrular.
+
+Bir sonraki geliştirici yeni code yazmadan önce bu workflow'u default SHA ile dispatch eder.
+
+
+### 2026-09-22 — CLOSURE PROTOCOL HARDENING + D65-E1 STARTED
+
+**Protocol hardening commits**
+- `b088b5802919` — measurable closure + freeze/certification invalidation rules
+- `01043d9bfa84` — phase gates + work-mode oracle + freeze-candidate policy
+- `90f813225a52` — AGENTS research-authority/freeze semantics
+- `c6904034dc38` — MIMARI research body + certification invalidation
+
+**Frozen phase gates before broad rerun**
+```text
+DEV80 semantic case pass >= 0.95
+DEV80 MUST recall        >= 0.95
+VALIDATION50 case pass   >= 0.95
+VALIDATION50 MUST recall >= 0.95
+HIDDEN50 case pass       >= 0.95
+HIDDEN50 MUST recall     >= 0.95
+adaptive branch          >= 0.90 where applicable
+P0 authority/security/silent-loss counters = 0
+```
+
+**Three-mode oracle**
+Every eval case must carry:
+- `allowed_work_modes`
+- `expected_authority_family`
+
+Valid modes:
+`STANDARD_DIRECT | STANDARD_BUILDER | RESEARCH`.
+
+Direct/Builder both map to `AcceptedStandardAuthority`.
+Research maps to the **existing `AcceptedTurnContract` body**; `AcceptedResearchAuthority`
+is alias/tagged-view only, never a second semantic contract.
+
+**Progress invariant**
+```text
+max_executions_per_action_state_pair = 1
+duplicate_reexecution_max = 0
+```
+
+**Freeze invalidation**
+- one DEV80 per engineering-freeze candidate SHA,
+- architecture/code change after DEV80 => new candidate + new DEV80,
+- Validation fail + code change => certification freeze invalid; fresh validation set required,
+- Hidden fail + architecture/code change => same hidden may not be reused for certification;
+  external evaluator must provide a fresh sealed hidden corpus.
+
+**Canonical sequence correction**
+```text
+provider-free
+→ workers=1 focused live
+→ same-SHA model-floor A/B when needed
+→ 12–16 stratified canary
+→ real Wren Standard + Research sentinel
+→ ENGINEERING FREEZE CANDIDATE
+→ DEV80 once-per-candidate
+→ engineering closed
+→ VALIDATION50
+→ external fresh HIDDEN50
+→ certification sealed
+```
+
+**Terminology**
+Old “current-head recertification” phrasing is superseded.
+Canonical name:
+`EXACT CURRENT SEMANTIC-SHA RECERTIFICATION`.
+
+### D65-E1 — RUNNING
+
+Exact semantic code:
+`c9629d9029db360e86a8592e12da646a2afc0621`
+
+GitHub Actions run:
+`35689470508`
+
+Trigger workflow-source commit:
+`521b1f768e75df1e36c833a57e0b28eeac082892`
+
+Receipt records separately:
+- `workflow_source_sha`
+- `requested_code_sha`
+- `tested_code_sha`
+
+Product semantic code was not modified before recertification.
+
+
+### D65-E1 — GREEN / EXACT CURRENT SEMANTIC-SHA RECERTIFIED
+
+**Exact semantic code**
+`c9629d9029db360e86a8592e12da646a2afc0621`
+
+**Run**
+`35689470508`
+
+**Result**
+```text
+compile cognition-authority boundary    PASS
+focused provider-free closure           70 / 70 PASS
+warnings                                5
+test time                               10.73s
+certification identity                  PASS
+receipt upload                          PASS
+```
+
+**Audit identity**
+```text
+workflow_source_sha = 521b1f768e75df1e36c833a57e0b28eeac082892
+requested_code_sha  = c9629d9029db360e86a8592e12da646a2afc0621
+tested_code_sha     = c9629d9029db360e86a8592e12da646a2afc0621
+artifact_id         = 10677887784
+artifact_digest     = sha256:685eade8e948c22b839e51db769f53210ef3839d5d4d42a78acfaf2afd78cd82
+```
+
+**Checkpoint**
+`checkpoint/day6.5-exact-recert-c9629d`
+→ points exactly to `c9629d9029db...`.
+
+**Interpretation**
+- no semantic/contract regression observed in the exact current semantic SHA,
+- completeness-by-bound-kind change preserved the 70/70 cognition-authority closure,
+- real Wren trust-plane sentinel remained inside the passing bundle,
+- no patch was required,
+- D65-E1 CLOSED GREEN.
+
+**Workflow hygiene**
+One-shot push trigger was used only because connector has no workflow-dispatch action.
+After the successful run, `v2-day6-5-provider-free-closure.yml` was restored to
+manual-only at `207e58fdabf12663356065dd5b1c344a22a483e6`.
+Paid/provider automation remains OFF.
+
+### D65-E2 — SemanticCatalogRetriever seam
+
+**AMAÇ**
+Semantic candidate discovery'yi explicit non-authoritative interface arkasına almak;
+current deterministic enumeration behavior'ını değiştirmeden ileride large-catalog retrieval
+backend'ine yer açmak.
+
+**ROADMAP / REPORT**
+Mühürlü plan/rapor değişmez. Aktif phase-local owner:
+`DIMA_DAY6_5_ENGINEERING_CLOSURE_PROTOCOL.md §4 / §12`.
+
+**NEW OWNER**
+`SemanticCatalogRetriever` = discovery only.
+Canonical authority hâlâ `SemanticBindingGate`.
+
+**TOUCH**
+- `app/v2/semantic_retriever.py` NEW
+- `app/v2/semantic_linker.py` minimal seam wiring
+- `tests/test_v2_day6_5_semantic_linker.py` focused seam invariant
+- living status
+
+**NO-TOUCH**
+- Manager prompt/schema semantics
+- Resolver canonical rules
+- Capability algebra
+- temporal boundary
+- DEV80 corpus/oracle
+- production routing
+
+**INVARIANTS**
+- retrieval score != semantic truth,
+- retrieval miss != semantic does not exist,
+- retriever cannot mint `sem_*`,
+- candidate outside returned bounded set cannot bind,
+- exact alias deterministic fast bind remains unchanged,
+- sensitive filter fallback remains exact-only,
+- no regex/morphology/fuzzy semantic authority.
+
+**TARGETED TEST**
+`pytest -q tests/test_v2_day6_5_semantic_linker.py`
+
+**EXIT**
+Current behavior preserved and generator obtains discovery candidates through the explicit
+Retriever seam. No vector/BM25/RRF implementation in Day6.5.
+
+
+### D65-E2 — GREEN / SemanticCatalogRetriever seam
+
+**Product commits**
+- `4b28fc169e71` — add non-authoritative semantic retriever seam
+- `14b117e2eeae` — route candidate discovery through retriever seam
+- `2ff527379047` — lock discovery-only / retrieval-miss invariants
+
+**Focused gate**
+- workflow run: `35689752878`
+- result: **9 / 9 PASS**
+- runtime: **8.26s**
+- compile: PASS
+
+**One-shot cleanup**
+- `5feaf5edc528` — retriever focused workflow removed after pass.
+
+**What changed**
+`SemanticCandidateGenerator` artık candidate discovery'yi explicit
+`SemanticCatalogRetriever` interface üzerinden alıyor.
+
+Current backend:
+`EnumeratingSemanticCatalogRetriever`
+→ mevcut governed catalog slice'ını exhaustive döndürür.
+Bu nedenle mevcut semantic behavior korunur.
+
+Future ranked/indexed backend için result contract:
+```text
+candidates
+exhaustive
+backend
+truncated
+```
+
+**New invariant**
+```text
+non-exhaustive retrieval miss
+!=
+semantic does not exist
+```
+
+Non-exhaustive boş discovery artık `GAP` yerine `RETRIEVAL_MISS` üretir.
+Binding authority değişmedi; `SemanticBindingGate` tek canonical authority sahibidir.
+
+**Deferred**
+- vector/BM25/RRF
+- separate Hydrator framework
+- catalog ranking optimization
+
+Bunlar D65-E2 kapsamı değildir.
+
+### D65-E3 — bounded StandardBuilder
+
+**AMAÇ**
+Research Manager'dan ayrı, tek governed analytical projection kuran bounded StandardBuilder
+state machine'ini eklemek. `STANDARD_DIRECT` ayrı engine olmayacak; aynı builder'ın immediate
+lossless short path'i olacak.
+
+**DESIGN SOURCE**
+`DIMA_DAY6_5_ENGINEERING_CLOSURE_PROTOCOL.md §2–§8`
++ Day6.5 closure report Standard Builder §7–§11.
+
+**FIRST CUT**
+- `standard_projection.py` compiler core'unu heavy `AcceptedTurnContract + UOL`
+  input'una sıkı bağlı olmaktan çıkar; lightweight standard binding source kabul et.
+- existing research wrapper behavior korunur.
+- `standard_builder.py` finite state/progress contract eklenir.
+- no raw SQL / no research tools.
+- same action + same state second execution => `NO_PROGRESS`.
+- compile/validation failure otomatik `RESEARCH` değildir.
+- `RESEARCH_REQUIRED` yalnız gerçek research-only capability olduğunda mümkündür.
+
+**NO-TOUCH**
+- production `/ask-v2` routing
+- Research Manager loop
+- AcceptedTurnContract semantic body
+- DEV corpus/oracle
+- Resolver/BindingGate authority
+
+
+### D65-E3 — GREEN / bounded StandardBuilder core
+
+**Product commits**
+- `2fbcc31d1019` — add `STANDARD_BUILD_REQUIRED` representability outcome
+- `d62dcdcb0fba` — decouple StandardProjection compiler core from Research contract/UOL
+- `7884f7912f37` — reserve RESEARCH_REQUIRED for actual research capabilities
+- `1c13447e3c1a` — bounded StandardBuilder state machine
+- `de7a7751840e` — update old authority expectation
+- `151e16184ad2` — StandardBuilder provider-free invariants
+
+**Focused gate**
+- workflow run: `35690931816`
+- result: **20 / 20 PASS**
+- runtime: **5.69s**
+- compile: PASS
+- one-shot workflow cleanup: `d413e48a5c3e`
+
+**Closed architecture points**
+```text
+STANDARD_DIRECT = first successful attempt of StandardBuilder
+STANDARD_BUILDER = same engine after bounded repair
+missing/incomplete standard representation != RESEARCH_REQUIRED
+real research capability                     = RESEARCH_REQUIRED
+same proposal + unchanged state              = NO_PROGRESS
+budget exhausted                             = fail closed
+```
+
+`StandardProjectionCompiler.compile_bound(...)` now accepts lightweight grounded standard
+atoms without requiring `AcceptedTurnContract + UserObligationLedger`.
+Existing `compile(contract, ledger, ...)` wrapper remains for Research compatibility.
+
+### D65-E4 — Minimal Standard authority / cross-family exactly-one
+
+**TARGET**
+- minimal `AcceptedStandardAuthority` seal,
+- semantic body = `StandardProjection`; authority artifact does not duplicate it,
+- `AcceptedResearchAuthority` = existing `AcceptedTurnContract` alias/tag only,
+- same turn cannot commit both Standard and Research accepted authority,
+- Standard seal validates every `sem_*` against tenant/context before authority mint.
+
+
+### D65-E4 — GREEN / Standard-Research authority split
+
+**Product**
+- `9974d36b346c` — minimal `AcceptedStandardAuthority` sealer + cross-family registry
+- `3212af70b8ac` — Standard/Research authority invariants
+
+**Focused gate**
+- run: `35691100678`
+- result: **25 / 25 PASS**
+- runtime: **6.31s**
+- compile: PASS
+- one-shot cleanup: `5924a21a8cee`
+
+**Authority shape**
+```text
+AcceptedStandardAuthority
+- authority_id
+- turn_id / request_ref
+- source_message_hash
+- context_version
+- projection_hash
+- semantic_handle_refs
+- accepted_attempt_id
+- model_role
+- work_mode
+- created_at
+```
+
+Semantic body burada tekrar yazılmaz:
+`StandardProjection` body'dir.
+
+Research:
+`AcceptedResearchAuthority = AcceptedTurnContract` **type alias only**.
+İkinci research contract/body yaratılmadı.
+
+Cross-family `AcceptedAuthorityRegistry`:
+same-turn second accepted authority → deterministic reject.
+
+### D65-E5 — narrow Standard CoverageVeto
+
+Seal öncesi yalnız:
+- material user request omission,
+- explicit exclusion omission / wrong polarity,
+- research-only need omitted from routing
+
+için veto olabilir.
+
+YASAK:
+- canonical semantic seçmek,
+- `sem_*` üretmek/istemek,
+- obligation eklemek,
+- query/projection repair etmek,
+- clarification truth sahibi olmak.
+
+
+### D65-E5 — GREEN / narrow Standard CoverageVeto
+
+**Product**
+- `13ef659ce6d2` — veto-only Standard intent coverage guard
+- `b49063863b74` — provider-free coverage boundary invariants
+
+**Focused gate**
+- run: `35691288505`
+- result: **16 / 16 PASS**
+- runtime: **7.52s**
+- compile: PASS
+- one-shot cleanup: `f5ce6b217ee2`
+
+**Coverage input surface**
+Only:
+- user message,
+- obligation id,
+- registered capability key,
+- REQUIRED/EXCLUDED polarity,
+- runtime-validated exact source surfaces.
+
+It does NOT receive:
+- semantic handles,
+- canonical semantic IDs,
+- SQL/DB metadata,
+- QueryContract/Evidence.
+
+**Coverage output authority**
+```text
+PASS
+or
+VETO:
+  MATERIAL_REQUEST_OMITTED
+  EXCLUSION_OMITTED_OR_WRONG_POLARITY
+  RESEARCH_NEED_OMITTED
+```
+
+Every veto source must be exact user-message evidence.
+Coverage cannot add/repair obligation, select semantic, create authority, or own clarification.
+
+### D65-E6 — provider-free family closure
+
+Bundle old cognition/authority closure + new standard front-door primitives:
+- semantic retriever/linker,
+- typed temporal,
+- research finite pre-acceptance,
+- capability algebra,
+- authority/completion,
+- adaptive branch/trust plane,
+- StandardBuilder,
+- Standard authority split,
+- Standard CoverageVeto.
+
+No paid/live model.
+
+---
+
+## 2026-09-22 — RUNTIME KERNEL + SUBSTRATE DECISION INTEGRATED
+
+### Kaynak kararların birleşik sonucu
+
+Yeni iki rapor roadmap reset'i yapmıyor. Current work devam ediyor; ancak D65-E3'ün internal structure'ı artık kesin:
+
+```text
+architecture execution paths = STANDARD | RESEARCH
+STANDARD_DIRECT               = Standard outcome/telemetry only
+STANDARD_BUILDER              = same Standard engine after bounded repair
+generic runtime kernel        = process-control mechanics only
+Research Manager migration    = NOT NOW
+Wren                          = current incumbent substrate
+Metabase                      = isolated post-closure challenger
+```
+
+Yeni active addendum: `DIMA_DAY6_5_RUNTIME_KERNEL_AND_SUBSTRATE_DECISION.md`.
+
+Bu belge generic kernel ownership/forbidden knowledge, profile/domain boundary, manager_progress reuse sınırı, StandardBuilder tool/state sınırı, lightweight compiler, authority split, Standard→Research isolation, CoverageVeto, budgets, Research NO-TOUCH, Wren incumbent, Metabase challenger, D65-X ölçütleri, freeze/certification ve exact handoff sırasını dondurur.
+
+### Gerçek current code state — NO ROLLBACK
+
+```text
+D65-E1 exact semantic SHA recert      70 / 70 GREEN
+D65-E2 SemanticCatalogRetriever        9 / 9 GREEN
+D65-E3 provisional StandardBuilder    20 / 20 GREEN
+D65-E4 Standard authority split       25 / 25 GREEN
+D65-E5 narrow CoverageVeto            16 / 16 GREEN
+```
+
+Bu kod geri alınmaz. Ancak runtime-kernel kararı E3 implementation başladıktan sonra geldiği için `focused GREEN != architecture sealed`.
+
+Current `StandardBuilderSession` kendi counter/budget/action-state mechanics'ini taşıyor. Sıradaki refactor bu mechanics'i `BoundedAgentRuntimeKernel` içine taşır; Standard domain state, semantic binding, projection validation ve authority Standard layer'da kalır.
+
+### Family closure ilk birleşik koşum
+
+Run: `35691397377`.
+
+```text
+compile PASS
+87 PASS
+1 FAIL
+5 warnings
+```
+
+Failure: `test_v2_day6_5_dev_corpus.py::test_day65_dev_corpus_is_complete_and_taxonomy_balanced`.
+
+Classification: **EVAL_ORACLE**.
+
+Sebep: manifest yeni `allowed_work_modes` ve `expected_authority_family` metadata alanlarını bekliyordu; DEV corpus schema-integrity key-map'i eskiydi. Bu semantic/product bug değildir; regex/prompt/Resolver/StandardBuilder patch yapılmadı.
+
+### Eval schema düzeltmesi
+
+```text
+38 STANDARD_LOSSLESS      → [STANDARD_DIRECT, STANDARD_BUILDER] / AcceptedStandardAuthority
+26 RESEARCH_REQUIRED      → [RESEARCH] / AcceptedResearchAuthority
+15 CLARIFICATION_REQUIRED → [] / NONE
+1  UNSUPPORTED            → [] / NONE
+```
+
+Architecture terminology: `execution_path = STANDARD | RESEARCH`; `standard_outcome = DIRECT | BUILDER`.
+
+### Current family closure rerun
+
+Oracle sync sonrası same family bundle yeniden tetiklendi: `run 35691982389`.
+
+Result: **88 / 88 PASS**, 5 warnings, 12.46s. Compile PASS.
+
+Semantic code testcase geçirmek için yamalanmadı. One-shot workflow green sonrası kaldırıldı (`6e3c81cf19c0`).
+
+### Sıradaki product ticket — D65-E3A-R
+
+**NAME:** `RUNTIME KERNEL REALIGNMENT`
+
+**NEW:** `app/v2/agent_runtime.py`
+
+**Kernel owns only:** model/tool counters, budgets, observation lifecycle, action fingerprint, domain/profile-supplied state fingerprint, duplicate action/state guard, terminal/no-progress/budget-exhausted, generic telemetry.
+
+**Kernel must not know/import:** `AcceptedTurnContract`, `UserObligationLedger`, `ResearchDirective`, CompletionGate semantics, Evidence verification semantics, canonical semantic truth, `sem_*` minting, join/query/numeric truth.
+
+**TOUCH:** `app/v2/agent_runtime.py`, `app/v2/standard_builder.py`, focused kernel/builder tests; `manager_progress.py` only if generic fingerprint primitives need a non-semantic export/rename.
+
+**NO-TOUCH:** `manager_loop.py`, `manager_runtime.py`, `manager_tools.py`, `manager_preacceptance.py`, Research `AcceptedTurnContract` body, Resolver canonical rules, production `/ask-v2`, DEV expected semantic labels.
+
+**EXIT:** StandardBuilder consumes `BoundedAgentRuntimeKernel`; kernel has zero Research-domain imports/knowledge; DIRECT remains outcome only; existing Standard semantic behavior is preserved; same action+state second execution = `NO_PROGRESS`; budget fail-closed; focused kernel+builder+authority+coverage and family closure GREEN.
+
+### Bundan sonraki bağlayıcı sıra
+
+```text
+D65-E3A-R generic kernel realignment
+→ focused provider-free kernel/builder gates
+→ provider-free family closure
+→ workers=1 focused live
+→ same-SHA model-floor A/B if needed
+→ 12–16 stratified canary
+→ real Wren Standard vertical + Research sentinel
+→ ENGINEERING FREEZE CANDIDATE
+→ DEV80 once-per-candidate
+→ DAY 6.5 ENGINEERING CLOSED / ARCHITECTURE FROZEN
+→ D65-X Wren incumbent vs Metabase Agent API substrate-only challenger
+→ choose ONE primary substrate
+→ VALIDATION50 no tuning
+→ external fresh HIDDEN50
+→ CERTIFICATION SEALED
+→ production hybrid activation
+```
+
+Day 7–10 numbering unchanged.
+
+### D65-X non-negotiable isolation
+
+Primary experiment fixes Dima cognition, accepted semantics, `AcceptedStandardAuthority`, `StandardProjection` and benchmark. Only execution substrate changes: `WrenAdapter` vs thin `MetabaseStandardAdapter`.
+
+Metabase native NLQ/Metabot comparison is a separate secondary experiment. Wren + Metabase as equal production truth engines = **STOP-THE-LINE**.
+
+---
+
+## 2026-09-22 — D65-E3A-R GREEN / RUNTIME KERNEL REALIGNMENT
+
+### Yapılan
+
+`AGENTS.md` içindeki tek stale “üç-mode front door” ifadesi `STANDARD | RESEARCH` architecture terminology'sine düzeltildi.
+
+Yeni generic mechanics kernel: `app/v2/agent_runtime.py`.
+
+Primitive'ler:
+```text
+BoundedLoopBudget
+LoopCounters
+LoopTerminalReason
+ActionReservation
+LoopObservation
+ActionStateGuard
+BoundedAgentRuntimeKernel
+```
+
+Kernel yalnız model-turn/tool-call counters, budget enforcement, action fingerprint, domain-supplied state fingerprint, action/state guard, observation receipt, terminal/NO_PROGRESS/BUDGET_EXHAUSTED ve generic telemetry taşır.
+
+Kernel Research/business truth katmanlarını import etmez: `AcceptedTurnContract`, `UserObligationLedger`, `ResearchDirective`, `ManagerRuntime`, Research loop, Evidence verification, CompletionGate semantics, canonical semantic truth, join/query/numeric truth.
+
+`manager_progress.py` değiştirilmedi. Yalnız mevcut generic `action_fingerprint` / `result_fingerprint` primitive'leri reuse edildi; Research-specific `progress_fingerprint(runtime)` kernel'e taşınmadı.
+
+### StandardBuilder realignment
+
+`StandardBuilderSession` generic counters / duplicate guard / budget controller mechanics'ini artık `BoundedAgentRuntimeKernel` üzerinden kullanır.
+
+Standard domain/profile hâlâ state-fingerprint payload'ını, Representability kararını, StandardProjection compile/validation'ı, DIRECT vs BUILDER outcome'ını ve RESEARCH_REQUIRED / CLARIFY / UNSUPPORTED mapping'ini sahiplenir.
+
+Semantic davranış:
+```text
+first lossless attempt       → STANDARD_DIRECT outcome
+repair then seal             → STANDARD_BUILDER outcome
+same action + same state     → NO_PROGRESS
+model-turn budget exhausted  → BUDGET_EXHAUSTED / fail closed
+real research capability     → RESEARCH_REQUIRED
+```
+
+### Commits
+
+```text
+d0ed44b9212a  docs: remove stale three-mode wording
+5cb7a046f4c1  feat: generic bounded runtime kernel
+e1d44f742435  refactor: StandardBuilder consumes kernel
+160f1ac0ffa6  test: kernel boundary invariants
+291409d50145  test: StandardBuilder kernel-consumer proof
+```
+
+### Focused gate
+
+Run: `35693039369`
+
+```text
+compile PASS
+22 / 22 PASS
+8.62s
+```
+
+### Full provider-free family closure
+
+Run: `35693146320`
+
+```text
+compile PASS
+94 / 94 PASS
+5 warnings
+12.39s
+```
+
+### NO-TOUCH kanıtı
+
+D65-E3A-R başlangıç checkpoint'i `fc0472436124d764cb6f4bd0b6bc439ec80e8010` ile implementation sonrası code diff yalnız:
+
+```text
+backend/AGENTS.md
+backend/app/v2/agent_runtime.py
+backend/app/v2/standard_builder.py
+backend/tests/test_v2_day6_5_agent_runtime.py
+backend/tests/test_v2_day6_5_standard_builder.py
+```
+
+Research files NO-TOUCH:
+```text
+manager_loop.py
+manager_runtime.py
+manager_tools.py
+manager_preacceptance.py
+AcceptedTurnContract body
+```
+
+E4/E5 no-rollback korundu.
+
+### D65-E3A-R exit
+
+```text
+StandardBuilder consumes BoundedAgentRuntimeKernel        PASS
+kernel has zero Research-domain imports                   PASS
+DIRECT remains outcome only                               PASS
+existing Standard semantic behavior preserved             PASS
+same action+state duplicate = NO_PROGRESS                 PASS
+budget fail closed                                        PASS
+focused kernel/builder/authority/coverage                 22/22 PASS
+full provider-free family closure                         94/94 PASS
+```
+
+**D65-E3A-R CLOSED GREEN.**
+
+### Sıradaki exact adım
+
+Yeni feature/refactor açmadan:
+
+```text
+workers=1 focused live architecture set
+→ exact-same-SHA model-floor A/B only if needed
+→ 12–16 stratified canary
+→ real Wren Standard vertical + Research sentinel
+→ ENGINEERING FREEZE CANDIDATE
+→ DEV80 once-per-candidate
+```
+
+Live gate başlamadan current green SHA checkpoint edilir.
+
+---
+
+## 2026-09-22 — METABASE SOURCE REFERENCE CONTRACT + LIVE GATE SIGNAL
+
+### Metabase source authority/protocol
+
+Canonical upstream exact source snapshot doğrulandı:
+
+```text
+repo = metabase/metabase
+sha  = 74216b30981d8310c4cf724d63ca282e2e63529d
+```
+
+Pinned SHA üzerinde mevcut olduğu doğrulanan canonical files:
+
+```text
+src/metabase/metabot/agent/core.clj
+src/metabase/metabot/agent/profiles.clj
+src/metabase/agent_api/reference.md
+src/metabase/agent_api/api.clj
+src/metabase/agent_api/query_guards.clj
+src/metabase/mcp/v2/tools/query.clj
+```
+
+Dima repo Git tree'sinde şu anda `public/metabase/master` yoktur. İleride varsa yalnız read-only convenience checkout; canonical authority değildir.
+
+`DIMA_DAY6_5_RUNTIME_KERNEL_AND_SUBSTRATE_DECISION.md §17A` içine zorunlu **Metabase Source Reference Contract** ve **mandatory source-control / analysis / research protocol** eklendi.
+
+Binding rules:
+- source-copy / port / vendor / transliteration yasak,
+- D65-X real integration = separate-service Metabase Agent API,
+- important Metabase decision before coding = source identity + exact source reading + security/API/runtime review + Dima trust-plane cross-check + receipt,
+- bake-off receipt pins source SHA + runtime version + immutable image digest + Dima/adapter SHA + corpus + permission context,
+- product development sequence değişmedi.
+
+Protocol additionally surfaced in `AGENTS.md`, `CLAUDE.md`, `MIMARI.md` and eval manifest so compact/handoff sırasında atlanamaz.
+
+### Workers=1 focused live gate
+
+Run: `35693815578`
+
+Exact code under test:
+`dea7ba673ba64280c3e58037705c31db99c733aa`
+
+Workflow source SHA:
+`612ae77d6cc43f910e9035bd1f73c085fb0d0793`
+
+Model:
+```text
+RESEARCH_MANAGER = openai/gpt-5.6-sol
+SEMANTIC_LINKER  = google/gemini-2.5-flash-lite
+workers          = 1
+```
+
+Selected architecture set:
+`001, 005, 025, 026, 047, 063, 067, 075`.
+
+Measurement:
+```text
+selected/evaluable    8 / 8
+measurement failures  0
+model failures        0
+grounding failures    0
+harness failures      0
+case pass             7 / 8 = 0.875
+unsafe fast           0
+silent ambiguity      0
+invented MUST         0
+handle violation      0
+execution violation   0
+clarification rate    1.0
+```
+
+Only failing case:
+`d65-dev-026` — `net geliri bölgelere göre göster ve geçen ayla karşılaştır`.
+
+Observed pipeline:
+```text
+Manager draft:
+  U1 breakdown(metric=net geliri, dimension=bölgelere)
+  U2 comparison(metric=net geliri, comparison=geçen ayla)
+
+grounding:
+  metric resolved
+  dimension resolved
+  metric resolved
+  comparison surface 'geçen ayla' unresolved
+
+material grounding gap:
+  comparison missing required kind
+
+terminal:
+  CLARIFICATION_REQUIRED
+
+expected:
+  ACCEPTED / STANDARD_LOSSLESS
+```
+
+Classification is **NOT YET PATCHABLE**.
+Infra/provider/harness classes are ruled out. Next step is exact-same-SHA owner/model-floor A/B focused on comparison binding. No semantic code change before classification.
+
+---
+
+## 2026-09-22 — D65-G ROOT-FIX / ANTI-PATCH GUARD
+
+### Giriş kanıtı
+
+Stratified canary run `35695029547`, exact semantic SHA `f5ca942f83aaee0806d7119957c543ab17a59a37`:
+
+```text
+16 evaluable
+14 PASS / 2 FAIL
+measurement failures 0
+model failures 0
+grounding infrastructure failures 0
+harness failures 0
+P0 authority/security counters 0
+```
+
+Failures:
+- `d65-dev-019` explicit-base comparison
+- `d65-dev-073` conversation repair/versioning
+
+Mandatory receipts: `DIMA_DAY6_5_FAILURE_TRIAGE_RECEIPTS.md`.
+
+`019` exact-same-SHA diagnostic `35695366379`:
+```text
+flash-lite SEMANTIC_LINKER → FAIL
+Sol SEMANTIC_LINKER        → PASS
+classification            → MODEL_CAPABILITY_FLOOR
+product correctness patch → FORBIDDEN
+```
+
+`073` same-SHA repeat diagnostic:
+```text
+FAIL / PASS / FAIL
+semantic-linker calls = 0
+classification = CONTRACT/ARCHITECTURE
+owner = finite pre-acceptance repair-vs-exclusion contract / CoverageVeto boundary
+```
+
+### D65-G ticket contract
+
+**AMAÇ**
+Yeni Manager semantic hot path'ten legacy heuristic resolver dependency'sini fiziksel olarak sökmek ve RED sonrası vaka-yama disiplinini architecture test + mandatory receipt ile zorlaştırmak.
+
+**USER SCENARIO**
+Bir semantic/linking failure olduğunda geliştirici `legacy SemanticResolver` fallback'i, fuzzy/morphology/regex branch'i veya failed phrase prompt example'ı ekleyememeli; önce root owner/classification kanıtlanmalı.
+
+**NEW OWNER**
+No new semantic owner. Existing owner map korunur. D65-G yalnız anti-regression boundary'dir.
+
+**FILES TO TOUCH**
+```text
+app/v2/manager_semantics.py
+app/v2/manager_lab.py
+tests/test_v2_day6_5_no_legacy_semantic_fallback.py  NEW
+focused existing tests only if constructor surface changes
+```
+
+**FILES NOT TO TOUCH**
+```text
+app/v2/resolver.py behavior
+semantic_linker.py truth/binding behavior
+manager_preacceptance.py repair behavior (separate D65-CANARY-073 owner ticket)
+temporal_intent.py
+StandardBuilder/E4/E5
+Research execution/evidence/completion
+DEV expected labels
+production /ask-v2
+```
+
+**HARDENING RULES**
+- `manager_semantics.py` may not import `app.v2.resolver`.
+- Manager hot path may not accept/store a legacy resolver dependency.
+- `manager_lab.py` may not instantiate/inject `SemanticResolver`.
+- authoritative Day6.5 semantic modules may not import/use `difflib`, `SequenceMatcher`, `py_rust_stemmers`, `SnowballStemmer`, `rapidfuzz`, `_FUZZY` or semantic-language regex parsing.
+- Scope-limited regex guard applies only to semantic authority modules; syntax/JSON/security regex elsewhere is not globally banned.
+
+**EXIT**
+```text
+legacy resolver import/injection from Manager hot path = 0
+anti-heuristic architecture test = GREEN
+focused Manager semantic tests = GREEN
+full provider-free family closure = GREEN
+Research behavior = NO-TOUCH
+```
+
+D65-G sonrasında active canary failures ayrı owner ticket'larıyla ele alınır; `019` için code patch yok, `073` için yalnız repair/coverage contract owner'ı yetkilidir.
+
+---
+
+## 2026-09-22 — D65-G + REPAIR HARDENING + REFERENCE CANARY GREEN
+
+### D65-G anti-patch hardening
+
+Manager semantic hot path artık legacy `SemanticResolver` import/constructor/field/fallback seam'i taşımıyor.
+
+```text
+manager_semantics.py  → no app.v2.resolver import
+ManagerSemanticResolutionAdapter.__init__ → no resolver parameter
+manager_lab.py        → no SemanticResolver construction/injection
+```
+
+Architecture guard:
+`tests/test_v2_day6_5_no_legacy_semantic_fallback.py`.
+
+Scoped forbidden semantic-authority primitives:
+`app.v2.resolver`, `difflib/SequenceMatcher`, `py_rust_stemmers/SnowballStemmer`, `rapidfuzz`, `_FUZZY`, semantic-language `re.*` parser.
+
+Regex repository-wide yasak değildir; yalnız authoritative semantic meaning/authority modülleri guard edilir.
+
+### Mandatory RED triage gate
+
+`DIMA_DAY6_5_FAILURE_TRIAGE_RECEIPTS.md` oluşturuldu ve AGENTS/CLAUDE/closure protocol/eval manifestte binding hale getirildi.
+
+```text
+RED
+→ NO PRODUCT/SEMANTIC CODE CHANGE
+→ failure triage receipt
+→ same-SHA A/B if needed
+→ failure_class + single_owner + root_cause + failure_family
+→ allowed files
+→ code
+→ focused proof
+→ family/metamorphic proof
+```
+
+`ONE FAILURE ≠ ONE NEW RULE` artık repo contract'ıdır.
+
+### Conversation-repair root fix
+
+Corrective/superseding discourse business EXCLUDED obligation ile aynı şey değildir.
+Finite pre-acceptance draft artık `CONVERSATION_REPAIR` control state temsil edebilir.
+EXCLUDED business obligation yalnız current message gerekli semantic target'ı source-ground ediyorsa geçerlidir.
+
+Bu çözüm phrase/keyword/regex özel değildir; correction/replacement family abstraction'ıdır.
+
+### Provider-free proofs
+
+Combined focused closure:
+```text
+run 35696222877
+59 / 59 PASS
+```
+
+Full family closure after all stale fixture cleanup:
+```text
+run 35696652502
+exact tested SHA = ffbdc224066dc4c85a9e46b510ae3535f83f3416
+102 / 102 PASS
+5 warnings
+```
+
+Intermediate RED runs were not semantic patched; each was classified as `EVAL_ORACLE` stale test/harness constructor drift and received a formal receipt before test-only cleanup.
+
+### Semantic Linker model-floor finding
+
+`d65-dev-019` exact-same-SHA diagnostic run `35695366379`:
+
+```text
+backend SHA        = f5ca942f...
+Manager            = openai/gpt-5.6-sol
+flash-lite linker  = FAIL
+Sol linker         = PASS
+classification     = MODEL_CAPABILITY_FLOOR
+product code patch = NONE
+```
+
+Reference architecture certification floor for current canary therefore uses Sol Manager + Sol Semantic Linker.
+Bu model-specific business branch değildir; measured evaluation/certification floor'dur.
+
+### Reference-floor stratified canary
+
+Run: `35697064833`
+
+Exact tested SHA:
+`8dfde62d46d1418f05cce3ed44c26a8025b3b20e`
+
+```text
+selected/evaluable          16 / 16
+case pass                   16 / 16 = 1.0
+MUST obligation recall      1.0
+invented MUST               0
+missing/invented exclusion  0 / 0
+handle violations           0
+preacceptance exec violation 0
+blocking ambiguity silent    0
+unsafe fast admission        0
+standard lossless rate       1.0
+clarification canonical      1.0
+measurement/model/grounding/harness failures = 0
+```
+
+Models:
+```text
+RESEARCH_MANAGER = openai/gpt-5.6-sol
+SEMANTIC_LINKER  = openai/gpt-5.6-sol
+workers          = 1
+```
+
+### Current exact next gate
+
+Current pre-freeze sequence:
+
+```text
+D65-J1S semantic candidate-decision bake-off
++
+D65-J1T typed temporal-intent bake-off
++
+D65-M0 Metabase architecture extraction/adoption audit
+↓
+decision receipts
+↓
+D65-X0 thin Metabase feasibility
+↓
+Wren primary OR consult → full D65-X → ONE primary substrate
+↓
+ENGINEERING FREEZE CANDIDATE
+↓
+DEV80 once for that candidate
+```
+
+`35697471863` Wren/Research sentinel = 2/2 PASS on exact `8dfde62d...`; proof is preserved but does not authorize freeze until J1 + M0/X0 are resolved.
+
+Current detailed authority: `DIMA_DAY6_5_PREFREEZE_DECISION_GATE_J1_M0_X0.md`.
+
+---
+
+## 2026-09-22 — D65-J1 JEV DECISION-MODEL CHALLENGER
+
+### Trigger / neden şimdi
+
+D65-G CLOSED GREEN:
+```text
+provider-free family run 35696652502 = 102/102 PASS
+legacy SemanticResolver Manager hot path = REMOVED
+regex/fuzzy/morphology semantic fallback = architecture-test forbidden
+mandatory failure-triage receipt = ACTIVE
+```
+
+Reference-floor canary:
+```text
+run                  = 35697064833
+workflow source SHA  = 07ac8d47796b89634b2411def457bb85f4bc0da7
+tested code SHA      = 8dfde62d46d1418f05cce3ed44c26a8025b3b20e
+Manager              = openai/gpt-5.6-sol
+Semantic/Temporal    = openai/gpt-5.6-sol
+workers              = 1
+selected/evaluable   = 16/16
+case pass            = 16/16
+MUST recall          = 1.0
+all P0 counters      = 0
+measurement failures = 0
+```
+
+Earlier run `35696811902` = 16/16 HARNESS_FAILURE due stale `resolver=` evaluator constructor; classification `EVAL_ORACLE / HARNESS DRIFT`; semantic conclusion NONE; product code unchanged.
+
+Early Wren/Research sentinel:
+```text
+run             = 35697471863
+tested code SHA = 8dfde62d46d1418f05cce3ed44c26a8025b3b20e
+result          = 2/2 PASS
+```
+This proof is retained but freeze is BLOCKED pending D65-J1.
+
+### New architecture observation
+
+Current `SEMANTIC_LINKER` role conflates two distinct cognition contracts:
+```text
+1. bounded catalog candidate selection
+2. TypedTemporalNormalizer
+```
+
+`d65-dev-019` model-floor evidence belonged to typed temporal comparison normalization, not catalog candidate selection. Therefore Jev is NOT a case019 patch and case019 is not evidence to ship Jev.
+
+### D65-J1A — isolated lab/eval only
+
+Pinned challenger:
+```text
+typesafe/jev-1.13
+```
+
+Forbidden:
+```text
+~typesafe/jev-latest
+v2_semantic_linker_model=typesafe/jev-1.13
+Jev through chat/completions
+Jev through current structured_json adapter
+prompt wrapper/hack/fallback to make Jev look like a chat LLM
+product semantic_linker.py changes before bake-off result
+temporal normalization with Jev in J1A
+```
+
+Native surface:
+```text
+OpenRouter Decisions API
+POST /api/alpha/decisions
+state + typed choice question
+→ choice + probabilities
+```
+
+Candidate boundary remains:
+```text
+USER SURFACE
+→ frozen CandidateSet[cand_*]
+→ decision challenger
+→ candidate_id | ABSTAIN
+→ existing SemanticBindingGate conceptually remains authority
+```
+
+J1A compares:
+```text
+A = google/gemini-2.5-flash-lite
+B = typesafe/jev-1.13
+C = openai/gpt-5.6-sol
+```
+
+Manager is not part of this benchmark. TemporalNormalizer is excluded.
+
+Jev may not mint sem_*, see canonical IDs unnecessarily, escape candidate sets, write SQL, see DB/numeric truth, perform temporal arithmetic, or accept authority.
+
+Required strata:
+```text
+exact alias controls
+non-exact Turkish paraphrases
+synonym surfaces
+multiple plausible candidates
+true ambiguity
+no-match / ABSTAIN
+retrieval miss
+bounded high-cardinality candidate sets
+entity-value cases
+sensitive-value exact-only controls
+different metric/dimension names
+permuted/metamorphic schema names
+cross-tenant candidate isolation
+```
+
+Metrics:
+```text
+candidate-selection accuracy
+ABSTAIN precision/recall
+ambiguity unsafe-pick count
+candidate-escape count
+Turkish paraphrase accuracy
+metamorphic consistency
+same-input repeated-run agreement
+p50/p95 latency
+cost
+provider failures
+Jev raw choice probabilities
+Jev Brier/ECE or equivalent calibration
+Jev high-confidence-wrong count
+```
+
+P0:
+```text
+candidate outside supplied set = 0
+silent ambiguity auto-pick = 0
+cross-tenant semantic leak = 0
+high-confidence wrong accepted = 0
+semantic authority minted by model = 0
+```
+
+No confidence threshold is tuned or activated in J1A.
+
+### Decision rule
+
+Jev clearly poor / Turkish weak:
+```text
+REJECT JEV
+→ product code NO CHANGE
+→ current architecture continues
+→ Wren/Research sentinel proof can be retained/rechecked as needed
+→ freeze sequence resumes
+```
+
+Jev promising:
+```text
+OPEN D65-J1B
+→ SemanticLinkDecisionProvider seam
+→ StructuredLLMDecisionProvider | JevDecisionProvider
+→ SEMANTIC_LINKER = bounded candidate decision only
+→ TEMPORAL_NORMALIZER = separate language→TemporalNormalizationChoice role
+→ focused/provider-free/family/live/canary/sentinel revalidation
+→ freeze
+```
+
+Jev/Gemini/Sol = cognition decision-model experiment.
+Wren/Metabase D65-X = analytics execution-substrate experiment.
+They are independent and MUST NOT be conflated.
+
+Canonical roadmap numbering and Day7–10 remain unchanged.
+
+
+---
+
+## 2026-09-22 — PRE-FREEZE PLAN REVISION: J1S/J1T + M0/X0
+
+This section supersedes the earlier candidate-only J1 scope and the earlier post-DEV80 D65-X timing.
+
+Verified baseline:
+```text
+D65-G                         GREEN
+provider-free family          35696652502 = 102/102 PASS
+reference-floor canary        35697064833 = 16/16 PASS
+Wren + Research sentinels     35697471863 = 2/2 PASS
+production hybrid             OFF
+freeze candidate              NOT CREATED
+DEV80                         NOT STARTED
+```
+
+Metabase source identity:
+```text
+historical pinned reference = 74216b30981d8310c4cf724d63ca282e2e63529d
+current upstream master      = fff70175e0b5f82dc0eb267593c717c4a6130206
+ahead                         = 1 commit
+relevant agent/API/MCP source changes between SHAs = NONE
+```
+
+Active pre-freeze work:
+```text
+D65-J1S = Gemini Flash-Lite vs Jev 1.13 vs Sol on bounded semantic candidate selection
+D65-J1T = Gemini Flash-Lite vs Jev 1.13 vs Sol on typed temporal intent classification
+D65-M0  = Metabase source/adoption matrix audit
+D65-X0  = thin separate-service Agent API feasibility
+```
+
+J1S/J1T and M0 are isolated lab/research gates; product semantic/temporal/authority code remains NO-TOUCH until a decision gate is reached.
+
+Consultation required before:
+- D65-J1B integration,
+- production model/cascade/threshold selection,
+- full D65-X,
+- primary substrate switch,
+- freeze candidate,
+- DEV80.
+
+---
+
+## 2026-09-22 — RELEASE-LEVEL DEV80 TIMING OVERRIDE
+
+New binding economic/release rule:
+```text
+DEV80 = FINAL BROAD ENGINEERING GATE
+DEV80 count for this release = exactly 1
+```
+
+Therefore DEV80 is no longer a Day6.5 closure test.
+
+Current release sequence:
+```text
+J1S + J1T + M0
+→ X0
+→ if needed full X / chosen one primary substrate
+→ any approved Jev/Metabase production integration
+→ Day7 Research loop
+→ Day8 Hypothesis/root-cause
+→ Day9 ReportDocument
+→ Day10 Product MVP
+→ Day11 eval/metamorphic expansion
+→ Day12 QueryContract/evidence/telemetry hardening
+→ Day13 tenant/PII/principal security
+→ Day14 persistence/resume
+→ Day15 pilot flag + rollback CODE complete, flag OFF
+→ all cheap/focused/live/metamorphic/canary/sentinel gates GREEN
+→ 20–25 case final integration rehearsal
+→ FINAL ENGINEERING FREEZE CANDIDATE
+→ DEV80 ONCE
+→ CODE FREEZE
+→ Validation50 NO TUNING
+→ fresh external Hidden50 NO TUNING
+→ certification seal
+→ pilot flag activation
+```
+
+Development still uses focused REAL LLM scenarios continuously. DEV80/Validation50/Hidden50 are not debugging tools.
+
+Consult before final freeze and before DEV80 start.
+
+Detailed authority: `DIMA_RELEASE_FINAL_INTEGRATED_GATE.md`.
+
+
+---
+
+## 0B. J1 FULL DECISION GATE — STOP / CONSULT
+
+Corrected full run:
+`35705668833` @ `bde3e5a21c159243002ef600ece007256d8482d0`.
+
+Current decision state:
+
+```text
+J1S Jev semantic decision primitive   = PROMISING
+J1T Jev temporal production role      = REJECTED BY CAPABILITY FLOOR
+J1T Luna typed contract evidence      = strongest primary peer, but 2 invalid typed outputs
+Gemini current cheap temporal evidence= weaker; one unsafe ambiguity pick + contract misses
+run-level RED                         = EVAL_ORACLE classification bug
+product code changes                  = 0
+J1B                                   = CLOSED / CONSULT REQUIRED
+D65-SI                                = WAITING FOR J1 TOPOLOGY DECISION
+X0 execution                          = BLOCKED BY D65-SI
+production /ask-v2                    = OFF
+DEV80                                 = FORBIDDEN
+```
+
+Mandatory stop is active because Jev is promising for a narrower bounded semantic role.
+Do not:
+- open J1B;
+- choose semantic/temporal production model topology;
+- introduce cascade/confidence threshold;
+- run Terra;
+- wire D65-SI against a topology not yet approved;
+- execute X0.
+
+Permitted while stopped:
+- documentation / receipt correction only;
+- user consultation.
+
+Open eval debt:
+`D65-J1-FULL-001` — invalid typed Pydantic output is currently mislabeled as
+TRANSPORT/PROVIDER by the harness. Root cause is classified EVAL_ORACLE; no patch has been made
+because the J1 promising consultation gate has precedence.
+
+
+---
+
+## 2026-09-22 — J1 RESULTS + METABASE DEPLOYMENT CONSULTATION
+
+Current HEAD before this documentation update:
+`978e6317822eadbcb3ac469804cc19f1d569be29`.
+
+J1 corrected full result:
+```text
+run                         = 35705668833
+tested SHA                  = bde3e5a21c159243002ef600ece007256d8482d0
+
+J1S Jev model-needed        = 93.33%
+J1S Gemini                  = 86.67%
+J1S Luna                    = 86.67%
+Jev p50                     = 0.266s
+Gemini p50                  = 0.537s
+Luna p50                    = 1.013s
+Jev measured cost           = $0.002282
+high-confidence Jev wrong   = 0
+```
+
+Interpretation:
+```text
+Jev universal replacement   = NO
+Jev bounded semantic choice = PROMISING
+Jev temporal provider       = NO / capability floor
+Luna temporal typed role    = PROMISING, not sealed
+J1B                         = CONSULT REQUIRED
+```
+
+Run-level workflow FAILURE was classified EVAL_ORACLE because typed-contract validation failures
+were mislabeled as TRANSPORT/PROVIDER. Real provider/network failures = 0. Product semantic code
+was not patched from this RED.
+
+Metabase deployment clarification:
+```text
+Agent API != Metabase Cloud requirement
+
+X0 default:
+Dima → private network → self-hosted pinned Metabase → analytical DB
+
+vendor Cloud = not selected
+source copy/port/vendor = forbidden
+same-stack sidecar/container packaging = feasible candidate
+same Python process/library embedding = not a supported realistic integration
+```
+
+Self-hosting adds real operational cost:
+- Metabase JVM/service,
+- production application DB,
+- upgrades/migrations/backups,
+- monitoring,
+- scaling/load balancing,
+- permission/tenant mapping.
+
+These costs are now mandatory X0 metrics.
+
+External current verification:
+- OSS edition uses AGPL;
+- Docker/JAR self-host are supported;
+- production app DB should be relational/PostgreSQL;
+- horizontal scaling is supported with shared app DB/load balancer.
+
+Detailed decision:
+`DIMA_DAY6_5_METABASE_DEPLOYMENT_TOPOLOGY_DECISION.md`.
+
+Current STOP:
+```text
+J1B product experiment = WAITING USER APPROVAL
+D65-SI                 = WAITING J1 TOPOLOGY DECISION
+X0 execution           = WAITING consultation + D65-SI sequence
+product /ask-v2        = OFF
+DEV80                  = FORBIDDEN / final release only
+```
+
+
+---
+
+## WREN_SEMANTIC_BACKBONE_RETENTION_DECISION
+
+> **D65-X0 Wren'in MDL/cube semantic backbone'unu kaldırma deneyi değildir. İlk aşamada yalnız
+> analytics execution/query-lifecycle overlap'ını ölçer. Wren semantic-layer retention ayrı bir
+> architecture decision'dır.**
+
+Binding implications:
+
+```text
+X0 MAY compare:
+  StandardProjection → Wren execution/query lifecycle
+  vs
+  StandardProjection → Metabase construct/validate/execute lifecycle
+
+X0 MAY NOT infer:
+  "Metabase query execution works"
+  ⇒ "Wren MDL/cube semantic backbone is redundant"
+```
+
+During X0:
+- current Dima semantic authority remains `SemanticBindingGate + accepted authority`;
+- existing Wren MDL/cube semantics may remain the semantic backbone even if Metabase is tested as
+  an execution/query-lifecycle component;
+- metric meaning, cube relationships, grain/additivity/unit/time semantics are not silently
+  re-owned by Metabase;
+- removing or replacing the Wren semantic layer requires a separate explicit architecture
+  decision and consultation, with its own semantic-equivalence and migration evidence.
+
+Therefore a promising X0 can justify a **full execution-substrate/query-lifecycle comparison**,
+not automatic Wren semantic-layer removal.
+
+
+---
+
+## 2026-09-22 — DAY7 FANOUT LIVE ENFORCEMENT GREEN
+
+```text
+tested product SHA   ace4d3979f0188fd41138a93cb45cbf63652ba92
+workflow             35786373201
+result               GREEN
+```
+
+Closed:
+- adaptive candidate branches are registered before execution,
+- `propose_branches` is orchestration-only; it never executes DB work,
+- derived `RUN_ANALYTICS` in contract mode requires a pre-registered READY task,
+- `ResearchTaskService.materialize_derived_candidates` validates provenance first,
+  then calls `ResearchFanoutPolicy`,
+- canonical budget source = `ManagerRuntime.remaining_data_queries`,
+- branch depth remains canonical task provenance,
+- selected tasks enter lifecycle only through `ResearchTaskRegistry.register_many()`,
+- unknown cardinality -> conservative bounded subset,
+- high cardinality without governed priority -> `BOUNDED_SUBSET`,
+- `BOUNDED_TOP_K` requires priority provenance
+  `VERIFIED_EVIDENCE | GOVERNED_METADATA`,
+- arbitrary model/caller order is no longer mislabeled Top-K,
+- real two-Wren adaptive path remains GREEN through the fanout policy.
+
+No second scheduler and no second budget truth were introduced.
+
+Current next ticket:
+**D7-SEED-SET — reconcile roadmap seed 2–4 tasks with accepted USER_MUST obligations
+and run-scoped ResearchTaskRegistry without building another scheduler.**
+
+Required proof:
+```text
+2–4 accepted USER_MUST obligations
+→ bounded initial task identities
+→ no USER_MUST silent loss
+→ zero blind execute-all
+→ Manager sees READY tasks and chooses next
+→ evidence may alter later choice
+```
+
+---
+
+## 2026-09-22 — DAY7 PRINCIPAL-BOUND RESEARCH DELIVERY GREEN
+
+```text
+tested product SHA   3fb9c1ffe343374f946c63a07161031c6ab6a36b
+workflow             35785195280
+result               GREEN
+
+scope                 runner/executor principal + tenant binding
+receipt identity      principal subject + tenant binding
+durable replay owner  DEFERRED / Day14
+full access lens      DEFERRED / Day12–14
+```
+
+Proven:
+- runner principal == governed executor principal subject/tenant -> allowed,
+- runner/executor principal mismatch -> deny before DB,
+- same task completed by principal A cannot reuse receipt as principal B,
+- same task/same principal A receipt reuse remains idempotent,
+- missing runner/executor principal -> deny,
+- foreign tenant principal -> deny,
+- complete Day7 focused family remains GREEN on the same product SHA.
+
+Metabase DD-13/DD-14 Day7 minimum is now adopted at run-scoped lifecycle level.
+Receipt is not authorization; durable crash/restart identity remains Day14 debt.
+
+Current next ticket:
+**D7-FANOUT-LIVE — enforce ResearchFanoutPolicy at actual adaptive task materialization,
+using ManagerRuntime.remaining_data_queries and governed candidate-set provenance.**
+
+Hard rule:
+- no singleton pseudo-integration,
+- no second scheduler,
+- no second budget owner,
+- `BOUNDED_TOP_K` only with explicit VERIFIED_EVIDENCE/GOVERNED_METADATA priority;
+  otherwise use `BOUNDED_SUBSET`.
+
+---
+
+## 2026-09-22 — DAY7 RELATIONSHIP VERTICAL ROOT FIX GREEN
+
+```text
+tested product SHA   06fc7eae94b6aeba9a2038dccc25c4dfff5cc6cd
+workflow             35784645498
+result               GREEN
+
+root family          ROW_GRAIN / JOIN_KEY / ANALYTICAL_GRAIN SEPARATION
+owner                app/v2/cross_domain_facts.py
+```
+
+Closed generically:
+- relationship target join key is no longer conflated with relationship-derived analytical column,
+- target join key still must equal governed target row PK for the narrow primitive,
+- analytical target column must exist on the governed target Wren model,
+- one-hop provenance is explicit; unsupported multi-hop is denied,
+- relationship-derived attribute != target PK is valid,
+- relationship-derived attribute == target PK remains valid with canonical target-row aggregation,
+- missing relationship / wrong target model / missing target column / stale fanout / unsafe grain deny,
+- physical FK still never creates relationship authority.
+
+Same-SHA focused proof:
+- governed cross-domain facts = GREEN,
+- CrossDomainJoinGate = GREEN,
+- fanout certificate freshness = GREEN,
+- real Wren schema grain metadata = GREEN,
+- real two-Wren adaptive vertical = GREEN,
+- real governed RELATIONSHIP positive + negative = GREEN,
+- complete `v2-day7-focused` = GREEN.
+
+Current next ticket:
+**D7-PRINCIPAL-BINDING — bind Research delivery/receipt identity to tenant + principal subject.**
+
+Required P0:
+```text
+runner principal A + executor principal A -> allow
+runner principal B + executor principal A -> deny before DB
+completed task as A redelivery as B -> prior receipt NOT reusable
+same task same principal A -> receipt reuse allowed
+missing principal -> deny
+foreign tenant -> deny
+```
+
+Day7 remains ACTIVE. Do not start live Sol or Day8.
+
+---
+
+## 2026-09-22 23:10 — DAY7 RELATIONSHIP RED FAILURE RECEIPT
+
+```text
+tested_sha      5259cfdd2de504b6639ab55246e4e87f6dc92bff
+run             35782082131
+failure_stage   CrossDomainJoinFactBuilder
+failure_class   CONTRACT/ARCHITECTURE
+sub_family      ROW_GRAIN / JOIN_KEY / ANALYTICAL_GRAIN SEPARATION
+single_owner    backend/app/v2/cross_domain_facts.py
+```
+
+Observed generic bug:
+
+```text
+relationship source model      makine_duruslari
+relationship source join key   makine
+relationship target model      makineler
+target row/join key             makine
+relationship-derived attribute  bolum
+
+valid path:
+makine_duruslari.makine
+→ makineler.makine
+→ GROUP BY makineler.bolum
+
+invalid current assumption:
+origin.column == relationship target join key
+```
+
+Correct invariant:
+
+```text
+relationship path truth
+  relationship.name/models
+  source join key
+  target join key
+  target join key == governed target row PK for current narrow primitive
+
+analytical target truth
+  dimension_origin.relationship == selected relationship
+  dimension_origin.model        == relationship target model
+  dimension_origin.column       == governed existing target-model column
+
+target_row_grain        = target PK
+target_join_key         = relationship target key
+target_analysis_grain   = accepted analytical dimension
+target_analysis_column  = origin.column
+requested_output_grain  = target_analysis_grain
+aggregation             = GROUP_BY_TARGET_ATTRIBUTE
+```
+
+Forbidden fixes:
+- no special-case `bolum`, `makine`, relationship literal or testcase branch,
+- no provenance weakening,
+- no CrossDomainJoinGate bypass,
+- no multi-hop inference; current executable primitive remains one-hop unless complete
+  governed path provenance exists.
+
+Required proof order:
+`cross_domain_facts → cross_domain_join_gate → real_relationship_vertical → full v2-day7-focused`.
+
+---
+
+## 2026-09-22 — DAY7 CROSSDOMAINJOINGATE GREEN
+
+**Checkpoint:** `bc28716cdeef3c4b4ec9f4f8e776815bebef652c`  
+**Focused workflow:** `35776346727` = **SUCCESS**
+
+CrossDomainJoinGate provider-free attacks are GREEN and all previous Day7 focused
+steps remain GREEN on the same run.
+
+### Authority boundary
+
+```text
+PHYSICAL FK
+!= WREN business relationship authority
+
+model/name similarity
+!= relationship authority
+
+LLM relationship proposal
+!= execution authority
+```
+
+The gate consumes only explicit Wren relationships plus the repository's existing
+`fanout_certificate.json` health stamp. It does not create a second relationship graph.
+
+Proven deny/allow families:
+- healthy explicit MANY_TO_ONE path → eligible;
+- explicit safe two-hop bridge + required aggregation → eligible;
+- missing path → deny;
+- ambiguous path → deny until explicit binding;
+- MANY_TO_MANY → deny;
+- measured fanout risk → deny;
+- unmeasured relationship → deny;
+- grain mismatch / missing aggregation → deny;
+- time mismatch/unknown → deny;
+- unit/currency mismatch/unknown → deny;
+- physical FK without Wren relationship → deny;
+- reverse one-to-many interpretation → deny.
+
+Metabase reference disposition: **DIMA_CORE_NATIVE / PATTERN_ONLY**.
+Adopted invariant: relationship execution must be authorized by current Dima/Wren
+semantic + trust-plane facts. No Metabase runtime/code or implicit-FK behavior adopted.
+
+RELATIONSHIP tool execution is still CLOSED at this exact checkpoint; next work is
+to wire one controlled adapter through this gate, then prove positive + negative verticals.
+
+---
+## 2026-09-22 — DAY7 SAME-DOMAIN TOOL INVENTORY + COMPARE/RANK GREEN
+
+**Checkpoint:** `4dd76fde3cfc60de67cf49f57eabd555123c29bc`  
+**Focused workflow:** `35775416365` = **SUCCESS**
+
+Declared governed Research tools now:
+
+```text
+wren.query       → QUERY
+wren.breakdown   → BREAKDOWN
+wren.compare     → COMPARE
+wren.rank        → RANK
+```
+
+COMPARE/RANK reuse the existing official path:
+
+```text
+ResearchTask
+→ ResearchToolContract shape gate
+→ RUN_ANALYTICS
+→ ManagerCoreAnalyticsAdapter
+→ AnalyticsIR / CubePlanner
+→ Wren
+→ sealed QueryContract
+→ verified EvidenceArtifact
+```
+
+Contract-specific guards:
+- COMPARE requires a governed comparison handle;
+- RANK requires governed dimension + direction + limit;
+- QUERY cannot smuggle breakdown/comparison/ranking semantics;
+- BREAKDOWN cannot silently become comparison/ranking;
+- plain COMPARE/RANK do not silently become ranked-comparison.
+
+### Temporal contract correction found during COMPARE inventory
+`ResolvedComparison` carries its governed `base_period`, but ManagerCoreAnalyticsAdapter
+previously left `AnalyticsIR.period=None` when no separate period handle was supplied.
+That could make the primary side all-time while the reference side used the comparison period.
+Adapter now mirrors canonical Core behavior:
+
+```text
+comparison + no explicit period
+→ primary period = comparison.base_period
+
+explicit period + comparison
+→ must equal comparison.base_period or fail closed
+```
+
+Focused COMPARE proof seals two QueryContracts and verifies primary/reference evidence.
+Focused RANK proof verifies top-N direction/limit through the official validator.
+
+### Deliberately not declared yet
+- TREND: current derived RUN_ANALYTICS accepts STANDARD capability only; no governed Day7
+  trend primitive has been proven yet.
+- CONTRIBUTION: mature deterministic legacy math exists, but no V2 Research adapter currently
+  owns typed QueryContract/Evidence production for it.
+- PEER_COMPARE: no verified governed primitive identified yet.
+
+No empty wrappers were added. Relationship remains fail-closed pending CrossDomainJoinGate.
+
+---
+## 2026-09-22 — DAY7 CARDINALITY-AWARE FANOUT POLICY GREEN
+
+**Checkpoint:** `7a4c2f45734f43b24d54a1c796374cd8031b4272`  
+**Focused workflow:** `35774624379` = **SUCCESS**
+
+### Metabase reference check — DD-15
+- mechanism: cardinality-bounded exploratory fanout;
+- disposition: **PATTERN_ONLY**;
+- Dima-native invariant adopted: LOW/HIGH/UNKNOWN all remain bounded by the canonical
+  Research query budget + branch depth + safety cap;
+- behavior NOT adopted: no Metabase runtime/code, no shared discovery cache, no synthetic
+  `Other` entity and no statistical ranking promoted to semantic authority.
+
+Provider-free attack proof:
+
+```text
+low cardinality                 PASS
+high cardinality                PASS
+unknown cardinality             PASS
+query budget nearly exhausted   PASS
+query budget exhausted          PASS
+branch depth exhausted          PASS
+duplicate candidates            PASS
+> safety-bound proposals        PASS
+Wren exact dimension_values     PASS
+missing values => UNKNOWN       PASS
+canonical Manager budget reuse  PASS
+```
+
+Important scope:
+- `ResearchFanoutPolicy` is a deterministic policy gate, not a second planner/scheduler;
+- existing Wren `dimension_values` can prove exact exposed low cardinality;
+- missing `dimension_values` means `UNKNOWN`, never silently `HIGH`;
+- `max_fanout` remains the final generic fuse; cardinality policy is the intended pre-fuse decision;
+- Day7 still has no claim that every tool family or relationship/timeout path is complete.
+
+Next: same-domain governed tool families, starting only with primitives already proven in the
+current V2/Wren trust plane.
+
+---
+## 2026-09-22 — DAY7 D7-A2 + REAL ADAPTIVE WREN GREEN
+
+**Checkpoint:** `ce29f52e71f102f3ec18154c9aae2a045afa3f5d`  
+**Focused workflow:** `35774115600` = **SUCCESS**
+
+Focused proof:
+
+```text
+ResearchToolContract                     PASS
+ResearchTask lifecycle                   PASS
+ResearchTaskRegistry lifecycle           10/10 PASS
+ResearchTaskRegistry execution path      2/2 PASS
+Manager contract mode                    PASS
+provider-free adaptive result-aware      PASS
+real Wren single task                    PASS
+real Wren adaptive two-task chain        PASS
+```
+
+### D7-A2 — GREEN
+
+Run-scoped ownership is now explicit:
+
+```text
+ResearchManagerLoop
+→ ONE ResearchTaskRegistry per run
+→ begin_execution / receipt reuse
+→ ResearchToolContract
+→ governed executor
+→ pre-commit lifecycle guard
+→ Evidence/UOL commit
+→ complete_execution
+```
+
+Proven invariants:
+- same task identity + same completed delivery reuses prior receipt;
+- same task id + different immutable identity rejects;
+- duplicate IN_FLIGHT rejects;
+- FAILED/CANCELLED are terminal and do not silently restart;
+- generic `max_fanout` remains a final safety fuse;
+- duplicate delivery causes exactly one governed DB query;
+- cancel during query + late return cannot enter EvidenceStore, cannot verify the obligation,
+  and cannot resurrect the ResearchTask.
+
+`BoundedAgentRuntimeKernel` remains generic no-progress/budget mechanics.
+`ResearchTaskRegistry` remains Research delivery/lifecycle/idempotency authority.
+They are not merged.
+
+### D7-REAL-ADAPTIVE-WREN — GREEN
+
+Real trust-plane chain proven with existing demo Wren semantics:
+
+```text
+Accepted Research authority
+→ real Wren task #1
+→ QueryContract #1
+→ verified Evidence #1
+→ inspect actual bounded result
+→ evidence-grounded AGENT_DERIVED BREAKDOWN task
+→ ResearchTaskRegistry
+→ real Wren task #2
+→ QueryContract #2
+→ verified Evidence #2
+→ inspect
+→ USER_MUST preserved
+→ VERIFIED_COMPLETE
+```
+
+Assertions:
+- real Wren query count = 2;
+- sealed QueryContract count = 2;
+- accepted Evidence count = 2;
+- derived task carries parent obligation + trigger evidence + branch depth 1;
+- original USER_MUST item is unchanged by the child investigation;
+- no third invented branch.
+
+### Remaining Day7 order
+
+```text
+cardinality-aware fanout policy
+→ same-domain governed tool families
+→ CrossDomainJoinGate
+→ RELATIONSHIP only through gate
+→ deadline/cancel lifecycle
+→ focused workers=1 live Sol
+→ failure-family / metamorphic / small canary
+→ Day7 closeout receipt
+```
+
+Day7 remains ACTIVE. Day8 is NOT opened.
+
+---
+## 2026-09-22 — DAY7 FANOUT FRESHNESS + GOVERNED JOIN FACTS GREEN
+
+```text
+tested code HEAD                 0fecde9c1579495e4f100dff7d1fffd7625478aa
+focused workflow                 35780536632 = GREEN
+CrossDomainJoinGate              GREEN / preserved
+fanout certificate MDL binding   GREEN
+CrossDomainJoinFacts builder     GREEN
+RELATIONSHIP execution           STILL OFF
+```
+
+Closed provenance gaps:
+- Wren schema fanout badge is now bound to exact current `mdl_version`;
+- missing / corrupt / stale certificate cannot remain `olculdu:saglikli`;
+- relationship schema exposes version-bound `fanout_proof`:
+  status, certificate MDL, current MDL, measurement timestamp;
+- display `certified` badge cannot launder a stale proof;
+- `CrossDomainJoinFactBuilder` consumes only accepted obligation handles +
+  current Wren schema/current MDL;
+- accepted handle -> cube -> declared `base_object` mapping is explicit;
+- row grain comes only from Wren-declared model primary key;
+- physical FK is not relationship authority;
+- multiple Wren paths are not auto-picked;
+- missing PK, foreign-tenant handle, authority-external handle, target grain not governed,
+  stale/risky fanout all fail closed.
+
+Initial supported fact shape remains deliberately narrow:
+```text
+one accepted source metric
+→ one accepted target row-key dimension
+→ Wren path
+→ target-row analytical output
+```
+
+For this exact primitive, time/unit compatibility are deterministically
+`NOT_APPLICABLE`; the model does not certify them.
+
+Important:
+`primary_key = governed ROW GRAIN`, not universal analytical grain.
+
+Next exact block:
+`real governed RELATIONSHIP vertical — positive + negative`.
+
+No raw SQL join engine. No model-created join key. No relationship execution until the
+adapter consumes these facts and the existing gate.
+
+---
+
+## 2026-09-22 — DAY7 TIMEOUT / COMMIT ATOMICITY GREEN
+
+```text
+tested code HEAD               08a0a1a9a3a5308f776f5eef6524197eaaf2ecd2
+focused workflow               35779380415 = GREEN
+logical lifecycle deadline     SUPPORTED
+physical DB cancellation       NOT GUARANTEED / NOT CLAIMED
+```
+
+Root boundary:
+- every executable Research task receives a run-scoped execution lease with
+  `started_at + deadline_at`;
+- `ResearchTaskRegistry` owns delivery/cancel/deadline lifecycle;
+- accepted-Evidence commit guard verifies ACTIVE + execution identity + deadline;
+- deadline expiry happens **before** EvidenceStore/UOL truth commit;
+- timeout marks the task terminal failed and same task cannot silently retry;
+- cancel-vs-timeout remains terminal;
+- QueryContract/audit receipt may survive a physically completed late DB query, but it is
+  not promoted into accepted Research Evidence;
+- commit authorization freezes the deadline decision, preventing a post-commit
+  millisecond race from manufacturing a timeout after truth was already accepted.
+
+Focused attacks GREEN:
+```text
+late result after timeout            -> Evidence 0 / VERIFIED 0
+timeout + duplicate/retry            -> second DB side effect 0
+cancel vs timeout                    -> no resurrection
+near-deadline success                -> one accepted Evidence
+commit authorized before deadline    -> finalization remains valid
+```
+
+Metabase reference disposition:
+- lifecycle deadline/cancel non-resurrection = **PATTERN_ONLY / DIMA_CORE_NATIVE**;
+- no Metabase runtime/code adopted.
+
+Next exact block:
+`fanout certificate MDL binding + governed CrossDomainJoinFacts construction`.
+
+RELATIONSHIP execution remains OFF until this provenance boundary is GREEN.
+
+---
+
+## 2026-09-22 — DAY7 CURRENT-HEAD WREN GRAIN RECERTIFICATION GREEN
+
+```text
+tested HEAD                    e08894dc5d438dbfdd9be880b45a16d6d866e7d6
+product Wren metadata commit   b815d19cc8f07ecbd617e3e417e1405503a59542
+focused workflow               35778730697 = GREEN
+```
+
+New certification proof:
+- `backend/app/wren_service.py` is now inside the Day7 focused workflow trigger;
+- real composed demo MDL is read through actual `wren.schema()`;
+- declared model `primaryKey` is preserved exactly as `model.primary_key`;
+- only MDL-declared PK columns receive `is_primary_key=true`;
+- non-PK columns/models do not receive inferred grain;
+- real Wren relationship export preserves `name/models/join_type/condition/certified`;
+- no model-name, column-name or physical-FK grain inference was introduced.
+
+Result:
+`CURRENT HEAD = TESTED CHECKPOINT`.
+
+Next exact P0:
+`timeout / accepted-Evidence commit atomicity`.
+
+Known distinction remains:
+```text
+logical lifecycle deadline = OPEN
+physical DB cancellation   = NOT CLAIMED / capability-dependent
+```
+
+---
+
+## 2026-09-22 — DAY7 SUPERVISOR RECONCILIATION @ 5789e729
+
+**Current HEAD:** `5789e729115fe044b689739d5960021aba0aca32`  
+**Latest focused CI:** `35770506794 = GREEN`  
+**Day7 status:** ACTIVE — current GREEN is NOT Day7 closure.
+
+Exact current state:
+
+```text
+ResearchTaskRegistry implementation = PRESENT
+actual execution-path integration   = NOT YET PROVEN
+registry-specific behavioral proof  = NOT YET COMPLETE
+
+generic max_fanout fuse              = PRESENT
+cardinality-aware fanout policy      = OPEN
+
+real Wren single task                = GREEN
+real Wren adaptive two-task chain    = OPEN
+
+CrossDomainJoinGate                  = OPEN
+live Sol Research Manager proof      = OPEN
+
+timeout contract field               = PRESENT
+true deadline/cancel semantics       = OPEN
+```
+
+D7-A2 classification:
+
+```text
+IMPLEMENTED PARTIALLY
+NOT INTEGRATED
+NOT SEALED
+```
+
+Metabase reference for remaining Day7 lifecycle work:
+- mechanism: async task identity/idempotency/cancel non-resurrection + missing-principal fail-closed;
+- disposition: **DIMA_CORE_NATIVE / PATTERN_ONLY as previously classified**;
+- adopted Dima invariant: run-scoped task delivery identity is authoritative for lifecycle only;
+- behavior NOT adopted: no Metabase runtime/code port, no second task authority;
+- proof required before GREEN: duplicate delivery -> one DB side effect; cancel + late return ->
+  no accepted EvidenceArtifact, no obligation verification, no resurrection.
+
+Immediate order from this checkpoint:
+
+```text
+D7-A2 registry focused behavioral proof
+→ integrate ONE run-scoped ResearchTaskRegistry into actual Research execution
+→ duplicate/cancel-late execution proof
+→ REAL TWO-WREN adaptive vertical
+→ cardinality-aware fanout
+→ same-domain tools
+→ CrossDomainJoinGate
+→ deadline lifecycle
+→ focused live Sol
+```
+
+Do not mark D7-A2 CLOSED because code exists. Do not begin Day8.
+
+---
+
+## 2026-09-22 21:54 — DAY7 BUNDLE A — RESEARCH TOOL CONTRACT + RESULT-AWARE FIRST VERTICAL
+
+**Phase:** P10 / DAY7 RESULT-AWARE RESEARCH LOOP  
+**Status:** ACTIVE — first vertical GREEN; Day7 NOT complete  
+**Branch:** `feat/ask-v2-mvp`  
+**Bundle checkpoint:** `a1d9b90204752ba4c6a0b81635a98eb4126cc78a`  
+**Focused workflow:** `35770029440` / job `106889112459` = **SUCCESS**
+
+### Metabase Reference Check — Bundle A
+
+#### DD-14 / missing principal
+- relevant mechanism: async/governed execution identity must exist.
+- disposition: **DIMA_CORE_NATIVE**.
+- adopted invariant: `principal is None → FAIL CLOSED before governed execution`.
+- implementation: `ResearchToolRegistry.validate_invocation` reuses existing
+  `authorize(principal, "query:run", ...)`.
+- explicitly rejected: anonymous/default/admin widening.
+- behavioral proof: focused principal-negative test; query call count remains 0.
+
+#### DD-08 / accumulated state vs current-result delta
+- relevant mechanism: accumulated memory and latest execution result must not be conflated.
+- disposition: **PATTERN_ONLY**.
+- adopted invariant:
+  `ACCUMULATED_RESEARCH_STATE != CURRENT_RESULT_DELTA`.
+- implementation: Dima-native read-model `research_state.py`; no authority minting.
+- `UNAVAILABLE` evidence-store state is explicit and is not converted into NO_MATCH/semantic gap.
+- behavioral proof: focused state/delta tests + Manager-loop prompt proof.
+
+No Metabase runtime/source port/dependency was added.
+
+### Implemented vertical
+
+```text
+Accepted Research authority
+→ ResearchTask
+→ ResearchToolContract
+→ principal + permission + schema + task/tool gate
+→ existing ManagerRuntime
+→ existing GovernedManagerExecutor
+→ existing ManagerCoreAnalyticsAdapter
+→ CubePlanner / Wren dry-plan / Wren query
+→ QueryContract
+→ verified EvidenceArtifact
+→ explicit current-result delta
+→ inspect evidence
+→ bounded adaptive task proposal
+→ second governed task family
+→ completion
+```
+
+### New / changed code
+
+- `app/v2/research_tools.py`
+  - declarative `ResearchToolContract`;
+  - first families: `wren.query`, `wren.breakdown`;
+  - task-kind/schema/authority/principal/permission/input-handle/output/evidence gates;
+  - no raw SQL and no new execution engine.
+- `app/v2/research_state.py`
+  - accumulated state and latest-result delta separate;
+  - bounded evidence payload;
+  - evidence UNAVAILABLE remains typed.
+- `app/v2/research_tasks.py`
+  - seed task materialization from accepted obligation;
+  - derived task requires completed parent + current-run VERIFIED + INSPECTED evidence;
+  - parent/evidence/depth provenance.
+- `app/v2/models.py`
+  - existing Day6 `ResearchTask` shell extended; no parallel task model.
+- `app/v2/manager_runtime.py`
+  - `latest_evidence_ref`, `inspected_evidence_refs`;
+  - current-run inspection state is authoritative runtime state.
+- `app/v2/manager_executor.py`
+  - inspect_evidence fail-closed to current run;
+  - evidence binds to actual `research_task_id`;
+  - principal exposed read-only to Research contract gate.
+- `app/v2/manager_loop.py`
+  - Day7 ResearchToolRunner integration is **opt-in**;
+  - old Day6.5 path is not silently rewritten;
+  - Manager receives accumulated state and current result delta separately;
+  - post-acceptance derived work checks runtime-inspected evidence, not transcript scraping.
+- `app/v2/manager_models.py`
+  - single authoritative budget defaults aligned:
+    data queries=8, hard schema max=12, manager turns=6.
+- `.github/workflows/v2-day7-focused.yml`
+  - focused/provider-free only; no paid LLM, no DEV80/50/50.
+
+### Commit chain
+
+```text
+61aa63367f66  ResearchToolContract boundary
+47557acb755f  research_task_id through governed analytics
+6467d05e5927  EvidenceArtifact binds declared Research task
+3f1dd2c71643  focused first-contract tests
+ace7cde1dc1e  Day7 focused CI
+6ea55e227486  first real-Wren Research vertical
+336a1ca28eec  real-Wren CI step
+51ff55f6f9a9  accumulated-state/current-delta read model
+82367658500e  explicit inspected/latest evidence runtime state
+71a9134a97e4  authoritative evidence inspection state
+9fe7b50e6ed0  inspect current-run fail-closed
+bb0bffd54106  Manager prompt state/delta separation
+25247de62006  state/delta focused tests
+22220ba7ed9e  ResearchTask provenance shell
+25fdf95ab27d  evidence-grounded task materialization
+cbefdaed15c0  derived task provenance at tool gate
+713d0b21f7a7  lifecycle CI coverage
+aefbd7762809  CI harness correction: lifecycle step actually executed
+eac4d0e5330c  capability→ResearchTaskKind map
+8a5cd7692bc7  task-kind→declared tool lookup
+b0c9f2fb7ae5  execution principal exposure
+b8090f6131fb  ResearchTask→tool contract routing
+f292c3949404  opt-in Manager-loop ResearchTask execution
+30a8bf673696  negative/no-branch Manager contract-mode proof
+8b319fac994d  Manager loop focused CI step
+bb0ad73a66d8  BREAKDOWN second tool family
+8addf0bc2feb  bounded actual-result payload in delta
+2b06b1b1220f  delta payload test
+efbf17689195  closed-registry eval oracle sync
+5a9a510e3349  two-step adaptive provider-free scenario
+4a3485cc24af  adaptive CI step
+d32af58be8fe  canonical Research budget alignment
+a1d9b9020475  budget focused proof
+```
+
+### Focused gate evidence
+
+Run `35770029440`:
+
+```text
+compile Day7 slice               PASS
+ResearchToolContract             7/7 PASS
+Research task lifecycle          5/5 PASS
+Manager loop contract mode       1/1 PASS
+result-aware adaptive loop       1/1 PASS
+real Wren Research vertical      1/1 PASS
+```
+
+Real Wren vertical:
+```text
+1 passed in 10.11s
+```
+
+Only observed warnings are dependency/deprecation warnings
+(`duckdb.fetch_arrow_table`, `datetime.utcnow`, GitHub Action Node runtime).
+They are not semantic failures.
+
+### Failure receipts in this bundle
+
+1. orchestration script local variable shadowing:
+   - class: **TRANSPORT/HARNESS**
+   - product commits produced: 0
+   - product patch: 0
+
+2. lifecycle test path present but CI step initially absent:
+   - class: **EVAL_ORACLE / CI_HARNESS**
+   - fixed in workflow only;
+   - no semantic/product patch.
+
+No MODEL_COGNITION, CONTRACT/ARCHITECTURE, RESOLVER_TRUTH or provider semantic RED occurred
+in this bundle.
+
+### What is proven
+
+- declared Research tool execution can reach official Wren/QueryContract/Evidence boundary;
+- missing principal fails before execution;
+- worker cannot use semantic handles absent from typed ResearchTask;
+- evidence attachment and evidence inspection are distinct runtime facts;
+- latest result can be exposed as bounded actual data without raw canonical SQL/schema;
+- agent-derived task cannot materialize before verified+inspected parent evidence;
+- branch depth is bounded at task materialization;
+- negative path can inspect evidence and terminate without invented branch;
+- positive provider-free path can:
+  `QUERY → inspect → derived semantic discovery → BREAKDOWN → inspect → finish`;
+- USER_MUST stays immutable; derived child stays AGENT_DERIVED;
+- one existing budget truth is reused.
+
+### Not yet proven / open Day7 debt
+
+#### D7-A1 — real two-Wren adaptive chain
+Current real-Wren sentinel proves one declared QUERY task.
+The two-step adaptive scenario is provider-free/synthetic execution.
+Day7 real exit still requires:
+```text
+real Wren task 1
+→ inspect
+→ evidence-grounded adaptive task
+→ real Wren task 2
+→ second EvidenceArtifact
+→ terminal
+```
+
+#### D7-A2 — async/idempotency/cancel lifecycle
+Required carry-forward:
+- duplicate async delivery → no duplicate side effect,
+- cancelled task → late result cannot resurrect,
+- task identity idempotent.
+
+#### D7-A3 — fanout/cardinality
+Research fanout must be bounded.
+High/unknown-cardinality policy remains to be implemented/tested.
+
+#### D7-A4 — timeout semantics
+`ResearchToolContract.timeout_ms` is currently checked after synchronous execution.
+True cooperative deadline/cancellation belongs to async/task lifecycle work.
+Do not claim timeout cancellation is solved.
+
+#### D7-A5 — CrossDomainJoinGate
+Not yet implemented for Day7.
+No RELATIONSHIP execution should be opened until grain/path/cardinality/time/fanout gate exists.
+
+#### D7-A6 — live Research Manager quality metrics
+No paid/focused Sol run was executed in Bundle A.
+Later: focused workers=1 live → failure family → small representative canary.
+No DEV80 / Validation50 / Hidden50.
+
+### Next exact bundle
+
+```text
+D7-B
+Research task identity / idempotent delivery / cancel-race non-resurrection
+→ bounded fanout
+→ real two-Wren adaptive vertical
+→ then CrossDomainJoinGate
+```
+
+Day7 remains ACTIVE. Day8/Day9/Day10 are not opened.
+
+
+## 2026-09-23 — DAY7 ORACLE RECONCILIATION + COGNITION DIAGNOSTIC PREP
+
+### Product freeze
+
+```text
+tested product checkpoint = d22fb3626db0fe44ea543eee6531e5544cdf0b56
+product code changed       = NO
+evaluator/docs commits     = YES
+```
+
+Supervisor protocol followed: RED -> freeze product -> first bad transition -> owner classification
+before any semantic/trust-plane patch.
+
+### D7-OPEN-1 multi-obligation PREVIOUS_PERIOD — classified EVAL_ORACLE
+
+Observed exact live receipt:
+
+```text
+"geçen dönemle"
+→ TemporalNormalizer/Sol = NORMALIZED
+→ comparison_kind = PREVIOUS_PERIOD
+→ implicit_base_period_kind = null
+
+U2 owner-local metric = resolved
+U2 owner-local period = absent
+cross-obligation period borrowing = correctly forbidden
+→ comparison unresolved
+→ NEEDS_CLARIFICATION
+→ no AcceptedTurnContract
+→ zero DB query
+```
+
+Contract decision:
+`PREVIOUS_PERIOD` requires a governed/typed base period. If the same USER_MUST does not
+supply one and the normalized comparison surface does not uniquely imply one, Dima does
+not invent a current-month/current-year/default base. Existing owner isolation remains
+correct. Therefore the old frozen expectation that this turn must accept+execute is stale.
+
+No product temporal code changed.
+
+### D7-OPEN-2 relationship-unsafe — classified EVAL_ORACLE
+
+Sealed current behavior remains:
+
+```text
+required counterpart dimension unresolved
+→ material_grounding_gap
+→ NEEDS_CLARIFICATION
+→ no AcceptedTurnContract
+→ no ledger
+→ zero DB query
+```
+
+Old frozen expectation `run_relationship + downstream typed block` represented the prior
+architecture and has been reconciled at evaluator level only. Relationship/Wren/fanout code
+was not touched.
+
+### Evaluator abstraction correction
+
+Generic preacceptance oracle support added to `lab/v2_day7_manager_live_sol.py`:
+
+```text
+expected_preacceptance_state
+expected_observation_kind
+expect_no_ledger
+```
+
+A valid fail-closed preacceptance outcome is no longer falsely scored as:
+"accepted_contract=false / must_tools=false".
+
+Commits:
+- `6736ea76ba22...` evaluator generic preacceptance outcome
+- `dfdf672c6a84...` stale multi-obligation/relationship expectations reconciled
+- `921860d1acc9...` provider-free evaluator contract proof
+
+No case-specific branch was added to product code or evaluator logic.
+
+### D7-OPEN-3 insufficient-evidence — owner not patched yet
+
+Frozen13 first bad transition:
+
+```text
+"Seyrek sinyali araştır..."
+→ Manager draft capability = ROOT_CAUSE
+→ ROOT_CAUSE is Day7 deferred
+→ typed UNSUPPORTED/BLOCKED
+→ no AcceptedTurnContract
+→ zero DB
+```
+
+Current registry semantics:
+
+```text
+PERFORMANCE
+= read/show/measure level/value/state of a metric
+= NOT why/causes/drivers/anomaly/decline investigation
+
+ROOT_CAUSE
+= explicitly investigate why an outcome/change/decline/increase/anomaly happened
+= causes/drivers research
+```
+
+Provisional owner hypothesis: `MODEL_COGNITION`, because the frozen wording asks to inspect
+a metric and avoid invention/branching but does not explicitly ask why/cause/driver/change.
+
+NO prompt or product change is authorized from one case.
+
+A separate 8-case TR+EN neutral-vs-causal diagnostic was added:
+- `eval/v2_day7_capability_cognition_diagnostic.yaml`
+- `.github/workflows/v2-day7-capability-cognition-diagnostic.yml`
+
+Commits:
+- `3cdc0e149177...` diagnostic corpus
+- `ec4167226659...` manual-only workflow
+
+Workflow is `workflow_dispatch` only; paid LLM is not push-triggered.
+
+Decision rule after diagnostic:
+
+```text
+neutral inspection family consistently -> PERFORMANCE
+causal controls consistently -> ROOT_CAUSE
+but frozen exact prompt -> ROOT_CAUSE
+=> MODEL_COGNITION tail; generic ontology/prompt capability boundary may be considered
+
+neutral family itself frequently -> ROOT_CAUSE
+=> broader cognition boundary defect; generic correction only
+
+neutral "araştır" is intentionally defined causal by agreed ontology
+=> EVAL_ORACLE, no product patch
+```
+
+### Current test order
+
+1. provider-free `v2-day7-focused` for evaluator-only changes,
+2. manual cognition diagnostic,
+3. classify D7-OPEN-3,
+4. only then touch product cognition owner if generic defect is proven,
+5. affected LIVE only,
+6. frozen13 once justified,
+7. shadow ablation only after behavioral closure.
+
+Do NOT start Day8.
+
+
+## 2026-09-23 — DAY7 ORACLE RECONCILIATION PROVIDER-FREE SEALED
+
+```text
+tested product base          d22fb3626db0fe44ea543eee6531e5544cdf0b56
+evaluator/diagnostic SHA     e038c3d3403bfc2caddccac19e2da54cfa0fe751
+focused run                  35847415718
+result                       GREEN
+product app/v2 code changed  NO
+```
+
+Focused run passed the full current Day7 provider-free chain including:
+- temporal owner isolation,
+- obligation-local semantic recovery,
+- relationship structured-action diagnostic,
+- fanout/seed lifecycle,
+- updated live-corpus contract,
+- derived Evidence primitives,
+- same-domain + cross-domain gates,
+- Manager/result-aware loop,
+- real Wren schema/query/adaptive/relationship verticals.
+
+Oracle reconciliation is therefore provider-free sealed:
+- multi-obligation PREVIOUS_PERIOD = EVAL_ORACLE debt; current clarification is correct,
+- relationship-unsafe = EVAL_ORACLE debt; current clarification is correct.
+
+Hard-safety evaluator remains strict for fail-closed preacceptance:
+`accepted_contract_absent`, `zero_data_queries`, and `ledger_absent` are scored
+when that outcome is the declared oracle.
+
+### Remaining D7-OPEN-3
+
+`insufficient-evidence` remains the only frozen13 owner classification still open.
+
+Additional same-run evidence from frozen13:
+- `"Net geliri araştır..."` → PERFORMANCE + ACCEPT + run_analytics,
+- `"Seyrek sinyali araştır..."` → ROOT_CAUSE + typed deferred block.
+
+This rejects the hypothesis that the word "araştır" itself globally means ROOT_CAUSE.
+Provisional class remains MODEL_COGNITION tail, but production cognition is still frozen
+until the small neutral-vs-causal family diagnostic is measured.
+
+Manual-only cognition diagnostic is now cognition-boundary only:
+- corpus: `eval/v2_day7_capability_cognition_diagnostic.yaml`
+- runner: `lab/v2_day7_capability_cognition_diagnostic.py`
+- workflow: `.github/workflows/v2-day7-capability-cognition-diagnostic.yml`
+- 8 cases, workers=1, Sol Manager,
+- one intent-draft cognition call per normal case,
+- no semantic grounding, no Wren/DB, no Evidence/Completion scoring,
+- behavioral mismatch is diagnostic output, not harness failure.
+
+The workflow remains `workflow_dispatch` only by protocol. No paid push trigger was added.
+
+### Exact continuation
+
+```text
+manual capability cognition diagnostic
+→ inspect artifact
+→ classify insufficient-evidence
+→ IF generic MODEL_COGNITION defect proven:
+     one generic capability-ontology correction
+     → provider-free focused/metamorphic
+     → affected LIVE only
+  ELSE:
+     reconcile EVAL_ORACLE / capability-floor receipt
+→ frozen13 once justified
+→ Day7 behavioral closure
+→ FREE_COGNITION vs GOVERNED_ORCHESTRATION shadow ablation
+→ Harvest reconciliation
+→ Day7 closure receipt
+→ STOP; do not auto-start Day8
+```
+
+
+## 2026-09-23 — D7-OPEN-3 MODEL_COGNITION CLASSIFIED + GENERIC OWNER FIX
+
+Manual cognition diagnostic:
+
+```text
+workflow   v2-day7-capability-cognition-diagnostic
+run        35848438878
+SHA        f571264a510437b64a8903eb8d742110aecd6fc8
+validity   VALID
+cases      8 / 8 evaluable
+raw score  6 / 8
+```
+
+Observed mismatches:
+
+1. `neutral-investigate-tr`
+   ```text
+   "Seyrek sinyali araştır. Kanıt yoksa yeni sonuç uydurma ve gereksiz dallanma açma."
+   expected analytical capability = PERFORMANCE
+   actual                       = ROOT_CAUSE
+   ```
+   This exactly reproduces the frozen13 `insufficient-evidence` first bad transition
+   at the cognition boundary and is classified `MODEL_COGNITION`.
+
+2. `neutral-inspect-en`
+   ```text
+   expected analytical capability = PERFORMANCE
+   actual obligations              = PERFORMANCE + REPORT
+   ```
+   PERFORMANCE itself was correct. REPORT is a PRESENTATION-lane obligation produced
+   from "report only its observed state". The cognition diagnostic was incorrectly
+   scoring presentation obligations as analytical mismatches. This is `EVAL_ORACLE`,
+   not a product semantic failure.
+
+Control family:
+- neutral state/show TR -> PERFORMANCE
+- neutral evaluate/show TR -> PERFORMANCE
+- explicit causal why TR -> ROOT_CAUSE
+- explicit root-cause TR -> ROOT_CAUSE
+- anomaly-causes TR -> ROOT_CAUSE
+- explicit causal why EN -> ROOT_CAUSE
+
+Therefore the defect is not `"araştır" == ROOT_CAUSE` globally. Frozen13 already had
+`"Net geliri araştır"` -> PERFORMANCE. The defect is a probabilistic boundary tail:
+a descriptive metric investigation can be promoted to ROOT_CAUSE when surrounding
+research/evidence-control language is present.
+
+### Generic correction
+
+Product owner changed only in:
+
+`backend/app/v2/manager_policy.py`
+
+Commit:
+`70543ffd576ddabfa059a78c12506cae4f856ebc`
+
+No case-specific branch, regex, Turkish keyword rule, frozen case ID, semantic linker
+change, Temporal change, Wren change, or trust-plane bypass was added.
+
+The capability ontology now states generically:
+
+```text
+PERFORMANCE
+= descriptive observation / inspection / evaluation / measurement of metric state
+= generic investigate/research remains PERFORMANCE unless material causal intent exists
+
+ROOT_CAUSE
+= causal explanatory investigation
+= requires material intent to determine why / causes / drivers / mechanisms
+= descriptive investigation, evidence caution, or adaptive/no-branch directives
+  do not by themselves promote the obligation into ROOT_CAUSE
+```
+
+Diagnostic evaluator was also corrected to score only STANDARD + RESEARCH analytical
+lanes, not PRESENTATION extras.
+
+### Provider-free proof after fix
+
+```text
+HEAD/test SHA   6de7862b848b0e3cc43b5114da847e6e45573da7
+focused run     35849168189
+result          GREEN
+```
+
+The complete current Day7 focused chain passed, including preacceptance completeness,
+semantic/temporal owner isolation, capability receipts, fanout, Evidence, Manager loop,
+cross-domain gates, and real Wren/adaptive/relationship verticals.
+
+Diff audit from `d22fb362...`:
+under `backend/app/v2/`, the only changed production file is
+`manager_policy.py`.
+
+### Next exact paid measurement
+
+Re-run manual:
+`v2-day7-capability-cognition-diagnostic`
+
+Expected after correction:
+- all 4 neutral analytical cases -> PERFORMANCE,
+- all 4 causal analytical cases -> ROOT_CAUSE,
+- presentation extras do not affect analytical score,
+- measurement VALID.
+
+Only after that measurement is GREEN:
+1. run `v2-day7-live-sol` with `case_ids=insufficient-evidence,duplicate-side-effect`,
+2. if affected LIVE is green, run frozen full13 once,
+3. then behavioral closure / shadow ablation.
+
+
+## 2026-09-23 — POST-FIX COGNITION DIAGNOSTIC GREEN
+
+```text
+workflow    v2-day7-capability-cognition-diagnostic
+run         35850683005
+head_sha    8e423f810517b402fa339d0abed214d829397423
+validity    VALID
+evaluable   8 / 8
+behavior    8 / 8 PASS
+mismatches  []
+```
+
+The generic capability-owner correction is therefore confirmed on the balanced
+neutral-vs-causal family:
+
+```text
+neutral descriptive investigation -> PERFORMANCE
+explicit causal investigation      -> ROOT_CAUSE
+```
+
+The prior frozen13 `insufficient-evidence` first bad transition is closed as
+`MODEL_COGNITION`, with the correction localized to `manager_policy.py`.
+
+Do not broaden the patch. No further cognition edit is authorized from this result.
+
+### Next gate — affected LIVE only
+
+Run manual `v2-day7-live-sol` with:
+
+```text
+manager_model  = openai/gpt-5.6-sol
+linker_model   = openai/gpt-5.6-luna
+temporal_model = openai/gpt-5.6-sol
+case_ids       = insufficient-evidence,duplicate-side-effect
+```
+
+Reason:
+- `insufficient-evidence` directly exercises the corrected capability boundary end-to-end.
+- `duplicate-side-effect` is the closest non-causal research control already proven in
+  the same frozen family and guards against over-broad PERFORMANCE promotion.
+
+Do not run full frozen13 until this affected LIVE pair is classified.
+
+
+## 2026-09-23 — DAY7 DETERMINISTIC CAPABILITY CLOSURE
+
+### Frozen13 once
+
+```text
+run                  35855765109
+measurement_valid    true
+measurement_validity VALID
+selected/evaluable   13 / 13
+behavior PASS        11 / 13
+hard safety failures 0
+provider failures    0
+model transport fail 0
+```
+
+Per protocol, frozen13 was run ONCE after the affected cognition/zero-row repairs.
+It will not be rerun to chase a score.
+
+Remaining RED classifications:
+
+#### breakdown-region -> FUTURE-DAY DEBT (Day9 presentation)
+
+Analytical path was correct:
+- BREAKDOWN USER_MUST grounded,
+- one governed query,
+- verified Evidence.
+
+Sol additionally emitted a TABLE presentation USER_MUST from "sonucu göster".
+TABLE is registered as PRESENTATION and intentionally non-executable in Day7.
+Completion therefore remained blocked on that presentation obligation.
+
+No Day7 table/report engine will be invented. Presentation composition is Day9-owned.
+This failure is explicitly classified FUTURE-DAY DEBT, not a Day7 analytical/trust-plane defect.
+
+#### adaptive-material -> CONTRACT/ARCHITECTURE defect, fixed
+
+First bad transition after valid accepted authority + inspected Evidence:
+the post-acceptance Manager selected propose_acceptance.
+
+That action is owned by finite pre-acceptance and is deterministically invalid after an
+AcceptedTurnContract exists. The post-acceptance provider schema was still advertising it.
+
+Generic invariant:
+```text
+advertised cognition action surface
+= actions actually legal in the current Manager phase
+```
+
+Fix:
+- manager_loop.py post-acceptance native schema removes propose_acceptance,
+- runtime rejection remains defense-in-depth,
+- no testcase literal/keyword/budget inflation/provider fallback added.
+
+Proof:
+```text
+provider-free focused 35856719878 = GREEN
+affected LIVE          35857076622 = VALID / 1 of 1 PASS
+adaptive terminal      VERIFIED_COMPLETE
+hard safety failures   0
+```
+
+### Deterministic Day7 capability closure verdict
+
+```text
+known hard invariant holes              0
+advertised executable dead ends         0 for current Day7 post-acceptance action surface
+known cross-obligation authority leaks  0
+unsafe semantic bindings                0
+silent USER_MUST loss                   0
+remaining frozen RED                    classified FUTURE-DAY DEBT only
+focused provider-free                   GREEN
+required affected LIVE                  VALID
+```
+
+Next exact gate:
+FREE_COGNITION vs GOVERNED_ORCHESTRATION shadow ablation.
+Do not start Day8.
+
+
+## 2026-09-23 — DAY7 TEST-ECONOMY HARDENING / MICRO-ABLATION READY
+
+### Current exact engineering state
+
+```text
+branch                          feat/ask-v2-mvp
+latest product behavior SHA     ce82d48bb8ab127a2dd5f7a63ebb25604a6557a6
+latest provider-free checkpoint 6b62fa941f4857b0e10b4c361c552d6a8b847535
+focused run                     35868630145 = GREEN
+latest frozen13                 35855765109 = VALID / 11 of 13 / hard safety 0
+adaptive affected LIVE          35857076622 = PASS
+unclassified Day7 LIVE RED      0
+```
+
+No paid provider run was executed after the test-economy supervisor instruction.
+
+### Product budget correction
+
+Canonical Day7 Manager cognition ceiling is restored:
+
+```text
+max_total_manager_turns = 6
+max_preacceptance_turns <= 2
+max_research_manager_turns <= 6
+
+preacceptance_turns + research_manager_turns <= 6
+```
+
+Phase counters remain observable and useful; they no longer expand the total allowance.
+
+Provider-free proofs:
+- 1 pre + 5 research = allowed,
+- 2 pre + 4 research = allowed,
+- seventh total turn = deterministic `BUDGET_EXHAUSTED`,
+- rejected turn does not drift counters,
+- `finish()` cannot hide a budget-exhausted state.
+
+Product commits:
+- `a32ed3560002...` — global budget field,
+- `ce82d48bb8ab...` — runtime total-cap enforcement.
+
+### Paid evaluation cost safety
+
+Permanent progressive widening:
+
+```text
+LOCAL/CONTRACT/METAMORPHIC
+→ ONE LIVE
+→ AFFECTED PAIR
+→ 2-case MICRO CANARY/ABLATION
+→ MILESTONE CORPUS
+→ CERTIFICATION CORPUS
+```
+
+Current Day7 paid workflow invariants:
+- paid workflows = `workflow_dispatch` only,
+- explicit case scope required,
+- blank input cannot mean “run all”,
+- broad frozen13 requires explicit `FROZEN13` confirmation,
+- explicit model-call budget is required before provider execution,
+- evaluator guards before each provider call,
+- live artifacts expose manager/linker/temporal/total model-call counts,
+  service queries, declared budget, and exhaustion state.
+
+Harvest:
+- H-053 evaluation scope proportional to uncertainty = MUST_PORT,
+- H-054 paid evaluation predeclares/enforces model-call budget = MUST_PORT,
+- H-055 broad/certification corpora are milestone resources = MUST_PORT.
+
+### Day7 orchestration ablation — new cheap gate
+
+The existing 8-case corpus remains frozen for later evaluation and MUST NOT be run now.
+
+First micro ablation is fixed to:
+
+```text
+adaptive-material
+stable-no-extra-branch
+```
+
+Two arms:
+```text
+FREE_COGNITION
+GOVERNED_ORCHESTRATION
+```
+
+Scope:
+```text
+2 cases × 2 arms = 4 maximum loop records
+hard total paid-call ceiling = 20
+preferred actual use <= 16
+```
+
+Runner now requires:
+- explicit `--case-id`,
+- explicit `--max-model-calls`,
+- pre-call global PaidCallGuard,
+- `--dry-run` cost/scope receipt,
+- typed `EVAL_BUDGET_EXHAUSTED`,
+- artifact cost receipt.
+
+Workflow:
+`.github/workflows/v2-day7-orchestration-micro.yml`
+
+It is manual-only and requires:
+```text
+confirm_micro_ablation = MICRO2
+max_model_calls        = 1..20
+```
+
+### Explicit prohibitions at this checkpoint
+
+```text
+DO NOT run 8-case ablation
+DO NOT rerun frozen13
+DO NOT run DEV80
+DO NOT run Validation50
+DO NOT run Hidden50
+DO NOT start Day8
+DO NOT expand Manager total turn budget
+```
+
+Next paid measurement, only after explicit supervisor receipt:
+2-case micro ablation above. If decisive, STOP. If ambiguous, add only
+`simple-performance` with <= 8 additional model calls.
+
+
+## 2026-09-23 — DAY8 P11 DESIGN / INVENTORY RECEIPT COMPLETE
+
+```text
+DAY7 / P10                 CLOSED / SEALED
+P11 / DAY8                 OPEN — DESIGN ONLY
+Day8 product implementation NOT STARTED
+paid Day8 eval             NOT RUN
+```
+
+Current design authority:
+`DIMA_DAY8_ROOT_CAUSE_ARCHITECTURE_AND_PRIMITIVE_INVENTORY.md`
+
+Core conclusion:
+```text
+Day8 does not need a new SQL/query/agent engine.
+It needs a deterministic epistemic authority layer over existing governed Evidence:
+HypothesisLedger + evidence polarity + EpistemicLabelGate.
+```
+
+Current hard boundary:
+`ROOT_CAUSE` remains recognized but `executable=false` until that authority exists.
+
+Proposed D8-A after review:
+typed epistemic models → HypothesisLedger service → evidence-ref validation →
+EpistemicLabelGate → default-deny CONFIRMED_CAUSE → provider-free attacks.
+
+STOP before product implementation pending architecture review.
+
+
+---
+
+## 2026-09-23 — DAY8 D8-B PROVIDER-FREE GREEN / SUPERVISOR STOP
+
+```text
+Day7 / P10                        CLOSED / SEALED
+Day8 product behavior SHA         e6e46c04ebabdac804545855d7fbbcf90c1b1b90
+D8-A1                             GREEN
+D8-A2                             GREEN
+structural seams                  GREEN
+D8-B proposal boundary            GREEN
+focused run                       35884577376 = GREEN
+paid calls                        0
+DB queries                        0
+ROOT_CAUSE executable             false
+D8-C                              NOT STARTED
+```
+
+### Structural seams closed
+
+1. ROOT_CAUSE hypothesis authority accepts only:
+   `ACCEPTED | READY | IN_PROGRESS`.
+   Proposed/clarification/blocked/limited/unsupported/superseded/verified terminal
+   authority cannot mint mutable epistemic state.
+
+2. HypothesisLedger no longer freezes `current_evidence_refs` at construction.
+   `CurrentRunEvidenceView` reads the same Day7 ManagerRuntime snapshot live.
+   It exposes no membership mutator and creates no second EvidenceStore/run registry.
+
+3. Cognition proposal admission requires:
+   `current-run + VERIFIED + inspected Evidence`.
+
+### D8-B delivered
+
+`HypothesisProposalBoundary` is a provider-free cognition admission layer only.
+
+It admits:
+- typed statement,
+- governed SemanticHandle refs,
+- inspected trigger Evidence refs,
+- limitations,
+- explicit SUPPORTS / CONTRADICTS proposal against existing server-owned IDs.
+
+It does not:
+- execute SQL/DB,
+- call Wren,
+- create ResearchTasks,
+- change capability execution mapping,
+- perform causal inference,
+- auto-convert trigger Evidence into support,
+- mint model-owned IDs.
+
+The ledger remains the only hypothesis-ID owner.
+
+### Focused proof
+
+Run `35884577376` passed:
+- Day8 compile,
+- 29 HypothesisLedger attacks,
+- EpistemicLabelGate attacks,
+- D8-B hypothesis proposal attacks,
+- Day7 DerivedEvidence regression,
+- Day7 ResearchTask lifecycle/registry regressions.
+
+A prior focused RED `35884376351` was classified
+`EVAL/CONTRACT REGRESSION`: one stale private helper call remained after exposing the
+priority-only classifier publicly. Generic one-line owner fix only; no product semantics,
+budget or test-case rule changed.
+
+### STOP
+
+Per supervisor:
+```text
+STOP after D8-B GREEN.
+No D8-C automatically.
+No paid test.
+No live Sol.
+No ROOT_CAUSE executable=true.
+```
+
+
+---
+
+## 2026-09-23 — DAY8 D8-C ORCHESTRATION ENGINEERING GREEN / LIVE CERTIFICATION STOP
+
+```text
+Day7 / P10                         CLOSED / SEALED
+D8-A1                              GREEN
+D8-A2                              GREEN
+D8-B                               GREEN
+D8-C execution-mode                GREEN
+D8-C bootstrap/applicability       GREEN
+D8-C next-test identity            GREEN
+D8-C Manager-loop wiring           GREEN
+D8-C real-Wren sentinel            GREEN
+latest product behavior SHA        3091651aea93e42e00521654af8d5dc2c51dc9c3
+latest post-fix focused            35895808495 = GREEN
+
+live Sol certification             NOT GREEN / STOP
+third paid run                      FORBIDDEN without new supervisor authority
+```
+
+### Capability execution authority
+
+One truth now exists:
+
+```text
+DIRECT
+ORCHESTRATED
+DEFERRED
+PRESENTATION
+```
+
+`ManagerCapabilitySpec.execution_mode` is authoritative.
+`spec.executable` is compatibility-only and derives from `execution_mode == DIRECT`.
+
+Current critical mapping:
+
+```text
+PERFORMANCE / BREAKDOWN / RANKING / COMPARISON / RELATIONSHIP
+→ DIRECT
+
+ROOT_CAUSE
+→ ORCHESTRATED
+
+TREND
+→ DEFERRED
+
+REPORT / TABLE / CHART / EXPLAIN
+→ PRESENTATION
+```
+
+Therefore:
+
+```text
+ROOT_CAUSE semantic binding = allowed
+ROOT_CAUSE direct execution = forbidden
+ResearchTaskKind.ROOT_CAUSE = absent
+ROOT_CAUSE → QUERY alias = absent
+```
+
+### ROOT_CAUSE bootstrap
+
+`RootCauseBootstrapPolicy` is the deterministic owner.
+
+Flow:
+
+```text
+current + VERIFIED + inspected relevant Evidence exists
+→ EVIDENCE_READY
+→ no unnecessary bootstrap
+
+otherwise
+accepted ROOT_CAUSE semantic handles
+→ existing DIRECT capability/task/tool applicability
+→ exactly one lossless candidate
+→ server-owned observational seed ResearchTask
+
+zero candidate
+→ fail closed
+
+multiple candidates
+→ AMBIGUOUS_TASK
+→ no silent pick
+```
+
+Metric-only ROOT_CAUSE may therefore seed an existing QUERY observational subtask when and only
+when PERFORMANCE is the unique lossless DIRECT shape. This is not a ROOT_CAUSE→QUERY alias.
+
+### Server-owned hypothesis next-test identity
+
+`HypothesisNextTestProposal` carries:
+
+```text
+hypothesis_ref
+task_kind
+input_refs
+trigger_evidence_ref
+material_reason
+optional ranking params
+```
+
+It carries no `task_id`, `parent_task_id`, `parent_obligation_id` or canonical identity.
+
+`HypothesisNextTestBoundary` resolves governed identities and mints stable `rt_*` task identity,
+then reuses:
+- `DerivedResearchTaskProposal`,
+- `ResearchTaskService.materialize_derived_candidates`,
+- `ResearchFanoutPolicy`,
+- `ResearchTaskRegistry`,
+- `ResearchToolRegistry`.
+
+No new scheduler, Evidence registry, generic agent kernel, budget truth or SQL engine was added.
+
+### Manager-loop integration
+
+Day8 root-cause cognition is opt-in behind active ROOT_CAUSE context.
+
+Added bounded cognition actions:
+
+```text
+PROPOSE_HYPOTHESIS
+PROPOSE_HYPOTHESIS_EVIDENCE_RELATION
+PROPOSE_HYPOTHESIS_NEXT_TEST
+```
+
+Manager proposes only.
+Trust plane admits/materializes/executes.
+
+`CONFIRMED_CAUSE` remains hard-denied with `CAUSAL_NOT_IDENTIFIED`.
+
+### Deterministic / real-Wren proof
+
+Latest focused run:
+
+`35895808495 = GREEN`.
+
+It passed:
+- capability execution-mode attacks,
+- ROOT_CAUSE bootstrap/applicability attacks,
+- Manager-loop root-cause wiring,
+- HypothesisLedger attacks,
+- EpistemicLabelGate attacks,
+- D8-B proposal attacks,
+- relevant Day7 Evidence regression,
+- relevant Day7 ResearchTask lifecycle/registry regressions,
+- provider-free live-harness contract,
+- one real-Wren root-cause sentinel.
+
+The real-Wren sentinel proves:
+
+```text
+ORCHESTRATED ROOT_CAUSE
+→ existing governed bootstrap
+→ Wren
+→ QueryContract
+→ VERIFIED Evidence
+→ inspect
+→ hypothesis
+→ server-owned follow-up task
+→ VERIFIED Evidence
+→ inspect
+→ explicit SUPPORTS
+→ CANDIDATE_CAUSE ceiling
+→ CONFIRMED_CAUSE denied
+```
+
+### Live Sol receipts and failure triage
+
+#### Run 35894577133
+
+```text
+measurement_valid = false
+classification    = EVAL/HARNESS/FIXTURE
+Sol calls          = 2
+semantic calls     = 0
+temporal calls     = 0
+```
+
+Observed boundary rejection:
+`TREND` was proposed as a hypothesis next test even though it has no declared governed execution
+tool in the current Day8 surface. The trust plane correctly rejected it.
+
+The harness incorrectly terminated on that correct rejection instead of mirroring production
+bounded rejection → feedback → replan behavior.
+
+Generic harness fix:
+rejected next-test proposals become `tool_rejected` observations and may replan within the
+existing hard call ceiling. Provider-free rejection/replan proof then passed.
+
+#### Run 35895279649
+
+```text
+measurement_valid = true
+classification    = CONTRACT/ARCHITECTURE
+result             = RED
+Sol calls          = 5
+semantic calls     = 0
+temporal calls     = 0
+message            = expected governed next-test proposal, got resolve_semantics
+```
+
+Cross-check exposed a generic contract defect:
+
+```text
+provider advertised ResearchTaskKind vocabulary
+!=
+runtime-admissible ROOT_CAUSE next-test vocabulary
+```
+
+The Manager saw capability execution modes under capability names, while
+`propose_hypothesis_next_test` required task-kind names. The provider schema also advertised
+task kinds that deterministic admission would always reject.
+
+Single-owner generic fix:
+- one shared task-kind → existing capability/tool mapping now owns both advertisement and runtime admission,
+- `ROOT_CAUSE_NEXT_TEST_CONTRACT` projects the actual DIRECT governed families and semantic-shape requirements,
+- strict provider schema exposes only those same admissible task kinds,
+- runtime admission remains defense-in-depth.
+
+No phrase/keyword/business-case/model-specific rule was added.
+
+Post-fix provider-free proof:
+`35895808495 = GREEN`.
+
+### Paid-test economy / STOP
+
+Paid model calls consumed:
+
+```text
+35894577133  invalid harness measurement   2
+35895279649  valid RED                     5
+--------------------------------------------
+combined                                   7
+```
+
+No third paid run was executed.
+
+The supervisor contract explicitly allows no third case and requires progressive paid-test economy.
+Therefore the post-fix architecture is deterministically GREEN, but live Sol certification is
+not claimed GREEN without a new supervisor authorization for a post-fix live measurement.
+
+### Current hard invariants
+
+```text
+ROOT_CAUSE direct executable?        NO
+ResearchTaskKind.ROOT_CAUSE?         NO
+ROOT_CAUSE → QUERY alias?            NO
+CONFIRMED_CAUSE allowed?             NO
+model-owned ResearchTask identity?   NO
+new semantic owner?                  NO
+new Evidence owner?                  NO
+new scheduler/budget truth?          NO
+Metabase runtime/substrate adopted?  NO
+```
+
+STOP here for supervisor receipt. Do not start Day9 and do not run another paid model test without
+new supervisor authority.
+
+
+---
+
+## 2026-09-23 — DAY8 POST-FIX LIVE RE-MEASUREMENT VALID RED / GENERIC FIX GREEN
+
+Supervisor-authorized same-scenario re-measurement:
+
+```text
+run                         35898027005
+measurement_valid           true
+measurement_validity        VALID
+result                       RED
+Manager model                openai/gpt-5.6-sol
+Manager calls                2 / hard ceiling 5
+semantic-linker calls        0
+temporal-model calls         0
+scenario_count               1
+workers                      1
+
+product_behavior_sha         3091651aea93e42e00521654af8d5dc2c51dc9c3
+run head                     d5ac338ac5b242e86c77469075e6c3e8b405a72c
+scenario_hash                8379daa7fc70a678514b7f87dcb41fcdfec4d317d8ded4cc2712ee7cfb4c8d6a
+harness_version              4ae479eb171eccb709eb326309734779533079ab
+```
+
+Preflight proved:
+- no `backend/app/v2` behavior drift after `3091651...`,
+- the live harness blob was byte-identical to the harness used by `35895279649`,
+- the scenario hash was unchanged,
+- the stricter paid ceiling was 5.
+
+### First incorrect transition
+
+```text
+initial governed Evidence / bootstrap
+→ inspected Evidence
+→ bounded hypothesis proposal
+→ server-owned hypothesis identity
+→ resolve_semantics
+```
+
+The first four transitions were valid.
+The first incorrect transition was selecting `resolve_semantics` instead of moving to a
+governed next-test proposal over already-governed handles.
+
+### Failure classification
+
+Initial symptom was model action selection. Contract cross-check showed the provider-facing
+post-acceptance state did not expose the non-secret semantic type of opaque `h*` aliases even
+though next-test applicability is expressed in semantic kinds.
+
+Final class:
+
+```text
+CONTRACT/ARCHITECTURE
+```
+
+Single owner:
+post-acceptance Manager-safe semantic-handle projection.
+
+Broken invariant:
+
+```text
+opaque identity
+!=
+opaque type
+
+canonical semantic value may remain hidden,
+but governed target_kind/provenance required for deterministic action selection
+must be available without semantic re-resolution.
+```
+
+### Generic post-RED fix
+
+Product behavior SHA after fix:
+
+`810fa70ded3bca53542316d32a5497302b4eb9c7`.
+
+Implemented:
+- `HypothesisLedger.semantic_handle_metadata()` projects only validated non-secret handle metadata,
+- `SEMANTIC_HANDLE_CATALOG` exposes alias → target_kind/provenance to Manager cognition,
+- canonical target remains exclusively inside `SemanticHandleRegistry`,
+- ROOT_CAUSE cognition policy tells Manager to use the existing handle catalog against
+  `ROOT_CAUSE_NEXT_TEST_CONTRACT` before evidence-grounded semantic expansion,
+- no phrase/regex/business-case/model-specific patch,
+- no new semantic owner,
+- no budget increase.
+
+Deterministic proof:
+
+```text
+35898621489 = GREEN   Day8 focused
+35898591894 = GREEN   full affected Day7 regression
+```
+
+The Day8 focused run also includes:
+- execution-mode attacks,
+- root-cause orchestration attacks,
+- Manager-loop root-cause wiring,
+- HypothesisLedger and EpistemicLabelGate,
+- D8-B proposal boundary,
+- affected Day7 Evidence/ResearchTask regressions,
+- provider-free live-harness contract,
+- one real-Wren root-cause sentinel.
+
+### Paid receipt / hard stop
+
+```text
+35894577133   2 Sol calls   INVALID measurement
+35895279649   5 Sol calls   VALID RED
+35898027005   2 Sol calls   VALID RED
+-----------------------------------------------
+cumulative       9 Sol calls
+```
+
+No additional paid run is authorized automatically.
+
+Current state:
+
+```text
+D8-C deterministic        GREEN
+D8-C real-Wren            GREEN
+D8-C live Sol             OPEN / NOT GREEN
+
+DAY8 / P11                NOT SEALED
+DAY9 / P12                NOT STARTED
+```
+
+STOP for supervisor review.
+
+
+---
+
+## 2026-09-23 — DAY9 / P12-A AUTHORIZED
+
+Current authoritative state:
+
+```text
+DAY8 deterministic engineering = GREEN
+DAY8 real-Wren                  = GREEN
+DAY8 live Sol                   = OPEN / NOT GREEN
+DAY8 final seal                 = DEFERRED TO INTEGRATED LIVE GATE
+
+latest valid live result         35898027005 = RED
+latest generic Day8 product fix  810fa70ded3bca53542316d32a5497302b4eb9c7
+latest focused + real-Wren       35898621489 = GREEN
+affected full Day7 regression    35898591894 = GREEN
+
+standalone paid Day8 tests       CLOSED
+cumulative Day8 Sol calls        9
+```
+
+Supervisor accepted the latest opaque-handle contract fix as the frozen Day8 behavior.
+
+Permanent opaque-handle split:
+
+```text
+opaque semantic VALUE
+= registry-private
+
+opaque semantic ID
+= server-owned
+
+governed non-secret TYPE / PROVENANCE metadata
+= may be projected to bounded cognition
+```
+
+`SEMANTIC_HANDLE_CATALOG` may expose only governed metadata such as handle alias,
+target kind and provenance. It may not expose canonical semantic value, raw `sem_*` identity,
+formula, join truth or tenant-crossing identity.
+
+No more Day8 tuning or standalone live root-cause sentinel is authorized.
+
+Forward release obligation:
+
+```text
+DAY10 integrated Product-MVP live gate
+MUST re-exercise:
+hypothesis
+→ governed next test
+→ VERIFIED result
+→ explicit SUPPORTS/CONTRADICTS
+→ maximum claim <= CANDIDATE_CAUSE
+```
+
+Until that integrated proof passes, Day8 is not FINAL LIVE SEALED.
+
+### Current active ticket
+
+```text
+DAY9 / P12-A
+deterministic ReportDocument authority
+```
+
+Canonical Day9-A flow:
+
+```text
+VERIFIED Evidence
++ EvidenceLinkedFinding
++ existing governed semantic scope
++ presentation artifact refs
+→ deterministic immutable ReportDocument
+```
+
+Day9-A report composition is a pure projection. It must not query DB, call Wren, call an LLM,
+re-resolve semantics, mint Evidence, or become a second analytical truth store.
+
+Day9-A is provider-free only. Do not run real-Wren, live Sol, frozen13, DEV80, Validation50,
+Hidden50, or broad Day9/Day8 corpora.
+
+Historical Day8 live RED receipts above remain authoritative history and are intentionally not
+rewritten.
+
+
+---
+
+## 2026-09-23 — DAY9-A DETERMINISTIC REPORT AUTHORITY GREEN
+
+```text
+DAY8 deterministic engineering = GREEN
+DAY8 real-Wren                  = GREEN
+DAY8 live Sol                   = OPEN / NOT GREEN
+DAY8 final seal                 = DEFERRED TO DAY10 INTEGRATED LIVE GATE
+
+DAY9 / P12-A                    = GREEN / SUPERVISOR STOP
+Day9 product behavior SHA       = 2415948f9857cd8ec1707c0eb05f539c8c1edb9c
+Day9 focused                    = 35903324742 = GREEN
+focused tests                   = 16 passed
+Day9 paid calls                 = 0
+```
+
+### Canonical Day9-A output
+
+New file:
+`backend/app/v2/report_builder.py`.
+
+Typed authority:
+
+```text
+ReportDocument
+  report_id
+  title
+  sections
+  evidence_index
+  limitations
+  provenance
+
+ReportSection
+  section_id
+  title
+  blocks
+  evidence_refs
+  semantic_scope
+  followup_context_ref
+  limitations
+
+ReportBlock
+  block_id
+  block_kind
+  claim_kind
+  content
+  evidence_refs
+  finding_refs
+  artifact_ref
+  render_spec
+  epistemic_label
+  hypothesis_ref
+  limitations
+```
+
+Reference models:
+- `ReportEvidenceRef` preserves Evidence identity + QueryContract refs only;
+- `ReportFindingRef` preserves canonical Finding identity;
+- `ReportArtifactRef` preserves presentation artifact identity + kind;
+- `ReportRenderSpec` / `ReportResultShape` are presentation support only.
+
+### Structural claim grounding
+
+```text
+NUMERIC
+→ Evidence required
+
+ANALYTICAL
+→ Evidence required
+
+EPISTEMIC
+→ exactly one canonical FindingRef
+→ underlying verified Evidence lineage required
+
+NARRATIVE
+→ evidence-free only by explicit typed claim class
+
+LIMITATION
+→ limitation presentation, never analytical truth
+```
+
+No regex scans prose for digits or analytical meaning.
+
+### Evidence / finding validation
+
+Every report EvidenceRef must:
+- belong to the supplied current report source run,
+- resolve in the existing Evidence authority,
+- be VERIFIED,
+- preserve QueryContract provenance,
+- preserve derived parent Evidence lineage when derived.
+
+FindingRef must:
+- resolve to a supplied canonical `EvidenceLinkedFinding`,
+- match accepted contract / lineage / run provenance,
+- preserve its underlying Evidence,
+- preserve causal limitations,
+- never expose unavailable `CONFIRMED_CAUSE`.
+
+A FindingRef is legal only in typed `EPISTEMIC` blocks. It cannot be hidden inside
+`ANALYTICAL` or `NUMERIC` prose to bypass epistemic classification.
+
+### Deterministic identity / section anchor
+
+Authority IDs are server-generated hashes:
+
+```text
+rblk_*
+rsec_*
+rctx_*
+rpt_*
+```
+
+Identity seeds exclude presentation title/content/render settings.
+Reference order is normalized; equivalent authoritative input order produces stable report,
+section and follow-up identities.
+
+Section follow-up anchor:
+
+```text
+section_id
++ EvidenceRef[]
++ governed semantic_scope
++ followup_context_ref
+```
+
+No section semantic scope is recovered from prose.
+
+### Pure composition boundary
+
+`ReportBuilder` imports/executes none of:
+- DB query path,
+- Wren,
+- LLM,
+- semantic linker/retriever,
+- legacy report composer,
+- viz recommendation.
+
+Missing Evidence returns typed `NEEDS_EVIDENCE`.
+Invalid semantic/finding/artifact authority returns typed `REJECTED`.
+The builder does not create replacement analytical work.
+
+### Current-viewer replay seam
+
+`ReportSourceProvenance` retains:
+- accepted_contract_id,
+- lineage_id,
+- run_id,
+- tenant_binding,
+- context_version,
+- `CURRENT_RUN_ONLY_REAUTHORIZE_ON_REPLAY` access policy.
+
+Evidence index retains EvidenceRef + QueryContractRef pointers.
+
+Therefore future Day12–14 current-viewer reauthorization remains possible without inventing
+a fake Day9 security token.
+
+Current restriction:
+ReportDocument is safe for same-request/current-run rendering under existing authority, but it is
+NOT yet a freely replayable cross-user/cross-tenant cache of warehouse-derived truth.
+
+### Legacy report/viz characterization
+
+`backend/app/report.py::compose_report`
+must NOT be canonical because it executes `cube_sql → query`.
+
+`backend/app/report.py::bolumlerden_kur`
+is reference-only for the pure idea:
+already-executed sections → compose without re-query.
+
+`backend/app/viz.py`
+is deferred. It may later be a presentation adapter only; its name/unit/result heuristics cannot
+become semantic authority.
+
+### Metabase patterns
+
+Adopted:
+```text
+document composition
+!= reference hydration
+!= permission resolution
+
+presentation/render config
+!= analytical truth
+```
+
+Also preserved:
+```text
+valid Evidence
++ render/artifact failure
+→ Evidence remains valid
+```
+
+Explicitly rejected:
+- Metabase runtime/code as Dima execution substrate,
+- copying query/Evidence truth by value into report authority,
+- treating creator access as permanent report replay permission.
+
+### Focused proof
+
+Run `35903324742`:
+
+```text
+compile report_builder.py = GREEN
+16 focused tests          = GREEN
+paid calls                = 0
+Wren/DB/LLM calls         = 0
+```
+
+Coverage includes:
+- numeric/analytical claims without Evidence,
+- unknown/unverified Evidence,
+- derived parent-lineage failure,
+- canonical Finding lineage,
+- CANDIDATE_CAUSE preservation,
+- CONFIRMED_CAUSE rejection,
+- Finding claim-class anti-laundering,
+- governed semantic scope,
+- stable section/follow-up identity,
+- broken artifact handling,
+- result-shape metadata as presentation support,
+- raw tool payload rejection,
+- order normalization,
+- static no-analytics/no-probabilistic dependency guard.
+
+### STOP
+
+D9-A is GREEN. Do not automatically begin D9-B narration, export, frontend or Day10.
+Return to supervisor for report-authority review.
+
+
+---
+
+## 2026-09-23 — DAY9-B BOUNDED NARRATION AUTHORIZED
+
+Supervisor state:
+
+```text
+D9-A deterministic authority = ACCEPTED / GREEN / FROZEN
+D9-A product SHA             = 2415948f9857cd8ec1707c0eb05f539c8c1edb9c
+D9-A focused                 = 35903324742 = GREEN
+
+D9-B bounded narration       = AUTHORIZED
+Day10                        = NOT AUTHORIZED
+```
+
+D9-B architecture:
+
+```text
+immutable ReportDocument
+→ presentation-safe NarrationPacket
+→ exactly one typed structured model call
+→ NarrationPlanProposal
+→ deterministic NarrationPlanGate
+→ server-owned ReportNarrationOverlay
+→ deterministic renderer
+```
+
+The model may select/order only existing `rpt_*`, `rsec_*`, `rblk_*` identities.
+It may not produce factual prose, numeric statements, causal labels, EvidenceRefs, FindingRefs,
+semantic identities, queries or tools.
+
+If narration is invalid, the canonical ReportDocument remains valid and deterministic presentation
+fallback may be used. No second model call is permitted.
+
+D9-A must not be reopened merely to make narration easier.
+
+
+---
+
+## 2026-09-23 — DAY9-B BOUNDED NARRATION GREEN CANDIDATE
+
+```text
+D9-A deterministic authority = GREEN / FROZEN
+D9-A product SHA             = 2415948f9857cd8ec1707c0eb05f539c8c1edb9c
+
+D9-B bounded narration       = GREEN CANDIDATE
+D9-B product SHA             = 164ff7e6628cca37cbfc8bdb269d84faf4561b51
+provider-free                = 35908601251 = GREEN
+tests                        = 15 / 15
+live Sol                     = 35908863544 = GREEN
+paid calls                   = 1
+
+DAY9 engineering             = GREEN candidate
+Day10                        = NOT AUTHORIZED
+```
+
+### Bounded narration authority
+
+New canonical module:
+`backend/app/v2/report_narration.py`.
+
+The model is not a report writer. It is a presentation planner over an immutable canonical report.
+
+```text
+ReportDocument
+→ NarrationPacket
+→ one structured model call
+→ NarrationPlanProposal
+→ NarrationPlanGate
+→ ReportNarrationOverlay
+→ deterministic renderer
+```
+
+Provider output has no factual-prose fields.
+
+The only probabilistic choices are:
+- which existing blocks appear as executive highlights,
+- block order inside each existing section,
+- which existing blocks receive presentation emphasis.
+
+Every material canonical block must remain present because `ordered_block_refs` is an exact
+permutation, not a subset.
+
+### Failure domain separation
+
+Narration failure is a presentation failure.
+
+Invalid provider output:
+```text
+→ no retry / no repair call
+→ deterministic fallback plan
+→ canonical ReportDocument remains valid
+```
+
+No narration path can:
+- execute DB/Wren/Research,
+- resolve semantics,
+- create Evidence,
+- create Finding,
+- repair missing Evidence,
+- create numeric/analytical/epistemic prose.
+
+### Deterministic renderer
+
+Renderer returns canonical report text verbatim.
+
+`CANDIDATE_CAUSE` presentation is deterministically labeled `Aday neden`; its canonical
+limitations are always carried. Model output does not control causal wording.
+
+Report, section and block limitations are preserved independent of model selection.
+
+### Provider-safe packet
+
+NarrationPacket excludes Evidence/Finding/QueryContract internals, semantic scope, canonical
+semantic IDs, raw data/query state, conversation transcript and Manager scratch state.
+
+It contains only presentation-safe report/section/block metadata and canonical display content.
+
+### Strict structured-output transport
+
+D9-B reuses the repository's existing OpenAI/OpenRouter native JSON-schema wrapper. No new provider
+topology exists.
+
+The narration schema is normalized to the existing strict-native rule:
+all object properties are required, defaults are removed from transport, and
+`additionalProperties=false` is enforced recursively.
+
+### Provider-free proof
+
+`35908601251 = GREEN`.
+
+15 focused high-information tests cover:
+- minimum NarrationPacket surface,
+- absence of factual-prose/authority output fields,
+- strict provider schema,
+- unknown report/section/block refs,
+- missing section,
+- foreign-section block,
+- duplicates,
+- exact block permutations,
+- executive limit <= 3,
+- server-owned overlay identity,
+- candidate-cause + limitation preservation,
+- ReportDocument immutability under alternative valid presentation plans,
+- exactly-one-call fake model path,
+- invalid plan/schema/provider deterministic fallback,
+- renderer has no analytics/probabilistic dependency.
+
+### One live Sol sentinel
+
+`35908863544 = GREEN`.
+
+```text
+openai/gpt-5.6-sol
+model calls      = 1
+tool calls       = 0
+semantic calls   = 0
+Wren calls       = 0
+DB calls         = 0
+Research calls   = 0
+
+schema valid             = yes
+canonical refs only      = yes
+full section coverage    = yes
+exact block permutations = yes
+invented IDs             = 0
+new text claims          = 0
+candidate cause retained = yes
+limitations retained     = yes
+ReportDocument unchanged = yes
+```
+
+No second live reassurance case was executed.
+
+### Day8 release debt
+
+Still OPEN:
+
+```text
+DAY8 deterministic = GREEN
+DAY8 real-Wren     = GREEN
+DAY8 live Sol      = OPEN
+```
+
+The Day8 live root-cause debt remains scheduled for the future Day10 integrated Product-MVP live
+gate. Day9 work did not run another standalone root-cause sentinel.
+
+### STOP
+
+DAY9 engineering is a GREEN candidate.
+
+Do not begin Day10, factual LLM polishing, export/frontend integration or broader test gates until
+supervisor review.
+
+
+---
+
+## 2026-09-23 — DAY10 D10-A..F GREEN / PAID GATE BUDGET BLOCKED
+
+```text
+Day10 product behavior SHA        f4299a3bcfb48ab351db20f555483fe483e5e3e8
+latest harness/test HEAD          031056398535f325ea9ce34701cc711861eeec33
+
+focused + real-Wren               35921618398 = GREEN
+provider-free                     29 passed
+real-Wren Product vertical        1 passed
+
+paid Product-MVP                  NOT RUN
+Day10 paid calls                  0
+Day8 live debt                    OPEN
+Day10 FINAL                       BLOCKED
+```
+
+### D10-A — front-door closure
+
+Authoritative `/ask-v2` now has exactly two analytical lanes:
+
+```text
+STANDARD
+RESEARCH
+```
+
+Only `StandardLaneStatus.RESEARCH_REQUIRED` enters Research. Standard rejected/clarification/
+unsupported semantic state is not reused as Research authority.
+
+Production Research construction lives in `app/v2/research_lane.py`; `manager_lab.py` is not a
+production dependency.
+
+### D10-B — deterministic Product report projection
+
+`ResearchReportProjector` projects only canonical:
+- accepted USER_MUST ledger,
+- VERIFIED Evidence,
+- canonical EvidenceLinkedFinding,
+- governed semantic handles,
+- server-owned presentation artifacts.
+
+No observation text is parsed into Findings. No report worker executes Wren/DB or invents numeric or
+causal claims.
+
+### D10-C — progress / stream / controls
+
+Product progress is server-authored `ProductEvent` state transition output. Events carry typed refs,
+not chain-of-thought/raw SQL/tool payload/provider text.
+
+The stream route is a thin NDJSON adapter over the same `ProductCoordinator`.
+Cancel/Answer-Now are typed control signals. Research cancellation remains owned by the existing
+`ResearchTaskRegistry` lifecycle; late Evidence commit cannot resurrect a cancelled task.
+
+### D10-D — section continuation
+
+Signed section tokens contain locator/integrity state only. Current principal, tenant, context,
+session/thread, report, section, source-run and lineage are revalidated.
+
+Only the selected section's governed semantic scope is projected into typed conversation/context
+state. Follow-up acceptance keeps the same Research run/lineage but commits a new immutable
+AcceptedTurnContract version and a versioned report that supersedes the prior report.
+
+### D10-E — deterministic partial
+
+Answer-Now pauses through existing completion/lifecycle authority. It cannot manufacture
+`VERIFIED_COMPLETE`; Product returns only current verified Evidence/report material.
+
+### D10-F — deterministic real-Wren Product gate
+
+Run `35921618398`:
+
+```text
+29 focused provider-free tests = GREEN
+1 real-Wren Product vertical   = GREEN
+```
+
+The vertical crosses:
+`ProductCoordinator → ResearchLane → semantic binding → governed relationship execution →
+real Wren/DuckDB → QueryContract → VERIFIED Evidence → deterministic report`.
+
+The earlier D10-F RED was fixture cognition: the bare `bölüm` alias is correctly ambiguous across
+multiple governed cubes when no semantic decision provider exists. The test helper was changed to
+select only from production-supplied bounded candidate cards inside the fixture-owned governed
+`makine_duruslari` cube. Production semantic code was not widened.
+
+### Paid gate STOP — global turn-budget authority conflict
+
+The canonical paid Product-MVP scenario is not currently executable as a valid certification under
+all sealed constraints.
+
+Current canonical Manager budget:
+
+```text
+max_total_manager_turns     = 6
+max_preacceptance_turns     = 2
+max_manager_turns           = 6  # phase sublimit
+```
+
+Commit `a32ed3560002ac46ed5173d8ff152852878b455d` intentionally restored the global total
+ceiling. This is not an accidental stale default.
+
+Product Research finite pre-acceptance consumes:
+```text
+DRAFT     = 1 Manager turn
+COVERAGE  = 1 Manager turn
+```
+
+Thus at most four post-acceptance Manager actions remain.
+
+Day8's already-favourable provider-free live state machine requires five post-acceptance cognition
+actions even when inspected trigger Evidence already exists:
+
+```text
+propose_hypothesis
+propose_hypothesis_next_test
+run_analytics
+inspect_evidence
+propose_hypothesis_evidence_relation
+```
+
+The actual integrated Product path additionally needs bootstrap Evidence execution/inspection.
+
+Cross-obligation compression is forbidden: HypothesisLedger admits Evidence only from the
+ROOT_CAUSE obligation/derived ancestry. BREAKDOWN/RELATIONSHIP Evidence cannot silently become
+ROOT_CAUSE trigger/support Evidence.
+
+Supervisor constraints prohibit increasing budget simply to make the case pass. Day8 live debt also
+MUST be exercised inside the integrated Day10 gate before Day10 FINAL GREEN.
+
+Therefore no paid Product-MVP call was made.
+
+### STOP / supervisor decision required
+
+Do not infer a solution. A supervisor must explicitly change either:
+- the global Manager-turn authority/policy; or
+- the causal orchestration architecture while preserving Day8 inspection/support invariants; or
+- the integrated certification contract.
+
+Until an explicit decision:
+```text
+Day10 deterministic engineering = GREEN
+Day10 real-Wren                = GREEN
+Day10 paid integrated gate     = BLOCKED / NOT RUN
+Day8 live certification       = OPEN
+Day10 FINAL GREEN             = NO
+Day11                        = NOT STARTED
+```
+
+
+---
+
+## 2026-09-24 — DAY10-G PRE-PAID HARDENING GREEN / PAID STOP
+
+This section supersedes the earlier Day10 paid-gate budget blocker recorded above.
+
+```text
+Day10 product behavior SHA              e46c3a3e28dc14ed78dfc5fd66d48605b41fae98
+latest deterministic run                35957173325 = GREEN
+provider-free Day10                     47 passed
+real-Wren ROOT_CAUSE Product            1 passed
+G16 NS4 provider-free receipt            PASS
+
+paid Product-MVP                        NOT RUN
+Day10 paid calls                         0
+Day8 live root-cause debt                OPEN
+Day10 FINAL                              NO
+Day11                                   NOT AUTHORIZED
+```
+
+### What changed since the earlier paid blocker
+
+The global Manager ceiling remains:
+
+```text
+max_total_manager_turns = 6
+```
+
+The architecture was reduced to genuine cognition rather than increasing the budget.
+
+Canonical lower-bound now:
+
+```text
+PREACCEPTANCE
+1  draft accepted intent
+2  coverage proof
+
+RESEARCH COGNITION
+3  propose result-driven branch
+4  propose hypothesis
+5  propose hypothesis next test
+6  propose explicit Evidence relation
+```
+
+The following no longer require Manager echo turns when their authority is already complete:
+
+```text
+fully-bound DIRECT USER_SEED execution
+fresh-result inspect ceremony
+exactly-one lossless ROOT_CAUSE bootstrap execution
+exactly-one admitted hypothesis next-test execution
+exactly-one admitted adaptive branch execution
+finish declaration after deterministic CompletionGate truth
+```
+
+Receipt from `35957173325`:
+
+```text
+preacceptance model calls               2
+Research Manager cognition              4
+Manager total                           6
+ceiling                                 6
+headroom                                0
+
+deterministic task executions           5
+fresh Evidence disclosures              3
+explicit historical Evidence inspect    0
+redundant fresh inspect turns            0
+redundant execution-control turns        0
+
+structural status
+STRUCTURALLY_ADMISSIBLE_AT_CEILING
+```
+
+No budget field was increased.
+
+### G1 — fresh Product turn authority
+
+Product content identity and authority identity are separated.
+
+`request_ref` remains deterministic correlation/audit identity.
+
+Every Product turn receives a server-owned opaque `turn_ref`.
+
+Authoritative use:
+- Standard `turn_id`,
+- Research `AcceptedTurnContract.turn_id`,
+- current SourceSpan message identity,
+- Research run identity,
+- initial Research lineage seed.
+
+Identical body/session/thread repeated twice therefore creates different turn/run/initial-lineage authority.
+
+Identical payload strings in different tenants likewise cannot collide.
+
+Signed section continuation:
+- new turn_ref,
+- same existing Research lineage,
+- immutable contract version +1.
+
+### G2 — physically shared cross-lane authority
+
+ProductCoordinator owns one `AcceptedAuthorityRegistry`.
+
+That exact registry object is injected/bound into both:
+- StandardLaneEngine,
+- ResearchLaneService.
+
+Cross-family second authority on the same authoritative turn fails closed. This is no longer merely a router convention.
+
+### G3/G11 — model hypothesis prose is not canonical report truth
+
+Internal `HypothesisEntry.statement` remains cognition/audit material.
+
+Canonical `EvidenceLinkedFinding` now also preserves governed semantic_handle_refs.
+
+For hypothesis-backed causal output, `EvidenceLinkedFindingBuilder` deterministically renders user-facing wording from:
+- governed semantic labels,
+- epistemic class,
+- governed Evidence,
+- canonical limitations.
+
+The model's arbitrary hypothesis sentence is not copied into causal report prose.
+
+Attack:
+```text
+model hypothesis includes "%27"
+supporting Evidence does not
+→ internal hypothesis retains "%27"
+→ canonical Finding / ReportDocument does not
+```
+
+No numeric regex or phrase sanitizer exists.
+
+### G4 — deterministic hypothesis status
+
+Admitted governed Evidence relations reconcile lifecycle:
+
+```text
+SUPPORTS only       -> SUPPORTED
+CONTRADICTS only    -> REFUTED
+both                -> INCONCLUSIVE + server-owned mixed-Evidence limitation
+no relation         -> OPEN
+```
+
+The model proposes relation class; it does not own final hypothesis status.
+
+### G5/G10 — ROOT_CAUSE investigation completion
+
+`RootCauseObligationVerifier` is inside the existing root-cause authority family.
+
+ROOT_CAUSE USER_MUST may become VERIFIED only when:
+- governed hypotheses exist,
+- no hypothesis is OPEN,
+- every accounted hypothesis has admitted Evidence relations,
+- those Evidence refs validate against current root lineage,
+- linked next-test ResearchTasks are complete,
+- no relevant root task is pending/running,
+- no failed/blocked/cancelled required root task remains.
+
+The obligation verdict explicitly means:
+the bounded investigation was fulfilled.
+
+It does NOT mean:
+the proposed cause was proven true.
+
+`CONFIRMED_CAUSE` remains unavailable.
+
+Completion remains owned by `CompletionGate`.
+
+### G6/G7 — deterministic scheduling versus cognition
+
+New/extended owner:
+`app/v2/research_scheduler.py`.
+
+Lossless scheduler input:
+```text
+ResearchTask
++ accepted ObligationLedgerItem
++ governed CapabilityBinding
+```
+
+Output uses existing typed Manager tool calls and crosses:
+- ResearchToolContract,
+- permission checks,
+- canonical runtime budgets,
+- ResearchTask lifecycle,
+- cancel commit_guard,
+- QueryContract,
+- Evidence lineage.
+
+No raw-language interpretation is permitted.
+
+Current deterministic executions:
+- accepted fully-bound DIRECT USER_SEED,
+- exactly-one lossless ROOT_CAUSE bootstrap,
+- exactly-one admitted hypothesis next test,
+- exactly-one admitted adaptive branch.
+
+Ambiguous/non-lossless work remains cognition or fail-closed; scheduler does not choose semantics.
+
+Fresh Evidence rule:
+```text
+fresh VERIFIED bounded result included in successful Manager cognition packet
+-> may be marked inspected after provider returns successfully
+```
+
+Provider failure:
+```text
+-> not inspected
+```
+
+Older Evidence whose payload is not the current disclosed delta still needs explicit inspect.
+
+Cancellation attack:
+the deterministic scheduler retains the existing ResearchTask commit_guard.
+A query attempt may be metered, but cancellation before Evidence commit leaves:
+```text
+task = cancelled
+Evidence commit = 0
+```
+
+### G8 — correct phase accounting
+
+Both successful preacceptance calls are now explicitly:
+
+```text
+phase="preacceptance"
+```
+
+The real-Wren root Product proof observes:
+```text
+preacceptance_turns     = 2
+research_manager_turns  = 3
+manager_turns           = 5
+```
+
+No accounting trick changes the total.
+
+### G15 — one real-Wren root Product micro-gate
+
+The single gated case proves:
+
+```text
+ProductCoordinator
+-> Standard RESEARCH_REQUIRED
+-> Research acceptance
+-> deterministic root bootstrap
+-> real Wren
+-> QueryContract
+-> VERIFIED Evidence
+-> hypothesis
+-> governed next test
+-> follow-up real Wren Evidence
+-> explicit Evidence relation
+-> hypothesis status reconciliation
+-> RootCauseObligationVerifier
+-> CompletionGate
+-> canonical Finding
+-> deterministic report
+```
+
+Expected epistemic ceiling remains:
+```text
+CANDIDATE_CAUSE possible
+CONFIRMED_CAUSE = 0
+```
+
+Only one root real-Wren micro-case is in the Day10 gate.
+
+### G17 — integrated paid harness prepared, not executed
+
+Prepared:
+- `lab/v2_day10_product_mvp_live.py`
+- `.github/workflows/v2-day10-product-mvp-paid-once.yml`
+- `tests/test_v2_day10_paid_harness_contract.py`
+
+The workflow:
+- is `workflow_dispatch` only;
+- has one job / no matrix;
+- requires explicit `CANONICAL_NS4`;
+- requires explicit `DAY10_PAID_ONCE`;
+- rejects call ceilings outside `1..20`;
+- runs deterministic preflight before provider access;
+- permits one initial Product turn and, only after initial GREEN, one signed section continuation;
+- contains no third Product turn.
+
+Hard role ceilings across those maximum two turns:
+
+```text
+FAST_LANGUAGE         2  existing sealed fast policy
+RESEARCH_MANAGER     12  Sol
+SEMANTIC_LINKER       3  Luna
+TEMPORAL_NORMALIZER   1  Sol
+REPORT_NARRATOR       2  Sol
+GLOBAL               20
+```
+
+The harness records actual calls by role, Wren query counts, tool/Evidence events and:
+- first_status_ms,
+- first_verified_evidence_ms,
+- max_progress_silence_ms,
+- report_ready_ms,
+- total_ms.
+
+One run remains one observed sample, never a p95 claim.
+
+It cannot declare Day8 root debt exercised merely from report presence.
+The initial integrated receipt must include:
+- hypothesis registration,
+- admitted/executed next test,
+- new VERIFIED Evidence,
+- explicit Evidence relation,
+- reconciled ROOT_CAUSE obligation,
+- canonical CANDIDATE_CAUSE Finding.
+
+### G12/G13 carry-forward
+
+Metabase upstream pattern reference was refreshed at:
+`fa7362a1e4792c2e83faffc11fba7f36c2dd49d4`.
+
+Adopted principles only:
+- completed tool result becomes next-step memory;
+- new turn/message identity is UUID-like, not content-derived;
+- stale parent/retry advancement fails closed;
+- deterministic terminal state may end a loop without an extra model FINISH turn.
+
+No Metabase code/runtime was copied.
+
+Day10 persistence/concurrency boundary remains:
+```text
+same-process Product MVP only
+multi-process resume unsupported
+restart destroys continuation registry
+same-lineage concurrent CAS/locking = Day14 debt
+```
+
+### Current STOP
+
+D10-G exit criteria are satisfied deterministically and the future paid gate is structurally admissible at the current six-turn ceiling.
+
+This is NOT Day10 FINAL GREEN.
+
+Do not dispatch the paid workflow without supervisor review.
+Do not close Day8 live debt before that integrated run genuinely exercises the root chain.
+Do not start Day11 / DEV80 / Validation50 / Hidden50.
+
+
+---
+
+## 2026-09-24 — DAY10-H FINAL PRE-PAID SEAL GREEN
+
+```text
+DAY9 / P12                         SEALED
+
+DAY10 / P13
+D10-A front door                  GREEN
+D10-B Research -> Report          GREEN
+D10-C progress/stream             GREEN
+D10-D section continuation        GREEN
+D10-E Answer-Now                  GREEN
+D10-F real-Wren Product           GREEN
+D10-G pre-paid hardening          GREEN
+D10-H final pre-paid seal         GREEN / STOP
+
+product behavior SHA
+3db7f8688a5598188ae70375f778d2bef90452cf
+
+authoritative deterministic run
+35961399933 = GREEN
+
+provider-free focused             65 passed
+real-Wren ROOT_CAUSE Product      GREEN
+G16 directive-bearing rehearsal   GREEN
+paid calls                        0
+```
+
+### H1/H2 — ROOT_CAUSE completion hardened
+
+Trigger Evidence can still justify creating a hypothesis and may remain linked for context.
+
+It cannot by itself complete the requested investigation.
+
+For every hypothesis that accounts the ROOT_CAUSE USER_MUST, completion now requires:
+- non-OPEN hypothesis status,
+- at least one linked hypothesis next-test task,
+- at least one linked next-test task in COMPLETE state,
+- admitted post-test relation Evidence whose `EvidenceArtifact.task_id` is one of those linked
+  COMPLETE next-test task IDs.
+
+Relationship alignment remains typed:
+- SUPPORTED -> SUPPORTS from post-test Evidence,
+- REFUTED -> CONTRADICTS from post-test Evidence,
+- INCONCLUSIVE -> attempted completed test + post-test relation/accounting.
+
+Required attacks prove:
+- trigger-only support cannot complete,
+- pending next test cannot complete,
+- completed next test + trigger-only relation cannot complete,
+- fresh linked next-test support/refutation can complete bounded investigation,
+- sibling/foreign Evidence cannot satisfy,
+- failed/blocked/cancelled required next test cannot verify.
+
+`ROOT_CAUSE VERIFIED` continues to mean bounded investigation fulfilled, never causal certainty.
+
+### H3-H9 — ResearchDirective now has typed runtime lifecycle
+
+New runtime accounting:
+`ResearchDirectiveDisposition`.
+
+Completion-relevant `ADAPT_ON_EVIDENCE`:
+- OPEN at acceptance,
+- APPLIED when an admitted governed material branch is executed/accounted,
+- NO_MATERIAL_DIRECTION when bounded cognition explicitly disposes the directive using current
+  VERIFIED inspected parent-lineage Evidence,
+- BLOCKED remains an explicit governed terminal disposition shape.
+
+No new research ledger/planner was introduced.
+
+`BROADEN_WITHIN_BUDGET` is authorization-only and does not become a hidden USER_MUST.
+
+Model FINISH is no longer allowed to bypass directive/task accounting; it delegates to the same
+deterministic finish gate.
+
+Provider-free no-branch attack proves:
+```text
+accepted ADAPT
++ current VERIFIED inspected Evidence
++ NO_MATERIAL_DIRECTION
+-> no branch task
+-> no fake Evidence
+-> no Finding
+-> CompletionGate may finish if USER_MUST is otherwise accounted
+```
+
+### H8 — canonical G16 now carries a real adaptive directive
+
+The rehearsal question includes the exact accepted conditional source surface:
+
+`doğrulanmış sonuçlar yeni bir maddi kırılıma işaret ederse onu takip et`
+
+Accepted directive:
+```text
+directive_id     R_ADAPT_ROOT
+directive_type   ADAPT_ON_EVIDENCE
+parent           U_ROOT
+condition        MATERIAL_NEW_DIRECTION
+```
+
+Runtime observed final disposition:
+```text
+APPLIED
+accounting Evidence   present
+branch task refs      non-empty
+```
+
+No extra Manager cognition was added.
+
+Cognition remains exactly:
+```text
+PREACCEPTANCE
+1 draft
+2 coverage
+
+RESEARCH
+1 propose_branches
+2 propose_hypothesis
+3 propose_hypothesis_next_test
+4 propose_hypothesis_evidence_relation
+```
+
+Receipt:
+```text
+preacceptance 2
+research      4
+total         6
+ceiling       6
+headroom      0
+```
+
+### H10/H11 — Product turn/event identity
+
+`request_ref` remains deterministic correlation fingerprint.
+
+Every Product turn has fresh server-owned `turn_ref`.
+
+`ProductResponse` now exposes `turn_ref`.
+
+`ProductEventSink` event identity includes the same `turn_ref`.
+
+Repeated identical Product requests prove:
+```text
+same request_ref
+different turn_ref
+different event-id sets
+```
+
+Repeated emission within the same sink/turn remains idempotent.
+
+Streaming mints one turn_ref once and reuses it across:
+```text
+router
+-> ProductEventSink
+-> ProductCoordinator
+-> ProductResponse
+```
+
+No second UUID is minted at the coordinator boundary when a pre-minted sink is supplied.
+
+### H12 — budget seal
+
+Budget fields were not changed:
+
+```text
+max_total_manager_turns = 6
+max_preacceptance_turns  = 4
+```
+
+Interpretation of preacceptance `4`:
+phase safety cap only, supporting at most two bounded draft+coverage attempts.
+
+Canonical success still uses two preacceptance calls.
+
+Provider-free attack proves three preacceptance + three Research calls reaches total six, while
+a seventh total Manager call fails closed.
+
+### Deterministic certification
+
+Authoritative run:
+`35961399933`.
+
+Steps:
+- Day10 focused provider-free: GREEN, 65 passed;
+- one real-Wren ROOT_CAUSE Product micro-gate: GREEN;
+- directive-bearing G16 provider-free cognition receipt: GREEN.
+
+G16:
+```text
+directive_final_status       APPLIED
+research cognition sequence  branch -> hypothesis -> next-test -> relation
+root_status                  VERIFIED
+CONFIRMED_CAUSE              0
+provider_calls               0
+```
+
+Affected sealed regressions:
+- Day7 full focused: `35960964752 = GREEN`
+- Day8 focused: `35960964807 = GREEN`
+
+### Paid harness boundary
+
+The manual `v2-day10-product-mvp-paid-once` workflow was NOT dispatched.
+
+Paid call count remains zero.
+
+Only deterministic contract/preflight was updated so the future paid run must also require:
+- >=4 Evidence-producing analytical steps,
+- adaptive branch,
+- relationship check,
+- hypothesis next-test,
+- fresh VERIFIED Evidence,
+- explicit relation,
+- ROOT_CAUSE accounted,
+- CANDIDATE_CAUSE present,
+- CONFIRMED_CAUSE = 0,
+- accepted ADAPT directive APPLIED with Evidence + branch-task accounting,
+- unique Product turn identity for both initial and continuation turns.
+
+### CURRENT STOP
+
+D10-H final pre-paid seal is GREEN.
+
+The paid gate is structurally admissible, but NOT authorized to run.
+
+Do not:
+- dispatch `v2-day10-product-mvp-paid-once`,
+- start Day11,
+- run DEV80 / Validation50 / Hidden50,
+- run another standalone paid Day8 root-cause test.
+
+Day8 live debt remains OPEN until a separately authorized integrated paid Product-MVP run genuinely
+exercises the governed root-cause chain.
+
+
+---
+
+## 2026-09-24 — D10-K VALID RED / D10-L GREEN CHECKPOINT
+
+Historical D10-K paid measurement is immutable history:
+
+```text
+run                         35970179887
+tested HEAD                 0c6258ca988ee21e654f41a7d636102ddf801c52
+tested Product SHA          a449bcfd62ede142ced7d2c9631fba2430534d62
+result                      VALID RED
+failure class               CONTRACT/ARCHITECTURE
+Research entered            NO
+Wren query/dry-plan/cube    0 / 0 / 0
+```
+
+FAST correctly represented REQUIRED `relationship` and `root_cause`, but `NON_AUTHORITATIVE_CONTROL_REQUEST` handling ran before deterministic representability and terminated Standard as clarification. This established the first wrong transition: control handling preempted an already source-valid typed Research requirement.
+
+D10-L corrected ownership, not cognition:
+
+```text
+draft
+→ exact-source validation
+→ RepresentabilityGate.decide_typed_capabilities
+→ if Research required: stop Standard
+→ otherwise Standard-local semantic grounding
+→ material-gap handling
+→ conversation/control handling
+→ bound representability / builder
+→ CoverageVeto
+→ Standard seal / execution
+```
+
+Shared owner:
+
+- `RepresentabilityGate._effective_capability_partition()`
+- `RepresentabilityGate.decide_typed_capabilities()`
+- existing bound `RepresentabilityGate._decide_items()`
+
+No duplicated business-literal routing exists in StandardLane.
+
+Latest Product behavior SHA:
+
+`29b66000fd64d50ee464f989c23cc7f8f7502721`
+
+Final D10-L deterministic candidate SHA:
+
+`4888c10a1cfd3027402e928a616d8a975ad26eef`
+
+Authoritative proof:
+
+`35972060988 = GREEN`
+
+- 104 focused provider-free tests passed.
+- Real-Wren sentinel: 2 passed, covering typed-direct Path A and omission-veto Path B.
+- G16 provider-free receipt remained structurally admissible at ceiling.
+- `provider_calls=0`, `confirmed_cause_count=0`, `root_status=VERIFIED`.
+- Day7 and Day8 affected deterministic regressions remained GREEN.
+
+`35971912520` is a historical test-oracle RED only: Path B test assumed one semantic-provider call, while deterministic exact resolution legitimately required zero. Classification `EVAL/HARNESS/FIXTURE`; only the assertion changed.
+
+Current status:
+
+```text
+Day8 live debt      OPEN
+Day10 FINAL         OPEN / NOT SEALED
+D10-L paid calls    0
+paid dispatch       NO
+Day11               NOT AUTHORIZED
+```
+
+D10-K authorization is consumed. No third paid measurement is authorized. STOP pending supervisor decision.
+
+
+---
+
+## 2026-09-24 — D10-N RESEARCH SEMANTIC RECOVERY / DETERMINISTIC GREEN
+
+D10-M historical paid run remains immutable:
+
+```text
+run                         36016509479
+tested HEAD                 8a03e6673b78842b0fbe8538d01107233d9e6871
+result                      VALID RED
+route                       PATH A / RESEARCH entered
+provider calls              3
+first wrong transition      Research preacceptance material semantic grounding gap
+```
+
+D10-N first closed the diagnostic blind spot. The paid lab now preserves Research intent/coverage
+validated outputs, bounded semantic-linker output, preacceptance observations, semantic-resolution
+receipts and safe candidate-selection diagnostics. Sensitive filter/entity surfaces are redacted.
+
+Generic behavior fix:
+
+```text
+pass-1 governed discovery
+→ existing same-owner recovery
+→ bounded current-turn applicability recovery for metric/dimension only
+→ Semantic Linker SELECT | ABSTAIN
+→ existing SemanticBindingGate
+→ fresh source-bound authority
+```
+
+Current-turn governed handles are never copied into another obligation. They provide only bounded
+candidate context from the same current source message/tenant/context/attempt. Exact ambiguity stays
+fail-closed; same-set ABSTAIN is not repeated; sensitive/filter/period/comparison values are outside
+this cross-owner recovery.
+
+The preacceptance owner also handles a REQUIRED capability kind omitted locally by cognition only
+when the same current draft already contains source-grounded material of that kind. It synthesizes
+no canonical truth: the unresolved obligation's own exact source span still crosses the ordinary
+semantic linker + BindingGate path.
+
+Latest semantic Product behavior:
+
+`8b2ea59045a87ec03d78517d6dbe653fcc9b14f6`
+
+Final deterministic candidate:
+
+`7c5b8be2bc46178a0f8b4e33882223203f4c57cd`
+
+Certification at that exact SHA:
+
+```text
+Day10  36035224902 = GREEN
+  106 focused provider-free passed
+  59 D10-N semantic/preacceptance attacks passed
+  3 real-Wren Product/semantic sentinel tests passed
+  G16 provider_calls=0
+  G16 preacceptance=2
+  G16 Research cognition=4
+  G16 headroom=0
+  G16 ADAPT=APPLIED
+  G16 root_status=VERIFIED
+  G16 CONFIRMED_CAUSE=0
+
+Day8   36035224892 = GREEN
+Day7   36035224835 = GREEN
+```
+
+Metabase Exploration was consulted only for the generic applicability separation:
+
+```text
+candidate existence != applicability
+applicability       != authority
+authority           != execution result
+```
+
+Dima translation remains:
+
+```text
+catalog candidate
+→ current-turn applicability context
+→ bounded linker proposal
+→ SemanticBindingGate
+→ sem_* authority
+```
+
+No Metabase runtime or semantic matcher was imported.
+
+Current status:
+
+```text
+D10-N deterministic            GREEN
+D10-N paid dispatches          0 / 2
+D10-N new provider calls       0 / 30
+
+Day8 live debt                 OPEN
+Day8 FINAL                     NOT SEALED
+Day10 FINAL                    OPEN / NOT SEALED
+Day11                          NOT AUTHORIZED
+```
+
+Next authorized action is the first D10-N canonical paid Product-MVP measurement. A paid RED is a
+repair-owner signal rather than an automatic STOP unless a frozen architecture boundary or the
+D10-N paid envelope is crossed.
+
+
+---
+
+## 2026-09-24 — D10-O LIVE BOUNDARY
+
+Two authorized D10-O live Product measurements were used:
+
+```text
+36039697895  RED  4 provider calls
+36041398308  RED  5 provider calls
+cumulative        9 provider calls
+measurement count 2 / 2
+```
+
+Attempt 1 led to generic Product fix `482d118e105be729660906596ac1ef65365920ea`: current-turn metric/dimension candidate applicability may now be hydrated from one coherent current governed cube scope, while bounded Semantic Linker + SemanticBindingGate remain the only route to new authority.
+
+Pre-attempt-2 certification:
+- Day10 `36041069927` GREEN;
+- Day7 `36040669543` GREEN;
+- Day8 `36040542397` GREEN.
+
+Attempt 2 moved the live failure frontier forward. `Makine duruşları`, `arıza sayısı`, and `bölüm` were successfully governed. The remaining breakdown metric surface `performansı` could not be justified from four applicable maintenance metrics; the linker safely abstained.
+
+Classification: `MODEL_COGNITION` in Research draft semantic decomposition, not resolver truth.
+
+```text
+latest semantic Product SHA  482d118e105be729660906596ac1ef65365920ea
+Day8 live debt               OPEN
+Day10 FINAL                  OPEN
+Day11                        NOT AUTHORIZED
+```
+
+The temporary push trigger has been removed and the live workflow is restored to workflow_dispatch-only state. No third live measurement is authorized.
+
+
+---
+
+## 2026-09-24 — D10-P TRUE STOP / DAY10 STILL OPEN
+
+D10-P semantic decomposition repair is implemented and deterministic/real-Wren certified, but the
+authorized live envelope ended without full Product GREEN.
+
+Latest Product behavior:
+
+`c4f25b2346b451f08b7892465abccc3a62adb7d2`
+
+Repair contract:
+
+```text
+role                    SEMANTIC_LINKER / GPT-5.6 Luna
+schema                  dima_semantic_decomposition_repair_v1
+repair batches          max 1 per preacceptance attempt
+Manager turns           +0
+Manager global ceiling  6 unchanged
+SemanticBindingGate     unchanged authority owner
+```
+
+Latest affected deterministic certification:
+
+```text
+Day10  36052309001 = GREEN
+Day8   36052317079 = GREEN
+Day7   36052244024 = GREEN
+```
+
+Live D10-P sequence:
+
+```text
+36050427414  RED  7 calls
+  → presentation deliverable acceptance mismatch
+  → generic fix
+
+36051494562  RED  6 calls
+  → multi-metric RELATIONSHIP execution shape mismatch
+  → pairwise CrossDomainJoinGate + one Wren materialization generic fix
+
+36052945833  RED  5 calls
+  → ROOT_CAUSE semantic decomposition repair ABSTAIN / AMBIGUOUS_SCOPE
+  → no further fix: 3/3 dispatch TRUE STOP reached
+```
+
+Attempt 3 retained the safe trust plane:
+- exact current-message source tokens only;
+- BREAKDOWN repair selected both governed metric source tokens;
+- fresh target-owner BindingGate authority was available for selected repairs;
+- ROOT_CAUSE repair abstained;
+- remaining material gap caused deterministic clarification before Coverage/acceptance;
+- no forced semantic selection and no second repair batch.
+
+Paid authority:
+
+```text
+authorized dispatches        3 / 3
+authorized new provider calls 18 / 45
+status                       TRUE STOP
+```
+
+Operational note: cleanup accidentally triggered run `36053319641` after the authority was already
+consumed. It is classified `INVALID / UNAUTHORIZED POST-TRUE-STOP`, incurred 6 provider calls, and
+has zero release-evidence authority. Actual D10-P-period provider cost was therefore 24 calls.
+The paid workflow is now hard-restored to dispatch-only and the temporary marker is removed.
+
+Current release state:
+
+```text
+Day8 live debt   OPEN
+Day8 FINAL       NOT SEALED
+
+Day10 FINAL      OPEN / NOT SEALED
+
+Day11            NOT AUTHORIZED
+
+first unresolved P0
+MODEL_COGNITION / semantic decomposition:
+ROOT_CAUSE missing metric remains after the one bounded repair batch because repair cognition
+ABSTAINS / AMBIGUOUS_SCOPE over exact current-message governed metric sources.
+```
+
+No additional Product fix or paid measurement is authorized until a new supervisor decision.
+
+
+---
+
+## 2026-09-25 — D10-T CERTIFICATION ORACLE CORRECTION / CURRENT AUTHORITY
+
+Superseding current-authority receipt:
+
+`DIMA_DAY10_T_CERTIFICATION_ORACLE_CORRECTION.md`
+
+Historical D10-H/D10-S/live receipts remain immutable. This note does not rewrite them.
+
+Current classification:
+
+```text
+Product behavior                         999d5e28facadd85aefd0d5b47cebec6c3daf4e6
+Product patch required                   NO
+36135227087 GitHub workflow result       RED (historical / immutable)
+36135227087 Product lifecycle            COMPLETED / VERIFIED_COMPLETE
+36135227087 harness failure              EVAL / HARNESS / FIXTURE
+first wrong transition                   stale path-specific certification oracle
+```
+
+The final/integrated evaluator no longer treats `adaptive_branch_executed`,
+`ADAPTIVE_BRANCH_OPENED`, or `APPLIED` as unconditional lifecycle truth.
+Certification is now owned by accepted typed directive state, final
+`ResearchDirectiveDisposition`, governed Evidence, lineage/provenance and
+CompletionGate.
+
+Valid `ADAPT_ON_EVIDENCE` terminal handling is status-specific:
+
+```text
+APPLIED
+NO_MATERIAL_DIRECTION
+BLOCKED
+OPEN
+```
+
+`NO_MATERIAL_DIRECTION` is valid only with inspected VERIFIED Evidence in the
+accepted directive parent lineage, zero branch refs and a bounded reason.
+`OPEN + VERIFIED_COMPLETE` remains a genuine Product defect. `BLOCKED` remains a
+typed terminal and cannot be relabelled APPLIED.
+
+Day8 historical live debt is now closed from captured authority plus frozen verifier
+invariants:
+
+```text
+accepted ROOT authority
+→ server-owned hypothesis
+→ completed governed next-test task
+→ new VERIFIED post-test Evidence
+→ admitted post-test Evidence relation
+→ ROOT o4 VERIFIED
+→ canonical CANDIDATE_CAUSE
+→ CONFIRMED_CAUSE = 0
+```
+
+The frozen `RootCauseObligationVerifier` cannot write ROOT VERIFIED unless that
+next-test/relation chain exists. The historical ROOT candidate event is emitted only
+after canonical Finding construction succeeds.
+
+Therefore:
+
+```text
+Day8 live debt   CLOSED
+Day8 FINAL       SEALED
+
+Day10 FINAL      OPEN
+```
+
+Day10 remains OPEN because run `36135227087` stopped at the stale first-turn harness
+assertion before the signed report-section continuation ran.
+
+Provider-free correction proof:
+
+```text
+Day10 focused   36138055136 = GREEN
+Day8 affected   36138058114 = GREEN
+paid calls      26 / 40 used
+remaining       14 / 40
+new paid calls  0
+```
+
+Permanent certification rule:
+
+```text
+AUTHORITATIVE STATE > OBSERVATION STRING
+LIFECYCLE CONTRACT > EXECUTION TRAJECTORY
+EVENT != TRUTH
+MODEL ACTION SELECTION != SUCCESSFUL TRANSITION
+SUCCESSFUL TYPED RUNTIME TRANSITION = TRUTH
+MULTIPLE VALID EXECUTION PATHS → SAME LIFECYCLE CERTIFICATION
+HISTORICAL RUNS ARE IMMUTABLE
+```
+
+Transport remains permanent `workflow_dispatch`-only. No paid retry, Day11, DEV80,
+Validation50 or Hidden50 is authorized by this correction.
