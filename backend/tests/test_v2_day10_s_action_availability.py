@@ -340,6 +340,68 @@ def test_two_genuinely_legal_root_directions_become_two_action_instances():
     assert task_families == {"QUERY", "BREAKDOWN", "COMPARE"}
 
 
+
+def test_last_research_turn_with_executable_adapt_directive_is_completion_critical():
+    action_set = _build(
+        remaining_research_turns=1,
+        directive_states=(
+            DirectiveActionState("D1", "P_REL", ("E_REL",)),
+        ),
+        parent_evidence_states=(
+            ParentEvidenceActionState(
+                "P_REL",
+                "relationship",
+                "E_REL",
+                (_metric("M_REL"), _dimension("D_REL")),
+            ),
+            ParentEvidenceActionState(
+                "P_OTHER",
+                "breakdown",
+                "E_OTHER",
+                (_metric("M_OTHER"), _dimension("D_OTHER")),
+            ),
+        ),
+        root_states=(
+            RootActionState(
+                root_id="R1",
+                semantic_refs=(_metric("M_ROOT"),),
+                evidence_refs=("E_ROOT",),
+                next_test_evidence_refs=("E_ROOT",),
+                hypotheses=(),
+                next_test_contracts=(_query(),),
+            ),
+        ),
+        inspectable_evidence=(
+            InspectableEvidenceState(
+                evidence_ref="E_OLD",
+                capability_keys=("performance",),
+                evidence_kind="standard_analytics",
+            ),
+        ),
+    )
+
+    # With one cognition turn left, an executable completion-relevant ADAPT
+    # directive must not compete with work that necessarily needs a later turn.
+    assert set(action_set.available_actions) == {
+        "disposition_research_directive",
+        "propose_branches",
+    }
+
+    dispositions = _instances(action_set, "disposition_research_directive")
+    assert len(dispositions) == 1
+    assert dispositions[0].binding("directive_id") == "D1"
+    assert dispositions[0].binding("parent_obligation_id") == "P_REL"
+    assert dispositions[0].binding("evidence_ref") == "E_REL"
+
+    branches = _instances(action_set, "propose_branches")
+    assert len(branches) == 1
+    assert branches[0].binding("parent_obligation_id") == "P_REL"
+    assert branches[0].binding("evidence_ref") == "E_REL"
+    branch_schema = dict(branches[0].cognitive_schema)["branch_candidates"]
+    assert branch_schema["minItems"] == 1
+    assert branch_schema["maxItems"] == 1
+
+
 def test_action_ref_is_state_bound_and_stale_choice_fails_closed():
     old = _build(
         state_version="prog_N",
