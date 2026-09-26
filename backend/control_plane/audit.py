@@ -97,7 +97,7 @@ def _persist(row: AuditLog) -> None:
     """
     from sqlmodel import col, select
 
-    from app.audit_zinciri import GENESIS, ZINCIR_ALANLARI, kayit_hash
+    from control_plane.audit_chain import GENESIS, ZINCIR_ALANLARI, kayit_hash
 
     with Session(engine) as session:
         try:

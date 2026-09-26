@@ -197,7 +197,7 @@ def enforce_query(principal: Principal, referenced_models: list[str],
     Karar `app/katman_b.py::karar`'da (saf fonksiyon, DB'siz test edilebilir); burası
     yalnız onu **fırlatan** kabuktur — `context.py` felsefesi.
     """
-    from app.katman_b import ModelErisimReddi, karar
+    from control_plane.model_access import ModelErisimReddi, karar
 
     gecer, gerekce = karar(set(referenced_models or []), izinliler)
     if not gecer:
