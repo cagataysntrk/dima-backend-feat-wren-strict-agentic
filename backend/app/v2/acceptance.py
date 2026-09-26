@@ -266,6 +266,18 @@ class IntentAcceptanceGate:
             reject.append("active obligation ledger cannot exist without active contract")
 
         current_bindings: dict[str, CapabilityBinding] = {}
+        current_research_goal_parent_ids = {
+            directive.parent_obligation_id
+            for directive in envelope.research_directives
+        }
+        carried_research_goal_parent_ids = {
+            directive.parent_obligation_id
+            for directive in (
+                active_contract.research_directives
+                if active_contract is not None
+                else ()
+            )
+        }
 
         obligation_by_id = {item.obligation_id: item for item in envelope.obligations}
         active_by_id = {
@@ -413,7 +425,10 @@ class IntentAcceptanceGate:
                     item.origin == ObligationOrigin.USER_MUST
                     and item.priority == ObligationPriority.MUST
                     and item.polarity == ObligationPolarity.REQUIRED
-                    and spec_for_acceptance.lane == ManagerCapabilityLane.RESEARCH
+                    and (
+                        spec_for_acceptance.lane == ManagerCapabilityLane.RESEARCH
+                        or item.obligation_id in current_research_goal_parent_ids
+                    )
                 ),
             )
             if not binding_result.valid:
@@ -452,7 +467,10 @@ class IntentAcceptanceGate:
                     item.origin == ObligationOrigin.USER_MUST
                     and item.priority == ObligationPriority.MUST
                     and item.polarity == ObligationPolarity.REQUIRED
-                    and carried_spec.lane == ManagerCapabilityLane.RESEARCH
+                    and (
+                        carried_spec.lane == ManagerCapabilityLane.RESEARCH
+                        or item.obligation_id in carried_research_goal_parent_ids
+                    )
                 ),
             )
             if not result.valid:
