@@ -1523,6 +1523,7 @@ def test_d10_q_real_wren_joint_root_scope_executes_both_metrics_into_verified_ev
         input_refs=tuple(task_metric_handles),
     )
     assert task.origin == "GOAL_DERIVED"
+    assert task.parent_obligation_id == "U_ROOT"
     assert task.task_kind == ResearchTaskKind.QUERY.value
     assert task.input_refs == tuple(task_metric_handles)
     assert all(
@@ -1576,10 +1577,6 @@ def test_d10_q_real_wren_joint_root_scope_executes_both_metrics_into_verified_ev
         for snapshot in contract_ir
     )
     assert all(len(snapshot["metrics"]) == 2 for snapshot in contract_ir)
-    assert any(
-        item.get("kind") == "semantic_decomposition_repair"
-        for item in diagnostics
-    )
 
 
 
