@@ -78,6 +78,67 @@ class ManagerRuntime:
         self._semantic_receipts: list[SemanticResolutionReceipt] = []
         self._directive_dispositions: dict[str, ResearchDirectiveDisposition] = {}
 
+    @classmethod
+    def restore_canonical(
+        cls,
+        *,
+        snapshot: ManagerRunSnapshot,
+        accepted_contract,
+        ledger: UserObligationLedger,
+        directive_dispositions: tuple[ResearchDirectiveDisposition, ...] = (),
+        budget: ManagerBudget | None = None,
+    ) -> "ManagerRuntime":
+        """Restore terminal canonical runtime state without restoring scratch cognition."""
+
+        if accepted_contract is None:
+            raise ManagerStateError("runtime restore requires accepted contract")
+        if (
+            snapshot.accepted_contract_id != accepted_contract.contract_id
+            or snapshot.lineage_id != accepted_contract.lineage_id
+            or ledger.lineage_id != accepted_contract.lineage_id
+            or ledger.version != accepted_contract.version
+        ):
+            raise ManagerStateError(
+                "runtime restore contract/ledger/snapshot authority mismatch"
+            )
+        if snapshot.state not in {
+            ManagerState.COMPLETED,
+            ManagerState.BUDGET_EXHAUSTED,
+            ManagerState.BLOCKED,
+            ManagerState.NEEDS_CLARIFICATION,
+            ManagerState.FAILED,
+        }:
+            raise ManagerStateError(
+                "runtime restore requires a persisted terminal checkpoint"
+            )
+
+        restored = cls(
+            request_ref=f"restore:{snapshot.run_id}",
+            budget=budget,
+        )
+        restored._contracts.validate(accepted_contract)
+        restored._authorities.validate(accepted_contract)
+        restored._contracts.commit(accepted_contract)
+        restored._authorities.commit(accepted_contract)
+        restored._snapshot = snapshot
+        restored._accepted_contract = accepted_contract
+        restored._ledger = ledger
+        restored._semantic_receipts = []
+        restored._directive_dispositions = {
+            item.directive_id: item
+            for item in directive_dispositions
+        }
+        expected_directives = {
+            item.directive_id
+            for item in accepted_contract.research_directives
+            if item.directive_type == ResearchDirectiveType.ADAPT_ON_EVIDENCE
+        }
+        if set(restored._directive_dispositions) != expected_directives:
+            raise ManagerStateError(
+                "runtime restore directive disposition set mismatch"
+            )
+        return restored
+
     @property
     def snapshot(self) -> ManagerRunSnapshot:
         return self._snapshot
