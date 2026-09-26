@@ -1,10 +1,29 @@
 # DIMA METABASE — FINAL CORE CLOSURE ROADMAP
 
-**Status:** FORWARD ROADMAP AUTHORITY / POST-P21 / PRE-UI  
+**Status:** CORE CLOSURE A SEALED / CORE CLOSURE B ACTIVE / PRE-UI  
 **Date:** 2026-09-26  
 **Starting Platform HEAD:** 2a9d9d68a0e3b1a80bb85826daf5452bb4fbf55b  
 **Certified Engine:** cbe313af9ac2d5960f662068e433d328d896fb06 / 0.63.18-dima.6  
 **Wren reference branch HEAD at roadmap creation:** 0ff770e5e306e940337226b3dfdd2fbbc12e85e5
+
+## CURRENT EXECUTION STATUS — 2026-09-26
+
+~~~text
+CORE CLOSURE A = SEALED
+DMP-DEC-0060 = SEALED
+integrated candidate = 81a36a6984e273676119e86fc69534e967713912
+provider-free = 36228119851 SUCCESS
+governance = 36228119755 SUCCESS
+Core A owners = 69 PASS
+Alembic head = fb4e6d2a1074
+durable families = ActionWork / OutcomeObservation / InstitutionalMemoryEntry / Watch / Signal
+Wave-1 UX descriptors = 50 / COMPLETE
+external side effects = 0
+UI implementation = 0
+
+CORE CLOSURE B = ACTIVE
+~~~
+
 
 ## 0. Why this continuation exists
 

@@ -2,74 +2,78 @@
 
 ## CURRENT FORWARD AUTHORITY — 2026-09-26
 
-> **FORWARD AUTHORITY.** P14-P21, Human Adoption and ActionPlan/ActionAuthorization remain sealed.
-> Resend/mail is now explicitly deferred productization debt and is NOT the next core blocker.
-> Forward execution is governed by:
->
-> backend/belgeler/metabase/DIMA_METABASE_CORE_CLOSURE_FINAL_ROADMAP.md
+> **FORWARD AUTHORITY.** Core Closure A is sealed. P14-P21, Human Adoption and
+> ActionPlan/ActionAuthorization remain sealed. Forward execution is Core Closure B.
+> UI/UX and external production side effects remain forbidden.
 
 ~~~text
 branch                                = feat/dima-metabase-platform
-starting roadmap HEAD                 = 2a9d9d68a0e3b1a80bb85826daf5452bb4fbf55b
+roadmap start                         = d02474645578ff27ec9871c4738ac7556fb3f82a
+
+CORE CLOSURE A                        = SEALED
+DMP-DEC-0060                          = SEALED
+Core A integrated candidate           = 81a36a6984e273676119e86fc69534e967713912
+Core A provider-free                  = 36228119851 SUCCESS
+Core A governance                     = 36228119755 SUCCESS
+Core A focused aggregate              = 69 PASS
+
+ActionWork                            = GREEN
+OutcomeObservation                    = GREEN
+InstitutionalMemoryEntry              = GREEN
+Watch / Signal                        = GREEN
+Wave-1 UX foundations                 = COMPLETE / 50
+
+durable Core A families               = 5
+Alembic head                          = fb4e6d2a1074
+external side effects                 = 0
+action:execute                        = ABSENT
+DEFAULT ACTION CAPABILITY REGISTRY    = EMPTY
+frontend / UI diff                    = 0
 
 P14-P21                               = SEALED
 HUMAN ADOPTION / DMP-DEC-0058         = SEALED
-ACTIONPLAN / ACTIONAUTHORIZATION      = SEALED
-DMP-DEC-0059                          = SEALED
+ACTIONPLAN / ACTIONAUTHORIZATION      = SEALED / DMP-DEC-0059
 
-RESEND CONNECTOR provider-free        = GREEN
-RESEND LIVE                           = DEFERRED PRODUCTIZATION DEBT
-REAL-RECIPIENT EXECUTION              = DEFERRED
-DMP-DEC-0060 FOR RESEND               = NOT CREATED
-DEFAULT ACTION CAPABILITY REGISTRY    = EMPTY
+ActionAuthorization regression        = 38 PASS
+Human Adoption regression             = 29 PASS
+P21 / P20 / P19 / P18                 = 25 / 19 / 42 / 24 PASS
+P17 / P16 / P15 / P14                 = 95 / 6 / 5 / 17 PASS
 
+CORE CLOSURE B                        = ACTIVE NEXT
 UI / UX                               = FORBIDDEN
 FRONTEND BINDING                      = FORBIDDEN
 
+RESEND LIVE                           = DEFERRED PRODUCTIZATION_DEBT
+REAL-RECIPIENT EXECUTION              = DEFERRED
+
 engine SHA                            = cbe313af9ac2d5960f662068e433d328d896fb06
 engine release                        = 0.63.18-dima.6
-Wren reference HEAD                   = 0ff770e5e306e940337226b3dfdd2fbbc12e85e5
 ~~~
 
 Current forward sequence:
 
 ~~~text
-CORE CLOSURE A
-Internal Action Lifecycle
-+ Outcome Authority
-+ Institutional Memory
-+ Watch / Signal / Audit
-+ 50 Wave-1 UX foundation contracts
-+ Finance / Manufacturing / Textile / Plastics pack foundations
-
-THEN
-
 CORE CLOSURE B
-Headless Product Orchestrator
-+ closed-loop integration
-+ persistence/lifecycle/observability
-+ final Wren-vs-Platform bake-off
-+ canonical engine freeze
-+ final broad certification
-+ backend/product contract freeze
+→ Headless Product Orchestrator
+→ persistence / currentness / resume
+→ observability / audit lineage
+→ 24-scenario headless rehearsal
+→ full closed loop
+→ Wren-vs-Platform bake-off
+→ canonical core freeze
+→ final broad certification
+→ public contract freeze
+→ BACKEND / BRAIN = UI-READY
+→ STOP
 
-THEN
-
-BACKEND / BRAIN = UI-READY
-
-THEN STOP
-
-UI / UX opens ONLY after explicit user authorization.
+UI IMPLEMENTATION DOES NOT OPEN AUTOMATICALLY.
 ~~~
 
 ### CURRENT RETURN POINT
 
-Do not spend current core-development time on Resend live dispatch, real email, Slack or generic external
-execution. Preserve that work as classified productization debt.
-
-The next implementation authority should begin CORE CLOSURE A from the new final core-closure roadmap.
-Historical roadmap phases remain evidence and hard-gate history; they are not a requirement to create dozens of
-new forward phases.
+Do not return. Begin Core Closure B immediately. No UI, no external execution, no sealed-owner
+semantic rewrite. Headless orchestration must delegate to existing owners and resume from durable
+state rather than reinterpret original prompts.
 
 ## HISTORICAL / SUPERSEDED P17 RECOVERY AND PRIOR CURRENT-STATE SECTIONS
 
