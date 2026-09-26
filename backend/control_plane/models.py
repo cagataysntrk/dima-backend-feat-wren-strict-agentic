@@ -1679,3 +1679,36 @@ class OutcomeObservationRecord(SQLModel, table=True):
     outcome_fingerprint: str = Field(index=True)
     observed_at: datetime = Field(index=True)
     recorder_user_id: str = Field(index=True)
+
+
+
+class InstitutionalMemoryEntryRecord(SQLModel, table=True):
+    """Immutable precedent/context index over exact sealed artifact identities."""
+
+    __tablename__ = "institutional_memory_entry"
+    __table_args__ = (
+        UniqueConstraint(
+            "memory_fingerprint",
+            name="uq_institutional_memory_fingerprint",
+        ),
+    )
+
+    memory_id: str = Field(primary_key=True)
+    tenant_binding: str = Field(index=True)
+    role: str = Field(index=True)
+    problem_type: str = Field(index=True)
+    domain: str = Field(index=True)
+    entity_refs_json: str = Field(sa_column=Column(Text, nullable=False))
+    metric_refs_json: str = Field(sa_column=Column(Text, nullable=False))
+    source_refs_json: str = Field(sa_column=Column(Text, nullable=False))
+    summary: str = Field(sa_column=Column(Text, nullable=False))
+    limitations_json: str = Field(sa_column=Column(Text, nullable=False))
+    precedent_of_memory_id: str | None = Field(
+        default=None,
+        foreign_key="institutional_memory_entry.memory_id",
+        index=True,
+    )
+    source_set_fingerprint: str = Field(index=True)
+    memory_fingerprint: str = Field(index=True)
+    created_at: datetime = Field(index=True)
+    indexed_by_user_id: str = Field(index=True)
