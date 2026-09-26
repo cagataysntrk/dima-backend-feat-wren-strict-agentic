@@ -32,7 +32,7 @@ NO NEW EXECUTOR / RECEIPT / EVIDENCE / CLAIM AUTHORITY.
 NO GENERIC CAUSAL GRAPH.
 NO SOL.
 NO P20 IMPLEMENTATION WITHOUT NEW AUTHORITY.
-NO UI/UX BEFORE P21 SEALED.
+NO UI/UX WITHOUT EXPLICIT POST-P21 SUPERVISOR AUTHORITY.
 ```
 
 ## CURRENT FORWARD AUTHORITY — 2026-09-26
@@ -53,7 +53,8 @@ P20                                   = SEALED
 P21                                   = SEALED
 
 P20 canonical product SHA             = 46bbc5f22ea18f6be239014750d77fc254508c46
-P21 canonical product / closure SHA   = 224df510112092e5a64b6fbbd2bd579bc7694f1f
+P21 behavior/product SHA              = b4f101e30abd1292fedf6ea01fc150b9a3b55bce
+P21 certified integration HEAD        = 224df510112092e5a64b6fbbd2bd579bc7694f1f
 
 P21 provider-free                     = 36219566290 SUCCESS
 P21 governance                        = 36219566300 SUCCESS
@@ -93,6 +94,12 @@ engine modifications/builds           = 0 / 0
 Metabase core modification            = 0
 Luna / Sol / C1                       = 0 / 0 / 0
 UI / router                           = 0 / 0
+
+current open work                     = POST-P21 HUMAN ADOPTION / ACTION BOUNDARY REVIEW
+post-P21 review status                = COMPLETE
+HUMAN ADOPTION IMPLEMENTATION         = NOT AUTHORIZED
+ACTION EXECUTION                      = NOT AUTHORIZED
+UI / UX                               = NOT AUTHORIZED
 ```
 
 Current owner split:

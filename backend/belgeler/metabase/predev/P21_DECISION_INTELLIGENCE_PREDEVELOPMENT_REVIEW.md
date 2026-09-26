@@ -498,7 +498,8 @@ This authorization is lifecycle progression under DMP-DEC-0057, not a new archit
 ## 23. P21 final closure — SEALED
 
 ```text
-canonical product / closure SHA = 224df510112092e5a64b6fbbd2bd579bc7694f1f
+behavior/product SHA             = b4f101e30abd1292fedf6ea01fc150b9a3b55bce
+certified integration HEAD       = 224df510112092e5a64b6fbbd2bd579bc7694f1f
 provider-free                    = 36219566290 SUCCESS
 governance                       = 36219566300 SUCCESS
 Alembic head                     = f8d5b3e9c041

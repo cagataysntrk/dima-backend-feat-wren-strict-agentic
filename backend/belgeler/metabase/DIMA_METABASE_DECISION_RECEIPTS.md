@@ -5940,7 +5940,8 @@ DMP-DEC-0057 architecture is unchanged. This is lifecycle closure evidence, not 
 decision.
 
 ```text
-P21 canonical product / closure SHA   = 224df510112092e5a64b6fbbd2bd579bc7694f1f
+P21 behavior/product SHA              = b4f101e30abd1292fedf6ea01fc150b9a3b55bce
+P21 certified integration HEAD        = 224df510112092e5a64b6fbbd2bd579bc7694f1f
 P21 provider-free                     = 36219566290 SUCCESS
 P21 governance                        = 36219566300 SUCCESS
 Alembic head                          = f8d5b3e9c041
