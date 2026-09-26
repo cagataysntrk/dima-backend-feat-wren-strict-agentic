@@ -841,7 +841,11 @@ class ProductCoordinator:
                 manager_turns=snapshot.manager_turns,
                 tool_calls=snapshot.tool_calls,
                 data_queries=snapshot.data_queries,
-                completion_gap=result.outcome.completion_gap_receipt,
+                completion_gap=getattr(
+                    result.outcome,
+                    "completion_gap_receipt",
+                    None,
+                ),
             ),
             section_continuations=continuations,
         )
@@ -890,6 +894,10 @@ class ProductCoordinator:
                 manager_turns=snapshot.manager_turns,
                 tool_calls=snapshot.tool_calls,
                 data_queries=snapshot.data_queries,
-                completion_gap=result.outcome.completion_gap_receipt,
+                completion_gap=getattr(
+                    result.outcome,
+                    "completion_gap_receipt",
+                    None,
+                ),
             ),
         )
