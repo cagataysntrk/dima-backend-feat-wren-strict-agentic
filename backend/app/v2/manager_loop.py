@@ -49,7 +49,10 @@ from app.v2.manager_policy import (
     ManagerCapabilityExecutionMode,
     ManagerCapabilityRegistry,
 )
-from app.v2.capability_bindings import CapabilityBindingValidator
+from app.v2.capability_bindings import (
+    CapabilityBindingValidator,
+    ResearchGoalExecutionDisposition,
+)
 from app.v2.manager_preacceptance import (
     FiniteAcceptanceStatus,
     PreAcceptanceController,
@@ -1680,7 +1683,11 @@ class ResearchManagerLoop:
                     )
 
         goal_task_states: list[GoalTaskActionState] = []
-        if ledger is not None and self._research_tool_runner is not None:
+        if (
+            ledger is not None
+            and self._research_tool_runner is not None
+            and self._root_cause_context is not None
+        ):
             task_owner_ids = {
                 (
                     task.question_id
@@ -1688,10 +1695,7 @@ class ResearchManagerLoop:
                     else task.parent_obligation_id
                 )
                 for task in research_tasks
-                if (
-                    task.question_id
-                    or task.parent_obligation_id
-                )
+                if task.question_id or task.parent_obligation_id
             }
             directive_parent_ids_all = {
                 directive.parent_obligation_id
@@ -1703,6 +1707,10 @@ class ResearchManagerLoop:
             }
             declared_kinds = set(
                 self._research_tool_runner.declared_task_kinds
+            )
+            validator = CapabilityBindingValidator(
+                semantic_handles=self._root_cause_context.semantic_handles,
+                capabilities=self._capabilities,
             )
             for item in ledger.active_user_must:
                 if item.status not in {
@@ -1716,7 +1724,16 @@ class ResearchManagerLoop:
                     spec.lane.value == "RESEARCH"
                     or item.obligation_id in directive_parent_ids_all
                 )
-                if not is_research_goal:
+                classification = validator.classify_research_goal_execution(
+                    item,
+                    tenant_binding=self._root_cause_context.tenant_binding,
+                    context_version=self._root_cause_context.context_version,
+                    goal_authority_eligible=is_research_goal,
+                )
+                if (
+                    classification.disposition
+                    != ResearchGoalExecutionDisposition.MATERIALIZATION_REQUIRED
+                ):
                     continue
                 if item.obligation_id in task_owner_ids:
                     continue
@@ -1744,27 +1761,17 @@ class ResearchManagerLoop:
                     allowed.append(capability.value)
 
                 source_surfaces: list[str] = []
-                # Concrete child tasks may draw only from exact source spans already
-                # admitted by this same accepted analytical USER_MUST contract. This is
-                # source context, not semantic authority: child canonical handles are
-                # still freshly minted under the parent goal after bounded resolution.
-                for scope_item in ledger.active_user_must:
-                    if (
-                        scope_item.polarity != ObligationPolarity.REQUIRED
-                        or self._capabilities.get(
-                            scope_item.capability_key
-                        ).execution_mode
-                        == ManagerCapabilityExecutionMode.PRESENTATION
-                    ):
+                for source_ref in self._goal_admitted_source_refs(
+                    runtime=runtime,
+                    parent_obligation_id=item.obligation_id,
+                ):
+                    try:
+                        span = self._source_spans.validate(source_ref)
+                    except Exception:
                         continue
-                    for source_ref in scope_item.source_refs:
-                        try:
-                            span = self._source_spans.validate(source_ref)
-                        except Exception:
-                            continue
-                        value = str(span.exact_surface).strip()
-                        if value and value not in source_surfaces:
-                            source_surfaces.append(value)
+                    value = str(span.exact_surface).strip()
+                    if value and value not in source_surfaces:
+                        source_surfaces.append(value)
                 if allowed and source_surfaces:
                     goal_task_states.append(
                         GoalTaskActionState(
@@ -2444,6 +2451,41 @@ class ResearchManagerLoop:
         )
         return decision
 
+
+    def _goal_admitted_source_refs(
+        self,
+        *,
+        runtime: ManagerRuntime,
+        parent_obligation_id: str,
+    ) -> tuple[str, ...]:
+        """Exact source authority admitted to one Research goal.
+
+        Same AcceptedTurnContract membership is not enough. The goal owns its own
+        source_refs plus explicitly typed ResearchDirective source lineage whose parent
+        is that exact goal.
+        """
+
+        if runtime.ledger is None:
+            return ()
+        parent = next(
+            (
+                item
+                for item in runtime.ledger.items
+                if item.obligation_id == parent_obligation_id
+            ),
+            None,
+        )
+        if parent is None:
+            return ()
+
+        refs: list[str] = list(parent.source_refs)
+        contract = runtime.accepted_contract
+        if contract is not None:
+            for directive in contract.research_directives:
+                if directive.parent_obligation_id != parent_obligation_id:
+                    continue
+                refs.extend(directive.source_refs)
+        return tuple(dict.fromkeys(refs))
 
     def _source_refs(self, *, message_id: str, surfaces: tuple[str, ...]) -> tuple[str, ...]:
         return tuple(
