@@ -374,14 +374,21 @@ class ResearchToolRegistry:
                         "RANK task does not implicitly become ranked comparison"
                     )
 
-            if task.origin == "USER_SEED":
+            if task.origin in {"USER_SEED", "GOAL_DERIVED"}:
                 if validated.derived_task_id is not None:
                     raise ResearchToolContractError(
-                        "USER_SEED task cannot execute as AGENT_DERIVED"
+                        f"{task.origin} task cannot execute as evidence-derived AGENT_DERIVED"
                     )
                 if task.question_id not in validated.obligation_ids:
                     raise ResearchToolContractError(
                         "Research QUERY task must bind to its accepted obligation"
+                    )
+                if (
+                    task.origin == "GOAL_DERIVED"
+                    and task.parent_obligation_id != task.question_id
+                ):
+                    raise ResearchToolContractError(
+                        "GOAL_DERIVED task must remain bound to its accepted parent goal"
                     )
             else:
                 if validated.derived_task_id != task.task_id:
