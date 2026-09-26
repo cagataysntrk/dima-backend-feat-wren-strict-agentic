@@ -1571,3 +1571,60 @@ class ActionAuthorizationRecord(SQLModel, table=True):
         index=True,
     )
     authorization_fingerprint: str = Field(index=True)
+
+
+
+class ActionWorkRecord(SQLModel, table=True):
+    """Immutable revision snapshot for internal organizational work tracking."""
+
+    __tablename__ = "action_work"
+    __table_args__ = (
+        UniqueConstraint(
+            "root_action_work_id",
+            "revision",
+            name="uq_action_work_root_revision",
+        ),
+        UniqueConstraint("work_fingerprint", name="uq_action_work_fingerprint"),
+    )
+
+    action_work_id: str = Field(primary_key=True)
+    root_action_work_id: str = Field(index=True)
+    revision: int = Field(ge=1, index=True)
+    parent_action_work_id: str | None = Field(
+        default=None,
+        foreign_key="action_work.action_work_id",
+        index=True,
+    )
+    tenant_binding: str = Field(index=True)
+
+    decision_brief_id: str = Field(
+        foreign_key="p21_decision_brief.decision_brief_id",
+        index=True,
+    )
+    decision_brief_fingerprint: str = Field(index=True)
+    decision_adoption_id: str = Field(
+        foreign_key="decision_adoption.adoption_id",
+        index=True,
+    )
+    decision_adoption_fingerprint: str = Field(index=True)
+    action_authorization_id: str | None = Field(
+        default=None,
+        foreign_key="action_authorization.authorization_id",
+        index=True,
+    )
+    action_authorization_fingerprint: str | None = Field(default=None, index=True)
+
+    title: str = Field(sa_column=Column(Text, nullable=False))
+    work_intent_json: str = Field(sa_column=Column(Text, nullable=False))
+    owner_user_id: str = Field(index=True)
+    owner_context_json: str = Field(sa_column=Column(Text, nullable=False))
+    due_at: datetime | None = Field(default=None, index=True)
+
+    status: str = Field(index=True)
+    blocker_reason: str | None = Field(default=None, sa_column=Column(Text, nullable=True))
+    completion_reference: str | None = Field(default=None, sa_column=Column(Text, nullable=True))
+    transition_history_json: str = Field(sa_column=Column(Text, nullable=False))
+
+    source_fingerprint: str = Field(index=True)
+    work_fingerprint: str = Field(index=True)
+    created_at: datetime = Field(index=True)

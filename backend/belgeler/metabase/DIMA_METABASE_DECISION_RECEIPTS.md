@@ -6177,3 +6177,61 @@ generic root fix made the guard token-safe without changing product behavior.
 
 DMP-DEC-0059 is sealed. This closure does not authorize `action:execute`, connector calls,
 ActionAttempt/ExecutionReceipt, external side effects or UI.
+
+
+---
+
+## DMP-DEC-0060 — CORE CLOSURE A CLOSED-LOOP BRAIN AUTHORITY
+
+date: 2026-09-26
+
+status:
+`RATIFIED / CORE CLOSURE A IMPLEMENTATION AUTHORIZED / UI NOT AUTHORIZED`
+
+This one broad decision owns the new post-decision internal operating loop without reopening P14-P21,
+Human Adoption or ActionAuthorization.
+
+```text
+A1 ActionWork
+= authenticated internal commitment + immutable transition history
+= no external execution
+
+A2 OutcomeObservation
+= organizational interpretation over governed analytical provenance
+= no local KPI computation
+
+A3 InstitutionalMemoryEntry
+= precedent/reference index over sealed artifacts
+= no new truth authority
+
+A4 Watch + Signal
+= governed observation/context intake + business significance
+= no polling analytics engine
+
+A5 Wave-1 UX Foundations
+= backend/domain descriptors only
+= no UI implementation
+```
+
+Durable-family ceiling for this Core Closure:
+
+```text
+ActionWork
+OutcomeObservation
+InstitutionalMemoryEntry
+Watch
+Signal
+
+maximum = 5 families
+```
+
+Permanent:
+
+```text
+WORK COMPLETED != BUSINESS OUTCOME ACHIEVED
+OBSERVED IMPROVEMENT != ACTION CAUSED IMPROVEMENT
+MEMORY != CURRENT TRUTH
+SIGNAL != ANALYTICAL CALCULATION
+UI/UX = NOT AUTHORIZED
+external side effects = 0
+```

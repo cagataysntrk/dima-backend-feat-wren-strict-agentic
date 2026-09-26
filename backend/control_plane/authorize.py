@@ -91,6 +91,9 @@ _ACTION_MIN_RANK = {
     # human adoption. This grants permission to authorize an exact ActionPlan;
     # it does not grant execution capability.
     "action:authorize": 2,
+    # DMP-DEC-0060 / Core Closure A1 — internal work lifecycle only.
+    # No external execution capability is implied.
+    "work:manage": 1,
     # ── FAZ 1.3 · AJAN ARAÇ AKSİYONLARI (2026-08-04) ────────────────────────────
     # Ölçüldü: 15 aracın **15'i** `query:run` taşıyordu → `izinli_araclar()` ya 15'ini
     # döndürüyor ya hiçbirini. §11.2'nin *"ajan kullanıcının yetkisini AŞAMAZ"* değişmezi

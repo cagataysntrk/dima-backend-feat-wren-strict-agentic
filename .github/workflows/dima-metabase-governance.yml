@@ -58,6 +58,7 @@ jobs:
           grep -Fq -- '- "!backend/app/v3/decision_adoption.py"' .github/workflows/dima-metabase-m1.yml
           grep -Fq -- '- "!backend/app/v3/action_authorization.py"' .github/workflows/dima-metabase-m1.yml
           grep -Fq -- '- "!backend/app/v3/action_connectors/**"' .github/workflows/dima-metabase-m1.yml
+          grep -Fq -- '- "!backend/app/v3/core_a/**"' .github/workflows/dima-metabase-m1.yml
           grep -Fq -- '- "!backend/app/v3/substrate/metabase/native_engine.py"' .github/workflows/dima-metabase-m1.yml
           grep -Fq -- '- "!backend/app/v3/substrate/metabase/native_models.py"' .github/workflows/dima-metabase-m1.yml
           grep -Fq -- '- "!backend/app/v3/substrate/metabase/native_engine.py"' .github/workflows/dima-metabase-p3.yml
@@ -987,4 +988,41 @@ jobs:
               echo "Resend certification seam imported into product hot path"
               exit 1
             fi
+          fi
+
+
+      - name: Require DMP-DEC-0060 Core Closure A authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -d backend/app/v3/core_a ]; then
+            grep -q "DMP-DEC-0060 — CORE CLOSURE A CLOSED-LOOP BRAIN AUTHORITY" backend/belgeler/metabase/DIMA_METABASE_DECISION_RECEIPTS.md
+            grep -q '"work:manage": 1' backend/control_plane/authorize.py
+            ! grep -q '"action:execute"' backend/control_plane/authorize.py
+          fi
+
+      - name: Guard Core Closure A from shadow analytics and external execution
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -d backend/app/v3/core_a ]; then
+            python - <<'PY'
+          import ast
+          from pathlib import Path
+          root=Path("backend/app/v3/core_a")
+          forbidden=("httpx","requests","urllib","app.v3.action_connectors","app.v3.substrate.metabase","app.wren","numpy","pandas","scipy","statistics")
+          for p in root.glob("*.py"):
+              tree=ast.parse(p.read_text(encoding="utf-8"))
+              imports=set()
+              for node in ast.walk(tree):
+                  if isinstance(node,ast.Import):
+                      imports.update(a.name for a in node.names)
+                  elif isinstance(node,ast.ImportFrom):
+                      imports.add(node.module or "")
+              assert not any(name.startswith(forbidden) for name in imports), (p,imports)
+              src=p.read_text(encoding="utf-8")
+              assert "action:execute" not in src
+              assert "send_email" not in src
+              assert "webhook" not in src
+          PY
           fi
