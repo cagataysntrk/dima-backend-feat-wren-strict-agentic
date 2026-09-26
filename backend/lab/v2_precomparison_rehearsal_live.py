@@ -83,10 +83,10 @@ def _base_checks(case: dict[str, Any], response) -> dict[str, bool]:
     return checks
 
 
-def _first_section_token(response) -> str:
+def _first_section_token(response) -> str | None:
     continuations = tuple(response.section_continuations or ())
     if not continuations:
-        raise RuntimeError("report exposes no signed section continuation")
+        return None
     return continuations[0].token
 
 
@@ -303,6 +303,23 @@ def _run_signed_continuation(case, *, settings, budget, service, principal, chec
     initial_checks = _base_checks(case, initial)
     token = _first_section_token(initial)
     initial_dump = initial.report.model_dump(mode="json") if initial.report else None
+    if token is None:
+        elapsed_ms = int((time.monotonic() - started) * 1000)
+        return _case_receipt(
+            case=case,
+            response=initial,
+            elapsed_ms=elapsed_ms,
+            budget=budget,
+            budget_start=budget_start,
+            service=service,
+            wren_start=wren_start,
+            checks={"initial_continuable": False},
+            extra={
+                "continuation_state": "INITIAL_NOT_CONTINUABLE",
+                "initial_status": _value(initial.status),
+                "initial_checks": initial_checks,
+            },
+        )
     continuation = _handle(
         coordinator,
         principal=principal,
@@ -313,7 +330,7 @@ def _run_signed_continuation(case, *, settings, budget, service, principal, chec
     )
     elapsed_ms = int((time.monotonic() - started) * 1000)
     checks = {
-        **initial_checks,
+        "initial_continuable": True,
         "continuation_report": continuation.status == ProductStatus.REPORT,
         "continuation_verified": bool(continuation.terminal_receipt.verified_complete),
         "version_incremented": bool(
@@ -337,6 +354,7 @@ def _run_signed_continuation(case, *, settings, budget, service, principal, chec
         checks=checks,
         extra={
             "initial_status": _value(initial.status),
+            "initial_checks": initial_checks,
             "continuation_status": _value(continuation.status),
         },
     )
@@ -365,6 +383,23 @@ def _run_restart(case, *, settings, budget, service, principal, checkpoint_root)
     initial_checks = _base_checks(case, initial)
     token = _first_section_token(initial)
     initial_dump = initial.report.model_dump(mode="json") if initial.report else None
+    if token is None:
+        elapsed_ms = int((time.monotonic() - started) * 1000)
+        return _case_receipt(
+            case=case,
+            response=initial,
+            elapsed_ms=elapsed_ms,
+            budget=budget,
+            budget_start=budget_start,
+            service=service,
+            wren_start=wren_start,
+            checks={"initial_continuable": False},
+            extra={
+                "continuation_state": "INITIAL_NOT_CONTINUABLE",
+                "initial_status": _value(initial.status),
+                "initial_checks": initial_checks,
+            },
+        )
 
     # Process-restart simulation: new coordinator and empty in-memory continuation
     # registry, same durable checkpoint repository and canonical Wren context.
@@ -385,7 +420,7 @@ def _run_restart(case, *, settings, budget, service, principal, checkpoint_root)
     )
     elapsed_ms = int((time.monotonic() - started) * 1000)
     checks = {
-        **initial_checks,
+        "initial_continuable": True,
         "restart_continuation_status_allowed": (
             _value(continuation.status) in set(case["statuses"])
         ),
@@ -420,6 +455,7 @@ def _run_restart(case, *, settings, budget, service, principal, checkpoint_root)
         checks=checks,
         extra={
             "initial_status": _value(initial.status),
+            "initial_checks": initial_checks,
             "initial_report_version": initial.report.version if initial.report else None,
             "continuation_report_version": (
                 continuation.report.version if continuation.report else None
@@ -446,8 +482,26 @@ def _run_foreign_principal(case, *, settings, budget, service, principal, checkp
         session_id=session,
         thread_id=session,
     )
-    checks = _base_checks(case, initial)
+    initial_checks = _base_checks(case, initial)
     token = _first_section_token(initial)
+    if token is None:
+        elapsed_ms = int((time.monotonic() - started) * 1000)
+        return _case_receipt(
+            case=case,
+            response=initial,
+            elapsed_ms=elapsed_ms,
+            budget=budget,
+            budget_start=budget_start,
+            service=service,
+            wren_start=wren_start,
+            checks={"security_attack_available": False},
+            extra={
+                "security_state": "INITIAL_NOT_CONTINUABLE",
+                "initial_status": _value(initial.status),
+                "initial_checks": initial_checks,
+            },
+        )
+    checks = {"security_attack_available": True}
     attack_budget_start = len(budget.calls)
     foreign = Principal(
         user_id="rehearsal-foreign-user",
@@ -481,7 +535,11 @@ def _run_foreign_principal(case, *, settings, budget, service, principal, checkp
         service=service,
         wren_start=wren_start,
         checks=checks,
-        extra={"foreign_replay_error_type": error_type},
+        extra={
+            "foreign_replay_error_type": error_type,
+            "initial_status": _value(initial.status),
+            "initial_checks": initial_checks,
+        },
     )
 
 
