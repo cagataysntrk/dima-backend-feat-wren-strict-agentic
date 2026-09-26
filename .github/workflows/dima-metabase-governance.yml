@@ -56,6 +56,7 @@ jobs:
           grep -Fq -- '- "!backend/app/v3/decision_intelligence.py"' .github/workflows/dima-metabase-m1.yml
           grep -Fq -- '- "!backend/app/v3/decision_adoption.py"' .github/workflows/dima-metabase-m1.yml
           grep -Fq -- '- "!backend/app/v3/action_authorization.py"' .github/workflows/dima-metabase-m1.yml
+          grep -Fq -- '- "!backend/app/v3/action_connectors/**"' .github/workflows/dima-metabase-m1.yml
           grep -Fq -- '- "!backend/app/v3/substrate/metabase/native_engine.py"' .github/workflows/dima-metabase-m1.yml
           grep -Fq -- '- "!backend/app/v3/substrate/metabase/native_models.py"' .github/workflows/dima-metabase-m1.yml
           grep -Fq -- '- "!backend/app/v3/substrate/metabase/native_engine.py"' .github/workflows/dima-metabase-p3.yml
@@ -931,4 +932,58 @@ jobs:
           PY
             test ! -f backend/app/v3/action_execution.py
             ! grep -nE 'requests\.post|httpx\.|send_email|Slack|notification|ActionExecutionReceipt|ActionAttempt' "$HOT"
+          fi
+
+
+      - name: Require Resend connector certification authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          HOT="backend/app/v3/action_connectors/resend_email.py"
+          if [ -f "$HOT" ]; then
+            RECEIPT="backend/belgeler/metabase/predev/RESEND_CONNECTOR_CERTIFICATION_RECEIPT.md"
+            test -f "$RECEIPT"
+            grep -q "RESEND CONNECTOR CERTIFICATION" "$RECEIPT"
+            grep -q "NO DMP-DEC-0060" "$RECEIPT"
+            grep -q '^RESEND_API_ORIGIN = "https://api.resend.com"$' "$HOT"
+            grep -q '^DEFAULT_ACTION_CAPABILITY_REGISTRY = ActionCapabilityRegistry()$' backend/app/v3/action_authorization.py
+            ! grep -q '"action:execute"' backend/control_plane/authorize.py
+          fi
+
+      - name: Guard Resend seam from becoming generic execution
+        shell: bash
+        run: |
+          set -euo pipefail
+          HOT="backend/app/v3/action_connectors/resend_email.py"
+          if [ -f "$HOT" ]; then
+            python - <<'PY'
+          import ast
+          from pathlib import Path
+          p=Path("backend/app/v3/action_connectors/resend_email.py")
+          source=p.read_text(encoding="utf-8")
+          tree=ast.parse(source)
+          imports=set()
+          for node in ast.walk(tree):
+              if isinstance(node,ast.Import):
+                  imports.update(a.name for a in node.names)
+              elif isinstance(node,ast.ImportFrom):
+                  imports.add(node.module or "")
+          forbidden=(
+              "app.v3.action_authorization","app.v3.decision_adoption",
+              "app.v3.decision_intelligence","app.v3.report_document",
+              "app.v3.substrate.metabase","app.v3.research","app.wren",
+              "sqlmodel","sqlalchemy","numpy","pandas","scipy","statistics",
+          )
+          assert not any(name.startswith(forbidden) for name in imports), imports
+          assert "https://api.resend.com" in source
+          assert "action:execute" not in source
+          assert "ActionExecutionReceipt" not in source
+          assert "ActionAttempt" not in source
+          PY
+            test ! -f backend/app/v3/action_execution.py
+            test -z "$(find backend/migrations/versions -maxdepth 1 -type f -iname '*resend*' -print)"
+            if grep -R --include='*.py' -nE               'from app\.v3\.action_connectors\.resend_email|import app\.v3\.action_connectors\.resend_email'               backend/app --exclude='resend_email.py'; then
+              echo "Resend certification seam imported into product hot path"
+              exit 1
+            fi
           fi

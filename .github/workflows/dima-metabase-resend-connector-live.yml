@@ -1,0 +1,74 @@
+# One manual Resend test-mode canary. Never runs on push.
+name: dima-metabase-resend-connector-live
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  resend-test-mode-canary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DIMA_RESEND_API_KEY: ${{ secrets.DIMA_RESEND_API_KEY || secrets.RESEND_API_KEY }}
+      DIMA_RESEND_CANARY_CANDIDATE: ${{ github.sha }}
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_INTERACTION_LOG: "false"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install canonical backend environment
+        working-directory: backend
+        run: pip install -e ".[dev]"
+
+      - name: Enforce hard-locked test-mode canary
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${{ github.event_name }}" = "workflow_dispatch"
+          grep -q '^CANARY_RECIPIENT = "delivered@resend.dev"$' backend/lab/metabase/action_execution/resend_connector_canary.py
+          ! grep -nE 'argparse|sys\.argv|input\(' backend/lab/metabase/action_execution/resend_connector_canary.py
+          ! grep -q '"action:execute"' backend/control_plane/authorize.py
+          test ! -f backend/app/v3/action_execution.py
+          test -z "$(find backend/migrations/versions -maxdepth 1 -type f -iname '*resend*' -print)"
+          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "cbe313af9ac2d5960f662068e433d328d896fb06"
+
+      - name: Run exactly one logical Resend test-mode send
+        working-directory: backend
+        run: python lab/metabase/action_execution/resend_connector_canary.py
+
+      - name: Verify canary receipt
+        working-directory: backend
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("lab/metabase/action_execution/resend-canary-receipt.json")
+          data=json.loads(p.read_text(encoding="utf-8"))
+          assert data["recipient"] == "delivered@resend.dev"
+          assert data["real_recipient_count"] == 0
+          assert data["logical_send_count"] == 1
+          assert data["external_post_count"] == 2
+          assert data["provider_ids_identical"] is True
+          assert data["first_provider_email_id"] == data["second_provider_email_id"]
+          assert data["retrieve"]["provider_email_id"] == data["first_provider_email_id"]
+          assert data["credential_disclosed"] is False
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: resend-connector-canary-${{ github.run_id }}
+          path: backend/lab/metabase/action_execution/resend-canary-receipt.json
+          if-no-files-found: error
+          retention-days: 30

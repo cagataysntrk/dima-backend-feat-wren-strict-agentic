@@ -22,6 +22,7 @@ on:
       - "!backend/app/v3/decision_intelligence.py"
       - "!backend/app/v3/decision_adoption.py"
       - "!backend/app/v3/action_authorization.py"
+      - "!backend/app/v3/action_connectors/**"
       - "!backend/app/v3/substrate/metabase/native_engine.py"
       - "!backend/app/v3/substrate/metabase/native_models.py"
       - "backend/tests/test_v3_m1_*.py"
