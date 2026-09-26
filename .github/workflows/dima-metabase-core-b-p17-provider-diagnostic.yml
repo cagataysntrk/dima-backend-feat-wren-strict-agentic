@@ -13,6 +13,7 @@ on:
       - "backend/lab/metabase/core_b/p17_request_differential.py"
       - "backend/lab/metabase/core_b/p17_provider_diagnostic.py"
       - "backend/lab/metabase/core_b/authorizations/p17-provider-diagnostic-001.json"
+      - "backend/lab/metabase/core_b/authorizations/p17-request-differential-002.json"
 
 permissions:
   contents: read
@@ -95,6 +96,10 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD:backend/app/v3/research_manager_provider.py)" = "b6074af0909384e26ac9057f6d57f03e260876f1"
+          test "$(git rev-parse HEAD:backend/app/v3/structured_trace.py)" = "fd909369ca42a8fe97d28b86085f57a3ff687d14"
+          test "$(git rev-parse HEAD:backend/app/v3/structured_transport.py)" = "00dc7dfa846c89f8f3a45e1a94ba72bbd6aef292"
+          test "$(git rev-parse HEAD:backend/lab/metabase/core_b/p17_request_differential.py)" = "ec336c0ffd14b9c97d305c2bf9f813b28d7a5aba"
+          test "$(git rev-parse HEAD:backend/lab/metabase/core_b/p17_provider_diagnostic.py)" = "704e89923dc46a72c62af8f4ec0bf60e69cd57eb"
           test "$(git rev-parse HEAD:backend/app/v3/research_manager.py)" = "d9a2a83e3f5e678870a2ecbaf330ccb81edb73d7"
           test "$(git rev-parse HEAD:backend/app/v3/business_relationship_policy.py)" = "1c533667bd080331f4f2231b9d37ee0c5e532fa8"
           test "$(git rev-parse HEAD:backend/app/v3/hypothesis_root_cause.py)" = "19e4f8a2403c7e133137c106c58fa61959c4ceff"
@@ -124,20 +129,25 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          AUTH="backend/lab/metabase/core_b/authorizations/p17-provider-diagnostic-001.json"
+          AUTH="backend/lab/metabase/core_b/authorizations/p17-request-differential-002.json"
           test -f "$AUTH"
           python - "$AUTH" "$(git rev-parse HEAD^)" <<'PY'
           import json,subprocess,sys
           from pathlib import Path
           p=Path(sys.argv[1]); parent=sys.argv[2]
           value=json.loads(p.read_text(encoding="utf-8"))
-          assert value["mode"]=="p17_provider_diagnostic"
-          assert value["decision"]=="CORE_B_PROVIDER_BOUNDARY_RECOVERY"
+          assert value["mode"]=="p17_request_differential_live"
+          assert value["decision"]=="CORE_B_SENTINEL_DIFFERENTIAL_RECOVERY"
           assert value["candidate_product_sha"]==parent
+          assert value["provider_free_differential_run_id"]==36273274258
+          assert value["core_b_provider_free_seal_run_id"]==36273274224
+          assert value["provider_free_classification"]=="IDENTICAL"
+          assert value["historical_first_divergence_owner"]=="diagnostic_request_ref_namespace"
           assert value["model"]=="openai/gpt-5.6-luna"
           assert value["case_id"]=="root_cause_tr"
           assert value["max_p17_provider_calls"]==1
           assert value["automatic_retry"] is False
+          assert value["full_sentinel_rerun"] is False
           assert value["engine_sha"]=="cbe313af9ac2d5960f662068e433d328d896fb06"
           assert value["source_manifest_blob_sha"]=="cf9aea5004d2bbb979015917570f32417c67017a"
           assert value["neutral_fixture_blob_sha"]=="dd6ae7d8dd19e1a38d5e3c78ea8bfb2182f1b4d7"
@@ -145,7 +155,9 @@ jobs:
               return subprocess.check_output(["git","rev-parse",f"HEAD:{path}"],text=True).strip()
           assert blob("backend/eval/core_b/askv2_matched_20_cases.json")==value["source_manifest_blob_sha"]
           assert blob("backend/lab/metabase/core_b/fixtures/machine_operations.json")==value["neutral_fixture_blob_sha"]
+          assert blob("backend/app/v3/structured_trace.py")==value["structured_trace_blob_sha"]
           assert blob("backend/app/v3/structured_transport.py")==value["structured_transport_blob_sha"]
+          assert blob("backend/lab/metabase/core_b/p17_request_differential.py")==value["differential_harness_blob_sha"]
           assert blob("backend/lab/metabase/core_b/p17_provider_diagnostic.py")==value["diagnostic_runner_blob_sha"]
           PY
           test -n "$DIMA_OPENROUTER_API_KEY"
@@ -254,14 +266,28 @@ jobs:
           value=json.loads(p.read_text(encoding="utf-8"))
           assert value["case_id"]=="root_cause_tr"
           assert value["model"]=="openai/gpt-5.6-luna"
-          assert value["diagnostic_classification"]=="UNKNOWN_PENDING_REVIEW"
+          assert value["diagnostic_classification"] in {"PROVIDER_ACCEPTED","PROVIDER_REJECTED"}
           assert value["p17_provider_call_count"]==1
           assert value["p19_provider_call_count"]==0
           assert value["automatic_retry"] is False
+          assert value["full_sentinel_rerun"] is False
           assert value["engine_sha"]=="cbe313af9ac2d5960f662068e433d328d896fb06"
-          assert value["schema_name"]
-          assert len(value["schema_fingerprint"])==64
+          assert value["schema_name"]=="dima_p17_research_manager_proposal"
+          for key in (
+              "schema_fingerprint","request_envelope_fingerprint",
+              "system_prompt_hash","user_prompt_hash",
+              "provider_routing_policy_fingerprint",
+          ):
+              assert isinstance(value[key],str) and len(value[key])==64, key
+          assert value["call_ordinal_by_role"]==1
+          assert isinstance(value["request_trace"],dict)
+          assert value["request_trace"]["request_envelope_fingerprint"]==value["request_envelope_fingerprint"]
           assert isinstance(value["http_status"],int)
+          if value["diagnostic_classification"]=="PROVIDER_ACCEPTED":
+              assert 200 <= value["http_status"] < 300
+              assert value["provider_error_code"] is None
+          else:
+              assert not (200 <= value["http_status"] < 300)
           PY
 
       - name: Hard freeze
