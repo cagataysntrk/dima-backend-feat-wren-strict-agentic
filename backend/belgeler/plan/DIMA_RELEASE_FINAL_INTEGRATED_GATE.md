@@ -1,31 +1,65 @@
-## LATEST AUTHORITY — SIGNED CONTINUATION POLICY / INHERITED ANALYTICAL AUTHORITY — PROVIDER-FREE GREEN / PAID PENDING
+## LATEST AUTHORITY — SOURCE-TRUTH LIVE-PROVEN / HARNESS CAP FIXED / PAID RE-MEASUREMENT IN PROGRESS
 
 ```text
 branch                           feat/ask-v2-mvp
-engineering authority base      6c9b01ed3088a4b7ec35ffd5b3dfbf3409255653
-Product behavior                 a5cac9c2b0ac7b90fbe403c4b01b9e9128c420d1
+engineering measurement base     a70a20997e86f87dd83baa40845e8eaa01b2ae49
+Product behavior                 6dacfebd70caf0e91e2d701192d2de41fe4d66f6
 backend/app diff after Product   ZERO
 
-Day10 focused                    36221918363 = GREEN
-Day8 focused                     36222001588 = GREEN
-Day7 focused                     36221999924 = GREEN
+Day10 focused                    36227497718 = GREEN
+Day8 focused                     36227497717 = GREEN
+Day7 focused                     36227497720 = GREEN
 
-previous paid                    36217485288 = RED
-initial Product turn             LIVE-PROVEN / VERIFIED_COMPLETE
-starvation family                FAM-ADAPT-DIRECTIVE-COMPLETION-STARVATION
-starvation status                CLOSED / LIVE-PROVEN
-signed continuation              PARTIAL
-active family                    FAM-SIGNED-CONTINUATION-RESEARCH-POLICY-AUTHORITY
-cycle                            1 / 3
+harness correction Day10         36228073546 = GREEN
+harness correction Day8          36228073620 = GREEN
 
-current paid epoch               17 / 40 used
-current paid epoch remaining     23 / 40
-next full measurement cap        20 calls
+source-truth revision family     FAM-PREACCEPTANCE-REVISION-SOURCE-TRUTH-DRIFT
+source-truth status              CLOSED / LIVE-PROVEN
+latest prior paid                36227806311 = FAILURE / NO PRODUCT VERDICT
+prior terminal                   SEMANTIC_LINKER HARNESS CAP 3 / 3
+harness semantic role cap        4
+global paid hard cap             20
+active family                    FAM-PAID-HARNESS-SEMANTIC-ROLE-CAP
+active family status             FIXED / PAID RE-MEASUREMENT AUTHORIZED
+
+current paid run                 36228701676 = IN PROGRESS
+current paid epoch               0 / 40 used before run
+current paid epoch remaining     40 / 40 before run
+measurement cap                  20 calls
+
+ManagerBudget                    4 / 4 / 8 = FEASIBLE / RATIFIED
+ActionSet materializability      GREEN / RATIFIED
+READY hydration parity           GREEN / RATIFIED
+finding supersession provenance  GREEN
+signed continuation architecture HEALTHY provider-free
 
 Day8 FINAL                       SEALED
-Day10 FINAL                      OPEN
-Day11 / DEV80 / Validation50 /
-Hidden50                         NOT AUTHORIZED
+Day10 FINAL                      OPEN / PAID GATE RUNNING
+DEV80                            NOT AUTHORIZED YET
+```
+
+Current source-truth invariant:
+
+```text
+FINITE PREACCEPTANCE REVISION
+MAY CHANGE OBLIGATION STRUCTURE.
+
+IT MUST NOT RANDOMLY CHANGE
+THE CANONICAL MEANING OF THE SAME EXACT USER SOURCE.
+
+SOURCE TRUTH LIFETIME
+MUST OUTLIVE DRAFT REVISION
+WITHIN ONE IMMUTABLE USER TURN.
+
+OWNER AUTHORITY MAY BE REMINTED.
+SOURCE TRUTH MUST NOT BE RE-ROLLED.
+
+IDENTICAL NEGATIVE SEMANTIC QUESTION
++ IDENTICAL GOVERNED CANDIDATE UNIVERSE
+= NO NEW COGNITION VALUE.
+
+different governed candidate universe
+= fresh bounded cognition may run
 ```
 
 Current generic continuation fix:
