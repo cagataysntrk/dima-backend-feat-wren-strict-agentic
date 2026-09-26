@@ -402,6 +402,11 @@ def test_last_research_turn_with_executable_adapt_directive_is_completion_critic
     branch_schema = dict(branches[0].cognitive_schema)["branch_candidates"]
     assert branch_schema["minItems"] == 1
     assert branch_schema["maxItems"] == 1
+    final_turn_caps = set(
+        branch_schema["items"]["properties"]["capability_key"]["enum"]
+    )
+    assert "ranking" not in final_turn_caps
+    assert {"performance", "breakdown", "relationship"}.issubset(final_turn_caps)
 
 
 
@@ -466,6 +471,10 @@ def test_completion_critical_projection_is_final_turn_only():
     assert len(branches) == 1
     branch_schema = dict(branches[0].cognitive_schema)["branch_candidates"]
     assert branch_schema["maxItems"] > 1
+    ordinary_caps = set(
+        branch_schema["items"]["properties"]["capability_key"]["enum"]
+    )
+    assert "ranking" in ordinary_caps
 
 
 def test_action_ref_is_state_bound_and_stale_choice_fails_closed():
