@@ -1,0 +1,2 @@
+cases=std_clause_order,relationship_explicit_tr,adaptive_tr,canonical_reordered,restart_signed_continuation,foreign_principal_replay
+max_calls=70
