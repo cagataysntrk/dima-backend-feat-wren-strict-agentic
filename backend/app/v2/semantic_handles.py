@@ -11,12 +11,31 @@ from dataclasses import dataclass
 from typing import Any
 
 from app.v2.manager_models import SemanticHandle
+from app.v2.models import (
+    FrozenModel,
+    ResolvedComparison,
+    ResolvedFilterRef,
+    ResolvedPeriod,
+    ResolvedSemanticRef,
+)
 
 
 @dataclass(frozen=True)
 class SemanticBinding:
     handle: SemanticHandle
     canonical_target: Any
+
+
+class SemanticBindingRecord(FrozenModel):
+    """Durable canonical binding record; restore is revalidated by registry minting."""
+
+    handle: SemanticHandle
+    canonical_target: (
+        ResolvedSemanticRef
+        | ResolvedFilterRef
+        | ResolvedPeriod
+        | ResolvedComparison
+    )
 
 
 class SemanticHandleRegistry:
@@ -208,3 +227,50 @@ class SemanticHandleRegistry:
             context_version=context_version,
         )
         return self._bindings[handle_id]
+
+    def export_records(
+        self,
+        *,
+        tenant_binding: str,
+        context_version: str,
+    ) -> tuple[SemanticBindingRecord, ...]:
+        records: list[SemanticBindingRecord] = []
+        for binding in self._bindings.values():
+            handle = binding.handle
+            if (
+                handle.tenant_binding != tenant_binding
+                or handle.context_version != context_version
+            ):
+                continue
+            records.append(
+                SemanticBindingRecord(
+                    handle=handle,
+                    canonical_target=binding.canonical_target,
+                )
+            )
+        return tuple(sorted(records, key=lambda item: item.handle.handle_id))
+
+    @classmethod
+    def restore_records(
+        cls,
+        records: tuple[SemanticBindingRecord, ...],
+    ) -> "SemanticHandleRegistry":
+        registry = cls()
+        for record in records:
+            handle = record.handle
+            restored = registry._mint(
+                tenant_binding=handle.tenant_binding,
+                context_version=handle.context_version,
+                provenance_id=handle.resolver_provenance_id,
+                target_kind=handle.target_kind,
+                canonical_target=record.canonical_target,
+                sensitive=handle.sensitive,
+                provenance_type=handle.provenance_type,
+                parent_obligation_id=handle.parent_obligation_id,
+                trigger_evidence_ref=handle.trigger_evidence_ref,
+            )
+            if restored.handle_id != handle.handle_id:
+                raise ValueError(
+                    "durable semantic binding identity mismatch on restore"
+                )
+        return registry
