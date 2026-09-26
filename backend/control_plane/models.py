@@ -1628,3 +1628,54 @@ class ActionWorkRecord(SQLModel, table=True):
     source_fingerprint: str = Field(index=True)
     work_fingerprint: str = Field(index=True)
     created_at: datetime = Field(index=True)
+
+
+
+class OutcomeObservationRecord(SQLModel, table=True):
+    """Immutable organizational Outcome over governed analytical provenance."""
+
+    __tablename__ = "outcome_observation"
+    __table_args__ = (
+        UniqueConstraint(
+            "outcome_fingerprint",
+            name="uq_outcome_observation_fingerprint",
+        ),
+    )
+
+    outcome_id: str = Field(primary_key=True)
+    tenant_binding: str = Field(index=True)
+    action_work_id: str = Field(
+        foreign_key="action_work.action_work_id",
+        index=True,
+    )
+    action_work_fingerprint: str = Field(index=True)
+    decision_brief_id: str = Field(
+        foreign_key="p21_decision_brief.decision_brief_id",
+        index=True,
+    )
+    decision_adoption_id: str = Field(
+        foreign_key="decision_adoption.adoption_id",
+        index=True,
+    )
+
+    evidence_refs_json: str = Field(sa_column=Column(Text, nullable=False))
+    claim_ids_json: str = Field(sa_column=Column(Text, nullable=False))
+    report_id: str | None = Field(
+        default=None,
+        foreign_key="p20_report_document.report_id",
+        index=True,
+    )
+    report_fingerprint: str | None = Field(default=None, index=True)
+
+    baseline_definition: str = Field(sa_column=Column(Text, nullable=False))
+    baseline_window: str = Field(sa_column=Column(Text, nullable=False))
+    observation_window: str = Field(sa_column=Column(Text, nullable=False))
+    expected_target_ref: str | None = Field(default=None, sa_column=Column(Text, nullable=True))
+    observed_result_refs_json: str = Field(sa_column=Column(Text, nullable=False))
+    limitations_json: str = Field(sa_column=Column(Text, nullable=False))
+    classification: str = Field(index=True)
+
+    source_fingerprint: str = Field(index=True)
+    outcome_fingerprint: str = Field(index=True)
+    observed_at: datetime = Field(index=True)
+    recorder_user_id: str = Field(index=True)
