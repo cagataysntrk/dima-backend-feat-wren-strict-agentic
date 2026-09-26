@@ -343,7 +343,9 @@ def test_two_genuinely_legal_root_directions_become_two_action_instances():
 
 def test_last_research_turn_with_executable_adapt_directive_is_completion_critical():
     action_set = _build(
-        remaining_research_turns=1,
+        # The current cognition turn has already been charged by ManagerRuntime.
+        # Zero therefore means there is no later Research turn after this choice.
+        remaining_research_turns=0,
         directive_states=(
             DirectiveActionState("D1", "P_REL", ("E_REL",)),
         ),
