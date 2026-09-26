@@ -1,79 +1,51 @@
-"""Liveness / readiness endpoints (+ kimlikli /features)."""
-
+"""Canonical liveness/readiness endpoints for the headless Platform."""
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Request, Response, status
+from fastapi import APIRouter, Response, status
+
+from app.config import get_settings
 
 router = APIRouter(tags=["health"])
 
 
 @router.get("/health")
 def health() -> dict:
-    """Liveness: süreç ayakta mı? Her zaman 200 (bağımlılık kontrolü YAPMAZ)."""
-    return {"status": "ok"}
+    return {
+        "status": "ok",
+        "product": "dima-metabase-platform",
+        "ui": "not_implemented",
+    }
 
 
 def _db_ping() -> tuple[bool, str | None]:
-    """Control-plane DB'ye hafif bir SELECT 1 — bağlantı canlı mı?"""
     from sqlalchemy import text
-
     from control_plane.db import engine
 
     try:
-        with engine.connect() as conn:
-            conn.execute(text("SELECT 1"))
+        with engine.connect() as connection:
+            connection.execute(text("SELECT 1"))
         return True, None
-    except Exception as exc:  # noqa: BLE001 — probe: her hatayı degraded say
+    except Exception as exc:  # probe: degrade rather than hide the failure
         return False, str(exc)
 
 
-def _features_principal():
-    # İç import: health router'ı auth modülünden bağımsız import edilebilir kalsın.
-    from app.auth.dependencies import get_current_principal
-
-    return Depends(get_current_principal)
-
-
-@router.get("/features")
-def features(request: Request, principal=_features_principal()) -> dict:
-    """Etkin özellik bayrakları (ADR-0009): fabrika ayarı (sektör ⊕ şirket YAML)
-    + admin panel override'ları, PRINCIPAL'a özel çözülür (en spesifik kazanır).
-    Client login sonrası okur; alpha/beta aşamaları rozetle gösterilir."""
-    from app.config import get_settings
-    from app.features import resolve_for
-
-    return {"features": resolve_for(get_settings(), principal)}
-
-
 @router.get("/health/ready")
-def ready(request: Request, response: Response) -> dict:
-    """Readiness: MDL derlenmiş VE control-plane DB erişilebilir olduğunda hazır.
-    Hazır değilse HTTP 503 döner (load balancer/orkestrasyon trafiği yönlendirmesin;
-    prod'da Postgres down artık sessizce 200 dönmez)."""
-    service = request.app.state.wren
-    mdl_ready = service.mdl_path.exists()
+def ready(response: Response) -> dict:
+    settings = get_settings()
     db_ready, db_error = _db_ping()
-    ok = mdl_ready and db_ready
-    if not ok:
+    if not db_ready:
         response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
     body = {
-        "status": "ok" if ok else "degraded",
-        "mdl": str(service.mdl_path),
-        "mdl_ready": mdl_ready,
-        "db_ready": db_ready,
+        "status": "ok" if db_ready else "degraded",
+        "control_plane_db_ready": db_ready,
+        "canonical_engine": "metabase-metabot",
+        "engine_sha": settings.metabase_engine_sha,
+        "engine_release": settings.metabase_engine_runtime_tag,
+        "engine_digest": settings.metabase_engine_image_digest,
+        "native_runtime_configured": bool(settings.metabase_native_base_url.strip()),
+        "external_execution": "deferred",
+        "ui": "not_implemented",
     }
     if db_error:
         body["db_error"] = db_error
-    # 🔴 `Ö5` — GUARD DÜŞME ORANI. Sağlık yüzeyinde çünkü bu bir **iş kaydı değil sağlık
-    # sinyalidir**: geçmişe dönük sorgulanması değil, ŞİMDİ görünmesi gerekir.
-    # ⚠ `status`'ü **etkilemez** — anlatının soğuması bir kesinti değildir; sistem doğru
-    # cevap vermeye devam eder. Alarmı hazır-değil saymak, bir üslup sorununu bir
-    # kullanılabilirlik sorunu gibi raporlardı. *Bir sinyali yanlış şiddette çalmak, onu
-    # susturmanın bir başka yoludur.*
-    try:
-        from app.guard_alarmi import durum as _guard_durum
-
-        body["guard"] = _guard_durum()
-    except Exception:                                       # noqa: BLE001
-        pass
     return body

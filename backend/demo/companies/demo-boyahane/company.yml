@@ -1,5 +1,0 @@
-# BU DOSYA TÜRETİLMİŞTİR — kaynak: control-plane DB (tenant_config), admin panel.
-# Elle düzenleme bir sonraki materialize'da EZİLİR. (ADR-0005 + TenantConfig)
-name: demo-boyahane
-sektorler:
-- boyahane

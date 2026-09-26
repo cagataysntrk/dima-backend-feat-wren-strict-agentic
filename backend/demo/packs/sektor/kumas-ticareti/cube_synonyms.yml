@@ -1,6 +1,0 @@
-# Sektör terminolojisi → generic kaynak cube'una eklenir (ADR-0017: kaynak fiziksel,
-# sektör terminoloji). Kaynak cube'u sektörden bağımsız kalır; kumaş dili BURADA.
-mal:
-  synonyms: [kumaş, kumas, metre, top, metraj, kaç metre, kaç top]
-ticaret:
-  synonyms: [kumaş, kumas, kumaş satışı]

@@ -1,0 +1,84 @@
+name: dima-metabase-cleanup-focused
+
+on:
+  push:
+    branches:
+      - feat/dima-metabase-platform
+    paths:
+      - "backend/app/main.py"
+      - "backend/app/config.py"
+      - "backend/app/auth/dependencies.py"
+      - "backend/app/routers/health.py"
+      - "backend/app/v2/**"
+      - "backend/app/v3/**"
+      - "backend/control_plane/**"
+      - "backend/pyproject.toml"
+      - "backend/Dockerfile"
+      - "backend/migrations/**"
+      - "backend/tests/test_repository_hygiene.py"
+      - "README.md"
+      - "backend/README.md"
+      - "docker-compose.yml"
+      - ".github/workflows/dima-metabase-cleanup-focused.yml"
+      - ".github/workflows/dima-metabase-governance.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cleanup-focused:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          submodules: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install canonical test environment
+        working-directory: backend
+        run: pip install -e ".[dev]"
+
+      - name: Repository hygiene
+        working-directory: backend
+        run: pytest -q tests/test_repository_hygiene.py
+
+      - name: FastAPI and authority import smoke
+        working-directory: backend
+        run: |
+          python - <<'PY'
+          from app.main import app
+          assert app.title == "Dima Metabase Platform"
+          import control_plane.models
+          from app.v3.substrate.metabase.native_engine import NativeEngineBridge
+          from app.v3.research_product import ResearchAskOrchestrator
+          from app.v3.core_a.action_work import ActionWorkStore
+          from app.v3.core_a.outcome_observation import OutcomeObservationStore
+          from app.v3.core_a.institutional_memory import InstitutionalMemoryStore
+          from app.v3.core_a.watch_signal import WatchSignalStore
+          PY
+
+      - name: Core A focused retained proof
+        working-directory: backend
+        run: |
+          pytest -q             tests/test_v3_action_work.py             tests/test_v3_outcome_observation.py             tests/test_v3_institutional_memory.py             tests/test_v3_watch_signal.py             tests/test_v3_ux_foundations.py
+
+      - name: Native P14 focused retained proof
+        working-directory: backend
+        run: pytest -q tests/test_v3_p14_native_gateway.py
+
+      - name: Alembic and engine identity
+        working-directory: backend
+        run: |
+          python -m alembic heads > /tmp/heads.txt
+          test "$(grep -Ec '^[0-9a-f]+' /tmp/heads.txt)" -eq 1
+          grep -q '^fb4e6d2a1074' /tmp/heads.txt
+          cd ..
+          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "cbe313af9ac2d5960f662068e433d328d896fb06"

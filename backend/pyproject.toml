@@ -1,61 +1,32 @@
 [project]
-name = "dima-backend"
+name = "dima-metabase-platform"
 version = "0.1.0"
-description = "FastAPI bridge exposing the Wren (dima-wrenai) semantic SQL engine over HTTP for the dima-frontend-demo."
+description = "Headless Dima organizational-intelligence platform over Metabase / Metabot."
 requires-python = ">=3.11"
 dependencies = [
-  # Wren semantic SQL engine (the forked `dima-wrenai` core, published as `wrenai`).
-  # For local fork development install it editable instead:
-  #   pip install -e ../dima-wrenai/core/wren[postgres]
-  "wrenai>=0.13,<0.14",
-  # 🔴 `§F14`/`§F1` — **DOĞRUDAN İMPORT, BEYANSIZ BAĞIMLILIK** (⟳ 2026-08-12).
-  # `app/wren_service.py:1494,1733` `from wren_core import cube_query_to_sql` yazıyor;
-  # paket bugün yalnız `wrenai` üzerinden **geçişli** geliyordu. Ölçüldü: kurulu
-  # sürüm `wren-core-py 0.7.3`. Geçişli bir bağımlılığa doğrudan import etmek,
-  # üst paketin bir gün onu bırakmasıyla **çözümleme anında** değil **çalışma
-  # anında** kırılır. *Bir bağımlılığı yapılandırmadan çıkarmak, onu ortamdan
-  # çıkarmaz — yalnız görünmez yapar.*
-  "wren-core-py>=0.7.3,<0.8",
   "fastapi>=0.115",
   "uvicorn[standard]>=0.30",
-  "anthropic>=0.40",
-  "openai>=1.0.0",
-  # P3 Metabase REST/Agent API transport is production code; declare HTTPX directly.
   "httpx>=0.27",
   "pydantic>=2",
   "pydantic-settings>=2",
-  # Auth / control-plane (ADR-0014/0015; saka-standards 02/08)
   "sqlmodel>=0.0.22",
   "alembic>=1.13",
   "argon2-cffi>=23.1",
   "pyjwt>=2.9",
-  # Postgres sürücüsü (prod); lokal/demo SQLite ile çalışır, bu opsiyoneldir.
   "psycopg[binary]>=3.2",
-  # Bildirim teslimi (ADR-0011): e-posta gövdesi MJML (mrml = Rust MJML derleyici,
-  # Node gerekmez) + Jinja2 (veri → MJML markup). Ürün maili backend'de yönetilir.
-  "mrml>=0.2",
-  "jinja2>=3.1",
-  # Discovery→Promote (Faz 2d): onaylanan ölçüyü cube YAML'ına round-trip-güvenli (yorum/
-  # biçim korur) eklemek için — pyyaml safe_load+dump reponun elle yazılmış, açıklayıcı
-  # yorumlarla dolu cube YAML'larını sessizce siler (app/mdl_writer.py).
-  "ruamel.yaml>=0.18",
-  # V2 semantic grounding: Turkish inflection normalization over verified aliases.
-  "py-rust-stemmers>=0.1.8,<0.2",
+  "cryptography>=43",
+  # Bounded final cognition canaries use typed provider transports. Neither package
+  # is an analytical engine or a runtime dependency of deterministic authorities.
+  "anthropic>=0.40",
+  "openai>=1.0.0",
 ]
 
 [project.optional-dependencies]
-# Test/eval altyapısı (Faz 0-f: eval/ + pytest paketi CI'a bağlandı). Önceden hiçbir
-# yerde bildirilmemişti (yalnız geliştiricinin yerel ortamında ad hoc kuruluydu) —
-# artık CI + `pip install -e .[dev]` ile tekrarlanabilir.
 dev = [
   "pytest>=8.0",
-  # ⚡ Süiti 8 dk 30 sn'den 2 dk 15 sn'ye indiren paralel koşucu (2026-08-04). Kapı
-  # `-n 8` ile koşar (`lab/kapi.py`), yani bu ARTIK İSTEĞE BAĞLI DEĞİL: eksikse
-  # `pytest: error: unrecognized arguments: -n` ile kapı hiç başlamadan düşer.
   "pytest-xdist>=3.5",
   "pyyaml>=6.0",
   "ruff>=0.6",
-  "fastembed>=0.8",    # VQR embedding'i (requirements.txt ile aynı sürüm ailesi)
 ]
 
 [build-system]
@@ -63,7 +34,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["app"]
+packages = ["app", "control_plane"]
 
 [tool.ruff]
 line-length = 100

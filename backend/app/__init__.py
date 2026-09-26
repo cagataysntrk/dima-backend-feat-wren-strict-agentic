@@ -1,3 +1,3 @@
-"""dima-backend — FastAPI bridge over the Wren semantic SQL engine."""
+"""Dima Metabase Platform backend package."""
 
 __version__ = "0.1.0"

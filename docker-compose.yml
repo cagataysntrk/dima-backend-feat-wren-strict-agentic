@@ -1,85 +1,18 @@
-version: '3.8'
-
 services:
-  # 🔴🔴 `§F1` — ARŞİVLENMİŞ MOTOR KONTEYNERİ **KAPATILDI** (2026-08-11, ölçümle).
-  #
-  # ⊙ Ölçüldü, üç ayrı kanıt:
-  #   1. Konteyner **`Restarting (1)`** durumundaydı — `restart: always` ile **sonsuz
-  #      çökme döngüsünde**; her döngüde CPU/disk yakıyor ve 8080'i tutuyordu.
-  #   2. `grep -rn "WREN_ENGINE_URL|wren-engine" backend/ --include="*.py"` → **SIFIR**.
-  #      Env değişkeni geçiliyordu ama **hiçbir Python kodu okumuyordu**.
-  #   3. `backend/CLAUDE.md` mimariyi zaten yazmış: *«`wren.engine.WrenEngine`
-  #      (**in-process**; subprocess YOK)»*. Yani motor **kütüphane olarak** çalışıyor;
-  #      bu konteyner eski (HTTP-servis) mimariden kalma bir **artık**.
-  #   4. Ön-uçta ve betiklerde 8080 kullanımı **yok**.
-  #
-  # ⚠ Ve imajın kaynağı **arşivlenmiş** bir depodur (`Canner/wren-engine` → `WrenAI`
-  # `core/` altına taşındı, salt-okunur), üstelik `latest` etiketiyle: bir daha
-  # güncellenmeyecek bir imajı hareketli bir etiketle çekiyorduk.
-  # Rapor bunu **üç kez** işaretledi (`§11.3` · `§12.9` · `§16.3`).
-  #
-  # 🔴 SİLİNMEDİ, İŞARETLENDİ (`MIMARI §10`: *«kapananlar işaretlenir, silinmez»*).
-  # Geri almak için bu bloğun ve aşağıdaki iki satırın yorumunu kaldırmak yeter.
-  #
-  # *Çalışmayan bir bağımlılık, olmayan bir bağımlılıktan pahalıdır: bakım ister,
-  # kaynak yakar, hiçbir iş görmez.*
-  #
-  # wren-engine:
-  #   image: ghcr.io/canner/wren-engine:latest
-  #   container_name: dima-wren-engine
-  #   ports:
-  #     - "8080:8080"
-  #   environment:
-  #     - WREN_ENGINE_PORT=8080
-  #   restart: always
-
-  qdrant:
-    image: qdrant/qdrant:latest
-    container_name: dima-qdrant
-    ports:
-      - "6333:6333"
-    volumes:
-      - qdrant_data:/qdrant/storage
-
-  dima-backend:
+  dima-api:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: dima-backend-core
-    ports:
-      - "8001:8000"
-    env_file: .env
     environment:
-      # `§F1` — hiçbir Python kodu okumuyordu (ölçüldü: grep → SIFIR); motor
-      # in-process çalışıyor. Konteynerle birlikte kapatıldı.
-      # - WREN_ENGINE_URL=http://wren-engine:8080
-      - QDRANT_URL=http://qdrant:6333
-      - LLM_PROVIDER=openai
-      - OPENAI_API_KEY=${OPENAI_API_KEY:-${DIMA_OPENROUTER_API_KEY}}
-      - DIMA_OPENROUTER_API_KEY=${DIMA_OPENROUTER_API_KEY}
-      - DIMA_OPENROUTER_MODEL=${DIMA_OPENROUTER_MODEL}
+      DIMA_DATABASE_URL: ${DIMA_DATABASE_URL:-}
+      DIMA_METABASE_NATIVE_BASE_URL: ${DIMA_METABASE_NATIVE_BASE_URL:-}
+      DIMA_JWT_SECRET: ${DIMA_JWT_SECRET:-}
+      DIMA_JWT_REFRESH_SECRET: ${DIMA_JWT_REFRESH_SECRET:-}
+      DIMA_CORS_ORIGINS: ${DIMA_CORS_ORIGINS:-http://localhost:3000}
+    ports:
+      - "${DIMA_PORT:-8000}:8000"
     volumes:
-      # TELEMETRİ KALICILIĞI (2 Ağustos 2026). Önceden bu servisin HİÇ volume'u yoktu
-      # (`docker inspect` → Mounts: []) ve DIMA_DATABASE_URL=sqlite:////app/logs/dima.db
-      # konteyner katmanına yazıyordu → HER `docker compose build` tüm interaction_log'u,
-      # Query Contract kanıtlarını, sohbet geçmişini ve zamanlanmış rapor durumunu SİLİYORDU.
-      # Bulunduğunda tabloda 7 satır kalmıştı, hepsi tek bir 69 saniyelik oturumdan.
-      # Sonuç: ürünün ana KPI'ı ("Intent ≥%70 · Discovery <%30") ölçülemez durumdaydı ve
-      # hiçbir iyileştirmenin işe yarayıp yaramadığı kanıtlanamıyordu.
       - dima_logs:/app/logs
-      # EMBEDDING MODEL ÖNBELLEĞİ. `vqr._embedder()` ilk kullanımda HF Hub'dan
-      # multilingual-e5-large'ı (~2.2 GB ONNX) indirir. Kimliksiz indirme ORANLANIYOR ve
-      # pratikte duruyor; `fastembed`/`requests` katmanında timeout YOK. Volume olmadan her
-      # yeniden-build bu indirmeyi sıfırdan başlatır ve o süre boyunca VQR sessizce
-      # sözlüksel fallback'e düşer (benzer sorular eşleşmez). HANDOFF #4'ün uygulanmamış
-      # duran önerisiydi. Kapatmak için: DIMA_VQR_EMBEDDER=off (bkz. app/config.py).
-      - dima_hf_cache:/tmp/fastembed_cache
-    depends_on:
-      # - wren-engine   ← `§F1` kapatıldı (sonsuz çökme döngüsü, tüketicisi yok)
-      - qdrant
-    restart: always
 
 volumes:
-  qdrant_data:
   dima_logs:
-  dima_hf_cache:

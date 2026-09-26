@@ -1,5 +1,0 @@
-# Kumaş ticareti sektör paketi (ADR-0017 ile açıldı — ilk şirket: Gülteks/Logo Start 3).
-# Cube'lar kaynak pack'inden gelir; bu paket sektör terminolojisi ve kuralları taşır.
-name: kumas-ticareti
-moduller: []
-features:
