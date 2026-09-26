@@ -1913,6 +1913,25 @@ class ResearchManagerLoop:
                 branch_evidence_ref=bindings["evidence_ref"],
                 branch_candidates=tuple(candidates),
             )
+        if action == ManagerActionKind.PROPOSE_GOAL_TASK:
+            selected = str(payload["task_capability"])
+            allowed = tuple(str(value) for value in bindings["allowed_task_capabilities"])
+            if selected not in allowed:
+                raise ValueError(
+                    "goal task capability is not admitted by selected action_ref"
+                )
+            return ManagerDecisionTransport(
+                action=action,
+                goal_parent_obligation_id=bindings["parent_obligation_id"],
+                goal_task_capability=ManagerCapabilityKey(selected),
+                goal_task_semantic_surfaces=tuple(
+                    ManagerGoalTaskSemanticProposal.model_validate(item)
+                    for item in payload["semantic_surfaces"]
+                ),
+                goal_task_material_reason=str(payload["material_reason"]),
+                goal_task_ranking_direction=payload["ranking_direction"],
+                goal_task_ranking_limit=payload["ranking_limit"],
+            )
         if action == ManagerActionKind.DISPOSITION_RESEARCH_DIRECTIVE:
             return ManagerDecisionTransport(
                 action=action,
