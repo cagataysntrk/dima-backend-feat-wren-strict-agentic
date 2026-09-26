@@ -11,6 +11,7 @@ from fastapi.responses import StreamingResponse
 
 from app.auth.dependencies import get_current_principal, require, require_company
 from app.config import get_settings
+from app.v2.pilot import evaluate_pilot
 from app.v2.product_control import ProductControlError, ProductRunControlRegistry
 from app.v2.product_coordinator import ProductCoordinator
 from app.v2.product_events import ProductEventSink
@@ -43,7 +44,7 @@ def ask_v2(
     body: ProductAskRequest,
     principal: Principal = Depends(get_current_principal),
 ) -> ProductResponse:
-    if not get_settings().ask_v2_enabled:
+    if not evaluate_pilot(get_settings(), principal).enabled:
         raise HTTPException(status_code=404, detail="ask-v2 kapalı")
 
     if body.clarification_token is not None:
@@ -94,7 +95,7 @@ def ask_v2_stream(
     body: ProductAskRequest,
     principal: Principal = Depends(get_current_principal),
 ):
-    if not get_settings().ask_v2_enabled:
+    if not evaluate_pilot(get_settings(), principal).enabled:
         raise HTTPException(status_code=404, detail="ask-v2 kapalı")
     if body.clarification_token is not None:
         raise HTTPException(
@@ -231,9 +232,9 @@ def ask_v2_control(
 ) -> ProductControlReceipt:
     """Signal a currently attached live Product stream; this does not mutate run truth."""
 
-    if not get_settings().ask_v2_enabled:
-        raise HTTPException(status_code=404, detail="ask-v2 kapalı")
-
+    # Rollback blocks NEW Ask-V2 work at /ask-v2 and /stream. Existing attached
+    # runs remain controllable so operators/users can cancel or answer-now safely.
+    # ProductRunControlRegistry still enforces exact principal + tenant ownership.
     principal_subject = str(principal.user_id)
     principal_tenant = (
         f"id:{principal.tenant_id}"
