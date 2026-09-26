@@ -373,7 +373,7 @@ def _accepted_resume_authority():
     )
     snapshot = ManagerRunSnapshot(
         run_id="mgr-day14",
-        state=ManagerState.RESEARCHING,
+        state=ManagerState.INVESTIGATING,
         accepted_contract_id=contract.contract_id,
         lineage_id=contract.lineage_id,
     )
@@ -400,7 +400,7 @@ def test_crash_after_accepted_contract_restores_authority_without_fabricating_ev
     assert restored.accepted_contract == contract
     assert restored.ledger == ledger
     assert restored.evidence == ()
-    assert restored.runtime.snapshot.state == ManagerState.RESEARCHING
+    assert restored.runtime.snapshot.state == ManagerState.INVESTIGATING
 
 
 def test_crash_after_evidence_creation_preserves_evidence_before_obligation_consumption(tmp_path):
