@@ -1,0 +1,75 @@
+name: dima-metabase-core-b-seal-provider-free
+
+on:
+  push:
+    branches:
+      - feat/dima-metabase-platform
+    paths:
+      - "backend/eval/core_b/**"
+      - "backend/tests/test_v3_core_b_campaign_contract.py"
+      - "backend/app/v3/product/**"
+      - "backend/tests/test_v3_product_contracts.py"
+      - ".github/workflows/dima-metabase-core-b-seal-provider-free.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  provider-free-seal-canary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_INTERACTION_LOG: "false"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          submodules: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install canonical backend
+        working-directory: backend
+        run: pip install -e ".[dev]"
+
+      - name: Campaign contract proof
+        working-directory: backend
+        run: pytest -q tests/test_v3_core_b_campaign_contract.py
+
+      - name: Core B focused remains GREEN
+        working-directory: backend
+        run: pytest -q tests/test_v3_product_contracts.py
+
+      - name: Run frozen provider-free canary
+        working-directory: backend
+        run: |
+          python eval/core_b/run_provider_free_canary.py \
+            --manifest eval/core_b/canary_manifest.json \
+            --output eval/core_b/artifacts/provider_free_canary.json \
+            --candidate-sha "$GITHUB_SHA"
+
+      - name: Hard prohibitions
+        working-directory: backend
+        shell: bash
+        run: |
+          set -euo pipefail
+          test ! -e eval/DEV80
+          test ! -e eval/Validation50
+          test ! -e eval/Hidden50
+          ! grep -R -nE 'askv2_case_id|canonical_full special case|adaptive_tr special case' app/v3/product
+          test "$(git -C .. ls-tree HEAD engine/metabase | awk '{print $3}')" = "cbe313af9ac2d5960f662068e433d328d896fb06"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: core-b-provider-free-canary-${{ github.run_id }}
+          path: backend/eval/core_b/artifacts/provider_free_canary.json
+          if-no-files-found: warn
+          retention-days: 90

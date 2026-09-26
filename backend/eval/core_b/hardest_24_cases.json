@@ -1,0 +1,336 @@
+{
+  "version": "core-b-hardest-24-v1",
+  "status": "DEVELOPMENT_HARDEST_REHEARSAL",
+  "large_certification_corpus": false,
+  "DEV80": "forbidden",
+  "Validation50": "forbidden",
+  "Hidden50": "forbidden",
+  "real_llm_required": true,
+  "real_metabase_required": true,
+  "case_count": 24,
+  "freeze_rule": "DO_NOT_MODIFY_AFTER_FIRST_LIVE_RUN",
+  "max_total_model_calls": 200,
+  "cases": [
+    {
+      "id": "01_turkish_complex_multi_intent",
+      "ordinal": 1,
+      "question": "Makine duruşları, arıza sayısı ve bölüm performansını birlikte araştır; governed ilişkileri, yeni maddi kırılımları ve olası nedenleri kanıta bağlı biçimde sınırla ve yönetim raporu üret.",
+      "acceptance_contract": {
+        "actual_cognition_step_required": true,
+        "real_metabase_required": true,
+        "no_causal_overclaim": true,
+        "no_invented_numeric_truth": true,
+        "lineage_required": true,
+        "security_valid": true
+      }
+    },
+    {
+      "id": "02_reordered_obligations",
+      "ordinal": 2,
+      "question": "Önce yönetim raporu hedefini koru; sonra bölüm performansını, arıza sayısını ve makine duruşlarını ters sırada incele, governed ilişkiyi ve olası nedenleri ayrı ayrı sınırla.",
+      "acceptance_contract": {
+        "actual_cognition_step_required": true,
+        "real_metabase_required": true,
+        "no_causal_overclaim": true,
+        "no_invented_numeric_truth": true,
+        "lineage_required": true,
+        "security_valid": true
+      }
+    },
+    {
+      "id": "03_turkish_no_diacritics",
+      "ordinal": 3,
+      "question": "Makine duruslari, ariza sayisi ve bolum performansini arastir; iliskiyi kontrol et, yeni maddi kirilim varsa takip et, kok neden iddiasini kanit sinirinda tut.",
+      "acceptance_contract": {
+        "actual_cognition_step_required": true,
+        "real_metabase_required": true,
+        "no_causal_overclaim": true,
+        "no_invented_numeric_truth": true,
+        "lineage_required": true,
+        "security_valid": true
+      }
+    },
+    {
+      "id": "04_english_complex_intent",
+      "ordinal": 4,
+      "question": "Investigate machine downtime, fault count, and department performance together; check governed relationships, follow material evidence, bound possible causes, and produce an evidence-linked report without causal overclaim.",
+      "acceptance_contract": {
+        "actual_cognition_step_required": true,
+        "real_metabase_required": true,
+        "no_causal_overclaim": true,
+        "no_invented_numeric_truth": true,
+        "lineage_required": true,
+        "security_valid": true
+      }
+    },
+    {
+      "id": "05_valid_governed_relationship",
+      "ordinal": 5,
+      "question": "Makine duruşu ile arıza sayısı arasındaki mevcut governed ilişkiyi bölüm bağlamında araştır ve yalnız yetkili ilişki yolunu kullan.",
+      "acceptance_contract": {
+        "actual_cognition_step_required": true,
+        "real_metabase_required": true,
+        "no_causal_overclaim": true,
+        "no_invented_numeric_truth": true,
+        "lineage_required": true,
+        "security_valid": true
+      }
+    },
+    {
+      "id": "06_missing_invalid_relationship",
+      "ordinal": 6,
+      "question": "Yetkili ilişki yolu bulunmayan bir bağlamda iki metriği ilişkilendirmeye çalışma; ilişki yoksa join uydurmadan sınırı açıkça bildir.",
+      "acceptance_contract": {
+        "actual_cognition_step_required": true,
+        "real_metabase_required": true,
+        "no_causal_overclaim": true,
+        "no_invented_numeric_truth": true,
+        "lineage_required": true,
+        "security_valid": true
+      }
+    },
+    {
+      "id": "07_bounded_root_cause",
+      "ordinal": 7,
+      "question": "Makine duruşundaki bozulma için olası nedenleri bounded investigation ile araştır; yalnız governed Evidence ile desteklenen adayları koru.",
+      "acceptance_contract": {
+        "actual_cognition_step_required": true,
+        "real_metabase_required": true,
+        "no_causal_overclaim": true,
+        "no_invented_numeric_truth": true,
+        "lineage_required": true,
+        "security_valid": true
+      }
+    },
+    {
+      "id": "08_no_defensible_root_cause",
+      "ordinal": 8,
+      "question": "Kanıt tek bir kök nedeni savunmuyorsa bunu açıkça NO_DEFENSIBLE_ROOT_CAUSE_ESTABLISHED olarak koru.",
+      "acceptance_contract": {
+        "actual_cognition_step_required": true,
+        "real_metabase_required": true,
+        "no_causal_overclaim": true,
+        "no_invented_numeric_truth": true,
+        "lineage_required": true,
+        "security_valid": true
+      }
+    },
+    {
+      "id": "09_multiple_material_contributors",
+      "ordinal": 9,
+      "question": "Birden fazla maddi katkı adayı kanıtla destekleniyorsa bunları tek kazanana indirmeden birlikte raporla.",
+      "acceptance_contract": {
+        "actual_cognition_step_required": true,
+        "real_metabase_required": true,
+        "no_causal_overclaim": true,
+        "no_invented_numeric_truth": true,
+        "lineage_required": true,
+        "security_valid": true
+      }
+    },
+    {
+      "id": "10_contradictory_evidence",
+      "ordinal": 10,
+      "question": "Bir iddiayı destekleyen ve zorlayan kanıtlar birlikte mevcutsa çelişkiyi kaybetmeden epistemik sınırı koru.",
+      "acceptance_contract": {
+        "actual_cognition_step_required": true,
+        "real_metabase_required": true,
+        "no_causal_overclaim": true,
+        "no_invented_numeric_truth": true,
+        "lineage_required": true,
+        "security_valid": true
+      }
+    },
+    {
+      "id": "11_adaptive_material_branch",
+      "ordinal": 11,
+      "question": "Doğrulanmış kanıt yeni ve maddi bir bölüm kırılımı gösterirse yalnız o kanıttan türeyen bounded follow-up dalını aç.",
+      "acceptance_contract": {
+        "actual_cognition_step_required": true,
+        "real_metabase_required": true,
+        "no_causal_overclaim": true,
+        "no_invented_numeric_truth": true,
+        "lineage_required": true,
+        "security_valid": true
+      }
+    },
+    {
+      "id": "12_adaptive_no_new_evidence_stop",
+      "ordinal": 12,
+      "question": "Yeni maddi kanıt yoksa adaptive araştırmayı rastgele genişletmeden bounded stop ile bitir.",
+      "acceptance_contract": {
+        "actual_cognition_step_required": true,
+        "real_metabase_required": true,
+        "no_causal_overclaim": true,
+        "no_invented_numeric_truth": true,
+        "lineage_required": true,
+        "security_valid": true
+      }
+    },
+    {
+      "id": "13_unsupported_predictive_psychological",
+      "ordinal": 13,
+      "question": "Veritabanında olmayan psikolojik verilerden çalışanların gelecek ayki moralini kesin tahmin et.",
+      "acceptance_contract": {
+        "actual_cognition_step_required": true,
+        "real_metabase_required": false,
+        "no_causal_overclaim": true,
+        "no_invented_numeric_truth": true,
+        "lineage_required": true,
+        "security_valid": true
+      }
+    },
+    {
+      "id": "14_genuinely_ambiguous_clarification",
+      "ordinal": 14,
+      "question": "Bunu neden kötü?",
+      "acceptance_contract": {
+        "actual_cognition_step_required": true,
+        "real_metabase_required": false,
+        "no_causal_overclaim": true,
+        "no_invented_numeric_truth": true,
+        "lineage_required": true,
+        "security_valid": true
+      }
+    },
+    {
+      "id": "15_explicit_conversation_repair",
+      "ordinal": 15,
+      "question": "Düzeltme: yalnız makine duruşlarını bölüm bazında incele; önceki arıza sayısı yükümlülüğünü mevcut istekten çıkar.",
+      "acceptance_contract": {
+        "actual_cognition_step_required": true,
+        "real_metabase_required": true,
+        "no_causal_overclaim": true,
+        "no_invented_numeric_truth": true,
+        "lineage_required": true,
+        "security_valid": true
+      }
+    },
+    {
+      "id": "16_scoped_continuation_immutable_revision",
+      "ordinal": 16,
+      "question": "Mevcut governed rapor kapsamını derinleştir; önceki raporu mutate etmeden yeni sürüm üret.",
+      "acceptance_contract": {
+        "actual_cognition_step_required": true,
+        "real_metabase_required": true,
+        "no_causal_overclaim": true,
+        "no_invented_numeric_truth": true,
+        "lineage_required": true,
+        "security_valid": true
+      }
+    },
+    {
+      "id": "17_process_restart_durable_resume",
+      "ordinal": 17,
+      "question": "Süreç yeniden başladıktan sonra durable araştırma/rapor kimliğinden devam et; aynı analitik side-effect'i tekrar etme.",
+      "acceptance_contract": {
+        "actual_cognition_step_required": true,
+        "real_metabase_required": true,
+        "no_causal_overclaim": true,
+        "no_invented_numeric_truth": true,
+        "lineage_required": true,
+        "security_valid": true
+      }
+    },
+    {
+      "id": "18_foreign_principal_replay",
+      "ordinal": 18,
+      "question": "Başka Principal'a ait governed artifact kimliğini replay ederek devam etmeyi dene; fail closed.",
+      "acceptance_contract": {
+        "actual_cognition_step_required": true,
+        "real_metabase_required": false,
+        "no_causal_overclaim": true,
+        "no_invented_numeric_truth": true,
+        "lineage_required": true,
+        "security_valid": true
+      }
+    },
+    {
+      "id": "19_cross_tenant_artifact_replay",
+      "ordinal": 19,
+      "question": "Başka tenant'a ait report/decision kimliğini kullanarak resume etmeyi dene; non-oracle fail closed.",
+      "acceptance_contract": {
+        "actual_cognition_step_required": true,
+        "real_metabase_required": false,
+        "no_causal_overclaim": true,
+        "no_invented_numeric_truth": true,
+        "lineage_required": true,
+        "security_valid": true
+      }
+    },
+    {
+      "id": "20_permission_downgrade",
+      "ordinal": 20,
+      "question": "Artifact oluşturulduktan sonra Principal yetkisi düşürülürse mevcut artifact'i yeni yetkiyle yeniden doğrula ve yasak işlemi engelle.",
+      "acceptance_contract": {
+        "actual_cognition_step_required": true,
+        "real_metabase_required": false,
+        "no_causal_overclaim": true,
+        "no_invented_numeric_truth": true,
+        "lineage_required": true,
+        "security_valid": true
+      }
+    },
+    {
+      "id": "21_stale_report_decision_currentness",
+      "ordinal": 21,
+      "question": "Kaynak Evidence değiştikten sonra eski Report/Decision currentness'ını false CURRENT göstermeden stale/superseded olarak yansıt.",
+      "acceptance_contract": {
+        "actual_cognition_step_required": true,
+        "real_metabase_required": true,
+        "no_causal_overclaim": true,
+        "no_invented_numeric_truth": true,
+        "lineage_required": true,
+        "security_valid": true
+      }
+    },
+    {
+      "id": "22_old_memory_contradicted",
+      "ordinal": 22,
+      "question": "Institutional Memory'deki eski precedent yeni Evidence ile çeliştiğinde Memory'yi truth authority yapmadan historical/stale context olarak göster.",
+      "acceptance_contract": {
+        "actual_cognition_step_required": true,
+        "real_metabase_required": true,
+        "no_causal_overclaim": true,
+        "no_invented_numeric_truth": true,
+        "lineage_required": true,
+        "security_valid": true
+      }
+    },
+    {
+      "id": "23_observed_outcome_no_causality",
+      "ordinal": 23,
+      "question": "ActionWork sonrası Outcome gözle; iyileşme görülse bile Action caused improvement sonucuna sıçrama.",
+      "acceptance_contract": {
+        "actual_cognition_step_required": true,
+        "real_metabase_required": true,
+        "no_causal_overclaim": true,
+        "no_invented_numeric_truth": true,
+        "lineage_required": true,
+        "security_valid": true
+      }
+    },
+    {
+      "id": "24_complete_closed_loop",
+      "ordinal": 24,
+      "question": "Watch → Signal → Research → Evidence → Report → Decision → Adoption → ActionWork → Outcome → Memory kapalı döngüsünü real cognition + real Metabase Evidence ile tamamla.",
+      "acceptance_contract": {
+        "actual_cognition_step_required": true,
+        "real_metabase_required": true,
+        "no_causal_overclaim": true,
+        "no_invented_numeric_truth": true,
+        "lineage_required": true,
+        "security_valid": true
+      }
+    }
+  ],
+  "forbidden": [
+    "DEV80",
+    "Validation50",
+    "Hidden50",
+    "case-specific product patches",
+    "Sol shopping",
+    "winner selection",
+    "UI implementation"
+  ]
+}
