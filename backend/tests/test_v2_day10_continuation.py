@@ -32,6 +32,7 @@ from app.v2.manager_preacceptance import (
     PreAcceptanceController,
 )
 from app.v2.manager_runtime import ManagerRuntime
+from app.v2.product_models import VersionedReport
 from app.v2.models import ResolvedSemanticRef, SemanticTargetKind
 from app.v2.report_builder import (
     ReportBlock,
@@ -930,3 +931,77 @@ def test_arbitrary_active_ledger_parent_is_rejected_without_section_admission():
 
     assert rejected.status == AcceptanceStatus.REJECTED
     assert any("parent obligation missing" in reason for reason in rejected.reasons)
+
+
+def test_provider_free_signed_continuation_draft_represents_bounded_broaden_policy():
+    captured = {}
+
+    def structured(system, payload, *, schema, schema_name):
+        captured["system"] = system
+        captured["payload"] = json.loads(payload)
+        assert schema_name == "dima_intent_draft_v1"
+        return {
+            "obligations": [
+                {
+                    "obligation_id": "U_REPORT",
+                    "capability_key": "report",
+                    "origin": "USER_MUST",
+                    "priority": "MUST",
+                    "polarity": "REQUIRED",
+                    "source_surfaces": ["raporu derinleştir"],
+                    "semantic_surfaces": [],
+                    "open_questions": [],
+                    "ranking_direction": None,
+                    "ranking_limit": None,
+                }
+            ],
+            "research_directives": [
+                {
+                    "directive_id": "D_BROADEN",
+                    "directive_type": "BROADEN_WITHIN_BUDGET",
+                    "parent_scope": "SIGNED_SECTION_ANALYTICAL_AUTHORITY",
+                    "parent_obligation_id": None,
+                    "condition": "WITHIN_SYSTEM_BUDGET",
+                    "source_surfaces": ["gerekirse araştır"],
+                }
+            ],
+            "control_requests": [],
+        }
+
+    controller = PreAcceptanceController(
+        structured=structured,
+        source_spans=SourceSpanRegistry(),
+        signed_section_continuation=True,
+        allowed_continuation_parent_refs=("U_ROOT",),
+    )
+    draft = controller._draft(
+        question="raporu derinleştir; gerekirse araştır",
+        conversation=None,
+        revision_feedback=None,
+    )
+
+    assert captured["payload"]["SIGNED_SECTION_CONTINUATION"] is True
+    assert draft.research_directives[0].directive_type == "BROADEN_WITHIN_BUDGET"
+    assert draft.research_directives[0].parent_scope == (
+        "SIGNED_SECTION_ANALYTICAL_AUTHORITY"
+    )
+    assert draft.research_directives[0].parent_obligation_id is None
+    assert "authorization only" in captured["system"]
+
+
+def test_versioned_report_supersedes_without_mutating_prior_report():
+    report_v1 = _report()
+    report_v1_dump = report_v1.model_dump(mode="json")
+    report_v2 = report_v1.model_copy(
+        update={"report_id": "rpt_" + "8" * 24}
+    )
+    versioned = VersionedReport(
+        version=2,
+        report=report_v2,
+        supersedes_report_ref=report_v1.report_id,
+        source_run_ref="mgr-2",
+    )
+
+    assert versioned.supersedes_report_ref == report_v1.report_id
+    assert versioned.report.report_id != report_v1.report_id
+    assert report_v1.model_dump(mode="json") == report_v1_dump
