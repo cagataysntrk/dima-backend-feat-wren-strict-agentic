@@ -53,6 +53,10 @@ class Settings(BaseSettings):
     ask_v2_pilot_tenants: str = ""
     ask_v2_pilot_contract_version: str = "day15-pilot-v1"
 
+    # Day14 durable canonical checkpoint root. ProductCoordinator receives the
+    # storage adapter explicitly; tests may inject an isolated store.
+    ask_v2_checkpoint_dir: str = str(BASE_DIR / "data" / "v2-checkpoints")
+
     # --- LLM sağlayıcı ---------------------------------------------------
     # auto: anthropic → xai → gemini → groq → ollama (ayakta ise) → kural-tabanlı.
     # Açık değerler: auto | anthropic | xai | gemini | groq | openrouter | ollama | rule
