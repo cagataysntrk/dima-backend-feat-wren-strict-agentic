@@ -1477,3 +1477,275 @@ def test_source_truth_candidate_order_permutation_keeps_selected_identity():
         )[0]
         outcomes.append(selection.binding.card.candidate_id)
     assert outcomes == [selected_id, selected_id]
+
+
+# D10-W: source-decision lifetime must span finite preacceptance revisions.
+
+def test_source_truth_survives_separate_resolution_invocations_and_remints_owner_authority():
+    provider = _DivergesIfAskedAgain()
+    fx = _source_truth_fixture(provider)
+    message_id = "turn-source-truth-revision"
+    text = "Shared Axis remains the same user source across draft revision."
+    fx.spans.register_message(message_id=message_id, text=text)
+    source_ref = fx.spans.mint_exact(
+        message_id=message_id,
+        surface="Shared Axis",
+    ).source_ref
+
+    first = fx.adapter.resolve(
+        ResolveSemanticsArgs(
+            provenance="USER_SOURCE",
+            source_refs=(source_ref,),
+            source_obligation_ids=("U_ATTEMPT_1",),
+            target_kind_hints=("dimension",),
+        )
+    )
+    second = fx.adapter.resolve(
+        ResolveSemanticsArgs(
+            provenance="USER_SOURCE",
+            source_refs=(source_ref,),
+            source_obligation_ids=("U_ATTEMPT_2",),
+            target_kind_hints=("dimension",),
+        )
+    )
+
+    assert len(provider.requests) == 1
+    first_item = first.resolved[0]
+    second_item = second.resolved[0]
+    assert first_item.handle.resolver_provenance_id == (
+        second_item.handle.resolver_provenance_id
+    )
+    assert first_item.handle.parent_obligation_id == "U_ATTEMPT_1"
+    assert second_item.handle.parent_obligation_id == "U_ATTEMPT_2"
+    assert first_item.handle.handle_id != second_item.handle.handle_id
+
+
+def test_identical_negative_semantic_question_is_memoized_across_revision():
+    context, schema = _source_truth_context()
+    provider = _RecordingProvider(
+        id_to_canonical=_catalog_index(context, schema),
+    )
+    fx = _source_truth_fixture(provider)
+    message_id = "turn-negative-revision"
+    text = "Shared Axis is mentioned but no governed choice is justified."
+    fx.spans.register_message(message_id=message_id, text=text)
+    source_ref = fx.spans.mint_exact(
+        message_id=message_id,
+        surface="Shared Axis",
+    ).source_ref
+
+    first = fx.adapter.resolve(
+        ResolveSemanticsArgs(
+            provenance="USER_SOURCE",
+            source_refs=(source_ref,),
+            source_obligation_ids=("U1",),
+            target_kind_hints=("dimension",),
+        )
+    )
+    second = fx.adapter.resolve(
+        ResolveSemanticsArgs(
+            provenance="USER_SOURCE",
+            source_refs=(source_ref,),
+            source_obligation_ids=("U2",),
+            target_kind_hints=("dimension",),
+        )
+    )
+
+    assert first.unresolved_source_refs == (source_ref,)
+    assert second.unresolved_source_refs == (source_ref,)
+    assert len(provider.calls) == 1
+
+
+def test_negative_memo_reconsiders_when_governed_candidate_universe_changes():
+    context, schema = _source_truth_context()
+    provider = _RecordingProvider(
+        id_to_canonical=_catalog_index(context, schema),
+    )
+    fx = _source_truth_fixture(provider)
+    message_id = "turn-negative-universe-change"
+    text = "Axis issue needs interpretation."
+    fx.spans.register_message(message_id=message_id, text=text)
+    source_ref = fx.spans.mint_exact(
+        message_id=message_id,
+        surface="Axis issue",
+    ).source_ref
+    span = fx.spans.validate(source_ref)
+    fx.adapter._preacceptance_semantic_session.bind_message(
+        message_id=span.message_id,
+        message_hash=span.message_hash,
+    )
+
+    governed = tuple(
+        fx.adapter._candidate_generator._governed_candidates("dimension")
+    )
+    assert len(governed) >= 3
+    first_linker = BoundedSemanticLinker(
+        generator=GovernedCurrentTurnCandidateGenerator(
+            bindings=(governed[0], governed[1]),
+        ),
+        binding_gate=fx.adapter._binding_gate,
+        provider=provider,
+    )
+    second_linker = BoundedSemanticLinker(
+        generator=GovernedCurrentTurnCandidateGenerator(
+            bindings=(governed[0], governed[2]),
+        ),
+        binding_gate=fx.adapter._binding_gate,
+        provider=provider,
+    )
+    args = ResolveSemanticsArgs(
+        provenance="USER_SOURCE",
+        source_refs=(source_ref,),
+        source_obligation_ids=("U1",),
+        target_kind_hints=("dimension",),
+    )
+    session_truth = fx.adapter._preacceptance_semantic_session.source_truth_by_key
+
+    _, first_selections = fx.adapter._resolve_regular_once(
+        entries=[(source_ref, "Axis issue", "dimension", "U1")],
+        args=args,
+        linker=first_linker,
+        discovery_pass="candidate_universe_attack",
+        source_truth_by_key=session_truth,
+    )
+    _, second_selections = fx.adapter._resolve_regular_once(
+        entries=[(source_ref, "Axis issue", "dimension", "U2")],
+        args=args.model_copy(update={"source_obligation_ids": ("U2",)}),
+        linker=second_linker,
+        discovery_pass="candidate_universe_attack",
+        source_truth_by_key=session_truth,
+    )
+
+    assert first_selections[0].status == "ABSTAIN"
+    assert second_selections[0].status == "ABSTAIN"
+    assert len(provider.calls) == 2
+
+
+def test_bound_truth_candidate_disappearance_fails_closed_without_second_cognition():
+    context, schema = _source_truth_context()
+    governed = tuple(
+        SemanticCandidateGenerator(
+            semantic_context=context,
+            schema=schema,
+        )._governed_candidates("dimension")
+    )
+    assert len(governed) >= 3
+    selected_id = governed[0].card.candidate_id
+    provider = _SelectCandidate(selected_id)
+    fx = _source_truth_fixture(provider)
+    message_id = "turn-bound-disappears"
+    text = "Axis issue needs interpretation."
+    fx.spans.register_message(message_id=message_id, text=text)
+    source_ref = fx.spans.mint_exact(
+        message_id=message_id,
+        surface="Axis issue",
+    ).source_ref
+    span = fx.spans.validate(source_ref)
+    fx.adapter._preacceptance_semantic_session.bind_message(
+        message_id=span.message_id,
+        message_hash=span.message_hash,
+    )
+    truth = fx.adapter._preacceptance_semantic_session.source_truth_by_key
+
+    first_linker = BoundedSemanticLinker(
+        generator=GovernedCurrentTurnCandidateGenerator(
+            bindings=(governed[0], governed[1]),
+        ),
+        binding_gate=fx.adapter._binding_gate,
+        provider=provider,
+    )
+    args = ResolveSemanticsArgs(
+        provenance="USER_SOURCE",
+        source_refs=(source_ref,),
+        source_obligation_ids=("U1",),
+        target_kind_hints=("dimension",),
+    )
+    first, first_selections = fx.adapter._resolve_regular_once(
+        entries=[(source_ref, "Axis issue", "dimension", "U1")],
+        args=args,
+        linker=first_linker,
+        discovery_pass="bound_disappearance_attack",
+        source_truth_by_key=truth,
+    )
+    assert first_selections[0].status == "BOUND"
+    assert len(first.resolved) == 1
+    assert provider.calls == 1
+
+    forbidden = _ForbiddenProvider()
+    second_linker = BoundedSemanticLinker(
+        generator=GovernedCurrentTurnCandidateGenerator(
+            bindings=(governed[1], governed[2]),
+        ),
+        binding_gate=fx.adapter._binding_gate,
+        provider=forbidden,
+    )
+    second, second_selections = fx.adapter._resolve_regular_once(
+        entries=[(source_ref, "Axis issue", "dimension", "U2")],
+        args=args.model_copy(update={"source_obligation_ids": ("U2",)}),
+        linker=second_linker,
+        discovery_pass="bound_disappearance_attack",
+        source_truth_by_key=truth,
+    )
+
+    assert second_selections[0].status == "SOURCE_TRUTH_CONTEXT_CONFLICT"
+    assert second.resolved == ()
+    assert second.unresolved_source_refs == (source_ref,)
+    assert forbidden.calls == 0
+
+
+def test_source_decision_session_does_not_leak_to_next_product_turn():
+    provider = _DivergesIfAskedAgain()
+
+    first_fx = _source_truth_fixture(provider)
+    first_result, first_refs = _resolve(
+        first_fx,
+        text="Shared Axis is the current source.",
+        entries=(("U1", "Shared Axis", "dimension"),),
+        message_id="same-message-identity",
+    )
+    first_id = first_result.resolved[0].handle.resolver_provenance_id
+
+    second_fx = _source_truth_fixture(provider)
+    second_result, second_refs = _resolve(
+        second_fx,
+        text="Shared Axis is the current source.",
+        entries=(("U2", "Shared Axis", "dimension"),),
+        message_id="same-message-identity",
+    )
+    second_id = second_result.resolved[0].handle.resolver_provenance_id
+
+    assert first_refs == second_refs
+    assert len(provider.requests) == 2
+    assert first_id != second_id
+
+
+def test_source_decision_session_is_bound_to_one_immutable_message():
+    provider = _DivergesIfAskedAgain()
+    fx = _source_truth_fixture(provider)
+    _resolve(
+        fx,
+        text="Shared Axis is the first immutable source.",
+        entries=(("U1", "Shared Axis", "dimension"),),
+        message_id="turn-one",
+    )
+
+    fx.spans.register_message(
+        message_id="turn-two",
+        text="Shared Axis is a different user turn.",
+    )
+    second_ref = fx.spans.mint_exact(
+        message_id="turn-two",
+        surface="Shared Axis",
+    ).source_ref
+    with pytest.raises(
+        ValueError,
+        match="cannot span user messages",
+    ):
+        fx.adapter.resolve(
+            ResolveSemanticsArgs(
+                provenance="USER_SOURCE",
+                source_refs=(second_ref,),
+                source_obligation_ids=("U2",),
+                target_kind_hints=("dimension",),
+            )
+        )
