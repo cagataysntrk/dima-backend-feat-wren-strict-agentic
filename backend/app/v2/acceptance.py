@@ -96,11 +96,15 @@ class IntentAcceptanceGate:
         semantic_handles: SemanticHandleRegistry,
         capabilities: ManagerCapabilityRegistry | None = None,
         allowed_context_scope_refs: tuple[str, ...] = (),
+        allowed_continuation_parent_refs: tuple[str, ...] = (),
     ) -> None:
         self._source_spans = source_spans
         self._semantic_handles = semantic_handles
         self._capabilities = capabilities or ManagerCapabilityRegistry()
         self._allowed_context_scope_refs = frozenset(allowed_context_scope_refs)
+        self._allowed_continuation_parent_refs = frozenset(
+            allowed_continuation_parent_refs
+        )
         self._bindings = CapabilityBindingValidator(
             semantic_handles=semantic_handles,
             capabilities=self._capabilities,
@@ -264,13 +268,43 @@ class IntentAcceptanceGate:
         current_bindings: dict[str, CapabilityBinding] = {}
 
         obligation_by_id = {item.obligation_id: item for item in envelope.obligations}
+        active_by_id = {
+            item.obligation_id: item
+            for item in (active_ledger.items if active_ledger is not None else ())
+        }
         for directive in envelope.research_directives:
             parent = obligation_by_id.get(directive.parent_obligation_id)
+            inherited_parent = False
             if parent is None:
-                reject.append(
-                    f"research directive {directive.directive_id} parent obligation missing"
-                )
-                continue
+                if (
+                    directive.parent_obligation_id
+                    in self._allowed_continuation_parent_refs
+                ):
+                    parent = active_by_id.get(directive.parent_obligation_id)
+                    inherited_parent = True
+                if parent is None:
+                    reject.append(
+                        f"research directive {directive.directive_id} parent obligation missing"
+                    )
+                    continue
+
+            if inherited_parent:
+                if active_contract is None or active_ledger is None:
+                    reject.append(
+                        "inherited research directive parent requires active contract + ledger"
+                    )
+                if parent.status == ObligationStatus.SUPERSEDED:
+                    reject.append(
+                        "inherited research directive parent must remain active"
+                    )
+                if (
+                    parent.origin != ObligationOrigin.USER_MUST
+                    or parent.priority != ObligationPriority.MUST
+                ):
+                    reject.append(
+                        "inherited research directive parent must be active USER_MUST authority"
+                    )
+
             if parent.polarity != ObligationPolarity.REQUIRED:
                 reject.append(
                     "research directive parent must be REQUIRED research obligation"
