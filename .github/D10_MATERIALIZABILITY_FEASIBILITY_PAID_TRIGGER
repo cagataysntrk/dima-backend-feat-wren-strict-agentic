@@ -1,0 +1,15 @@
+authorized_measurement=CANONICAL_NS4
+max_total_model_calls=20
+product_behavior=32315ce803fc0d96c592b4b904c930d667e93710
+materializability_matrix=36224622009
+feasibility_trace=36224676570
+provider_free_day10=36224461402
+provider_free_day8=36224461392
+provider_free_day7=36224461398
+materializability_family=FAM-ACTIONSET-MATERIALIZABILITY-PARITY
+materializability_cycle=1
+hydration_family=FAM-ACTION-HYDRATION-LOSS
+hydration_cycle=1
+previous_paid_run=36222828145
+fresh_epoch_used=10
+fresh_epoch_remaining=30
