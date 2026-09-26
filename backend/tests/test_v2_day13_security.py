@@ -55,7 +55,7 @@ def _pii_report() -> ReportDocument:
                 blocks=(
                     ReportBlock(
                         block_id="rblk_" + "3" * 24,
-                        block_kind=ReportBlockKind.NARRATIVE,
+                        block_kind=ReportBlockKind.TEXT,
                         claim_kind=ReportClaimKind.NARRATIVE,
                         content="İletişim 05551234567; kanıt özeti hazır.",
                         limitations=("E-posta ayse@firma.com paylaşılmamalı.",),
