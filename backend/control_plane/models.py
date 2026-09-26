@@ -1430,3 +1430,55 @@ class ReportDocumentRecord(SQLModel, table=True):
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc)
     )
+
+
+
+class DecisionBriefRecord(SQLModel, table=True):
+    """Immutable P21 advisory decision-intelligence snapshot."""
+
+    __tablename__ = "p21_decision_brief"
+    __table_args__ = (
+        UniqueConstraint(
+            "tenant_binding",
+            "brief_key",
+            "revision",
+            name="uq_p21_decision_brief_revision",
+        ),
+        UniqueConstraint(
+            "brief_fingerprint",
+            name="uq_p21_decision_brief_fingerprint",
+        ),
+    )
+
+    decision_brief_id: str = Field(primary_key=True)
+    report_id: str = Field(
+        foreign_key="p20_report_document.report_id",
+        index=True,
+    )
+    tenant_binding: str = Field(index=True)
+    semantic_context_version: str = Field(index=True)
+    brief_key: str = Field(index=True)
+    revision: int = Field(ge=1, index=True)
+    parent_decision_brief_id: str | None = Field(
+        default=None,
+        foreign_key="p21_decision_brief.decision_brief_id",
+        index=True,
+    )
+    objective_json: str = Field(sa_column=Column(Text, nullable=False))
+    constraints_json: str = Field(sa_column=Column(Text, nullable=False))
+    options_json: str = Field(sa_column=Column(Text, nullable=False))
+    tradeoffs_json: str = Field(sa_column=Column(Text, nullable=False))
+    recommendation_json: str = Field(sa_column=Column(Text, nullable=False))
+    premise_refs_json: str = Field(sa_column=Column(Text, nullable=False))
+    assumptions_json: str = Field(sa_column=Column(Text, nullable=False))
+    limitations_json: str = Field(sa_column=Column(Text, nullable=False))
+    model_provenance_json: str | None = Field(
+        default=None,
+        sa_column=Column(Text, nullable=True),
+    )
+    source_report_fingerprint: str = Field(index=True)
+    decision_source_fingerprint: str = Field(index=True)
+    brief_fingerprint: str = Field(index=True)
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )

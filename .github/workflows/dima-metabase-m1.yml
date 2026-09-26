@@ -19,6 +19,7 @@ on:
       - "!backend/app/v3/hypothesis_root_cause.py"
       - "!backend/app/v3/hypothesis_root_cause_provider.py"
       - "!backend/app/v3/report_document.py"
+      - "!backend/app/v3/decision_intelligence.py"
       - "!backend/app/v3/substrate/metabase/native_engine.py"
       - "!backend/app/v3/substrate/metabase/native_models.py"
       - "backend/tests/test_v3_m1_*.py"
