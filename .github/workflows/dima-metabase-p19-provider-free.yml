@@ -216,14 +216,12 @@ jobs:
           set -euo pipefail
           ! grep -nE 'openrouter|openai/gpt|Luna|Sol|C1' backend/app/v3/hypothesis_root_cause.py
 
-      - name: Verify bounded P19 live lab has zero analytical execution authority
+      - name: Verify retained P19 provider-free evaluator has zero analytical execution authority
         shell: bash
         run: |
           set -euo pipefail
           CANARY="backend/lab/metabase/p19/autonomous_canary.py"
-          LIVE=".github/workflows/dima-metabase-p19-live.yml"
           test -f "$CANARY"
-          test -f "$LIVE"
           python - <<'PY'
           import ast
           from pathlib import Path
@@ -263,5 +261,3 @@ jobs:
           assert "StructuredP19AssessmentManager" in source
           assert "evaluate_p19_canary" in source
           PY
-          grep -q 'MANAGER_MODEL_IDENTIFIER: openai/gpt-5.6-luna' "$LIVE"
-          ! grep -nE 'docker[[:space:]]+(build|buildx[[:space:]]+build|run)|/api/dataset|MB_METABOT|MB_LLM|wren_service|openai/gpt-5.6-sol|C1' "$LIVE"

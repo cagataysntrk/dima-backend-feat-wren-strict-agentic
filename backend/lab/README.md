@@ -1,33 +1,15 @@
-# lab/ — müşteri DB laboratuvarı (ADR-0017 Faz 0)
+# Active certification lab
 
-Gerçek müşteri yedeklerinin (Logo .bak, Mikro .sql export) restore edilip incelendiği
-YEREL SQL Server ortamı. Buradaki hiçbir veri git'e girmez (`data/`, `backups/`,
-`reports/` gitignore'lu). Interim üretim deseni de budur: yedek → restore → normal
-`DbConnection` (cloud_direct) — dosya-tabanlı ayrı sorgu yolu yoktur.
+This directory contains only retained provider-free/frozen certification material that is still
+consumed by the canonical Dima Metabase Platform regression chain.
 
-## Kurulum
+Retained families:
 
-```bash
-cd lab
-docker compose up -d          # SQL Server 2022 (amd64 emülasyon), port 14333
-```
+- `metabase/p14/` — frozen native-direct transport/result sentinel used by P14 regression.
+- `metabase/p17/` — provider-free investigation-manager authorization/evaluation fixtures.
+- `metabase/p19/` — provider-free epistemic-manager evaluation fixtures.
 
-Parola: `MSSQL_SA_PASSWORD` env'i, yoksa compose'daki varsayılan. `sqlcmd` container
-içinde: `/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P ...`.
+Historical Ask-v2, Wren parity, P3-P13 migration experiments, engine bootstrap probes, old UI labs,
+and ad-hoc curl/demo tooling live only in Git history.
 
-## Scriptler
-
-| Script | İş |
-|---|---|
-| `restore_bak.sh <dosya.bak> <DB_ADI>` | .bak'ı `backups/`e bekler; FILELISTONLY okuyup WITH MOVE ile restore eder |
-| `import_mikro_export.sh <export_dizini> <DB_ADI>` | Tablo-başına .sql dosyalarını (upcyman export biçimi) sıralı import eder; hatalı dosyaları raporlar |
-| `inventory.sh <DB_ADI>` | Tablo/kolon/satır envanteri + Logo `LG_` önek → firma/dönem keşfi → `reports/` |
-| `schema_diff.sh <DB_A> <DB_B>` | İki DB'nin INFORMATION_SCHEMA farkı (tablo/kolon/tip) → `reports/` |
-
-## Mevcut lab DB'leri (2026-07)
-
-| DB | Kaynak | İçerik |
-|---|---|---|
-| `GULTEKS_2021` | Logo Start 3 yedeği (13.09.2021) | Veri dolu; firma/dönem `LG_` önekli |
-| `GULTEKS_GUNCEL` | Logo Start 3 boş firma yedeği (2026) | Boş; güncel şema referansı |
-| `ATIKSAN_MIKRO` | Mikro V16 upcyman export'u | Tablo başına TOP-50000 kesikli veri |
+This is not a product runtime directory. Core B may add only final certification assets here.

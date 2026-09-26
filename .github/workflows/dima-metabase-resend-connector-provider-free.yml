@@ -8,14 +8,10 @@ on:
     paths:
       - "backend/app/v3/action_connectors/**"
       - "backend/tests/test_v3_resend_action_connector.py"
-      - "backend/lab/metabase/action_execution/resend_connector_canary.py"
       - ".github/workflows/dima-metabase-resend-connector-provider-free.yml"
-      - ".github/workflows/dima-metabase-resend-connector-live.yml"
       - ".github/workflows/dima-metabase-governance.yml"
-      - ".github/workflows/dima-metabase-m1.yml"
       - "backend/belgeler/metabase/predev/RESEND_CONNECTOR_CERTIFICATION_RECEIPT.md"
       - "backend/belgeler/metabase/predev/FIRST_ACTION_EXECUTION_CONNECTOR_PREDEVELOPMENT_REVIEW.md"
-      - "backend/belgeler/metabase/predev/RESEND_PRODUCTION_EXECUTION_PREDEVELOPMENT_REVIEW.md"
       - "DIMA-METABASE-DURUM.md"
       - "DIMA-METABASE-NEW-DEVELOPER-HANDOFF.md"
       - "backend/belgeler/metabase/DIMA_METABASE_CURRENT_PRODUCT_PLAN.md"
@@ -51,7 +47,7 @@ jobs:
       - name: Compile connector certification surface
         working-directory: backend
         run: |
-          python -m py_compile             app/v3/action_connectors/__init__.py             app/v3/action_connectors/resend_email.py             tests/test_v3_resend_action_connector.py             lab/metabase/action_execution/resend_connector_canary.py
+          python -m py_compile app/v3/action_connectors/__init__.py app/v3/action_connectors/resend_email.py tests/test_v3_resend_action_connector.py
 
       - name: Enforce connector-only boundary
         shell: bash
