@@ -5,6 +5,10 @@ import json
 import httpx
 import pytest
 
+from app.v3.structured_trace import (
+    build_provider_bound_payload,
+    request_identity,
+)
 from app.v3.structured_transport import (
     OpenRouterStructuredJSONTransport,
     StructuredProviderError,
@@ -302,3 +306,250 @@ def test_request_payload_still_uses_same_sealed_structured_parameters():
             "schema": SCHEMA,
         },
     }
+
+
+
+def test_equivalent_requests_have_same_envelope_identity_across_instances():
+    traces = []
+
+    def handler(request: httpx.Request):
+        return httpx.Response(
+            200,
+            headers={"x-request-id": "req_same"},
+            json={
+                "provider": "provider-a",
+                "choices": [{"message": {"content": '{"value":"ok"}'}}],
+            },
+        )
+
+    for _ in range(2):
+        with OpenRouterStructuredJSONTransport(
+            api_key=API_KEY,
+            model=MODEL,
+            owner="p17_research_manager",
+            transport=httpx.MockTransport(handler),
+        ) as client:
+            _call(client)
+            traces.append(client.last_trace)
+
+    assert traces[0] is not None
+    assert traces[1] is not None
+    assert (
+        traces[0].request_envelope_fingerprint
+        == traces[1].request_envelope_fingerprint
+    )
+    assert traces[0].schema_fingerprint == traces[1].schema_fingerprint
+    assert traces[0].system_prompt_hash == traces[1].system_prompt_hash
+    assert traces[0].user_prompt_hash == traces[1].user_prompt_hash
+    assert traces[0].provider_backend_identity == "provider-a"
+    assert traces[0].provider_request_id == "req_same"
+    assert traces[0].http_status == 200
+
+
+def test_schema_prompt_and_routing_differences_change_expected_fingerprints():
+    base_payload = build_provider_bound_payload(
+        model=MODEL,
+        system=SYSTEM,
+        user=USER,
+        schema=SCHEMA,
+        schema_name=SCHEMA_NAME,
+        max_tokens=4096,
+        provider_routing_policy={"require_parameters": True},
+    )
+    base = request_identity(
+        owner="p17_research_manager",
+        payload=base_payload,
+        schema_name=SCHEMA_NAME,
+        schema=SCHEMA,
+        system=SYSTEM,
+        user=USER,
+        call_ordinal_by_role=1,
+    )
+
+    changed_schema = {
+        "type": "object",
+        "properties": {"value": {"type": "integer"}},
+        "required": ["value"],
+        "additionalProperties": False,
+    }
+    schema_payload = build_provider_bound_payload(
+        model=MODEL,
+        system=SYSTEM,
+        user=USER,
+        schema=changed_schema,
+        schema_name=SCHEMA_NAME,
+        max_tokens=4096,
+        provider_routing_policy={"require_parameters": True},
+    )
+    schema_identity = request_identity(
+        owner="p17_research_manager",
+        payload=schema_payload,
+        schema_name=SCHEMA_NAME,
+        schema=changed_schema,
+        system=SYSTEM,
+        user=USER,
+        call_ordinal_by_role=1,
+    )
+    assert schema_identity.schema_fingerprint != base.schema_fingerprint
+    assert (
+        schema_identity.request_envelope_fingerprint
+        != base.request_envelope_fingerprint
+    )
+
+    prompt_payload = build_provider_bound_payload(
+        model=MODEL,
+        system=SYSTEM,
+        user=USER + " changed",
+        schema=SCHEMA,
+        schema_name=SCHEMA_NAME,
+        max_tokens=4096,
+        provider_routing_policy={"require_parameters": True},
+    )
+    prompt_identity = request_identity(
+        owner="p17_research_manager",
+        payload=prompt_payload,
+        schema_name=SCHEMA_NAME,
+        schema=SCHEMA,
+        system=SYSTEM,
+        user=USER + " changed",
+        call_ordinal_by_role=1,
+    )
+    assert prompt_identity.user_prompt_hash != base.user_prompt_hash
+    assert prompt_identity.system_prompt_hash == base.system_prompt_hash
+    assert (
+        prompt_identity.request_envelope_fingerprint
+        != base.request_envelope_fingerprint
+    )
+
+    routing_payload = build_provider_bound_payload(
+        model=MODEL,
+        system=SYSTEM,
+        user=USER,
+        schema=SCHEMA,
+        schema_name=SCHEMA_NAME,
+        max_tokens=4096,
+        provider_routing_policy={
+            "require_parameters": True,
+            "data_collection": "deny",
+        },
+    )
+    routing_identity = request_identity(
+        owner="p17_research_manager",
+        payload=routing_payload,
+        schema_name=SCHEMA_NAME,
+        schema=SCHEMA,
+        system=SYSTEM,
+        user=USER,
+        call_ordinal_by_role=1,
+    )
+    assert (
+        routing_identity.provider_routing_policy_fingerprint
+        != base.provider_routing_policy_fingerprint
+    )
+    assert (
+        routing_identity.request_envelope_fingerprint
+        != base.request_envelope_fingerprint
+    )
+
+
+def test_call_ordinal_is_telemetry_not_provider_envelope_identity():
+    payload = build_provider_bound_payload(
+        model=MODEL,
+        system=SYSTEM,
+        user=USER,
+        schema=SCHEMA,
+        schema_name=SCHEMA_NAME,
+        max_tokens=4096,
+    )
+    first = request_identity(
+        owner="p17_research_manager",
+        payload=payload,
+        schema_name=SCHEMA_NAME,
+        schema=SCHEMA,
+        system=SYSTEM,
+        user=USER,
+        call_ordinal_by_role=1,
+    )
+    later = request_identity(
+        owner="p17_research_manager",
+        payload=payload,
+        schema_name=SCHEMA_NAME,
+        schema=SCHEMA,
+        system=SYSTEM,
+        user=USER,
+        call_ordinal_by_role=9,
+    )
+    assert first.call_ordinal_by_role == 1
+    assert later.call_ordinal_by_role == 9
+    assert (
+        first.request_envelope_fingerprint
+        == later.request_envelope_fingerprint
+    )
+
+
+def test_trace_contains_no_raw_prompt_or_credential_material():
+    def handler(request: httpx.Request):
+        return httpx.Response(
+            200,
+            json={"choices": [{"message": {"content": '{"value":"ok"}'}}]},
+        )
+
+    with OpenRouterStructuredJSONTransport(
+        api_key=API_KEY,
+        model=MODEL,
+        owner="p17_research_manager",
+        transport=httpx.MockTransport(handler),
+    ) as client:
+        _call(client)
+        trace = client.last_trace
+
+    assert trace is not None
+    serialized = json.dumps(trace.model_dump(mode="json"), sort_keys=True)
+    assert API_KEY not in serialized
+    assert SYSTEM not in serialized
+    assert USER not in serialized
+    assert trace.owner == "p17_research_manager"
+    assert len(trace.system_prompt_hash) == 64
+    assert len(trace.user_prompt_hash) == 64
+    assert len(trace.request_envelope_fingerprint) == 64
+
+
+def test_rejected_call_trace_matches_diagnostic_request_identity():
+    def handler(request: httpx.Request):
+        return httpx.Response(
+            400,
+            headers={
+                "x-request-id": "req_bad",
+                "x-openrouter-provider": "provider-b",
+            },
+            json={
+                "error": {
+                    "code": "invalid_request",
+                    "message": "schema rejected",
+                }
+            },
+        )
+
+    with OpenRouterStructuredJSONTransport(
+        api_key=API_KEY,
+        model=MODEL,
+        owner="p17_research_manager",
+        transport=httpx.MockTransport(handler),
+    ) as client:
+        with pytest.raises(StructuredProviderError) as caught:
+            _call(client)
+        trace = client.last_trace
+
+    diagnostic = caught.value.diagnostic
+    assert diagnostic is not None
+    assert trace is not None
+    assert (
+        trace.request_envelope_fingerprint
+        == diagnostic.request_envelope_fingerprint
+    )
+    assert trace.schema_fingerprint == diagnostic.schema_fingerprint
+    assert trace.provider_request_id == "req_bad"
+    assert trace.provider_backend_identity == "provider-b"
+    assert trace.http_status == 400
+    assert trace.provider_error_code == "invalid_request"
+    assert trace.provider_error_message == "schema rejected"

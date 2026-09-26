@@ -6,7 +6,6 @@ It never executes analytics, SQL, Metabase queries, or business side effects.
 from __future__ import annotations
 
 import copy
-import hashlib
 import json
 import re
 import time
@@ -14,6 +13,15 @@ from typing import Any
 
 import httpx
 from pydantic import BaseModel, ConfigDict
+
+from app.v3.structured_trace import (
+    StructuredCallTrace,
+    StructuredRequestIdentity,
+    build_provider_bound_payload,
+    json_fingerprint,
+    provider_backend_identity,
+    request_identity,
+)
 
 
 _MAX_DIAGNOSTIC_BYTES = 8192
@@ -50,10 +58,18 @@ class StructuredProviderDiagnostic(_Frozen):
     provider_error_message: str | None = None
     provider_error_metadata: Any | None = None
     provider_request_id: str | None = None
+    provider_backend_identity: str | None = None
+    owner: str
     model: str
     schema_name: str
     schema_fingerprint: str
+    system_prompt_hash: str
+    user_prompt_hash: str
+    request_envelope_fingerprint: str
     response_format_family: str = "json_schema"
+    max_tokens: int
+    provider_routing_policy_fingerprint: str
+    call_ordinal_by_role: int
     bounded_response_excerpt: str | None = None
 
 
@@ -74,14 +90,7 @@ class StructuredProviderError(RuntimeError):
 def schema_fingerprint(schema: dict[str, Any]) -> str:
     """Deterministic SHA-256 over canonical JSON schema bytes."""
 
-    raw = json.dumps(
-        schema,
-        ensure_ascii=False,
-        sort_keys=True,
-        separators=(",", ":"),
-        allow_nan=False,
-    )
-    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+    return json_fingerprint(schema)
 
 
 def _bounded_utf8(value: str, limit: int = _MAX_DIAGNOSTIC_BYTES) -> str:
@@ -172,12 +181,41 @@ def _request_id(response: httpx.Response) -> str | None:
     return None
 
 
+def _safe_json(response: httpx.Response) -> Any | None:
+    try:
+        return response.json()
+    except ValueError:
+        return None
+
+
+def _trace_from_response(
+    identity: StructuredRequestIdentity,
+    response: httpx.Response | None,
+    *,
+    provider_error_code: str | None = None,
+    provider_error_message: str | None = None,
+    parsed_body: Any | None = None,
+) -> StructuredCallTrace:
+    if response is None:
+        return StructuredCallTrace(**identity.model_dump())
+    body = parsed_body if parsed_body is not None else _safe_json(response)
+    return StructuredCallTrace(
+        **identity.model_dump(),
+        provider_request_id=_request_id(response),
+        provider_backend_identity=provider_backend_identity(
+            headers=response.headers,
+            body=body,
+        ),
+        http_status=response.status_code,
+        provider_error_code=provider_error_code,
+        provider_error_message=provider_error_message,
+    )
+
+
 def _provider_diagnostic(
     response: httpx.Response,
     *,
-    model: str,
-    schema_name: str,
-    schema: dict[str, Any],
+    identity: StructuredRequestIdentity,
     api_key: str,
     system: str,
     user: str,
@@ -188,9 +226,8 @@ def _provider_diagnostic(
     provider_error_metadata: Any | None = None
     bounded_response_excerpt: str | None = None
 
-    try:
-        body = response.json()
-    except ValueError:
+    body = _safe_json(response)
+    if body is None:
         bounded_response_excerpt = _sanitize_text(
             response.text,
             sensitive_values=sensitive_values,
@@ -224,10 +261,11 @@ def _provider_diagnostic(
         provider_error_message=provider_error_message,
         provider_error_metadata=provider_error_metadata,
         provider_request_id=_request_id(response),
-        model=model,
-        schema_name=schema_name,
-        schema_fingerprint=schema_fingerprint(schema),
-        response_format_family="json_schema",
+        provider_backend_identity=provider_backend_identity(
+            headers=response.headers,
+            body=body,
+        ),
+        **identity.model_dump(),
         bounded_response_excerpt=bounded_response_excerpt,
     )
 
@@ -268,6 +306,7 @@ class OpenRouterStructuredJSONTransport:
         max_tokens: int = 4096,
         timeout_seconds: float = 60.0,
         transport: httpx.BaseTransport | None = None,
+        owner: str = "structured_cognition",
     ) -> None:
         key = str(api_key or "").strip()
         if not key:
@@ -281,9 +320,19 @@ class OpenRouterStructuredJSONTransport:
                 "COGNITION_MODEL_REQUIRED",
                 "model identifier is required",
             )
+        chosen_owner = str(owner or "").strip()
+        if not chosen_owner:
+            raise StructuredProviderError(
+                "COGNITION_OWNER_REQUIRED",
+                "structured cognition owner is required",
+            )
         self._key = key
         self.model = chosen
+        self.owner = chosen_owner
         self._max_tokens = max(256, int(max_tokens))
+        self._provider_routing_policy: dict[str, Any] = {
+            "require_parameters": True,
+        }
         self._client = httpx.Client(
             base_url=base_url.rstrip("/"),
             timeout=timeout_seconds,
@@ -291,6 +340,15 @@ class OpenRouterStructuredJSONTransport:
         )
         self.call_count = 0
         self.total_latency_ms = 0
+        self._trace_log: list[StructuredCallTrace] = []
+
+    @property
+    def trace_log(self) -> tuple[StructuredCallTrace, ...]:
+        return tuple(self._trace_log)
+
+    @property
+    def last_trace(self) -> StructuredCallTrace | None:
+        return self._trace_log[-1] if self._trace_log else None
 
     def close(self) -> None:
         self._client.close()
@@ -331,24 +389,27 @@ class OpenRouterStructuredJSONTransport:
                 "COGNITION_PROMPT_INVALID",
                 "system and user prompts are required",
             )
-        payload: dict[str, Any] = {
-            "model": self.model,
-            "messages": [
-                {"role": "system", "content": system},
-                {"role": "user", "content": user},
-            ],
-            "response_format": {
-                "type": "json_schema",
-                "json_schema": {
-                    "name": schema_name,
-                    "strict": True,
-                    "schema": schema,
-                },
-            },
-            "provider": {"require_parameters": True},
-            "reasoning": {"enabled": False},
-            "max_tokens": self._max_tokens,
-        }
+
+        call_ordinal = self.call_count + 1
+        payload = build_provider_bound_payload(
+            model=self.model,
+            system=system,
+            user=user,
+            schema=schema,
+            schema_name=schema_name,
+            max_tokens=self._max_tokens,
+            provider_routing_policy=self._provider_routing_policy,
+        )
+        identity = request_identity(
+            owner=self.owner,
+            payload=payload,
+            schema_name=schema_name,
+            schema=schema,
+            system=system,
+            user=user,
+            call_ordinal_by_role=call_ordinal,
+        )
+
         started = time.monotonic()
         self.call_count += 1
         try:
@@ -361,11 +422,13 @@ class OpenRouterStructuredJSONTransport:
                 json=payload,
             )
         except httpx.TimeoutException as exc:
+            self._trace_log.append(_trace_from_response(identity, None))
             raise StructuredProviderError(
                 "COGNITION_TIMEOUT",
                 "structured cognition request timed out",
             ) from exc
         except httpx.RequestError as exc:
+            self._trace_log.append(_trace_from_response(identity, None))
             raise StructuredProviderError(
                 "COGNITION_TRANSPORT_FAILED",
                 "structured cognition transport failed",
@@ -375,25 +438,43 @@ class OpenRouterStructuredJSONTransport:
                 0,
                 int((time.monotonic() - started) * 1000),
             )
+
         if response.status_code < 200 or response.status_code >= 300:
+            diagnostic = _provider_diagnostic(
+                response,
+                identity=identity,
+                api_key=self._key,
+                system=system,
+                user=user,
+            )
+            self._trace_log.append(
+                _trace_from_response(
+                    identity,
+                    response,
+                    provider_error_code=diagnostic.provider_error_code,
+                    provider_error_message=diagnostic.provider_error_message,
+                )
+            )
             raise StructuredProviderError(
                 "COGNITION_PROVIDER_REJECTED",
                 f"provider returned HTTP {response.status_code}",
-                diagnostic=_provider_diagnostic(
-                    response,
-                    model=self.model,
-                    schema_name=schema_name,
-                    schema=schema,
-                    api_key=self._key,
-                    system=system,
-                    user=user,
-                ),
+                diagnostic=diagnostic,
             )
+
         try:
             body = response.json()
         except json.JSONDecodeError as exc:
+            self._trace_log.append(_trace_from_response(identity, response))
             raise StructuredProviderError(
                 "COGNITION_RESPONSE_INVALID",
                 "provider response is not JSON",
             ) from exc
+
+        self._trace_log.append(
+            _trace_from_response(
+                identity,
+                response,
+                parsed_body=body,
+            )
+        )
         return self._content(body)

@@ -60,6 +60,13 @@ def _write_receipt(path: Path, payload: dict) -> None:
     print(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True, default=str))
 
 
+
+def _trace_payload(trace):
+    if trace is None:
+        return None
+    return trace.model_dump(mode="json")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--base-url", required=True)
@@ -114,14 +121,17 @@ def main() -> int:
     intake_transport = OpenRouterStructuredJSONTransport(
         api_key=api_key,
         model=MODEL,
+        owner="research_intake",
     )
     p17_transport = OpenRouterStructuredJSONTransport(
         api_key=api_key,
         model=MODEL,
+        owner="p17_research_manager",
     )
     p19_transport = OpenRouterStructuredJSONTransport(
         api_key=api_key,
         model=MODEL,
+        owner="p19_epistemic_manager",
     )
     intake = ResearchIntakeCompiler(transport=intake_transport)
     product = HeadlessProductService(
@@ -203,7 +213,7 @@ def main() -> int:
         composer.compose(
             brief=intake_result.brief,
             principal=_principal(),
-            request_ref=f"diagnostic:{ROOT_CASE_ID}",
+            request_ref=f"sentinel:{ROOT_CASE_ID}",
             source_message_hash=source_hash,
             native_session_token=token,
         )
@@ -235,7 +245,14 @@ def main() -> int:
             "provider_request_id": diagnostic.provider_request_id,
             "response_format_family": diagnostic.response_format_family,
             "bounded_response_excerpt": diagnostic.bounded_response_excerpt,
-            "diagnostic_classification": "UNKNOWN_PENDING_REVIEW",
+            "request_trace": _trace_payload(p17_transport.last_trace),
+            "request_envelope_fingerprint": diagnostic.request_envelope_fingerprint,
+            "system_prompt_hash": diagnostic.system_prompt_hash,
+            "user_prompt_hash": diagnostic.user_prompt_hash,
+            "provider_routing_policy_fingerprint": diagnostic.provider_routing_policy_fingerprint,
+            "call_ordinal_by_role": diagnostic.call_ordinal_by_role,
+            "provider_backend_identity": diagnostic.provider_backend_identity,
+            "diagnostic_classification": "PROVIDER_REJECTED",
             "p17_provider_call_count": p17_transport.call_count,
             "p19_provider_call_count": p19_transport.call_count,
             "intake_provider_call_count": intake_transport.call_count,
@@ -256,13 +273,60 @@ def main() -> int:
         "platform_sha": args.platform_sha,
         "case_id": ROOT_CASE_ID,
         "model": MODEL,
-        "schema_name": None,
-        "schema_fingerprint": None,
-        "http_status": None,
+        "schema_name": (
+            p17_transport.last_trace.schema_name
+            if p17_transport.last_trace is not None
+            else None
+        ),
+        "schema_fingerprint": (
+            p17_transport.last_trace.schema_fingerprint
+            if p17_transport.last_trace is not None
+            else None
+        ),
+        "http_status": (
+            p17_transport.last_trace.http_status
+            if p17_transport.last_trace is not None
+            else None
+        ),
         "provider_error_code": None,
         "provider_error_message": None,
-        "provider_request_id": None,
-        "diagnostic_classification": "NO_PROVIDER_REJECTION_OBSERVED",
+        "provider_request_id": (
+            p17_transport.last_trace.provider_request_id
+            if p17_transport.last_trace is not None
+            else None
+        ),
+        "provider_backend_identity": (
+            p17_transport.last_trace.provider_backend_identity
+            if p17_transport.last_trace is not None
+            else None
+        ),
+        "request_trace": _trace_payload(p17_transport.last_trace),
+        "request_envelope_fingerprint": (
+            p17_transport.last_trace.request_envelope_fingerprint
+            if p17_transport.last_trace is not None
+            else None
+        ),
+        "system_prompt_hash": (
+            p17_transport.last_trace.system_prompt_hash
+            if p17_transport.last_trace is not None
+            else None
+        ),
+        "user_prompt_hash": (
+            p17_transport.last_trace.user_prompt_hash
+            if p17_transport.last_trace is not None
+            else None
+        ),
+        "provider_routing_policy_fingerprint": (
+            p17_transport.last_trace.provider_routing_policy_fingerprint
+            if p17_transport.last_trace is not None
+            else None
+        ),
+        "call_ordinal_by_role": (
+            p17_transport.last_trace.call_ordinal_by_role
+            if p17_transport.last_trace is not None
+            else None
+        ),
+        "diagnostic_classification": "PROVIDER_ACCEPTED",
         "p17_provider_call_count": p17_transport.call_count,
         "p19_provider_call_count": p19_transport.call_count,
         "intake_provider_call_count": intake_transport.call_count,
@@ -272,7 +336,7 @@ def main() -> int:
         "automatic_retry": False,
     }
     _write_receipt(args.output, receipt)
-    return 2
+    return 0
 
 
 if __name__ == "__main__":

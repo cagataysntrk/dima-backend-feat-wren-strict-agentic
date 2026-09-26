@@ -14,6 +14,7 @@ on:
       - "backend/app/v3/research_product.py"
       - "backend/app/v3/report_document.py"
       - "backend/app/v3/research_intake.py"
+      - "backend/app/v3/structured_trace.py"
       - "backend/app/v3/structured_transport.py"
       - "backend/app/config.py"
       - "backend/control_plane/models.py"
@@ -22,6 +23,8 @@ on:
       - "backend/tests/test_v3_product_composition.py"
       - "backend/tests/test_v3_owner_scoped_must_accounting.py"
       - "backend/tests/test_v3_research_intake.py"
+      - "backend/tests/test_v3_structured_transport.py"
+      - "backend/tests/test_v3_p17_request_differential.py"
       - ".github/workflows/dima-metabase-core-b-seal-provider-free.yml"
   workflow_dispatch:
 
@@ -64,6 +67,10 @@ jobs:
       - name: Core B raw-language intake owner proof
         working-directory: backend
         run: pytest -q tests/test_v3_research_intake.py
+
+      - name: Structured cognition observability proof
+        working-directory: backend
+        run: pytest -q tests/test_v3_structured_transport.py tests/test_v3_p17_request_differential.py
 
       - name: Owner-scoped USER_MUST lifecycle matrix
         working-directory: backend

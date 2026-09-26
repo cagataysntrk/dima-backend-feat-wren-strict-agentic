@@ -6,8 +6,11 @@ on:
       - feat/dima-metabase-platform
     paths:
       - ".github/workflows/dima-metabase-core-b-p17-provider-diagnostic.yml"
+      - "backend/app/v3/structured_trace.py"
       - "backend/app/v3/structured_transport.py"
       - "backend/tests/test_v3_structured_transport.py"
+      - "backend/tests/test_v3_p17_request_differential.py"
+      - "backend/lab/metabase/core_b/p17_request_differential.py"
       - "backend/lab/metabase/core_b/p17_provider_diagnostic.py"
       - "backend/lab/metabase/core_b/authorizations/p17-provider-diagnostic-001.json"
 
@@ -46,7 +49,7 @@ jobs:
       - name: Compile diagnostic surfaces
         working-directory: backend
         run: |
-          python -m py_compile             app/v3/structured_transport.py             tests/test_v3_structured_transport.py             lab/metabase/core_b/p17_provider_diagnostic.py
+          python -m py_compile             app/v3/structured_trace.py             app/v3/structured_transport.py             tests/test_v3_structured_transport.py             tests/test_v3_p17_request_differential.py             lab/metabase/core_b/p17_request_differential.py             lab/metabase/core_b/p17_provider_diagnostic.py
 
       - name: Structured transport diagnostic focused proof
         working-directory: backend
@@ -55,6 +58,37 @@ jobs:
       - name: P17 provider representation regression
         working-directory: backend
         run: pytest -q tests/test_v3_p17_autonomous_provider_schema.py
+
+      - name: Provider-free request-envelope differential
+        working-directory: backend
+        run: |
+          pytest -q tests/test_v3_p17_request_differential.py
+          mkdir -p eval/core_b/artifacts
+          python lab/metabase/core_b/p17_request_differential.py             --output eval/core_b/artifacts/p17_request_differential.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("eval/core_b/artifacts/p17_request_differential.json")
+          value=json.loads(p.read_text(encoding="utf-8"))
+          assert value["classification"]=="IDENTICAL"
+          assert value["historical_first_divergence_owner"]=="diagnostic_request_ref_namespace"
+          diff=value["historical_vs_frozen_sentinel"]
+          assert diff["authority_id_equal"] is False
+          assert diff["session_id_equal"] is False
+          assert diff["schema_fingerprint_equal"] is True
+          assert diff["system_prompt_hash_equal"] is True
+          assert diff["user_prompt_hash_equal"] is False
+          assert diff["request_envelope_fingerprint_equal"] is False
+          assert value["provider_calls"]==0
+          assert value["full_sentinel_rerun"] is False
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: core-b-p17-request-differential-${{ github.run_id }}
+          path: backend/eval/core_b/artifacts/p17_request_differential.json
+          if-no-files-found: error
+          retention-days: 90
 
       - name: Freeze P17 semantics and frozen live inputs
         shell: bash
