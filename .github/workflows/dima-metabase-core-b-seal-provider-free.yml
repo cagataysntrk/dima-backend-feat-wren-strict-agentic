@@ -10,7 +10,11 @@ on:
       - "backend/tests/test_v3_core_b_campaign_contract.py"
       - "backend/tests/test_v3_core_b_neutral_fixture.py"
       - "backend/app/v3/product/**"
+      - "backend/app/v3/research_intake.py"
+      - "backend/app/v3/structured_transport.py"
+      - "backend/app/config.py"
       - "backend/tests/test_v3_product_contracts.py"
+      - "backend/tests/test_v3_research_intake.py"
       - ".github/workflows/dima-metabase-core-b-seal-provider-free.yml"
   workflow_dispatch:
 
@@ -44,6 +48,10 @@ jobs:
       - name: Campaign and neutral fixture contract proof
         working-directory: backend
         run: pytest -q tests/test_v3_core_b_campaign_contract.py tests/test_v3_core_b_neutral_fixture.py
+
+      - name: Core B raw-language intake owner proof
+        working-directory: backend
+        run: pytest -q tests/test_v3_research_intake.py
 
       - name: Core B focused remains GREEN
         working-directory: backend

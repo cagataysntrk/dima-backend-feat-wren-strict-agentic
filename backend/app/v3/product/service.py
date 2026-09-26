@@ -21,6 +21,12 @@ from app.v3.hypothesis_root_cause import HypothesisRootCauseStore
 from app.v3.report_document import ReportDocumentStore
 from app.v3.research_manager import ResearchReasoningStore
 from app.v3.research_product import ResearchAskOrchestrator
+from app.v3.research_intake import (
+    ResearchIntakeCatalog,
+    ResearchIntakeCompiler,
+    ResearchIntakeResult,
+)
+from app.v3.research_contracts import ResearchBrief
 
 from .capabilities import company_context
 from .contracts import (
@@ -61,6 +67,7 @@ _REQUIRED_LOOP = tuple(_STAGE_ORDER)
 @dataclass(frozen=True)
 class ProductSources:
     research: ResearchAskOrchestrator
+    intake: ResearchIntakeCompiler | None = None
     reasoning: ResearchReasoningStore | None = None
     claims: ClaimLineageStore | None = None
     epistemics: HypothesisRootCauseStore | None = None
@@ -129,6 +136,31 @@ def _cursor_decode(cursor: str | None) -> int:
 class HeadlessProductService:
     def __init__(self, *, sources: ProductSources) -> None:
         self._s=sources
+
+    def research_question(
+        self,
+        *,
+        question: str,
+        catalog: ResearchIntakeCatalog,
+        principal: Principal,
+        prior_brief: ResearchBrief | None = None,
+    ) -> ResearchIntakeResult:
+        """Interpret the current raw user question through the canonical intake owner.
+
+        Authentication/tenant legality is checked before any model call. This method
+        performs no analytics and does not create Evidence; READY output must still
+        pass the sealed P14 ResearchBrief authority boundary.
+        """
+        _tenant(principal)
+        _subject(principal)
+        intake = _require(self._s.intake, "research intake")
+        return _owner_call(
+            lambda: intake.compile(
+                question=question,
+                catalog=catalog,
+                prior_brief=prior_brief,
+            )
+        )
 
     def company_context(
         self,

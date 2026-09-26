@@ -35,6 +35,12 @@ class Settings(BaseSettings):
         "sha256:40e9a44be49904de3ddf12d4683c768e70955851c10a928a9c8f7d8f60780353"
     )
 
+    # Canonical cognition transport. The product has one sealed default role/model;
+    # individual features may not create an ad-hoc model cascade.
+    openrouter_api_key: str = ""
+    openrouter_base_url: str = "https://openrouter.ai/api/v1"
+    cognition_model: str = "openai/gpt-5.6-luna"
+
     # Classified productization debt only. No real-recipient execution is active.
     resend_api_key: str = ""
     resend_from: str = "dima <dima@upcytech.com>"
