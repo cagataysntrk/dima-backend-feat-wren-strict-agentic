@@ -1,91 +1,73 @@
 # DIMA + METABASE — CURRENT PRODUCT PLAN OVERLAY
 
-## P19 SEALED — P20 PRE-DEVELOPMENT COMPLETE
+## CURRENT FORWARD AUTHORITY — 2026-09-26
 
-```text
-P14 = SEALED
-P15 = SEALED
-P16 = SEALED
-P17 = SEALED
-P18 = SEALED / HARDENED
-P19 = SEALED
-
-current open phase = P20 PRE-DEVELOPMENT
-P20 pre-development = COMPLETE
-P20 implementation = NOT AUTHORIZED
-P21 = NOT STARTED
-UI / UX = FORBIDDEN UNTIL P21 SEALED
-```
-
-Permanent ownership:
-
-```text
-METABASE PROVES THE ANALYSIS.
-DIMA P19 GOVERNS EPISTEMIC MEANING.
-DIMA P20 REPORTS GOVERNED TRUTH.
-DIMA P21 DECIDES WHAT TO DO ABOUT IT.
-
-P17 InvestigationGraph != P19 causal structure.
-P18 policy direction != causal direction.
-P19 assessment != P20 report prose.
-P20 report != P21 decision/recommendation.
-```
-
-## CURRENT AUTHORITY SNAPSHOT — 2026-09-25
-
-> **FORWARD AUTHORITY.** This block overrides historical current/next/blocked text below it.
+> **FORWARD AUTHORITY.** This block is the current operational truth. Historical receipts and
+> prior phase snapshots remain below unchanged.
 
 ```text
 branch                                = feat/dima-metabase-platform
-P19 sealed product/code candidate     = 5ba8167632b390f927f33cbcb37638dba27ed0c5
-P19 live dispatch / receipt SHA       = 7efa4e50a4e2c24811ba3755101775c01d0f4526
+supervisor-authorized base HEAD       = bf0d03402eb3e154430eec623f822abfe71fd8cc
 
-P19 provider-free                     = 36187161337 SUCCESS
-P19 governance                        = 36187161416 SUCCESS
-P19 live                              = 36187407011 SUCCESS
-dispatch governance                   = 36187407129 SUCCESS
+P14                                   = SEALED
+P15                                   = SEALED
+P16                                   = SEALED
+P17                                   = SEALED
+P18                                   = SEALED / HARDENED
+P19                                   = SEALED
+P20                                   = SEALED
 
-P19 focused                           = 25 PASS
-P19 provider/evaluator                = 17 PASS
-P18                                   = 24 PASS
-P17                                   = 95 PASS
-P16                                   = 6 PASS
-P15                                   = 5 PASS
-P14                                   = 17 PASS
+P20 canonical product SHA             = 46bbc5f22ea18f6be239014750d77fc254508c46
+P20 provider-free                     = 36217317017 SUCCESS
+governance                            = 36217317067 SUCCESS
+P19 provider-free                     = 36217317064 SUCCESS
+P18 provider-free                     = 36217316992 SUCCESS
+P20 Alembic sealed revision           = f7c4a2d8b930
 
-live Luna proposal calls              = 1
-live final outcome                    = NO_DEFENSIBLE_ROOT_CAUSE_ESTABLISHED
-live hypothesis count                 = 2
-live selected grounding count         = 4
-live challenge grounding count        = 1
-P19 analytical execution              = 0
-duplicate receipt/Evidence/claim      = 0 / 0 / 0
-P17 graph causal writes               = 0
-P18 direction causal writes           = 0
+P21 PRE-DEVELOPMENT                   = COMPLETE
+P21 architecture authority            = DMP-DEC-0057
+P21 MINIMAL IMPLEMENTATION            = AUTHORIZED / PROVIDER-FREE ONLY
+
+UI / UX                               = NOT AUTHORIZED
+HUMAN ADOPTION WRITE                  = NOT AUTHORIZED
+ACTION EXECUTION                      = NOT AUTHORIZED
 
 engine SHA                            = cbe313af9ac2d5960f662068e433d328d896fb06
 engine release                        = 0.63.18-dima.6
-engine digest                         = sha256:40e9a44be49904de3ddf12d4683c768e70955851c10a928a9c8f7d8f60780353
-engine certification                  = 36042062775 SUCCESS
 engine modifications/builds           = 0 / 0
 Metabase core modification            = 0
-Sol / C1                              = 0 / 0
-
-P19 durable record types              = 3
-HypothesisRecord                      = SEALED
-HypothesisGroundingLink               = SEALED
-RootCauseAssessment                   = SEALED
-
-P20 pre-development document          = backend/belgeler/metabase/predev/P20_REPORTDOCUMENT_PREDEVELOPMENT_REVIEW.md
-P20 production code                   = NOT STARTED
-P20 tables/migrations                 = 0
-P20 model/live calls                  = 0
+Luna / Sol / C1                       = 0 / 0 / 0
 ```
 
-### CURRENT RETURN POINT
+Permanent current owner split:
 
-P19 is closed. The P20 pre-development review is complete. No P20 implementation, P21 work or UI/UX
-is authorized by this handoff. Return to supervisor for the next bounded implementation decision.
+```text
+METABASE + METABOT = analytical computation / execution
+P19                = epistemic / root-cause authority
+P20                = governed report / publication authority
+P21                = advisory decision intelligence
+
+P20 REPORT != P21 RECOMMENDATION
+P21 RECOMMENDATION != HUMAN-ADOPTED DECISION
+HUMAN-ADOPTED DECISION != ACTION EXECUTION
+```
+
+### CURRENT BOUNDED OBJECTIVE
+
+Implement and seal exactly one provider-free P21 DecisionBrief authority vertical:
+
+```text
+one CURRENT sealed P20 ReportDocument
++ explicit user objective / typed constraints
++ exact P20 premise refs
++ advisory options / tradeoffs / recommendation
++ assumptions / limitations
+→ deterministic DecisionLegalityGate
+→ one immutable/versioned DecisionBrief
+```
+
+No router, UI, model provider, analytics, legacy DecisionRecord write, human-adoption write or action
+execution is authorized in this objective.
 
 ## HISTORICAL / SUPERSEDED P17 RECOVERY AND PRIOR CURRENT-STATE SECTIONS
 

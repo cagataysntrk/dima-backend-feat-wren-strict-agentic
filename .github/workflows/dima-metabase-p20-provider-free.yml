@@ -61,14 +61,15 @@ jobs:
         run: |
           set -euo pipefail
           python -m py_compile app/v3/report_document.py control_plane/models.py migrations/versions/f7c4a2d8b930_p20_report_document.py tests/test_v3_p20_report_document.py
-      - name: Verify single Alembic head
+      - name: Verify single Alembic head retains sealed P20 revision
         working-directory: backend
         shell: bash
         run: |
           set -euo pipefail
           python -m alembic heads > /tmp/p20-heads.txt
           test "$(grep -Ec '^[0-9a-f]+' /tmp/p20-heads.txt)" -eq 1
-          grep -q '^f7c4a2d8b930' /tmp/p20-heads.txt
+          python -m alembic history --verbose > /tmp/p20-history.txt
+          grep -q 'Rev: f7c4a2d8b930' /tmp/p20-history.txt
       - name: Guard P20 as publication legality only
         shell: bash
         run: |

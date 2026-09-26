@@ -5888,3 +5888,45 @@ requires a separate review because adoption truth and legacy replay semantics mu
 
 P21 implementation, live model certification, action execution, workflow automation and UI remain
 unauthorized.
+
+
+### DMP-DEC-0057 lifecycle — MINIMAL P21 IMPLEMENTATION AUTHORIZATION
+
+date: 2026-09-26
+
+The original DMP-DEC-0057 pre-development status remains historical fact. This supervisor directive
+advances the same ratified architecture without replacing the original receipt.
+
+status:
+`RATIFIED / P21 MINIMAL PROVIDER-FREE IMPLEMENTATION AUTHORIZED`
+
+Authorized boundary:
+
+```text
+CURRENT sealed P20 ReportDocument
++ explicit USER_DECLARED objective
++ typed constraints
++ exact P20 premise identities
++ advisory options / tradeoffs / recommendation
++ explicit assumptions / limitations
+→ deterministic DecisionLegalityGate
+→ one immutable/versioned DecisionBrief durable family
+```
+
+Still forbidden:
+
+```text
+legacy DecisionRecord mutation/write
+human-adoption truth
+action execution
+workflow automation
+analytics / forecasting / optimization / causal inference
+direct P14/P16/P19 bypass
+new Evidence / claim / report authority
+router / UI
+model dependency
+engine or Metabase core change
+```
+
+The implementation must be provider-free. Normal GREEN closure remains part of DMP-DEC-0057 and
+does not require a new architecture receipt.

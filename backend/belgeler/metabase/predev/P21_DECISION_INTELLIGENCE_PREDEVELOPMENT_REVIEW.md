@@ -453,3 +453,43 @@ recommended next bounded objective
 ```
 
 No P21 production code was created by this review.
+
+
+## 22. DMP-DEC-0057 lifecycle — minimal implementation authorization
+
+The historical pre-development status above remains true for the time at which this review was
+sealed. Supervisor authority on 2026-09-26 now advances the same architecture decision without
+rewriting that history:
+
+```text
+DMP-DEC-0057
+MINIMAL P21 IMPLEMENTATION AUTHORIZATION
+
+status:
+RATIFIED /
+P21 MINIMAL PROVIDER-FREE IMPLEMENTATION AUTHORIZED
+```
+
+Authorized first vertical remains exactly the architecture defined by this review:
+
+```text
+one CURRENT sealed P20 ReportDocument
+→ typed DecisionBriefDraft
+→ deterministic DecisionLegalityGate
+→ one immutable/versioned DecisionBrief
+```
+
+Constraints remain unchanged:
+
+```text
+DecisionBrief != legacy DecisionRecord
+recommendation != human adoption
+human adoption != action execution
+P21 != analytics
+P21 != optimization / forecasting / causal inference
+direct P14/P16/P19 reach-around = forbidden
+router / UI / model provider = 0
+engine / Metabase core change = 0
+```
+
+This authorization is lifecycle progression under DMP-DEC-0057, not a new architecture decision.
