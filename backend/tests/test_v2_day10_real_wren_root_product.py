@@ -22,7 +22,7 @@ from app.v2.manager_executor import GovernedManagerExecutionContext, GovernedMan
 from app.v2.manager_loop import ResearchManagerLoop
 from app.v2.manager_runtime import ManagerRuntime
 from app.v2.manager_semantics import ManagerSemanticResolutionAdapter
-from app.v2.manager_models import ObligationStatus
+from app.v2.manager_models import ManagerCapabilityKey, ObligationStatus
 from app.v2.manager_tools import ManagerToolCall, ManagerToolName
 from app.v2.model_policy import ModelProfile, ModelRole
 from app.v2.models import ConversationStateV2, EpistemicLabel, TenantAnalyticsRuntimeV0
@@ -36,7 +36,7 @@ from app.v2.product_models import (
 )
 from app.v2.report_narration import ReportNarrator
 from app.v2.research_lane import ResearchCognition, ResearchLaneService
-from app.v2.research_tasks import ResearchTaskRegistry
+from app.v2.research_tasks import ResearchTaskRegistry, ResearchTaskService
 from app.v2.research_tools import ResearchToolRunner, ResearchTaskKind
 from helpers.manager_action_set_adapter import adapt_legacy_manager_intent
 from app.v2.root_cause_orchestration import (
@@ -1488,50 +1488,63 @@ def test_d10_q_real_wren_joint_root_scope_executes_both_metrics_into_verified_ev
         ).target_kind in {"metric", "kpi"}
     )
     assert len(scope_metric_handles) == 2
-    assert len(root_metric_handles) == 2
-    assert set(root_metric_handles).isdisjoint(scope_metric_handles)
-    assert {
+    # Goal authority is accepted without copying sibling executable semantics into
+    # the ROOT parent. Concrete child-task authority is minted only at execution.
+    assert root_metric_handles == ()
+
+    task_metric_handles = []
+    for scope_ref in scope_metric_handles:
+        scope_handle = semantic_handles.validate(
+            scope_ref,
+            tenant_binding=f"id:{tenant}",
+            context_version=semantic_context.context_version.version,
+        )
+        binding = semantic_handles.binding_for_execution(
+            scope_ref,
+            tenant_binding=f"id:{tenant}",
+            context_version=semantic_context.context_version.version,
+        )
+        task_handle = semantic_handles.mint_from_binding_gate(
+            tenant_binding=f"id:{tenant}",
+            context_version=semantic_context.context_version.version,
+            candidate_id=scope_handle.resolver_provenance_id,
+            target_kind=scope_handle.target_kind,
+            canonical_target=binding.canonical_target,
+            provenance_type="USER_SOURCE",
+            parent_obligation_id="U_ROOT",
+        )
+        task_metric_handles.append(task_handle.handle_id)
+
+    task = ResearchTaskService().materialize_goal_task(
+        runtime=runtime,
+        parent_obligation_id="U_ROOT",
+        capability_key=ManagerCapabilityKey.PERFORMANCE,
+        task_id="goal:U_ROOT:performance",
+        input_refs=tuple(task_metric_handles),
+    )
+    assert task.origin == "GOAL_DERIVED"
+    assert task.task_kind == ResearchTaskKind.QUERY.value
+    assert task.input_refs == tuple(task_metric_handles)
+    assert all(
         semantic_handles.validate(
             ref,
             tenant_binding=f"id:{tenant}",
             context_version=semantic_context.context_version.version,
-        ).resolver_provenance_id
-        for ref in root_metric_handles
-    } == {
-        semantic_handles.validate(
-            ref,
-            tenant_binding=f"id:{tenant}",
-            context_version=semantic_context.context_version.version,
-        ).resolver_provenance_id
-        for ref in scope_metric_handles
-    }
+        ).parent_obligation_id
+        == "U_ROOT"
+        for ref in task.input_refs
+    )
 
     registry = ResearchTaskRegistry()
-    bootstrap = RootCauseBootstrapPolicy(
-        semantic_handles=semantic_handles,
-    ).prepare(
-        runtime=runtime,
-        evidence_store=executor.evidence_store,
-        task_registry=registry,
-        root_obligation_id="U_ROOT",
-        tenant_binding=f"id:{tenant}",
-        context_version=semantic_context.context_version.version,
-    )
-    assert bootstrap.status == RootCauseBootstrapStatus.TASK_READY
-    assert bootstrap.selected_capability.value == "performance"
-    assert bootstrap.task is not None
-    assert bootstrap.task.task_kind == ResearchTaskKind.QUERY.value
-    assert bootstrap.task.input_refs == root_metric_handles
-
     before = service.query_calls
     result = ResearchToolRunner().execute(
-        task=bootstrap.task,
-        tool_id=ResearchToolRunner().tool_id_for_task(bootstrap.task),
+        task=task,
+        tool_id=ResearchToolRunner().tool_id_for_task(task),
         call=ManagerToolCall(
             name=ManagerToolName.RUN_ANALYTICS,
             args={
                 "obligation_ids": ("U_ROOT",),
-                "metric_handles": root_metric_handles,
+                "metric_handles": tuple(task_metric_handles),
             },
         ),
         runtime=runtime,
@@ -1549,7 +1562,7 @@ def test_d10_q_real_wren_joint_root_scope_executes_both_metrics_into_verified_ev
             tenant_binding=f"id:{tenant}",
             context_version=semantic_context.context_version.version,
         ).canonical_target.canonical_name
-        for ref in root_metric_handles
+        for ref in task_metric_handles
     }
     contract_ir = [
         json.loads(row.provenance_json)["v2_manager"]["analytics_ir"]
