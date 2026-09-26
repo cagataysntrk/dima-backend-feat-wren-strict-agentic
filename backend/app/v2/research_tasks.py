@@ -16,7 +16,14 @@ from pydantic import Field
 from app.v2.manager_errors import ManagerRecoverableToolError
 from app.v2.manager_models import (
     ManagerCapabilityKey,
+    ObligationOrigin,
+    ObligationPolarity,
     ObligationStatus,
+)
+from app.v2.manager_policy import (
+    ManagerCapabilityExecutionMode,
+    ManagerCapabilityLane,
+    ManagerCapabilityRegistry,
 )
 from app.v2.models import FrozenModel, ResearchTask, ResearchTaskKind
 from app.v2.research_fanout import (
