@@ -14,6 +14,7 @@ on:
       - "backend/product_contracts/ux_foundations.json"
       - "backend/control_plane/models.py"
       - "backend/control_plane/authorize.py"
+      - "backend/migrations/versions/fb4e6d2a1074_core_a_closed_loop.py"
       - "backend/belgeler/metabase/DIMA_METABASE_DECISION_RECEIPTS.md"
       - ".github/workflows/dima-metabase-core-a-focused.yml"
       - ".github/workflows/dima-metabase-m1.yml"
@@ -60,13 +61,24 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python -m py_compile app/v3/core_a/__init__.py
+          python -m py_compile app/v3/core_a/__init__.py migrations/versions/fb4e6d2a1074_core_a_closed_loop.py
           for f in app/v3/core_a/*.py; do
             python -m py_compile "$f"
           done
           for f in tests/test_v3_action_work.py tests/test_v3_outcome_observation.py tests/test_v3_institutional_memory.py tests/test_v3_watch_signal.py tests/test_v3_ux_foundations.py; do
             test ! -f "$f" || python -m py_compile "$f"
           done
+
+      - name: Verify Core A is the single Alembic head
+        working-directory: backend
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m alembic heads > /tmp/core-a-heads.txt
+          test "$(grep -Ec '^[0-9a-f]+' /tmp/core-a-heads.txt)" -eq 1
+          grep -q '^fb4e6d2a1074' /tmp/core-a-heads.txt
+          python -m alembic history --verbose > /tmp/core-a-history.txt
+          grep -q 'Rev: fa07d50b2163' /tmp/core-a-history.txt
 
       - name: Guard Core A against shadow analytics and side effects
         shell: bash

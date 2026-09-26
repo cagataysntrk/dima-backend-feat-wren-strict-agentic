@@ -66,15 +66,15 @@ jobs:
         run: |
           python -m py_compile             app/v3/action_authorization.py             control_plane/models.py             control_plane/authorize.py             migrations/versions/fa07d50b2163_action_authorization.py             tests/test_v3_action_authorization.py
 
-      - name: Verify single Alembic head
+      - name: Verify single Alembic head retains sealed ActionAuthorization revision
         working-directory: backend
         shell: bash
         run: |
           set -euo pipefail
           python -m alembic heads > /tmp/action-heads.txt
           test "$(grep -Ec '^[0-9a-f]+' /tmp/action-heads.txt)" -eq 1
-          grep -q '^fa07d50b2163' /tmp/action-heads.txt
           python -m alembic history --verbose > /tmp/action-history.txt
+          grep -q 'Rev: fa07d50b2163' /tmp/action-history.txt
           grep -q 'Rev: f9e6c4fa1052' /tmp/action-history.txt
 
       - name: Guard one-table authorization-only authority
