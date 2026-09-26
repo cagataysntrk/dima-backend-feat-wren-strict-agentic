@@ -1,9 +1,9 @@
 {
   "schema_version": "core_b_live_authorization_v1",
   "mode": "small_sentinel",
-  "decision": "MATCHED_WREN_CHALLENGE_DEVELOPMENT_ROBUSTNESS",
+  "decision": "CORE_B_PRODUCT_COMPOSITION_LIVE_REPROOF_COMPATIBILITY_GATE",
   "branch": "feat/dima-metabase-platform",
-  "candidate_product_sha": "3e7854504a140b3daccf39d2cd68dff23e378c6a",
+  "candidate_product_sha": "288ab93fa73d22bed9b7e6fd7630c6d032f5b713",
   "provider_free_run_id": 36245781069,
   "governance_run_id": 36245781152,
   "model_topology": {
@@ -13,5 +13,17 @@
   "max_observable_model_boundary_units": 30,
   "engine_sha": "cbe313af9ac2d5960f662068e433d328d896fb06",
   "source_manifest": "backend/eval/core_b/askv2_matched_20_cases.json",
-  "purpose": "Focused live reproof after generic timezone-aware control-plane persistence fix."
+  "purpose": "Compatibility gate for the frozen workflow snapshot; authoritative current proof is small-sentinel-004.json.",
+  "compatibility_gate_only": true,
+  "superseded_by": "backend/lab/metabase/core_b/authorizations/small-sentinel-004.json",
+  "current_provider_free_run_id": 36248492515,
+  "current_governance_run_id": 36248492544,
+  "current_model_topology": {
+    "research_intake": "openai/gpt-5.6-luna",
+    "p17_manager": "openai/gpt-5.6-luna",
+    "p19_manager": "openai/gpt-5.6-luna",
+    "metabot": "openrouter/openai/gpt-5.6-luna"
+  },
+  "source_manifest_blob_sha": "cf9aea5004d2bbb979015917570f32417c67017a",
+  "neutral_fixture_blob_sha": "dd6ae7d8dd19e1a38d5e3c78ea8bfb2182f1b4d7"
 }
