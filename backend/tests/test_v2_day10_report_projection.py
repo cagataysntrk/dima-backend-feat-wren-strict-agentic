@@ -408,6 +408,73 @@ def test_canonical_candidate_cause_flows_through_frozen_report_builder():
     assert finding.limitations[0] in root_blocks[0].limitations
 
 
+
+def test_signed_continuation_report_accepts_immutable_prior_contract_finding_in_same_run_lineage():
+    registry, metric, _ = _handles()
+    evidence = _execution_evidence("E_PRIOR_FINDING", "U_ROOT", metric)
+    finding = EvidenceLinkedFinding(
+        finding_id="find_" + "c" * 24,
+        parent_obligation_id="U_ROOT",
+        statement="Prior immutable candidate finding remains valid after contract supersession.",
+        epistemic_label=EpistemicLabel.CANDIDATE_CAUSE,
+        evidence_refs=("E_PRIOR_FINDING",),
+        hypothesis_ref="hyp_" + "d" * 24,
+        limitations=("Same-run prior version remains observational.",),
+        provenance=HypothesisProvenance(
+            accepted_contract_id="atc-prior-version",
+            lineage_id=LINEAGE,
+            run_id=RUN,
+        ),
+    )
+    ledger = UserObligationLedger(
+        lineage_id=LINEAGE,
+        version=2,
+        items=(
+            _item(
+                "U_ROOT",
+                ManagerCapabilityKey.ROOT_CAUSE,
+                (metric,),
+            ),
+        ),
+    )
+    projection = ResearchReportProjector(
+        semantic_handles=registry,
+        tenant_binding=TENANT,
+        context_version=CTX,
+    ).project(
+        ledger=ledger,
+        evidence=(evidence,),
+        findings=(finding,),
+    )
+    assert projection.status == ResearchReportProjectionStatus.COMPLETE
+
+    store = EvidenceStore()
+    store.put(evidence)
+    result = ReportBuilder(
+        evidence_store=store,
+        current_evidence_refs=("E_PRIOR_FINDING",),
+        findings=(finding,),
+        semantic_handles=registry,
+        known_artifacts={
+            item.artifact_id: item.artifact_kind
+            for item in projection.artifacts
+        },
+        provenance=ReportSourceProvenance(
+            accepted_contract_id="atc-current-version",
+            lineage_id=LINEAGE,
+            run_id=RUN,
+            tenant_binding=TENANT,
+            context_version=CTX,
+        ),
+    ).build(projection.request)
+
+    # accepted_contract_id is version-local.  Same immutable run + lineage is the
+    # continuity authority across signed contract supersession.
+    assert result.status == ReportBuildStatus.COMPLETE
+    assert result.report is not None
+
+
+
 def test_projector_api_has_no_observation_or_freeform_manager_truth_input():
     names = ResearchReportProjector.project.__annotations__
     signature_text = str(names)
