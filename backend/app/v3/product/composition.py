@@ -573,6 +573,7 @@ class HeadlessProductComposer:
         p19_refs: list[str] = []
         limitations: list[CompositionLimitation] = []
         p17_required: list[str] = []
+        correlated_evidence_refs: list[str] = []
         limitation_codes: dict[str, str] = {}
 
         session = self._research.start_from_brief(
@@ -633,6 +634,13 @@ class HeadlessProductComposer:
                         )
                     )
                     child_sessions.append(material_session_id)
+                    material_session = self._research.resume_state(
+                        session_id=material_session_id,
+                        principal=principal,
+                    )
+                    correlated_evidence_refs.extend(
+                        item.evidence_id for item in material_session.evidence_refs
+                    )
                     decision, p17_snapshot, error = self._resolve_relationship(
                         original_goal=goal,
                         material_session_id=material_session_id,
@@ -660,7 +668,7 @@ class HeadlessProductComposer:
                                 owner="P18",
                             )
                         )
-                except Exception as exc:
+                except (RuntimeError, ValueError) as exc:
                     code = getattr(
                         exc,
                         "code",
@@ -754,7 +762,12 @@ class HeadlessProductComposer:
             principal=principal,
         )
         evidence_refs = tuple(
-            dict.fromkeys(item.evidence_id for item in current.evidence_refs)
+            dict.fromkeys(
+                (
+                    *(item.evidence_id for item in current.evidence_refs),
+                    *correlated_evidence_refs,
+                )
+            )
         )
         p17_refs = list(dict.fromkeys(p17_refs))
         p18_refs = list(dict.fromkeys(p18_refs))

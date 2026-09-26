@@ -48,6 +48,10 @@ jobs:
         working-directory: backend
         run: pip install -e ".[dev]"
 
+      - name: Compile canonical composition live harness
+        working-directory: backend
+        run: python -m py_compile app/v3/product/composition.py lab/metabase/core_b/live_sentinel.py
+
       - name: Campaign and neutral fixture contract proof
         working-directory: backend
         run: pytest -q tests/test_v3_core_b_campaign_contract.py tests/test_v3_core_b_neutral_fixture.py

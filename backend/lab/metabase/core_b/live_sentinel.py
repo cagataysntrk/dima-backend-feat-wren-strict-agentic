@@ -17,19 +17,34 @@ from uuid import UUID
 import httpx
 from sqlmodel import SQLModel, Session, create_engine, select
 
+from app.v3.product.composition import HeadlessProductComposer
 from app.v3.product.service import HeadlessProductService, ProductSources
+from app.v3.business_relationship_policy import BusinessRelationshipPolicyStore
+from app.v3.claim_lineage import ClaimLineageStore
+from app.v3.hypothesis_root_cause import HypothesisRootCauseStore
+from app.v3.hypothesis_root_cause_provider import StructuredP19AssessmentManager
+from app.v3.report_document import ReportDocumentStore
+from app.v3.research_exploration import NativeResearchExploration
+from app.v3.research_followup import NativeResearchFollowupExecutor
+from app.v3.research_manager import ResearchInvestigationManager, ResearchReasoningStore
+from app.v3.research_manager_provider import StructuredResearchProposalManager
 from app.v3.research_intake import (
     AllowedRelationship,
     ResearchIntakeCatalog,
     ResearchIntakeCompiler,
     ResearchIntakeTerminal,
 )
-from app.v3.research_contracts import ResearchSemanticRef, SemanticTargetKind
+from app.v3.research_contracts import (
+    PresentationKind,
+    ResearchGoalKind,
+    ResearchSemanticRef,
+    SemanticTargetKind,
+)
 from app.v3.research_native_gateway import (
     NativeResearchMaterialExecutor,
     NativeSubjectSessionProvider,
 )
-from app.v3.research_product import ResearchAskOrchestrator
+from app.v3.research_product import NativeResearchOccurrenceRunner, ResearchAskOrchestrator
 from app.v3.research_store import ResearchSessionStore, ResearchPersistenceError
 from app.v3.structured_transport import OpenRouterStructuredJSONTransport
 from app.v3.substrate.metabase.native_models import NativeEngineIdentity
@@ -251,28 +266,34 @@ def _links(store_engine, session_id: str):
 def _case_result(
     *,
     case_id: str,
-    category: str,
     question: str,
     intake,
     product,
+    composer,
+    p17_manager,
+    p19_manager,
     store,
     db_engine,
     principal,
     native_token,
     minimum_evidence: int,
+    allowed_terminal_states: tuple[str, ...],
     started_at: float,
 ):
     before_intake = intake.call_count
-    result = product.research_question(
+    before_p17 = p17_manager.call_count
+    before_p19 = p19_manager.call_count
+
+    intake_result = product.research_question(
         question=question,
         catalog=_catalog(),
         principal=principal,
     )
     intake_calls = intake.call_count - before_intake
 
-    if result.terminal != ResearchIntakeTerminal.READY:
-        terminal = result.terminal.value
-        allowed = category in {"unsupported_request", "clarification"}
+    if intake_result.terminal != ResearchIntakeTerminal.READY:
+        terminal = intake_result.terminal.value
+        allowed = terminal in allowed_terminal_states
         return {
             "case_id": case_id,
             "passed": bool(allowed),
@@ -281,7 +302,17 @@ def _case_result(
             "artifact_count": 0,
             "obligations_satisfied": [],
             "obligations_unresolved": [],
-            "model_calls_by_role": {"intake": intake_calls, "metabot_stream_invocations": 0},
+            "p17_refs": [],
+            "p18_policy_use_refs": [],
+            "p19_assessment_refs": [],
+            "p20_report_ref": None,
+            "p21_decision_ref": None,
+            "model_calls_by_role": {
+                "intake": intake_calls,
+                "p17_manager": 0,
+                "p19_manager": 0,
+                "metabot_stream_invocations": 0,
+            },
             "metabase_analytical_calls": 0,
             "manager_research_turns": 0,
             "first_evidence_latency_ms": None,
@@ -294,33 +325,34 @@ def _case_result(
             "security_valid": True,
         }
 
-    brief = result.brief
+    brief = intake_result.brief
     assert brief is not None
     source_hash = hashlib.sha256(question.encode("utf-8")).hexdigest()
-    session = store.start_from_brief(
+
+    composition = composer.compose(
         brief=brief,
+        principal=principal,
         request_ref=f"sentinel:{case_id}",
         source_message_hash=source_hash,
-        principal=principal,
+        native_session_token=native_token,
     )
-
-    first_evidence_latency = None
-    for obligation in brief.questions:
-        response = store.run_next(
-            session_id=session.session_id,
-            principal=principal,
-            obligation_id=obligation.goal_id,
-            native_session_token=native_token,
-        )
-        if response.evidence_id and first_evidence_latency is None:
-            first_evidence_latency = int((time.monotonic() - started_at) * 1000)
+    p17_calls = p17_manager.call_count - before_p17
+    p19_calls = p19_manager.call_count - before_p19
 
     final = store.resume_state(
-        session_id=session.session_id,
+        session_id=composition.research_session_id,
         principal=principal,
     )
-    links = _links(db_engine, final.session_id)
-    evidence_count = len(final.evidence_refs)
+    session_ids = (
+        composition.research_session_id,
+        *composition.child_research_session_ids,
+    )
+    links = tuple(
+        link
+        for session_id in session_ids
+        for link in _links(db_engine, session_id)
+    )
+    evidence_count = len(composition.evidence_refs)
     verified = [
         item.obligation_id
         for item in final.obligations
@@ -338,50 +370,101 @@ def _case_result(
         for link in links
     )
 
-    failure = None
-    passed = evidence_count >= minimum_evidence and lineage_valid
-    terminal = "ANSWER" if final.stopping.status.value == "COMPLETE" else "PARTIAL"
+    relationship_required = any(
+        item.kind == ResearchGoalKind.RELATIONSHIP
+        for item in brief.questions
+    )
+    root_required = any(
+        item.kind == ResearchGoalKind.ROOT_CAUSE
+        for item in brief.questions
+    )
+    p17_required = bool(composition.p17_required_goal_ids)
+    report_required = any(
+        item.kind == PresentationKind.REPORT
+        for item in brief.deliverables
+    )
 
-    # The sentinel deliberately refuses to count lower authority as an advanced
-    # product capability. These families must obtain their sealed owner artifact.
-    if category == "relationship":
+    failure = None
+    terminal = composition.terminal_state.value
+    passed = (
+        evidence_count >= minimum_evidence
+        and lineage_valid
+        and terminal in allowed_terminal_states
+    )
+    if relationship_required and not composition.p18_policy_use_refs:
         passed = False
         failure = "P18_RELATIONSHIP_AUTHORITY_NOT_COMPOSED"
-        terminal = "PARTIAL"
-    elif category == "root_cause":
+    elif root_required and (
+        not composition.p17_step_refs
+        or not composition.p19_assessment_refs
+    ):
         passed = False
         failure = "P19_EPISTEMIC_AUTHORITY_NOT_COMPOSED"
-        terminal = "PARTIAL"
-    elif category == "adaptive_branch":
+    elif p17_required and not composition.p17_step_refs:
         passed = False
         failure = "P17_ADAPTIVE_AUTHORITY_NOT_COMPOSED"
-        terminal = "PARTIAL"
+    elif report_required and not composition.p20_report_ref:
+        passed = False
+        failure = "P20_REPORT_AUTHORITY_NOT_COMPOSED"
+    elif evidence_count < minimum_evidence:
+        passed = False
+        failure = "MINIMUM_EVIDENCE_NOT_MET"
+    elif not lineage_valid:
+        passed = False
+        failure = "GOVERNED_LINEAGE_INVALID"
+    elif terminal not in allowed_terminal_states:
+        passed = False
+        failure = "TERMINAL_NOT_ACCEPTED"
 
+    elapsed_ms = int((time.monotonic() - started_at) * 1000)
+    artifact_count = (
+        1
+        + evidence_count
+        + len(composition.p17_step_refs)
+        + len(composition.p18_policy_use_refs)
+        + len(composition.p19_assessment_refs)
+        + int(composition.p20_report_ref is not None)
+        + int(composition.p21_decision_ref is not None)
+    )
     return {
         "case_id": case_id,
         "passed": bool(passed),
         "terminal_state": terminal,
         "research_session_id": final.session_id,
+        "child_research_session_ids": list(composition.child_research_session_ids),
         "evidence_count": evidence_count,
-        "artifact_count": 1 + evidence_count,
+        "artifact_count": artifact_count,
         "obligations_satisfied": verified,
         "obligations_unresolved": unresolved,
+        "p17_required_goal_ids": list(composition.p17_required_goal_ids),
+        "p17_refs": list(composition.p17_step_refs),
+        "p18_policy_use_refs": list(composition.p18_policy_use_refs),
+        "p19_assessment_refs": list(composition.p19_assessment_refs),
+        "p20_report_ref": composition.p20_report_ref,
+        "p21_decision_ref": composition.p21_decision_ref,
+        "composition_limitations": [
+            item.model_dump(mode="json")
+            for item in composition.limitations
+        ],
         "model_calls_by_role": {
             "intake": intake_calls,
+            "p17_manager": p17_calls,
+            "p19_manager": p19_calls,
             "metabot_stream_invocations": len(links),
         },
         "metabase_analytical_calls": len(links),
-        "manager_research_turns": len(links),
-        "first_evidence_latency_ms": first_evidence_latency,
-        "report_ready_latency_ms": None,
-        "total_latency_ms": int((time.monotonic() - started_at) * 1000),
+        "manager_research_turns": p17_calls,
+        "first_evidence_latency_ms": elapsed_ms if evidence_count else None,
+        "report_ready_latency_ms": (
+            elapsed_ms if composition.p20_report_ref is not None else None
+        ),
+        "total_latency_ms": elapsed_ms,
         "failure_class": failure,
         "causal_overclaim": False,
         "invented_number": False,
         "lineage_valid": lineage_valid,
         "security_valid": True,
     }
-
 
 def _security_case(
     *,
@@ -520,25 +603,89 @@ def main() -> int:
         expected_identity=expected,
         db_engine=db_engine,
     )
+    material_executor=NativeResearchMaterialExecutor(
+        subject_provider=subjects,
+        store=session_store,
+        expected_identity=expected,
+    )
     orchestrator=ResearchAskOrchestrator(
         store=session_store,
         bridge_factory=subjects,
-        material_executor=NativeResearchMaterialExecutor(
-            subject_provider=subjects,
-            store=session_store,
-            expected_identity=expected,
-        ),
+        material_executor=material_executor,
     )
-    transport=OpenRouterStructuredJSONTransport(
+
+    intake_transport=OpenRouterStructuredJSONTransport(
         api_key=api_key,
         model=MODEL,
     )
-    intake=ResearchIntakeCompiler(transport=transport)
+    p17_transport=OpenRouterStructuredJSONTransport(
+        api_key=api_key,
+        model=MODEL,
+    )
+    p19_transport=OpenRouterStructuredJSONTransport(
+        api_key=api_key,
+        model=MODEL,
+    )
+    intake=ResearchIntakeCompiler(transport=intake_transport)
     product=HeadlessProductService(
         sources=ProductSources(
             research=orchestrator,
             intake=intake,
         )
+    )
+
+    reasoning=ResearchReasoningStore(db_engine)
+    claim_store=ClaimLineageStore(
+        research_store=session_store,
+        db_engine=db_engine,
+    )
+    occurrence_runner=NativeResearchOccurrenceRunner(
+        store=session_store,
+        bridge_factory=subjects,
+        material_executor=material_executor,
+    )
+    exploration=NativeResearchExploration(
+        research_store=session_store,
+        subject_provider=subjects,
+    )
+    p17=ResearchInvestigationManager(
+        research_store=session_store,
+        claim_store=claim_store,
+        reasoning_store=reasoning,
+        followup_executor=NativeResearchFollowupExecutor(
+            store=session_store,
+            occurrence_runner=occurrence_runner,
+            exploration=exploration,
+        ),
+        db_engine=db_engine,
+    )
+    p17_manager=StructuredResearchProposalManager(
+        transport=p17_transport,
+    )
+    p18=BusinessRelationshipPolicyStore(
+        research_store=session_store,
+        db_engine=db_engine,
+    )
+    p19=HypothesisRootCauseStore(
+        research_store=session_store,
+        db_engine=db_engine,
+    )
+    p19_manager=StructuredP19AssessmentManager(
+        transport=p19_transport,
+    )
+    p20=ReportDocumentStore(
+        research_store=session_store,
+        db_engine=db_engine,
+    )
+    composer=HeadlessProductComposer(
+        research=orchestrator,
+        investigation=p17,
+        investigation_manager=p17_manager,
+        reasoning=reasoning,
+        relationships=p18,
+        epistemics=p19,
+        epistemic_manager=p19_manager,
+        reports=p20,
     )
 
     source_cases=_load_cases(args.manifest)
@@ -549,15 +696,21 @@ def main() -> int:
         observations.append(
             _case_result(
                 case_id=cid,
-                category=str(case["category"]),
                 question=str(case["platform_question"]),
                 intake=intake,
                 product=product,
+                composer=composer,
+                p17_manager=p17_manager,
+                p19_manager=p19_manager,
                 store=orchestrator,
                 db_engine=db_engine,
                 principal=_principal(),
                 native_token=token,
                 minimum_evidence=int(case["acceptance_contract"]["minimum_evidence"]),
+                allowed_terminal_states=tuple(
+                    str(item)
+                    for item in case["acceptance_contract"]["terminal_states"]
+                ),
                 started_at=started,
             )
         )
@@ -570,10 +723,14 @@ def main() -> int:
             native_token=token,
         )
     )
-    transport.close()
+    intake_transport.close()
+    p17_transport.close()
+    p19_transport.close()
 
     total_budget_units=sum(
         int(item["model_calls_by_role"].get("intake",0))
+        + int(item["model_calls_by_role"].get("p17_manager",0))
+        + int(item["model_calls_by_role"].get("p19_manager",0))
         + int(item["model_calls_by_role"].get("metabot_stream_invocations",0))
         for item in observations
     )
@@ -590,6 +747,8 @@ def main() -> int:
         "engine_runtime_tag":args.runtime_tag,
         "model_topology":{
             "research_intake":MODEL,
+            "p17_manager":MODEL,
+            "p19_manager":MODEL,
             "metabot":"openrouter/openai/gpt-5.6-luna",
             "new_model_cascade":False,
         },
