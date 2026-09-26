@@ -1,7 +1,7 @@
 {
   "version": "v2-precomparison-canary-v1",
   "purpose": "Small continuous provider-free regression set for pre-comparison high-risk families.",
-  "case_count": 12,
+  "case_count": 13,
   "cases": [
     {
       "id": "source_truth_revision",
@@ -50,6 +50,10 @@
     {
       "id": "pilot_rollback_dark",
       "node": "tests/test_v2_day15_pilot_rollback.py::test_comparison_seal_configuration_is_dark_by_default"
+    },
+    {
+      "id": "nonterminal_resume",
+      "node": "tests/test_v2_day14_persistence_resume.py::test_crash_after_accepted_contract_restores_authority_without_fabricating_evidence"
     }
   ],
   "forbidden": [
