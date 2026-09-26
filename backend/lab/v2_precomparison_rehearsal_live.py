@@ -386,9 +386,12 @@ def _run_restart(case, *, settings, budget, service, principal, checkpoint_root)
     elapsed_ms = int((time.monotonic() - started) * 1000)
     checks = {
         **initial_checks,
-        "restart_continuation_report": continuation.status == ProductStatus.REPORT,
-        "restart_continuation_verified": bool(
-            continuation.terminal_receipt.verified_complete
+        "restart_continuation_status_allowed": (
+            _value(continuation.status) in set(case["statuses"])
+        ),
+        "restart_continuation_verified": (
+            not bool(case.get("require_continuation_verified", False))
+            or bool(continuation.terminal_receipt.verified_complete)
         ),
         "version_incremented": bool(
             initial.report
