@@ -1210,6 +1210,103 @@ def test_d10_l_typed_relationship_preempts_conversation_repair():
     assert engine.authority_registry.accepted("turn-d10-l-rel-repair") is None
 
 
+
+def test_d10_l_adaptive_policy_handoff_preempts_standard_grounding_without_authority():
+    question = (
+        "net geliri araştır; doğrulanmış kanıt yeni ve maddi bir yön gösterirse "
+        "o yönü takip et"
+    )
+    draft_payload = {
+        "obligations": [
+            {
+                "obligation_id": "U_PERF",
+                "capability_key": "performance",
+                "origin": "USER_MUST",
+                "priority": "MUST",
+                "polarity": "REQUIRED",
+                "source_surfaces": ["net geliri araştır"],
+                "semantic_surfaces": [
+                    {"surface": "net geliri", "kind_hint": "metric"},
+                ],
+                "ranking_direction": None,
+                "ranking_limit": None,
+            }
+        ],
+        "control_requests": [
+            {
+                "request_id": "H_ADAPT",
+                "category": "RESEARCH_POLICY_HANDOFF",
+                "source_surfaces": [
+                    "doğrulanmış kanıt yeni ve maddi bir yön gösterirse o yönü takip et"
+                ],
+            }
+        ],
+    }
+
+    semantic = _D10LForbiddenSemanticProvider()
+    engine, outcome = _run_d10_l_engine(
+        question=question,
+        draft_payload=draft_payload,
+        coverage=lambda *args, **kwargs: (_ for _ in ()).throw(
+            AssertionError("typed Research policy handoff must not call Standard coverage")
+        ),
+        semantic_provider=semantic,
+        turn_id="turn-d10-l-adaptive-handoff",
+    )
+
+    assert outcome.status == StandardLaneStatus.RESEARCH_REQUIRED
+    assert outcome.obligations == ()
+    assert outcome.projection is None
+    assert outcome.authority is None
+    assert semantic.calls == 0
+    assert "Research policy handoff" in outcome.reasons[0]
+    assert engine.authority_registry.accepted("turn-d10-l-adaptive-handoff") is None
+
+
+def test_d10_l_research_policy_handoff_requires_exact_current_message_source():
+    question = "net geliri araştır"
+    bad = {
+        "obligations": [
+            {
+                "obligation_id": "U_PERF",
+                "capability_key": "performance",
+                "origin": "USER_MUST",
+                "priority": "MUST",
+                "polarity": "REQUIRED",
+                "source_surfaces": ["net geliri"],
+                "semantic_surfaces": [
+                    {"surface": "net geliri", "kind_hint": "metric"},
+                ],
+                "ranking_direction": None,
+                "ranking_limit": None,
+            }
+        ],
+        "control_requests": [
+            {
+                "request_id": "H_BAD",
+                "category": "RESEARCH_POLICY_HANDOFF",
+                "source_surfaces": ["kanıt yeni yön gösterirse takip et"],
+            }
+        ],
+    }
+
+    semantic = _D10LForbiddenSemanticProvider()
+    engine, outcome = _run_d10_l_engine(
+        question=question,
+        draft_payload=bad,
+        coverage=lambda *args, **kwargs: (_ for _ in ()).throw(
+            AssertionError("source-invalid handoff must fail before coverage")
+        ),
+        semantic_provider=semantic,
+        turn_id="turn-d10-l-bad-adaptive-handoff",
+    )
+
+    assert outcome.status == StandardLaneStatus.COGNITION_REJECTED
+    assert outcome.authority is None
+    assert semantic.calls == 0
+    assert engine.authority_registry.accepted("turn-d10-l-bad-adaptive-handoff") is None
+
+
 def test_d10_l_typed_research_does_not_depend_on_standard_semantic_resolution():
     question = "belirsiz metrik için kök nedeni araştır"
     draft_payload = {
