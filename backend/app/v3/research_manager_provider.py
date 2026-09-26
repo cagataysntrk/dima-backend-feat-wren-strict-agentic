@@ -11,6 +11,7 @@ from typing import Any, Literal, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from app.v3.claim_lineage import ClaimFreshness
 from app.v3.structured_transport import validate_provider_strict_schema
 from app.v3.research_manager import (
     InvestigationBranchKeyPolicy,
@@ -250,6 +251,9 @@ class ResearchManagerProposalDraft(_Frozen):
         return self
 
 
+ResearchManagerProposalDraft.model_rebuild()
+
+
 _ACTION_FOR_INTENT = {
     InvestigationIntent.INVESTIGATE_GAP: ManagerAction.EXPLORE_NATIVE,
     InvestigationIntent.EXPLORE_ALTERNATIVES: (
@@ -310,6 +314,8 @@ def _strict_json_schema(schema: dict[str, Any]) -> dict[str, Any]:
         "maximum",
         "exclusiveMinimum",
         "exclusiveMaximum",
+        "minItems",
+        "maxItems",
         "format",
     }
 
