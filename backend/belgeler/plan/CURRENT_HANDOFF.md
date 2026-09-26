@@ -1,65 +1,88 @@
-## LATEST AUTHORITY — SOURCE-TRUTH LIVE-PROVEN / HARNESS CAP FIXED / PAID RE-MEASUREMENT IN PROGRESS
+## LATEST AUTHORITY — DAY10 FULL TWO-TURN PAID GREEN / FINAL SEALED
 
 ```text
 branch                           feat/ask-v2-mvp
-engineering measurement base     a70a20997e86f87dd83baa40845e8eaa01b2ae49
-Product behavior                 6dacfebd70caf0e91e2d701192d2de41fe4d66f6
+Day10 engineering candidate      61fd0556f69bfde678002bdb521dc75d0d49d713
+Product behavior                 e1b3823b82cd28bbe9b4725abf81a4aa49d578ba
 backend/app diff after Product   ZERO
 
-Day10 focused                    36227497718 = GREEN
-Day8 focused                     36227497717 = GREEN
-Day7 focused                     36227497720 = GREEN
+Day10 focused                    36229010298 = GREEN
+Day8 focused                     36229010266 = GREEN
+Day7 focused                     36229010331 = GREEN
 
-harness correction Day10         36228073546 = GREEN
-harness correction Day8          36228073620 = GREEN
+final paid                       36229302570 = GREEN
+paid scope                       CANONICAL_NS4
+Product turns                    2 / 2
+initial Product                  REPORT / VERIFIED_COMPLETE
+signed continuation              REPORT / VERIFIED_COMPLETE
+initial report                   version 1
+continuation report              version 2 / supersedes v1
+real Wren                        query 6 / dry-plan 6 / cube-sql 6
 
-source-truth revision family     FAM-PREACCEPTANCE-REVISION-SOURCE-TRUTH-DRIFT
-source-truth status              CLOSED / LIVE-PROVEN
-latest prior paid                36227806311 = FAILURE / NO PRODUCT VERDICT
-prior terminal                   SEMANTIC_LINKER HARNESS CAP 3 / 3
-harness semantic role cap        4
-global paid hard cap             20
-active family                    FAM-PAID-HARNESS-SEMANTIC-ROLE-CAP
-active family status             FIXED / PAID RE-MEASUREMENT AUTHORIZED
+ROOT live certification          VALID
+CANDIDATE_CAUSE                  >= 1
+CONFIRMED_CAUSE                  0
+ADAPT_ON_EVIDENCE                APPLIED / VALIDLY_ACCOUNTED
+adaptive certification           COMPLETE / VALID
 
-current paid run                 36228701676 = IN PROGRESS
-current paid epoch               0 / 40 used before run
-current paid epoch remaining     40 / 40 before run
-measurement cap                  20 calls
+source-truth revision family     CLOSED / LIVE-PROVEN
+harness semantic-role-cap family CLOSED / LIVE-PROVEN
+presentation-control polarity    CLOSED / LIVE-PROVEN
 
 ManagerBudget                    4 / 4 / 8 = FEASIBLE / RATIFIED
 ActionSet materializability      GREEN / RATIFIED
 READY hydration parity           GREEN / RATIFIED
-finding supersession provenance  GREEN
-signed continuation architecture HEALTHY provider-free
+signed continuation authority    GREEN / LIVE-PROVEN
+finding supersession provenance  GREEN / LIVE-PROVEN
+
+PAID_EPOCH_CURRENT used          28 / 40
+PAID_EPOCH_CURRENT remaining     12 / 40
 
 Day8 FINAL                       SEALED
-Day10 FINAL                      OPEN / PAID GATE RUNNING
+Day10 FINAL                      SEALED
+Day11 roadmap work               AUTHORIZED NEXT
 DEV80                            NOT AUTHORIZED YET
 ```
 
-Current source-truth invariant:
+Final Day10 proof chain:
 
 ```text
-FINITE PREACCEPTANCE REVISION
-MAY CHANGE OBLIGATION STRUCTURE.
+provider-free root fix
+→ Day10 / Day8 / Day7 GREEN
+→ paid run 36229302570
+→ initial Product REPORT
+→ real Wren execution
+→ Evidence / ROOT / hypothesis lifecycle certified
+→ ADAPT directive terminally accounted
+→ ReportDocument v1
+→ signed section continuation
+→ inherited analytical authority server-hydrated
+→ ReportDocument v2 supersedes v1
+→ previous report remains immutable
+→ second CompletionGate VERIFIED_COMPLETE
+→ DAY10 FINAL SEALED
+```
 
-IT MUST NOT RANDOMLY CHANGE
-THE CANONICAL MEANING OF THE SAME EXACT USER SOURCE.
+Permanent harvest added by the final paid cycle:
 
-SOURCE TRUTH LIFETIME
-MUST OUTLIVE DRAFT REVISION
-WITHIN ONE IMMUTABLE USER TURN.
+```text
+PRESENTATION DELIVERABLE
+!=
+ARTIFACT LIFECYCLE / IMMUTABILITY CONTROL
 
-OWNER AUTHORITY MAY BE REMINTED.
-SOURCE TRUTH MUST NOT BE RE-ROLLED.
+If one probabilistic draft expresses the same presentation effect as both
+REQUIRED and EXCLUDED:
+→ do not immediately turn model draft instability into user ambiguity
+→ allow one bounded finite-preacceptance revision
+→ control/lifecycle constraints remain NON_AUTHORITATIVE_CONTROL_REQUEST
+→ if the contradiction survives the bounded revision, fail closed to clarification
 
-IDENTICAL NEGATIVE SEMANTIC QUESTION
-+ IDENTICAL GOVERNED CANDIDATE UNIVERSE
-= NO NEW COGNITION VALUE.
+SOURCE TRUTH
+!=
+OWNER AUTHORITY
 
-different governed candidate universe
-= fresh bounded cognition may run
+canonical source candidate may survive finite draft revision
+while each revised obligation owner receives a fresh BindingGate sem_* edge.
 ```
 
 Current generic continuation fix:
