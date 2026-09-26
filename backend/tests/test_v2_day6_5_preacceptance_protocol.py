@@ -3515,3 +3515,138 @@ def test_revision_source_truth_survives_cross_cube_contract_revision_without_rec
         in reason
         for reason in rejected["reasons"]
     )
+
+
+def test_presentation_control_misclassification_gets_one_bounded_revision_before_clarify():
+    question = "Create a new report version and keep the prior artifact immutable."
+    conflicted = {
+        "obligations": [
+            _obligation(
+                obligation_id="U_REPORT_REQUIRED",
+                capability="report",
+                source_surfaces=("Create a new report version",),
+                semantic_surfaces=(),
+            ),
+            {
+                **_obligation(
+                    obligation_id="U_REPORT_EXCLUDED",
+                    capability="report",
+                    source_surfaces=("keep the prior artifact immutable",),
+                    semantic_surfaces=(),
+                ),
+                "polarity": "EXCLUDED",
+            },
+        ],
+        "research_directives": [],
+        "control_requests": [],
+    }
+    corrected = {
+        "obligations": [
+            _obligation(
+                obligation_id="U_REPORT_REQUIRED_V2",
+                capability="report",
+                source_surfaces=("Create a new report version",),
+                semantic_surfaces=(),
+            ),
+        ],
+        "research_directives": [],
+        "control_requests": [
+            {
+                "request_id": "C_IMMUTABLE",
+                "category": "NON_AUTHORITATIVE_CONTROL_REQUEST",
+                "source_surfaces": ("keep the prior artifact immutable",),
+            },
+        ],
+    }
+    scripted = _ScriptedStructured(
+        drafts=[conflicted, corrected],
+        audits=[{"status": "PASS", "issues": []}],
+    )
+    loop, runtime, executor = _loop(scripted)
+
+    outcome = loop.understand(
+        question=question,
+        message_id="turn-presentation-control-revision",
+        request_ref="req-presentation-control-revision",
+        runtime=runtime,
+        executor=executor,
+    )
+
+    assert outcome.accepted is True
+    shape = next(
+        item
+        for item in outcome.observations
+        if item.get("kind") == "presentation_polarity_shape"
+    )
+    assert shape["attempt"] == 1
+    assert shape["status"] == "REJECTED"
+    assert shape["gaps"] == [
+        {
+            "effect_family": "report",
+            "required_obligation_ids": ["U_REPORT_REQUIRED"],
+            "excluded_obligation_ids": ["U_REPORT_EXCLUDED"],
+        }
+    ]
+    assert scripted.calls == [
+        "dima_intent_draft_v1",
+        "dima_intent_draft_v1",
+        "dima_intent_coverage_v1",
+    ]
+    assert runtime.ledger is not None
+    active = {
+        item.obligation_id: item
+        for item in runtime.ledger.active_user_must
+    }
+    assert set(active) == {"U_REPORT_REQUIRED_V2"}
+    assert active["U_REPORT_REQUIRED_V2"].polarity == ObligationPolarity.REQUIRED
+
+
+def test_persistent_presentation_polarity_conflict_fails_closed_to_user_clarification():
+    question = "Create the deliverable but also exclude that same deliverable."
+    conflicted = {
+        "obligations": [
+            _obligation(
+                obligation_id="U_REPORT_REQUIRED",
+                capability="report",
+                source_surfaces=("Create the deliverable",),
+                semantic_surfaces=(),
+            ),
+            {
+                **_obligation(
+                    obligation_id="U_REPORT_EXCLUDED",
+                    capability="report",
+                    source_surfaces=("exclude that same deliverable",),
+                    semantic_surfaces=(),
+                ),
+                "polarity": "EXCLUDED",
+            },
+        ],
+        "research_directives": [],
+        "control_requests": [],
+    }
+    scripted = _ScriptedStructured(
+        drafts=[conflicted, conflicted],
+        audits=[],
+    )
+    loop, runtime, executor = _loop(scripted)
+
+    outcome = loop.understand(
+        question=question,
+        message_id="turn-persistent-presentation-conflict",
+        request_ref="req-persistent-presentation-conflict",
+        runtime=runtime,
+        executor=executor,
+    )
+
+    assert outcome.accepted is False
+    assert outcome.clarification_required is True
+    conflicts = [
+        item
+        for item in outcome.observations
+        if item.get("kind") == "presentation_polarity_shape"
+    ]
+    assert [item["attempt"] for item in conflicts] == [1, 2]
+    assert scripted.calls == [
+        "dima_intent_draft_v1",
+        "dima_intent_draft_v1",
+    ]
