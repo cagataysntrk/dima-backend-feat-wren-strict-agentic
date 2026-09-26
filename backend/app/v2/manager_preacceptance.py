@@ -1307,6 +1307,16 @@ class PreAcceptanceController:
             }
         ]
         revision_feedback: dict[str, Any] | None = None
+        begin_semantic_session = getattr(
+            executor,
+            "begin_preacceptance_semantic_session",
+            None,
+        )
+        if callable(begin_semantic_session):
+            begin_semantic_session(
+                message_id=message_id,
+                message_hash=source_hash,
+            )
 
         for attempt in range(1, self._max_draft_attempts + 1):
             runtime.reset_semantic_resolution_receipts()
