@@ -62,3 +62,35 @@ def test_rehearsal_manifest_has_no_wren_internal_or_certification_case_ids():
     assert "hidden50" in raw  # forbidden marker only
     for forbidden in ("cube_sql_expected", "action_ref", "wren_internal_event"):
         assert forbidden not in raw
+
+
+def test_every_rehearsal_case_has_explicit_behavioral_contract_class():
+    manifest = _manifest()
+    allowed = {
+        "MUST_EXECUTE",
+        "MAY_CLARIFY",
+        "MUST_CLARIFY",
+        "MUST_REJECT",
+        "SECURITY_ATTACK",
+        "CONTINUATION",
+        "PERSISTENCE",
+    }
+    assert set(manifest["contract_classes"]) == allowed
+    assert all(item["contract_class"] in allowed for item in manifest["cases"])
+
+
+def test_canonical_metamorphic_family_shares_one_execution_contract_class():
+    cases = {item["id"]: item for item in _manifest()["cases"]}
+    assert {
+        cases["canonical_full"]["contract_class"],
+        cases["canonical_reordered"]["contract_class"],
+        cases["canonical_no_diacritics"]["contract_class"],
+    } == {"MUST_EXECUTE"}
+
+
+def test_orthogonal_cases_are_not_scored_as_generic_analytical_execution_contracts():
+    cases = {item["id"]: item for item in _manifest()["cases"]}
+    assert cases["foreign_principal_replay"]["contract_class"] == "SECURITY_ATTACK"
+    assert cases["broaden_policy"]["contract_class"] == "CONTINUATION"
+    assert cases["report_control"]["contract_class"] == "CONTINUATION"
+    assert cases["restart_signed_continuation"]["contract_class"] == "PERSISTENCE"
