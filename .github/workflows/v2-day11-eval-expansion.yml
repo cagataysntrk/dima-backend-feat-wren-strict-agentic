@@ -1,0 +1,54 @@
+name: v2-day11-eval-expansion
+
+"on":
+  push:
+    branches:
+      - feat/ask-v2-mvp
+    paths:
+      - "backend/eval/v2_day11_eval_expansion_manifest.json"
+      - "backend/tests/test_v2_day11_eval_expansion.py"
+      - ".github/workflows/v2-day11-eval-expansion.yml"
+  workflow_dispatch:
+
+jobs:
+  provider-free-day11-coverage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install backend
+        working-directory: backend
+        run: pip install -e ".[dev]"
+
+      - name: Day11 coverage manifest and holdout separation
+        working-directory: backend
+        run: pytest -q tests/test_v2_day11_eval_expansion.py
+
+      - name: Day11 metamorphic invariant gate
+        working-directory: backend
+        run: |
+          pytest -q \
+            tests/test_v2_day7_obligation_local_semantic_recovery.py::test_source_truth_owner_order_permutation_does_not_change_canonical_truth \
+            tests/test_v2_day7_obligation_local_semantic_recovery.py::test_source_truth_candidate_order_permutation_keeps_selected_identity \
+            tests/test_v2_day7_obligation_local_semantic_recovery.py::test_source_truth_same_source_different_kind_does_not_share_decision \
+            tests/test_v2_day6_5_preacceptance_protocol.py::test_d10_q_scope_group_generation_is_permutation_stable_and_excludes_excluded \
+            tests/test_v2_day6_5_preacceptance_protocol.py::test_d10_q_unique_full_cover_classifier_is_permutation_invariant \
+            tests/test_v2_day10_s_action_availability.py::test_candidate_order_permutation_does_not_change_action_set_identity \
+            tests/test_v2_day10_continuation.py::test_versioned_report_supersedes_without_mutating_prior_report
+
+      - name: Existing external holdout attestation contract
+        working-directory: backend
+        run: pytest -q tests/test_v2_day6_5_holdout_freeze.py
+
+      - name: Assert no certification corpus was executed
+        run: |
+          test ! -e backend/lab/reports/v2_day6_5_dev80.json
+          test ! -e backend/lab/reports/v2_day6_5_validation50.json
+          test ! -e backend/lab/reports/v2_day6_5_hidden50.json
