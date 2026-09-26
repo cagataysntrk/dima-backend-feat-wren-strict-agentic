@@ -48,7 +48,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          AUTH="backend/lab/metabase/core_b/authorizations/small-sentinel-005.json"
+          AUTH="backend/lab/metabase/core_b/authorizations/small-sentinel-006.json"
           test -f "$AUTH"
           python - "$AUTH" "$(git rev-parse HEAD^)" <<'PY'
           import json,subprocess,sys
@@ -56,10 +56,18 @@ jobs:
           p=Path(sys.argv[1]); parent=sys.argv[2]
           value=json.loads(p.read_text(encoding="utf-8"))
           assert value["mode"]=="small_sentinel"
-          assert value["decision"]=="CORE_B_OWNER_SCOPED_MUST_FINAL_LIVE_SENTINEL"
+          assert value["decision"]=="CORE_B_P17_PROVIDER_RECOVERY_FINAL_LIVE_SENTINEL"
           assert value["candidate_product_sha"]==parent
-          assert value["provider_free_run_id"]==36250936119
-          assert value["governance_run_id"]==36250936065
+          assert value["provider_free_run_id"]==36275984671
+          assert value["governance_run_id"]==36275984683
+          assert value["p17_provider_free_run_id"]==36275984685
+          assert value["p17_live_recovery_run_id"]==36276202664
+          assert value["p17_live_recovery_status"]=="GREEN"
+          assert value["p17_recovered_call_count"]==2
+          assert value["p17_recovered_call_statuses"]==[200,200]
+          assert value["p17_live_p19_provider_calls"]==0
+          assert value["p17_recovered_turn2_schema_fingerprint"]=="1f4138e9d871597dbc9fefd068649f91f72800c078d8b7243d9ce9382576066f"
+          assert value["p17_historical_failed_turn2_schema_fingerprint"]=="80533318ccc154c2e183e66099bb1f42d4a055413a2fffec7939ee172cda9b11"
           assert value["max_observable_model_boundary_units"]==30
           assert value["case_count"]==6
           assert value["engine_sha"]=="cbe313af9ac2d5960f662068e433d328d896fb06"
@@ -73,12 +81,16 @@ jobs:
           assert value["neutral_fixture_blob_sha"]=="dd6ae7d8dd19e1a38d5e3c78ea8bfb2182f1b4d7"
           assert value["engine_lock_blob_sha"]=="764ed2779fab6c970d062d520d5c9709b91d4ba3"
           assert value["live_runner_blob_sha"]=="9ebf66876b1023c3dd7be54f6035281debd7b4e4"
+          assert value["research_manager_provider_blob_sha"]=="5e06e58e402134fb4d072837951ddec4f455b240"
+          assert value["structured_transport_blob_sha"]=="21bed409418085471191feddde25db09b9e4b487"
           def blob(path):
               return subprocess.check_output(["git","rev-parse",f"HEAD:{path}"],text=True).strip()
           assert blob("backend/eval/core_b/askv2_matched_20_cases.json")==value["source_manifest_blob_sha"]
           assert blob("backend/lab/metabase/core_b/fixtures/machine_operations.json")==value["neutral_fixture_blob_sha"]
           assert blob("backend/lab/metabase/core_b/runtime/engine_runtime_lock.json")==value["engine_lock_blob_sha"]
           assert blob("backend/lab/metabase/core_b/live_sentinel.py")==value["live_runner_blob_sha"]
+          assert blob("backend/app/v3/research_manager_provider.py")==value["research_manager_provider_blob_sha"]
+          assert blob("backend/app/v3/structured_transport.py")==value["structured_transport_blob_sha"]
           PY
           test -n "$DIMA_OPENROUTER_API_KEY"
 
@@ -176,6 +188,35 @@ jobs:
         run: |
           mkdir -p eval/core_b/artifacts
           python lab/metabase/core_b/live_sentinel.py             --base-url http://127.0.0.1:3361             --email "$MB_RESTRICTED_EMAIL"             --password "$MB_RESTRICTED_PASSWORD"             --manifest eval/core_b/askv2_matched_20_cases.json             --output eval/core_b/artifacts/small_live_sentinel.json             --control-db eval/core_b/artifacts/small_live_sentinel.db             --engine-sha "$ENGINE_SHA"             --upstream-sha "$UPSTREAM_BASE_SHA"             --runtime-tag "$RUNTIME_TAG"             --runtime-image-digest "$REGISTRY_DIGEST"             --build-identity "$BUILD_IDENTITY"             --image-identity "$REGISTRY_DIGEST"             --platform-sha "$GITHUB_SHA"
+
+      - name: Verify final frozen sentinel receipt
+        working-directory: backend
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("eval/core_b/artifacts/small_live_sentinel.json")
+          value=json.loads(p.read_text(encoding="utf-8"))
+          assert value["schema_version"]=="core_b_small_live_sentinel_v1"
+          assert value["status"]=="GREEN"
+          assert value["case_count"]==6
+          assert value["passed"]==6
+          assert value["failed"]==0
+          assert value["failed_case_ids"]==[]
+          assert value["observable_model_boundary_units"] <= 30
+          assert value["model_budget_ceiling"]==30
+          assert value["silent_wrong_count"]==0
+          assert value["security_violations"]==0
+          assert value["engine_sha"]=="cbe313af9ac2d5960f662068e433d328d896fb06"
+          assert value["model_topology"]=={
+              "research_intake":"openai/gpt-5.6-luna",
+              "p17_manager":"openai/gpt-5.6-luna",
+              "p19_manager":"openai/gpt-5.6-luna",
+              "metabot":"openrouter/openai/gpt-5.6-luna",
+              "new_model_cascade":False,
+          }
+          assert all(case["passed"] for case in value["cases"])
+          PY
 
       - name: Hard prohibitions
         if: always()
