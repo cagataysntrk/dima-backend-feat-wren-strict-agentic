@@ -1,6 +1,11 @@
 name: v2-precomparison-rehearsal-live
 
 "on":
+  push:
+    branches:
+      - feat/ask-v2-mvp
+    paths:
+      - ".github/V2_PRECOMPARISON_REHEARSAL_TRIGGER"
   workflow_dispatch:
     inputs:
       confirm:
@@ -16,7 +21,7 @@ name: v2-precomparison-rehearsal-live
 
 jobs:
   rehearsal:
-    if: "${{ inputs.confirm == 'PRECOMPARISON_REHEARSAL' && inputs.max_total_model_calls > 0 && inputs.max_total_model_calls <= 200 }}"
+    if: "${{ github.event_name == 'push' || (inputs.confirm == 'PRECOMPARISON_REHEARSAL' && inputs.max_total_model_calls > 0 && inputs.max_total_model_calls <= 200) }}"
     runs-on: ubuntu-latest
     environment: DIMA_OPENROUTER_API_KEY
     timeout-minutes: 120
@@ -55,8 +60,14 @@ jobs:
       - name: Real LLM + real Wren 20-case development rehearsal
         working-directory: backend
         run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            max_calls=180
+          else
+            max_calls="${{ inputs.max_total_model_calls }}"
+          fi
+          test -n "$max_calls"
           python lab/v2_precomparison_rehearsal_live.py \
-            --max-total-model-calls "${{ inputs.max_total_model_calls }}"
+            --max-total-model-calls "$max_calls"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
