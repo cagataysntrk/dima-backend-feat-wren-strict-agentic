@@ -46,6 +46,13 @@ class Settings(BaseSettings):
     # explicit tenant-server setting, never a per-request silent legacy fallback.
     ask_v2_enabled: bool = False
 
+    # Day15 pilot layer. Master V2 remains dark by default; when pilot mode is
+    # explicitly enabled, only exact tenant bindings in this comma-separated allowlist
+    # may start new /ask-v2 work. No request-level silent legacy fallback exists.
+    ask_v2_pilot_enabled: bool = False
+    ask_v2_pilot_tenants: str = ""
+    ask_v2_pilot_contract_version: str = "day15-pilot-v1"
+
     # --- LLM sağlayıcı ---------------------------------------------------
     # auto: anthropic → xai → gemini → groq → ollama (ayakta ise) → kural-tabanlı.
     # Açık değerler: auto | anthropic | xai | gemini | groq | openrouter | ollama | rule
