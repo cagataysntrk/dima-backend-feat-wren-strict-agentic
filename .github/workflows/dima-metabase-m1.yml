@@ -23,7 +23,6 @@ on:
       - "!backend/app/v3/substrate/metabase/native_engine.py"
       - "!backend/app/v3/substrate/metabase/native_models.py"
       - "backend/tests/test_v3_m1_*.py"
-      - ".github/workflows/dima-metabase-m1.yml"
   workflow_dispatch:
 
 permissions:

@@ -887,6 +887,7 @@ def test_legacy_decision_record_is_unchanged_and_not_written():
     with Session(db) as s:
         legacy = DecisionRecord(
             id="d-legacy-p21",
+            ts=STAMP,
             tenant_id=str(TENANT),
             user_id=str(USER),
             note="historical compatibility",
