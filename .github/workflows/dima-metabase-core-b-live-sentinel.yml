@@ -47,7 +47,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          AUTH="backend/lab/metabase/core_b/authorizations/small-sentinel-002.json"
+          AUTH="backend/lab/metabase/core_b/authorizations/small-sentinel-003.json"
           test -f "$AUTH"
           python - "$AUTH" "$(git rev-parse HEAD^)" <<'PY'
           import json,sys
@@ -56,8 +56,8 @@ jobs:
           value=json.loads(p.read_text(encoding="utf-8"))
           assert value["mode"]=="small_sentinel"
           assert value["candidate_product_sha"]==parent
-          assert value["provider_free_run_id"]==36244726437
-          assert value["governance_run_id"]==36244726417
+          assert value["provider_free_run_id"]==36245781069
+          assert value["governance_run_id"]==36245781152
           assert value["max_observable_model_boundary_units"]==30
           assert value["engine_sha"]=="cbe313af9ac2d5960f662068e433d328d896fb06"
           assert value["model_topology"]=={
