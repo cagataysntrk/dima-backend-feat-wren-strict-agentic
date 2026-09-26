@@ -1,3 +1,98 @@
+## LATEST AUTHORITY — SIGNED CONTINUATION POLICY / INHERITED ANALYTICAL AUTHORITY — PROVIDER-FREE GREEN / PAID PENDING
+
+```text
+branch                           feat/ask-v2-mvp
+engineering authority base      6c9b01ed3088a4b7ec35ffd5b3dfbf3409255653
+Product behavior                 a5cac9c2b0ac7b90fbe403c4b01b9e9128c420d1
+backend/app diff after Product   ZERO
+
+Day10 focused                    36221918363 = GREEN
+Day8 focused                     36222001588 = GREEN
+Day7 focused                     36221999924 = GREEN
+
+previous paid                    36217485288 = RED
+initial Product turn             LIVE-PROVEN / VERIFIED_COMPLETE
+starvation family                FAM-ADAPT-DIRECTIVE-COMPLETION-STARVATION
+starvation status                CLOSED / LIVE-PROVEN
+signed continuation              PARTIAL
+active family                    FAM-SIGNED-CONTINUATION-RESEARCH-POLICY-AUTHORITY
+cycle                            1 / 3
+
+current paid epoch               17 / 40 used
+current paid epoch remaining     23 / 40
+next full measurement cap        20 calls
+
+Day8 FINAL                       SEALED
+Day10 FINAL                      OPEN
+Day11 / DEV80 / Validation50 /
+Hidden50                         NOT AUTHORIZED
+```
+
+Current generic continuation fix:
+
+```text
+SIGNED CONTINUATION
+DOES NOT CREATE ANALYTICAL AUTHORITY.
+
+signed section
+→ server derives section-local inherited analytical authority
+→ model selects bounded policy intent
+→ server hydrates exact canonical parent
+→ IntentAcceptanceGate validates active lineage/version/section admission
+→ runtime executes existing governed lifecycle
+```
+
+Permanent continuation invariants:
+
+```text
+PRESENTATION AUTHORITY != ANALYTICAL AUTHORITY
+
+ADAPT_ON_EVIDENCE
+!=
+BROADEN_WITHIN_BUDGET
+
+ADAPT_ON_EVIDENCE
+= inspected VERIFIED Evidence reveals MATERIAL_NEW_DIRECTION
+  → completion-relevant follow/account lifecycle
+
+BROADEN_WITHIN_BUDGET
+= bounded permission for additional governed work when useful/necessary
+  → authorization only
+  → never invent work merely to close it
+
+CANONICAL IDENTITY WIRING
+= SERVER WORK
+!= LLM COGNITION
+
+signed token
+= locator + integrity proof only
+!= semantic / Evidence / canonical authority payload
+
+0 or multiple admissible inherited analytical parents
+→ fail closed / clarify
+→ never choose by order, label, title, similarity, regex, or opaque ID echo
+```
+
+Protected owners remain unchanged:
+
+```text
+Wren
+CrossDomainJoinGate
+SemanticBindingGate
+source-truth consistency
+unique-scope determinism
+Standard cube coherence
+ManagerActionSet final-turn starvation correction
+ManagerBudget 4 / 4 / 8
+CompletionGate VERIFIED/PARTIAL truth
+EvidenceStore
+HypothesisLedger
+EpistemicLabelGate
+provider topology
+```
+
+Historical receipts below remain immutable audit history and do not override this physically first block.
+
 ## LATEST AUTHORITY — SOURCE-TRUTH CONSISTENCY + HONEST BLOCKED LIFECYCLE ACTIVE / PAID HARD STOP
 
 ```text
