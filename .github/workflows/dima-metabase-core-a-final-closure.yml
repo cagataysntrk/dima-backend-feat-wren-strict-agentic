@@ -83,12 +83,24 @@ jobs:
           assert not (forbidden & tables), forbidden & tables
           PY
 
-      - name: Verify sealed owner production code remains unchanged
+      - name: Verify sealed owner production identities
         shell: bash
         run: |
           set -euo pipefail
-          BASE=d02474645578ff27ec9871c4738ac7556fb3f82a
-          test -z "$(git diff --name-only "$BASE"...HEAD --             backend/app/v3/decision_adoption.py             backend/app/v3/action_authorization.py             backend/app/v3/decision_intelligence.py             backend/app/v3/report_document.py             backend/app/v3/hypothesis_root_cause.py             backend/app/v3/business_relationship_policy.py             backend/app/v3/claim_lineage.py             backend/app/v3/research.py             backend/app/v3/research_store.py             backend/app/v3/research_product.py             backend/app/v3/research_native_gateway.py)"
+          assert_blob() {
+            test "$(git rev-parse "HEAD:$1")" = "$2"
+          }
+          assert_blob backend/app/v3/decision_adoption.py 86c8174cf6fc7ea58aa9ef57d8980cc3c1f05d91
+          assert_blob backend/app/v3/action_authorization.py dae2bb018f9980957fc191dcae16135f53ac50cb
+          assert_blob backend/app/v3/decision_intelligence.py 1a40508048d668829344ca30aa7aadf881cebb82
+          assert_blob backend/app/v3/report_document.py 5c7f199c16763a95d255b1b7f083bc61310b453e
+          assert_blob backend/app/v3/hypothesis_root_cause.py 19e4f8a2403c7e133137c106c58fa61959c4ceff
+          assert_blob backend/app/v3/business_relationship_policy.py 1c533667bd080331f4f2231b9d37ee0c5e532fa8
+          assert_blob backend/app/v3/claim_lineage.py 76589172d19d4d9ffa1db9f94f4ee9ee9f277e5a
+          assert_blob backend/app/v3/research.py 44286dee6b6bf5eb2cb8f88866f46007f266b6ab
+          assert_blob backend/app/v3/research_store.py dc08a38920ea0e330de124ad93a5b467e48968cd
+          assert_blob backend/app/v3/research_product.py 5e42d2a095b00fb21229971bde4c424cdb22e33c
+          assert_blob backend/app/v3/research_native_gateway.py 32f32e8fac1c24273cd2edd36ed40699d75c11a5
           test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "cbe313af9ac2d5960f662068e433d328d896fb06"
 
       - name: Verify no shadow analytics external execution or UI
@@ -98,7 +110,9 @@ jobs:
           ! grep -q '"action:execute"' backend/control_plane/authorize.py
           grep -q '^DEFAULT_ACTION_CAPABILITY_REGISTRY = ActionCapabilityRegistry()$' backend/app/v3/action_authorization.py
           test ! -f backend/app/v3/action_execution.py
-          test -z "$(git diff --name-only d02474645578ff27ec9871c4738ac7556fb3f82a...HEAD -- frontend web ui)"
+          test ! -d frontend
+          test ! -d web
+          test ! -d ui
           python - <<'PY'
           import ast
           from pathlib import Path
