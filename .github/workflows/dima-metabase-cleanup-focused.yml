@@ -100,6 +100,6 @@ jobs:
         run: |
           python -m alembic heads > /tmp/heads.txt
           test "$(grep -Ec '^[0-9a-f]+' /tmp/heads.txt)" -eq 1
-          grep -q '^fb4e6d2a1074' /tmp/heads.txt
+          grep -q '^fc8a1d0e3b42' /tmp/heads.txt
           cd ..
           test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "cbe313af9ac2d5960f662068e433d328d896fb06"

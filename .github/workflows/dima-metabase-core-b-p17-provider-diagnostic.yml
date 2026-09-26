@@ -99,7 +99,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD:backend/app/v3/research_manager_provider.py)" = "5e06e58e402134fb4d072837951ddec4f455b240"
+          test "$(git rev-parse HEAD:backend/app/v3/research_manager_provider.py)" = "ff494cc09744fc323b305bd8a4f5968035c43c25"
           test "$(git rev-parse HEAD:backend/app/v3/structured_trace.py)" = "fd909369ca42a8fe97d28b86085f57a3ff687d14"
           test "$(git rev-parse HEAD:backend/app/v3/structured_transport.py)" = "21bed409418085471191feddde25db09b9e4b487"
           test "$(git rev-parse HEAD:backend/lab/metabase/core_b/p17_request_differential.py)" = "ec336c0ffd14b9c97d305c2bf9f813b28d7a5aba"
