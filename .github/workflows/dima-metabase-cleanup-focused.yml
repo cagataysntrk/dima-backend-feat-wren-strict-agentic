@@ -5,13 +5,15 @@ on:
     branches:
       - feat/dima-metabase-platform
     paths:
-      - "backend/app/main.py"
-      - "backend/app/config.py"
-      - "backend/app/auth/dependencies.py"
-      - "backend/app/routers/health.py"
+      - "backend/app/*.py"
+      - "backend/app/auth/**"
+      - "backend/app/routers/**"
+      - "backend/app/email/**"
       - "backend/app/v2/**"
       - "backend/app/v3/**"
       - "backend/control_plane/**"
+      - "backend/eval/**"
+      - "backend/*.py"
       - "backend/pyproject.toml"
       - "backend/Dockerfile"
       - "backend/migrations/**"
