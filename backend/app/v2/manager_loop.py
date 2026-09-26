@@ -3475,6 +3475,104 @@ class ResearchManagerLoop:
                 )
                 continue
 
+            if decision.action == ManagerActionKind.PROPOSE_GOAL_TASK:
+                try:
+                    task, result_view = self._materialize_goal_task_from_decision(
+                        message_id=message_id,
+                        runtime=runtime,
+                        executor=executor,
+                        task_registry=task_registry,
+                        decision=decision,
+                        action_ref=selected_action_ref,
+                    )
+                    observations.append(result_view)
+                    if task is None:
+                        frontier.observe(
+                            progress_before=progress_before,
+                            action=decision,
+                            runtime=runtime,
+                            result=result_view,
+                        )
+                        continue
+
+                    scheduled = self._execute_scheduled_task(
+                        runtime=runtime,
+                        executor=executor,
+                        task_registry=task_registry,
+                        task=task,
+                        capability_key=decision.goal_task_capability,
+                        ranking_direction=decision.goal_task_ranking_direction,
+                        ranking_limit=decision.goal_task_ranking_limit,
+                    )
+                    execution_outcome = ResearchExecutionOutcome.project(scheduled)
+                    if execution_outcome.blocked:
+                        result_view = {
+                            **result_view,
+                            "execution_state": scheduled.task.state,
+                            "evidence_ref": None,
+                        }
+                        observations.append(
+                            {
+                                "kind": "goal_task_blocked",
+                                "task_id": scheduled.task.task_id,
+                                "result": self._manager_safe(
+                                    scheduled.observation
+                                ),
+                            }
+                        )
+                        self._emit_progress(
+                            "research_task_blocked",
+                            (scheduled.task.task_id,),
+                        )
+                    else:
+                        evidence = execution_outcome.require_evidence()
+                        result_view = {
+                            **result_view,
+                            "execution_state": scheduled.task.state,
+                            "evidence_ref": evidence.artifact_id,
+                        }
+                        observations.append(
+                            {
+                                "kind": "goal_task_executed",
+                                "task_id": scheduled.task.task_id,
+                                "tool_id": scheduled.contract.tool_id,
+                                "evidence_ref": evidence.artifact_id,
+                            }
+                        )
+                        self._emit_progress(
+                            "evidence_verified",
+                            (evidence.artifact_id,),
+                        )
+                        if evidence.evidence_kind == "relationship_analytics":
+                            self._emit_progress(
+                                "relationship_checked",
+                                (evidence.artifact_id,),
+                            )
+                    frontier.observe(
+                        progress_before=progress_before,
+                        action=decision,
+                        runtime=runtime,
+                        result=result_view,
+                    )
+                except Exception as exc:
+                    observations.append(
+                        {
+                            "kind": "goal_task_materialization_error",
+                            "action": decision.action.value,
+                            "message": str(exc),
+                        }
+                    )
+                    frontier.observe(
+                        progress_before=progress_before,
+                        action=decision,
+                        runtime=runtime,
+                        result={
+                            "goal_task_error": type(exc).__name__,
+                            "message": str(exc),
+                        },
+                    )
+                continue
+
             if decision.action == ManagerActionKind.PROPOSE_HYPOTHESIS_WITH_NEXT_TEST:
                 try:
                     if not root_cause_ledgers:
