@@ -26,6 +26,7 @@ jobs:
       DIMA_VQR_EMBEDDER: "off"
       DIMA_SCHEDULER_ENABLED: "false"
       DIMA_INTERACTION_LOG: "false"
+      DIMA_DATABASE_URL: "sqlite:///${{ runner.temp }}/dima-precomparison-control-plane.db"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -36,6 +37,16 @@ jobs:
       - name: Install backend
         working-directory: backend
         run: pip install -e ".[dev]"
+      - name: Initialize rehearsal contract store
+        working-directory: backend
+        run: |
+          python - <<'PY'
+          from control_plane.db import init_db
+          init_db()
+          from sqlalchemy import inspect
+          from control_plane.db import engine
+          assert "contract_log" in inspect(engine).get_table_names()
+          PY
       - name: Provider-free targeted preflight
         working-directory: backend
         run: |
