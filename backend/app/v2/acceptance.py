@@ -404,10 +404,17 @@ class IntentAcceptanceGate:
                         "in current source hash"
                     )
 
+            spec_for_acceptance = self._capabilities.get(item.capability_key)
             binding_result = self._bindings.validate(
                 item,
                 tenant_binding=tenant_binding,
                 context_version=context_version,
+                research_goal_authority=(
+                    item.origin == ObligationOrigin.USER_MUST
+                    and item.priority == ObligationPriority.MUST
+                    and item.polarity == ObligationPolarity.REQUIRED
+                    and spec_for_acceptance.lane == ManagerCapabilityLane.RESEARCH
+                ),
             )
             if not binding_result.valid:
                 reject.extend(binding_result.reasons)
@@ -436,10 +443,17 @@ class IntentAcceptanceGate:
         # Revalidate carried authority defensively against the current contract algebra.
         effective_bindings = dict(current_bindings)
         for item in carried_items:
+            carried_spec = self._capabilities.get(item.capability_key)
             result = self._bindings.validate(
                 item,
                 tenant_binding=tenant_binding,
                 context_version=context_version,
+                research_goal_authority=(
+                    item.origin == ObligationOrigin.USER_MUST
+                    and item.priority == ObligationPriority.MUST
+                    and item.polarity == ObligationPolarity.REQUIRED
+                    and carried_spec.lane == ManagerCapabilityLane.RESEARCH
+                ),
             )
             if not result.valid:
                 reject.extend(
