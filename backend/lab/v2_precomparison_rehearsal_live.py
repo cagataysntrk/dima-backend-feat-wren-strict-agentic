@@ -82,6 +82,13 @@ def _base_checks(case: dict[str, Any], response) -> dict[str, bool]:
     return checks
 
 
+def _first_section_token(response) -> str:
+    continuations = tuple(response.section_continuations or ())
+    if not continuations:
+        raise RuntimeError("report exposes no signed section continuation")
+    return continuations[0].token
+
+
 def _coordinator(
     *,
     settings,
@@ -204,6 +211,66 @@ def _run_prompt(case, *, settings, budget, service, principal, checkpoint_root):
     )
 
 
+def _run_signed_continuation(case, *, settings, budget, service, principal, checkpoint_root):
+    coordinator, _, _, _ = _coordinator(
+        settings=settings,
+        budget=budget,
+        service=service,
+        principal=principal,
+    )
+    session = f"rehearsal:{case['id']}"
+    budget_start = len(budget.calls)
+    wren_start = (service.query_calls, service.dry_plan_calls, service.cube_sql_calls)
+    started = time.monotonic()
+    initial = _handle(
+        coordinator,
+        principal=principal,
+        question=case["question"],
+        session_id=session,
+        thread_id=session,
+    )
+    initial_checks = _base_checks(case, initial)
+    token = _first_section_token(initial)
+    initial_dump = initial.report.model_dump(mode="json") if initial.report else None
+    continuation = _handle(
+        coordinator,
+        principal=principal,
+        question=case["followup"],
+        session_id=session,
+        thread_id=session,
+        token=token,
+    )
+    elapsed_ms = int((time.monotonic() - started) * 1000)
+    checks = {
+        **initial_checks,
+        "continuation_report": continuation.status == ProductStatus.REPORT,
+        "continuation_verified": bool(continuation.terminal_receipt.verified_complete),
+        "version_incremented": bool(
+            initial.report
+            and continuation.report
+            and continuation.report.version == initial.report.version + 1
+        ),
+        "v1_immutable": bool(
+            initial.report
+            and initial.report.model_dump(mode="json") == initial_dump
+        ),
+    }
+    return _case_receipt(
+        case=case,
+        response=continuation,
+        elapsed_ms=elapsed_ms,
+        budget=budget,
+        budget_start=budget_start,
+        service=service,
+        wren_start=wren_start,
+        checks=checks,
+        extra={
+            "initial_status": _value(initial.status),
+            "continuation_status": _value(continuation.status),
+        },
+    )
+
+
 def _run_restart(case, *, settings, budget, service, principal, checkpoint_root):
     store = DurableCheckpointStore(checkpoint_root / case["id"])
     first, _, _, _ = _coordinator(
@@ -225,7 +292,7 @@ def _run_restart(case, *, settings, budget, service, principal, checkpoint_root)
         thread_id=session,
     )
     initial_checks = _base_checks(case, initial)
-    token = _candidate_section_token(initial)
+    token = _first_section_token(initial)
     initial_dump = initial.report.model_dump(mode="json") if initial.report else None
 
     # Process-restart simulation: new coordinator and empty in-memory continuation
@@ -306,7 +373,7 @@ def _run_foreign_principal(case, *, settings, budget, service, principal, checkp
         thread_id=session,
     )
     checks = _base_checks(case, initial)
-    token = _candidate_section_token(initial)
+    token = _first_section_token(initial)
     attack_budget_start = len(budget.calls)
     foreign = Principal(
         user_id="rehearsal-foreign-user",
@@ -395,6 +462,15 @@ def run(
             try:
                 if case["kind"] == "prompt":
                     record = _run_prompt(
+                        case,
+                        settings=settings,
+                        budget=budget,
+                        service=service,
+                        principal=principal,
+                        checkpoint_root=checkpoint_root,
+                    )
+                elif case["kind"] == "signed_continuation":
+                    record = _run_signed_continuation(
                         case,
                         settings=settings,
                         budget=budget,
