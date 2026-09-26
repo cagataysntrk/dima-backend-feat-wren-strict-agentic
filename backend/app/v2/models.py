@@ -1175,7 +1175,7 @@ class ResearchTask(FrozenModel):
     question_id: str
     task_kind: str
     input_refs: tuple[str, ...] = ()
-    origin: Literal["USER_SEED", "AGENT_DERIVED"] = "USER_SEED"
+    origin: Literal["USER_SEED", "GOAL_DERIVED", "AGENT_DERIVED"] = "USER_SEED"
     parent_task_id: str | None = None
     parent_obligation_id: str | None = None
     trigger_evidence_ref: str | None = None
@@ -1193,6 +1193,20 @@ class ResearchTask(FrozenModel):
             ):
                 raise ValueError(
                     "USER_SEED ResearchTask cannot carry derived provenance"
+                )
+        elif self.origin == "GOAL_DERIVED":
+            if (
+                self.parent_task_id is not None
+                or self.parent_obligation_id is None
+                or self.trigger_evidence_ref is not None
+                or self.branch_depth != 0
+            ):
+                raise ValueError(
+                    "GOAL_DERIVED ResearchTask requires accepted parent obligation only"
+                )
+            if self.question_id != self.parent_obligation_id:
+                raise ValueError(
+                    "GOAL_DERIVED task question_id must equal parent obligation"
                 )
         else:
             if (
