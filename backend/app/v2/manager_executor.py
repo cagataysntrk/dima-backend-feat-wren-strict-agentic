@@ -64,7 +64,6 @@ class EvidenceStore:
         context_version: str | None = None,
     ) -> None:
         self._items: dict[str, EvidenceArtifact] = {}
-        self._by_task: dict[str, str] = {}
         self._tenant_binding = tenant_binding
         self._principal_subject = principal_subject
         self._context_version = context_version
@@ -93,14 +92,7 @@ class EvidenceStore:
                 )
             return
 
-        prior_task_artifact = self._by_task.get(artifact.task_id)
-        if prior_task_artifact is not None and prior_task_artifact != artifact.artifact_id:
-            raise ManagerAuthorityViolation(
-                f"ResearchTask already owns canonical Evidence: {artifact.task_id}"
-            )
-
         self._items[artifact.artifact_id] = artifact
-        self._by_task[artifact.task_id] = artifact.artifact_id
 
     def get(self, artifact_id: str) -> EvidenceArtifact:
         try:
