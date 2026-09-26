@@ -262,6 +262,10 @@ Rules:
   labels and never turn a bare repair signal into an EXCLUDED business obligation.
 - An EXCLUDED business obligation is reserved for an explicit current-message exclusion whose
   required semantic target is itself source-grounded in the current message.
+- PRESENTATION capabilities describe deliverables, not artifact lifecycle/control operations.
+  A lifecycle, immutability, mutation, security, runtime, or governance constraint must be a
+  NON_AUTHORITATIVE_CONTROL_REQUEST unless the user actually excludes receiving that presentation
+  deliverable. Never encode a control constraint as the opposite polarity of a requested deliverable.
 - Conditional or scope-level research behavior is NOT an obligation. Use only the declared
   research directives.
 - ADAPT_ON_EVIDENCE means: after inspected VERIFIED Evidence reveals a MATERIAL_NEW_DIRECTION,
@@ -1003,6 +1007,69 @@ class PreAcceptanceController:
                 )
         return tuple(gaps)
 
+    def _presentation_polarity_shape_gaps(
+        self,
+        *,
+        draft: IntentDraft,
+    ) -> tuple[dict[str, Any], ...]:
+        """Detect contradictory presentation polarity before it becomes authority.
+
+        Presentation capabilities are deliverables. A draft that both requires and
+        excludes the same presentation effect is not yet a stable intent contract.
+        Finite preacceptance gets one bounded revision opportunity; if the conflict
+        survives revision, the user is asked rather than silently choosing a side.
+        """
+
+        by_effect: dict[str, list[IntentDraftObligation]] = {}
+        for obligation in draft.obligations:
+            spec = self._capabilities.get(obligation.capability_key)
+            if (
+                spec.execution_mode
+                != ManagerCapabilityExecutionMode.PRESENTATION
+                or not spec.effect_family
+            ):
+                continue
+            by_effect.setdefault(spec.effect_family, []).append(obligation)
+
+        gaps: list[dict[str, Any]] = []
+        for effect_family, obligations in sorted(by_effect.items()):
+            required = tuple(
+                item.obligation_id
+                for item in obligations
+                if item.polarity == ObligationPolarity.REQUIRED
+            )
+            excluded = tuple(
+                item.obligation_id
+                for item in obligations
+                if item.polarity == ObligationPolarity.EXCLUDED
+            )
+            if required and excluded:
+                gaps.append(
+                    {
+                        "effect_family": effect_family,
+                        "required_obligation_ids": list(required),
+                        "excluded_obligation_ids": list(excluded),
+                    }
+                )
+        return tuple(gaps)
+
+    @staticmethod
+    def _presentation_polarity_feedback(
+        gaps: tuple[dict[str, Any], ...],
+    ) -> dict[str, Any]:
+        return {
+            "kind": "PRESENTATION_POLARITY_DRAFT_CONFLICT",
+            "gaps": list(gaps),
+            "instruction": (
+                "The same presentation deliverable is both REQUIRED and EXCLUDED. "
+                "Re-read only the exact current-message sources. Preserve a genuine "
+                "deliverable exclusion only when the user actually excludes receiving "
+                "that deliverable. Artifact lifecycle, immutability, mutation, security, "
+                "runtime, or governance constraints belong in NON_AUTHORITATIVE_CONTROL_REQUEST. "
+                "Do not invent a business exclusion to represent a control constraint."
+            ),
+        }
+
     @staticmethod
     def _excluded_shape_feedback(
         gaps: tuple[dict[str, Any], ...],
@@ -1402,6 +1469,33 @@ class PreAcceptanceController:
                 )
                 return FiniteAcceptanceOutcome(
                     status=FiniteAcceptanceStatus.UNSUPPORTED_CAPABILITY,
+                    observations=tuple(observations),
+                )
+
+            presentation_polarity_gaps = (
+                self._presentation_polarity_shape_gaps(
+                    draft=draft,
+                )
+            )
+            if presentation_polarity_gaps:
+                observations.append(
+                    {
+                        "kind": "presentation_polarity_shape",
+                        "attempt": attempt,
+                        "status": "REJECTED",
+                        "gaps": list(presentation_polarity_gaps),
+                    }
+                )
+                if attempt < self._max_draft_attempts:
+                    revision_feedback = self._presentation_polarity_feedback(
+                        presentation_polarity_gaps
+                    )
+                    continue
+                runtime.require_clarification(
+                    "current message still both requires and excludes the same presentation deliverable"
+                )
+                return FiniteAcceptanceOutcome(
+                    status=FiniteAcceptanceStatus.CLARIFICATION_REQUIRED,
                     observations=tuple(observations),
                 )
 
