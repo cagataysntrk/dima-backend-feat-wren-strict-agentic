@@ -30,7 +30,7 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD:backend/belgeler/metabase/DIMA_METABASE_NIHAI_FIZIBILITE_VE_MIMARI_RAPORU.md)" = "a29fcabfeba22a7bd684287dafe4d4fc6f74ab82"
-          test "$(git rev-parse HEAD:backend/belgeler/metabase/DIMA_METABASE_NIHAI_UYGULAMA_YOL_HARITASI.md)" = "32ec18ce5ec0f62df30263e567364d7efb8ce2f2"
+          test "$(git rev-parse HEAD:backend/belgeler/metabase/DIMA_METABASE_NIHAI_UYGULAMA_YOL_HARITASI.md)" = "a7960a1ce79601939fcbdcce993396b9af976396"
 
       - name: Verify permanent product-first CI economy rules
         shell: bash

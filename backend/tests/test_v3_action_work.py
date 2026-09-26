@@ -442,7 +442,7 @@ def test_action_work_owner_has_zero_external_side_effect_surface():
         "send_email",
         "webhook",
         "Slack",
-        "ERP",
+        "erp_client",
         "DimaQueryReceipt(",
         "EvidenceArtifact(",
         "ResearchClaimRecord(",
