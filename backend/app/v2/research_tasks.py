@@ -151,6 +151,85 @@ class ResearchTaskService:
             origin="USER_SEED",
         )
 
+    def materialize_goal_task(
+        self,
+        *,
+        runtime,
+        parent_obligation_id: str,
+        capability_key: ManagerCapabilityKey,
+        task_id: str,
+        input_refs: tuple[str, ...],
+    ) -> ResearchTask:
+        """Materialize one executable analytical task under accepted Research goal authority.
+
+        Goal acceptance is not executable task authority. Canonical semantic refs are
+        supplied only after the concrete task proposal passed the existing governed
+        semantic boundary. This method owns task identity/provenance only.
+        """
+        contract = runtime.accepted_contract
+        if contract is None or runtime.ledger is None:
+            raise ResearchTaskMaterializationError(
+                "goal task requires accepted Research authority"
+            )
+        accepted = runtime.authority_registry.accepted(contract.turn_id)
+        if accepted is None or accepted[0].value != "RESEARCH":
+            raise ResearchTaskMaterializationError(
+                "goal task requires Research authority family"
+            )
+
+        parent = self._ledger_item(runtime, parent_obligation_id)
+        if (
+            parent.origin != ObligationOrigin.USER_MUST
+            or parent.polarity != ObligationPolarity.REQUIRED
+            or parent.status not in {
+                ObligationStatus.ACCEPTED,
+                ObligationStatus.READY,
+                ObligationStatus.IN_PROGRESS,
+            }
+        ):
+            raise ResearchTaskMaterializationError(
+                "goal task requires active REQUIRED USER_MUST parent"
+            )
+
+        parent_spec = ManagerCapabilityRegistry().get(parent.capability_key)
+        selected_spec = ManagerCapabilityRegistry().get(capability_key)
+        if selected_spec.execution_mode != ManagerCapabilityExecutionMode.DIRECT:
+            raise ResearchTaskMaterializationError(
+                "goal task capability must be an existing DIRECT analytical capability"
+            )
+        if selected_spec.lane not in {
+            ManagerCapabilityLane.STANDARD,
+            ManagerCapabilityLane.RESEARCH,
+        }:
+            raise ResearchTaskMaterializationError(
+                "goal task capability must be analytical"
+            )
+        if (
+            parent.capability_key != ManagerCapabilityKey.ROOT_CAUSE
+            and capability_key != parent.capability_key
+        ):
+            raise ResearchTaskMaterializationError(
+                "non-ROOT goal task cannot change accepted capability family"
+            )
+        if parent_spec.execution_mode == ManagerCapabilityExecutionMode.PRESENTATION:
+            raise ResearchTaskMaterializationError(
+                "presentation authority cannot materialize analytical goal task"
+            )
+        if not input_refs:
+            raise ResearchTaskMaterializationError(
+                "goal task requires governed executable semantic refs"
+            )
+
+        task_kind = self.task_kind_for_capability(capability_key)
+        return ResearchTask(
+            task_id=task_id,
+            question_id=parent_obligation_id,
+            task_kind=task_kind.value,
+            input_refs=tuple(dict.fromkeys(input_refs)),
+            origin="GOAL_DERIVED",
+            parent_obligation_id=parent_obligation_id,
+        )
+
     def seed_orchestrated_subtask(
         self,
         *,
