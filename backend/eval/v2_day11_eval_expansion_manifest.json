@@ -1,7 +1,7 @@
 {
   "version": "day11-eval-expansion-v1",
   "phase": "P14_DAY11_EVAL_EXPANSION",
-  "status": "PROVIDER_FREE_COVERAGE_ACTIVE",
+  "status": "PROVIDER_FREE_BEHAVIORAL_ROBUSTNESS_ACTIVE",
   "product_behavior": "e1b3823b82cd28bbe9b4725abf81a4aa49d578ba",
   "day10_paid_green_run": 36229302570,
   "purpose": "Expand visible evaluation coverage from demo prompts to real-language variation and known regression families without consuming DEV80, Validation50, or Hidden50.",
@@ -235,7 +235,9 @@
     "metamorphic_invariants_green": true,
     "hidden_prompt_text_committed_max": 0,
     "dev80_runs_consumed_by_day11_expansion": 0,
-    "product_eval_literals_added_max": 0
+    "product_eval_literals_added_max": 0,
+    "behavioral_categories_represented": 1,
+    "negative_attack_nodes_green": true
   },
   "stop_the_line": [
     "hidden_or_validation_prompt_bodies_added_to_this_manifest",
@@ -251,5 +253,83 @@
     "required_coverage": 1,
     "expected_taxonomy_count": 18,
     "execution_required": false
-  }
+  },
+  "behavioral_categories": [
+    "turkish_paraphrase",
+    "english_paraphrase",
+    "surface_order_permutation",
+    "metric_dimension_rename",
+    "schema_label_change",
+    "implicit_comparison",
+    "explicit_comparison",
+    "breakdown",
+    "ranking",
+    "relationship",
+    "cross_domain_relationship",
+    "root_cause",
+    "adaptive_research",
+    "unsupported_request",
+    "ambiguous_request",
+    "clarification",
+    "conversation_repair",
+    "follow_up",
+    "signed_continuation",
+    "broaden_vs_adapt",
+    "report_evidence_linkage",
+    "presentation_control_constraints"
+  ],
+  "negative_attack_nodes": [
+    {
+      "id": "foreign_source_truth",
+      "test": "tests/test_v2_day7_obligation_local_semantic_recovery.py#test_prior_turn_governed_handle_is_not_current_turn_candidate_context"
+    },
+    {
+      "id": "foreign_owner_handles",
+      "test": "tests/test_v2_day10_s_action_availability.py#test_multi_root_never_produces_cross_parent_handle_or_evidence_combinations"
+    },
+    {
+      "id": "foreign_tenant_principal",
+      "test": "tests/test_v2_day10_continuation.py#test_registry_revalidates_current_principal_and_exact_section_identity"
+    },
+    {
+      "id": "foreign_context_version",
+      "test": "tests/test_v2_day10_continuation.py#test_tampered_and_foreign_context_tokens_fail_closed"
+    },
+    {
+      "id": "stale_action_ref",
+      "test": "tests/test_v2_day10_s_action_availability.py#test_action_ref_is_state_bound_and_stale_choice_fails_closed"
+    },
+    {
+      "id": "invented_action_ref",
+      "test": "tests/test_v2_day10_s_action_availability.py#test_invented_action_ref_fails_closed"
+    },
+    {
+      "id": "wrong_task_identity",
+      "test": "tests/test_v2_day7_research_tool_contract.py#test_task_tool_mismatch_is_rejected_before_execution"
+    },
+    {
+      "id": "cross_parent_evidence",
+      "test": "tests/test_v2_day10_s_action_availability.py#test_resolve_semantics_parent_cannot_select_sibling_evidence"
+    },
+    {
+      "id": "wrong_hypothesis_evidence",
+      "test": "tests/test_v2_day8_hypothesis_ledger.py#test_unrelated_obligation_evidence_is_rejected"
+    },
+    {
+      "id": "wrong_directive_parent",
+      "test": "tests/test_v2_day10_directive_lifecycle.py#test_action_availability_projects_only_parent_lineage_evidence_for_open_directive"
+    },
+    {
+      "id": "wrong_signed_section_authority",
+      "test": "tests/test_v2_day10_continuation.py#test_report_presentation_obligation_cannot_become_analytical_directive_parent"
+    },
+    {
+      "id": "foreign_report_finding",
+      "test": "tests/test_v2_day9_report_builder.py#test_finding_with_missing_derived_parent_lineage_never_becomes_cached_truth"
+    },
+    {
+      "id": "stale_continuation",
+      "test": "tests/test_v2_day10_continuation.py#test_evicted_or_missing_registry_context_requires_rebind"
+    }
+  ]
 }
