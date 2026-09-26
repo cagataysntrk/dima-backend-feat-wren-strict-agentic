@@ -380,3 +380,60 @@ UI/UX = NOT AUTHORIZED
 ~~~
 
 STOP before execution implementation.
+
+
+## 16. Resend certification addendum — provider-free GREEN, live proof blocked
+
+Historical `NO SAFE EXECUTION CANDIDATE YET` above remains the correct pre-verification
+conclusion at that time.
+
+Current connector-specific evidence:
+
+```text
+candidate connector                    = Resend Email API
+fixed origin                           = https://api.resend.com
+provider-free run                      = 36224592531 SUCCESS
+focused                                = 31 PASS
+governance                             = 36224898224 SUCCESS
+
+provider idempotency seam              = GREEN provider-free
+retrieve/reconciliation seam           = GREEN provider-free
+test recipient hard lock               = delivered@resend.dev
+real-recipient execution               = NOT AUTHORIZED
+```
+
+The bounded live proof is currently blocked before any external request because GitHub manual
+workflow dispatch requires the workflow file on the default branch. This repository's default
+branch is `feat/ask-v2-mvp`, while the authorized Platform workflow exists only on
+`feat/dima-metabase-platform`.
+
+Permanent response to this blocker:
+
+```text
+do not write Platform workflow into Ask-v2 without authority
+do not change repository default branch without authority
+do not use push-triggered real API calls
+do not expose/copy the Resend credential
+do not claim TEST-MODE PROTOCOL CERTIFIED without the real canary
+```
+
+Current live proof counts:
+
+```text
+external POST = 0
+logical sends = 0
+real recipients = 0
+unknown external state = 0
+```
+
+### Return condition
+
+This directive reaches its genuine architecture/tooling STOP branch before live provider execution.
+Production Resend execution pre-development review is intentionally not opened because the required
+live canary prerequisite is not GREEN.
+
+Next bounded action requires authority/tooling that can perform the existing manual
+`dima-metabase-resend-connector-live.yml` workflow against the Platform branch without modifying
+Ask-v2 branch ownership. Once that canary is GREEN, append the newer
+`RESEND CONNECTOR = TEST-MODE PROTOCOL CERTIFIED` authority section and only then open the
+production irreversible-action pre-development review.
