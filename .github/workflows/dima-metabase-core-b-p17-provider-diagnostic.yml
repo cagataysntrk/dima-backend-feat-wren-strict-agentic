@@ -1,0 +1,265 @@
+name: dima-metabase-core-b-p17-provider-diagnostic
+
+on:
+  push:
+    branches:
+      - feat/dima-metabase-platform
+    paths:
+      - ".github/workflows/dima-metabase-core-b-p17-provider-diagnostic.yml"
+      - "backend/app/v3/structured_transport.py"
+      - "backend/tests/test_v3_structured_transport.py"
+      - "backend/lab/metabase/core_b/p17_provider_diagnostic.py"
+      - "backend/lab/metabase/core_b/authorizations/p17-provider-diagnostic-001.json"
+
+permissions:
+  contents: read
+  packages: read
+
+env:
+  DIMA_OPENROUTER_API_KEY: ${{ secrets.DIMA_OPENROUTER_API_KEY || secrets.OPENROUTER_API_KEY }}
+  METABOT_MODEL_IDENTIFIER: openrouter/openai/gpt-5.6-luna
+  DIMA_COGNITION_MODEL: openai/gpt-5.6-luna
+  MB_ADMIN_EMAIL: admin@core-b-diagnostic.local
+  MB_RESTRICTED_EMAIL: restricted@core-b-diagnostic.local
+  MB_RESTRICTED_GROUP: Dima Core B Diagnostic Restricted
+
+jobs:
+  provider-free-diagnostic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+          submodules: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install canonical test environment
+        working-directory: backend
+        run: pip install -e ".[dev]"
+
+      - name: Compile diagnostic surfaces
+        working-directory: backend
+        run: |
+          python -m py_compile             app/v3/structured_transport.py             tests/test_v3_structured_transport.py             lab/metabase/core_b/p17_provider_diagnostic.py
+
+      - name: Structured transport diagnostic focused proof
+        working-directory: backend
+        run: pytest -q tests/test_v3_structured_transport.py
+
+      - name: P17 provider representation regression
+        working-directory: backend
+        run: pytest -q tests/test_v3_p17_autonomous_provider_schema.py
+
+      - name: Freeze P17 semantics and frozen live inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD:backend/app/v3/research_manager_provider.py)" = "b6074af0909384e26ac9057f6d57f03e260876f1"
+          test "$(git rev-parse HEAD:backend/app/v3/research_manager.py)" = "d9a2a83e3f5e678870a2ecbaf330ccb81edb73d7"
+          test "$(git rev-parse HEAD:backend/app/v3/business_relationship_policy.py)" = "1c533667bd080331f4f2231b9d37ee0c5e532fa8"
+          test "$(git rev-parse HEAD:backend/app/v3/hypothesis_root_cause.py)" = "19e4f8a2403c7e133137c106c58fa61959c4ceff"
+          test "$(git rev-parse HEAD:backend/app/v3/report_document.py)" = "9eaa1478b3c3924a8b6c4e4dfe547bda1bcb343d"
+          test "$(git rev-parse HEAD:backend/app/v3/decision_intelligence.py)" = "1a40508048d668829344ca30aa7aadf881cebb82"
+          test "$(git rev-parse HEAD:backend/eval/core_b/askv2_matched_20_cases.json)" = "cf9aea5004d2bbb979015917570f32417c67017a"
+          test "$(git rev-parse HEAD:backend/lab/metabase/core_b/fixtures/machine_operations.json)" = "dd6ae7d8dd19e1a38d5e3c78ea8bfb2182f1b4d7"
+          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "cbe313af9ac2d5960f662068e433d328d896fb06"
+
+  live-p17-diagnostic:
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[core-b-p17-diagnostic-live]')
+    needs: provider-free-diagnostic
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: DIMA_OPENROUTER_API_KEY
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+          submodules: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify bounded diagnostic authorization
+        shell: bash
+        run: |
+          set -euo pipefail
+          AUTH="backend/lab/metabase/core_b/authorizations/p17-provider-diagnostic-001.json"
+          test -f "$AUTH"
+          python - "$AUTH" "$(git rev-parse HEAD^)" <<'PY'
+          import json,subprocess,sys
+          from pathlib import Path
+          p=Path(sys.argv[1]); parent=sys.argv[2]
+          value=json.loads(p.read_text(encoding="utf-8"))
+          assert value["mode"]=="p17_provider_diagnostic"
+          assert value["decision"]=="CORE_B_PROVIDER_BOUNDARY_RECOVERY"
+          assert value["candidate_product_sha"]==parent
+          assert value["model"]=="openai/gpt-5.6-luna"
+          assert value["case_id"]=="root_cause_tr"
+          assert value["max_p17_provider_calls"]==1
+          assert value["automatic_retry"] is False
+          assert value["engine_sha"]=="cbe313af9ac2d5960f662068e433d328d896fb06"
+          assert value["source_manifest_blob_sha"]=="cf9aea5004d2bbb979015917570f32417c67017a"
+          assert value["neutral_fixture_blob_sha"]=="dd6ae7d8dd19e1a38d5e3c78ea8bfb2182f1b4d7"
+          def blob(path):
+              return subprocess.check_output(["git","rev-parse",f"HEAD:{path}"],text=True).strip()
+          assert blob("backend/eval/core_b/askv2_matched_20_cases.json")==value["source_manifest_blob_sha"]
+          assert blob("backend/lab/metabase/core_b/fixtures/machine_operations.json")==value["neutral_fixture_blob_sha"]
+          assert blob("backend/app/v3/structured_transport.py")==value["structured_transport_blob_sha"]
+          assert blob("backend/lab/metabase/core_b/p17_provider_diagnostic.py")==value["diagnostic_runner_blob_sha"]
+          PY
+          test -n "$DIMA_OPENROUTER_API_KEY"
+
+      - name: Derive ephemeral credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          S="${GITHUB_SHA:0:12}"
+          {
+            echo "MB_ADMIN_PASSWORD=Adm-${S}-Aa1!"
+            echo "MB_RESTRICTED_PASSWORD=Res-${S}-Aa1!"
+            echo "PG_OWNER_PASSWORD=PgO-${S}-Aa1!"
+            echo "CORE_B_READONLY_PASSWORD=PgR-${S}-Aa1!"
+            echo "MB_APP_PASSWORD=MbA-${S}-Aa1!"
+          } >> "$GITHUB_ENV"
+
+      - name: Load exact certified engine runtime lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          GITLINK_SHA="$(git ls-tree HEAD engine/metabase | awk '{print $3}')"
+          python backend/lab/metabase/core_b/runtime/engine_runtime_lock.py             --lock backend/lab/metabase/core_b/runtime/engine_runtime_lock.json             --gitlink-sha "$GITLINK_SHA"             --github-env "$GITHUB_ENV"
+
+      - name: Pull exact certified dima.6 digest
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$ENGINE_SHA" = "cbe313af9ac2d5960f662068e433d328d896fb06"
+          test "$CERTIFICATION_RUN_ID" = "36042062775"
+          test "$RUNTIME_TAG" = "v0.63.18-dima.6"
+          docker pull "$IMMUTABLE_IMAGE_REF"
+          docker image inspect -f '{{range .RepoDigests}}{{println .}}{{end}}' "$IMMUTABLE_IMAGE_REF" | grep -Fx "$IMMUTABLE_IMAGE_REF"
+
+      - name: Install live diagnostic environment
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+          pip install "psycopg[binary]==3.3.3"
+
+      - name: Start neutral live databases
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker network create dima-core-b-diagnostic
+          PG="postgres@sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675"
+          docker run -d --name analytics-db --network dima-core-b-diagnostic --network-alias analytics-db -p 127.0.0.1:55461:5432             -e POSTGRES_DB=core_b_neutral -e POSTGRES_USER=core_b_owner -e POSTGRES_PASSWORD="$PG_OWNER_PASSWORD" "$PG"
+          docker run -d --name app-db --network dima-core-b-diagnostic --network-alias app-db             -e POSTGRES_DB=metabase_core_b -e POSTGRES_USER=metabase_app -e POSTGRES_PASSWORD="$MB_APP_PASSWORD" "$PG"
+          for n in analytics-db app-db; do
+            for i in $(seq 1 90); do
+              docker exec "$n" pg_isready >/dev/null 2>&1 && break
+              sleep 2
+              test "$i" -lt 90
+            done
+          done
+
+      - name: Seed frozen neutral fixture
+        working-directory: backend
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: "55461"
+          PGDATABASE: core_b_neutral
+          PGUSER: core_b_owner
+          PGPASSWORD: ${{ env.PG_OWNER_PASSWORD }}
+          CORE_B_READONLY_USER: core_b_readonly
+          CORE_B_READONLY_PASSWORD: ${{ env.CORE_B_READONLY_PASSWORD }}
+        run: python lab/metabase/core_b/runtime/seed_fixture.py --fixture lab/metabase/core_b/fixtures/machine_operations.json
+
+      - name: Start exact dima.6 engine
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run -d --name mb-core-b-diagnostic --network dima-core-b-diagnostic -p 127.0.0.1:3361:3000             -e MB_DB_TYPE=postgres -e MB_DB_HOST=app-db -e MB_DB_PORT=5432             -e MB_DB_DBNAME=metabase_core_b -e MB_DB_USER=metabase_app -e MB_DB_PASS="$MB_APP_PASSWORD"             -e MB_AI_FEATURES_ENABLED=true -e MB_METABOT_ENABLED=true -e MB_AGENT_API_ENABLED=true             -e MB_LOAD_SAMPLE_CONTENT=false -e MB_MCP_EXECUTE_SQL_ENABLED=false             -e MB_LLM_OPENROUTER_API_KEY="$DIMA_OPENROUTER_API_KEY"             -e MB_LLM_METABOT_PROVIDER="$METABOT_MODEL_IDENTIFIER"             -e DIMA_ENGINE_REPOSITORY=UpcyTech/dima-metabase-engine             -e DIMA_ENGINE_REVISION_SHA="$ENGINE_SHA"             -e DIMA_ENGINE_UPSTREAM_BASE_SHA="$UPSTREAM_BASE_SHA"             -e DIMA_ENGINE_RUNTIME_TAG="$RUNTIME_TAG"             -e DIMA_ENGINE_BUILD_IDENTITY="$BUILD_IDENTITY"             -e DIMA_ENGINE_IMAGE_IDENTITY="$REGISTRY_DIGEST"             "$IMMUTABLE_IMAGE_REF"
+
+      - name: Bootstrap restricted analytical principal
+        working-directory: backend
+        env:
+          METABASE_URL: http://127.0.0.1:3361
+          MB_SITE_NAME: Dima Core B Diagnostic
+          ANALYTICS_DB_NAME: core_b_neutral
+          ANALYTICS_DB_USER: core_b_readonly
+          ANALYTICS_DB_PASSWORD: ${{ env.CORE_B_READONLY_PASSWORD }}
+          MB_ADMIN_EMAIL: ${{ env.MB_ADMIN_EMAIL }}
+          MB_ADMIN_PASSWORD: ${{ env.MB_ADMIN_PASSWORD }}
+          MB_RESTRICTED_EMAIL: ${{ env.MB_RESTRICTED_EMAIL }}
+          MB_RESTRICTED_PASSWORD: ${{ env.MB_RESTRICTED_PASSWORD }}
+          MB_RESTRICTED_GROUP: ${{ env.MB_RESTRICTED_GROUP }}
+        run: python lab/metabase/core_b/runtime/bootstrap.py
+
+      - name: Run one exact root_cause_tr P17 provider diagnostic
+        working-directory: backend
+        env:
+          PYTHONPATH: .
+        run: |
+          mkdir -p eval/core_b/artifacts
+          python lab/metabase/core_b/p17_provider_diagnostic.py             --base-url http://127.0.0.1:3361             --email "$MB_RESTRICTED_EMAIL"             --password "$MB_RESTRICTED_PASSWORD"             --manifest eval/core_b/askv2_matched_20_cases.json             --output eval/core_b/artifacts/p17_provider_diagnostic.json             --control-db eval/core_b/artifacts/p17_provider_diagnostic.db             --engine-sha "$ENGINE_SHA"             --upstream-sha "$UPSTREAM_BASE_SHA"             --runtime-tag "$RUNTIME_TAG"             --runtime-image-digest "$REGISTRY_DIGEST"             --build-identity "$BUILD_IDENTITY"             --image-identity "$REGISTRY_DIGEST"             --platform-sha "$GITHUB_SHA"
+
+      - name: Verify diagnostic receipt contract
+        working-directory: backend
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("eval/core_b/artifacts/p17_provider_diagnostic.json")
+          value=json.loads(p.read_text(encoding="utf-8"))
+          assert value["case_id"]=="root_cause_tr"
+          assert value["model"]=="openai/gpt-5.6-luna"
+          assert value["diagnostic_classification"]=="UNKNOWN_PENDING_REVIEW"
+          assert value["p17_provider_call_count"]==1
+          assert value["p19_provider_call_count"]==0
+          assert value["automatic_retry"] is False
+          assert value["engine_sha"]=="cbe313af9ac2d5960f662068e433d328d896fb06"
+          assert value["schema_name"]
+          assert len(value["schema_fingerprint"])==64
+          assert isinstance(value["http_status"],int)
+          PY
+
+      - name: Hard freeze
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD:backend/app/v3/research_manager_provider.py)" = "b6074af0909384e26ac9057f6d57f03e260876f1"
+          test "$(git rev-parse HEAD:backend/app/v3/research_manager.py)" = "d9a2a83e3f5e678870a2ecbaf330ccb81edb73d7"
+          test "$(git rev-parse HEAD:backend/eval/core_b/askv2_matched_20_cases.json)" = "cf9aea5004d2bbb979015917570f32417c67017a"
+          test "$(git rev-parse HEAD:backend/lab/metabase/core_b/fixtures/machine_operations.json)" = "dd6ae7d8dd19e1a38d5e3c78ea8bfb2182f1b4d7"
+          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "cbe313af9ac2d5960f662068e433d328d896fb06"
+          ! grep -R -nE 'openai/gpt-5\.6-sol|Gemini|C1' backend/lab/metabase/core_b/p17_provider_diagnostic.py
+          ! grep -R -n 'action:execute' backend/app
+          test ! -e backend/eval/DEV80
+          test ! -e backend/eval/Validation50
+          test ! -e backend/eval/Hidden50
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: core-b-p17-provider-diagnostic-${{ github.run_id }}
+          path: backend/eval/core_b/artifacts/p17_provider_diagnostic.json
+          if-no-files-found: warn
+          retention-days: 90
+
+      - name: Runtime logs
+        if: failure()
+        run: docker logs --tail=1000 mb-core-b-diagnostic || true
+
+      - name: Teardown
+        if: always()
+        run: |
+          docker rm -f mb-core-b-diagnostic analytics-db app-db 2>/dev/null || true
+          docker network rm dima-core-b-diagnostic 2>/dev/null || true

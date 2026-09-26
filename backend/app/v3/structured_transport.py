@@ -136,7 +136,7 @@ def _sanitize_value(
         if len(serialized.encode("utf-8")) <= _MAX_DIAGNOSTIC_BYTES:
             return out
         return {
-            "_bounded_excerpt": _bounded_utf8(serialized),
+            "_bounded_excerpt": _bounded_utf8(serialized, 7800),
             "_truncated": True,
         }
     if isinstance(value, list):
@@ -156,7 +156,7 @@ def _sanitize_value(
         )
         if len(serialized.encode("utf-8")) <= _MAX_DIAGNOSTIC_BYTES:
             return out
-        return [_bounded_utf8(serialized), "[TRUNCATED]"]
+        return [_bounded_utf8(serialized, 7800), "[TRUNCATED]"]
     if isinstance(value, str):
         return _sanitize_text(value, sensitive_values=sensitive_values)
     if value is None or isinstance(value, (bool, int, float)):

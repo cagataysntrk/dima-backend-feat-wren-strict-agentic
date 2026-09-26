@@ -114,7 +114,7 @@ def test_nested_provider_metadata_is_sanitized_and_bounded():
         ensure_ascii=False,
         sort_keys=True,
     )
-    assert len(serialized.encode("utf-8")) <= 9000
+    assert len(serialized.encode("utf-8")) <= 8192
     assert API_KEY not in serialized
     assert SYSTEM not in serialized
     assert USER not in serialized
