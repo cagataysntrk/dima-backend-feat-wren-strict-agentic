@@ -93,7 +93,7 @@ def _report(version: int) -> VersionedReport:
                 blocks=(
                     ReportBlock(
                         block_id="rblk_" + str(version + 2) * 24,
-                        block_kind=ReportBlockKind.NARRATIVE,
+                        block_kind=ReportBlockKind.TEXT,
                         claim_kind=ReportClaimKind.NARRATIVE,
                         content=f"Immutable report version {version}",
                     ),
