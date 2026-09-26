@@ -1,8 +1,0 @@
-scope=DEVELOPMENT_REHEARSAL
-case_count=20
-max_total_model_calls=180
-product_behavior=deba0432148beaa3910eb9fac534b959eedb2bb1
-adaptive_live_proof=36238142681
-previous_transport_run=36238348443
-previous_transport_verdict=NO_PRODUCT_VERDICT_EMPTY_INPUT
-large_certification=DEFERRED
