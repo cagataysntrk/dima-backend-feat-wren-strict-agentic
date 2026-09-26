@@ -40,11 +40,13 @@ def test_paid_harness_role_and_global_ceiling_are_hard_and_explicit():
     assert paid.ROLE_LIMITS == {
         "FAST_LANGUAGE": 2,
         "RESEARCH_MANAGER": 12,
-        "SEMANTIC_LINKER": 3,
+        "SEMANTIC_LINKER": 4,
         "TEMPORAL_NORMALIZER": 1,
         "REPORT_NARRATOR": 2,
     }
-    assert sum(paid.ROLE_LIMITS.values()) == paid.MAX_HARNESS_TOTAL_CALLS
+    # Per-role ceilings are independent anti-waste guards. Their sum may exceed
+    # the hard global ceiling; MAX_HARNESS_TOTAL_CALLS remains the final cap.
+    assert sum(paid.ROLE_LIMITS.values()) > paid.MAX_HARNESS_TOTAL_CALLS
 
     budget = paid.RoleCallBudget(
         max_total=2,
@@ -60,6 +62,25 @@ def test_paid_harness_role_and_global_ceiling_are_hard_and_explicit():
             role="FAST_LANGUAGE",
             model=paid.FAST_MODEL,
             schema_name="y",
+        )
+
+    global_budget = paid.RoleCallBudget(
+        max_total=1,
+        role_limits=paid.ROLE_LIMITS,
+    )
+    global_budget.reserve(
+        role="SEMANTIC_LINKER",
+        model=paid.SEMANTIC_MODEL,
+        schema_name="first",
+    )
+    with pytest.raises(
+        paid.PaidBudgetExceeded,
+        match="global paid-call ceiling exhausted",
+    ):
+        global_budget.reserve(
+            role="RESEARCH_MANAGER",
+            model=paid.RESEARCH_MODEL,
+            schema_name="second",
         )
 
 
