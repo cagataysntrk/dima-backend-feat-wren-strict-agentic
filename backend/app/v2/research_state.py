@@ -10,6 +10,7 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import Any
 
+from app.pii import mask_rows
 from app.v2.manager_models import (
     ObligationOrigin,
     ObligationStatus,
@@ -73,13 +74,22 @@ def _manager_bounded_payload(
     payload: dict[str, Any] = evidence.payload or {}
     executions = []
     for item in tuple(payload.get("executions") or ()):
+        bounded_rows = [
+            dict(row)
+            for row in tuple(item.get("rows") or ())[:max_rows]
+            if isinstance(row, dict)
+        ]
+        # Provider-facing Research cognition is never entitled to raw PII merely
+        # because the analytical execution was authorized. Reuse the existing PII
+        # owner and preserve numeric/bool cells unchanged.
+        masked_rows, _pii_found = mask_rows(bounded_rows)
         executions.append(
             {
                 "execution_id": item.get("execution_id"),
                 "role": item.get("role"),
                 "columns": tuple(item.get("columns") or ()),
                 "row_count": int(item.get("row_count") or 0),
-                "rows": tuple(item.get("rows") or ())[:max_rows],
+                "rows": tuple(masked_rows),
             }
         )
     return {
