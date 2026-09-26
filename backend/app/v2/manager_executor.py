@@ -54,21 +54,69 @@ class RelationshipToolExecutor(Protocol):
 
 
 class EvidenceStore:
-    def __init__(self) -> None:
+    """Immutable/idempotent Evidence registry with optional request-scope enforcement."""
+
+    def __init__(
+        self,
+        *,
+        tenant_binding: str | None = None,
+        principal_subject: str | None = None,
+        context_version: str | None = None,
+    ) -> None:
         self._items: dict[str, EvidenceArtifact] = {}
+        self._by_task: dict[str, str] = {}
+        self._tenant_binding = tenant_binding
+        self._principal_subject = principal_subject
+        self._context_version = context_version
+
+    def _validate_scope(self, artifact: EvidenceArtifact) -> None:
+        checks = (
+            ("tenant", self._tenant_binding, artifact.tenant_binding),
+            ("principal", self._principal_subject, artifact.principal_subject),
+            ("context", self._context_version, artifact.context_version),
+        )
+        for label, expected, actual in checks:
+            if expected is None:
+                continue
+            if actual != expected:
+                raise ManagerAuthorityViolation(
+                    f"Evidence {label} scope mismatch: {artifact.artifact_id}"
+                )
 
     def put(self, artifact: EvidenceArtifact) -> None:
+        self._validate_scope(artifact)
+        prior = self._items.get(artifact.artifact_id)
+        if prior is not None:
+            if prior != artifact:
+                raise ManagerAuthorityViolation(
+                    f"Evidence identity conflict: {artifact.artifact_id}"
+                )
+            return
+
+        prior_task_artifact = self._by_task.get(artifact.task_id)
+        if prior_task_artifact is not None and prior_task_artifact != artifact.artifact_id:
+            raise ManagerAuthorityViolation(
+                f"ResearchTask already owns canonical Evidence: {artifact.task_id}"
+            )
+
         self._items[artifact.artifact_id] = artifact
+        self._by_task[artifact.task_id] = artifact.artifact_id
 
     def get(self, artifact_id: str) -> EvidenceArtifact:
         try:
-            return self._items[artifact_id]
+            artifact = self._items[artifact_id]
         except KeyError as exc:
             raise ManagerSemanticGap(f"unknown evidence artifact: {artifact_id}") from exc
+        self._validate_scope(artifact)
+        return artifact
 
     @property
     def count(self) -> int:
         return len(self._items)
+
+    @property
+    def artifacts(self) -> tuple[EvidenceArtifact, ...]:
+        return tuple(self._items.values())
 
 
 @dataclass(frozen=True)
@@ -100,7 +148,11 @@ class GovernedManagerExecutor:
         self._acceptance = acceptance
         self._core = core_analytics
         self._context = context
-        self._evidence = evidence or EvidenceStore()
+        self._evidence = evidence or EvidenceStore(
+            tenant_binding=context.tenant_binding,
+            principal_subject=str(getattr(context.principal, "user_id", "") or ""),
+            context_version=context.context_version,
+        )
         self._semantic_resolution = semantic_resolution
         self._relationship = relationship
         self._obligations = obligation_ledger or UserObligationLedgerService()
