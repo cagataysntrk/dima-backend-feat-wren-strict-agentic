@@ -123,6 +123,7 @@ class StandardDraftControlRequest(FrozenModel):
     category: Literal[
         "NON_AUTHORITATIVE_CONTROL_REQUEST",
         "CONVERSATION_REPAIR",
+        "RESEARCH_POLICY_HANDOFF",
     ]
     source_surfaces: tuple[str, ...] = Field(min_length=1)
 
@@ -189,6 +190,11 @@ Rules:
 - Presentation-only capability may remain typed but must not become numeric/query authority.
 - If the user text is a conversation repair/control request, expose it only as a
   non-authoritative control request; do not manufacture a business exclusion.
+- If the user explicitly asks for conditional evidence-following research policy — for example,
+  follow a new material direction only if verified evidence reveals it — represent that exact
+  source only as control_requests.category=RESEARCH_POLICY_HANDOFF. This is a non-authoritative
+  lane handoff signal, not a business obligation and not a ResearchDirective. Do not invent
+  semantic handles or Research authority in the Standard lane.
 - REVISION_FEEDBACK can identify representation loss. Repair only from exact user-message
   evidence; never invent missing semantics.
 
@@ -582,6 +588,22 @@ class StandardLaneEngine:
             # Lane ownership is deterministic once the typed proposal is proven to quote
             # exact current-message source. Research-required business capability must
             # stop Standard before semantic grounding, control handling, coverage or Wren.
+            research_policy_handoffs = tuple(
+                item
+                for item in draft.control_requests
+                if item.category == "RESEARCH_POLICY_HANDOFF"
+            )
+            if research_policy_handoffs:
+                return StandardLaneOutcome(
+                    status=StandardLaneStatus.RESEARCH_REQUIRED,
+                    reasons=tuple(
+                        "typed Standard draft contains non-authoritative Research policy handoff: "
+                        + "|".join(item.source_surfaces)
+                        for item in research_policy_handoffs
+                    ),
+                    attempts=attempt,
+                )
+
             typed_precheck = representability.decide_typed_capabilities(
                 capabilities=tuple(
                     (item.capability_key, item.polarity)
