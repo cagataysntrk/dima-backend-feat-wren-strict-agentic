@@ -1015,6 +1015,76 @@ def run_rehearsal(
 
     cognition_sequence = tuple(manager.actions)
 
+    cognition_reason = {
+        "inspect_evidence": (
+            "inspect one governed prior Evidence item before deciding whether it "
+            "reveals a material direction"
+        ),
+        "propose_branches": (
+            "choose a materially useful bounded branch from the currently legal "
+            "Evidence-grounded alternatives"
+        ),
+        "propose_hypothesis": (
+            "form one bounded hypothesis from governed Evidence"
+        ),
+        "propose_hypothesis_with_next_test": (
+            "choose one bounded hypothesis and its next governed discriminating test"
+        ),
+        "propose_hypothesis_next_test": (
+            "choose the next governed test for an existing hypothesis"
+        ),
+        "propose_hypothesis_evidence_relation": (
+            "judge the epistemic relation of fresh inspected Evidence to the hypothesis"
+        ),
+        "disposition_research_directive": (
+            "judge NO_MATERIAL_DIRECTION from inspected governed Evidence"
+        ),
+        "resolve_semantics": (
+            "propose one Evidence-grounded semantic interpretation for resolver validation"
+        ),
+    }
+    if len(manager.manager_prompts) != len(cognition_sequence):
+        raise RehearsalError(
+            "Research cognition trace prompt/action cardinality drifted"
+        )
+    research_turn_trace: list[dict[str, object]] = []
+    for index, (prompt, selected_action) in enumerate(
+        zip(manager.manager_prompts, cognition_sequence),
+        start=1,
+    ):
+        cards = tuple(
+            (prompt.get("MANAGER_ACTION_SET") or {}).get("action_instances") or ()
+        )
+        available = tuple(
+            {
+                "action": str(item.get("action") or ""),
+                "action_ref": str(item.get("action_ref") or ""),
+            }
+            for item in cards
+        )
+        if selected_action not in {item["action"] for item in available}:
+            raise RehearsalError(
+                f"selected cognition action absent from ActionSet: {selected_action}"
+            )
+        state_after = (
+            str(manager.manager_prompts[index].get("MANAGER_STATE") or "")
+            if index < len(manager.manager_prompts)
+            else snapshot.state.value
+        )
+        research_turn_trace.append(
+            {
+                "turn": index,
+                "state_before": str(prompt.get("MANAGER_STATE") or ""),
+                "available_action_instances": list(available),
+                "selected_action": selected_action,
+                "why_genuine_cognition": cognition_reason.get(
+                    selected_action,
+                    "bounded Manager judgment over current governed state",
+                ),
+                "state_after": state_after,
+            }
+        )
+
     fresh_disclosures = sum(
         1 for item in observations
         if item.get("kind") == "fresh_evidence_disclosed"
@@ -1084,6 +1154,7 @@ def run_rehearsal(
         "preacceptance_model_calls": manager.preacceptance_calls,
         "research_manager_calls": len(manager.manager_prompts),
         "research_cognition_sequence": list(cognition_sequence),
+        "research_turn_trace": research_turn_trace,
         "manager_turn_total": snapshot.manager_turns,
         "manager_turn_ceiling": result.runtime.budget.max_total_manager_turns,
         "manager_turn_headroom": (
