@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 
+from app.v2.manager_loop import ResearchManagerLoop
 from app.v2.semantic_handles import SemanticHandleRegistry
 from app.v2.manager_action_set import (
     DirectiveActionState,
@@ -370,6 +371,42 @@ def test_root_next_test_rank_requires_lossless_exact_metric_cardinality():
     rows = _instances(good, "propose_hypothesis_with_next_test")
     assert len(rows) == 1
     assert rows[0].binding("next_test_task_kind") == "RANK"
+
+
+
+def test_ready_relationship_hydration_preserves_exact_research_task_identity():
+    action_set = _build(
+        ready_tasks=(
+            TaskActionState(
+                task_id="T_REL_READY",
+                question_id="P_REL",
+                task_kind="RELATIONSHIP",
+                capability_key="relationship",
+                origin="AGENT_DERIVED",
+                semantic_refs=(_metric("M_REL"), _dimension("D_REL")),
+                parent_obligation_id="P_REL",
+                trigger_evidence_ref="E_REL",
+            ),
+        ),
+    )
+    rows = _instances(action_set, "run_relationship")
+    assert len(rows) == 1
+    instance = rows[0]
+    assert instance.binding("task_id") == "T_REL_READY"
+
+    loop = object.__new__(ResearchManagerLoop)
+    decision = loop._hydrate_action_choice(
+        action_instance=instance,
+        payload={},
+    )
+
+    # Exact READY task identity is server-owned authority and must survive
+    # opaque action_ref hydration; reconstructing seed:{obligation} is lossy.
+    assert decision.research_task_id == "T_REL_READY"
+    assert decision.relationship_obligation_id == "P_REL"
+    assert decision.focus_handles == ("M_REL",)
+    assert decision.counterpart_handles == ("D_REL",)
+
 
 
 def test_ready_derived_task_is_one_server_bound_execution_instance():
