@@ -5,6 +5,7 @@ import pytest
 
 from app.main import create_app
 from control_plane.authorize import AuthzError, Principal, authorize, permissions_for
+from control_plane.models import Tenant, User
 
 
 def _principal(role: str) -> Principal:
@@ -54,3 +55,13 @@ def test_principal_tenant_identity_is_not_derived_from_request_payload():
     principal=_principal("viewer")
     assert principal.tenant_id == "tenant-1"
     assert principal.user_id == "user-viewer"
+
+
+
+def test_control_plane_created_at_defaults_are_timezone_aware():
+    tenant = Tenant(slug="tz-proof", name="Timezone Proof")
+    user = User(email="tz-proof@example.test", password_hash="not-used")
+    assert tenant.created_at.tzinfo is not None
+    assert tenant.created_at.utcoffset() is not None
+    assert user.created_at.tzinfo is not None
+    assert user.created_at.utcoffset() is not None
