@@ -1744,14 +1744,27 @@ class ResearchManagerLoop:
                     allowed.append(capability.value)
 
                 source_surfaces: list[str] = []
-                for source_ref in item.source_refs:
-                    try:
-                        span = self._source_spans.validate(source_ref)
-                    except Exception:
+                # Concrete child tasks may draw only from exact source spans already
+                # admitted by this same accepted analytical USER_MUST contract. This is
+                # source context, not semantic authority: child canonical handles are
+                # still freshly minted under the parent goal after bounded resolution.
+                for scope_item in ledger.active_user_must:
+                    if (
+                        scope_item.polarity != ObligationPolarity.REQUIRED
+                        or self._capabilities.get(
+                            scope_item.capability_key
+                        ).execution_mode
+                        == ManagerCapabilityExecutionMode.PRESENTATION
+                    ):
                         continue
-                    value = str(span.exact_surface).strip()
-                    if value and value not in source_surfaces:
-                        source_surfaces.append(value)
+                    for source_ref in scope_item.source_refs:
+                        try:
+                            span = self._source_spans.validate(source_ref)
+                        except Exception:
+                            continue
+                        value = str(span.exact_surface).strip()
+                        if value and value not in source_surfaces:
+                            source_surfaces.append(value)
                 if allowed and source_surfaces:
                     goal_task_states.append(
                         GoalTaskActionState(
@@ -2625,15 +2638,26 @@ class ResearchManagerLoop:
                 "parent_obligation_id": parent_id,
             }
 
-        parent_surfaces: list[str] = []
-        for source_ref in parent.source_refs:
-            try:
-                span = self._source_spans.validate(source_ref)
-            except Exception:
+        admissible_surfaces: list[str] = []
+        for scope_item in runtime.ledger.active_user_must:
+            if (
+                scope_item.polarity != ObligationPolarity.REQUIRED
+                or self._capabilities.get(
+                    scope_item.capability_key
+                ).execution_mode
+                == ManagerCapabilityExecutionMode.PRESENTATION
+            ):
                 continue
-            if span.message_id != message_id:
-                continue
-            parent_surfaces.append(str(span.exact_surface))
+            for source_ref in scope_item.source_refs:
+                try:
+                    span = self._source_spans.validate(source_ref)
+                except Exception:
+                    continue
+                if span.message_id != message_id:
+                    continue
+                value = str(span.exact_surface)
+                if value not in admissible_surfaces:
+                    admissible_surfaces.append(value)
 
         proposed = tuple(decision.goal_task_semantic_surfaces)
         if not proposed:
@@ -2647,10 +2671,10 @@ class ResearchManagerLoop:
         hints: list[str] = []
         for item in proposed:
             surface = str(item.surface)
-            if not any(surface in parent_surface for parent_surface in parent_surfaces):
+            if not any(surface in admitted for admitted in admissible_surfaces):
                 return None, {
                     "kind": "goal_task_materialization_rejected",
-                    "reason": "task semantic surface is outside accepted parent source lineage",
+                    "reason": "task semantic surface is outside accepted current-contract analytical source lineage",
                     "parent_obligation_id": parent_id,
                     "surface": surface,
                 }
