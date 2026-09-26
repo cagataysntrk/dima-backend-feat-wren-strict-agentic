@@ -1,0 +1,3090 @@
+{
+  "version": "wave-1-core-a-v1",
+  "architecture": "shared-motors + domain/sector configuration + headless contracts; no UI and no feature-specific backend forks",
+  "descriptors": [
+    {
+      "ux_id": "general-01",
+      "group": "general",
+      "ordinal": 1,
+      "ux_name": "Smart Onboarding + Data Connection + first Company Map",
+      "business_objective": "Provide a governed headless foundation for Smart Onboarding + Data Connection + first Company Map using shared Dima motors without creating a feature-specific analytics engine.",
+      "required_entity_types": [
+        "company",
+        "entity_registry"
+      ],
+      "required_metrics": [
+        "semantic_metric_refs"
+      ],
+      "required_source_data": [
+        "governed_company_sources",
+        "Metabase/Metabot analytical results"
+      ],
+      "watch_dependency": false,
+      "signal_dependency": false,
+      "investigation_dependency": false,
+      "evidence_dependency": false,
+      "decision_dependency": false,
+      "action_work_dependency": false,
+      "outcome_dependency": false,
+      "memory_dependency": false,
+      "sector_pack_requirements": [],
+      "specialized_engine_gap": null,
+      "headless_api_needs": [
+        "stable_entity_refs",
+        "typed_lifecycle_state",
+        "tenant_non_oracle",
+        "deterministic_pagination",
+        "artifact_deep_links"
+      ],
+      "current_feasibility": "FOUNDATION_PARTIAL",
+      "deferred_capabilities": [],
+      "shared_motors": [
+        "CompanyMap",
+        "EntityRegistry",
+        "SemanticRefs"
+      ]
+    },
+    {
+      "ux_id": "general-02",
+      "group": "general",
+      "ordinal": 2,
+      "ux_name": "Sector Intelligence + Company Overlay",
+      "business_objective": "Provide a governed headless foundation for Sector Intelligence + Company Overlay using shared Dima motors without creating a feature-specific analytics engine.",
+      "required_entity_types": [
+        "company",
+        "entity_registry"
+      ],
+      "required_metrics": [
+        "semantic_metric_refs"
+      ],
+      "required_source_data": [
+        "governed_company_sources",
+        "Metabase/Metabot analytical results"
+      ],
+      "watch_dependency": true,
+      "signal_dependency": true,
+      "investigation_dependency": true,
+      "evidence_dependency": true,
+      "decision_dependency": false,
+      "action_work_dependency": false,
+      "outcome_dependency": false,
+      "memory_dependency": true,
+      "sector_pack_requirements": [],
+      "specialized_engine_gap": null,
+      "headless_api_needs": [
+        "stable_entity_refs",
+        "typed_lifecycle_state",
+        "tenant_non_oracle",
+        "deterministic_pagination",
+        "artifact_deep_links"
+      ],
+      "current_feasibility": "FOUNDATION_READY",
+      "deferred_capabilities": [],
+      "shared_motors": [
+        "CompanyMap",
+        "EntityRegistry",
+        "SemanticRefs",
+        "Watch",
+        "Signal",
+        "Investigation",
+        "Evidence",
+        "Memory"
+      ]
+    },
+    {
+      "ux_id": "general-03",
+      "group": "general",
+      "ordinal": 3,
+      "ux_name": "Dima Today / Focus Queue",
+      "business_objective": "Provide a governed headless foundation for Dima Today / Focus Queue using shared Dima motors without creating a feature-specific analytics engine.",
+      "required_entity_types": [
+        "company",
+        "entity_registry"
+      ],
+      "required_metrics": [
+        "semantic_metric_refs"
+      ],
+      "required_source_data": [
+        "governed_company_sources",
+        "Metabase/Metabot analytical results"
+      ],
+      "watch_dependency": true,
+      "signal_dependency": true,
+      "investigation_dependency": true,
+      "evidence_dependency": true,
+      "decision_dependency": true,
+      "action_work_dependency": true,
+      "outcome_dependency": true,
+      "memory_dependency": true,
+      "sector_pack_requirements": [],
+      "specialized_engine_gap": null,
+      "headless_api_needs": [
+        "stable_entity_refs",
+        "typed_lifecycle_state",
+        "tenant_non_oracle",
+        "deterministic_pagination",
+        "artifact_deep_links"
+      ],
+      "current_feasibility": "FOUNDATION_READY",
+      "deferred_capabilities": [],
+      "shared_motors": [
+        "CompanyMap",
+        "EntityRegistry",
+        "SemanticRefs",
+        "Watch",
+        "Signal",
+        "Investigation",
+        "Evidence",
+        "Decision",
+        "ActionWork",
+        "Outcome",
+        "Memory"
+      ]
+    },
+    {
+      "ux_id": "general-04",
+      "group": "general",
+      "ordinal": 4,
+      "ux_name": "Radar + Watch Engine",
+      "business_objective": "Provide a governed headless foundation for Radar + Watch Engine using shared Dima motors without creating a feature-specific analytics engine.",
+      "required_entity_types": [
+        "company",
+        "entity_registry"
+      ],
+      "required_metrics": [
+        "semantic_metric_refs"
+      ],
+      "required_source_data": [
+        "governed_company_sources",
+        "Metabase/Metabot analytical results"
+      ],
+      "watch_dependency": true,
+      "signal_dependency": true,
+      "investigation_dependency": true,
+      "evidence_dependency": true,
+      "decision_dependency": false,
+      "action_work_dependency": true,
+      "outcome_dependency": true,
+      "memory_dependency": true,
+      "sector_pack_requirements": [],
+      "specialized_engine_gap": null,
+      "headless_api_needs": [
+        "stable_entity_refs",
+        "typed_lifecycle_state",
+        "tenant_non_oracle",
+        "deterministic_pagination",
+        "artifact_deep_links"
+      ],
+      "current_feasibility": "FOUNDATION_READY",
+      "deferred_capabilities": [],
+      "shared_motors": [
+        "CompanyMap",
+        "EntityRegistry",
+        "SemanticRefs",
+        "Watch",
+        "Signal",
+        "Investigation",
+        "Evidence",
+        "ActionWork",
+        "Outcome",
+        "Memory"
+      ]
+    },
+    {
+      "ux_id": "general-05",
+      "group": "general",
+      "ordinal": 5,
+      "ux_name": "Evidence / Trust Drawer",
+      "business_objective": "Provide a governed headless foundation for Evidence / Trust Drawer using shared Dima motors without creating a feature-specific analytics engine.",
+      "required_entity_types": [
+        "company",
+        "entity_registry"
+      ],
+      "required_metrics": [
+        "semantic_metric_refs"
+      ],
+      "required_source_data": [
+        "governed_company_sources",
+        "Metabase/Metabot analytical results"
+      ],
+      "watch_dependency": false,
+      "signal_dependency": false,
+      "investigation_dependency": true,
+      "evidence_dependency": true,
+      "decision_dependency": false,
+      "action_work_dependency": false,
+      "outcome_dependency": false,
+      "memory_dependency": true,
+      "sector_pack_requirements": [],
+      "specialized_engine_gap": null,
+      "headless_api_needs": [
+        "stable_entity_refs",
+        "typed_lifecycle_state",
+        "tenant_non_oracle",
+        "deterministic_pagination",
+        "artifact_deep_links"
+      ],
+      "current_feasibility": "FOUNDATION_READY",
+      "deferred_capabilities": [],
+      "shared_motors": [
+        "CompanyMap",
+        "EntityRegistry",
+        "SemanticRefs",
+        "Investigation",
+        "Evidence",
+        "Memory"
+      ]
+    },
+    {
+      "ux_id": "general-06",
+      "group": "general",
+      "ordinal": 6,
+      "ux_name": "Contextual Ask / Quick Answer",
+      "business_objective": "Provide a governed headless foundation for Contextual Ask / Quick Answer using shared Dima motors without creating a feature-specific analytics engine.",
+      "required_entity_types": [
+        "company",
+        "entity_registry"
+      ],
+      "required_metrics": [
+        "semantic_metric_refs"
+      ],
+      "required_source_data": [
+        "governed_company_sources",
+        "Metabase/Metabot analytical results"
+      ],
+      "watch_dependency": false,
+      "signal_dependency": false,
+      "investigation_dependency": true,
+      "evidence_dependency": true,
+      "decision_dependency": true,
+      "action_work_dependency": false,
+      "outcome_dependency": false,
+      "memory_dependency": true,
+      "sector_pack_requirements": [],
+      "specialized_engine_gap": null,
+      "headless_api_needs": [
+        "stable_entity_refs",
+        "typed_lifecycle_state",
+        "tenant_non_oracle",
+        "deterministic_pagination",
+        "artifact_deep_links"
+      ],
+      "current_feasibility": "FOUNDATION_READY",
+      "deferred_capabilities": [],
+      "shared_motors": [
+        "CompanyMap",
+        "EntityRegistry",
+        "SemanticRefs",
+        "Investigation",
+        "Evidence",
+        "Decision",
+        "Memory"
+      ]
+    },
+    {
+      "ux_id": "general-07",
+      "group": "general",
+      "ordinal": 7,
+      "ux_name": "Investigation Workspace / See Why",
+      "business_objective": "Provide a governed headless foundation for Investigation Workspace / See Why using shared Dima motors without creating a feature-specific analytics engine.",
+      "required_entity_types": [
+        "company",
+        "entity_registry"
+      ],
+      "required_metrics": [
+        "semantic_metric_refs"
+      ],
+      "required_source_data": [
+        "governed_company_sources",
+        "Metabase/Metabot analytical results"
+      ],
+      "watch_dependency": false,
+      "signal_dependency": true,
+      "investigation_dependency": true,
+      "evidence_dependency": true,
+      "decision_dependency": true,
+      "action_work_dependency": true,
+      "outcome_dependency": true,
+      "memory_dependency": true,
+      "sector_pack_requirements": [],
+      "specialized_engine_gap": null,
+      "headless_api_needs": [
+        "stable_entity_refs",
+        "typed_lifecycle_state",
+        "tenant_non_oracle",
+        "deterministic_pagination",
+        "artifact_deep_links"
+      ],
+      "current_feasibility": "FOUNDATION_READY",
+      "deferred_capabilities": [],
+      "shared_motors": [
+        "CompanyMap",
+        "EntityRegistry",
+        "SemanticRefs",
+        "Signal",
+        "Investigation",
+        "Evidence",
+        "Decision",
+        "ActionWork",
+        "Outcome",
+        "Memory"
+      ]
+    },
+    {
+      "ux_id": "general-08",
+      "group": "general",
+      "ordinal": 8,
+      "ux_name": "Domain Root Cause Room",
+      "business_objective": "Provide a governed headless foundation for Domain Root Cause Room using shared Dima motors without creating a feature-specific analytics engine.",
+      "required_entity_types": [
+        "company",
+        "entity_registry"
+      ],
+      "required_metrics": [
+        "semantic_metric_refs"
+      ],
+      "required_source_data": [
+        "governed_company_sources",
+        "Metabase/Metabot analytical results"
+      ],
+      "watch_dependency": false,
+      "signal_dependency": true,
+      "investigation_dependency": true,
+      "evidence_dependency": true,
+      "decision_dependency": true,
+      "action_work_dependency": true,
+      "outcome_dependency": true,
+      "memory_dependency": true,
+      "sector_pack_requirements": [],
+      "specialized_engine_gap": null,
+      "headless_api_needs": [
+        "stable_entity_refs",
+        "typed_lifecycle_state",
+        "tenant_non_oracle",
+        "deterministic_pagination",
+        "artifact_deep_links"
+      ],
+      "current_feasibility": "FOUNDATION_READY",
+      "deferred_capabilities": [],
+      "shared_motors": [
+        "CompanyMap",
+        "EntityRegistry",
+        "SemanticRefs",
+        "Signal",
+        "Investigation",
+        "Evidence",
+        "Decision",
+        "ActionWork",
+        "Outcome",
+        "Memory"
+      ]
+    },
+    {
+      "ux_id": "general-09",
+      "group": "general",
+      "ordinal": 9,
+      "ux_name": "Live Dashboard / Saved Analysis",
+      "business_objective": "Provide a governed headless foundation for Live Dashboard / Saved Analysis using shared Dima motors without creating a feature-specific analytics engine.",
+      "required_entity_types": [
+        "company",
+        "entity_registry"
+      ],
+      "required_metrics": [
+        "semantic_metric_refs"
+      ],
+      "required_source_data": [
+        "governed_company_sources",
+        "Metabase/Metabot analytical results"
+      ],
+      "watch_dependency": true,
+      "signal_dependency": true,
+      "investigation_dependency": false,
+      "evidence_dependency": true,
+      "decision_dependency": false,
+      "action_work_dependency": false,
+      "outcome_dependency": true,
+      "memory_dependency": true,
+      "sector_pack_requirements": [],
+      "specialized_engine_gap": null,
+      "headless_api_needs": [
+        "stable_entity_refs",
+        "typed_lifecycle_state",
+        "tenant_non_oracle",
+        "deterministic_pagination",
+        "artifact_deep_links"
+      ],
+      "current_feasibility": "FOUNDATION_READY",
+      "deferred_capabilities": [],
+      "shared_motors": [
+        "CompanyMap",
+        "EntityRegistry",
+        "SemanticRefs",
+        "Watch",
+        "Signal",
+        "Evidence",
+        "Outcome",
+        "Memory"
+      ]
+    },
+    {
+      "ux_id": "general-10",
+      "group": "general",
+      "ordinal": 10,
+      "ux_name": "Morning Briefing / Scheduled Intelligence",
+      "business_objective": "Provide a governed headless foundation for Morning Briefing / Scheduled Intelligence using shared Dima motors without creating a feature-specific analytics engine.",
+      "required_entity_types": [
+        "company",
+        "entity_registry"
+      ],
+      "required_metrics": [
+        "semantic_metric_refs"
+      ],
+      "required_source_data": [
+        "governed_company_sources",
+        "Metabase/Metabot analytical results"
+      ],
+      "watch_dependency": true,
+      "signal_dependency": true,
+      "investigation_dependency": true,
+      "evidence_dependency": true,
+      "decision_dependency": true,
+      "action_work_dependency": true,
+      "outcome_dependency": true,
+      "memory_dependency": true,
+      "sector_pack_requirements": [],
+      "specialized_engine_gap": null,
+      "headless_api_needs": [
+        "stable_entity_refs",
+        "typed_lifecycle_state",
+        "tenant_non_oracle",
+        "deterministic_pagination",
+        "artifact_deep_links"
+      ],
+      "current_feasibility": "FOUNDATION_READY",
+      "deferred_capabilities": [],
+      "shared_motors": [
+        "CompanyMap",
+        "EntityRegistry",
+        "SemanticRefs",
+        "Watch",
+        "Signal",
+        "Investigation",
+        "Evidence",
+        "Decision",
+        "ActionWork",
+        "Outcome",
+        "Memory"
+      ]
+    },
+    {
+      "ux_id": "finance-01",
+      "group": "finance",
+      "ordinal": 1,
+      "ux_name": "Smart Collections Desk",
+      "business_objective": "Provide a governed headless foundation for Smart Collections Desk using shared Dima motors without creating a feature-specific analytics engine.",
+      "required_entity_types": [
+        "company",
+        "customer",
+        "invoice",
+        "payment",
+        "bank_account"
+      ],
+      "required_metrics": [
+        "cash",
+        "receivables",
+        "payables",
+        "collections",
+        "financial_control_metrics"
+      ],
+      "required_source_data": [
+        "ERP/accounting",
+        "bank/POS",
+        "e-document sources",
+        "Metabase/Metabot analytical results"
+      ],
+      "watch_dependency": true,
+      "signal_dependency": true,
+      "investigation_dependency": true,
+      "evidence_dependency": true,
+      "decision_dependency": true,
+      "action_work_dependency": true,
+      "outcome_dependency": true,
+      "memory_dependency": true,
+      "sector_pack_requirements": [
+        "domain-pack:finance"
+      ],
+      "specialized_engine_gap": null,
+      "headless_api_needs": [
+        "stable_entity_refs",
+        "typed_lifecycle_state",
+        "tenant_non_oracle",
+        "deterministic_pagination",
+        "artifact_deep_links"
+      ],
+      "current_feasibility": "FOUNDATION_READY",
+      "deferred_capabilities": [],
+      "shared_motors": [
+        "CompanyMap",
+        "EntityRegistry",
+        "SemanticRefs",
+        "Watch",
+        "Signal",
+        "Investigation",
+        "Evidence",
+        "Decision",
+        "ActionWork",
+        "Outcome",
+        "Memory",
+        "SectorPack"
+      ]
+    },
+    {
+      "ux_id": "finance-02",
+      "group": "finance",
+      "ordinal": 2,
+      "ux_name": "Bank–ERP–POS Reconciliation",
+      "business_objective": "Provide a governed headless foundation for Bank–ERP–POS Reconciliation using shared Dima motors without creating a feature-specific analytics engine.",
+      "required_entity_types": [
+        "company",
+        "customer",
+        "invoice",
+        "payment",
+        "bank_account"
+      ],
+      "required_metrics": [
+        "cash",
+        "receivables",
+        "payables",
+        "collections",
+        "financial_control_metrics"
+      ],
+      "required_source_data": [
+        "ERP/accounting",
+        "bank/POS",
+        "e-document sources",
+        "Metabase/Metabot analytical results"
+      ],
+      "watch_dependency": true,
+      "signal_dependency": true,
+      "investigation_dependency": true,
+      "evidence_dependency": true,
+      "decision_dependency": true,
+      "action_work_dependency": true,
+      "outcome_dependency": true,
+      "memory_dependency": true,
+      "sector_pack_requirements": [
+        "domain-pack:finance"
+      ],
+      "specialized_engine_gap": null,
+      "headless_api_needs": [
+        "stable_entity_refs",
+        "typed_lifecycle_state",
+        "tenant_non_oracle",
+        "deterministic_pagination",
+        "artifact_deep_links"
+      ],
+      "current_feasibility": "FOUNDATION_READY",
+      "deferred_capabilities": [],
+      "shared_motors": [
+        "CompanyMap",
+        "EntityRegistry",
+        "SemanticRefs",
+        "Watch",
+        "Signal",
+        "Investigation",
+        "Evidence",
+        "Decision",
+        "ActionWork",
+        "Outcome",
+        "Memory",
+        "SectorPack"
+      ]
+    },
+    {
+      "ux_id": "finance-03",
+      "group": "finance",
+      "ordinal": 3,
+      "ux_name": "Daily Cash Radar",
+      "business_objective": "Provide a governed headless foundation for Daily Cash Radar using shared Dima motors without creating a feature-specific analytics engine.",
+      "required_entity_types": [
+        "company",
+        "customer",
+        "invoice",
+        "payment",
+        "bank_account"
+      ],
+      "required_metrics": [
+        "cash",
+        "receivables",
+        "payables",
+        "collections",
+        "financial_control_metrics"
+      ],
+      "required_source_data": [
+        "ERP/accounting",
+        "bank/POS",
+        "e-document sources",
+        "Metabase/Metabot analytical results"
+      ],
+      "watch_dependency": true,
+      "signal_dependency": true,
+      "investigation_dependency": true,
+      "evidence_dependency": true,
+      "decision_dependency": true,
+      "action_work_dependency": true,
+      "outcome_dependency": true,
+      "memory_dependency": true,
+      "sector_pack_requirements": [
+        "domain-pack:finance"
+      ],
+      "specialized_engine_gap": null,
+      "headless_api_needs": [
+        "stable_entity_refs",
+        "typed_lifecycle_state",
+        "tenant_non_oracle",
+        "deterministic_pagination",
+        "artifact_deep_links"
+      ],
+      "current_feasibility": "FOUNDATION_READY",
+      "deferred_capabilities": [],
+      "shared_motors": [
+        "CompanyMap",
+        "EntityRegistry",
+        "SemanticRefs",
+        "Watch",
+        "Signal",
+        "Investigation",
+        "Evidence",
+        "Decision",
+        "ActionWork",
+        "Outcome",
+        "Memory",
+        "SectorPack"
+      ]
+    },
+    {
+      "ux_id": "finance-04",
+      "group": "finance",
+      "ordinal": 4,
+      "ux_name": "Smart Payment Planner",
+      "business_objective": "Provide a governed headless foundation for Smart Payment Planner using shared Dima motors without creating a feature-specific analytics engine.",
+      "required_entity_types": [
+        "company",
+        "customer",
+        "invoice",
+        "payment",
+        "bank_account"
+      ],
+      "required_metrics": [
+        "cash",
+        "receivables",
+        "payables",
+        "collections",
+        "financial_control_metrics"
+      ],
+      "required_source_data": [
+        "ERP/accounting",
+        "bank/POS",
+        "e-document sources",
+        "Metabase/Metabot analytical results"
+      ],
+      "watch_dependency": true,
+      "signal_dependency": true,
+      "investigation_dependency": true,
+      "evidence_dependency": true,
+      "decision_dependency": true,
+      "action_work_dependency": true,
+      "outcome_dependency": true,
+      "memory_dependency": true,
+      "sector_pack_requirements": [
+        "domain-pack:finance"
+      ],
+      "specialized_engine_gap": "SPECIAL_ENGINE_DEFERRED:constraint_optimizer",
+      "headless_api_needs": [
+        "stable_entity_refs",
+        "typed_lifecycle_state",
+        "tenant_non_oracle",
+        "deterministic_pagination",
+        "artifact_deep_links"
+      ],
+      "current_feasibility": "SPECIAL_ENGINE_DEFERRED",
+      "deferred_capabilities": [
+        "constraint_optimizer"
+      ],
+      "shared_motors": [
+        "CompanyMap",
+        "EntityRegistry",
+        "SemanticRefs",
+        "Watch",
+        "Signal",
+        "Investigation",
+        "Evidence",
+        "Decision",
+        "ActionWork",
+        "Outcome",
+        "Memory",
+        "SectorPack"
+      ]
+    },
+    {
+      "ux_id": "finance-05",
+      "group": "finance",
+      "ordinal": 5,
+      "ux_name": "e-Invoice / e-Archive / e-Ledger Compliance Radar",
+      "business_objective": "Provide a governed headless foundation for e-Invoice / e-Archive / e-Ledger Compliance Radar using shared Dima motors without creating a feature-specific analytics engine.",
+      "required_entity_types": [
+        "company",
+        "customer",
+        "invoice",
+        "payment",
+        "bank_account"
+      ],
+      "required_metrics": [
+        "cash",
+        "receivables",
+        "payables",
+        "collections",
+        "financial_control_metrics"
+      ],
+      "required_source_data": [
+        "ERP/accounting",
+        "bank/POS",
+        "e-document sources",
+        "Metabase/Metabot analytical results"
+      ],
+      "watch_dependency": true,
+      "signal_dependency": true,
+      "investigation_dependency": true,
+      "evidence_dependency": true,
+      "decision_dependency": true,
+      "action_work_dependency": true,
+      "outcome_dependency": true,
+      "memory_dependency": true,
+      "sector_pack_requirements": [
+        "domain-pack:finance"
+      ],
+      "specialized_engine_gap": null,
+      "headless_api_needs": [
+        "stable_entity_refs",
+        "typed_lifecycle_state",
+        "tenant_non_oracle",
+        "deterministic_pagination",
+        "artifact_deep_links"
+      ],
+      "current_feasibility": "FOUNDATION_READY",
+      "deferred_capabilities": [],
+      "shared_motors": [
+        "CompanyMap",
+        "EntityRegistry",
+        "SemanticRefs",
+        "Watch",
+        "Signal",
+        "Investigation",
+        "Evidence",
+        "Decision",
+        "ActionWork",
+        "Outcome",
+        "Memory",
+        "SectorPack"
+      ]
+    },
+    {
+      "ux_id": "finance-06",
+      "group": "finance",
+      "ordinal": 6,
+      "ux_name": "Smart Invoice Auditor",
+      "business_objective": "Provide a governed headless foundation for Smart Invoice Auditor using shared Dima motors without creating a feature-specific analytics engine.",
+      "required_entity_types": [
+        "company",
+        "customer",
+        "invoice",
+        "payment",
+        "bank_account"
+      ],
+      "required_metrics": [
+        "cash",
+        "receivables",
+        "payables",
+        "collections",
+        "financial_control_metrics"
+      ],
+      "required_source_data": [
+        "ERP/accounting",
+        "bank/POS",
+        "e-document sources",
+        "Metabase/Metabot analytical results"
+      ],
+      "watch_dependency": true,
+      "signal_dependency": true,
+      "investigation_dependency": true,
+      "evidence_dependency": true,
+      "decision_dependency": true,
+      "action_work_dependency": true,
+      "outcome_dependency": true,
+      "memory_dependency": true,
+      "sector_pack_requirements": [
+        "domain-pack:finance"
+      ],
+      "specialized_engine_gap": null,
+      "headless_api_needs": [
+        "stable_entity_refs",
+        "typed_lifecycle_state",
+        "tenant_non_oracle",
+        "deterministic_pagination",
+        "artifact_deep_links"
+      ],
+      "current_feasibility": "FOUNDATION_READY",
+      "deferred_capabilities": [],
+      "shared_motors": [
+        "CompanyMap",
+        "EntityRegistry",
+        "SemanticRefs",
+        "Watch",
+        "Signal",
+        "Investigation",
+        "Evidence",
+        "Decision",
+        "ActionWork",
+        "Outcome",
+        "Memory",
+        "SectorPack"
+      ]
+    },
+    {
+      "ux_id": "finance-07",
+      "group": "finance",
+      "ordinal": 7,
+      "ux_name": "Duplicate / Suspicious Payment and Accounting Anomaly Radar",
+      "business_objective": "Provide a governed headless foundation for Duplicate / Suspicious Payment and Accounting Anomaly Radar using shared Dima motors without creating a feature-specific analytics engine.",
+      "required_entity_types": [
+        "company",
+        "customer",
+        "invoice",
+        "payment",
+        "bank_account"
+      ],
+      "required_metrics": [
+        "cash",
+        "receivables",
+        "payables",
+        "collections",
+        "financial_control_metrics"
+      ],
+      "required_source_data": [
+        "ERP/accounting",
+        "bank/POS",
+        "e-document sources",
+        "Metabase/Metabot analytical results"
+      ],
+      "watch_dependency": true,
+      "signal_dependency": true,
+      "investigation_dependency": true,
+      "evidence_dependency": true,
+      "decision_dependency": true,
+      "action_work_dependency": true,
+      "outcome_dependency": true,
+      "memory_dependency": true,
+      "sector_pack_requirements": [
+        "domain-pack:finance"
+      ],
+      "specialized_engine_gap": "SPECIAL_ENGINE_DEFERRED:advanced_anomaly_model",
+      "headless_api_needs": [
+        "stable_entity_refs",
+        "typed_lifecycle_state",
+        "tenant_non_oracle",
+        "deterministic_pagination",
+        "artifact_deep_links"
+      ],
+      "current_feasibility": "SPECIAL_ENGINE_DEFERRED",
+      "deferred_capabilities": [
+        "advanced_anomaly_model"
+      ],
+      "shared_motors": [
+        "CompanyMap",
+        "EntityRegistry",
+        "SemanticRefs",
+        "Watch",
+        "Signal",
+        "Investigation",
+        "Evidence",
+        "Decision",
+        "ActionWork",
+        "Outcome",
+        "Memory",
+        "SectorPack"
+      ]
+    },
+    {
+      "ux_id": "finance-08",
+      "group": "finance",
+      "ordinal": 8,
+      "ux_name": "13-Week Cash Forecast",
+      "business_objective": "Provide a governed headless foundation for 13-Week Cash Forecast using shared Dima motors without creating a feature-specific analytics engine.",
+      "required_entity_types": [
+        "company",
+        "customer",
+        "invoice",
+        "payment",
+        "bank_account"
+      ],
+      "required_metrics": [
+        "cash",
+        "receivables",
+        "payables",
+        "collections",
+        "financial_control_metrics"
+      ],
+      "required_source_data": [
+        "ERP/accounting",
+        "bank/POS",
+        "e-document sources",
+        "Metabase/Metabot analytical results"
+      ],
+      "watch_dependency": true,
+      "signal_dependency": true,
+      "investigation_dependency": true,
+      "evidence_dependency": true,
+      "decision_dependency": true,
+      "action_work_dependency": true,
+      "outcome_dependency": true,
+      "memory_dependency": true,
+      "sector_pack_requirements": [
+        "domain-pack:finance"
+      ],
+      "specialized_engine_gap": "SPECIAL_ENGINE_DEFERRED:forecast_service",
+      "headless_api_needs": [
+        "stable_entity_refs",
+        "typed_lifecycle_state",
+        "tenant_non_oracle",
+        "deterministic_pagination",
+        "artifact_deep_links"
+      ],
+      "current_feasibility": "SPECIAL_ENGINE_DEFERRED",
+      "deferred_capabilities": [
+        "forecast_service"
+      ],
+      "shared_motors": [
+        "CompanyMap",
+        "EntityRegistry",
+        "SemanticRefs",
+        "Watch",
+        "Signal",
+        "Investigation",
+        "Evidence",
+        "Decision",
+        "ActionWork",
+        "Outcome",
+        "Memory",
+        "SectorPack"
+      ]
+    },
+    {
+      "ux_id": "finance-09",
+      "group": "finance",
+      "ordinal": 9,
+      "ux_name": "Customer Risk / Collection Behavior Engine",
+      "business_objective": "Provide a governed headless foundation for Customer Risk / Collection Behavior Engine using shared Dima motors without creating a feature-specific analytics engine.",
+      "required_entity_types": [
+        "company",
+        "customer",
+        "invoice",
+        "payment",
+        "bank_account"
+      ],
+      "required_metrics": [
+        "cash",
+        "receivables",
+        "payables",
+        "collections",
+        "financial_control_metrics"
+      ],
+      "required_source_data": [
+        "ERP/accounting",
+        "bank/POS",
+        "e-document sources",
+        "Metabase/Metabot analytical results"
+      ],
+      "watch_dependency": true,
+      "signal_dependency": true,
+      "investigation_dependency": true,
+      "evidence_dependency": true,
+      "decision_dependency": true,
+      "action_work_dependency": true,
+      "outcome_dependency": true,
+      "memory_dependency": true,
+      "sector_pack_requirements": [
+        "domain-pack:finance"
+      ],
+      "specialized_engine_gap": "SPECIAL_ENGINE_DEFERRED:risk_model",
+      "headless_api_needs": [
+        "stable_entity_refs",
+        "typed_lifecycle_state",
+        "tenant_non_oracle",
+        "deterministic_pagination",
+        "artifact_deep_links"
+      ],
+      "current_feasibility": "SPECIAL_ENGINE_DEFERRED",
+      "deferred_capabilities": [
+        "risk_model"
+      ],
+      "shared_motors": [
+        "CompanyMap",
+        "EntityRegistry",
+        "SemanticRefs",
+        "Watch",
+        "Signal",
+        "Investigation",
+        "Evidence",
+        "Decision",
+        "ActionWork",
+        "Outcome",
+        "Memory",
+        "SectorPack"
+      ]
+    },
+    {
+      "ux_id": "finance-10",
+      "group": "finance",
+      "ordinal": 10,
+      "ux_name": "Financial Cause-Effect / contribution investigation surface",
+      "business_objective": "Provide a governed headless foundation for Financial Cause-Effect / contribution investigation surface using shared Dima motors without creating a feature-specific analytics engine.",
+      "required_entity_types": [
+        "company",
+        "customer",
+        "invoice",
+        "payment",
+        "bank_account"
+      ],
+      "required_metrics": [
+        "cash",
+        "receivables",
+        "payables",
+        "collections",
+        "financial_control_metrics"
+      ],
+      "required_source_data": [
+        "ERP/accounting",
+        "bank/POS",
+        "e-document sources",
+        "Metabase/Metabot analytical results"
+      ],
+      "watch_dependency": true,
+      "signal_dependency": true,
+      "investigation_dependency": true,
+      "evidence_dependency": true,
+      "decision_dependency": true,
+      "action_work_dependency": true,
+      "outcome_dependency": true,
+      "memory_dependency": true,
+      "sector_pack_requirements": [
+        "domain-pack:finance"
+      ],
+      "specialized_engine_gap": "SPECIAL_ENGINE_DEFERRED:causal_contribution_model",
+      "headless_api_needs": [
+        "stable_entity_refs",
+        "typed_lifecycle_state",
+        "tenant_non_oracle",
+        "deterministic_pagination",
+        "artifact_deep_links"
+      ],
+      "current_feasibility": "SPECIAL_ENGINE_DEFERRED",
+      "deferred_capabilities": [
+        "causal_contribution_model"
+      ],
+      "shared_motors": [
+        "CompanyMap",
+        "EntityRegistry",
+        "SemanticRefs",
+        "Watch",
+        "Signal",
+        "Investigation",
+        "Evidence",
+        "Decision",
+        "ActionWork",
+        "Outcome",
+        "Memory",
+        "SectorPack"
+      ]
+    },
+    {
+      "ux_id": "manufacturing-01",
+      "group": "manufacturing",
+      "ordinal": 1,
+      "ux_name": "Plant Today",
+      "business_objective": "Provide a governed headless foundation for Plant Today using shared Dima motors without creating a feature-specific analytics engine.",
+      "required_entity_types": [
+        "company",
+        "plant",
+        "line",
+        "machine",
+        "order",
+        "batch"
+      ],
+      "required_metrics": [
+        "throughput",
+        "scrap",
+        "downtime",
+        "quality",
+        "delivery",
+        "resource_use"
+      ],
+      "required_source_data": [
+        "MES/ERP",
+        "machine/production events",
+        "quality records",
+        "Metabase/Metabot analytical results"
+      ],
+      "watch_dependency": true,
+      "signal_dependency": true,
+      "investigation_dependency": true,
+      "evidence_dependency": true,
+      "decision_dependency": true,
+      "action_work_dependency": true,
+      "outcome_dependency": true,
+      "memory_dependency": true,
+      "sector_pack_requirements": [
+        "DIMA_MANUFACTURING_CORE"
+      ],
+      "specialized_engine_gap": null,
+      "headless_api_needs": [
+        "stable_entity_refs",
+        "typed_lifecycle_state",
+        "tenant_non_oracle",
+        "deterministic_pagination",
+        "artifact_deep_links"
+      ],
+      "current_feasibility": "FOUNDATION_READY",
+      "deferred_capabilities": [],
+      "shared_motors": [
+        "CompanyMap",
+        "EntityRegistry",
+        "SemanticRefs",
+        "Watch",
+        "Signal",
+        "Investigation",
+        "Evidence",
+        "Decision",
+        "ActionWork",
+        "Outcome",
+        "Memory",
+        "SectorPack"
+      ]
+    },
+    {
+      "ux_id": "manufacturing-02",
+      "group": "manufacturing",
+      "ordinal": 2,
+      "ux_name": "Loss Tree / automatic root-cause investigation",
+      "business_objective": "Provide a governed headless foundation for Loss Tree / automatic root-cause investigation using shared Dima motors without creating a feature-specific analytics engine.",
+      "required_entity_types": [
+        "company",
+        "plant",
+        "line",
+        "machine",
+        "order",
+        "batch"
+      ],
+      "required_metrics": [
+        "throughput",
+        "scrap",
+        "downtime",
+        "quality",
+        "delivery",
+        "resource_use"
+      ],
+      "required_source_data": [
+        "MES/ERP",
+        "machine/production events",
+        "quality records",
+        "Metabase/Metabot analytical results"
+      ],
+      "watch_dependency": true,
+      "signal_dependency": true,
+      "investigation_dependency": true,
+      "evidence_dependency": true,
+      "decision_dependency": true,
+      "action_work_dependency": true,
+      "outcome_dependency": true,
+      "memory_dependency": true,
+      "sector_pack_requirements": [
+        "DIMA_MANUFACTURING_CORE"
+      ],
+      "specialized_engine_gap": null,
+      "headless_api_needs": [
+        "stable_entity_refs",
+        "typed_lifecycle_state",
+        "tenant_non_oracle",
+        "deterministic_pagination",
+        "artifact_deep_links"
+      ],
+      "current_feasibility": "FOUNDATION_READY",
+      "deferred_capabilities": [],
+      "shared_motors": [
+        "CompanyMap",
+        "EntityRegistry",
+        "SemanticRefs",
+        "Watch",
+        "Signal",
+        "Investigation",
+        "Evidence",
+        "Decision",
+        "ActionWork",
+        "Outcome",
+        "Memory",
+        "SectorPack"
+      ]
+    },
+    {
+      "ux_id": "manufacturing-03",
+      "group": "manufacturing",
+      "ordinal": 3,
+      "ux_name": "Plan vs Actual / Delivery Risk Radar",
+      "business_objective": "Provide a governed headless foundation for Plan vs Actual / Delivery Risk Radar using shared Dima motors without creating a feature-specific analytics engine.",
+      "required_entity_types": [
+        "company",
+        "plant",
+        "line",
+        "machine",
+        "order",
+        "batch"
+      ],
+      "required_metrics": [
+        "throughput",
+        "scrap",
+        "downtime",
+        "quality",
+        "delivery",
+        "resource_use"
+      ],
+      "required_source_data": [
+        "MES/ERP",
+        "machine/production events",
+        "quality records",
+        "Metabase/Metabot analytical results"
+      ],
+      "watch_dependency": true,
+      "signal_dependency": true,
+      "investigation_dependency": true,
+      "evidence_dependency": true,
+      "decision_dependency": true,
+      "action_work_dependency": true,
+      "outcome_dependency": true,
+      "memory_dependency": true,
+      "sector_pack_requirements": [
+        "DIMA_MANUFACTURING_CORE"
+      ],
+      "specialized_engine_gap": null,
+      "headless_api_needs": [
+        "stable_entity_refs",
+        "typed_lifecycle_state",
+        "tenant_non_oracle",
+        "deterministic_pagination",
+        "artifact_deep_links"
+      ],
+      "current_feasibility": "FOUNDATION_READY",
+      "deferred_capabilities": [],
+      "shared_motors": [
+        "CompanyMap",
+        "EntityRegistry",
+        "SemanticRefs",
+        "Watch",
+        "Signal",
+        "Investigation",
+        "Evidence",
+        "Decision",
+        "ActionWork",
+        "Outcome",
+        "Memory",
+        "SectorPack"
+      ]
+    },
+    {
+      "ux_id": "manufacturing-04",
+      "group": "manufacturing",
+      "ordinal": 4,
+      "ux_name": "Capacity / Bottleneck Desk",
+      "business_objective": "Provide a governed headless foundation for Capacity / Bottleneck Desk using shared Dima motors without creating a feature-specific analytics engine.",
+      "required_entity_types": [
+        "company",
+        "plant",
+        "line",
+        "machine",
+        "order",
+        "batch"
+      ],
+      "required_metrics": [
+        "throughput",
+        "scrap",
+        "downtime",
+        "quality",
+        "delivery",
+        "resource_use"
+      ],
+      "required_source_data": [
+        "MES/ERP",
+        "machine/production events",
+        "quality records",
+        "Metabase/Metabot analytical results"
+      ],
+      "watch_dependency": true,
+      "signal_dependency": true,
+      "investigation_dependency": true,
+      "evidence_dependency": true,
+      "decision_dependency": true,
+      "action_work_dependency": true,
+      "outcome_dependency": true,
+      "memory_dependency": true,
+      "sector_pack_requirements": [
+        "DIMA_MANUFACTURING_CORE"
+      ],
+      "specialized_engine_gap": "SPECIAL_ENGINE_DEFERRED:constraint_optimizer",
+      "headless_api_needs": [
+        "stable_entity_refs",
+        "typed_lifecycle_state",
+        "tenant_non_oracle",
+        "deterministic_pagination",
+        "artifact_deep_links"
+      ],
+      "current_feasibility": "SPECIAL_ENGINE_DEFERRED",
+      "deferred_capabilities": [
+        "constraint_optimizer"
+      ],
+      "shared_motors": [
+        "CompanyMap",
+        "EntityRegistry",
+        "SemanticRefs",
+        "Watch",
+        "Signal",
+        "Investigation",
+        "Evidence",
+        "Decision",
+        "ActionWork",
+        "Outcome",
+        "Memory",
+        "SectorPack"
+      ]
+    },
+    {
+      "ux_id": "manufacturing-05",
+      "group": "manufacturing",
+      "ordinal": 5,
+      "ux_name": "Scrap / Rework Detector",
+      "business_objective": "Provide a governed headless foundation for Scrap / Rework Detector using shared Dima motors without creating a feature-specific analytics engine.",
+      "required_entity_types": [
+        "company",
+        "plant",
+        "line",
+        "machine",
+        "order",
+        "batch"
+      ],
+      "required_metrics": [
+        "throughput",
+        "scrap",
+        "downtime",
+        "quality",
+        "delivery",
+        "resource_use"
+      ],
+      "required_source_data": [
+        "MES/ERP",
+        "machine/production events",
+        "quality records",
+        "Metabase/Metabot analytical results"
+      ],
+      "watch_dependency": true,
+      "signal_dependency": true,
+      "investigation_dependency": true,
+      "evidence_dependency": true,
+      "decision_dependency": true,
+      "action_work_dependency": true,
+      "outcome_dependency": true,
+      "memory_dependency": true,
+      "sector_pack_requirements": [
+        "DIMA_MANUFACTURING_CORE"
+      ],
+      "specialized_engine_gap": null,
+      "headless_api_needs": [
+        "stable_entity_refs",
+        "typed_lifecycle_state",
+        "tenant_non_oracle",
+        "deterministic_pagination",
+        "artifact_deep_links"
+      ],
+      "current_feasibility": "FOUNDATION_READY",
+      "deferred_capabilities": [],
+      "shared_motors": [
+        "CompanyMap",
+        "EntityRegistry",
+        "SemanticRefs",
+        "Watch",
+        "Signal",
+        "Investigation",
+        "Evidence",
+        "Decision",
+        "ActionWork",
+        "Outcome",
+        "Memory",
+        "SectorPack"
+      ]
+    },
+    {
+      "ux_id": "manufacturing-06",
+      "group": "manufacturing",
+      "ordinal": 6,
+      "ux_name": "Downtime / Micro-downtime Intelligence",
+      "business_objective": "Provide a governed headless foundation for Downtime / Micro-downtime Intelligence using shared Dima motors without creating a feature-specific analytics engine.",
+      "required_entity_types": [
+        "company",
+        "plant",
+        "line",
+        "machine",
+        "order",
+        "batch"
+      ],
+      "required_metrics": [
+        "throughput",
+        "scrap",
+        "downtime",
+        "quality",
+        "delivery",
+        "resource_use"
+      ],
+      "required_source_data": [
+        "MES/ERP",
+        "machine/production events",
+        "quality records",
+        "Metabase/Metabot analytical results"
+      ],
+      "watch_dependency": true,
+      "signal_dependency": true,
+      "investigation_dependency": true,
+      "evidence_dependency": true,
+      "decision_dependency": true,
+      "action_work_dependency": true,
+      "outcome_dependency": true,
+      "memory_dependency": true,
+      "sector_pack_requirements": [
+        "DIMA_MANUFACTURING_CORE"
+      ],
+      "specialized_engine_gap": null,
+      "headless_api_needs": [
+        "stable_entity_refs",
+        "typed_lifecycle_state",
+        "tenant_non_oracle",
+        "deterministic_pagination",
+        "artifact_deep_links"
+      ],
+      "current_feasibility": "FOUNDATION_READY",
+      "deferred_capabilities": [],
+      "shared_motors": [
+        "CompanyMap",
+        "EntityRegistry",
+        "SemanticRefs",
+        "Watch",
+        "Signal",
+        "Investigation",
+        "Evidence",
+        "Decision",
+        "ActionWork",
+        "Outcome",
+        "Memory",
+        "SectorPack"
+      ]
+    },
+    {
+      "ux_id": "manufacturing-07",
+      "group": "manufacturing",
+      "ordinal": 7,
+      "ux_name": "Maintenance Prioritization / Asset Health",
+      "business_objective": "Provide a governed headless foundation for Maintenance Prioritization / Asset Health using shared Dima motors without creating a feature-specific analytics engine.",
+      "required_entity_types": [
+        "company",
+        "plant",
+        "line",
+        "machine",
+        "order",
+        "batch"
+      ],
+      "required_metrics": [
+        "throughput",
+        "scrap",
+        "downtime",
+        "quality",
+        "delivery",
+        "resource_use"
+      ],
+      "required_source_data": [
+        "MES/ERP",
+        "machine/production events",
+        "quality records",
+        "Metabase/Metabot analytical results"
+      ],
+      "watch_dependency": true,
+      "signal_dependency": true,
+      "investigation_dependency": true,
+      "evidence_dependency": true,
+      "decision_dependency": true,
+      "action_work_dependency": true,
+      "outcome_dependency": true,
+      "memory_dependency": true,
+      "sector_pack_requirements": [
+        "DIMA_MANUFACTURING_CORE"
+      ],
+      "specialized_engine_gap": "SPECIAL_ENGINE_DEFERRED:predictive_asset_model",
+      "headless_api_needs": [
+        "stable_entity_refs",
+        "typed_lifecycle_state",
+        "tenant_non_oracle",
+        "deterministic_pagination",
+        "artifact_deep_links"
+      ],
+      "current_feasibility": "SPECIAL_ENGINE_DEFERRED",
+      "deferred_capabilities": [
+        "predictive_asset_model"
+      ],
+      "shared_motors": [
+        "CompanyMap",
+        "EntityRegistry",
+        "SemanticRefs",
+        "Watch",
+        "Signal",
+        "Investigation",
+        "Evidence",
+        "Decision",
+        "ActionWork",
+        "Outcome",
+        "Memory",
+        "SectorPack"
+      ]
+    },
+    {
+      "ux_id": "manufacturing-08",
+      "group": "manufacturing",
+      "ordinal": 8,
+      "ux_name": "Quality Drift / FPY Radar",
+      "business_objective": "Provide a governed headless foundation for Quality Drift / FPY Radar using shared Dima motors without creating a feature-specific analytics engine.",
+      "required_entity_types": [
+        "company",
+        "plant",
+        "line",
+        "machine",
+        "order",
+        "batch"
+      ],
+      "required_metrics": [
+        "throughput",
+        "scrap",
+        "downtime",
+        "quality",
+        "delivery",
+        "resource_use"
+      ],
+      "required_source_data": [
+        "MES/ERP",
+        "machine/production events",
+        "quality records",
+        "Metabase/Metabot analytical results"
+      ],
+      "watch_dependency": true,
+      "signal_dependency": true,
+      "investigation_dependency": true,
+      "evidence_dependency": true,
+      "decision_dependency": true,
+      "action_work_dependency": true,
+      "outcome_dependency": true,
+      "memory_dependency": true,
+      "sector_pack_requirements": [
+        "DIMA_MANUFACTURING_CORE"
+      ],
+      "specialized_engine_gap": null,
+      "headless_api_needs": [
+        "stable_entity_refs",
+        "typed_lifecycle_state",
+        "tenant_non_oracle",
+        "deterministic_pagination",
+        "artifact_deep_links"
+      ],
+      "current_feasibility": "FOUNDATION_READY",
+      "deferred_capabilities": [],
+      "shared_motors": [
+        "CompanyMap",
+        "EntityRegistry",
+        "SemanticRefs",
+        "Watch",
+        "Signal",
+        "Investigation",
+        "Evidence",
+        "Decision",
+        "ActionWork",
+        "Outcome",
+        "Memory",
+        "SectorPack"
+      ]
+    },
+    {
+      "ux_id": "manufacturing-09",
+      "group": "manufacturing",
+      "ordinal": 9,
+      "ux_name": "Energy / resource-per-unit optimization surface",
+      "business_objective": "Provide a governed headless foundation for Energy / resource-per-unit optimization surface using shared Dima motors without creating a feature-specific analytics engine.",
+      "required_entity_types": [
+        "company",
+        "plant",
+        "line",
+        "machine",
+        "order",
+        "batch"
+      ],
+      "required_metrics": [
+        "throughput",
+        "scrap",
+        "downtime",
+        "quality",
+        "delivery",
+        "resource_use"
+      ],
+      "required_source_data": [
+        "MES/ERP",
+        "machine/production events",
+        "quality records",
+        "Metabase/Metabot analytical results"
+      ],
+      "watch_dependency": true,
+      "signal_dependency": true,
+      "investigation_dependency": true,
+      "evidence_dependency": true,
+      "decision_dependency": true,
+      "action_work_dependency": true,
+      "outcome_dependency": true,
+      "memory_dependency": true,
+      "sector_pack_requirements": [
+        "DIMA_MANUFACTURING_CORE"
+      ],
+      "specialized_engine_gap": "SPECIAL_ENGINE_DEFERRED:resource_optimizer",
+      "headless_api_needs": [
+        "stable_entity_refs",
+        "typed_lifecycle_state",
+        "tenant_non_oracle",
+        "deterministic_pagination",
+        "artifact_deep_links"
+      ],
+      "current_feasibility": "SPECIAL_ENGINE_DEFERRED",
+      "deferred_capabilities": [
+        "resource_optimizer"
+      ],
+      "shared_motors": [
+        "CompanyMap",
+        "EntityRegistry",
+        "SemanticRefs",
+        "Watch",
+        "Signal",
+        "Investigation",
+        "Evidence",
+        "Decision",
+        "ActionWork",
+        "Outcome",
+        "Memory",
+        "SectorPack"
+      ]
+    },
+    {
+      "ux_id": "manufacturing-10",
+      "group": "manufacturing",
+      "ordinal": 10,
+      "ux_name": "Money Loss Bridge",
+      "business_objective": "Provide a governed headless foundation for Money Loss Bridge using shared Dima motors without creating a feature-specific analytics engine.",
+      "required_entity_types": [
+        "company",
+        "plant",
+        "line",
+        "machine",
+        "order",
+        "batch"
+      ],
+      "required_metrics": [
+        "throughput",
+        "scrap",
+        "downtime",
+        "quality",
+        "delivery",
+        "resource_use"
+      ],
+      "required_source_data": [
+        "MES/ERP",
+        "machine/production events",
+        "quality records",
+        "Metabase/Metabot analytical results"
+      ],
+      "watch_dependency": true,
+      "signal_dependency": true,
+      "investigation_dependency": true,
+      "evidence_dependency": true,
+      "decision_dependency": true,
+      "action_work_dependency": true,
+      "outcome_dependency": true,
+      "memory_dependency": true,
+      "sector_pack_requirements": [
+        "DIMA_MANUFACTURING_CORE"
+      ],
+      "specialized_engine_gap": null,
+      "headless_api_needs": [
+        "stable_entity_refs",
+        "typed_lifecycle_state",
+        "tenant_non_oracle",
+        "deterministic_pagination",
+        "artifact_deep_links"
+      ],
+      "current_feasibility": "FOUNDATION_READY",
+      "deferred_capabilities": [],
+      "shared_motors": [
+        "CompanyMap",
+        "EntityRegistry",
+        "SemanticRefs",
+        "Watch",
+        "Signal",
+        "Investigation",
+        "Evidence",
+        "Decision",
+        "ActionWork",
+        "Outcome",
+        "Memory",
+        "SectorPack"
+      ]
+    },
+    {
+      "ux_id": "textile-01",
+      "group": "textile",
+      "ordinal": 1,
+      "ux_name": "Right-First-Time Dyeing Radar",
+      "business_objective": "Provide a governed headless foundation for Right-First-Time Dyeing Radar using shared Dima motors without creating a feature-specific analytics engine.",
+      "required_entity_types": [
+        "company",
+        "plant",
+        "machine",
+        "dye_batch",
+        "recipe",
+        "quality_lot"
+      ],
+      "required_metrics": [
+        "right_first_time",
+        "shade_quality",
+        "cycle_time",
+        "water",
+        "steam",
+        "energy",
+        "delivery"
+      ],
+      "required_source_data": [
+        "MES/ERP",
+        "lab/dyeing/finishing records",
+        "machine/resource events",
+        "Metabase/Metabot analytical results"
+      ],
+      "watch_dependency": true,
+      "signal_dependency": true,
+      "investigation_dependency": true,
+      "evidence_dependency": true,
+      "decision_dependency": true,
+      "action_work_dependency": true,
+      "outcome_dependency": true,
+      "memory_dependency": true,
+      "sector_pack_requirements": [
+        "DIMA_MANUFACTURING_CORE",
+        "sector-pack:textile"
+      ],
+      "specialized_engine_gap": null,
+      "headless_api_needs": [
+        "stable_entity_refs",
+        "typed_lifecycle_state",
+        "tenant_non_oracle",
+        "deterministic_pagination",
+        "artifact_deep_links"
+      ],
+      "current_feasibility": "FOUNDATION_READY",
+      "deferred_capabilities": [],
+      "shared_motors": [
+        "CompanyMap",
+        "EntityRegistry",
+        "SemanticRefs",
+        "Watch",
+        "Signal",
+        "Investigation",
+        "Evidence",
+        "Decision",
+        "ActionWork",
+        "Outcome",
+        "Memory",
+        "SectorPack"
+      ]
+    },
+    {
+      "ux_id": "textile-02",
+      "group": "textile",
+      "ordinal": 2,
+      "ux_name": "Recipe Recommendation / Correction Desk",
+      "business_objective": "Provide a governed headless foundation for Recipe Recommendation / Correction Desk using shared Dima motors without creating a feature-specific analytics engine.",
+      "required_entity_types": [
+        "company",
+        "plant",
+        "machine",
+        "dye_batch",
+        "recipe",
+        "quality_lot"
+      ],
+      "required_metrics": [
+        "right_first_time",
+        "shade_quality",
+        "cycle_time",
+        "water",
+        "steam",
+        "energy",
+        "delivery"
+      ],
+      "required_source_data": [
+        "MES/ERP",
+        "lab/dyeing/finishing records",
+        "machine/resource events",
+        "Metabase/Metabot analytical results"
+      ],
+      "watch_dependency": true,
+      "signal_dependency": true,
+      "investigation_dependency": true,
+      "evidence_dependency": true,
+      "decision_dependency": true,
+      "action_work_dependency": true,
+      "outcome_dependency": true,
+      "memory_dependency": true,
+      "sector_pack_requirements": [
+        "DIMA_MANUFACTURING_CORE",
+        "sector-pack:textile"
+      ],
+      "specialized_engine_gap": "SPECIAL_ENGINE_DEFERRED:recipe_matching_optimizer",
+      "headless_api_needs": [
+        "stable_entity_refs",
+        "typed_lifecycle_state",
+        "tenant_non_oracle",
+        "deterministic_pagination",
+        "artifact_deep_links"
+      ],
+      "current_feasibility": "SPECIAL_ENGINE_DEFERRED",
+      "deferred_capabilities": [
+        "recipe_matching_optimizer"
+      ],
+      "shared_motors": [
+        "CompanyMap",
+        "EntityRegistry",
+        "SemanticRefs",
+        "Watch",
+        "Signal",
+        "Investigation",
+        "Evidence",
+        "Decision",
+        "ActionWork",
+        "Outcome",
+        "Memory",
+        "SectorPack"
+      ]
+    },
+    {
+      "ux_id": "textile-03",
+      "group": "textile",
+      "ordinal": 3,
+      "ux_name": "Batch Preflight",
+      "business_objective": "Provide a governed headless foundation for Batch Preflight using shared Dima motors without creating a feature-specific analytics engine.",
+      "required_entity_types": [
+        "company",
+        "plant",
+        "machine",
+        "dye_batch",
+        "recipe",
+        "quality_lot"
+      ],
+      "required_metrics": [
+        "right_first_time",
+        "shade_quality",
+        "cycle_time",
+        "water",
+        "steam",
+        "energy",
+        "delivery"
+      ],
+      "required_source_data": [
+        "MES/ERP",
+        "lab/dyeing/finishing records",
+        "machine/resource events",
+        "Metabase/Metabot analytical results"
+      ],
+      "watch_dependency": true,
+      "signal_dependency": true,
+      "investigation_dependency": true,
+      "evidence_dependency": true,
+      "decision_dependency": true,
+      "action_work_dependency": true,
+      "outcome_dependency": true,
+      "memory_dependency": true,
+      "sector_pack_requirements": [
+        "DIMA_MANUFACTURING_CORE",
+        "sector-pack:textile"
+      ],
+      "specialized_engine_gap": null,
+      "headless_api_needs": [
+        "stable_entity_refs",
+        "typed_lifecycle_state",
+        "tenant_non_oracle",
+        "deterministic_pagination",
+        "artifact_deep_links"
+      ],
+      "current_feasibility": "FOUNDATION_READY",
+      "deferred_capabilities": [],
+      "shared_motors": [
+        "CompanyMap",
+        "EntityRegistry",
+        "SemanticRefs",
+        "Watch",
+        "Signal",
+        "Investigation",
+        "Evidence",
+        "Decision",
+        "ActionWork",
+        "Outcome",
+        "Memory",
+        "SectorPack"
+      ]
+    },
+    {
+      "ux_id": "textile-04",
+      "group": "textile",
+      "ordinal": 4,
+      "ux_name": "Off-Shade / Rework Root Cause Investigator",
+      "business_objective": "Provide a governed headless foundation for Off-Shade / Rework Root Cause Investigator using shared Dima motors without creating a feature-specific analytics engine.",
+      "required_entity_types": [
+        "company",
+        "plant",
+        "machine",
+        "dye_batch",
+        "recipe",
+        "quality_lot"
+      ],
+      "required_metrics": [
+        "right_first_time",
+        "shade_quality",
+        "cycle_time",
+        "water",
+        "steam",
+        "energy",
+        "delivery"
+      ],
+      "required_source_data": [
+        "MES/ERP",
+        "lab/dyeing/finishing records",
+        "machine/resource events",
+        "Metabase/Metabot analytical results"
+      ],
+      "watch_dependency": true,
+      "signal_dependency": true,
+      "investigation_dependency": true,
+      "evidence_dependency": true,
+      "decision_dependency": true,
+      "action_work_dependency": true,
+      "outcome_dependency": true,
+      "memory_dependency": true,
+      "sector_pack_requirements": [
+        "DIMA_MANUFACTURING_CORE",
+        "sector-pack:textile"
+      ],
+      "specialized_engine_gap": null,
+      "headless_api_needs": [
+        "stable_entity_refs",
+        "typed_lifecycle_state",
+        "tenant_non_oracle",
+        "deterministic_pagination",
+        "artifact_deep_links"
+      ],
+      "current_feasibility": "FOUNDATION_READY",
+      "deferred_capabilities": [],
+      "shared_motors": [
+        "CompanyMap",
+        "EntityRegistry",
+        "SemanticRefs",
+        "Watch",
+        "Signal",
+        "Investigation",
+        "Evidence",
+        "Decision",
+        "ActionWork",
+        "Outcome",
+        "Memory",
+        "SectorPack"
+      ]
+    },
+    {
+      "ux_id": "textile-05",
+      "group": "textile",
+      "ordinal": 5,
+      "ux_name": "Water / Steam / Energy per kg",
+      "business_objective": "Provide a governed headless foundation for Water / Steam / Energy per kg using shared Dima motors without creating a feature-specific analytics engine.",
+      "required_entity_types": [
+        "company",
+        "plant",
+        "machine",
+        "dye_batch",
+        "recipe",
+        "quality_lot"
+      ],
+      "required_metrics": [
+        "right_first_time",
+        "shade_quality",
+        "cycle_time",
+        "water",
+        "steam",
+        "energy",
+        "delivery"
+      ],
+      "required_source_data": [
+        "MES/ERP",
+        "lab/dyeing/finishing records",
+        "machine/resource events",
+        "Metabase/Metabot analytical results"
+      ],
+      "watch_dependency": true,
+      "signal_dependency": true,
+      "investigation_dependency": true,
+      "evidence_dependency": true,
+      "decision_dependency": true,
+      "action_work_dependency": true,
+      "outcome_dependency": true,
+      "memory_dependency": true,
+      "sector_pack_requirements": [
+        "DIMA_MANUFACTURING_CORE",
+        "sector-pack:textile"
+      ],
+      "specialized_engine_gap": null,
+      "headless_api_needs": [
+        "stable_entity_refs",
+        "typed_lifecycle_state",
+        "tenant_non_oracle",
+        "deterministic_pagination",
+        "artifact_deep_links"
+      ],
+      "current_feasibility": "FOUNDATION_READY",
+      "deferred_capabilities": [],
+      "shared_motors": [
+        "CompanyMap",
+        "EntityRegistry",
+        "SemanticRefs",
+        "Watch",
+        "Signal",
+        "Investigation",
+        "Evidence",
+        "Decision",
+        "ActionWork",
+        "Outcome",
+        "Memory",
+        "SectorPack"
+      ]
+    },
+    {
+      "ux_id": "textile-06",
+      "group": "textile",
+      "ordinal": 6,
+      "ux_name": "Dyeing Cycle-Time Optimizer surface",
+      "business_objective": "Provide a governed headless foundation for Dyeing Cycle-Time Optimizer surface using shared Dima motors without creating a feature-specific analytics engine.",
+      "required_entity_types": [
+        "company",
+        "plant",
+        "machine",
+        "dye_batch",
+        "recipe",
+        "quality_lot"
+      ],
+      "required_metrics": [
+        "right_first_time",
+        "shade_quality",
+        "cycle_time",
+        "water",
+        "steam",
+        "energy",
+        "delivery"
+      ],
+      "required_source_data": [
+        "MES/ERP",
+        "lab/dyeing/finishing records",
+        "machine/resource events",
+        "Metabase/Metabot analytical results"
+      ],
+      "watch_dependency": true,
+      "signal_dependency": true,
+      "investigation_dependency": true,
+      "evidence_dependency": true,
+      "decision_dependency": true,
+      "action_work_dependency": true,
+      "outcome_dependency": true,
+      "memory_dependency": true,
+      "sector_pack_requirements": [
+        "DIMA_MANUFACTURING_CORE",
+        "sector-pack:textile"
+      ],
+      "specialized_engine_gap": "SPECIAL_ENGINE_DEFERRED:cycle_time_optimizer",
+      "headless_api_needs": [
+        "stable_entity_refs",
+        "typed_lifecycle_state",
+        "tenant_non_oracle",
+        "deterministic_pagination",
+        "artifact_deep_links"
+      ],
+      "current_feasibility": "SPECIAL_ENGINE_DEFERRED",
+      "deferred_capabilities": [
+        "cycle_time_optimizer"
+      ],
+      "shared_motors": [
+        "CompanyMap",
+        "EntityRegistry",
+        "SemanticRefs",
+        "Watch",
+        "Signal",
+        "Investigation",
+        "Evidence",
+        "Decision",
+        "ActionWork",
+        "Outcome",
+        "Memory",
+        "SectorPack"
+      ]
+    },
+    {
+      "ux_id": "textile-07",
+      "group": "textile",
+      "ordinal": 7,
+      "ux_name": "Color Sequence / Machine Scheduling surface",
+      "business_objective": "Provide a governed headless foundation for Color Sequence / Machine Scheduling surface using shared Dima motors without creating a feature-specific analytics engine.",
+      "required_entity_types": [
+        "company",
+        "plant",
+        "machine",
+        "dye_batch",
+        "recipe",
+        "quality_lot"
+      ],
+      "required_metrics": [
+        "right_first_time",
+        "shade_quality",
+        "cycle_time",
+        "water",
+        "steam",
+        "energy",
+        "delivery"
+      ],
+      "required_source_data": [
+        "MES/ERP",
+        "lab/dyeing/finishing records",
+        "machine/resource events",
+        "Metabase/Metabot analytical results"
+      ],
+      "watch_dependency": true,
+      "signal_dependency": true,
+      "investigation_dependency": true,
+      "evidence_dependency": true,
+      "decision_dependency": true,
+      "action_work_dependency": true,
+      "outcome_dependency": true,
+      "memory_dependency": true,
+      "sector_pack_requirements": [
+        "DIMA_MANUFACTURING_CORE",
+        "sector-pack:textile"
+      ],
+      "specialized_engine_gap": "SPECIAL_ENGINE_DEFERRED:scheduling_solver",
+      "headless_api_needs": [
+        "stable_entity_refs",
+        "typed_lifecycle_state",
+        "tenant_non_oracle",
+        "deterministic_pagination",
+        "artifact_deep_links"
+      ],
+      "current_feasibility": "SPECIAL_ENGINE_DEFERRED",
+      "deferred_capabilities": [
+        "scheduling_solver"
+      ],
+      "shared_motors": [
+        "CompanyMap",
+        "EntityRegistry",
+        "SemanticRefs",
+        "Watch",
+        "Signal",
+        "Investigation",
+        "Evidence",
+        "Decision",
+        "ActionWork",
+        "Outcome",
+        "Memory",
+        "SectorPack"
+      ]
+    },
+    {
+      "ux_id": "textile-08",
+      "group": "textile",
+      "ordinal": 8,
+      "ux_name": "Lab → Bulk Scale-Up Reliability",
+      "business_objective": "Provide a governed headless foundation for Lab → Bulk Scale-Up Reliability using shared Dima motors without creating a feature-specific analytics engine.",
+      "required_entity_types": [
+        "company",
+        "plant",
+        "machine",
+        "dye_batch",
+        "recipe",
+        "quality_lot"
+      ],
+      "required_metrics": [
+        "right_first_time",
+        "shade_quality",
+        "cycle_time",
+        "water",
+        "steam",
+        "energy",
+        "delivery"
+      ],
+      "required_source_data": [
+        "MES/ERP",
+        "lab/dyeing/finishing records",
+        "machine/resource events",
+        "Metabase/Metabot analytical results"
+      ],
+      "watch_dependency": true,
+      "signal_dependency": true,
+      "investigation_dependency": true,
+      "evidence_dependency": true,
+      "decision_dependency": true,
+      "action_work_dependency": true,
+      "outcome_dependency": true,
+      "memory_dependency": true,
+      "sector_pack_requirements": [
+        "DIMA_MANUFACTURING_CORE",
+        "sector-pack:textile"
+      ],
+      "specialized_engine_gap": null,
+      "headless_api_needs": [
+        "stable_entity_refs",
+        "typed_lifecycle_state",
+        "tenant_non_oracle",
+        "deterministic_pagination",
+        "artifact_deep_links"
+      ],
+      "current_feasibility": "FOUNDATION_READY",
+      "deferred_capabilities": [],
+      "shared_motors": [
+        "CompanyMap",
+        "EntityRegistry",
+        "SemanticRefs",
+        "Watch",
+        "Signal",
+        "Investigation",
+        "Evidence",
+        "Decision",
+        "ActionWork",
+        "Outcome",
+        "Memory",
+        "SectorPack"
+      ]
+    },
+    {
+      "ux_id": "textile-09",
+      "group": "textile",
+      "ordinal": 9,
+      "ux_name": "Stenter / Finishing Optimization surface",
+      "business_objective": "Provide a governed headless foundation for Stenter / Finishing Optimization surface using shared Dima motors without creating a feature-specific analytics engine.",
+      "required_entity_types": [
+        "company",
+        "plant",
+        "machine",
+        "dye_batch",
+        "recipe",
+        "quality_lot"
+      ],
+      "required_metrics": [
+        "right_first_time",
+        "shade_quality",
+        "cycle_time",
+        "water",
+        "steam",
+        "energy",
+        "delivery"
+      ],
+      "required_source_data": [
+        "MES/ERP",
+        "lab/dyeing/finishing records",
+        "machine/resource events",
+        "Metabase/Metabot analytical results"
+      ],
+      "watch_dependency": true,
+      "signal_dependency": true,
+      "investigation_dependency": true,
+      "evidence_dependency": true,
+      "decision_dependency": true,
+      "action_work_dependency": true,
+      "outcome_dependency": true,
+      "memory_dependency": true,
+      "sector_pack_requirements": [
+        "DIMA_MANUFACTURING_CORE",
+        "sector-pack:textile"
+      ],
+      "specialized_engine_gap": "SPECIAL_ENGINE_DEFERRED:process_optimizer",
+      "headless_api_needs": [
+        "stable_entity_refs",
+        "typed_lifecycle_state",
+        "tenant_non_oracle",
+        "deterministic_pagination",
+        "artifact_deep_links"
+      ],
+      "current_feasibility": "SPECIAL_ENGINE_DEFERRED",
+      "deferred_capabilities": [
+        "process_optimizer"
+      ],
+      "shared_motors": [
+        "CompanyMap",
+        "EntityRegistry",
+        "SemanticRefs",
+        "Watch",
+        "Signal",
+        "Investigation",
+        "Evidence",
+        "Decision",
+        "ActionWork",
+        "Outcome",
+        "Memory",
+        "SectorPack"
+      ]
+    },
+    {
+      "ux_id": "textile-10",
+      "group": "textile",
+      "ordinal": 10,
+      "ux_name": "Customer Delivery + Quality Risk linker",
+      "business_objective": "Provide a governed headless foundation for Customer Delivery + Quality Risk linker using shared Dima motors without creating a feature-specific analytics engine.",
+      "required_entity_types": [
+        "company",
+        "plant",
+        "machine",
+        "dye_batch",
+        "recipe",
+        "quality_lot"
+      ],
+      "required_metrics": [
+        "right_first_time",
+        "shade_quality",
+        "cycle_time",
+        "water",
+        "steam",
+        "energy",
+        "delivery"
+      ],
+      "required_source_data": [
+        "MES/ERP",
+        "lab/dyeing/finishing records",
+        "machine/resource events",
+        "Metabase/Metabot analytical results"
+      ],
+      "watch_dependency": true,
+      "signal_dependency": true,
+      "investigation_dependency": true,
+      "evidence_dependency": true,
+      "decision_dependency": true,
+      "action_work_dependency": true,
+      "outcome_dependency": true,
+      "memory_dependency": true,
+      "sector_pack_requirements": [
+        "DIMA_MANUFACTURING_CORE",
+        "sector-pack:textile"
+      ],
+      "specialized_engine_gap": null,
+      "headless_api_needs": [
+        "stable_entity_refs",
+        "typed_lifecycle_state",
+        "tenant_non_oracle",
+        "deterministic_pagination",
+        "artifact_deep_links"
+      ],
+      "current_feasibility": "FOUNDATION_READY",
+      "deferred_capabilities": [],
+      "shared_motors": [
+        "CompanyMap",
+        "EntityRegistry",
+        "SemanticRefs",
+        "Watch",
+        "Signal",
+        "Investigation",
+        "Evidence",
+        "Decision",
+        "ActionWork",
+        "Outcome",
+        "Memory",
+        "SectorPack"
+      ]
+    },
+    {
+      "ux_id": "plastics-01",
+      "group": "plastics",
+      "ordinal": 1,
+      "ux_name": "Process Stability Radar",
+      "business_objective": "Provide a governed headless foundation for Process Stability Radar using shared Dima motors without creating a feature-specific analytics engine.",
+      "required_entity_types": [
+        "company",
+        "plant",
+        "machine",
+        "mold_or_die",
+        "material_batch",
+        "production_order"
+      ],
+      "required_metrics": [
+        "cycle_time",
+        "throughput",
+        "scrap",
+        "moisture",
+        "energy",
+        "unit_cost",
+        "quality"
+      ],
+      "required_source_data": [
+        "MES/ERP",
+        "machine/process records",
+        "material/quality records",
+        "Metabase/Metabot analytical results"
+      ],
+      "watch_dependency": true,
+      "signal_dependency": true,
+      "investigation_dependency": true,
+      "evidence_dependency": true,
+      "decision_dependency": true,
+      "action_work_dependency": true,
+      "outcome_dependency": true,
+      "memory_dependency": true,
+      "sector_pack_requirements": [
+        "DIMA_MANUFACTURING_CORE",
+        "sector-pack:plastics"
+      ],
+      "specialized_engine_gap": null,
+      "headless_api_needs": [
+        "stable_entity_refs",
+        "typed_lifecycle_state",
+        "tenant_non_oracle",
+        "deterministic_pagination",
+        "artifact_deep_links"
+      ],
+      "current_feasibility": "FOUNDATION_READY",
+      "deferred_capabilities": [],
+      "shared_motors": [
+        "CompanyMap",
+        "EntityRegistry",
+        "SemanticRefs",
+        "Watch",
+        "Signal",
+        "Investigation",
+        "Evidence",
+        "Decision",
+        "ActionWork",
+        "Outcome",
+        "Memory",
+        "SectorPack"
+      ]
+    },
+    {
+      "ux_id": "plastics-02",
+      "group": "plastics",
+      "ordinal": 2,
+      "ux_name": "Cycle Time / Throughput Optimizer surface",
+      "business_objective": "Provide a governed headless foundation for Cycle Time / Throughput Optimizer surface using shared Dima motors without creating a feature-specific analytics engine.",
+      "required_entity_types": [
+        "company",
+        "plant",
+        "machine",
+        "mold_or_die",
+        "material_batch",
+        "production_order"
+      ],
+      "required_metrics": [
+        "cycle_time",
+        "throughput",
+        "scrap",
+        "moisture",
+        "energy",
+        "unit_cost",
+        "quality"
+      ],
+      "required_source_data": [
+        "MES/ERP",
+        "machine/process records",
+        "material/quality records",
+        "Metabase/Metabot analytical results"
+      ],
+      "watch_dependency": true,
+      "signal_dependency": true,
+      "investigation_dependency": true,
+      "evidence_dependency": true,
+      "decision_dependency": true,
+      "action_work_dependency": true,
+      "outcome_dependency": true,
+      "memory_dependency": true,
+      "sector_pack_requirements": [
+        "DIMA_MANUFACTURING_CORE",
+        "sector-pack:plastics"
+      ],
+      "specialized_engine_gap": "SPECIAL_ENGINE_DEFERRED:throughput_optimizer",
+      "headless_api_needs": [
+        "stable_entity_refs",
+        "typed_lifecycle_state",
+        "tenant_non_oracle",
+        "deterministic_pagination",
+        "artifact_deep_links"
+      ],
+      "current_feasibility": "SPECIAL_ENGINE_DEFERRED",
+      "deferred_capabilities": [
+        "throughput_optimizer"
+      ],
+      "shared_motors": [
+        "CompanyMap",
+        "EntityRegistry",
+        "SemanticRefs",
+        "Watch",
+        "Signal",
+        "Investigation",
+        "Evidence",
+        "Decision",
+        "ActionWork",
+        "Outcome",
+        "Memory",
+        "SectorPack"
+      ]
+    },
+    {
+      "ux_id": "plastics-03",
+      "group": "plastics",
+      "ordinal": 3,
+      "ux_name": "Scrap / Reject Root Cause",
+      "business_objective": "Provide a governed headless foundation for Scrap / Reject Root Cause using shared Dima motors without creating a feature-specific analytics engine.",
+      "required_entity_types": [
+        "company",
+        "plant",
+        "machine",
+        "mold_or_die",
+        "material_batch",
+        "production_order"
+      ],
+      "required_metrics": [
+        "cycle_time",
+        "throughput",
+        "scrap",
+        "moisture",
+        "energy",
+        "unit_cost",
+        "quality"
+      ],
+      "required_source_data": [
+        "MES/ERP",
+        "machine/process records",
+        "material/quality records",
+        "Metabase/Metabot analytical results"
+      ],
+      "watch_dependency": true,
+      "signal_dependency": true,
+      "investigation_dependency": true,
+      "evidence_dependency": true,
+      "decision_dependency": true,
+      "action_work_dependency": true,
+      "outcome_dependency": true,
+      "memory_dependency": true,
+      "sector_pack_requirements": [
+        "DIMA_MANUFACTURING_CORE",
+        "sector-pack:plastics"
+      ],
+      "specialized_engine_gap": null,
+      "headless_api_needs": [
+        "stable_entity_refs",
+        "typed_lifecycle_state",
+        "tenant_non_oracle",
+        "deterministic_pagination",
+        "artifact_deep_links"
+      ],
+      "current_feasibility": "FOUNDATION_READY",
+      "deferred_capabilities": [],
+      "shared_motors": [
+        "CompanyMap",
+        "EntityRegistry",
+        "SemanticRefs",
+        "Watch",
+        "Signal",
+        "Investigation",
+        "Evidence",
+        "Decision",
+        "ActionWork",
+        "Outcome",
+        "Memory",
+        "SectorPack"
+      ]
+    },
+    {
+      "ux_id": "plastics-04",
+      "group": "plastics",
+      "ordinal": 4,
+      "ux_name": "Drying / Moisture Readiness",
+      "business_objective": "Provide a governed headless foundation for Drying / Moisture Readiness using shared Dima motors without creating a feature-specific analytics engine.",
+      "required_entity_types": [
+        "company",
+        "plant",
+        "machine",
+        "mold_or_die",
+        "material_batch",
+        "production_order"
+      ],
+      "required_metrics": [
+        "cycle_time",
+        "throughput",
+        "scrap",
+        "moisture",
+        "energy",
+        "unit_cost",
+        "quality"
+      ],
+      "required_source_data": [
+        "MES/ERP",
+        "machine/process records",
+        "material/quality records",
+        "Metabase/Metabot analytical results"
+      ],
+      "watch_dependency": true,
+      "signal_dependency": true,
+      "investigation_dependency": true,
+      "evidence_dependency": true,
+      "decision_dependency": true,
+      "action_work_dependency": true,
+      "outcome_dependency": true,
+      "memory_dependency": true,
+      "sector_pack_requirements": [
+        "DIMA_MANUFACTURING_CORE",
+        "sector-pack:plastics"
+      ],
+      "specialized_engine_gap": null,
+      "headless_api_needs": [
+        "stable_entity_refs",
+        "typed_lifecycle_state",
+        "tenant_non_oracle",
+        "deterministic_pagination",
+        "artifact_deep_links"
+      ],
+      "current_feasibility": "FOUNDATION_READY",
+      "deferred_capabilities": [],
+      "shared_motors": [
+        "CompanyMap",
+        "EntityRegistry",
+        "SemanticRefs",
+        "Watch",
+        "Signal",
+        "Investigation",
+        "Evidence",
+        "Decision",
+        "ActionWork",
+        "Outcome",
+        "Memory",
+        "SectorPack"
+      ]
+    },
+    {
+      "ux_id": "plastics-05",
+      "group": "plastics",
+      "ordinal": 5,
+      "ux_name": "Dosing / Masterbatch / Regrind Audit",
+      "business_objective": "Provide a governed headless foundation for Dosing / Masterbatch / Regrind Audit using shared Dima motors without creating a feature-specific analytics engine.",
+      "required_entity_types": [
+        "company",
+        "plant",
+        "machine",
+        "mold_or_die",
+        "material_batch",
+        "production_order"
+      ],
+      "required_metrics": [
+        "cycle_time",
+        "throughput",
+        "scrap",
+        "moisture",
+        "energy",
+        "unit_cost",
+        "quality"
+      ],
+      "required_source_data": [
+        "MES/ERP",
+        "machine/process records",
+        "material/quality records",
+        "Metabase/Metabot analytical results"
+      ],
+      "watch_dependency": true,
+      "signal_dependency": true,
+      "investigation_dependency": true,
+      "evidence_dependency": true,
+      "decision_dependency": true,
+      "action_work_dependency": true,
+      "outcome_dependency": true,
+      "memory_dependency": true,
+      "sector_pack_requirements": [
+        "DIMA_MANUFACTURING_CORE",
+        "sector-pack:plastics"
+      ],
+      "specialized_engine_gap": null,
+      "headless_api_needs": [
+        "stable_entity_refs",
+        "typed_lifecycle_state",
+        "tenant_non_oracle",
+        "deterministic_pagination",
+        "artifact_deep_links"
+      ],
+      "current_feasibility": "FOUNDATION_READY",
+      "deferred_capabilities": [],
+      "shared_motors": [
+        "CompanyMap",
+        "EntityRegistry",
+        "SemanticRefs",
+        "Watch",
+        "Signal",
+        "Investigation",
+        "Evidence",
+        "Decision",
+        "ActionWork",
+        "Outcome",
+        "Memory",
+        "SectorPack"
+      ]
+    },
+    {
+      "ux_id": "plastics-06",
+      "group": "plastics",
+      "ordinal": 6,
+      "ux_name": "Mold / Die / Extruder Health",
+      "business_objective": "Provide a governed headless foundation for Mold / Die / Extruder Health using shared Dima motors without creating a feature-specific analytics engine.",
+      "required_entity_types": [
+        "company",
+        "plant",
+        "machine",
+        "mold_or_die",
+        "material_batch",
+        "production_order"
+      ],
+      "required_metrics": [
+        "cycle_time",
+        "throughput",
+        "scrap",
+        "moisture",
+        "energy",
+        "unit_cost",
+        "quality"
+      ],
+      "required_source_data": [
+        "MES/ERP",
+        "machine/process records",
+        "material/quality records",
+        "Metabase/Metabot analytical results"
+      ],
+      "watch_dependency": true,
+      "signal_dependency": true,
+      "investigation_dependency": true,
+      "evidence_dependency": true,
+      "decision_dependency": true,
+      "action_work_dependency": true,
+      "outcome_dependency": true,
+      "memory_dependency": true,
+      "sector_pack_requirements": [
+        "DIMA_MANUFACTURING_CORE",
+        "sector-pack:plastics"
+      ],
+      "specialized_engine_gap": null,
+      "headless_api_needs": [
+        "stable_entity_refs",
+        "typed_lifecycle_state",
+        "tenant_non_oracle",
+        "deterministic_pagination",
+        "artifact_deep_links"
+      ],
+      "current_feasibility": "FOUNDATION_READY",
+      "deferred_capabilities": [],
+      "shared_motors": [
+        "CompanyMap",
+        "EntityRegistry",
+        "SemanticRefs",
+        "Watch",
+        "Signal",
+        "Investigation",
+        "Evidence",
+        "Decision",
+        "ActionWork",
+        "Outcome",
+        "Memory",
+        "SectorPack"
+      ]
+    },
+    {
+      "ux_id": "plastics-07",
+      "group": "plastics",
+      "ordinal": 7,
+      "ux_name": "Energy per kg / per shot",
+      "business_objective": "Provide a governed headless foundation for Energy per kg / per shot using shared Dima motors without creating a feature-specific analytics engine.",
+      "required_entity_types": [
+        "company",
+        "plant",
+        "machine",
+        "mold_or_die",
+        "material_batch",
+        "production_order"
+      ],
+      "required_metrics": [
+        "cycle_time",
+        "throughput",
+        "scrap",
+        "moisture",
+        "energy",
+        "unit_cost",
+        "quality"
+      ],
+      "required_source_data": [
+        "MES/ERP",
+        "machine/process records",
+        "material/quality records",
+        "Metabase/Metabot analytical results"
+      ],
+      "watch_dependency": true,
+      "signal_dependency": true,
+      "investigation_dependency": true,
+      "evidence_dependency": true,
+      "decision_dependency": true,
+      "action_work_dependency": true,
+      "outcome_dependency": true,
+      "memory_dependency": true,
+      "sector_pack_requirements": [
+        "DIMA_MANUFACTURING_CORE",
+        "sector-pack:plastics"
+      ],
+      "specialized_engine_gap": null,
+      "headless_api_needs": [
+        "stable_entity_refs",
+        "typed_lifecycle_state",
+        "tenant_non_oracle",
+        "deterministic_pagination",
+        "artifact_deep_links"
+      ],
+      "current_feasibility": "FOUNDATION_READY",
+      "deferred_capabilities": [],
+      "shared_motors": [
+        "CompanyMap",
+        "EntityRegistry",
+        "SemanticRefs",
+        "Watch",
+        "Signal",
+        "Investigation",
+        "Evidence",
+        "Decision",
+        "ActionWork",
+        "Outcome",
+        "Memory",
+        "SectorPack"
+      ]
+    },
+    {
+      "ux_id": "plastics-08",
+      "group": "plastics",
+      "ordinal": 8,
+      "ux_name": "Material / Color / Mold Changeover surface",
+      "business_objective": "Provide a governed headless foundation for Material / Color / Mold Changeover surface using shared Dima motors without creating a feature-specific analytics engine.",
+      "required_entity_types": [
+        "company",
+        "plant",
+        "machine",
+        "mold_or_die",
+        "material_batch",
+        "production_order"
+      ],
+      "required_metrics": [
+        "cycle_time",
+        "throughput",
+        "scrap",
+        "moisture",
+        "energy",
+        "unit_cost",
+        "quality"
+      ],
+      "required_source_data": [
+        "MES/ERP",
+        "machine/process records",
+        "material/quality records",
+        "Metabase/Metabot analytical results"
+      ],
+      "watch_dependency": true,
+      "signal_dependency": true,
+      "investigation_dependency": true,
+      "evidence_dependency": true,
+      "decision_dependency": true,
+      "action_work_dependency": true,
+      "outcome_dependency": true,
+      "memory_dependency": true,
+      "sector_pack_requirements": [
+        "DIMA_MANUFACTURING_CORE",
+        "sector-pack:plastics"
+      ],
+      "specialized_engine_gap": "SPECIAL_ENGINE_DEFERRED:changeover_scheduler",
+      "headless_api_needs": [
+        "stable_entity_refs",
+        "typed_lifecycle_state",
+        "tenant_non_oracle",
+        "deterministic_pagination",
+        "artifact_deep_links"
+      ],
+      "current_feasibility": "SPECIAL_ENGINE_DEFERRED",
+      "deferred_capabilities": [
+        "changeover_scheduler"
+      ],
+      "shared_motors": [
+        "CompanyMap",
+        "EntityRegistry",
+        "SemanticRefs",
+        "Watch",
+        "Signal",
+        "Investigation",
+        "Evidence",
+        "Decision",
+        "ActionWork",
+        "Outcome",
+        "Memory",
+        "SectorPack"
+      ]
+    },
+    {
+      "ux_id": "plastics-09",
+      "group": "plastics",
+      "ordinal": 9,
+      "ux_name": "Recycled / Regrind Blend Optimizer surface",
+      "business_objective": "Provide a governed headless foundation for Recycled / Regrind Blend Optimizer surface using shared Dima motors without creating a feature-specific analytics engine.",
+      "required_entity_types": [
+        "company",
+        "plant",
+        "machine",
+        "mold_or_die",
+        "material_batch",
+        "production_order"
+      ],
+      "required_metrics": [
+        "cycle_time",
+        "throughput",
+        "scrap",
+        "moisture",
+        "energy",
+        "unit_cost",
+        "quality"
+      ],
+      "required_source_data": [
+        "MES/ERP",
+        "machine/process records",
+        "material/quality records",
+        "Metabase/Metabot analytical results"
+      ],
+      "watch_dependency": true,
+      "signal_dependency": true,
+      "investigation_dependency": true,
+      "evidence_dependency": true,
+      "decision_dependency": true,
+      "action_work_dependency": true,
+      "outcome_dependency": true,
+      "memory_dependency": true,
+      "sector_pack_requirements": [
+        "DIMA_MANUFACTURING_CORE",
+        "sector-pack:plastics"
+      ],
+      "specialized_engine_gap": "SPECIAL_ENGINE_DEFERRED:blend_optimizer",
+      "headless_api_needs": [
+        "stable_entity_refs",
+        "typed_lifecycle_state",
+        "tenant_non_oracle",
+        "deterministic_pagination",
+        "artifact_deep_links"
+      ],
+      "current_feasibility": "SPECIAL_ENGINE_DEFERRED",
+      "deferred_capabilities": [
+        "blend_optimizer"
+      ],
+      "shared_motors": [
+        "CompanyMap",
+        "EntityRegistry",
+        "SemanticRefs",
+        "Watch",
+        "Signal",
+        "Investigation",
+        "Evidence",
+        "Decision",
+        "ActionWork",
+        "Outcome",
+        "Memory",
+        "SectorPack"
+      ]
+    },
+    {
+      "ux_id": "plastics-10",
+      "group": "plastics",
+      "ordinal": 10,
+      "ux_name": "Unit Cost / Margin Leak Advisor",
+      "business_objective": "Provide a governed headless foundation for Unit Cost / Margin Leak Advisor using shared Dima motors without creating a feature-specific analytics engine.",
+      "required_entity_types": [
+        "company",
+        "plant",
+        "machine",
+        "mold_or_die",
+        "material_batch",
+        "production_order"
+      ],
+      "required_metrics": [
+        "cycle_time",
+        "throughput",
+        "scrap",
+        "moisture",
+        "energy",
+        "unit_cost",
+        "quality"
+      ],
+      "required_source_data": [
+        "MES/ERP",
+        "machine/process records",
+        "material/quality records",
+        "Metabase/Metabot analytical results"
+      ],
+      "watch_dependency": true,
+      "signal_dependency": true,
+      "investigation_dependency": true,
+      "evidence_dependency": true,
+      "decision_dependency": true,
+      "action_work_dependency": true,
+      "outcome_dependency": true,
+      "memory_dependency": true,
+      "sector_pack_requirements": [
+        "DIMA_MANUFACTURING_CORE",
+        "sector-pack:plastics"
+      ],
+      "specialized_engine_gap": null,
+      "headless_api_needs": [
+        "stable_entity_refs",
+        "typed_lifecycle_state",
+        "tenant_non_oracle",
+        "deterministic_pagination",
+        "artifact_deep_links"
+      ],
+      "current_feasibility": "FOUNDATION_READY",
+      "deferred_capabilities": [],
+      "shared_motors": [
+        "CompanyMap",
+        "EntityRegistry",
+        "SemanticRefs",
+        "Watch",
+        "Signal",
+        "Investigation",
+        "Evidence",
+        "Decision",
+        "ActionWork",
+        "Outcome",
+        "Memory",
+        "SectorPack"
+      ]
+    }
+  ]
+}

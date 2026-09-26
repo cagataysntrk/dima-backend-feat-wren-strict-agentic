@@ -10,6 +10,8 @@ on:
       - "backend/tests/test_v3_outcome_observation.py"
       - "backend/tests/test_v3_institutional_memory.py"
       - "backend/tests/test_v3_watch_signal.py"
+      - "backend/tests/test_v3_ux_foundations.py"
+      - "backend/product_contracts/ux_foundations.json"
       - "backend/control_plane/models.py"
       - "backend/control_plane/authorize.py"
       - "backend/belgeler/metabase/DIMA_METABASE_DECISION_RECEIPTS.md"
@@ -62,7 +64,7 @@ jobs:
           for f in app/v3/core_a/*.py; do
             python -m py_compile "$f"
           done
-          for f in tests/test_v3_action_work.py tests/test_v3_outcome_observation.py tests/test_v3_institutional_memory.py tests/test_v3_watch_signal.py; do
+          for f in tests/test_v3_action_work.py tests/test_v3_outcome_observation.py tests/test_v3_institutional_memory.py tests/test_v3_watch_signal.py tests/test_v3_ux_foundations.py; do
             test ! -f "$f" || python -m py_compile "$f"
           done
 
@@ -111,6 +113,11 @@ jobs:
         if: hashFiles('backend/tests/test_v3_watch_signal.py') != ''
         working-directory: backend
         run: pytest -q tests/test_v3_watch_signal.py
+
+      - name: Wave-1 UX foundation contract proof
+        if: hashFiles('backend/tests/test_v3_ux_foundations.py') != ''
+        working-directory: backend
+        run: pytest -q tests/test_v3_ux_foundations.py
 
       - name: Verify engine and no external execution
         shell: bash
