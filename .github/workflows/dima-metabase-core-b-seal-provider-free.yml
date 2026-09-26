@@ -16,6 +16,7 @@ on:
       - "backend/control_plane/models.py"
       - "backend/tests/test_v3_control_plane_security.py"
       - "backend/tests/test_v3_product_contracts.py"
+      - "backend/tests/test_v3_product_composition.py"
       - "backend/tests/test_v3_research_intake.py"
       - ".github/workflows/dima-metabase-core-b-seal-provider-free.yml"
   workflow_dispatch:
@@ -57,7 +58,7 @@ jobs:
 
       - name: Core B focused remains GREEN
         working-directory: backend
-        run: pytest -q tests/test_v3_product_contracts.py
+        run: pytest -q tests/test_v3_product_contracts.py tests/test_v3_product_composition.py
 
       - name: Control-plane persistence invariant proof
         working-directory: backend
@@ -70,6 +71,18 @@ jobs:
             --manifest eval/core_b/canary_manifest.json \
             --output eval/core_b/artifacts/provider_free_canary.json \
             --candidate-sha "$GITHUB_SHA"
+
+      - name: Guard sealed P14-P21 owner blobs
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD:backend/app/v3/research_product.py)" = "5e42d2a095b00fb21229971bde4c424cdb22e33c"
+          test "$(git rev-parse HEAD:backend/app/v3/research_manager.py)" = "d9a2a83e3f5e678870a2ecbaf330ccb81edb73d7"
+          test "$(git rev-parse HEAD:backend/app/v3/business_relationship_policy.py)" = "1c533667bd080331f4f2231b9d37ee0c5e532fa8"
+          test "$(git rev-parse HEAD:backend/app/v3/hypothesis_root_cause.py)" = "19e4f8a2403c7e133137c106c58fa61959c4ceff"
+          test "$(git rev-parse HEAD:backend/app/v3/report_document.py)" = "5c7f199c16763a95d255b1b7f083bc61310b453e"
+          test "$(git rev-parse HEAD:backend/app/v3/decision_intelligence.py)" = "1a40508048d668829344ca30aa7aadf881cebb82"
+          test "$(git rev-parse HEAD:backend/app/v3/claim_lineage.py)" = "76589172d19d4d9ffa1db9f94f4ee9ee9f277e5a"
 
       - name: Hard prohibitions
         working-directory: backend
