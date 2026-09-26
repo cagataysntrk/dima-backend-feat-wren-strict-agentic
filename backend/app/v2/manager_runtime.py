@@ -88,7 +88,12 @@ class ManagerRuntime:
         directive_dispositions: tuple[ResearchDirectiveDisposition, ...] = (),
         budget: ManagerBudget | None = None,
     ) -> "ManagerRuntime":
-        """Restore terminal canonical runtime state without restoring scratch cognition."""
+        """Restore canonical post-acceptance runtime state without scratch cognition.
+
+        Durable resume admits terminal states plus post-acceptance CONTRACT_ACCEPTED /
+        INVESTIGATING states. INITIAL / UNDERSTANDING remain excluded because their
+        model/preacceptance scratch is deliberately not persisted as authority.
+        """
 
         if accepted_contract is None:
             raise ManagerStateError("runtime restore requires accepted contract")
@@ -102,6 +107,8 @@ class ManagerRuntime:
                 "runtime restore contract/ledger/snapshot authority mismatch"
             )
         if snapshot.state not in {
+            ManagerState.CONTRACT_ACCEPTED,
+            ManagerState.INVESTIGATING,
             ManagerState.COMPLETED,
             ManagerState.BUDGET_EXHAUSTED,
             ManagerState.BLOCKED,
@@ -109,7 +116,7 @@ class ManagerRuntime:
             ManagerState.FAILED,
         }:
             raise ManagerStateError(
-                "runtime restore requires a persisted terminal checkpoint"
+                "runtime restore requires persisted post-acceptance canonical state"
             )
 
         restored = cls(
