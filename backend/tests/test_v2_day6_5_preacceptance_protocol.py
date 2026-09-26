@@ -1067,8 +1067,22 @@ def test_relationship_goal_accepts_before_future_executable_dimension_exists():
     )
     assert relationship.capability_key == ManagerCapabilityKey.RELATIONSHIP
     assert relationship.status == ObligationStatus.ACCEPTED
+    deferred = next(
+        item
+        for item in outcome.observations
+        if item.get("kind") == "research_goal_materialization_required"
+    )
+    assert deferred["gaps"] == [
+        {
+            "obligation_id": "U_REL",
+            "capability": "relationship",
+            "polarity": "REQUIRED",
+            "missing_required_kinds": ["dimension"],
+            "materialization_required": True,
+        }
+    ]
     assert not any(
-        item.get("kind") == "material_grounding_gap"
+        item.get("kind") == "semantic_decomposition_repair"
         for item in outcome.observations
     )
     accepted = next(

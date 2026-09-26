@@ -7,6 +7,8 @@ It never creates semantic handles, USER_MUST obligations or query truth.
 
 from __future__ import annotations
 
+import hashlib
+import json
 import time
 from dataclasses import dataclass, replace
 from typing import Callable
@@ -64,6 +66,51 @@ class ResearchSeedSet(FrozenModel):
 
 class ResearchTaskService:
     """Materialize seed/derived tasks without owning cognition or execution truth."""
+
+    @staticmethod
+    def goal_task_id(
+        *,
+        accepted_contract_id: str,
+        parent_obligation_id: str,
+        capability_key: ManagerCapabilityKey,
+        semantic_requests: tuple[tuple[str, str], ...],
+        ranking_direction: str | None = None,
+        ranking_limit: int | None = None,
+    ) -> str:
+        """Stable identity for one bounded child objective before semantic minting.
+
+        The request identity is source-authority based. If the same request later
+        resolves to different canonical handles, ResearchTaskRegistry sees an identity
+        conflict and fails closed instead of duplicating execution.
+        """
+
+        if not accepted_contract_id or not parent_obligation_id:
+            raise ResearchTaskMaterializationError(
+                "goal task identity requires accepted contract + parent goal"
+            )
+        if not semantic_requests:
+            raise ResearchTaskMaterializationError(
+                "goal task identity requires bounded semantic requests"
+            )
+        normalized = tuple(sorted(
+            f"{source_ref}:{kind_hint}"
+            for source_ref, kind_hint in semantic_requests
+        ))
+        payload = {
+            "accepted_contract_id": accepted_contract_id,
+            "parent_obligation_id": parent_obligation_id,
+            "capability": capability_key.value,
+            "semantic_requests": normalized,
+            "ranking_direction": ranking_direction,
+            "ranking_limit": ranking_limit,
+        }
+        raw = json.dumps(
+            payload,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        return "goal_" + hashlib.sha256(raw.encode("utf-8")).hexdigest()[:24]
 
     _TASK_KIND_BY_CAPABILITY = {
         ManagerCapabilityKey.PERFORMANCE: ResearchTaskKind.QUERY,

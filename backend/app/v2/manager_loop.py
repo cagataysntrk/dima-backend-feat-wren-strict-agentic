@@ -2649,7 +2649,6 @@ class ResearchManagerLoop:
         executor,
         task_registry: ResearchTaskRegistry,
         decision: ManagerDecisionTransport,
-        action_ref: str,
     ) -> tuple[ResearchTask | None, dict[str, Any]]:
         """Late-bind one concrete analytical task under accepted Research goal authority.
 
@@ -2744,26 +2743,14 @@ class ResearchManagerLoop:
                 "parent_obligation_id": parent_id,
             }
 
-        import hashlib
-        task_identity = {
-            "accepted_contract_id": runtime.accepted_contract.contract_id,
-            "parent_obligation_id": parent_id,
-            "capability": capability.value,
-            "semantic_requests": sorted(
-                f"{source_ref}:{kind_hint}"
-                for source_ref, kind_hint in zip(refs, hints, strict=True)
-            ),
-            "ranking_direction": decision.goal_task_ranking_direction,
-            "ranking_limit": decision.goal_task_ranking_limit,
-        }
-        task_id = "goal_" + hashlib.sha256(
-            json.dumps(
-                task_identity,
-                ensure_ascii=False,
-                sort_keys=True,
-                separators=(",", ":"),
-            ).encode("utf-8")
-        ).hexdigest()[:24]
+        task_id = self._research_tasks.goal_task_id(
+            accepted_contract_id=runtime.accepted_contract.contract_id,
+            parent_obligation_id=parent_id,
+            capability_key=capability,
+            semantic_requests=tuple(zip(refs, hints, strict=True)),
+            ranking_direction=decision.goal_task_ranking_direction,
+            ranking_limit=decision.goal_task_ranking_limit,
+        )
 
         step = runtime.call_tool(
             ManagerToolCall(
@@ -3710,7 +3697,6 @@ class ResearchManagerLoop:
                         executor=executor,
                         task_registry=task_registry,
                         decision=decision,
-                        action_ref=selected_action_ref,
                     )
                     observations.append(result_view)
                     if task is None:
