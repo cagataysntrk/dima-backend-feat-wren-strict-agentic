@@ -174,33 +174,33 @@
     },
     {
       "id": "broaden_policy",
-      "kind": "prompt",
+      "kind": "signed_continuation",
       "category": "research",
-      "question": "Makine duruşları ve arıza sayısı hakkında mevcut doğrulanmış analiz yetmezse bütçe içinde ilgili ek governed analizleri yap ve raporla.",
+      "question": "Makine duruşları, arıza sayısı ve bölüm bazındaki performansı birlikte araştır. Aralarındaki governed ilişkiyi kontrol et; olası kök nedenleri doğrulanmış kanıtlarla sınırla ve yönetim raporu üret. Kesin nedensellik iddia etme.",
       "lanes": [
         "RESEARCH"
       ],
       "statuses": [
-        "REPORT",
-        "PARTIAL"
+        "REPORT"
       ],
       "min_evidence": 1,
-      "verified": false
+      "verified": true,
+      "followup": "Yalnızca imzalı bu rapor bölümünün governed kapsamını derinleştir; mevcut kanıt yetmezse bütçe içinde ilgili ek governed analizleri yap ve yeni rapor sürümü üret."
     },
     {
       "id": "report_control",
-      "kind": "prompt",
+      "kind": "signed_continuation",
       "category": "presentation_control",
-      "question": "Makine duruşlarını bölüm bazında araştır ve yönetim raporu üret; mevcut doğrulanmış analitik kanıtı değiştirme.",
+      "question": "Makine duruşları, arıza sayısı ve bölüm bazındaki performansı birlikte araştır; doğrulanmış kanıta bağlı yönetim raporu üret ve kesin nedensellik iddia etme.",
       "lanes": [
         "RESEARCH"
       ],
       "statuses": [
-        "REPORT",
-        "PARTIAL"
+        "REPORT"
       ],
       "min_evidence": 1,
-      "verified": false
+      "verified": true,
+      "followup": "Yalnızca imzalı bölüm kapsamında yeni rapor sürümü üret; önceki raporu ve önceki doğrulanmış kanıtı mutate etme."
     },
     {
       "id": "unsupported_domain",
@@ -222,15 +222,14 @@
       "id": "ambiguous_request",
       "kind": "prompt",
       "category": "clarification",
-      "question": "Performans neden kötü?",
+      "question": "Bunu neden kötü?",
       "lanes": [
         "STANDARD",
         "RESEARCH"
       ],
       "statuses": [
         "CLARIFY",
-        "UNSUPPORTED",
-        "PARTIAL"
+        "UNSUPPORTED"
       ],
       "min_evidence": 0,
       "verified": false
