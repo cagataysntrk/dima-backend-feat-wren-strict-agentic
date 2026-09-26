@@ -163,6 +163,25 @@ def _case_receipt(
         wren_cube_sql_calls=wren_cube,
         manager_turns=int(response.terminal_receipt.manager_turns),
     )
+    terminal_receipt = getattr(response, "terminal_receipt", None)
+    events = tuple(getattr(response, "events", ()) or ())
+    diagnostics = {
+        "terminal_reasons": list(
+            getattr(terminal_receipt, "reasons", ()) or ()
+        ),
+        "terminal_status": getattr(terminal_receipt, "terminal_status", None),
+        "manager_turns": int(
+            getattr(terminal_receipt, "manager_turns", 0) or 0
+        ),
+        "event_kinds": [
+            _value(getattr(item, "kind", None))
+            for item in events
+        ],
+        "event_refs": [
+            list(getattr(item, "refs", ()) or ())
+            for item in events
+        ],
+    }
     return {
         "id": case["id"],
         "kind": case["kind"],
@@ -176,6 +195,7 @@ def _case_receipt(
         "checks": checks,
         "pass": all(checks.values()),
         "performance": performance,
+        "diagnostics": diagnostics,
         "extra": extra or {},
     }
 
