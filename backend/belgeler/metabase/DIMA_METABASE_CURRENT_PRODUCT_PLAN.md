@@ -2,78 +2,54 @@
 
 ## CURRENT FORWARD AUTHORITY — 2026-09-26
 
-> **FORWARD AUTHORITY.** Core Closure A is sealed. P14-P21, Human Adoption and
-> ActionPlan/ActionAuthorization remain sealed. Forward execution is Core Closure B.
-> UI/UX and external production side effects remain forbidden.
-
 ~~~text
 branch                                = feat/dima-metabase-platform
-roadmap start                         = d02474645578ff27ec9871c4738ac7556fb3f82a
-
-CORE CLOSURE A                        = SEALED
-DMP-DEC-0060                          = SEALED
-Core A integrated candidate           = 81a36a6984e273676119e86fc69534e967713912
-Core A provider-free                  = 36228119851 SUCCESS
-Core A governance                     = 36228119755 SUCCESS
-Core A focused aggregate              = 69 PASS
-
-ActionWork                            = GREEN
-OutcomeObservation                    = GREEN
-InstitutionalMemoryEntry              = GREEN
-Watch / Signal                        = GREEN
-Wave-1 UX foundations                 = COMPLETE / 50
-
-durable Core A families               = 5
-Alembic head                          = fb4e6d2a1074
-external side effects                 = 0
-action:execute                        = ABSENT
-DEFAULT ACTION CAPABILITY REGISTRY    = EMPTY
-frontend / UI diff                    = 0
+repository canonicalization           = SEALED
+cleanup behavior SHA                  = 2a8534990757d6b84634aac1e70fdf78f99798f0
+cleanup-focused                       = 36237748801 SUCCESS
+governance                            = 36237748789 SUCCESS
+Core A final                          = 36237748799 SUCCESS
 
 P14-P21                               = SEALED
-HUMAN ADOPTION / DMP-DEC-0058         = SEALED
-ACTIONPLAN / ACTIONAUTHORIZATION      = SEALED / DMP-DEC-0059
+Human Adoption                        = SEALED
+ActionAuthorization                   = SEALED
+Core Closure A                        = SEALED
+Core Closure B                        = ACTIVE
 
-ActionAuthorization regression        = 38 PASS
-Human Adoption regression             = 29 PASS
-P21 / P20 / P19 / P18                 = 25 / 19 / 42 / 24 PASS
-P17 / P16 / P15 / P14                 = 95 / 6 / 5 / 17 PASS
-
-CORE CLOSURE B                        = ACTIVE NEXT
-UI / UX                               = FORBIDDEN
-FRONTEND BINDING                      = FORBIDDEN
-
-RESEND LIVE                           = DEFERRED PRODUCTIZATION_DEBT
-REAL-RECIPIENT EXECUTION              = DEFERRED
-
+Core A durable families               = 5
+Alembic head                          = fb4e6d2a1074
 engine SHA                            = cbe313af9ac2d5960f662068e433d328d896fb06
 engine release                        = 0.63.18-dima.6
+
+external side effects                 = 0
+action:execute                        = ABSENT
+DEFAULT Action capability registry    = EMPTY
+UI / frontend                         = ABSENT
+
+final target                          = SEALED NEUTRAL-COMPARISON CANDIDATE
+DEV80                                 = NOT AUTHORIZED
+Validation50                          = NOT AUTHORIZED
+Hidden50                              = NOT AUTHORIZED
+neutral comparison                    = NOT PERFORMED BY THIS DEVELOPER
 ~~~
 
-Current forward sequence:
+Forward sequence:
 
 ~~~text
-CORE CLOSURE B
-→ Headless Product Orchestrator
-→ persistence / currentness / resume
-→ observability / audit lineage
-→ 24-scenario headless rehearsal
-→ full closed loop
-→ canonical candidate freeze
-→ final certification
+Core B product DTO/projection layer
+→ durable-ID resume / currentness / security
+→ artifact timeline / observability
+→ 24+ provider-free closed-loop rehearsal
+→ 50 UX readiness matrix freeze
+→ one final provider-free integrated closure
 → product contract freeze
-→ BACKEND / BRAIN = UI-READY
+→ immutable neutral-comparison candidate
+→ Platform-only comparison dossier
 → STOP
-
-UI IMPLEMENTATION DOES NOT OPEN AUTOMATICALLY.
 ~~~
 
-### CURRENT RETURN POINT
-
-Repository canonicalization must be sealed first. Then continue immediately into Core Closure B.
-No UI, no external execution, no sealed-owner semantic rewrite. Headless orchestration must delegate
-to existing owners and resume from durable state rather than reinterpret original prompts. DEV80 is
-not run under the current directive.
+No Wren evaluation, winner selection, broad final-certification corpus, UI implementation or
+external execution is part of this sequence.
 
 ## HISTORICAL / SUPERSEDED P17 RECOVERY AND PRIOR CURRENT-STATE SECTIONS
 

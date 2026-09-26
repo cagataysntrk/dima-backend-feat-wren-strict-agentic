@@ -8,5 +8,15 @@ Read:
 3. `DIMA_METABASE_DECISION_RECEIPTS.md`
 4. `DIMA_METABASE_CURRENT_HANDOFF.md`
 
-Current state: **Core A SEALED → repository canonicalization → Core B headless product engine**.
-UI/UX and DEV80 are not authorized.
+Current state: **Repository canonicalization SEALED → Core A SEALED → Core B ACTIVE**.
+
+Final target: **SEALED NEUTRAL-COMPARISON CANDIDATE**.
+
+~~~text
+DEV80 = NOT RUN / NOT AUTHORIZED
+VALIDATION50 = NOT RUN / NOT AUTHORIZED
+HIDDEN50 = NOT RUN / NOT AUTHORIZED
+NEUTRAL COMPARISON = NOT PERFORMED HERE
+UI IMPLEMENTATION = NOT STARTED
+EXTERNAL EXECUTION = DEFERRED
+~~~

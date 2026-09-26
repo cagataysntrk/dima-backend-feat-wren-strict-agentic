@@ -2,104 +2,82 @@
 
 **Branch:** `feat/dima-metabase-platform`  
 **Canonical analytical engine:** Metabase / Metabot  
-**UI state:** not implemented / forbidden under current authority
+**Repository canonicalization:** SEALED  
+**UI:** not implemented / forbidden
 
-## 1. Ownership model
+## Ownership
 
 ~~~text
 METABASE / METABOT
-= analytical computation
-= analytical execution
-= governed native analytical material
+= analytical computation / execution / governed analytical material
 
 DIMA CORE
 = company/context meaning
-= research orchestration
-= evidence and claim governance
-= investigation and epistemics
-= report and decision authority
-= human adoption
-= internal work/outcome/memory/watch closed loop
+= Research / Evidence / Claim / Investigation / Epistemics
+= Report / Decision / Human Adoption
+= internal Work / Outcome / Memory / Watch / Signal
 = headless product projection/orchestration
 ~~~
 
 Dima does not reproduce Metabase analytical primitives.
 
-## 2. Sealed authority chain
+## Sealed authority chain
 
 ~~~text
 P14 Research
-→ P15 native Exploration material
+→ P15 native Exploration
 → P16 Claim / Evidence lineage
 → P17 Investigation
 → P18 Relationship Policy
 → P19 Epistemics / Root-Cause Assessment
-→ P20 Governed Report
+→ P20 Report
 → P21 DecisionBrief
 → Human Adoption
 → optional ActionAuthorization
 ~~~
 
-Key boundaries:
+Permanent:
 
 ~~~text
-P17 investigation graph != causal graph
-P18 relationship direction != causality
-P19 epistemics may conclude no defensible root cause
-P20 report cannot strengthen source semantics
-P21 recommendation != human decision
-Decision != Human Adoption
+P17 investigation != causal graph
+P18 direction != causality
+P20 cannot strengthen source semantics
+P21 recommendation != Human Adoption
 Adoption != external execution
 ~~~
 
-## 3. Core Closure A — sealed closed loop
+## Core A — SEALED
 
 ~~~text
-ActionWork
-= internal organizational commitment lifecycle
-= no connector execution
-
-OutcomeObservation
-= governed observation over analytical provenance
-= Outcome != causality
-= no local KPI calculation
-
-InstitutionalMemoryEntry
-= references to governed artifacts + context + precedent
-= Memory != truth authority
-
-Watch / Signal
-= governed observation/context intake and business significance
-= Watch != analytics engine
+ActionWork            = internal commitment lifecycle
+OutcomeObservation    = governed observation; Outcome != causality
+InstitutionalMemory   = precedent/reference; Memory != truth authority
+Watch / Signal        = governed observation/context; Watch != analytics engine
 ~~~
 
-Core A durable families are limited to its sealed five-family model:
-ActionWork, OutcomeObservation, InstitutionalMemoryEntry, Watch and Signal.
+Exactly five durable Core A families remain sealed.
 
-## 4. Core Closure B — active forward architecture
+## Core B — ACTIVE
 
-Core B is the stable headless product layer over sealed owners. Preferred package:
-`app/v3/product/`.
+Preferred package: `app/v3/product/`.
 
-It owns no new business truth. It owns:
+Core B owns no analytical or business truth. It owns:
 
 ~~~text
-DTOs
-company/context projection
-capability discovery
-navigation/deep links
-correlation/request identity
+stable product DTOs
+CompanyContext
+CapabilityDiscovery
+navigation / deep links
 typed product errors
+correlation / audit projection
 deterministic pagination
-resume
-artifact timeline projection
-closed-loop orchestration
-observability/audit projection
+durable-ID resume
+currentness projection
+artifact timeline
+headless closed-loop orchestration
 ~~~
 
-Required headless product objects include Company Context, Capabilities, Ask/Research, Watch, Signal,
-Investigation, Evidence, Report, Decision, Adoption, ActionWork, Outcome, Memory and Artifact
-Timeline.
+Future clients consume product contracts, not SQLModel rows.
 
 ### Resume
 
@@ -107,19 +85,18 @@ Timeline.
 RESUME != RAW PROMPT REINTERPRETATION
 ~~~
 
-Resume starts from durable IDs/artifacts and reauthorizes the current Principal.
+Every protected resume/read reauthorizes the current Principal.
 
 ### Timeline
 
 ~~~text
-TIMELINE = PROJECTION
+TIMELINE = READ-ONLY PROJECTION
+TIMELINE != AUTHORITY
 ~~~
 
-No timeline truth table unless a measured blocker proves it unavoidable.
+No timeline table by default.
 
-## 5. Product error taxonomy
-
-Core B normalizes product-facing errors into:
+## Product-facing error taxonomy
 
 ~~~text
 UNAVAILABLE
@@ -133,53 +110,30 @@ DEFERRED_CAPABILITY
 UNKNOWN_OUTCOME
 ~~~
 
-Cross-tenant existing and missing identities preserve non-oracle behavior.
+Cross-tenant and missing identities preserve non-oracle behavior.
 
-## 6. Analytics and causality invariants
+## External execution
 
-~~~text
-analytics != organizational authority
-observed improvement != action caused improvement
-Outcome != causality
-Memory != current truth
-Watch/Signal != metric computation
-Report/Decision projections != new Evidence
-~~~
+Deferred. `action:execute` is absent and the default ActionCapability registry remains empty.
 
-Any numerical/analytical fact must ultimately trace to governed Metabase/Metabot analytical
-provenance and the sealed authority chain.
+## Engine
 
-## 7. Security
+`cbe313af9ac2d5960f662068e433d328d896fb06` — `0.63.18-dima.6`.
 
-Tenant, actor and roles come from authenticated `Principal`, never request payload. Historical
-access does not imply current access. Every protected resume/read rechecks current authorization.
+No Wren runtime, Wren source substrate, Wren bake-off or dual-engine product architecture exists.
 
-## 8. External execution
-
-External production execution is deferred. `action:execute` is absent. The default
-ActionCapability registry remains closed. Resend provider-free work is productization debt, not a
-Core B blocker.
-
-## 9. Engine identity
-
-Pinned engine gitlink:
-
-`cbe313af9ac2d5960f662068e433d328d896fb06` — release `0.63.18-dima.6`.
-
-No Wren runtime, Wren source substrate, Wren bake-off or dual-engine product architecture exists in
-the canonical forward design.
-
-## 10. Certification sequence
+## Final product-seal sequence
 
 ~~~text
-repository canonicalization
-→ Core B headless product engine
-→ persistence/resume/currentness/security
-→ 24+ deterministic closed-loop rehearsal
-→ hardest-case rehearsal
-→ pre-DEV80 freeze candidate
+Core B headless product layer
+→ provider-free closed-loop rehearsal
+→ 50 UX readiness freeze
+→ one final provider-free sealed regression
+→ product contract freeze
+→ immutable neutral-comparison candidate
+→ neutral-comparison dossier
 → STOP
 ~~~
 
-DEV80 is not run under the current directive. UI implementation does not open automatically after
-backend readiness.
+No DEV80, Validation50, Hidden50, Wren evaluation, winner selection or UI implementation occurs
+under the current authority.

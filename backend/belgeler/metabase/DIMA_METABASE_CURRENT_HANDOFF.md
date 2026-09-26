@@ -2,44 +2,47 @@
 
 **Date:** 2026-09-26  
 **Branch:** `feat/dima-metabase-platform`  
-**Directive start:** `af544a64f80e6e92553f28a9181d06530d0ddc85`
+**Cleanup behavior SHA:** `2a8534990757d6b84634aac1e70fdf78f99798f0`
 
 ## Current truth
 
 ~~~text
+REPOSITORY CANONICALIZATION = SEALED
 P14-P21 = SEALED
 Human Adoption = SEALED
 ActionAuthorization = SEALED
 Core A = SEALED
-repository canonicalization = ACTIVE
-Core B = NEXT immediately after cleanup seal
-UI/UX = FORBIDDEN
+Core B = ACTIVE
+canonical engine = Metabase / Metabot
 external production execution = DEFERRED
-DEV80 = DO NOT RUN
+UI/UX = FORBIDDEN
+DEV80 / Validation50 / Hidden50 = NOT AUTHORIZED
 ~~~
 
-Canonical architecture is **Dima Core + Metabase/Metabot**. Wren and Ask-v2 are historical only and
-must not be restored.
-
-Current verified proofs at directive start:
+Cleanup closure proofs:
 
 ~~~text
-governance      36233076092 SUCCESS
-Core A final    36233076110 SUCCESS
-cleanup-focused 36232970637 SUCCESS
+cleanup-focused 36237748801 SUCCESS
+governance      36237748789 SUCCESS
+Core A final    36237748799 SUCCESS
 Alembic head    fb4e6d2a1074
 engine          cbe313af9ac2d5960f662068e433d328d896fb06
 ~~~
 
-## Immediate sequence
+The final cleanup removed another 48 historical files:
+25 `backend/belgeler/plan/**`, 19 ticket files, `backend/OPERASYON-DURUM.md`,
+`backend/VIZ_STANDARDS.md`, `test_auth.py`, and `wait_and_seed.sh`.
 
-1. seal final repository canonicalization;
-2. begin Core B without returning;
-3. build stable headless product contracts/projections/resume/timeline/orchestration;
-4. create clean `eval/core_b/` rehearsal corpus;
-5. pass 24+ provider-free scenarios and security variants;
-6. run 20–25 hardest-case pre-certification rehearsal;
-7. freeze DEV80-ready candidate;
-8. STOP without running DEV80 and without implementing UI.
+## Forward sequence
 
-Failure handling is always first wrong transition → owner → root cause → generic fix → focused proof.
+1. build `app/v3/product/` as projection/orchestration only;
+2. freeze stable CompanyContext / capability / artifact / resume / timeline contracts;
+3. create clean provider-free `eval/core_b/` rehearsal corpus;
+4. prove 24+ closed-loop and security scenarios;
+5. freeze the 50-UX readiness matrix;
+6. run one final provider-free integrated closure;
+7. freeze immutable Platform candidate metadata;
+8. prepare Platform-only neutral comparison dossier;
+9. STOP.
+
+Do not run DEV80, Validation50 or Hidden50. Do not evaluate Wren or choose a winner.

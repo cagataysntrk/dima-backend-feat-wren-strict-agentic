@@ -12,8 +12,8 @@ METABASE / METABOT
 CANONICAL PRODUCTION ARCHITECTURE
 ~~~
 
-Wren/Ask-v2 is historical only. Do not restore Wren runtime, Wren source, dual-engine abstractions,
-old frontend, or deleted legacy operation paths.
+Wren/Ask-v2 is historical only. Do not restore Wren runtime, dual-engine abstractions, old frontend,
+or deleted operation trees.
 
 ## Read first
 
@@ -25,15 +25,16 @@ old frontend, or deleted legacy operation paths.
 
 ## Current state
 
+- Repository canonicalization: SEALED
 - P14-P21: SEALED
 - Human Adoption: SEALED
 - ActionAuthorization: SEALED
 - Core Closure A: SEALED
-- Repository canonicalization: active until sealed
-- Forward objective: Core Closure B headless product engine
-- External execution: deferred
+- Core Closure B: ACTIVE
+- Final target: SEALED NEUTRAL-COMPARISON CANDIDATE
+- External production execution: deferred
 - UI/UX implementation: forbidden
-- DEV80: do not run under the current directive
+- DEV80 / Validation50 / Hidden50: not authorized
 
 ## Engineering rules
 
@@ -51,10 +52,11 @@ FIRST WRONG TRANSITION
 → FOCUSED PROOF
 ~~~
 
-No regex/fuzzy/morph/prompt patches for semantic truth. No shadow analytics. No test-specific
-business behavior. Provider-free first; broad gates only at their authorized milestone.
+No regex/fuzzy/morph semantic patches. No shadow analytics. No test-specific behavior.
+Provider-free first and CI economy always.
 
-Core B must remain headless and expose product DTO/projection contracts rather than raw SQLModel
-tables. Resume uses persisted IDs/artifacts; never raw-prompt reinterpretation.
+Core B is headless projection/orchestration over sealed owners. It exposes deliberate product DTOs,
+reauthorizes the current Principal, preserves non-oracle behavior, resumes only from durable IDs,
+and introduces no new truth family by default.
 
-Git history is the archive. Do not create new legacy/archive directories for deleted systems.
+Git history is the archive. Do not recreate legacy/archive directories.

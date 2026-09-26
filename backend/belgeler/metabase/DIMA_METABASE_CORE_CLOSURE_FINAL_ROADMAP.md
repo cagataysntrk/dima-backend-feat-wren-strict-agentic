@@ -1,6 +1,6 @@
 # DIMA METABASE — FINAL CORE CLOSURE ROADMAP
 
-**Status:** CORE CLOSURE A SEALED / REPOSITORY CANONICALIZATION ACTIVE / CORE CLOSURE B NEXT / PRE-UI  
+**Status:** REPOSITORY CANONICALIZATION SEALED / CORE CLOSURE A SEALED / CORE CLOSURE B ACTIVE / PRODUCT-SEAL  
 **Date:** 2026-09-26  
 **Starting Platform HEAD:** 2a9d9d68a0e3b1a80bb85826daf5452bb4fbf55b  
 **Certified Engine:** cbe313af9ac2d5960f662068e433d328d896fb06 / 0.63.18-dima.6  
@@ -20,10 +20,31 @@ Wave-1 UX descriptors = 50 / COMPLETE
 external side effects = 0
 UI implementation = 0
 
-REPOSITORY CANONICALIZATION = ACTIVE
-CORE CLOSURE B = NEXT AFTER CLEANUP
+REPOSITORY CANONICALIZATION = SEALED
+cleanup behavior SHA = 2a8534990757d6b84634aac1e70fdf78f99798f0
+cleanup-focused = 36237748801 SUCCESS
+governance = 36237748789 SUCCESS
+Core A final = 36237748799 SUCCESS
+CORE CLOSURE B = ACTIVE
 ~~~
 
+
+
+## FINAL PRODUCT-SEAL AUTHORITY — 2026-09-26
+
+~~~text
+FINAL CLEAN CANONICAL REPOSITORY
+→ CORE CLOSURE B
+→ HEADLESS CLOSED-LOOP PRODUCT
+→ PRODUCT CONTRACT FREEZE
+→ SEALED NEUTRAL-COMPARISON CANDIDATE
+→ NEUTRAL COMPARISON HANDOFF
+→ STOP
+~~~
+
+This developer does not evaluate Wren, choose a winner, run DEV80, run Validation50, run Hidden50,
+or implement UI. Broad expensive certification is deferred until an independent comparison selects
+a candidate.
 
 ## 0. Why this continuation exists
 

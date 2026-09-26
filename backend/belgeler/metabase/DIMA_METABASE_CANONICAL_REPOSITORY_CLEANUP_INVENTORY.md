@@ -4,7 +4,7 @@
 **Starting SHA:** f229da9f1c67be94ad23bc2e50740b5353e88403  
 **Core A certified candidate:** 81a36a6984e273676119e86fc69534e967713912  
 **Engine:** cbe313af9ac2d5960f662068e433d328d896fb06 / 0.63.18-dima.6  
-**Status:** MACHINE-GENERATED DEPENDENCY/PATH INVENTORY / CLEANUP AUTHORITY INPUT
+**Status:** **REPOSITORY CANONICALIZATION = SEALED**
 
 ## 1. Canonical architecture
 
@@ -218,3 +218,30 @@ inventory
 → cleanup seal
 → Core B
 ~~~
+
+
+---
+
+## 14. Final canonicalization closure
+
+~~~text
+starting cleanup authority SHA         = af544a64f80e6e92553f28a9181d06530d0ddc85
+final cleanup behavior SHA             = 2a8534990757d6b84634aac1e70fdf78f99798f0
+cleanup-focused                        = 36237748801 SUCCESS
+governance                             = 36237748789 SUCCESS
+Core A final regression                = 36237748799 SUCCESS
+Alembic head                           = fb4e6d2a1074
+engine gitlink                         = cbe313af9ac2d5960f662068e433d328d896fb06
+external side effects                  = 0
+UI implementation                     = 0
+~~~
+
+Final removal added 48 files to the earlier cleanup:
+25 legacy `backend/belgeler/plan/**` files, 19 historical ticket files and four unreferenced
+root/backend helper documents/scripts.
+
+Final canonical root contains only the current status pointer, canonical README, backend, engine,
+compose metadata and repository metadata. Active architecture authority lives under
+`backend/belgeler/metabase/`.
+
+The inventory is closed. Forward authority is Core Closure B.
