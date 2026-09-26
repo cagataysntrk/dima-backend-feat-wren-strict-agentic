@@ -1,11 +1,6 @@
 name: v2-precomparison-rehearsal-live
 
 "on":
-  push:
-    branches:
-      - feat/ask-v2-mvp
-    paths:
-      - ".github/V2_PRECOMPARISON_REHEARSAL_TRIGGER"
   workflow_dispatch:
     inputs:
       confirm:
@@ -21,7 +16,7 @@ name: v2-precomparison-rehearsal-live
 
 jobs:
   rehearsal:
-    if: "${{ github.event_name == 'push' || (inputs.confirm == 'PRECOMPARISON_REHEARSAL' && inputs.max_total_model_calls > 0 && inputs.max_total_model_calls <= 200) }}"
+    if: "${{ inputs.confirm == 'PRECOMPARISON_REHEARSAL' && inputs.max_total_model_calls > 0 && inputs.max_total_model_calls <= 200 }}"
     runs-on: ubuntu-latest
     environment: DIMA_OPENROUTER_API_KEY
     timeout-minutes: 120
