@@ -168,6 +168,7 @@ class CapabilityBindingValidator:
         *,
         tenant_binding: str,
         context_version: str,
+        research_goal_authority: bool = False,
     ) -> CapabilityBindingResult:
         reasons: list[str] = []
 
@@ -249,11 +250,22 @@ class CapabilityBindingValidator:
 
         present_kinds = set(normalized_by_kind)
 
-        required_kinds = (
-            spec.required_kinds
-            if item.polarity == ObligationPolarity.REQUIRED
-            else spec.exclusion_required_kinds
-        )
+        if research_goal_authority:
+            if (
+                spec.lane != ManagerCapabilityLane.RESEARCH
+                or item.polarity != ObligationPolarity.REQUIRED
+            ):
+                reasons.append(
+                    f"{item.obligation_id}: research_goal_authority is valid only for "
+                    "REQUIRED Research-lane obligations"
+                )
+            required_kinds = frozenset()
+        else:
+            required_kinds = (
+                spec.required_kinds
+                if item.polarity == ObligationPolarity.REQUIRED
+                else spec.exclusion_required_kinds
+            )
         missing_kinds = required_kinds - present_kinds
         if missing_kinds:
             reasons.append(
@@ -282,9 +294,13 @@ class CapabilityBindingValidator:
         params = self._provided_params(item)
         present_params = set(params)
         required_params = (
-            spec.required_params
-            if item.polarity == ObligationPolarity.REQUIRED
-            else frozenset()
+            frozenset()
+            if research_goal_authority
+            else (
+                spec.required_params
+                if item.polarity == ObligationPolarity.REQUIRED
+                else frozenset()
+            )
         )
         missing_params = required_params - present_params
         if missing_params:
