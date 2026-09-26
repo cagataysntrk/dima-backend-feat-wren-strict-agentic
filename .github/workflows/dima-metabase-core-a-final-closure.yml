@@ -17,6 +17,12 @@ on:
       - "backend/control_plane/authorize.py"
       - "backend/migrations/versions/fb4e6d2a1074_core_a_closed_loop.py"
       - "backend/belgeler/metabase/DIMA_METABASE_DECISION_RECEIPTS.md"
+      - "backend/tests/test_repository_hygiene.py"
+      - "backend/tests/test_v3_control_plane_security.py"
+      - "backend/tools/repository_reachability.py"
+      - "backend/CLAUDE.md"
+      - "backend/AGENTS.md"
+      - "backend/MIMARI.md"
   workflow_dispatch:
 
 permissions:
@@ -44,6 +50,23 @@ jobs:
       - name: Install canonical backend test environment
         working-directory: backend
         run: pip install -e ".[dev]"
+
+      - name: Canonical repository preflight
+        working-directory: backend
+        run: |
+          pytest -q tests/test_repository_hygiene.py tests/test_v3_control_plane_security.py
+          python tools/repository_reachability.py --json > /tmp/reachability.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          data=json.loads(Path("/tmp/reachability.json").read_text())
+          assert data["legacy_unreachable"] == [], data["legacy_unreachable"]
+          assert data["unresolved_dynamic_import"] == {}, data["unresolved_dynamic_import"]
+          PY
+          python - <<'PY'
+          from app.main import app
+          assert app.title == "Dima Metabase Platform"
+          PY
 
       - name: Verify Core A authority and single migration head
         shell: bash
