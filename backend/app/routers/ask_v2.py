@@ -11,6 +11,7 @@ from fastapi.responses import StreamingResponse
 
 from app.auth.dependencies import get_current_principal, require, require_company
 from app.config import get_settings
+from app.v2.persistence import DurableCheckpointStore
 from app.v2.pilot import evaluate_pilot
 from app.v2.product_control import ProductControlError, ProductRunControlRegistry
 from app.v2.product_coordinator import ProductCoordinator
@@ -30,7 +31,12 @@ from control_plane.authorize import Principal
 
 
 router = APIRouter(tags=["ask-v2"])
-_coordinator = ProductCoordinator()
+_settings = get_settings()
+_coordinator = ProductCoordinator(
+    checkpoint_store=DurableCheckpointStore(
+        _settings.ask_v2_checkpoint_dir
+    )
+)
 _controls = ProductRunControlRegistry()
 
 
