@@ -1092,7 +1092,8 @@ class PreAcceptanceController:
         draft: IntentDraft,
         grounded: dict[tuple[str, str, str], SemanticBindingRef],
     ) -> tuple[dict[str, Any], ...]:
-        """Find missing capability-required bindings; optional extra surfaces do not block."""
+        """Classify missing executable semantics without universal Research exemption."""
+
         gaps: list[dict[str, Any]] = []
         research_goal_parent_ids = {
             directive.parent_obligation_id
@@ -1103,19 +1104,9 @@ class PreAcceptanceController:
         for obligation in draft.obligations:
             spec = self._capabilities.get(obligation.capability_key)
             required = (
-                frozenset()
-                if (
-                    obligation.polarity == ObligationPolarity.REQUIRED
-                    and (
-                        spec.lane == ManagerCapabilityLane.RESEARCH
-                        or obligation.obligation_id in research_goal_parent_ids
-                    )
-                )
-                else (
-                    spec.required_kinds
-                    if obligation.polarity == ObligationPolarity.REQUIRED
-                    else spec.exclusion_required_kinds
-                )
+                spec.required_kinds
+                if obligation.polarity == ObligationPolarity.REQUIRED
+                else spec.exclusion_required_kinds
             )
             if not required:
                 continue
@@ -1130,15 +1121,32 @@ class PreAcceptanceController:
                 if len(self._context_scope_by_kind.get(kind, ())) == 1
             }
             missing = sorted(required - resolved_kinds - inherited_kinds)
-            if missing:
-                gaps.append(
-                    {
-                        "obligation_id": obligation.obligation_id,
-                        "capability": obligation.capability_key.value,
-                        "polarity": obligation.polarity.value,
-                        "missing_required_kinds": missing,
-                    }
+            if not missing:
+                continue
+
+            goal_authority_eligible = (
+                obligation.origin == "USER_MUST"
+                and obligation.priority == ObligationPriority.MUST
+                and obligation.polarity == ObligationPolarity.REQUIRED
+                and spec.execution_mode
+                in {
+                    ManagerCapabilityExecutionMode.DIRECT,
+                    ManagerCapabilityExecutionMode.ORCHESTRATED,
+                }
+                and (
+                    spec.lane == ManagerCapabilityLane.RESEARCH
+                    or obligation.obligation_id in research_goal_parent_ids
                 )
+            )
+            gaps.append(
+                {
+                    "obligation_id": obligation.obligation_id,
+                    "capability": obligation.capability_key.value,
+                    "polarity": obligation.polarity.value,
+                    "missing_required_kinds": missing,
+                    "materialization_required": goal_authority_eligible,
+                }
+            )
         return tuple(gaps)
 
     def _eligible_repair_source_refs(
@@ -1653,58 +1661,83 @@ class PreAcceptanceController:
                     {
                         "kind": "material_grounding_gap",
                         "attempt": attempt,
-                        "phase": "BEFORE_DECOMPOSITION_REPAIR",
+                        "phase": "CLASSIFIED",
                         "gaps": list(material_gaps),
                     }
                 )
-                try:
-                    grounded, repair_result = self._repair_material_grounding_gaps(
-                        draft=draft,
-                        material_gaps=material_gaps,
-                        grounded=grounded,
-                        resolution=resolution,
-                        message_id=message_id,
-                        attempt=attempt,
-                        runtime=runtime,
-                        executor=executor,
-                    )
-                except Exception as exc:
-                    observations.append(
-                        {
-                            "kind": "semantic_decomposition_repair_error",
-                            "attempt": attempt,
-                            "message": str(exc),
-                        }
-                    )
-                    return FiniteAcceptanceOutcome(
-                        status=FiniteAcceptanceStatus.GROUNDING_FAILURE,
-                        observations=tuple(observations),
-                    )
+                blocking_gaps = tuple(
+                    gap
+                    for gap in material_gaps
+                    if not bool(gap.get("materialization_required"))
+                )
+                if blocking_gaps:
+                    try:
+                        grounded, repair_result = self._repair_material_grounding_gaps(
+                            draft=draft,
+                            material_gaps=blocking_gaps,
+                            grounded=grounded,
+                            resolution=resolution,
+                            message_id=message_id,
+                            attempt=attempt,
+                            runtime=runtime,
+                            executor=executor,
+                        )
+                    except Exception as exc:
+                        observations.append(
+                            {
+                                "kind": "semantic_decomposition_repair_error",
+                                "attempt": attempt,
+                                "message": str(exc),
+                            }
+                        )
+                        return FiniteAcceptanceOutcome(
+                            status=FiniteAcceptanceStatus.GROUNDING_FAILURE,
+                            observations=tuple(observations),
+                        )
 
-                if repair_result is not None:
-                    grounding_summary = self._grounding_summary(
-                        draft=draft,
-                        grounded=grounded,
-                        resolution=repair_result,
-                    )
-                    observations.append(
-                        {
-                            "kind": "semantic_decomposition_repair",
-                            "attempt": attempt,
-                            "resolved_count": len(
-                                tuple(getattr(repair_result, "resolved", ()) or ())
-                            ),
-                            "receipt_count": len(
-                                runtime.semantic_resolution_receipts
-                            ),
-                        }
-                    )
+                    if repair_result is not None:
+                        grounding_summary = self._grounding_summary(
+                            draft=draft,
+                            grounded=grounded,
+                            resolution=repair_result,
+                        )
+                        observations.append(
+                            {
+                                "kind": "semantic_decomposition_repair",
+                                "attempt": attempt,
+                                "resolved_count": len(
+                                    tuple(getattr(repair_result, "resolved", ()) or ())
+                                ),
+                                "receipt_count": len(
+                                    runtime.semantic_resolution_receipts
+                                ),
+                            }
+                        )
                     material_gaps = self._material_grounding_gaps(
                         draft=draft,
                         grounded=grounded,
                     )
 
-                if material_gaps:
+                deferred_gaps = tuple(
+                    gap
+                    for gap in material_gaps
+                    if bool(gap.get("materialization_required"))
+                )
+                if deferred_gaps:
+                    observations.append(
+                        {
+                            "kind": "research_goal_materialization_required",
+                            "attempt": attempt,
+                            "gaps": list(deferred_gaps),
+                        }
+                    )
+
+                blocking_gaps = tuple(
+                    gap
+                    for gap in material_gaps
+                    if not bool(gap.get("materialization_required"))
+                )
+                if blocking_gaps:
                     runtime.require_clarification(
                         "material capability-required semantic binding is unresolved"
                     )
@@ -1713,7 +1746,7 @@ class PreAcceptanceController:
                             "kind": "material_grounding_gap",
                             "attempt": attempt,
                             "phase": "AFTER_DECOMPOSITION_REPAIR",
-                            "gaps": list(material_gaps),
+                            "gaps": list(blocking_gaps),
                         }
                     )
                     return FiniteAcceptanceOutcome(
