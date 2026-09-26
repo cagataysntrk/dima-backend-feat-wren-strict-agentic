@@ -5930,3 +5930,62 @@ engine or Metabase core change
 
 The implementation must be provider-free. Normal GREEN closure remains part of DMP-DEC-0057 and
 does not require a new architecture receipt.
+
+
+### DMP-DEC-0057 final closure — P21 SEALED GREEN
+
+date: 2026-09-26
+
+DMP-DEC-0057 architecture is unchanged. This is lifecycle closure evidence, not a new architecture
+decision.
+
+```text
+P21 canonical product / closure SHA   = 224df510112092e5a64b6fbbd2bd579bc7694f1f
+P21 provider-free                     = 36219566290 SUCCESS
+P21 governance                        = 36219566300 SUCCESS
+Alembic head                          = f8d5b3e9c041
+
+P21 focused                           = 25 PASS
+P20 regression                        = 19 PASS
+P19 regression                        = 42 PASS
+P18 regression                        = 24 PASS
+P17 regression                        = 95 PASS
+P16 regression                        = 6 PASS
+P15 regression                        = 5 PASS
+P14 regression                        = 17 PASS
+
+DecisionBrief durable families        = 1
+DecisionBrief table                   = p21_decision_brief
+CURRENT sealed P20 required           = GREEN
+stale P20 rejection                   = GREEN
+tenant isolation / non-oracle         = GREEN
+exact P20 premise identity            = GREEN
+numeric value/unit preservation       = GREEN
+new numeric calculation rejection     = GREEN
+epistemic ceiling preservation        = GREEN
+NO_DEFENSIBLE_ROOT_CAUSE preservation = GREEN
+advisory recommendation boundary      = GREEN
+assumptions / limitations preservation= GREEN
+restart / idempotency                 = GREEN
+revision / staleness                  = GREEN
+
+legacy DecisionRecord changes         = 0
+backend/app/decision.py changes       = 0
+existing decision routes changes      = 0
+P14-P20 authority mutation            = 0
+P21 analytical execution              = 0
+new receipt/Evidence/claim/P19/report authority writes = 0
+human-adoption writes                 = 0
+action execution / side-effect writes = 0
+
+engine SHA                            = cbe313af9ac2d5960f662068e433d328d896fb06
+engine modifications/builds           = 0 / 0
+Metabase core modifications           = 0
+Luna / Sol / C1                       = 0 / 0 / 0
+UI / router                           = 0 / 0
+```
+
+P21 is permanently SEALED as an advisory DecisionBrief authority.
+
+This closure does not authorize a human-adoption write path, Action execution, workflow automation,
+model-backed recommendation generation or UI/UX. The next boundary is architecture review only.

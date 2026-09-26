@@ -37,12 +37,11 @@ NO UI/UX BEFORE P21 SEALED.
 
 ## CURRENT FORWARD AUTHORITY — 2026-09-26
 
-> **FORWARD AUTHORITY.** This block is the current operational truth. Historical receipts and
-> prior phase snapshots remain below unchanged.
+> **FORWARD AUTHORITY.** This is the current operational truth. Historical receipts and phase
+> snapshots below remain append-only history.
 
 ```text
 branch                                = feat/dima-metabase-platform
-supervisor-authorized base HEAD       = bf0d03402eb3e154430eec623f822abfe71fd8cc
 
 P14                                   = SEALED
 P15                                   = SEALED
@@ -51,58 +50,71 @@ P17                                   = SEALED
 P18                                   = SEALED / HARDENED
 P19                                   = SEALED
 P20                                   = SEALED
+P21                                   = SEALED
 
 P20 canonical product SHA             = 46bbc5f22ea18f6be239014750d77fc254508c46
-P20 provider-free                     = 36217317017 SUCCESS
-governance                            = 36217317067 SUCCESS
-P19 provider-free                     = 36217317064 SUCCESS
-P18 provider-free                     = 36217316992 SUCCESS
-P20 Alembic sealed revision           = f7c4a2d8b930
+P21 canonical product / closure SHA   = 224df510112092e5a64b6fbbd2bd579bc7694f1f
 
-P21 PRE-DEVELOPMENT                   = COMPLETE
-P21 architecture authority            = DMP-DEC-0057
-P21 MINIMAL IMPLEMENTATION            = AUTHORIZED / PROVIDER-FREE ONLY
+P21 provider-free                     = 36219566290 SUCCESS
+P21 governance                        = 36219566300 SUCCESS
+P20 current-head regression           = 36219566284 SUCCESS
+P19 current-head regression           = 36219566307 SUCCESS
+P18 current-head regression           = 36219566289 SUCCESS
 
-UI / UX                               = NOT AUTHORIZED
-HUMAN ADOPTION WRITE                  = NOT AUTHORIZED
-ACTION EXECUTION                      = NOT AUTHORIZED
+P21 focused                           = 25 PASS
+P20 regression                        = 19 PASS
+P19 regression                        = 42 PASS
+P18 regression                        = 24 PASS
+P17 regression                        = 95 PASS
+P16 regression                        = 6 PASS
+P15 regression                        = 5 PASS
+P14 regression                        = 17 PASS
+
+Alembic head                          = f8d5b3e9c041
+P21 durable record families           = 1
+P21 table                             = p21_decision_brief
+
+P20 currentness gate                  = GREEN
+tenant / non-oracle isolation         = GREEN
+numeric premise exact-copy gate       = GREEN
+epistemic ceiling                     = GREEN
+restart / idempotency                 = GREEN
+revision / staleness                  = GREEN
+legacy DecisionRecord diff            = 0
+
+P21 analytical execution              = 0
+new receipt/Evidence/claim/P19/report authority writes = 0
+human-adoption writes                 = 0
+action execution / side-effect writes = 0
 
 engine SHA                            = cbe313af9ac2d5960f662068e433d328d896fb06
 engine release                        = 0.63.18-dima.6
 engine modifications/builds           = 0 / 0
 Metabase core modification            = 0
 Luna / Sol / C1                       = 0 / 0 / 0
+UI / router                           = 0 / 0
 ```
 
-Permanent current owner split:
+Current owner split:
 
 ```text
 METABASE + METABOT = analytical computation / execution
 P19                = epistemic / root-cause authority
 P20                = governed report / publication authority
-P21                = advisory decision intelligence
+P21                = advisory DecisionBrief authority
 
 P20 REPORT != P21 RECOMMENDATION
 P21 RECOMMENDATION != HUMAN-ADOPTED DECISION
 HUMAN-ADOPTED DECISION != ACTION EXECUTION
 ```
 
-### CURRENT BOUNDED OBJECTIVE
+### CURRENT RETURN POINT
 
-Implement and seal exactly one provider-free P21 DecisionBrief authority vertical:
+P21 is sealed. The post-P21 Human Adoption / Action Boundary pre-development review is complete.
 
-```text
-one CURRENT sealed P20 ReportDocument
-+ explicit user objective / typed constraints
-+ exact P20 premise refs
-+ advisory options / tradeoffs / recommendation
-+ assumptions / limitations
-→ deterministic DecisionLegalityGate
-→ one immutable/versioned DecisionBrief
-```
-
-No router, UI, model provider, analytics, legacy DecisionRecord write, human-adoption write or action
-execution is authorized in this objective.
+No human-adoption production authority, Action executor, workflow automation or UI/UX is authorized.
+The next bounded objective requires a new supervisor authorization and must preserve the
+DecisionBrief → human adoption → Action-execution separation.
 
 ## HISTORICAL / SUPERSEDED P17 RECOVERY AND PRIOR CURRENT-STATE SECTIONS
 
