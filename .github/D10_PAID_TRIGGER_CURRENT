@@ -1,0 +1,14 @@
+authorized_measurement=CANONICAL_NS4
+confirm_expensive_run=DAY10_PAID_ONCE
+max_total_model_calls=20
+product_behavior=e1b3823b82cd28bbe9b4725abf81a4aa49d578ba
+engineering_head_before_transport=61fd0556f69bfde678002bdb521dc75d0d49d713
+cheap_day10=36229010298
+cheap_day8=36229010266
+cheap_day7=36229010331
+paid_epoch=PAID_EPOCH_CURRENT
+paid_epoch_starting_capacity=40
+paid_epoch_used_before_run=13
+paid_epoch_remaining_before_run=27
+active_family=FAM-PREACCEPTANCE-PRESENTATION-CONTROL-POLARITY
+family_cycle=1
