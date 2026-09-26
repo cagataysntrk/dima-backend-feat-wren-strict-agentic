@@ -17,6 +17,7 @@ from app.v2.cube_planner import (
     StandardAnalyticsError,
     ledger_from_canonical_ir,
 )
+from app.v2.execution_receipts import build_query_contract_audit_receipt
 from app.v2.manager_models import AcceptedTurnContract
 from app.v2.manager_tools import RunAnalyticsArgs
 from app.v2.models import (
@@ -262,6 +263,47 @@ class ManagerCoreAnalyticsAdapter:
         for plan, result, errors in zip(plans, raw_results, validation_errors):
             if errors:
                 raise ManagerCoreAdapterError("verified result contains validation errors")
+            requested_capabilities = tuple(
+                str(value)
+                for value in tuple(
+                    (provenance_extra or {}).get("requested_capabilities") or ()
+                )
+            )
+            relationship_authority = (
+                provenance_extra
+                if (provenance_extra or {}).get("kind")
+                == "cross_domain_relationship"
+                else None
+            )
+            audit_receipt = build_query_contract_audit_receipt(
+                execution_id=plan.execution_id,
+                accepted_authority_ref=accepted_contract.contract_id,
+                obligation_ids=args.obligation_ids,
+                requested_capabilities=requested_capabilities,
+                semantic_handle_refs=tuple(
+                    dict.fromkeys(
+                        (
+                            *args.metric_handles,
+                            *args.dimension_handles,
+                            *args.filter_handles,
+                            *((args.period_handle,) if args.period_handle else ()),
+                            *((args.comparison_handle,) if args.comparison_handle else ()),
+                        )
+                    )
+                ),
+                analytics_ir=ir,
+                tenant_binding=tenant_binding,
+                principal_subject=runtime.principal_user_id,
+                context_version=context_version,
+                planner_id=self._planner.planner_id,
+                planner_version=self._planner.planner_version,
+                research_run_id=(
+                    str((provenance_extra or {}).get("research_run_id") or "")
+                    or None
+                ),
+                research_task_id=task_id,
+                relationship_join_authority=relationship_authority,
+            )
             sealed = contract_store.record_v2_minimum(
                 session_id=session_id,
                 question=f"[v2-manager:{accepted_contract.contract_id}]",
@@ -280,6 +322,7 @@ class ManagerCoreAnalyticsAdapter:
                         "context_version": context_version,
                         "principal_user_id": runtime.principal_user_id,
                         "principal_roles": list(runtime.roles),
+                        "audit_receipt": audit_receipt,
                         **(
                             {"governed_extension": provenance_extra}
                             if provenance_extra is not None
@@ -329,6 +372,15 @@ class ManagerCoreAnalyticsAdapter:
             query_contract_refs=tuple(contract_refs),
             evidence_kind=evidence_kind,
             verified=True,
+            tenant_binding=tenant_binding,
+            principal_subject=runtime.principal_user_id,
+            context_version=context_version,
+            run_id=(
+                str((provenance_extra or {}).get("research_run_id") or "")
+                or task_id
+            ),
+            lineage_id=accepted_contract.lineage_id,
+            accepted_contract_id=accepted_contract.contract_id,
             payload={
                 "executions": bounded_results,
                 "query_count": query_count,
