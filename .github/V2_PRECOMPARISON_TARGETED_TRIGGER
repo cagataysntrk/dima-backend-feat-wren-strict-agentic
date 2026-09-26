@@ -1,3 +1,5 @@
 cycle=2
 cases=std_clause_order,relationship_explicit_tr,adaptive_tr,canonical_reordered,restart_signed_continuation,foreign_principal_replay
 max_calls=70
+
+diagnostic_refresh=0c1501944052c7d4488823803f9a65ea70703b9c
