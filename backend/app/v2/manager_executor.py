@@ -108,6 +108,17 @@ class GovernedManagerExecutor:
         self._representability = representability or RepresentabilityGate(self._capabilities)
         self._obligation_verifier = obligation_verifier or StandardObligationVerifier()
 
+    def begin_preacceptance_semantic_session(
+        self,
+        *,
+        message_id: str,
+        message_hash: str,
+    ) -> None:
+        semantic = self._semantic_resolution
+        begin = getattr(semantic, "begin_preacceptance_semantic_session", None)
+        if callable(begin):
+            begin(message_id=message_id, message_hash=message_hash)
+
     @property
     def evidence_store(self) -> EvidenceStore:
         return self._evidence
