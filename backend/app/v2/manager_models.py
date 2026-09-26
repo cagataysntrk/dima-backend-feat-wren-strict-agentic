@@ -291,12 +291,10 @@ class UserIntentEnvelope(FrozenModel):
         directive_ids = [item.directive_id for item in self.research_directives]
         if len(directive_ids) != len(set(directive_ids)):
             raise ValueError("research directive IDs unique olmalı")
-        obligation_ids = set(ids)
-        for directive in self.research_directives:
-            if directive.parent_obligation_id not in obligation_ids:
-                raise ValueError(
-                    "research directive parent accepted obligation içinde bulunmalı"
-                )
+        # Parent authority is context-sensitive. Ordinary turns are validated
+        # against current candidate obligations by IntentAcceptanceGate; signed
+        # continuations may reference only server-admitted active lineage authority.
+        # The envelope itself must not re-impose the old current-turn-only rule.
         return self
 
 
