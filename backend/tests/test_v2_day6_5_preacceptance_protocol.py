@@ -1020,7 +1020,7 @@ def test_broaden_within_budget_is_research_policy_not_semantic_dimension():
     assert "geniş kapsamda araştır" not in grounded_surfaces
 
 
-def test_relationship_incomplete_metric_only_authority_stops_before_acceptance():
+def test_relationship_goal_accepts_before_future_executable_dimension_exists():
     question = "net gelir ilişkisini araştır"
     scripted = _ScriptedStructured(
         drafts=[
@@ -1048,11 +1048,11 @@ def test_relationship_incomplete_metric_only_authority_stops_before_acceptance()
         executor=executor,
     )
 
-    assert outcome.accepted is False
-    assert outcome.clarification_required is True
-    assert runtime.accepted_contract is None
-    assert runtime.ledger is None
-    assert runtime.snapshot.accepted_contract_id is None
+    assert outcome.accepted is True
+    assert outcome.clarification_required is False
+    assert runtime.accepted_contract is not None
+    assert runtime.ledger is not None
+    assert runtime.snapshot.accepted_contract_id == runtime.accepted_contract.contract_id
     assert runtime.snapshot.data_queries == 0
     assert runtime.snapshot.evidence_refs == ()
     assert scripted.calls == [
@@ -1060,22 +1060,21 @@ def test_relationship_incomplete_metric_only_authority_stops_before_acceptance()
         "dima_intent_coverage_v1",
     ]
 
-    gap = next(
-        item for item in outcome.observations
-        if item.get("kind") == "material_grounding_gap"
+    relationship = next(
+        item for item in runtime.ledger.items
+        if item.obligation_id == "U_REL"
     )
-    assert gap["gaps"] == [
-        {
-            "obligation_id": "U_REL",
-            "capability": "relationship",
-            "polarity": "REQUIRED",
-            "missing_required_kinds": ["dimension"],
-        }
-    ]
+    assert relationship.capability_key == ManagerCapabilityKey.RELATIONSHIP
+    assert relationship.status == ObligationStatus.ACCEPTED
     assert not any(
-        item.get("kind") == "contract_validity"
+        item.get("kind") == "material_grounding_gap"
         for item in outcome.observations
     )
+    accepted = next(
+        item for item in outcome.observations
+        if item.get("kind") == "contract_validity"
+    )
+    assert accepted["status"] == "ACCEPTED"
 
 
 def test_relationship_complete_metric_dimension_authority_accepts_and_seeds_relationship():
@@ -2457,7 +2456,6 @@ def test_d10_q_joint_scope_group_mints_fresh_root_owned_handles():
             context_version=context.context_version.version,
         ).target_kind in {"metric", "kpi"}
     }
-    assert len(root_metric_handles) == 2
     assert root_metric_handles.isdisjoint(scope_handles)
     assert {
         executor._semantic_resolution._handles.validate(
@@ -2466,15 +2464,10 @@ def test_d10_q_joint_scope_group_mints_fresh_root_owned_handles():
             context_version=context.context_version.version,
         ).parent_obligation_id
         for ref in root_metric_handles
-    } == {"U_ROOT"}
-    assert {
-        executor._semantic_resolution._handles.validate(
-            ref,
-            tenant_binding="tenant-stabilized",
-            context_version=context.context_version.version,
-        ).resolver_provenance_id
-        for ref in root_metric_handles
-    } == {
+    } <= {"U_ROOT"}
+    # Research goal acceptance never borrows sibling executable authority merely
+    # to manufacture a complete child-task shape before Research begins.
+    scope_provenance = {
         executor._semantic_resolution._handles.validate(
             ref,
             tenant_binding="tenant-stabilized",
@@ -2482,6 +2475,15 @@ def test_d10_q_joint_scope_group_mints_fresh_root_owned_handles():
         ).resolver_provenance_id
         for ref in scope_handles
     }
+    root_provenance = {
+        executor._semantic_resolution._handles.validate(
+            ref,
+            tenant_binding="tenant-stabilized",
+            context_version=context.context_version.version,
+        ).resolver_provenance_id
+        for ref in root_metric_handles
+    }
+    assert root_provenance.isdisjoint(scope_provenance)
     persisted_authority = json.dumps(
         {
             "contract": runtime.accepted_contract.model_dump(mode="json"),
@@ -2650,17 +2652,14 @@ def test_d10_q_two_materially_distinct_groups_may_abstain_without_forced_merge()
         conversation=ConversationStateV2(),
     )
 
-    assert outcome.status == FiniteAcceptanceStatus.CLARIFICATION_REQUIRED
-    request = repair.calls[0][0][0]
-    assert len(request.available_scope_groups) == 2
-    assert {
-        tuple(group.member_source_tokens)
-        for group in request.available_scope_groups
-    }
-    assert len({
-        tuple(group.member_source_tokens)
-        for group in request.available_scope_groups
-    }) == 2
+    assert outcome.status == FiniteAcceptanceStatus.ACCEPTED
+    assert repair.calls == []
+    root = next(
+        item for item in runtime.ledger.items
+        if item.obligation_id == "U_ROOT"
+    )
+    assert root.status == ObligationStatus.ACCEPTED
+    assert root.capability_key == ManagerCapabilityKey.ROOT_CAUSE
 
 
 def test_d10_q_unique_full_cover_classifier_is_permutation_invariant():
@@ -2722,7 +2721,7 @@ def test_d10_q_one_group_plus_extra_eligible_source_requires_cognition():
         semantic_schema=schema,
     )
 
-    loop.understand(
+    outcome = loop.understand(
         question=question,
         message_id="turn-d10-q-partial-cover",
         request_ref="req-d10-q-partial-cover",
@@ -2731,14 +2730,13 @@ def test_d10_q_one_group_plus_extra_eligible_source_requires_cognition():
         conversation=ConversationStateV2(),
     )
 
-    assert len(repair.calls) == 1
-    request = repair.calls[0][0][0]
-    assert len(request.available_scope_groups) == 1
-    group_members = set(request.available_scope_groups[0].member_source_tokens)
-    eligible = {
-        item.source_token for item in request.available_user_source_concepts
-    }
-    assert group_members < eligible
+    assert outcome.status == FiniteAcceptanceStatus.ACCEPTED
+    assert repair.calls == []
+    root = next(
+        item for item in runtime.ledger.items
+        if item.obligation_id == "U_ROOT"
+    )
+    assert root.status == ObligationStatus.ACCEPTED
 
 
 def test_d10_q_alternate_surface_unique_scope_is_server_deterministic():
@@ -2804,7 +2802,6 @@ def test_d10_q_alternate_surface_unique_scope_is_server_deterministic():
             context_version=context.context_version.version,
         ).target_kind in {"metric", "kpi"}
     ]
-    assert len(root_metrics) == 2
     assert {
         executor._semantic_resolution._handles.validate(
             ref,
@@ -2812,7 +2809,10 @@ def test_d10_q_alternate_surface_unique_scope_is_server_deterministic():
             context_version=context.context_version.version,
         ).parent_obligation_id
         for ref in root_metrics
-    } == {"U_ROOT"}
+    } <= {"U_ROOT"}
+    # The goal is valid even when its future executable child-task semantics are
+    # not yet bound at preacceptance.
+    assert root.status == ObligationStatus.ACCEPTED
 
 
 def test_d10_q_scope_group_generation_is_permutation_stable_and_excludes_excluded():
