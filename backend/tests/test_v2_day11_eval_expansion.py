@@ -173,6 +173,29 @@ def test_day11_does_not_consume_freeze_or_certification_corpora():
     )
 
 
+def test_day11_visible_dev_seed_covers_entire_canonical_taxonomy():
+    manifest = _manifest()
+    coverage = manifest["canonical_taxonomy_coverage"]
+    d65_manifest = yaml.safe_load(
+        (BACKEND / coverage["source_manifest"]).read_text(encoding="utf-8")
+    )
+    dev = json.loads(
+        (BACKEND / coverage["visible_dev_source"]).read_text(encoding="utf-8")
+    )
+
+    canonical = set(d65_manifest["taxonomy"])
+    represented = {
+        taxonomy
+        for case in dev["cases"]
+        for taxonomy in case.get("taxonomy", ())
+    }
+
+    assert coverage["required_coverage"] == 1.0
+    assert coverage["execution_required"] is False
+    assert coverage["expected_taxonomy_count"] == len(canonical) == 18
+    assert canonical <= represented
+
+
 def test_day11_visible_dev_seed_remains_exactly_the_declared_80_cases():
     manifest = _manifest()
     dev = manifest["corpus_partitions"]["dev"]
