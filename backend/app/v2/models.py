@@ -1218,6 +1218,16 @@ class EvidenceArtifact(FrozenModel):
     payload: dict[str, Any] = Field(default_factory=dict)
     limitations: tuple[str, ...] = ()
 
+    # Day12 additive audit scope. Legacy/provider-free fixtures may omit these; every
+    # official Day12 execution path populates them. They are provenance, never a second
+    # authorization source.
+    tenant_binding: str | None = None
+    principal_subject: str | None = None
+    context_version: str | None = None
+    run_id: str | None = None
+    lineage_id: str | None = None
+    accepted_contract_id: str | None = None
+
     # Day7 derived analytics lineage. Existing execution Evidence remains compatible
     # because these fields default to the original execution shape.
     source_kind: Literal["EXECUTION", "DERIVED_ANALYTICAL"] = "EXECUTION"
