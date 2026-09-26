@@ -2688,6 +2688,21 @@ class ResearchManagerLoop:
                     "ranking_limit": ranking_limit,
                 }
             )
+        if task.origin == "GOAL_DERIVED":
+            for handle_id in task.input_refs:
+                handle = self._root_cause_context.semantic_handles.validate(
+                    handle_id,
+                    tenant_binding=self._root_cause_context.tenant_binding,
+                    context_version=self._root_cause_context.context_version,
+                )
+                if (
+                    handle.provenance_type != "USER_SOURCE"
+                    or handle.parent_obligation_id != obligation_id
+                ):
+                    raise ResearchTaskInvocationCompileError(
+                        "goal-derived task semantic authority must be current-goal USER_SOURCE"
+                    )
+
         validator = CapabilityBindingValidator(
             semantic_handles=self._root_cause_context.semantic_handles,
             capabilities=self._capabilities,
