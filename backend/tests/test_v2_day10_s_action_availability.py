@@ -58,6 +58,16 @@ def _compare() -> NextTestContractState:
     )
 
 
+def _rank() -> NextTestContractState:
+    return NextTestContractState(
+        task_kind="RANK",
+        capability_key="ranking",
+        required_kinds=("dimension", "metric"),
+        allowed_kinds=("metric", "dimension", "filter", "period"),
+        required_params=("ranking_direction", "ranking_limit"),
+    )
+
+
 def _build(**updates):
     values = {
         "state_version": "prog_N",
@@ -274,6 +284,92 @@ def test_propose_branch_parent_evidence_and_handles_remain_correlated():
     assert ("P1", "E1", ("M1", "D1")) in rows
     assert ("P2", "E2", ("M2", "D2")) in rows
     assert ("P1", "E2", ("M2", "D2")) not in rows
+
+
+def test_branch_projection_does_not_advertise_rank_with_multiple_metrics():
+    action_set = _build(
+        parent_evidence_states=(
+            ParentEvidenceActionState(
+                "P1",
+                "relationship",
+                "E1",
+                (
+                    _metric("M1"),
+                    _metric("M2"),
+                    _dimension("D1"),
+                ),
+            ),
+        ),
+    )
+
+    branches = _instances(action_set, "propose_branches")
+    assert len(branches) == 1
+    branch_schema = dict(branches[0].cognitive_schema)["branch_candidates"]
+    capabilities = set(
+        branch_schema["items"]["properties"]["capability_key"]["enum"]
+    )
+    assert "ranking" not in capabilities
+    assert "breakdown" in capabilities
+    assert "relationship" in capabilities
+
+
+def test_ready_rank_task_with_multiple_metrics_is_not_executable_action():
+    action_set = _build(
+        ready_tasks=(
+            TaskActionState(
+                task_id="T_RANK_BAD",
+                question_id="P1",
+                task_kind="RANK",
+                capability_key="ranking",
+                origin="AGENT_DERIVED",
+                semantic_refs=(
+                    _metric("M1"),
+                    _metric("M2"),
+                    _dimension("D1"),
+                ),
+                parent_obligation_id="P1",
+                trigger_evidence_ref="E1",
+            ),
+        ),
+    )
+
+    assert not _instances(action_set, "run_analytics")
+
+
+def test_root_next_test_rank_requires_lossless_exact_metric_cardinality():
+    bad = _build(
+        root_states=(
+            RootActionState(
+                root_id="R1",
+                semantic_refs=(
+                    _metric("M1"),
+                    _metric("M2"),
+                    _dimension("D1"),
+                ),
+                evidence_refs=("E_ROOT",),
+                next_test_evidence_refs=("E_ROOT",),
+                hypotheses=(),
+                next_test_contracts=(_rank(),),
+            ),
+        ),
+    )
+    assert not _instances(bad, "propose_hypothesis_with_next_test")
+
+    good = _build(
+        root_states=(
+            RootActionState(
+                root_id="R1",
+                semantic_refs=(_metric("M1"), _dimension("D1")),
+                evidence_refs=("E_ROOT",),
+                next_test_evidence_refs=("E_ROOT",),
+                hypotheses=(),
+                next_test_contracts=(_rank(),),
+            ),
+        ),
+    )
+    rows = _instances(good, "propose_hypothesis_with_next_test")
+    assert len(rows) == 1
+    assert rows[0].binding("next_test_task_kind") == "RANK"
 
 
 def test_ready_derived_task_is_one_server_bound_execution_instance():
