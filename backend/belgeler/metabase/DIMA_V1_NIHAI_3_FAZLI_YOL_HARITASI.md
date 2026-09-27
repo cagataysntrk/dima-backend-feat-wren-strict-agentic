@@ -307,6 +307,38 @@ Dima:
 
 diyecek.
 
+Bu sınır CI’da architecture invariant olarak korunmalı.
+
+Dima’nın request-invariant kontrolü yalnız:
+
+```text
+metric refs
+dimensions
+time scope
+filters
+comparison intent
+ranking basis
+requested grain
+requested output surfaces
+scope version
+```
+
+üzerinde çalışabilir.
+
+Architecture test açıkça şunları yasaklamalı:
+
+```text
+SQL parsing / scoring / rewriting
+MBQL parsing / scoring / rewriting
+join-plan validation
+aggregation-implementation validation
+temporal-computation validation
+query-optimality judgment
+second analytical planner / second query validator
+```
+
+Yani accepted user contract ile native Metabase/Metabot candidate’ın maddi request invariants’ı karşılaştırılır; analitik implementasyonun nasıl yapıldığı Dima tarafından yeniden değerlendirilmez.
+
 Mismatch durumunda:
 
 ```text
@@ -457,17 +489,41 @@ demeyecek.
 
 Yalnız mevcut state’e bakacak.
 
-Eğer yeterli candidate varsa:
+P19 callability tek bir executable predicate ile belirlenmeli:
+
+```text
+P19_ELIGIBLE(snapshot) :=
+    request.intent == ROOT_CAUSE
+    AND candidate.scope_version == current_scope_version
+    AND materially_distinct(candidate explanations) >= 2
+    AND every eligible candidate has governed P16 claim refs
+    AND every eligible candidate has governed Evidence refs
+```
+
+`materially_distinct` lexical farklılık değildir.
+
+Ayrım typed/durable candidate identity ve açıklayıcı mekanizma/ilişki farkından gelmeli; yalnız farklı kelimelerle aynı açıklamayı söyleyen iki kayıt iki candidate sayılamaz. Regex, fuzzy text similarity veya morphology bu predicate’in authority’si olamaz.
+
+Predicate true ise:
 
 ```text
 P19 callable
 ```
 
-değilse:
+Predicate false fakat legal bir discriminating investigation ile eksik Evidence elde edilebiliyorsa:
+
+```text
+NEED_MORE_EVIDENCE
+→ P17 legal next investigation
+```
+
+Predicate false ve yeni ayırıcı Evidence için legal/available yol yoksa:
 
 ```text
 INCONCLUSIVE
 ```
+
+Product Composer candidate/hypothesis uyduramaz, sayıyı ikiye tamamlayamaz ve stale/başka scope’taki candidate’ı current eligibility için kullanamaz.
 
 Fake hypothesis yok.
 
@@ -536,13 +592,25 @@ Dosyanın önerdiği competing hypotheses → supporting/challenging evidence �
 Recursive depth:
 
 ```text
-default = 3
-configurable max = 5
+depth starts at 1
+deepen only on positive expected information gain
+V1 hard max_depth = 3
 ```
 
-olabilir.
+`positive expected information gain` numeric veya LLM tarafından uydurulmuş bir confidence score değildir.
 
-Ama sırf depth=3 olsun diye derine inilmez.
+V1’de deepen gate ancak şu typed koşullar birlikte varsa açılır:
+
+```text
+material unresolved hypothesis ambiguity exists
+AND a legal NextTestRequest can discriminate it
+AND the requested Evidence surface is available
+AND the Evidence/test is not a duplicate of already-inspected material
+```
+
+Bu koşullar yoksa recursive child investigation açılmaz.
+
+Sırf depth=3 olsun diye derine inilmez.
 
 Stop reasons:
 
@@ -850,7 +918,7 @@ Use my data
 Try demo
 ```
 
-Data connect:
+Data connect hedef havuzu:
 
 ```text
 PostgreSQL
@@ -860,7 +928,33 @@ CSV
 Excel
 ```
 
-Destek sırası gerçek müşteri ihtiyacına göre azaltılabilir.
+Fakat Faz 2 ilk V1 acceptance scope’u bilinçli olarak daha dardır:
+
+```text
+Demo
++
+CSV
++
+one primary relational connector:
+PostgreSQL OR SQL Server
+```
+
+Hangi relational connector’ın ilk olduğu gerçek pilot/müşteri ihtiyacına göre seçilir.
+
+İlk connector acceptance gate connector sayısı değildir. Şu tam loop kanıtlanmalıdır:
+
+```text
+connect
+→ schema discovery
+→ Company Map
+→ Company Brain
+→ Ask
+→ Watch
+→ Signal
+→ Investigation
+```
+
+Diğer relational connector, MySQL ve Excel Faz 2 içinde ikinci connector wave’i olabilir; ilk tam loop’un kapanmasını bloke etmez.
 
 Yeni ingestion/query engine yok.
 
@@ -1230,6 +1324,42 @@ Controlled email later in the same V1 release if stable.
 
 Investigation ve Today üzerinden lightweight fakat durable.
 
+V1 closed-loop scope burada mühürlüdür:
+
+```text
+contextual Decision
+→ existing governed DecisionBrief / human adoption
+
+manual / controlled ActionWork
+→ owner
+→ due state
+→ progress / blocked / completed
+→ no generic autonomous execution
+
+Outcome observation
+→ expected vs observed
+→ governed Evidence / metric refs
+→ no automatic causal attribution
+
+Memory receipt
+→ decision / action / outcome / limitation lineage
+→ reference-first institutional memory
+→ not a second truth owner
+```
+
+V1 içinde bunlar ayrı büyük ürünlere dönüşmeyecek.
+
+Şunlar sonraya kalır:
+
+```text
+full Decision Desk
+generic automation orchestration
+agentic external execution
+generic tool executor
+autonomous ERP write-back
+LLM/vector memory as truth authority
+```
+
 ### Memory
 
 Outcome’dan institutional memory’ye.
@@ -1453,6 +1583,132 @@ restart/security GREEN
 ```
 
 olmalıdır.
+
+---
+
+# FAZLAR ARASI IMMUTABLE ACCEPTANCE GOVERNANCE
+
+Her faz tek bir canonical candidate SHA ve immutable acceptance receipt ile kapanır.
+
+Bir fazın kapanışı yalnız “testler yeşil” anlamına gelmez; o fazın authority/contract yüzeyinin dondurulduğu anlamına gelir.
+
+## Faz 1 seal
+
+Faz 1 sonunda:
+
+```text
+one canonical Phase-1 candidate SHA
++
+immutable Phase-1 acceptance receipt
++
+Sealed Dima Brain V1
+```
+
+üretilir.
+
+Receipt en az:
+
+```text
+candidate SHA
+engine SHA / release / digest
+migration head
+Brain contract / schema versions
+benchmark + metamorphic validation receipts
+P0 invariant results
+known governed limitations
+open technical debt
+```
+
+taşımalı.
+
+Faz 1 seal sonrasında intelligence semantics docs-only değişiklik dışında oynanmaz.
+
+Eğer Faz 2 veya Faz 3 sırasında Faz 1 semantics’ini değiştirmeyi gerektiren gerçek bir defect bulunursa:
+
+```text
+REOPEN PHASE 1
+→ fix at owning contract
+→ focused proof
+→ affected regression
+→ new Phase-1 candidate SHA
+→ new immutable acceptance receipt
+→ dependent later phase gates revalidated
+```
+
+olmadan değişiklik yapılamaz.
+
+## Faz 2 seal
+
+Faz 2 sonunda:
+
+```text
+one canonical Phase-2 candidate SHA
++
+immutable Phase-2 acceptance receipt
++
+headless product contract freeze
+```
+
+üretilir.
+
+Freeze kapsamı:
+
+```text
+Product façade contracts
+Company Brain contracts
+connector acceptance scope
+Watch / Signal / Today contracts
+Workspace / Brief product objects
+durability / resume / currentness
+tenant / permission boundaries
+```
+
+Faz 3 sırasında bu headless contract’lar yalnız UX/productization ihtiyacı bahanesiyle sessizce değiştirilemez.
+
+Headless contract değişikliği gerekiyorsa Faz 2 resmen reopen edilir ve yeniden mühürlenir.
+
+## Faz 3 seal
+
+Faz 3 sonunda:
+
+```text
+one canonical V1 release candidate SHA
++
+immutable V1 release acceptance receipt
+```
+
+üretilir.
+
+Faz 3’te normal olarak yalnız:
+
+```text
+UX implementation
+productization fixes
+performance
+accessibility
+locale
+release hardening
+```
+
+değişiklikleri kabul edilir.
+
+Core intelligence semantics veya headless product authority’sini değiştiren bir sorun bulunursa ilgili önceki gate resmen reopen edilmeden “release fix” adı altında patch yapılamaz.
+
+Kalıcı kural:
+
+```text
+SEALED PHASE
+!=
+NEVER CHANGE
+
+SEALED PHASE
+=
+CHANGE ONLY THROUGH EXPLICIT REOPEN
++ NEW CANONICAL SHA
++ NEW IMMUTABLE RECEIPT
+```
+
+Bu governance daha önce yaşanan “bir şeyi düzeltirken başka seal’i sessizce bozma” döngüsünü engellemelidir.
 
 ---
 
