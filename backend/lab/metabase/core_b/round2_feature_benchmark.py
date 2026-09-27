@@ -231,12 +231,41 @@ def main() -> int:
             "failure_class":"GLOBAL_MODEL_BUDGET_EXHAUSTED",
           })
           continue
-        result=run_case(
-          case=case,intake=intake,product=product,composer=composer,p17_manager=p17_manager,p19_manager=p19_manager,
-          reasoning=reasoning,orchestrator=orchestrator,db_engine=db_engine,native_token=token,
-        )
+        before_counts=(intake.call_count,p17_manager.call_count,p19_manager.call_count)
+        started_case=time.monotonic()
+        try:
+          result=run_case(
+            case=case,intake=intake,product=product,composer=composer,p17_manager=p17_manager,p19_manager=p19_manager,
+            reasoning=reasoning,orchestrator=orchestrator,db_engine=db_engine,native_token=token,
+          )
+        except Exception as exc:
+          intake_delta=intake.call_count-before_counts[0]
+          p17_delta=p17_manager.call_count-before_counts[1]
+          p19_delta=p19_manager.call_count-before_counts[2]
+          consumed=intake_delta+p17_delta+p19_delta
+          result={
+            "id":case["id"],"feature_id":case["feature_id"],"feature_name":case["feature_name"],
+            "difficulty":case["difficulty"],"kind":case["kind"],"question":case["question"],
+            "turn_count_expected":len(case.get("turns") or [case["question"]]),"turn_count_executed":0,
+            "turns":[],"terminal_state":"EXCEPTION","evidence_count":0,"lineage_valid":True,
+            "observable_model_boundary_units":consumed,"case_model_call_ceiling":case.get("max_model_calls"),
+            "metabase_analytical_calls":0,"total_latency_ms":int((time.monotonic()-started_case)*1000),
+            "budget_ok":consumed<=int(case.get("max_model_calls",14)),
+            "all_turns_executed":False,"passed":False,"expected":case.get("expected",{}),
+            "failure_class":"CASE_EXCEPTION","error_type":type(exc).__name__,"error":str(exc),
+            "model_calls_by_role":{"intake":intake_delta,"p17_manager":p17_delta,"p19_manager":p19_delta},
+          }
         observations.append(result)
         used_units += int(result["observable_model_boundary_units"])
+        checkpoint={
+          "schema_version":"dima_neutral_feature_benchmark_round2_checkpoint_v1",
+          "system":"metabase-platform","platform_sha":args.platform_sha,
+          "completed_case_count":len(observations),
+          "observable_model_boundary_units":used_units,
+          "cases":observations,
+        }
+        args.output.parent.mkdir(parents=True,exist_ok=True)
+        args.output.write_text(json.dumps(checkpoint,ensure_ascii=False,indent=2,default=str)+"\n",encoding="utf-8")
     finally:
       intake_transport.close(); p17_transport.close(); p19_transport.close()
     total_units=sum(x["observable_model_boundary_units"] for x in observations)
