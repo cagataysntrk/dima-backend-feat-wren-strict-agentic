@@ -7040,7 +7040,7 @@ closure are GREEN on the re-authorized P19 owner identity.
 date: 2026-09-27
 
 status:
-RESEAL CANDIDATE / B2 BEHAVIOR PROOF GREEN / FINAL PIN PROOF PENDING
+SEALED / B2 GREEN / WAVE-B GREEN
 
 question:
 May Wave-B B2 complete the V1 relationship-result surface, scope-aware report currentness
@@ -7192,8 +7192,37 @@ rejected shortcuts:
 - generic P20 redesign;
 - changing P18/P19/engine to satisfy B2.
 
+final re-seal proof:
+- re-pin lifecycle candidate = ec32b5b5b65e9c49771e66bd493a6603a691234c;
+- dima-v1-phase1-focused 36345910032 = SUCCESS;
+- core-b-focused 36346079648 = SUCCESS;
+- p20-provider-free 36346079630 = SUCCESS;
+- core-a-final 36346079740 = SUCCESS;
+- provider-free seal canary 36346079680 = SUCCESS;
+- canonical governance 36346079655 = SUCCESS;
+- exact P20 owner pin = c2d1e266c4a7335bf7c62349b3229d7a55a38bee;
+- P18 owner pin unchanged = 1c533667bd080331f4f2231b9d37ee0c5e532fa8;
+- P19 owner pin unchanged = fb6c4bfe17cd4193b9584b79fa32b63dc6c85563;
+- frozen provider-free canary = GREEN;
+- engine = cbe313af9ac2d5960f662068e433d328d896fb06 / 0.63.18-dima.6;
+- migration head = fc8a1d0e3b42;
+- new durable families = 0;
+- UI/frontend = 0;
+- Wren runtime/code import = 0;
+- external execution = 0.
+
+decision:
+- DMP-DEC-0067 = SEALED;
+- B2 = GREEN;
+- P9 = WAVE_GREEN;
+- P10 = WAVE_GREEN;
+- P11 = WAVE_GREEN;
+- B1 remains GREEN and P6/P7/P8 are promoted from focused closure to Wave-B WAVE_GREEN;
+- WAVE B = WAVE_GREEN;
+- PHASE 1 remains IN_PROGRESS because P12/P13 are not yet sealed;
+- no Phase-2, DEV80, Validation50 or Hidden50 authority is granted.
+
 final seal condition:
-DMP-DEC-0067 becomes SEALED only after focused B2 and affected Core-A/Core-B/provider-free proofs
-are GREEN, the exact candidate P20 owner blob is formally re-authorized, and final exact-owner
-guards are GREEN.
+SATISFIED. Focused B2, scope-currentness propagation, affected owner regressions,
+exact P20 owner re-authorization and all final exact-owner guards are GREEN.
 
