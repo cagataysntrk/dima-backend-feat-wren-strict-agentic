@@ -43,6 +43,8 @@ from app.v3.research_manager import (
     ResearchReasoningBudget,
 )
 from app.v3.research_product import ResearchAskOrchestrator
+from app.v3.research_followup import NativeResearchFollowupExecutor
+from app.v3.substrate.metabase.native_engine import NativeEngineBridgeError
 from app.v3.research_store import ResearchSessionStore
 from control_plane.authorize import Principal
 from control_plane.models import (
@@ -2744,3 +2746,91 @@ def test_dmp0053_store_persists_resolved_topology_without_reinterpreting_branch_
     )
     assert "topology: ResolvedInvestigationTopology" in create
     assert "proposal.branch_key" not in create
+
+
+
+class NoExecutableQueryOccurrenceRunner:
+    """Deterministic reproduction of a native Metabot turn with no capturable query."""
+
+    def execute(self, **kwargs):
+        del kwargs
+        raise NativeEngineBridgeError(
+            "native Metabot turn did not expose exactly one executable query payload"
+        )
+
+
+def test_p17_native_followup_no_query_reproduces_raw_bridge_failure_and_durable_pending_state():
+    db = db_engine()
+    store, session, _, _, claims, _ = setup_state(db)
+    followup = NativeResearchFollowupExecutor(
+        store=store,
+        occurrence_runner=NoExecutableQueryOccurrenceRunner(),
+    )
+    service = ResearchInvestigationManager(
+        research_store=store,
+        claim_store=claims,
+        followup_executor=followup,
+        db_engine=db,
+    )
+
+    manager = ScriptedManager(
+        lambda snap: recursive_proposal(
+            snap,
+            proposal_id="no-query-followup",
+            objective_key="native.no-query",
+            intent=InvestigationIntent.INVESTIGATE_GAP,
+            target_kind=InvestigationTargetKind.GAP,
+            target_ref="native-query-generation",
+            wording="Test one bounded native follow-up.",
+        )
+    )
+
+    with pytest.raises(
+        NativeEngineBridgeError,
+        match="did not expose exactly one executable query payload",
+    ):
+        service.run_one(
+            session_id=session.session_id,
+            principal=principal(),
+            manager=manager,
+        )
+
+    with Session(db) as s:
+        steps = tuple(
+            s.exec(
+                select(ResearchReasoningStepRecord).where(
+                    ResearchReasoningStepRecord.session_id == session.session_id
+                )
+            ).all()
+        )
+        tasks = tuple(
+            s.exec(
+                select(ResearchInvestigationTaskRecord).where(
+                    ResearchInvestigationTaskRecord.session_id == session.session_id
+                )
+            ).all()
+        )
+        links = tuple(
+            s.exec(
+                select(ResearchExecutionLink)
+                .where(ResearchExecutionLink.session_id == session.session_id)
+                .where(ResearchExecutionLink.execution_kind == "P17_FOLLOWUP")
+            ).all()
+        )
+
+    assert len(steps) == 1
+    assert steps[0].status == ReasoningStepStatus.PENDING.value
+    assert len(tasks) == 1
+    assert tasks[0].status == InvestigationTaskStatus.PENDING.value
+    assert len(links) == 1
+    assert links[0].status == "DELEGATED"
+    assert links[0].native_query_id is None
+    assert links[0].reasoning_step_id == steps[0].step_id
+    assert links[0].investigation_task_id == tasks[0].task_id
+
+    snap = service.snapshot(
+        session_id=session.session_id,
+        principal=principal(),
+    )
+    assert snap.pending_reasoning_steps == (steps[0].step_id,)
+    assert snap.terminal_stop_reason is None
