@@ -39,6 +39,7 @@ jobs:
         run: |
           python -m py_compile lab/metabase/core_b/round2_feature_benchmark.py
           python -m py_compile lab/metabase/core_b/runtime/seed_round2_fixture.py
+          PYTHONPATH=. python -c "import lab.metabase.core_b.round2_feature_benchmark"
           python - <<'PY'
           import json
           from pathlib import Path
