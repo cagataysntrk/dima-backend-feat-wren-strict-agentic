@@ -4,3 +4,5 @@ product_behavior=f7e565bb13e0668f85df071f6ecc70411314f9fd
 cases=std_breakdown_tr,relationship_explicit_tr,root_cause_tr,adaptive_tr
 max_calls=30
 purpose=wren_vs_metabase_neutral_comparison
+
+retry_harness_migration=1
