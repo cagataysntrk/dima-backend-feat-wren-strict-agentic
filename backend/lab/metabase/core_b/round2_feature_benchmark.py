@@ -233,7 +233,9 @@ def main() -> int:
         result=run_case(
           case=case,intake=intake,product=product,composer=composer,p17_manager=p17_manager,p19_manager=p19_manager,
           reasoning=reasoning,orchestrator=orchestrator,db_engine=db_engine,native_token=token,
-        ))
+        )
+        observations.append(result)
+        used_units += int(result["observable_model_boundary_units"])
     finally:
       intake_transport.close(); p17_transport.close(); p19_transport.close()
     total_units=sum(x["observable_model_boundary_units"] for x in observations)
