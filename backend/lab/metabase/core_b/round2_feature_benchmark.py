@@ -174,6 +174,7 @@ def main() -> int:
     ap.add_argument("--manifest",type=Path,required=True); ap.add_argument("--output",type=Path,required=True); ap.add_argument("--control-db",type=Path,required=True)
     ap.add_argument("--engine-sha",required=True); ap.add_argument("--upstream-sha",required=True); ap.add_argument("--runtime-tag",required=True)
     ap.add_argument("--runtime-image-digest",required=True); ap.add_argument("--build-identity",required=True); ap.add_argument("--image-identity",required=True); ap.add_argument("--platform-sha",required=True)
+    ap.add_argument("--max-total-model-units",type=int,default=180)
     args=ap.parse_args()
     manifest=json.loads(args.manifest.read_text(encoding="utf-8"))
     cases=list(manifest["cases"])
