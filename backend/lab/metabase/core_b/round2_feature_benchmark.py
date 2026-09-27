@@ -8,8 +8,8 @@ from typing import Any
 from lab.metabase.core_b import live_sentinel as sealed
 from app.v3.research_intake import (
     AllowedRelationship, ResearchIntakeCatalog, ResearchIntakeTerminal,
-    ResearchSemanticRef, SemanticTargetKind,
 )
+from app.v3.research_contracts import ResearchSemanticRef, SemanticTargetKind
 from control_plane.authorize import Principal
 
 MODEL="openai/gpt-5.6-luna"
