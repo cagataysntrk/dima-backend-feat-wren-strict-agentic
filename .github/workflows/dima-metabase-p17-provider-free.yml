@@ -152,13 +152,15 @@ jobs:
             tests/test_v3_p17_autonomous_provider_schema.py \
             tests/test_v3_p17_research_manager.py
 
-      - name: Verify single Alembic head includes P17 durability
+      - name: Verify single Alembic head preserves P17 durability
         working-directory: backend
         run: |
           set -euo pipefail
           heads="$(python -m alembic heads)"
           test "$(printf '%s\n' "$heads" | grep -Ec '^[0-9a-f]+')" -eq 1
-          printf '%s\n' "$heads" | grep -q '^f3c9d6e2a814'
+          test -f migrations/versions/f3c9d6e2a814_p17_recursive_investigation_topology.py
+          grep -q 'revision: str = "f3c9d6e2a814"' migrations/versions/f3c9d6e2a814_p17_recursive_investigation_topology.py
+          grep -q 'down_revision: str | None = "f3c9d6e2a814"' migrations/versions/f5a1d7c9e2b4_p18_business_relationship_policy.py
 
       - name: DMP-DEC-0053 family-aware exact-Git authorization proof
         working-directory: backend
