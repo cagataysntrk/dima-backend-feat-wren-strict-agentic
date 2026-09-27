@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import inspect
+
+import pytest
 from types import SimpleNamespace
 from uuid import UUID
 
@@ -209,9 +211,12 @@ class FakeResearch:
 
 
 class FakeInvestigation:
-    def __init__(self, *, claim_turns=()):
+    def __init__(self, *, research, claim_on_calls=None):
         self.states = {}
-        self.claim_turns = tuple(claim_turns)
+        self.research = research
+        self.claim_on_calls = (
+            None if claim_on_calls is None else set(claim_on_calls)
+        )
 
     def _state(self, session_id):
         return self.states.setdefault(
@@ -222,11 +227,31 @@ class FakeInvestigation:
     def snapshot(self, *, session_id, principal):
         del principal
         state = self._state(session_id)
+        session = self.research.sessions[session_id]
         return SimpleNamespace(
+            source_revision=state["calls"] + 1,
+            parent_obligations=tuple(
+                SimpleNamespace(
+                    obligation_id=item.obligation_id,
+                    state=item.state,
+                )
+                for item in session.obligations
+            ),
             completed_reasoning_steps=tuple(state["steps"]),
+            pending_reasoning_steps=(),
             claims=tuple(state["claims"]),
             terminal_stop_reason=None,
             remaining_reasoning_steps=max(0, 8 - state["calls"]),
+            action_profile=SimpleNamespace(
+                rules=(
+                    SimpleNamespace(
+                        intent=SimpleNamespace(value="INVESTIGATE_GAP"),
+                        legal_parent_step_ids=tuple(state["steps"]),
+                        allow_parentless=True,
+                    ),
+                ),
+                legal_intents=("INVESTIGATE_GAP",),
+            ),
         )
 
     def run_one(
@@ -253,12 +278,12 @@ class FakeInvestigation:
         if not step_id.startswith("rrs_"):
             step_id = "rrs_" + f"{n:024x}"
         state["steps"].append(step_id)
-        if n in self.claim_turns:
+        if self.claim_on_calls is None or n in self.claim_on_calls:
             state["claims"].append(
                 SimpleNamespace(
-                    claim_id="clm_" + f"{len(state['claims'])+1:024x}",
+                    claim_id="clm_" + f"{n:024x}",
                     obligation_id=self._obligation(session_id),
-                    claim_text=f"Sealed P17 claim {len(state['claims'])+1}",
+                    claim_text=f"Sealed P17 claim {n}",
                 )
             )
         return SimpleNamespace(step_id=step_id), None
@@ -439,9 +464,17 @@ class FakeReports:
         return SimpleNamespace(report_id="p20r_" + "3" * 24)
 
 
-def composer(*, relationship_blocked=True, limited_goal_ids=(), claim_turns=()):
+def composer(
+    *,
+    relationship_blocked=True,
+    limited_goal_ids=(),
+    claim_on_calls=None,
+):
     research = FakeResearch(limited_goal_ids=limited_goal_ids)
-    investigation = FakeInvestigation(claim_turns=claim_turns)
+    investigation = FakeInvestigation(
+        research=research,
+        claim_on_calls=claim_on_calls,
+    )
     reasoning = FakeReasoning(investigation)
     return (
         HeadlessProductComposer(
@@ -490,7 +523,7 @@ def test_ordinary_composition_uses_p14_only():
 
 
 def test_relationship_composes_p14_material_p17_and_p18_without_creating_policy():
-    c, research, investigation, reasoning = composer(claim_turns=(5,))
+    c, research, investigation, reasoning = composer()
     b = brief(
         question(
             "g_relationship",
@@ -500,6 +533,15 @@ def test_relationship_composes_p14_material_p17_and_p18_without_creating_policy(
         ),
         report=True,
     )
+
+    # Fake P17 needs the child obligation identity after child creation.
+    original = c._resolve_relationship
+    def wrapped(**kwargs):
+        reasoning.current_obligation_by_session[kwargs["material_session_id"]] = (
+            kwargs["material_goal"].goal_id
+        )
+        return original(**kwargs)
+    c._resolve_relationship = wrapped
 
     result = c.compose(
         brief=b,
@@ -518,11 +560,19 @@ def test_relationship_composes_p14_material_p17_and_p18_without_creating_policy(
 
 
 def test_root_cause_composes_p17_then_p19_and_preserves_inconclusive_outcome():
-    c, research, investigation, reasoning = composer(claim_turns=(2, 5))
+    c, research, investigation, reasoning = composer()
     b = brief(
         question("g_root", ResearchGoalKind.ROOT_CAUSE),
         report=True,
     )
+    original = c._assess_root_cause
+    def wrapped(**kwargs):
+        reasoning.current_obligation_by_session[kwargs["session_id"]] = (
+            kwargs["goal"].goal_id
+        )
+        return original(**kwargs)
+    c._assess_root_cause = wrapped
+
     result = c.compose(
         brief=b,
         principal=principal(),
@@ -632,10 +682,7 @@ def test_adaptive_requirement_does_not_open_p17_when_source_is_limited():
 
 
 def test_p18_blocked_resolution_is_preserved_as_limitation_not_fake_success():
-    c, research, _, reasoning = composer(
-        relationship_blocked=True,
-        claim_turns=(5,),
-    )
+    c, research, _, reasoning = composer(relationship_blocked=True)
     b = brief(
         question(
             "g_relationship",
@@ -645,6 +692,13 @@ def test_p18_blocked_resolution_is_preserved_as_limitation_not_fake_success():
         ),
         report=True,
     )
+    original = c._resolve_relationship
+    def wrapped(**kwargs):
+        reasoning.current_obligation_by_session[kwargs["material_session_id"]] = (
+            kwargs["material_goal"].goal_id
+        )
+        return original(**kwargs)
+    c._resolve_relationship = wrapped
     result = c.compose(
         brief=b,
         principal=principal(),
@@ -719,3 +773,120 @@ def test_product_composition_has_no_direct_truth_store_or_text_case_routing():
         "askv2_case_id",
     ):
         assert forbidden not in source
+
+
+def test_relationship_waits_for_p17_owned_fifth_turn_without_product_shadow_budget():
+    c, research, investigation, reasoning = composer(claim_on_calls={5})
+    b = brief(question("g_relationship", ResearchGoalKind.RELATIONSHIP,
+                       subjects=(DOWNTIME, FAULTS), related=(DEPT,)))
+    original = c._resolve_relationship
+    def wrapped(**kwargs):
+        reasoning.current_obligation_by_session[kwargs["material_session_id"]] = kwargs["material_goal"].goal_id
+        return original(**kwargs)
+    c._resolve_relationship = wrapped
+    result = c.compose(brief=b, principal=principal(), request_ref="rel-fifth",
+                       source_message_hash="9"*64, native_session_token=None)
+    child = result.child_research_session_ids[0]
+    assert investigation._state(child)["calls"] == 5
+    assert result.p18_policy_use_refs
+
+def test_root_waits_for_p17_owned_seventh_turn_for_second_candidate():
+    c, research, investigation, reasoning = composer(claim_on_calls={3, 7})
+    b = brief(question("g_root", ResearchGoalKind.ROOT_CAUSE))
+    original = c._assess_root_cause
+    def wrapped(**kwargs):
+        reasoning.current_obligation_by_session[kwargs["session_id"]] = kwargs["goal"].goal_id
+        return original(**kwargs)
+    c._assess_root_cause = wrapped
+    result = c.compose(brief=b, principal=principal(), request_ref="root-seventh",
+                       source_message_hash="6"*64, native_session_token=None)
+    assert investigation._state(result.research_session_id)["calls"] == 7
+    assert result.p19_assessment_refs
+
+def test_product_composition_has_no_independent_p17_budget_or_output_quota():
+    source = inspect.getsource(__import__(
+        "app.v3.product.composition",
+        fromlist=["HeadlessProductComposer"],
+    ))
+    for forbidden in (
+        "max_turns",
+        "minimum_claims",
+        "ProductInvestigationOutputNeed",
+        "RELATIONSHIP_INTERPRETATION_INPUT",
+        "COMPETING_EXPLANATION_INPUTS",
+    ):
+        assert forbidden not in source
+
+
+
+def test_relationship_unexpected_owner_error_fails_closed_instead_of_sealing_report():
+    c, _, _, _ = composer()
+    b = brief(
+        question(
+            "g_relationship",
+            ResearchGoalKind.RELATIONSHIP,
+            subjects=(DOWNTIME, FAULTS),
+            related=(DEPT,),
+        ),
+        report=True,
+    )
+
+    def explode(**_kwargs):
+        raise ValueError("unexpected upstream owner/transport contract failure")
+
+    c._resolve_relationship = explode
+    with pytest.raises(
+        ValueError,
+        match="unexpected upstream owner/transport contract failure",
+    ):
+        c.compose(
+            brief=b,
+            principal=principal(),
+            request_ref="relationship-fail-closed",
+            source_message_hash="f" * 64,
+            native_session_token=None,
+        )
+
+
+
+def test_root_does_not_enter_p17_when_p14_parent_is_limited():
+    """Root investigation is callable only from VERIFIED durable P14 material."""
+
+    c, research, investigation, reasoning = composer(
+        limited_goal_ids=("g_root",),
+    )
+    b = brief(
+        question("g_root", ResearchGoalKind.ROOT_CAUSE),
+        report=True,
+    )
+    original = c._assess_root_cause
+
+    def wrapped(**kwargs):
+        reasoning.current_obligation_by_session[kwargs["session_id"]] = (
+            kwargs["goal"].goal_id
+        )
+        return original(**kwargs)
+
+    c._assess_root_cause = wrapped
+    result = c.compose(
+        brief=b,
+        principal=principal(),
+        request_ref="root-limited-proof",
+        source_message_hash="e" * 64,
+        native_session_token=None,
+    )
+
+    state = next(
+        item.state
+        for item in research.sessions[result.research_session_id].obligations
+        if item.obligation_id == "g_root"
+    )
+    assert state == ObligationState.LIMITED
+    assert investigation._state(result.research_session_id)["calls"] == 0
+    assert result.p17_step_refs == ()
+    assert result.p19_assessment_refs == ()
+    assert any(
+        item.code == "P17_NO_LEGAL_MOVE"
+        and item.obligation_id == "g_root"
+        for item in result.limitations
+    )

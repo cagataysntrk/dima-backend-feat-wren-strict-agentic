@@ -16,9 +16,15 @@ from pydantic import BaseModel, ConfigDict, Field
 from control_plane.authorize import Principal
 
 from app.v3.product.contracts import (
-    ProductInvestigationOutputNeed,
     ProductInvestigationRequirement,
     ProductInvestigationRequirementKind,
+)
+from app.v3.product.process_manager import (
+    ProductProcessError,
+    ProductProcessNext,
+    ProductProcessObservation,
+    ProductProcessPurpose,
+    decide_next_owner,
 )
 
 from app.v3.business_relationship_policy import (
@@ -168,12 +174,10 @@ class _ObligationScopedProposalManager:
         inner: ProposalManager,
         target_parent_obligation: str,
         allowed_evidence_refs: tuple[str, ...],
-        output_need: ProductInvestigationOutputNeed | None = None,
     ) -> None:
         self._inner = inner
         self.target_parent_obligation = target_parent_obligation
         self._allowed_evidence_refs = allowed_evidence_refs
-        self._output_need = output_need
 
     @property
     def call_count(self) -> int:
@@ -182,13 +186,11 @@ class _ObligationScopedProposalManager:
     def propose(self, snapshot):
         scoped = getattr(self._inner, "propose_for_obligation", None)
         if callable(scoped):
-            kwargs = {
-                "target_parent_obligation": self.target_parent_obligation,
-                "allowed_evidence_refs": self._allowed_evidence_refs,
-            }
-            if self._output_need is not None:
-                kwargs["output_need"] = self._output_need
-            return scoped(snapshot, **kwargs)
+            return scoped(
+                snapshot,
+                target_parent_obligation=self.target_parent_obligation,
+                allowed_evidence_refs=self._allowed_evidence_refs,
+            )
         proposal = self._inner.propose(snapshot)
         target = getattr(proposal, "target_parent_obligation", None)
         if target is not None and target != self.target_parent_obligation:
@@ -401,23 +403,112 @@ class HeadlessProductComposer:
             )
         return final.session_id, child_goal
 
+    def _observe_p17_process(
+        self,
+        *,
+        snapshot,
+        session_id: str,
+        target_obligation_id: str,
+        downstream_ref_present: bool = False,
+    ) -> tuple[ProductProcessObservation, tuple[Any, ...], tuple[Any, ...]]:
+        steps = tuple(
+            step for step in self._reasoning.steps(session_id)
+            if step.parent_obligation_id == target_obligation_id
+        )
+        scoped_step_ids = {step.step_id for step in steps}
+        completed_ids = set(snapshot.completed_reasoning_steps)
+        completed = tuple(
+            step.step_id for step in steps
+            if step.step_id in completed_ids
+        )
+        claims_by_id = {
+            claim.claim_id: claim
+            for claim in snapshot.claims
+            if claim.obligation_id == target_obligation_id
+        }
+        claims = tuple(claims_by_id.values())
+
+        parent_verified = any(
+            item.obligation_id == target_obligation_id
+            and _state_value(item.state) == ObligationState.VERIFIED.value
+            for item in snapshot.parent_obligations
+        )
+        scoped_move_available = False
+        if parent_verified:
+            for rule in snapshot.action_profile.rules:
+                legal_parents = set(rule.legal_parent_step_ids)
+                if not (
+                    rule.allow_parentless
+                    or bool(legal_parents.intersection(scoped_step_ids))
+                ):
+                    continue
+                if (
+                    _state_value(rule.intent) == "SEEK_COUNTER_EVIDENCE"
+                    and not claims
+                ):
+                    continue
+                scoped_move_available = True
+                break
+
+        stop = getattr(snapshot, "terminal_stop_reason", None)
+        observation = ProductProcessObservation(
+            claim_ids=tuple(claims_by_id),
+            completed_step_ids=completed,
+            terminal_stop_reason=(
+                _state_value(stop) if stop is not None else None
+            ),
+            remaining_reasoning_steps=int(snapshot.remaining_reasoning_steps),
+            scoped_move_available=scoped_move_available,
+            downstream_ref_present=downstream_ref_present,
+        )
+        return observation, claims, steps
+
+    @staticmethod
+    def _p17_progress_signature(
+        snapshot,
+        observation: ProductProcessObservation,
+        steps: tuple[Any, ...],
+    ) -> tuple[Any, ...]:
+        return (
+            getattr(snapshot, "source_revision", None),
+            observation.claim_ids,
+            observation.completed_step_ids,
+            tuple(
+                (
+                    step.step_id,
+                    _state_value(getattr(step, "status", "")),
+                    tuple(getattr(step, "result_refs", ()) or ()),
+                )
+                for step in steps
+            ),
+            tuple(getattr(snapshot, "pending_reasoning_steps", ()) or ()),
+            observation.terminal_stop_reason,
+            observation.remaining_reasoning_steps,
+        )
+
+    @staticmethod
+    def _p17_terminal_code(*, snapshot, last_error: Exception | None) -> str:
+        if last_error is not None and getattr(last_error, "code", None):
+            return str(last_error.code)
+        stop = getattr(snapshot, "terminal_stop_reason", None)
+        if stop is not None:
+            return "P17_" + _state_value(stop)
+        if int(getattr(snapshot, "remaining_reasoning_steps", 0)) <= 0:
+            return "P17_BUDGET_EXHAUSTED"
+        return "P17_NO_LEGAL_MOVE"
+
     def _run_p17(
         self,
         *,
         session_id: str,
         principal: Principal,
         native_session_token: str | None,
+        purpose: ProductProcessPurpose,
         owner_calls: list[str],
         manager: ProposalManager | None = None,
-        target_obligation_id: str | None = None,
-        output_need: ProductInvestigationOutputNeed | None = None,
+        target_obligation_id: str,
+        downstream_ref_present: bool = False,
     ):
-        """Run only until the downstream artifact shape is ready or sealed P17 stops.
-
-        Product owns no independent turn budget. The durable P17 snapshot remains
-        the only budget authority.
-        """
-
         executed = 0
         last_error: Exception | None = None
         effective_manager = manager or self._investigation_manager
@@ -427,40 +518,17 @@ class HeadlessProductComposer:
                 session_id=session_id,
                 principal=principal,
             )
-            completed = tuple(snapshot.completed_reasoning_steps)
-            claims = tuple(snapshot.claims)
+            observation, _, steps = self._observe_p17_process(
+                snapshot=snapshot,
+                session_id=session_id,
+                target_obligation_id=target_obligation_id,
+                downstream_ref_present=downstream_ref_present,
+            )
+            next_owner = decide_next_owner(purpose, observation)
+            if next_owner != ProductProcessNext.P17:
+                return snapshot, next_owner, executed, last_error
 
-            if target_obligation_id is not None:
-                scoped_step_ids = {
-                    step.step_id
-                    for step in self._reasoning.steps(session_id)
-                    if step.parent_obligation_id == target_obligation_id
-                }
-                completed = tuple(
-                    step_id
-                    for step_id in completed
-                    if step_id in scoped_step_ids
-                )
-                claims = tuple(
-                    claim
-                    for claim in claims
-                    if claim.obligation_id == target_obligation_id
-                )
-
-            if output_need == ProductInvestigationOutputNeed.RELATIONSHIP_INTERPRETATION_INPUT:
-                ready = bool(completed) and bool(claims)
-            elif output_need == ProductInvestigationOutputNeed.COMPETING_EXPLANATION_INPUTS:
-                ready = len({claim.claim_id for claim in claims}) >= 2
-            else:
-                ready = bool(completed)
-
-            if ready:
-                return snapshot, executed, last_error
-            if snapshot.terminal_stop_reason is not None:
-                return snapshot, executed, last_error
-            if snapshot.remaining_reasoning_steps == 0:
-                return snapshot, executed, last_error
-
+            before = self._p17_progress_signature(snapshot, observation, steps)
             try:
                 self._investigation.run_one(
                     session_id=session_id,
@@ -473,17 +541,34 @@ class HeadlessProductComposer:
             except ResearchManagerMaturationError as exc:
                 last_error = exc
                 if exc.code == "P17_INVESTIGATION_TERMINAL":
-                    break
+                    terminal = self._investigation.snapshot(
+                        session_id=session_id,
+                        principal=principal,
+                    )
+                    return terminal, ProductProcessNext.TERMINAL, executed, last_error
                 raise
 
-        return (
-            self._investigation.snapshot(
+            after = self._investigation.snapshot(
                 session_id=session_id,
                 principal=principal,
-            ),
-            executed,
-            last_error,
-        )
+            )
+            after_observation, _, after_steps = self._observe_p17_process(
+                snapshot=after,
+                session_id=session_id,
+                target_obligation_id=target_obligation_id,
+                downstream_ref_present=downstream_ref_present,
+            )
+            after_signature = self._p17_progress_signature(
+                after,
+                after_observation,
+                after_steps,
+            )
+            if after_signature == before:
+                last_error = ProductProcessError(
+                    "PROCESS_NO_PROGRESS",
+                    "P17 returned without durable state/revision progress",
+                )
+                return after, ProductProcessNext.TERMINAL, executed, last_error
 
     @staticmethod
     def _relationship_refs(goal: ResearchQuestion) -> tuple[str, str, tuple[str, ...]]:
@@ -524,35 +609,28 @@ class HeadlessProductComposer:
             inner=self._investigation_manager,
             target_parent_obligation=material_goal.goal_id,
             allowed_evidence_refs=allowed_evidence_refs,
-            output_need=(
-                ProductInvestigationOutputNeed.RELATIONSHIP_INTERPRETATION_INPUT
-            ),
         )
-        snapshot, _, _ = self._run_p17(
+        snapshot, next_owner, _, last_error = self._run_p17(
             session_id=material_session_id,
             principal=principal,
             native_session_token=native_session_token,
+            purpose=ProductProcessPurpose.RELATIONSHIP,
             owner_calls=owner_calls,
             manager=scoped_manager,
             target_obligation_id=material_goal.goal_id,
-            output_need=(
-                ProductInvestigationOutputNeed.RELATIONSHIP_INTERPRETATION_INPUT
-            ),
         )
-        claims = tuple(
-            item for item in snapshot.claims
-            if item.obligation_id == material_goal.goal_id
+        observation, claims, all_steps = self._observe_p17_process(
+            snapshot=snapshot,
+            session_id=material_session_id,
+            target_obligation_id=material_goal.goal_id,
         )
-        completed_step_ids = set(snapshot.completed_reasoning_steps)
-        steps = tuple(
-            item for item in self._reasoning.steps(material_session_id)
-            if (
-                item.parent_obligation_id == material_goal.goal_id
-                and item.step_id in completed_step_ids
+        completed = set(observation.completed_step_ids)
+        steps = tuple(step for step in all_steps if step.step_id in completed)
+        if next_owner != ProductProcessNext.P18:
+            return None, snapshot, self._p17_terminal_code(
+                snapshot=snapshot,
+                last_error=last_error,
             )
-        )
-        if not claims or not steps:
-            return None, snapshot, "PRODUCT_RELATIONSHIP_LINEAGE_INCOMPLETE"
 
         source_ref, target_ref, dimensions = self._relationship_refs(original_goal)
         scope = {
@@ -622,25 +700,26 @@ class HeadlessProductComposer:
             inner=self._investigation_manager,
             target_parent_obligation=goal.goal_id,
             allowed_evidence_refs=allowed_evidence_refs,
-            output_need=ProductInvestigationOutputNeed.COMPETING_EXPLANATION_INPUTS,
         )
-        snapshot, _, _ = self._run_p17(
+        snapshot, next_owner, _, last_error = self._run_p17(
             session_id=session_id,
             principal=principal,
             native_session_token=native_session_token,
+            purpose=ProductProcessPurpose.ROOT_CAUSE,
             owner_calls=owner_calls,
             manager=scoped_manager,
             target_obligation_id=goal.goal_id,
-            output_need=ProductInvestigationOutputNeed.COMPETING_EXPLANATION_INPUTS,
         )
-        claims_by_id = {
-            item.claim_id: item
-            for item in snapshot.claims
-            if item.obligation_id == goal.goal_id
-        }
-        claims = tuple(claims_by_id.values())
-        if len(claims) < 2:
-            return None, snapshot, "PRODUCT_P19_COMPETING_HYPOTHESES_INCOMPLETE"
+        _, claims, _ = self._observe_p17_process(
+            snapshot=snapshot,
+            session_id=session_id,
+            target_obligation_id=goal.goal_id,
+        )
+        if next_owner != ProductProcessNext.P19:
+            return None, snapshot, self._p17_terminal_code(
+                snapshot=snapshot,
+                last_error=last_error,
+            )
 
         for claim in claims:
             hypothesis = self._epistemics.create_hypothesis(
@@ -876,65 +955,52 @@ class HeadlessProductComposer:
                 p17_required.append(goal.goal_id)
 
             if goal.kind == ResearchGoalKind.RELATIONSHIP:
-                try:
-                    material_session_id, material_goal = (
-                        self._material_session_for_relationship(
-                            parent_session_id=session.session_id,
-                            brief=brief,
-                            goal=goal,
-                            principal=principal,
-                            native_session_token=native_session_token,
-                            owner_calls=owner_calls,
-                        )
-                    )
-                    child_sessions.append(material_session_id)
-                    material_session = self._research.resume_state(
-                        session_id=material_session_id,
-                        principal=principal,
-                    )
-                    correlated_evidence_refs.extend(
-                        item.evidence_id for item in material_session.evidence_refs
-                    )
-                    decision, p17_snapshot, error = self._resolve_relationship(
-                        original_goal=goal,
-                        material_session_id=material_session_id,
-                        material_goal=material_goal,
+                material_session_id, material_goal = (
+                    self._material_session_for_relationship(
+                        parent_session_id=session.session_id,
+                        brief=brief,
+                        goal=goal,
                         principal=principal,
                         native_session_token=native_session_token,
                         owner_calls=owner_calls,
                     )
-                    p17_refs.extend(p17_snapshot.completed_reasoning_steps)
-                    if decision is None:
-                        code = error or "PRODUCT_RELATIONSHIP_INCONCLUSIVE"
-                    else:
-                        p18_refs.append(decision.policy_use_id)
-                        code = (
-                            decision.limitation_code
-                            or f"P18_{decision.resolution_status.value}"
-                        )
-                    limitation_codes[goal.goal_id] = code
-                    if decision is None or decision.limitation_code:
-                        limitations.append(
-                            CompositionLimitation(
-                                obligation_id=goal.goal_id,
-                                code=code,
-                                detail="Relationship authority reached a governed limited terminal.",
-                                owner="P18",
-                            )
-                        )
-                except (RuntimeError, ValueError) as exc:
-                    code = getattr(
-                        exc,
-                        "code",
-                        "PRODUCT_RELATIONSHIP_COMPOSITION_INCONCLUSIVE",
+                )
+                child_sessions.append(material_session_id)
+                material_session = self._research.resume_state(
+                    session_id=material_session_id,
+                    principal=principal,
+                )
+                correlated_evidence_refs.extend(
+                    item.evidence_id for item in material_session.evidence_refs
+                )
+                decision, p17_snapshot, error = self._resolve_relationship(
+                    original_goal=goal,
+                    material_session_id=material_session_id,
+                    material_goal=material_goal,
+                    principal=principal,
+                    native_session_token=native_session_token,
+                    owner_calls=owner_calls,
+                )
+                p17_refs.extend(p17_snapshot.completed_reasoning_steps)
+                if decision is None:
+                    code = error or "PRODUCT_RELATIONSHIP_INCONCLUSIVE"
+                else:
+                    p18_refs.append(decision.policy_use_id)
+                    code = (
+                        decision.limitation_code
+                        or f"P18_{decision.resolution_status.value}"
                     )
-                    limitation_codes[goal.goal_id] = str(code)
+                limitation_codes[goal.goal_id] = code
+                if decision is None or decision.limitation_code:
                     limitations.append(
                         CompositionLimitation(
                             obligation_id=goal.goal_id,
-                            code=str(code),
-                            detail="Relationship composition did not reach a publishable governed terminal.",
-                            owner="PRODUCT",
+                            code=code,
+                            detail=(
+                                "Relationship authority reached a governed "
+                                "limited terminal."
+                            ),
+                            owner="P18",
                         )
                     )
                 continue
@@ -1025,10 +1091,11 @@ class HeadlessProductComposer:
                 target_parent_obligation=source_goal.goal_id,
                 allowed_evidence_refs=source_evidence_refs,
             )
-            p17_snapshot, _, error = self._run_p17(
+            p17_snapshot, next_owner, _, error = self._run_p17(
                 session_id=session.session_id,
                 principal=principal,
                 native_session_token=native_session_token,
+                purpose=ProductProcessPurpose.ADAPTIVE_INVESTIGATION,
                 owner_calls=owner_calls,
                 manager=scoped_manager,
                 target_obligation_id=source_goal.goal_id,
@@ -1044,7 +1111,10 @@ class HeadlessProductComposer:
                 if step_id in scoped_step_ids
             )
             p17_refs.extend(scoped_terminal_refs)
-            if scoped_terminal_refs:
+            if (
+                next_owner == ProductProcessNext.COMPLETE
+                and scoped_terminal_refs
+            ):
                 fulfilled_investigation_requirements.append(
                     requirement.requirement_id
                 )

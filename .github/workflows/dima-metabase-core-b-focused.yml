@@ -4,14 +4,24 @@ on:
   push:
     branches:
       - feat/dima-metabase-platform
+      - recovery/core-b-root-v2
     paths:
       - "backend/app/v3/product/**"
       - "backend/app/v3/research.py"
       - "backend/app/v3/research_product.py"
+      - "backend/app/v3/research_followup.py"
       - "backend/app/v3/report_document.py"
+      - "backend/app/v3/research_intake.py"
+      - "backend/app/v3/research_manager_provider.py"
+      - "backend/app/v3/hypothesis_root_cause_provider.py"
+      - "backend/tests/test_v3_research_intake.py"
+      - "backend/tests/test_v3_p17_autonomous_provider_schema.py"
+      - "backend/tests/test_v3_p17_research_manager.py"
+      - "backend/tests/test_v3_p19_provider.py"
       - "backend/tests/test_v3_product_*.py"
+      - "backend/tests/test_v3_core_b_closure_v2.py"
       - "backend/tests/test_v3_owner_scoped_must_accounting.py"
-      - "backend/tests/test_v3_core_b_relationship_root_regression.py"
+      - "backend/lab/metabase/core_b/live_sentinel_v2.py"
       - "backend/eval/core_b/**"
       - "backend/product_contracts/**"
       - "backend/belgeler/metabase/DIMA_METABASE_CORE_B_CLOSURE_RECEIPT.md"
@@ -52,16 +62,27 @@ jobs:
           python -m py_compile app/v3/product/*.py
           python -m py_compile tests/test_v3_product_contracts.py
           python -m py_compile tests/test_v3_product_composition.py
+          python -m py_compile tests/test_v3_product_process_manager.py
+          python -m py_compile tests/test_v3_core_b_closure_v2.py
           python -m py_compile tests/test_v3_owner_scoped_must_accounting.py
-          python -m py_compile tests/test_v3_core_b_relationship_root_regression.py
-
-      - name: Relationship and root-cause shadow-budget regression
-        working-directory: backend
-        run: pytest -q tests/test_v3_core_b_relationship_root_regression.py
+          python -m py_compile tests/test_v3_research_intake.py
+          python -m py_compile tests/test_v3_p19_provider.py
 
       - name: Core B product focused proof
         working-directory: backend
-        run: pytest -q tests/test_v3_product_contracts.py tests/test_v3_product_composition.py tests/test_v3_owner_scoped_must_accounting.py
+        run: pytest -q tests/test_v3_product_contracts.py tests/test_v3_product_composition.py tests/test_v3_product_process_manager.py tests/test_v3_core_b_closure_v2.py tests/test_v3_owner_scoped_must_accounting.py tests/test_v3_research_intake.py tests/test_v3_p19_provider.py
+
+      - name: Sealed P14-P19 affected regressions
+        working-directory: backend
+        run: |
+          pytest -q \
+            tests/test_v3_p14_research.py \
+            tests/test_v3_p16_claim_lineage.py \
+            tests/test_v3_p17_research_manager.py \
+            tests/test_v3_p17_autonomous_provider_schema.py \
+            tests/test_v3_p18_business_relationship_policy.py \
+            tests/test_v3_p19_hypothesis_root_cause.py \
+            tests/test_v3_p19_provider.py
 
       - name: Guard projection-only architecture
         working-directory: backend

@@ -28,6 +28,7 @@ from app.v3.research_intake import (
     ResearchIntakeCompiler,
     ResearchIntakeError,
     ResearchIntakeTerminal,
+    _intake_provider_schema,
 )
 from app.v3.structured_transport import (
     OpenRouterStructuredJSONTransport,
@@ -237,8 +238,11 @@ def test_adaptive_dependency_unknown_goal_key_fails_closed():
 def test_authorized_relationship_compiles_and_preserves_exact_catalog_refs():
     payload = ready_payload(
         kind="relationship",
-        subject=("metric.downtime", "metric.fault_count"),
-        related=("dimension.department",),
+        subject=(),
+        related=(),
+    )
+    payload["goals"][0]["allowed_relationship_id"] = (
+        "rel.downtime_fault_by_department"
     )
     result = ResearchIntakeCompiler(
         transport=FakeTransport(payload)
@@ -264,9 +268,10 @@ def test_authorized_relationship_compiles_and_preserves_exact_catalog_refs():
 def test_unapproved_relationship_fails_closed():
     payload = ready_payload(
         kind="relationship",
-        subject=("metric.fault_count", "metric.performance"),
-        related=("dimension.department",),
+        subject=(),
+        related=(),
     )
+    payload["goals"][0]["allowed_relationship_id"] = "rel.invented"
     with pytest.raises(ResearchIntakeError) as exc:
         ResearchIntakeCompiler(
             transport=FakeTransport(payload)
@@ -495,3 +500,104 @@ def test_headless_product_delegates_raw_question_to_intake_owner():
     assert result.terminal == ResearchIntakeTerminal.READY
     assert result.brief is not None
     assert transport.call_count == 1
+
+
+
+def test_request_scoped_intake_schema_closes_authority_ids_before_domain_execution():
+    schema = _intake_provider_schema(catalog())
+    goal = schema["$defs"]["ModelGoalDraft"]
+    variants = goal["anyOf"]
+    relationship = next(
+        item
+        for item in variants
+        if item["properties"]["kind"]["enum"] == ["relationship"]
+    )
+    assert set(relationship["properties"]) == {
+        "goal_key",
+        "source_text",
+        "ranking",
+        "comparison_texts",
+        "kind",
+        "allowed_relationship_id",
+    }
+    assert relationship["properties"]["allowed_relationship_id"]["enum"] == [
+        "rel.downtime_fault_by_department",
+        "rel.downtime_performance_by_department",
+    ]
+    assert "subject_semantic_ids" not in relationship["properties"]
+    assert "related_semantic_ids" not in relationship["properties"]
+
+    breakdown = next(
+        item
+        for item in variants
+        if item["properties"]["kind"]["enum"] == ["breakdown"]
+    )
+    legal_ids = {
+        item.candidate_id for item in catalog().semantic_refs
+    }
+    assert set(
+        breakdown["properties"]["subject_semantic_ids"]["items"]["enum"]
+    ) == legal_ids
+    assert set(
+        breakdown["properties"]["related_semantic_ids"]["items"]["enum"]
+    ) == legal_ids
+
+
+def test_relationship_provider_cannot_reconstruct_left_right_dimension_tuple():
+    payload = ready_payload(
+        kind="relationship",
+        subject=("metric.downtime", "metric.fault_count"),
+        related=("dimension.department",),
+    )
+    payload["goals"][0]["allowed_relationship_id"] = (
+        "rel.downtime_fault_by_department"
+    )
+    with pytest.raises(ResearchIntakeError) as exc:
+        ResearchIntakeCompiler(
+            transport=FakeTransport(payload)
+        ).compile(
+            question="Inspect the governed relationship.",
+            catalog=catalog(),
+        )
+    assert exc.value.code == "INTAKE_RELATIONSHIP_RECONSTRUCTION_FORBIDDEN"
+
+
+def test_catalog_reordering_preserves_authority_identity_and_relationship_expansion():
+    original = catalog()
+    reordered = ResearchIntakeCatalog(
+        context_version=original.context_version,
+        semantic_refs=tuple(reversed(original.semantic_refs)),
+        allowed_relationships=tuple(reversed(original.allowed_relationships)),
+        supported_domains=tuple(reversed(original.supported_domains)),
+    )
+    assert original.fingerprint == reordered.fingerprint
+
+    payload = ready_payload(kind="relationship", subject=(), related=())
+    payload["goals"][0]["allowed_relationship_id"] = (
+        "rel.downtime_fault_by_department"
+    )
+    first = ResearchIntakeCompiler(
+        transport=FakeTransport(payload)
+    ).compile(
+        question="Inspect downtime and faults by department.",
+        catalog=original,
+    )
+    second = ResearchIntakeCompiler(
+        transport=FakeTransport(payload)
+    ).compile(
+        question="Inspect downtime and faults by department.",
+        catalog=reordered,
+    )
+    assert first.brief is not None and second.brief is not None
+    assert first.brief.brief_id == second.brief.brief_id
+    assert [
+        ref.candidate_id
+        for ref in first.brief.questions[0].subject_refs
+    ] == [
+        "metric.downtime",
+        "metric.fault_count",
+    ]
+    assert [
+        ref.candidate_id
+        for ref in first.brief.questions[0].related_refs
+    ] == ["dimension.department"]

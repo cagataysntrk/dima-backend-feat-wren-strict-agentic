@@ -16,6 +16,7 @@ from app.v3.research_manager import (
 )
 from app.v3.research_product import NativeResearchOccurrenceRunner
 from app.v3.research_store import ResearchSessionStore
+from app.v3.substrate.metabase.native_engine import NativeEngineBridgeError
 from app.v3.substrate.metabase.native_models import NativeEngineRequest
 from control_plane.authorize import Principal
 
@@ -149,14 +150,24 @@ class NativeResearchFollowupExecutor:
                 ),
             )
 
-        occurrence = self._runner.execute(
-            session=session,
-            principal=principal,
-            obligation_id=task.parent_obligation_id,
-            link=link,
-            request=(request if created else None),
-            native_session_token=native_session_token,
-        )
+        try:
+            occurrence = self._runner.execute(
+                session=session,
+                principal=principal,
+                obligation_id=task.parent_obligation_id,
+                link=link,
+                request=(request if created else None),
+                native_session_token=native_session_token,
+            )
+        except NativeEngineBridgeError as exc:
+            link = self._store.mark_limited(
+                link.id,
+                code="P14_NATIVE_TRANSPORT_FAILED",
+                detail=str(exc),
+            )
+            return FollowupResult(
+                native_execution_refs=(str(link.id),),
+            )
         outcome = occurrence.outcome
         ResearchManager.check_evidence(
             session,

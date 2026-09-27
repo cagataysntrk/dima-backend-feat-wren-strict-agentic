@@ -1,0 +1,18 @@
+{
+  "schema_version": "core_b_root_v2_live_authorization_v1",
+  "mode": "intake_only_live_v2",
+  "candidate_product_sha": "f421dbf2c416c9086c3e42cecabccfe1e2ea22cd",
+  "recovery_base_sha": "eae1fd6856d75e7e2738f869d5bbe1f24fd5d309",
+  "forensic_sha": "266c25a08a7f9136dd6b4d809992ccec8177aadd",
+  "engine_sha": "cbe313af9ac2d5960f662068e433d328d896fb06",
+  "case_id": "relationship_explicit_tr",
+  "max_model_calls": 1,
+  "p17_calls": 0,
+  "p18_calls": 0,
+  "p19_calls": 0,
+  "provider_free_run_id": 36296604703,
+  "provider_free_status": "GREEN",
+  "governance_run_id": 36296604742,
+  "governance_status": "GREEN",
+  "purpose": "Prove raw relationship language compiles to one legal request-scoped relationship identity before any downstream owner executes."
+}

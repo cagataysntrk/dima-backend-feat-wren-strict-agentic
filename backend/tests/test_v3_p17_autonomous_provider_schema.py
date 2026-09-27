@@ -256,6 +256,17 @@ def test_form_claim_provider_transport_is_closed_and_maps_to_domain_claim():
     assert "ProviderClaimDraft" in serialized or "$ref" in claim_schema
     assert '"additionalProperties": true' not in serialized
 
+    freshness_schema = schema["$defs"]["ClaimFreshness"]["properties"]
+    assert freshness_schema["as_of"] == {
+        "format": "date-time",
+        "type": "string",
+    }
+    stale_after = freshness_schema["stale_after"]["anyOf"]
+    assert {
+        "format": "date-time",
+        "type": "string",
+    } in stale_after
+
     raw = {
         "proposal_id": "p17-form-claim-transport-001",
         "source_revision": 2,

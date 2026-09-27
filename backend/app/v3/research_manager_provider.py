@@ -12,7 +12,6 @@ from typing import Any, Literal, Protocol
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.v3.claim_lineage import ClaimFreshness
-from app.v3.product.contracts import ProductInvestigationOutputNeed
 from app.v3.structured_transport import validate_provider_strict_schema
 from app.v3.research_manager import (
     InvestigationBranchKeyPolicy,
@@ -276,23 +275,6 @@ _ACTION_FOR_INTENT = {
 }
 
 
-_OUTPUT_NEED_GUIDANCE: dict[ProductInvestigationOutputNeed, str] = {
-    ProductInvestigationOutputNeed.RELATIONSHIP_INTERPRETATION_INPUT: (
-        "Downstream composition can call relationship interpretation only after "
-        "this exact obligation has at least one governed claim and one completed "
-        "reasoning step. Continue only through state-legal P17 moves. If legal "
-        "support cannot be established, use the existing legal stop vocabulary. "
-        "Do not invent a claim or relationship."
-    ),
-    ProductInvestigationOutputNeed.COMPETING_EXPLANATION_INPUTS: (
-        "Downstream root-cause epistemics can be called only after this exact "
-        "obligation has at least two distinct governed candidate claims. Preserve "
-        "competing branches and counter-evidence. Continue only through state-legal "
-        "P17 moves; stop legally rather than fabricate a second candidate."
-    ),
-}
-
-
 _SYSTEM = """You are Dima's bounded P17 Research Manager.
 
 Architecture:
@@ -334,7 +316,6 @@ def _strict_json_schema(schema: dict[str, Any]) -> dict[str, Any]:
         "exclusiveMaximum",
         "minItems",
         "maxItems",
-        "format",
     }
 
     def visit(node: Any) -> None:
@@ -715,7 +696,6 @@ class StructuredResearchProposalManager:
         branch_key_mode: str | None = None,
         target_parent_obligation: str | None = None,
         allowed_evidence_refs: tuple[str, ...] | None = None,
-        output_need: ProductInvestigationOutputNeed | None = None,
     ) -> ManagerProposal:
         user = (
             "Choose exactly one next bounded investigation step from this "
@@ -726,19 +706,6 @@ class StructuredResearchProposalManager:
             "Use STOP_BRANCH for one exhausted/contradicted branch and "
             "STOP_INVESTIGATION only when the whole investigation should end."
         )
-        if output_need is not None:
-            user += (
-                "\n\nPRODUCT ORCHESTRATION OUTPUT NEED JSON "
-                "(closed typed metadata; not analytical truth):\n"
-                + json.dumps(
-                    {"kind": output_need.value},
-                    ensure_ascii=False,
-                    sort_keys=True,
-                    separators=(",", ":"),
-                )
-                + "\n"
-                + _OUTPUT_NEED_GUIDANCE[output_need]
-            )
         if guidance:
             user += (
                 "\n\nBOUNDARY-SHAPE GUIDANCE (does not supply the analytical "
@@ -1016,7 +983,6 @@ class StructuredResearchProposalManager:
         *,
         target_parent_obligation: str,
         allowed_evidence_refs: tuple[str, ...],
-        output_need: ProductInvestigationOutputNeed | None = None,
     ) -> ManagerProposal:
         """Narrow provider representation to one legally rooted obligation.
 
@@ -1027,7 +993,6 @@ class StructuredResearchProposalManager:
             snapshot,
             target_parent_obligation=target_parent_obligation,
             allowed_evidence_refs=allowed_evidence_refs,
-            output_need=output_need,
         )
 
     def propose_with_guidance(

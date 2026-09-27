@@ -6,6 +6,7 @@ analytics, create Evidence, or promote causal truth.
 """
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 from enum import StrEnum
@@ -30,7 +31,10 @@ from app.v3.research_contracts import (
     ResearchScope,
     ResearchSemanticRef,
 )
-from app.v3.structured_transport import strict_json_schema
+from app.v3.structured_transport import (
+    strict_json_schema,
+    validate_provider_strict_schema,
+)
 
 
 class StructuredJSONTransport(Protocol):
@@ -98,7 +102,26 @@ class ResearchIntakeCatalog(Frozen):
 
     @property
     def fingerprint(self) -> str:
-        payload = self.model_dump(mode="json")
+        # Catalog order is presentation only. Authority identity is the set of
+        # legal semantic/relationship choices for this exact context.
+        payload = {
+            "context_version": self.context_version,
+            "semantic_refs": [
+                item.model_dump(mode="json")
+                for item in sorted(
+                    self.semantic_refs,
+                    key=lambda value: value.candidate_id,
+                )
+            ],
+            "allowed_relationships": [
+                item.model_dump(mode="json")
+                for item in sorted(
+                    self.allowed_relationships,
+                    key=lambda value: value.relationship_id,
+                )
+            ],
+            "supported_domains": sorted(self.supported_domains),
+        }
         return hashlib.sha256(
             json.dumps(
                 payload,
@@ -119,6 +142,7 @@ class ModelGoalDraft(Frozen):
     goal_key: str = Field(min_length=1, max_length=120)
     kind: ResearchGoalKind
     source_text: str = Field(min_length=1)
+    allowed_relationship_id: str | None = None
     subject_semantic_ids: tuple[str, ...] = ()
     related_semantic_ids: tuple[str, ...] = ()
     ranking: DraftRanking | None = None
@@ -205,7 +229,8 @@ Authority rules:
 - Use ONLY semantic IDs present in the supplied grounded catalog.
 - Never invent a metric, dimension, entity value, relationship, number, SQL, or factual result.
 - This step performs NO analytics and creates NO Evidence.
-- A relationship goal is legal only when the supplied catalog explicitly authorizes the pair.
+- For RELATIONSHIP, select exactly one allowed_relationship_id from the supplied catalog.
+  Do not reconstruct its left/right/dimension identities yourself.
 - If the request depends on unavailable concepts/data (including psychological/predictive truth
   not represented by the catalog), return UNSUPPORTED.
 - If the user's actual intent cannot be determined without one bounded question, return CLARIFY.
@@ -233,6 +258,96 @@ def _canonical(value: Any) -> str:
     )
 
 
+def _intake_provider_schema(
+    catalog: ResearchIntakeCatalog,
+) -> dict[str, Any]:
+    """Close every provider-selected authority ID to this exact catalog.
+
+    RELATIONSHIP uses one governed relationship identity. The provider never
+    receives left/right/dimension identity fields for that variant; the
+    deterministic compiler expands the selected relationship afterwards.
+    """
+
+    schema = strict_json_schema(ModelResearchBriefDraft)
+    definitions = schema.get("$defs") or {}
+    goal_definition = definitions.get("ModelGoalDraft")
+    if not isinstance(goal_definition, dict):
+        raise ResearchIntakeError(
+            "INTAKE_SCHEMA_INVALID",
+            "ModelGoalDraft definition is absent",
+        )
+    base_properties = goal_definition.get("properties")
+    if not isinstance(base_properties, dict):
+        raise ResearchIntakeError(
+            "INTAKE_SCHEMA_INVALID",
+            "ModelGoalDraft properties are absent",
+        )
+
+    semantic_ids = tuple(
+        sorted(item.candidate_id for item in catalog.semantic_refs)
+    )
+    relationship_ids = tuple(
+        sorted(
+            item.relationship_id
+            for item in catalog.allowed_relationships
+        )
+    )
+    common_names = (
+        "goal_key",
+        "source_text",
+        "ranking",
+        "comparison_texts",
+    )
+    variants: list[dict[str, Any]] = []
+    for kind in ResearchGoalKind:
+        if kind == ResearchGoalKind.RELATIONSHIP:
+            if not relationship_ids:
+                continue
+            properties = {
+                name: copy.deepcopy(base_properties[name])
+                for name in common_names
+            }
+            properties["kind"] = {
+                "type": "string",
+                "enum": [kind.value],
+            }
+            properties["allowed_relationship_id"] = {
+                "type": "string",
+                "enum": list(relationship_ids),
+            }
+        else:
+            properties = {
+                name: copy.deepcopy(base_properties[name])
+                for name in common_names
+            }
+            properties["kind"] = {
+                "type": "string",
+                "enum": [kind.value],
+            }
+            closed_refs = {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "enum": list(semantic_ids),
+                },
+            }
+            properties["subject_semantic_ids"] = copy.deepcopy(closed_refs)
+            properties["related_semantic_ids"] = copy.deepcopy(closed_refs)
+        variants.append(
+            {
+                "type": "object",
+                "properties": properties,
+                "required": list(properties),
+                "additionalProperties": False,
+            }
+        )
+
+    goal_definition.clear()
+    goal_definition["anyOf"] = variants
+    validate_provider_strict_schema(schema)
+    return schema
+
+
 class ResearchIntakeCompiler:
     def __init__(
         self,
@@ -251,7 +366,7 @@ class ResearchIntakeCompiler:
     def _catalog_payload(catalog: ResearchIntakeCatalog) -> dict[str, Any]:
         return {
             "context_version": catalog.context_version,
-            "supported_domains": list(catalog.supported_domains),
+            "supported_domains": sorted(catalog.supported_domains),
             "semantic_refs": [
                 {
                     "candidate_id": item.candidate_id,
@@ -263,42 +378,58 @@ class ResearchIntakeCompiler:
                     "cube_names": list(item.cube_names),
                     "sensitive": item.sensitive,
                 }
-                for item in catalog.semantic_refs
+                for item in sorted(
+                    catalog.semantic_refs,
+                    key=lambda value: value.candidate_id,
+                )
             ],
             "allowed_relationships": [
                 item.model_dump(mode="json")
-                for item in catalog.allowed_relationships
+                for item in sorted(
+                    catalog.allowed_relationships,
+                    key=lambda value: value.relationship_id,
+                )
             ],
         }
 
     @staticmethod
-    def _validate_relationship_goal(
+    def _relationship_for_goal(
         goal: ModelGoalDraft,
         *,
         catalog: ResearchIntakeCatalog,
-    ) -> None:
+    ) -> AllowedRelationship | None:
         if goal.kind != ResearchGoalKind.RELATIONSHIP:
-            return
-        refs = set((*goal.subject_semantic_ids, *goal.related_semantic_ids))
-        if len(refs) < 2:
+            if goal.allowed_relationship_id is not None:
+                raise ResearchIntakeError(
+                    "INTAKE_RELATIONSHIP_ID_ON_NON_RELATIONSHIP",
+                    goal.goal_key,
+                )
+            return None
+        if goal.subject_semantic_ids or goal.related_semantic_ids:
+            raise ResearchIntakeError(
+                "INTAKE_RELATIONSHIP_RECONSTRUCTION_FORBIDDEN",
+                goal.goal_key,
+            )
+        relationship_id = str(goal.allowed_relationship_id or "").strip()
+        if not relationship_id:
             raise ResearchIntakeError(
                 "INTAKE_RELATIONSHIP_INCOMPLETE",
                 goal.goal_key,
             )
-        legal = False
-        for rel in catalog.allowed_relationships:
-            if {rel.left_semantic_id, rel.right_semantic_id}.issubset(refs):
-                if (
-                    rel.dimension_semantic_id is None
-                    or rel.dimension_semantic_id in refs
-                ):
-                    legal = True
-                    break
-        if not legal:
+        relationship = next(
+            (
+                item
+                for item in catalog.allowed_relationships
+                if item.relationship_id == relationship_id
+            ),
+            None,
+        )
+        if relationship is None:
             raise ResearchIntakeError(
                 "INTAKE_RELATIONSHIP_UNAUTHORIZED",
                 goal.goal_key,
             )
+        return relationship
 
     @staticmethod
     def _ids(prefix: str, seed: dict[str, Any], ordinal: int) -> str:
@@ -335,7 +466,7 @@ class ResearchIntakeCompiler:
         raw = self._transport.structured_json(
             _SYSTEM,
             _canonical(user_payload),
-            schema=strict_json_schema(ModelResearchBriefDraft),
+            schema=_intake_provider_schema(catalog),
             schema_name=self._schema_name,
         )
         try:
@@ -374,16 +505,32 @@ class ResearchIntakeCompiler:
                     goal.goal_key,
                 )
             seen_goal_keys.add(goal.goal_key)
-            ids = (*goal.subject_semantic_ids, *goal.related_semantic_ids)
+            relationship = self._relationship_for_goal(
+                goal,
+                catalog=catalog,
+            )
+            if relationship is not None:
+                subject_ids = (
+                    relationship.left_semantic_id,
+                    relationship.right_semantic_id,
+                )
+                related_ids = (
+                    (relationship.dimension_semantic_id,)
+                    if relationship.dimension_semantic_id is not None
+                    else ()
+                )
+            else:
+                subject_ids = goal.subject_semantic_ids
+                related_ids = goal.related_semantic_ids
+            ids = (*subject_ids, *related_ids)
             unknown = [item for item in ids if item not in by_id]
             if unknown:
                 raise ResearchIntakeError(
                     "INTAKE_UNKNOWN_SEMANTIC_REF",
                     ",".join(sorted(set(unknown))),
                 )
-            self._validate_relationship_goal(goal, catalog=catalog)
-            subject = tuple(by_id[item] for item in goal.subject_semantic_ids)
-            related = tuple(by_id[item] for item in goal.related_semantic_ids)
+            subject = tuple(by_id[item] for item in subject_ids)
+            related = tuple(by_id[item] for item in related_ids)
             for item in (*subject, *related):
                 scope_refs.setdefault(item.candidate_id, item)
             ranking = (
