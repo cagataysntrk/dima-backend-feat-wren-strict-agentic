@@ -31,6 +31,7 @@ from app.v3.research import EvidenceRef, ObligationState, ResearchManager
 from app.v3.research_exploration import ResearchExplorationStore
 from app.v3.research_manager import (
     FollowupResult,
+    InvestigationBranchBehavior,
     InvestigationIntent,
     InvestigationTargetKind,
     InvestigationTaskStatus,
@@ -42,6 +43,7 @@ from app.v3.research_manager import (
     ResearchInvestigationManager,
     ResearchManagerMaturationError,
     ResearchReasoningBudget,
+    StopScope,
 )
 from app.v3.research_product import ResearchAskOrchestrator
 from app.v3.research_followup import NativeResearchFollowupExecutor
