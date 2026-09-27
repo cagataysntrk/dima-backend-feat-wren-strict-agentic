@@ -269,6 +269,39 @@ def _links(store_engine, session_id: str):
         )
 
 
+def _terminal_execution_lineage_valid(*, links, evidence_refs) -> bool:
+    """Validate final native occurrence lineage without rejecting legal limitation.
+
+    VERIFIED is the only execution state allowed to back exposed Evidence.
+    LIMITED is a governed terminal and must carry an explicit limitation. Any
+    non-terminal execution state remains fail-closed.
+    """
+
+    verified_evidence_ids: set[str] = set()
+    for link in links:
+        if link.status == "VERIFIED":
+            if not link.receipt_id or not link.evidence_id:
+                return False
+            verified_evidence_ids.add(link.evidence_id)
+            continue
+        if link.status == "LIMITED":
+            if not link.limitation_code or not link.limitation_detail:
+                return False
+            continue
+        return False
+    return set(evidence_refs).issubset(verified_evidence_ids)
+
+
+def _reasoning_steps_for_sessions(reasoning, session_ids):
+    """Project P17 lineage across the complete composed Research session set."""
+
+    return tuple(
+        step
+        for session_id in session_ids
+        for step in reasoning.steps(session_id)
+    )
+
+
 def _case_result(
     *,
     case_id: str,
@@ -371,13 +404,14 @@ def _case_result(
         for item in final.obligations
         if item.state.value != "VERIFIED"
     ]
-    lineage_valid = all(
-        link.status == "VERIFIED"
-        and bool(link.receipt_id)
-        and bool(link.evidence_id)
-        for link in links
+    lineage_valid = _terminal_execution_lineage_valid(
+        links=links,
+        evidence_refs=composition.evidence_refs,
     )
-    parent_reasoning_steps = reasoning.steps(final.session_id)
+    composed_reasoning_steps = _reasoning_steps_for_sessions(
+        reasoning,
+        session_ids,
+    )
     evidence_obligation_by_id = {
         item.evidence_id: item.obligation_id
         for item in final.evidence_refs
@@ -391,7 +425,7 @@ def _case_result(
     )
     scoped_steps = tuple(
         step
-        for step in parent_reasoning_steps
+        for step in composed_reasoning_steps
         if step.step_id in set(composition.p17_step_refs)
     )
     p17_target_obligation_ids = tuple(
