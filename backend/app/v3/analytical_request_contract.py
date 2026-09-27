@@ -7,6 +7,8 @@ query optimality are outside this module's authority.
 """
 from __future__ import annotations
 
+from uuid import UUID
+
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.v3.analytics_contract import (
@@ -80,6 +82,21 @@ class AnalyticalRequestObservation(FrozenModel):
     ranking: AnalyticalRankingInvariant | None = None
     grain_constraints: tuple[str, ...] = ()
     requested_output_surfaces: tuple[str, ...] = ()
+
+
+class NativeAnalyticalRequestObservation(FrozenModel):
+    """Material semantic observation bound to one exact native occurrence.
+
+    The semantics are compared to AnalyticalRequestContract. The identity fields
+    bind that observation to the exact engine attestation/artifact; no SQL/MBQL
+    representation is carried or interpreted here.
+    """
+
+    attestation_id: str = Field(min_length=1)
+    native_conversation_id: UUID
+    native_query_id: str = Field(min_length=1)
+    exact_artifact_fingerprint: str = Field(pattern=r"^[a-f0-9]{64}$")
+    request: AnalyticalRequestObservation
 
 
 class AnalyticalRequestMismatch(RuntimeError):
@@ -172,6 +189,25 @@ def observation_from_contract(
         ranking=contract.ranking,
         grain_constraints=contract.grain_constraints,
         requested_output_surfaces=contract.requested_output_surfaces,
+    )
+
+
+def native_observation_from_contract(
+    contract: AnalyticalRequestContract,
+    *,
+    attestation_id: str,
+    native_conversation_id: UUID | str,
+    native_query_id: str,
+    exact_artifact_fingerprint: str,
+) -> NativeAnalyticalRequestObservation:
+    """Adapter/test seam for already-observed native material semantics."""
+
+    return NativeAnalyticalRequestObservation(
+        attestation_id=attestation_id,
+        native_conversation_id=native_conversation_id,
+        native_query_id=native_query_id,
+        exact_artifact_fingerprint=exact_artifact_fingerprint,
+        request=observation_from_contract(contract),
     )
 
 

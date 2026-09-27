@@ -6768,9 +6768,16 @@ seal lifecycle correction:
 - exact blob validation now occurs after the affected owner regressions, so future reopens
   can prove semantics before a new pin is accepted.
 
-pending final proof:
-- update the two exact owner pins to the new blob identities above;
-- run `dima-metabase-core-a-final-closure` from the exact candidate;
-- status may become SEALED only if that run is SUCCESS.
+final Core-A seal proof:
+- exact reseal candidate SHA: `bb7b759f713076afb9562e9c49dae5acdbdf5e7e`;
+- `dima-metabase-core-a-final-closure` run `36339715760 = SUCCESS`;
+- P14 affected regression = GREEN;
+- exact research_product/research_store owner identities = GREEN;
+- Final Core A invariant budget = GREEN.
 
-status: REOPENED / RESEAL CANDIDATE / FINAL CORE-A SUCCESS PENDING.
+decision:
+The Wave-A P2 P14 owner reopen is closed. The new owner blobs are the formally
+re-authorized Core-A identities. No analytical/Evidence/USER_MUST/security ownership
+boundary changed.
+
+status: SEALED.

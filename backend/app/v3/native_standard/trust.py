@@ -7,6 +7,8 @@ access identity to P10, and receipt sealing to P5. It never parses or rewrites M
 from __future__ import annotations
 
 import copy
+import hashlib
+import json
 from typing import Any, Iterable
 
 from pydantic import BaseModel, ConfigDict
@@ -16,6 +18,8 @@ from app.v3.analytical_request_contract import (
     AnalyticalRequestContract,
     AnalyticalRequestMismatch,
     AnalyticalRequestObservation,
+    NativeAnalyticalRequestObservation,
+    analytical_request_contract_from_intent,
     assert_request_invariants,
 )
 from app.v3.execution_identity import (
@@ -26,7 +30,10 @@ from app.v3.execution_identity import (
     RuntimeIdentity,
 )
 from app.v3.native_execution import (
+    AuthorizedExecutionArtifact,
+    ExecutionArtifactStep,
     ExecutionResourceBinding,
+    ExecutionSubstrateIdentity,
     NativeCandidateAuthorization,
     NativeCandidateAuthorizationGate,
     NativeCandidateOutcome,
@@ -85,6 +92,23 @@ def _block(code: str, detail: str) -> NativeCandidateAuthorization:
         code=code,
         detail=detail,
     )
+
+
+def _exact_artifact_fingerprint(value: dict[str, Any]) -> str:
+    try:
+        raw = json.dumps(
+            value,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+            allow_nan=False,
+        )
+    except (TypeError, ValueError) as exc:
+        raise NativeStandardTrustError(
+            "NATIVE_EXACT_ARTIFACT_NOT_CANONICAL",
+            "exact native artifact is not deterministic JSON",
+        ) from exc
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
 def _single_lineage(item: MetricSpec | DimensionSpec) -> SourceLineage:
@@ -152,6 +176,282 @@ class NativeStandardTrustOrchestrator:
                 f"Dima dimension {dimension_id!r} is not uniquely defined",
             )
         return matches[0]
+
+    @staticmethod
+    def _lineage_resources(
+        *,
+        snapshot: DimaExecutionBindingSnapshot,
+        item: MetricSpec | DimensionSpec,
+    ) -> tuple[ExecutionResourceBinding, ...]:
+        if not item.source_lineage:
+            identity = getattr(
+                item,
+                "metric_id",
+                getattr(item, "dimension_id", "semantic"),
+            )
+            raise NativeStandardTrustError(
+                "V1_SEMANTIC_RESOURCE_LINEAGE_REQUIRED",
+                f"{identity} has no durable source lineage",
+            )
+        return _unique_resources(
+            _resource(snapshot.current_lineage(lineage))
+            for lineage in item.source_lineage
+        )
+
+    @classmethod
+    def _expected_v1_resources(
+        cls,
+        *,
+        intent: ResolvedAnalyticsIntent,
+        snapshot: DimaExecutionBindingSnapshot,
+    ) -> tuple[ExecutionResourceBinding, ...]:
+        """Resolve accepted semantic resources without judging native query shape."""
+
+        resources: list[ExecutionResourceBinding] = []
+
+        for metric_ref in intent.metrics:
+            metric = cls._metric(
+                snapshot,
+                snapshot.candidate(
+                    metric_ref.source_candidate_id,
+                    kind="metric",
+                ),
+            )
+            if metric.name != metric_ref.canonical_name:
+                raise NativeStandardTrustError(
+                    "V1_EXPECTED_METRIC_BINDING_INVALID",
+                    "accepted metric name differs from Dima semantic binding",
+                )
+            resources.extend(
+                cls._lineage_resources(snapshot=snapshot, item=metric)
+            )
+
+        for dimension_ref in intent.dimensions:
+            dimension = cls._dimension(
+                snapshot,
+                snapshot.candidate(
+                    dimension_ref.source_candidate_id,
+                    kind="dimension",
+                ),
+            )
+            if dimension.name != dimension_ref.canonical_name:
+                raise NativeStandardTrustError(
+                    "V1_EXPECTED_DIMENSION_BINDING_INVALID",
+                    "accepted dimension name differs from Dima semantic binding",
+                )
+            resources.extend(
+                cls._lineage_resources(snapshot=snapshot, item=dimension)
+            )
+
+        temporal_keys: list[str] = []
+        if intent.period is not None:
+            temporal_keys.append(intent.period.time_dimension)
+        if intent.comparison is not None:
+            temporal_keys.extend(
+                (
+                    intent.comparison.base_period.time_dimension,
+                    intent.comparison.reference_period.time_dimension,
+                )
+            )
+        for temporal_key in dict.fromkeys(temporal_keys):
+            dimension = cls._dimension(
+                snapshot,
+                snapshot.temporal_dimension(temporal_key),
+            )
+            resources.extend(
+                cls._lineage_resources(snapshot=snapshot, item=dimension)
+            )
+
+        for filter_ref in intent.filters:
+            dimension = cls._dimension(
+                snapshot,
+                snapshot.candidate(
+                    filter_ref.source_candidate_id,
+                    kind="filter",
+                ),
+            )
+            if dimension.name != filter_ref.dimension_name:
+                raise NativeStandardTrustError(
+                    "V1_EXPECTED_FILTER_BINDING_INVALID",
+                    "accepted filter dimension differs from Dima semantic binding",
+                )
+            resources.extend(
+                cls._lineage_resources(snapshot=snapshot, item=dimension)
+            )
+
+        resolved = _unique_resources(resources)
+        if not resolved:
+            raise NativeStandardTrustError(
+                "V1_EXPECTED_RESOURCE_IDENTITY_REQUIRED",
+                "accepted request resolves to no durable execution resources",
+            )
+        return resolved
+
+    @staticmethod
+    def _assert_v1_contract_authority(
+        *,
+        intent: ResolvedAnalyticsIntent,
+        request_contract: AnalyticalRequestContract,
+    ) -> None:
+        expected = analytical_request_contract_from_intent(
+            intent,
+            scope_lineage_id=request_contract.scope_identity.lineage_id,
+            scope_version_id=request_contract.scope_identity.version_id,
+            requested_output_surfaces=request_contract.requested_output_surfaces,
+        )
+        if expected != request_contract:
+            raise NativeStandardTrustError(
+                "ANALYTICAL_REQUEST_AUTHORITY_MISMATCH",
+                "forward request contract differs from accepted analytics authority",
+            )
+
+    @staticmethod
+    def _assert_v1_observation_identity(
+        *,
+        observation: NativeAnalyticalRequestObservation,
+        attestation: NativeAttestationEnvelope,
+    ) -> None:
+        manifest = attestation.manifest
+        checks = (
+            (
+                "V1_ATTESTATION_ID_MISMATCH",
+                observation.attestation_id,
+                manifest.attestation_id,
+            ),
+            (
+                "V1_NATIVE_CONVERSATION_MISMATCH",
+                str(observation.native_conversation_id),
+                str(manifest.native_conversation_id),
+            ),
+            (
+                "V1_NATIVE_QUERY_ID_MISMATCH",
+                observation.native_query_id,
+                manifest.native_query_id,
+            ),
+            (
+                "V1_NATIVE_ARTIFACT_FINGERPRINT_MISMATCH",
+                observation.exact_artifact_fingerprint,
+                manifest.exact_pmbql_fingerprint,
+            ),
+        )
+        for code, observed, attested in checks:
+            if observed != attested:
+                raise NativeStandardTrustError(
+                    code,
+                    "native semantic observation belongs to another exact occurrence",
+                )
+        actual = _exact_artifact_fingerprint(
+            attestation.exact_serialized_pmbql
+        )
+        if actual != manifest.exact_pmbql_fingerprint:
+            raise NativeStandardTrustError(
+                "NATIVE_EXACT_ARTIFACT_FINGERPRINT_MISMATCH",
+                "attested fingerprint differs from exact native artifact",
+            )
+
+    @staticmethod
+    def _assert_v1_attested_resource_scope(
+        *,
+        snapshot: DimaExecutionBindingSnapshot,
+        manifest: NativeExecutionManifest,
+        expected_resources: tuple[ExecutionResourceBinding, ...],
+    ) -> None:
+        expected_ids = {item.resource_id for item in expected_resources}
+        for table_id in manifest.referenced_source_table_ids:
+            observed = snapshot.current_catalog.object_for_metabase_table(
+                database_id=manifest.database_id,
+                table_id=table_id,
+            )
+            resource = _resource(observed)
+            if resource.resource_id not in expected_ids:
+                raise NativeStandardTrustError(
+                    "V1_ATTESTED_RESOURCE_SCOPE_MISMATCH",
+                    "native occurrence references a source outside accepted Dima resources",
+                )
+
+    @staticmethod
+    def _assert_shared_subject_attestation(
+        *,
+        manifest: NativeExecutionManifest,
+        verified_security_facts: VerifiedExecutionSecurityFacts,
+    ) -> None:
+        expected_subject = (
+            f"metabase-user:{manifest.authenticated_metabase_subject}"
+        )
+        if verified_security_facts.metabase_subject_ref != expected_subject:
+            raise SecurityIdentityError(
+                "P13B_METABASE_SUBJECT_MISMATCH",
+                "P10 Metabase subject differs from engine-attested subject",
+            )
+        if (
+            manifest.attestation_id
+            not in verified_security_facts.attestation_refs
+        ):
+            raise SecurityIdentityError(
+                "P13B_ATTESTATION_PROOF_MISSING",
+                "P10 facts do not reference the native engine attestation",
+            )
+
+    @staticmethod
+    def _build_v1_artifact(
+        *,
+        intent: ResolvedAnalyticsIntent,
+        request_contract: AnalyticalRequestContract,
+        attestation: NativeAttestationEnvelope,
+        expected_resources: tuple[ExecutionResourceBinding, ...],
+    ) -> AuthorizedExecutionArtifact:
+        manifest = attestation.manifest
+        runtime = manifest.runtime_identity
+        semantic_refs = tuple(
+            dict.fromkeys(
+                (
+                    *request_contract.metric_refs,
+                    *request_contract.dimension_refs,
+                    *(item.semantic_ref for item in request_contract.filters),
+                )
+            )
+        )
+        return AuthorizedExecutionArtifact(
+            authority_id=intent.authority_id,
+            projection_hash=intent.projection_hash,
+            resolved_intent_hash=intent.resolved_intent_hash,
+            semantic_context_version=intent.semantic_context_version,
+            semantic_refs=semantic_refs,
+            resource_bindings=expected_resources,
+            steps=(
+                ExecutionArtifactStep(
+                    role="primary",
+                    artifact_fingerprint=manifest.exact_pmbql_fingerprint,
+                    artifact_representation=copy.deepcopy(
+                        attestation.exact_serialized_pmbql
+                    ),
+                ),
+            ),
+            query_count=1,
+            engine_identity=ExecutionSubstrateIdentity(
+                substrate="metabase-native",
+                repository=runtime.repository,
+                revision_sha=runtime.revision_sha,
+                upstream_base_sha=runtime.upstream_base_sha,
+                runtime_tag=runtime.runtime_tag,
+                build_identity=runtime.build_identity,
+                runtime_image_identity=runtime.image_identity,
+                runtime_instance_id=runtime.runtime_instance_id,
+            ),
+            provenance_refs=(
+                manifest.attestation_id,
+                f"native-producer:{manifest.producer_tool}",
+                (
+                    "native-permission:"
+                    f"{manifest.permission_provenance.permission_check}"
+                ),
+                (
+                    "metabase-user:"
+                    f"{manifest.authenticated_metabase_subject}"
+                ),
+                "v1-material-request-observation",
+            ),
+        )
 
     @classmethod
     def _expected(
@@ -999,25 +1299,104 @@ class NativeStandardTrustOrchestrator:
         cls,
         *,
         request_contract: AnalyticalRequestContract,
-        request_observation: AnalyticalRequestObservation,
-        **existing_trust_inputs: Any,
+        native_observation: NativeAnalyticalRequestObservation,
+        intent: ResolvedAnalyticsIntent,
+        snapshot: DimaExecutionBindingSnapshot,
+        attestation: NativeAttestationEnvelope,
+        expected_engine: NativeEngineIdentity,
+        current_principal: Principal,
+        verified_security_facts: VerifiedExecutionSecurityFacts,
+        dima_request_id: str,
+        dima_trace_id: str,
+        current_lens_value_evidence: tuple[
+            CurrentLensValueEvidence, ...
+        ] = (),
     ) -> NativeStandardAuthorizationResult:
-        """V1 request-correctness seam before retained trust/certification.
+        """Forward V1 request trust without historical query-shape certification."""
 
-        This gate owns only material accepted request invariants. On success the
-        existing sealed native trust path still owns exact occurrence, engine,
-        security, resource and provenance checks.
-        """
+        del dima_request_id, dima_trace_id  # correlation is carried by exact occurrence
         try:
+            cls._assert_v1_contract_authority(
+                intent=intent,
+                request_contract=request_contract,
+            )
             assert_request_invariants(
                 request_contract,
-                request_observation,
+                native_observation.request,
             )
-        except AnalyticalRequestMismatch as exc:
+            cls._assert_v1_observation_identity(
+                observation=native_observation,
+                attestation=attestation,
+            )
+            cls._assert_engine_pin(attestation.manifest, expected_engine)
+            expected_resources = cls._expected_v1_resources(
+                intent=intent,
+                snapshot=snapshot,
+            )
+            cls._assert_v1_attested_resource_scope(
+                snapshot=snapshot,
+                manifest=attestation.manifest,
+                expected_resources=expected_resources,
+            )
+            access = ExecutionAccessSnapshotIssuer.issue_for_expected_resources(
+                current_principal=current_principal,
+                accepted_intent=intent,
+                verified_security_facts=verified_security_facts,
+                expected_source_object_refs=tuple(
+                    item.resource_id for item in expected_resources
+                ),
+            )
+            cls._assert_shared_subject_attestation(
+                manifest=attestation.manifest,
+                verified_security_facts=verified_security_facts,
+            )
+        except (
+            AnalyticalRequestMismatch,
+            NativeStandardTrustError,
+            MetabaseCompilationBlocked,
+            SecurityIdentityError,
+        ) as exc:
             return NativeStandardAuthorizationResult(
                 authorization=_block(exc.code, exc.detail)
             )
-        return cls.authorize(**existing_trust_inputs)
+
+        for accepted_filter in request_contract.filters:
+            value_result = EntityValueAdoptionGate.adjudicate(
+                proposal=EntityValueProposal(
+                    decision="BIND",
+                    semantic_ref=accepted_filter.semantic_ref,
+                    value=accepted_filter.value,
+                ),
+                allowed_semantic_scopes=(accepted_filter.semantic_ref,),
+                evidence=current_lens_value_evidence,
+                expected_access_lens_ref=access.execution_access_fingerprint,
+            )
+            if value_result.decision != EntityValueDecision.BIND:
+                return NativeStandardAuthorizationResult(
+                    authorization=_block(
+                        f"P13C_{value_result.reason_code}",
+                        "accepted filter value is not bound by exact current-lens P11 evidence",
+                    )
+                )
+
+        artifact = cls._build_v1_artifact(
+            intent=intent,
+            request_contract=request_contract,
+            attestation=attestation,
+            expected_resources=expected_resources,
+        )
+        return NativeStandardAuthorizationResult(
+            authorization=NativeCandidateAuthorization(
+                outcome=NativeCandidateOutcome.ALLOW,
+                code="V1_REQUEST_AND_TRUST_AUTHORIZED",
+                detail=(
+                    "material request invariants and shared native "
+                    "security/provenance trust are valid"
+                ),
+                authorized_artifact=artifact,
+            ),
+            access_snapshot=access,
+        )
 
     @classmethod
     def authorize(
@@ -1091,17 +1470,10 @@ class NativeStandardTrustOrchestrator:
             )
 
         manifest = attestation.manifest
-        expected_subject = f"metabase-user:{manifest.authenticated_metabase_subject}"
-        if verified_security_facts.metabase_subject_ref != expected_subject:
-            raise SecurityIdentityError(
-                "P13B_METABASE_SUBJECT_MISMATCH",
-                "P10 Metabase subject differs from engine-attested subject",
-            )
-        if manifest.attestation_id not in verified_security_facts.attestation_refs:
-            raise SecurityIdentityError(
-                "P13B_ATTESTATION_PROOF_MISSING",
-                "P10 facts do not reference the native engine attestation",
-            )
+        cls._assert_shared_subject_attestation(
+            manifest=manifest,
+            verified_security_facts=verified_security_facts,
+        )
 
         artifact = decision.authorized_artifact
         assert artifact is not None
@@ -1224,3 +1596,54 @@ class NativeStandardTrustOrchestrator:
             results=(execution_result,),
             events=(execution_event,),
         )[0]
+
+
+class NativeStandardForwardAdmission(FrozenModel):
+    authorization: NativeStandardAuthorizationResult
+    execution_request: NativeExactOccurrenceExecutionRequest | None = None
+
+
+class NativeStandardExecutionGateway:
+    """Thin production entrypoint to the single native Standard trust owner."""
+
+    def __init__(self, *, expected_engine: NativeEngineIdentity) -> None:
+        self._expected_engine = expected_engine
+
+    def admit(
+        self,
+        *,
+        request_contract: AnalyticalRequestContract,
+        native_observation: NativeAnalyticalRequestObservation,
+        intent: ResolvedAnalyticsIntent,
+        snapshot: DimaExecutionBindingSnapshot,
+        attestation: NativeAttestationEnvelope,
+        current_principal: Principal,
+        verified_security_facts: VerifiedExecutionSecurityFacts,
+        dima_request_id: str,
+        dima_trace_id: str,
+        current_lens_value_evidence: tuple[
+            CurrentLensValueEvidence, ...
+        ] = (),
+    ) -> NativeStandardForwardAdmission:
+        result = NativeStandardTrustOrchestrator.authorize_v1(
+            request_contract=request_contract,
+            native_observation=native_observation,
+            intent=intent,
+            snapshot=snapshot,
+            attestation=attestation,
+            expected_engine=self._expected_engine,
+            current_principal=current_principal,
+            verified_security_facts=verified_security_facts,
+            dima_request_id=dima_request_id,
+            dima_trace_id=dima_trace_id,
+            current_lens_value_evidence=current_lens_value_evidence,
+        )
+        if result.authorization.outcome != NativeCandidateOutcome.ALLOW:
+            return NativeStandardForwardAdmission(authorization=result)
+        return NativeStandardForwardAdmission(
+            authorization=result,
+            execution_request=NativeStandardTrustOrchestrator.execution_request(
+                result=result,
+                attestation=attestation,
+            ),
+        )

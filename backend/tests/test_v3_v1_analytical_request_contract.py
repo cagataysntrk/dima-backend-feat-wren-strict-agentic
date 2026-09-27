@@ -107,6 +107,41 @@ def test_material_request_drift_fails_closed(field, value, code):
     assert exc.value.code == code
 
 
+def test_period_filter_and_ranking_drift_fail_closed():
+    item = contract()
+
+    period_drift = observation_from_contract(item).model_copy(
+        update={
+            "period": item.period.model_copy(
+                update={"start": "2026-08-01"}
+            )
+        }
+    )
+    with pytest.raises(AnalyticalRequestMismatch) as period_exc:
+        assert_request_invariants(item, period_drift)
+    assert period_exc.value.code == "ANALYTICAL_REQUEST_TIME_MISMATCH"
+
+    filter_drift = observation_from_contract(item).model_copy(
+        update={
+            "filters": (
+                item.filters[0].model_copy(update={"value": "DE"}),
+            )
+        }
+    )
+    with pytest.raises(AnalyticalRequestMismatch) as filter_exc:
+        assert_request_invariants(item, filter_drift)
+    assert filter_exc.value.code == "ANALYTICAL_REQUEST_FILTER_MISMATCH"
+
+    ranking_drift = observation_from_contract(item).model_copy(
+        update={
+            "ranking": item.ranking.model_copy(update={"direction": "asc"})
+        }
+    )
+    with pytest.raises(AnalyticalRequestMismatch) as ranking_exc:
+        assert_request_invariants(item, ranking_drift)
+    assert ranking_exc.value.code == "ANALYTICAL_REQUEST_RANKING_MISMATCH"
+
+
 def test_scope_identity_is_lineage_plus_version_not_bare_ordinal():
     item = contract()
     observed = observation_from_contract(item).model_copy(
@@ -158,65 +193,29 @@ def test_request_contract_module_has_no_query_planner_dependency_boundary():
     }
 
 
-def test_v1_native_entry_blocks_request_drift_before_historical_trust(monkeypatch):
-    from app.v3.native_execution import NativeCandidateOutcome
+def test_v1_forward_authorize_does_not_delegate_to_historical_physical_certifier():
     from app.v3.native_standard.trust import NativeStandardTrustOrchestrator
 
-    item = contract()
-    drifted = observation_from_contract(item).model_copy(
-        update={"metric_refs": ("sem_metric_wrong",)}
+    source = inspect.getsource(NativeStandardTrustOrchestrator.authorize_v1)
+    forbidden = (
+        "cls.authorize(",
+        "cls._candidate(",
+        "_assert_shape(",
+        "_observed_metric(",
+        "_observed_time(",
+        "_observed_breakout(",
+        "_observed_ranking(",
+        "NativeCandidateAuthorizationGate",
     )
-    called = {"value": False}
-
-    def should_not_run(cls, **kwargs):
-        called["value"] = True
-        raise AssertionError("retained trust must not run after request mismatch")
-
-    monkeypatch.setattr(
-        NativeStandardTrustOrchestrator,
-        "authorize",
-        classmethod(should_not_run),
-    )
-    result = NativeStandardTrustOrchestrator.authorize_v1(
-        request_contract=item,
-        request_observation=drifted,
-    )
-    assert result.authorization.outcome == NativeCandidateOutcome.BLOCK
-    assert result.authorization.code == "ANALYTICAL_REQUEST_METRIC_MISMATCH"
-    assert called["value"] is False
+    for token in forbidden:
+        assert token not in source, token
 
 
-def test_v1_native_entry_composes_existing_trust_after_request_match(monkeypatch):
-    from app.v3.native_execution import (
-        NativeCandidateAuthorization,
-        NativeCandidateOutcome,
-    )
-    from app.v3.native_standard.trust import (
-        NativeStandardAuthorizationResult,
-        NativeStandardTrustOrchestrator,
-    )
+def test_forward_gateway_is_wired_into_canonical_native_runtime():
+    import inspect as _inspect
+    from app import main as main_module
 
-    item = contract()
-    expected = NativeStandardAuthorizationResult(
-        authorization=NativeCandidateAuthorization(
-            outcome=NativeCandidateOutcome.BLOCK,
-            code="RETAINED_TRUST_SENTINEL",
-            detail="existing trust path was reached",
-        )
-    )
-
-    def retained(cls, **kwargs):
-        assert kwargs == {"sentinel": "existing-trust"}
-        return expected
-
-    monkeypatch.setattr(
-        NativeStandardTrustOrchestrator,
-        "authorize",
-        classmethod(retained),
-    )
-    result = NativeStandardTrustOrchestrator.authorize_v1(
-        request_contract=item,
-        request_observation=observation_from_contract(item),
-        sentinel="existing-trust",
-    )
-    assert result == expected
+    source = _inspect.getsource(main_module.lifespan)
+    assert "NativeStandardExecutionGateway" in source
+    assert "app.state.native_standard_gateway" in source
+    assert "expected_engine=identity" in source

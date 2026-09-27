@@ -37,6 +37,7 @@ async def lifespan(app: FastAPI):
     app.state.research_product = ResearchAskOrchestrator(store=research_store)
     app.state.claim_lineage = ClaimLineageStore(research_store=research_store)
     app.state.research_exploration = None
+    app.state.native_standard_gateway = None
 
     # Native Metabot/Metabase is the only analytical engine. No Wren fallback exists.
     if settings.metabase_native_base_url.strip():
@@ -44,6 +45,7 @@ async def lifespan(app: FastAPI):
             NativeResearchExploration,
             ResearchExplorationStore,
         )
+        from app.v3.native_standard.trust import NativeStandardExecutionGateway
         from app.v3.research_native_gateway import (
             NativeResearchMaterialExecutor,
             NativeSubjectSessionProvider,
@@ -57,6 +59,9 @@ async def lifespan(app: FastAPI):
             runtime_image_digest=settings.metabase_engine_image_digest,
             build_identity=settings.metabase_engine_build_identity,
             runtime_image_identity=settings.metabase_engine_image_identity,
+        )
+        app.state.native_standard_gateway = NativeStandardExecutionGateway(
+            expected_engine=identity,
         )
         subjects = NativeSubjectSessionProvider(
             base_url=settings.metabase_native_base_url,

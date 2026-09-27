@@ -5,6 +5,10 @@ import json
 
 import pytest
 
+from app.v3.analytical_request_contract import (
+    analytical_request_contract_from_intent,
+    native_observation_from_contract,
+)
 from app.v3.analytics_contract import (
     PrincipalContextRef,
     ResolvedAnalyticsIntent,
@@ -15,7 +19,10 @@ from app.v3.analytics_contract import (
 )
 from app.v3.native_execution import NativeCandidateOutcome
 from app.v3.native_standard.contracts import NativeAttestationEnvelope
-from app.v3.native_standard.trust import NativeStandardTrustOrchestrator
+from app.v3.native_standard.trust import (
+    NativeStandardExecutionGateway,
+    NativeStandardTrustOrchestrator,
+)
 from app.v3.security_identity import VerifiedExecutionSecurityFacts
 from app.v3.semantic_spec import DimensionSpec, DimaSemanticSpec, MetricSpec, SourceLineage, TimeSpec
 from app.v3.substrate.metabase.execution_binding import (
@@ -870,3 +877,234 @@ def test_non_contiguous_comparison_authority_blocks():
     result = _authorize_comparison(intent=bad)
     assert result.authorization.outcome == NativeCandidateOutcome.BLOCK
     assert result.authorization.code == "P13D_COMPARISON_PERIODS_UNSUPPORTED"
+
+
+
+# --- DIMA V1 Wave-A P3 forward request trust ---
+
+
+def _v1_contract(intent=None):
+    return analytical_request_contract_from_intent(
+        intent or _intent(),
+        scope_lineage_id="atl_v1_p3",
+        scope_version_id="scope_v1",
+    )
+
+
+def _v1_observation(contract, attestation):
+    manifest = attestation.manifest
+    return native_observation_from_contract(
+        contract,
+        attestation_id=manifest.attestation_id,
+        native_conversation_id=manifest.native_conversation_id,
+        native_query_id=manifest.native_query_id,
+        exact_artifact_fingerprint=manifest.exact_pmbql_fingerprint,
+    )
+
+
+def _authorize_v1(
+    *,
+    intent=None,
+    attestation=None,
+    contract=None,
+    observation=None,
+    engine=None,
+    principal=None,
+    security=None,
+):
+    intent = intent or _intent()
+    attestation = attestation or _attestation()
+    contract = contract or _v1_contract(intent)
+    observation = observation or _v1_observation(contract, attestation)
+    return NativeStandardTrustOrchestrator.authorize_v1(
+        request_contract=contract,
+        native_observation=observation,
+        intent=intent,
+        snapshot=_snapshot(),
+        attestation=attestation,
+        expected_engine=engine or _engine(),
+        current_principal=principal or _principal(),
+        verified_security_facts=security or _security(attestation),
+        dima_request_id="dima-req-v1-forward",
+        dima_trace_id="dima-trace-v1-forward",
+    )
+
+
+def _alternative_temporal_attestation():
+    query = _query()
+    query["stages"][0]["filters"] = [
+        [
+            "between",
+            {"lib/uuid": "00000000-0000-4000-8000-000000000901"},
+            [
+                "field",
+                {"lib/uuid": "00000000-0000-4000-8000-000000000902"},
+                11,
+            ],
+            "2026-06-01",
+            "2026-07-01",
+        ]
+    ]
+    return NativeAttestationEnvelope(
+        exact_serialized_pmbql=query,
+        manifest=_manifest(
+            query=query,
+            material_filter_count=1,
+            temporal_predicates=(
+                {
+                    "time_field_id": 11,
+                    "operator": "during",
+                    "lower_bound": "2026-06-01",
+                    "upper_bound": "2026-07-01",
+                    "lower_inclusive": True,
+                    "upper_inclusive": False,
+                    "field_temporal_type": "type/DateTime",
+                    "temporal_unit": None,
+                },
+            ),
+        ),
+    )
+
+
+def test_v1_forward_trust_accepts_materially_same_request_with_legal_different_native_shape():
+    attestation = _alternative_temporal_attestation()
+
+    historical = NativeStandardTrustOrchestrator.authorize(
+        intent=_intent(),
+        snapshot=_snapshot(),
+        attestation=attestation,
+        expected_engine=_engine(),
+        current_principal=_principal(),
+        verified_security_facts=_security(attestation),
+        dima_request_id="historical-shape-check",
+        dima_trace_id="historical-shape-check",
+    )
+    assert historical.authorization.outcome == NativeCandidateOutcome.BLOCK
+    assert historical.authorization.code == "TIME_SCOPE_VIOLATION"
+
+    forward = _authorize_v1(attestation=attestation)
+    assert forward.authorization.outcome == NativeCandidateOutcome.ALLOW
+    assert forward.authorization.code == "V1_REQUEST_AND_TRUST_AUTHORIZED"
+    artifact = forward.authorization.authorized_artifact
+    assert artifact is not None
+    assert artifact.steps[0].artifact_fingerprint == attestation.manifest.exact_pmbql_fingerprint
+
+
+def test_v1_forward_gateway_is_executable_path_to_exact_occurrence():
+    attestation = _alternative_temporal_attestation()
+    intent = _intent()
+    contract = _v1_contract(intent)
+    observation = _v1_observation(contract, attestation)
+    gateway = NativeStandardExecutionGateway(expected_engine=_engine())
+
+    admitted = gateway.admit(
+        request_contract=contract,
+        native_observation=observation,
+        intent=intent,
+        snapshot=_snapshot(),
+        attestation=attestation,
+        current_principal=_principal(),
+        verified_security_facts=_security(attestation),
+        dima_request_id="gateway-v1",
+        dima_trace_id="gateway-v1",
+    )
+
+    assert admitted.authorization.authorization.outcome == NativeCandidateOutcome.ALLOW
+    request = admitted.execution_request
+    assert request is not None
+    assert request.native_conversation_id == attestation.manifest.native_conversation_id
+    assert request.native_query_id == attestation.manifest.native_query_id
+    assert request.expected_attestation_id == attestation.manifest.attestation_id
+    assert request.expected_pmbql_fingerprint == attestation.manifest.exact_pmbql_fingerprint
+
+
+def test_v1_forward_wrong_engine_blocks():
+    result = _authorize_v1(
+        engine=_engine().model_copy(update={"engine_sha": "f" * 40}),
+    )
+    assert result.authorization.outcome == NativeCandidateOutcome.BLOCK
+    assert result.authorization.code == "NATIVE_ENGINE_PIN_MISMATCH"
+
+
+@pytest.mark.parametrize(
+    ("principal", "code"),
+    [
+        (
+            Principal(
+                user_id="another-user",
+                tenant_id="tenant-boyahane",
+                tenant_slug="tenant-boyahane",
+                roles=["analyst"],
+            ),
+            "P10_CURRENT_ACCEPTED_PRINCIPAL_MISMATCH",
+        ),
+        (
+            Principal(
+                user_id="user-p13d",
+                tenant_id="another-tenant",
+                tenant_slug="another-tenant",
+                roles=["analyst"],
+            ),
+            "P10_CURRENT_ACCEPTED_TENANT_MISMATCH",
+        ),
+    ],
+)
+def test_v1_forward_wrong_principal_or_tenant_blocks(principal, code):
+    result = _authorize_v1(principal=principal)
+    assert result.authorization.outcome == NativeCandidateOutcome.BLOCK
+    assert result.authorization.code == code
+
+
+def test_v1_forward_wrong_resource_scope_blocks():
+    attestation = _attestation()
+    facts = _security(
+        attestation,
+        source_object_refs=(TABLE, TIME),
+    )
+    result = _authorize_v1(
+        attestation=attestation,
+        security=facts,
+    )
+    assert result.authorization.outcome == NativeCandidateOutcome.BLOCK
+    assert result.authorization.code == "P10_SOURCE_OBJECT_MISMATCH"
+
+
+@pytest.mark.parametrize(
+    ("update", "code"),
+    [
+        (
+            {"native_query_id": "another-native-query"},
+            "V1_NATIVE_QUERY_ID_MISMATCH",
+        ),
+        (
+            {"exact_artifact_fingerprint": "f" * 64},
+            "V1_NATIVE_ARTIFACT_FINGERPRINT_MISMATCH",
+        ),
+    ],
+)
+def test_v1_forward_wrong_occurrence_or_fingerprint_blocks(update, code):
+    attestation = _attestation()
+    contract = _v1_contract()
+    observation = _v1_observation(contract, attestation).model_copy(
+        update=update,
+    )
+    result = _authorize_v1(
+        attestation=attestation,
+        contract=contract,
+        observation=observation,
+    )
+    assert result.authorization.outcome == NativeCandidateOutcome.BLOCK
+    assert result.authorization.code == code
+
+
+def test_v1_forward_missing_attestation_proof_blocks():
+    attestation = _attestation()
+    facts = _security(attestation).model_copy(
+        update={"attestation_refs": ("dima_att_missing",)}
+    )
+    result = _authorize_v1(
+        attestation=attestation,
+        security=facts,
+    )
+    assert result.authorization.outcome == NativeCandidateOutcome.BLOCK
+    assert result.authorization.code == "P13B_ATTESTATION_PROOF_MISSING"

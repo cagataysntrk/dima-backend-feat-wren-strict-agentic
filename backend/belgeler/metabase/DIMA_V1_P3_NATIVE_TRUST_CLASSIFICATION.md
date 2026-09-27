@@ -82,3 +82,50 @@ accepted request invariants
 ```
 
 No engine selection or engine release is reopened by this classification.
+
+
+## 5. WAVE-A FORWARD IMPLEMENTATION CANDIDATE
+
+The forward V1 path now remains inside the single
+`NativeStandardTrustOrchestrator` owner but no longer delegates request
+correctness to the historical physical-certification entry contract.
+
+Candidate architecture:
+
+```text
+AnalyticalRequestContract
++ NativeAnalyticalRequestObservation
+  (material semantics + exact occurrence binding)
+→ assert material request invariants
+→ assert exact observation/attestation/artifact identity
+→ exact engine pin
+→ accepted Dima semantic-resource lineage
+→ existing P10 principal / tenant / role / resource access identity
+→ existing attested Metabase subject / permission provenance
+→ existing P11 current-lens value gate where applicable
+→ AuthorizedExecutionArtifact
+→ existing exact-occurrence execution request
+→ existing receipt correlation
+```
+
+Historical `authorize()` remains intact for P13B/P13D certification evidence.
+Forward `authorize_v1()` does not call it and does not call the historical
+candidate/shape observers.
+
+A thin `NativeStandardExecutionGateway` is wired from the canonical
+`app.main` native runtime and delegates to this same trust owner. It is an
+entry adapter, not a second trust engine.
+
+Provider-free candidate proofs cover:
+
+- metric/dimension/time/filter/ranking/grain/scope drift → BLOCK;
+- same material request with a different native temporal representation that
+  historical P13D rejects → forward V1 ALLOW when shared trust remains valid;
+- wrong engine → BLOCK;
+- wrong principal or tenant → BLOCK;
+- wrong resource scope → BLOCK;
+- wrong occurrence/fingerprint → BLOCK;
+- missing attestation proof → BLOCK;
+- exact-occurrence execution request is emitted only after forward authorization.
+
+Status remains `IN_PROGRESS` until the coherent Wave-A closure run is GREEN.
