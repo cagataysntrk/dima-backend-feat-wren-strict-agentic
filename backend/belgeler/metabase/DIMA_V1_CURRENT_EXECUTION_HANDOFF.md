@@ -38,11 +38,11 @@ The new forward V1 roadmap is:
 
 Current roadmap authority commit:
 
-`ff9fdc4cc80f1c77d5de38236d089b772e6ebe3e`
+`23256335e57213f5a09dfc6daba29313afff5e6a`
 
 Current canonical roadmap Git blob:
 
-`0d6155be37516a373b382e3a45b33cf8076c2789`
+`a1586f69ad8ccd24e78b0a74beacc46d564b0054`
 
 Historical exact-import commit:
 

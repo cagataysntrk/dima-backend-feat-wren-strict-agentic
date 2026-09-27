@@ -5,8 +5,8 @@ neutral comparison                     = COMPLETE
 winner / canonical V1 engine           = METABASE / METABOT
 engine selection                       = CLOSED
 canonical V1 roadmap                   = backend/belgeler/metabase/DIMA_V1_NIHAI_3_FAZLI_YOL_HARITASI.md
-roadmap authority commit               = ff9fdc4cc80f1c77d5de38236d089b772e6ebe3e
-roadmap canonical blob                 = 0d6155be37516a373b382e3a45b33cf8076c2789
+roadmap authority commit               = 23256335e57213f5a09dfc6daba29313afff5e6a
+roadmap canonical blob                 = a1586f69ad8ccd24e78b0a74beacc46d564b0054
 original exact-import commit           = 6c9c438841bd747aa5f1969786453a69f6ed4728
 original exact-import blob             = 139a26d308606d2651f09489ac83062891ba3c0b
 
@@ -39,7 +39,7 @@ Canonical current handoff:
 `backend/belgeler/metabase/DIMA_V1_CURRENT_EXECUTION_HANDOFF.md`
 
 The roadmap originated as an exact byte-preserving import at `6c9c438841bd747aa5f1969786453a69f6ed4728` / `139a26d308606d2651f09489ac83062891ba3c0b`.
-The current canonical authority is the surgically hardened revision `ff9fdc4cc80f1c77d5de38236d089b772e6ebe3e` / `0d6155be37516a373b382e3a45b33cf8076c2789`.
+The current canonical authority is the surgically hardened revision `23256335e57213f5a09dfc6daba29313afff5e6a` / `a1586f69ad8ccd24e78b0a74beacc46d564b0054`.
 Do not silently edit or normalize it; future changes require explicit roadmap authority.
 
 Immediate next work:

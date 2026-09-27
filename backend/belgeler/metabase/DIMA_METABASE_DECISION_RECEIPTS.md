@@ -6582,8 +6582,9 @@ evidence:
 - final neutral comparison authority selects Metabase/Metabot as canonical production foundation;
 - original exact roadmap import commit: `6c9c438841bd747aa5f1969786453a69f6ed4728`;
 - original exact roadmap blob: `139a26d308606d2651f09489ac83062891ba3c0b`;
-- current surgical roadmap amendment commit: `ff9fdc4cc80f1c77d5de38236d089b772e6ebe3e`;
-- current canonical roadmap blob: `0d6155be37516a373b382e3a45b33cf8076c2789`;
+- initial surgical hardening commit: `ff9fdc4cc80f1c77d5de38236d089b772e6ebe3e`;
+- final executable-contract roadmap authority commit: `23256335e57213f5a09dfc6daba29313afff5e6a`;
+- current canonical roadmap blob: `a1586f69ad8ccd24e78b0a74beacc46d564b0054`;
 - roadmap already prohibited fake hypotheses and a second query planner but left P19 eligibility and CI enforcement partially interpretive;
 - roadmap depth text previously said `default = 3 / configurable max = 5`, which conflicted with the stated rule not to deepen merely to satisfy depth;
 - roadmap listed five connector targets but did not freeze the first Phase-2 acceptance subset;
