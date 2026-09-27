@@ -165,7 +165,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: dima-metabase-comparison-candidate-\${{ github.run_id }}
+          name: dima-metabase-comparison-candidate
           path: backend/eval/platform/comparison_candidate.json
           if-no-files-found: error
           retention-days: 90
