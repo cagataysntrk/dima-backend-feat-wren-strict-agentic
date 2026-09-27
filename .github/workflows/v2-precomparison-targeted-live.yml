@@ -41,10 +41,11 @@ jobs:
       - name: Initialize rehearsal contract store
         working-directory: backend
         run: |
-          python -m alembic upgrade head
           python - <<'PY'
+          import control_plane.models  # register SQLModel tables before create_all
+          from control_plane.db import init_db, engine
           from sqlalchemy import inspect
-          from control_plane.db import engine
+          init_db()
           assert "contract_log" in inspect(engine).get_table_names()
           PY
       - name: Provider-free targeted preflight
