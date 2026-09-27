@@ -122,7 +122,11 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD:backend/app/v3/research_product.py)" = "4c319737e7f8d77b7b1b0bdb02c9d47fdb8b4aa8"
-          test "$(git rev-parse HEAD:backend/app/v3/research_manager.py)" = "d9a2a83e3f5e678870a2ecbaf330ccb81edb73d7"
+          # P17 is an explicitly mutable owner in the active root-recovery closure.
+          # Its current semantics are protected by the P17 provider-free + sealed
+          # deterministic suites above; do not pin its mutable implementation blob.
+          grep -q 'InvestigationBranchBehavior.GLOBAL_CONTROL' backend/app/v3/research_manager.py
+          grep -q 'P17_BRANCH_TERMINAL' backend/app/v3/research_manager.py
           test "$(git rev-parse HEAD:backend/app/v3/business_relationship_policy.py)" = "1c533667bd080331f4f2231b9d37ee0c5e532fa8"
           test "$(git rev-parse HEAD:backend/app/v3/hypothesis_root_cause.py)" = "19e4f8a2403c7e133137c106c58fa61959c4ceff"
           test "$(git rev-parse HEAD:backend/app/v3/report_document.py)" = "9eaa1478b3c3924a8b6c4e4dfe547bda1bcb343d"

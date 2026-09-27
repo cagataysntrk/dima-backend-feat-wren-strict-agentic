@@ -2616,7 +2616,7 @@ def test_dmp0053_global_control_stop_after_all_multiple_branches_closed_is_legal
 
 def test_dmp0053_global_control_legality_survives_restart_after_branch_stop():
     db = db_engine()
-    store, session, _, _, claims, service = _dmp0053_service(db)
+    store, session, _, claims, _, service = _dmp0053_service(db)
     root, _ = _dmp0053_run(
         service,
         session,
