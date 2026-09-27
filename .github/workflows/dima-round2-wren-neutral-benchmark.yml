@@ -50,10 +50,10 @@ jobs:
         working-directory: backend
         run: |
           python - <<'PY'
-          from control_plane.db import init_db
-          init_db()
+          import control_plane.models
+          from control_plane.db import init_db, engine
           from sqlalchemy import inspect
-          from control_plane.db import engine
+          init_db()
           assert "contract_log" in inspect(engine).get_table_names()
           PY
       - name: Provider-free comparison harness preflight
@@ -69,18 +69,12 @@ jobs:
           assert len({(x["feature_id"],x["difficulty"]) for x in m["cases"]}) == 30
           PY
 
-      - name: Targeted live robustness rerun
+      - name: Round2 Wren neutral live benchmark
         working-directory: backend
         run: |
-          python lab/v2_precomparison_rehearsal_live.py \
-            --max-total-model-calls 70 \
-            --output lab/reports/v2_precomparison_targeted_live.json \
-            --case-id std_clause_order \
-            --case-id relationship_explicit_tr \
-            --case-id adaptive_tr \
-            --case-id canonical_reordered \
-            --case-id restart_signed_continuation \
-            --case-id foreign_principal_replay
+          python -m lab.comparison_round2_wren \
+            --max-total-model-calls 180 \
+            --output lab/reports/round2_wren_feature_benchmark.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
