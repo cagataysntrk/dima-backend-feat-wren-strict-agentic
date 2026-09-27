@@ -6,3 +6,5 @@ max_calls=30
 purpose=wren_vs_metabase_neutral_comparison
 
 retry_harness_migration=1
+
+retry_model_registration=1
