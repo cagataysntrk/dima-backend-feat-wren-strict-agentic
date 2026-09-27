@@ -2,17 +2,17 @@
   "schema_version": "core_b_root_v2_live_authorization_v1",
   "mode": "relationship",
   "case_id": "relationship_explicit_tr",
-  "candidate_product_sha": "7996d28fea4dc982c159cbc97d5021e6f12fb229",
+  "candidate_product_sha": "1e11af5764d3c98507a31d4ea0c38aba9ad1dcc0",
   "recovery_base_sha": "eae1fd6856d75e7e2738f869d5bbe1f24fd5d309",
   "forensic_sha": "266c25a08a7f9136dd6b4d809992ccec8177aadd",
   "engine_sha": "cbe313af9ac2d5960f662068e433d328d896fb06",
   "engine_runtime": "0.63.18-dima.6",
-  "provider_free_run_id": 36302999411,
+  "provider_free_run_id": 36303539433,
   "provider_free_status": "GREEN",
-  "governance_run_id": 36302999425,
+  "governance_run_id": 36303539386,
   "governance_status": "GREEN",
   "intake_live_run_id": 36296740234,
   "intake_live_status": "GREEN",
   "max_observable_model_boundary_units": 16,
-  "purpose": "Run exactly one frozen relationship_explicit_tr end-to-end case after generic Closure-v2 lineage projection correction."
+  "purpose": "Run exactly one frozen relationship_explicit_tr end-to-end case after P17 provider datetime schema fidelity correction."
 }
