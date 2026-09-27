@@ -834,3 +834,41 @@ def test_relationship_unexpected_owner_error_fails_closed_instead_of_sealing_rep
             source_message_hash="f" * 64,
             native_session_token=None,
         )
+
+
+
+def test_repro_root_currently_enters_p17_when_p14_parent_is_limited():
+    """Provider-free reproduction for full-closure owner-callability RED."""
+
+    c, research, investigation, reasoning = composer(
+        limited_goal_ids=("g_root",),
+    )
+    b = brief(
+        question("g_root", ResearchGoalKind.ROOT_CAUSE),
+        report=True,
+    )
+    original = c._assess_root_cause
+
+    def wrapped(**kwargs):
+        reasoning.current_obligation_by_session[kwargs["session_id"]] = (
+            kwargs["goal"].goal_id
+        )
+        return original(**kwargs)
+
+    c._assess_root_cause = wrapped
+    result = c.compose(
+        brief=b,
+        principal=principal(),
+        request_ref="root-limited-repro",
+        source_message_hash="e" * 64,
+        native_session_token=None,
+    )
+
+    state = next(
+        item.state
+        for item in research.sessions[result.research_session_id].obligations
+        if item.obligation_id == "g_root"
+    )
+    assert state == ObligationState.LIMITED
+    assert investigation._state(result.research_session_id)["calls"] > 0
+    assert result.p17_step_refs
