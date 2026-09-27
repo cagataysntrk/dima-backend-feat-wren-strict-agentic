@@ -111,7 +111,8 @@ class ResearchReasoningBudget(Frozen):
     max_reasoning_steps: int = Field(default=8, ge=1, le=64)
     max_followup_native_turns: int = Field(default=4, ge=0, le=32)
     max_counter_evidence_attempts: int = Field(default=2, ge=0, le=16)
-    max_depth: int = Field(default=5, ge=0, le=16)
+    # V1 contract depth is one-based: persisted root depth 0 == contract depth 1.
+    max_depth: int = Field(default=3, ge=1, le=3)
 
 
 class ProposedClaimDraft(Frozen):
@@ -259,6 +260,11 @@ class InvestigationBranchBehavior(StrEnum):
     GLOBAL_CONTROL = "GLOBAL_CONTROL"
 
 
+class InvestigationGainRequirement(StrEnum):
+    NONE = "NONE"
+    POSITIVE_EXPECTED_GAIN = "POSITIVE_EXPECTED_GAIN"
+
+
 class InvestigationBranchKeyPolicy(StrEnum):
     REQUIRED = "REQUIRED"
     FORBIDDEN = "FORBIDDEN"
@@ -271,6 +277,9 @@ class InvestigationActionRule(Frozen):
     branch_behavior: InvestigationBranchBehavior
     branch_key_policy: InvestigationBranchKeyPolicy
     depth_delta: int = Field(default=0, ge=0, le=1)
+    gain_requirement: InvestigationGainRequirement = (
+        InvestigationGainRequirement.NONE
+    )
 
 
 class InvestigationActionProfile(Frozen):
@@ -312,6 +321,10 @@ class InvestigationNodeView(Frozen):
     stop_reason: ManagerStopReason | None = None
     stop_scope: StopScope | None = None
 
+    @property
+    def contract_depth(self) -> int:
+        return self.depth + 1
+
 
 class InvestigationGraph(Frozen):
     nodes: tuple[InvestigationNodeView, ...]
@@ -319,6 +332,12 @@ class InvestigationGraph(Frozen):
     open_branch_ids: tuple[str, ...]
     stopped_branch_ids: tuple[str, ...]
     max_observed_depth: int = Field(ge=0)
+
+    @property
+    def max_contract_depth(self) -> int:
+        if not self.nodes:
+            return 0
+        return max(item.contract_depth for item in self.nodes)
 
 
 class ParentObligationView(Frozen):
@@ -418,6 +437,10 @@ class ResearchReasoningStep(Frozen):
     result_refs: tuple[str, ...] = ()
     created_at: datetime
     completed_at: datetime | None = None
+
+    @property
+    def contract_depth(self) -> int:
+        return self.depth + 1
 
 
 class ResearchInvestigationTask(Frozen):
@@ -964,7 +987,9 @@ def _build_action_profile(
 
     open_nodes = _open_investigation_nodes(graph)
     advancing = tuple(
-        node.step_id for node in open_nodes if node.depth < max_depth
+        node.step_id
+        for node in open_nodes
+        if node.contract_depth < max_depth
     )
     open_ids = tuple(node.step_id for node in open_nodes)
     candidate_branches = {
@@ -976,7 +1001,7 @@ def _build_action_profile(
         node.step_id
         for node in open_nodes
         if node.branch_id in candidate_branches
-        and node.depth < max_depth
+        and node.contract_depth < max_depth
     )
     rules: list[InvestigationActionRule] = []
 
@@ -999,6 +1024,11 @@ def _build_action_profile(
                 branch_behavior=behavior,
                 branch_key_policy=branch_key,
                 depth_delta=depth_delta,
+                gain_requirement=(
+                    InvestigationGainRequirement.POSITIVE_EXPECTED_GAIN
+                    if depth_delta > 0
+                    else InvestigationGainRequirement.NONE
+                ),
             )
         )
 
@@ -1235,10 +1265,23 @@ def resolve_investigation_topology(
                 )
             )
 
-    if depth > snapshot.action_profile.max_depth:
+    contract_depth = depth + 1
+    if contract_depth > snapshot.action_profile.max_depth:
         raise ResearchManagerMaturationError(
             "P17_DEPTH_BUDGET_EXHAUSTED",
-            f"resolved depth {depth} exceeds max depth",
+            (
+                f"resolved contract depth {contract_depth} exceeds "
+                f"max depth {snapshot.action_profile.max_depth}"
+            ),
+        )
+    if (
+        rule.gain_requirement
+        == InvestigationGainRequirement.POSITIVE_EXPECTED_GAIN
+        and not (proposal.expected_information_gain or "").strip()
+    ):
+        raise ResearchManagerMaturationError(
+            "P17_POSITIVE_EXPECTED_GAIN_REQUIRED",
+            "depth-increasing investigation move requires typed positive expected gain",
         )
 
     stop_scope = None
@@ -1639,11 +1682,11 @@ class ResearchInvestigationManager:
                 proposal.target_parent_obligation,
             )
 
-        if topology.depth > self._budget.max_depth:
+        if topology.depth + 1 > self._budget.max_depth:
             raise ResearchManagerMaturationError(
                 "P17_DEPTH_BUDGET_EXHAUSTED",
                 (
-                    f"requested depth {topology.depth} exceeds "
+                    f"requested contract depth {topology.depth + 1} exceeds "
                     f"max_depth={self._budget.max_depth}"
                 ),
             )

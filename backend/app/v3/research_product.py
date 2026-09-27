@@ -205,6 +205,7 @@ class ResearchBriefAuthoritySealer:
         brief: ResearchBrief,
         request_ref: str,
         source_message_hash: str,
+        prior_session: ResearchSession | None = None,
     ) -> AcceptedResearchAuthority:
         if brief.status != ResearchBriefStatus.READY_FOR_RESEARCH:
             raise ResearchProductError(
@@ -232,15 +233,67 @@ class ResearchBriefAuthoritySealer:
                 "P14_RESEARCH_BRIEF_OBLIGATION_DUPLICATE",
                 "ResearchBrief contains duplicate obligation identifiers",
             )
+        scope_version = brief.scope.scope_version
+        if prior_session is None:
+            if (
+                scope_version.ordinal != 1
+                or scope_version.parent_version_id is not None
+            ):
+                raise ResearchProductError(
+                    "P14_SCOPE_LINEAGE_REQUIRED",
+                    "mutated scope requires the exact prior Research session",
+                )
+            lineage_id = (
+                "atl_"
+                + hashlib.sha256(request_ref.encode("utf-8")).hexdigest()[:20]
+            )
+            authority_version = 1
+            supersedes = None
+        else:
+            prior_brief = prior_session.accepted_brief
+            if prior_brief is None:
+                raise ResearchProductError(
+                    "P14_PRIOR_ACCEPTED_BRIEF_MISSING",
+                    "follow-up authority requires the prior immutable ResearchBrief",
+                )
+            prior_scope = prior_brief.scope.scope_version
+            if (
+                prior_session.context_version != brief.context_version
+                or prior_brief.context_version != brief.context_version
+            ):
+                raise ResearchProductError(
+                    "P14_SCOPE_CONTEXT_MISMATCH",
+                    "follow-up scope cannot silently switch semantic context",
+                )
+            if (
+                scope_version.ordinal != prior_scope.ordinal + 1
+                or scope_version.parent_version_id != prior_scope.version_id
+            ):
+                raise ResearchProductError(
+                    "P14_SCOPE_VERSION_MISMATCH",
+                    "follow-up scope must advance exactly one version from the prior session",
+                )
+            lineage_id = prior_session.lineage_id
+            authority_version = scope_version.ordinal
+            supersedes = prior_session.authority_id
+
         raw = "\x1f".join(
-            (request_ref, source_message_hash, brief.brief_id, brief.context_version)
+            (
+                request_ref,
+                source_message_hash,
+                brief.brief_id,
+                brief.context_version,
+                lineage_id,
+                str(authority_version),
+                supersedes or "",
+            )
         )
         contract_id = "atc_" + hashlib.sha256(raw.encode("utf-8")).hexdigest()[:24]
         return AcceptedResearchAuthority(
             contract_id=contract_id,
-            lineage_id="atl_"
-            + hashlib.sha256(request_ref.encode("utf-8")).hexdigest()[:20],
-            version=1,
+            lineage_id=lineage_id,
+            version=authority_version,
+            supersedes_contract_id=supersedes,
             turn_id=f"research:{brief.brief_id}",
             request_ref=request_ref,
             source_message_hash=source_message_hash,
@@ -308,14 +361,27 @@ class ResearchAskOrchestrator:
         request_ref: str,
         source_message_hash: str,
         principal: Principal,
+        prior_session_id: str | None = None,
     ) -> ResearchSession:
+        tenant = self.tenant_binding_for(principal)
+        subject = self._principal_subject(principal)
+        prior_session = (
+            self._store.assert_lineage_head(
+                self._store.load(
+                    prior_session_id,
+                    tenant=tenant,
+                    principal=subject,
+                )
+            )
+            if prior_session_id is not None
+            else None
+        )
         authority = ResearchBriefAuthoritySealer.seal(
             brief=brief,
             request_ref=request_ref,
             source_message_hash=source_message_hash,
+            prior_session=prior_session,
         )
-        tenant = self.tenant_binding_for(principal)
-        subject = self._principal_subject(principal)
         # P14 executes analytical Research questions only. Presentation deliverables
         # remain in the immutable accepted ResearchBrief and total USER_MUST authority
         # for product-level fulfillment after the relevant owner (for example P20) seals.
@@ -333,6 +399,18 @@ class ResearchAskOrchestrator:
             session,
             delegatable_ids=tuple(item.goal_id for item in brief.questions),
         )
+
+    def current_scope_state(
+        self,
+        *,
+        session_id: str,
+        principal: Principal,
+    ) -> ResearchSession:
+        session = self.resume_state(
+            session_id=session_id,
+            principal=principal,
+        )
+        return self._store.assert_lineage_head(session)
 
     def resume_state(
         self,

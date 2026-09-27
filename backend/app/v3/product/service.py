@@ -162,6 +162,33 @@ class HeadlessProductService:
             )
         )
 
+    def research_follow_up_question(
+        self,
+        *,
+        question: str,
+        catalog: ResearchIntakeCatalog,
+        prior_session_id: str,
+        principal: Principal,
+    ) -> ResearchIntakeResult:
+        """Interpret one follow-up against the exact persisted accepted turn."""
+        prior = _owner_call(
+            lambda: self._s.research.current_scope_state(
+                session_id=prior_session_id,
+                principal=principal,
+            )
+        )
+        if prior.accepted_brief is None:
+            raise ProductError(
+                ProductErrorCode.UNAVAILABLE,
+                "prior Research session has no immutable accepted ResearchBrief",
+            )
+        return self.research_question(
+            question=question,
+            catalog=catalog,
+            principal=principal,
+            prior_brief=prior.accepted_brief,
+        )
+
     def company_context(
         self,
         *,

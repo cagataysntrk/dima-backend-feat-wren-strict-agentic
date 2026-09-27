@@ -373,7 +373,9 @@ def prior_brief() -> ResearchBrief:
 
 
 def test_explicit_repair_does_not_restore_removed_prior_obligation():
-    transport = FakeTransport(ready_payload())
+    payload = ready_payload()
+    payload["scope_mutation_kind"] = "REMOVE"
+    transport = FakeTransport(payload)
     result = ResearchIntakeCompiler(
         transport=transport
     ).compile(
@@ -392,6 +394,9 @@ def test_explicit_repair_does_not_restore_removed_prior_obligation():
     }
     assert "metric.downtime" in refs
     assert "metric.fault_count" not in refs
+    assert result.scope_contract is not None
+    assert result.brief.scope.scope_version.version_id == "scope_v2"
+    assert result.brief.scope.scope_version.parent_version_id == "scope_v1"
     sent = transport.calls[0]["user"]
     assert sent["prior_brief"]["brief_id"] == "rb_prior"
     assert "CURRENT intent only" in sent["instruction"]

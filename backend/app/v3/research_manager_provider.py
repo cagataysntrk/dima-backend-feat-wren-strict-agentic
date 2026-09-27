@@ -10,7 +10,7 @@ import hashlib
 import json
 from typing import Any, Literal, Protocol
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
 from app.v3.claim_lineage import ClaimFreshness
 from app.v3.structured_transport import (
@@ -38,6 +38,10 @@ class StructuredJSONTransport(Protocol):
         schema: dict[str, Any],
         schema_name: str,
     ) -> str: ...
+
+
+class ProviderProposalInvalid(ValueError):
+    """Provider-attributable structured/semantic contract failure only."""
 
 
 class _Frozen(BaseModel):
@@ -941,6 +945,69 @@ class StructuredResearchProposalManager:
         )
         return cls._proposal(legacy)
 
+    @staticmethod
+    def _parse_provider_semantic(
+        raw: str,
+        *,
+        schema: dict[str, Any],
+        effective_intents: tuple[InvestigationIntent, ...],
+        target_objectives: tuple[str, ...],
+        closed_evidence_ids: tuple[str, ...],
+        closed_claim_ids: tuple[str, ...],
+        closed_material_ids: tuple[str, ...],
+    ) -> ResearchManagerSemanticDraft:
+        try:
+            payload = _draft_payload_from_transport(raw, schema)
+            draft = ResearchManagerSemanticDraft.model_validate(payload)
+        except (json.JSONDecodeError, ValidationError, ValueError) as exc:
+            raise ProviderProposalInvalid(
+                "provider semantic proposal failed the closed typed contract"
+            ) from exc
+        if draft.intent not in effective_intents:
+            raise ProviderProposalInvalid(
+                f"provider selected {draft.intent.value} outside the closed legal intent set"
+            )
+        if draft.target_objective not in set(target_objectives):
+            raise ProviderProposalInvalid(
+                "provider selected target objective outside the closed legal representation"
+            )
+        closed_sets = (
+            (
+                "Evidence",
+                set(draft.inspected_evidence_refs),
+                set(closed_evidence_ids),
+            ),
+            (
+                "claim",
+                set(draft.inspected_claim_refs),
+                set(closed_claim_ids),
+            ),
+            (
+                "material",
+                set(draft.inspected_material_refs),
+                set(closed_material_ids),
+            ),
+        )
+        for name, selected, legal in closed_sets:
+            if not selected.issubset(legal):
+                raise ProviderProposalInvalid(
+                    f"provider selected {name} ref outside the closed legal representation"
+                )
+        if (
+            draft.counter_to_claim_id is not None
+            and draft.counter_to_claim_id not in set(closed_claim_ids)
+        ):
+            raise ProviderProposalInvalid(
+                "provider selected counter claim outside the closed legal representation"
+            )
+        if draft.claim is not None and not set(
+            draft.claim.origin_material_refs
+        ).issubset(set(closed_material_ids)):
+            raise ProviderProposalInvalid(
+                "provider selected claim origin outside the closed legal representation"
+            )
+        return draft
+
     @classmethod
     def _provider_inconclusive(
         cls,
@@ -1049,6 +1116,22 @@ class StructuredResearchProposalManager:
                     if item.obligation_id == target_parent_obligation
                 )
             )
+        closed_evidence_ids = (
+            scoped_evidence_ids
+            if scoped_evidence_ids is not None
+            else tuple(sorted(snapshot.evidence_refs))
+        )
+        closed_claim_ids = (
+            scoped_claim_ids
+            if scoped_claim_ids is not None
+            else tuple(sorted(item.claim_id for item in snapshot.claims))
+        )
+        closed_material_ids = (
+            scoped_material_ids
+            if scoped_material_ids is not None
+            else tuple(sorted(item.lead_id for item in snapshot.materials))
+        )
+
         user += (
             "\n\nGOVERNED SNAPSHOT JSON:\n"
             + self._snapshot_payload(
@@ -1124,35 +1207,32 @@ class StructuredResearchProposalManager:
                 "type": "string",
                 "enum": list(target_objectives),
             }
-            if scoped_evidence_ids is not None:
-                props["inspected_evidence_refs"] = {
-                    "type": "array",
-                    "items": {
-                        "type": "string",
-                        "enum": list(scoped_evidence_ids),
-                    },
+            props["inspected_evidence_refs"] = {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "enum": list(closed_evidence_ids),
+                },
+            }
+            props["inspected_claim_refs"] = {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "enum": list(closed_claim_ids),
+                },
+            }
+            if "counter_to_claim_id" in props:
+                props["counter_to_claim_id"] = {
+                    "type": "string",
+                    "enum": list(closed_claim_ids),
                 }
-            if scoped_claim_ids:
-                props["inspected_claim_refs"] = {
-                    "type": "array",
-                    "items": {
-                        "type": "string",
-                        "enum": list(scoped_claim_ids),
-                    },
-                }
-                if "counter_to_claim_id" in props:
-                    props["counter_to_claim_id"] = {
-                        "type": "string",
-                        "enum": list(scoped_claim_ids),
-                    }
-            if scoped_material_ids:
-                props["inspected_material_refs"] = {
-                    "type": "array",
-                    "items": {
-                        "type": "string",
-                        "enum": list(scoped_material_ids),
-                    },
-                }
+            props["inspected_material_refs"] = {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "enum": list(closed_material_ids),
+                },
+            }
             props["branch_concept"] = (
                 {"type": "string"}
                 if rule.branch_key_policy
@@ -1199,8 +1279,7 @@ class StructuredResearchProposalManager:
                     "provider branch-key constraint cannot broaden action-profile legality"
                 )
 
-        if scoped_material_ids:
-            for definition in (schema.get("$defs") or {}).values():
+        for definition in (schema.get("$defs") or {}).values():
                 if not isinstance(definition, dict):
                     continue
                 definition_props = definition.get("properties")
@@ -1212,7 +1291,7 @@ class StructuredResearchProposalManager:
                         "type": "array",
                         "items": {
                             "type": "string",
-                            "enum": list(scoped_material_ids),
+                            "enum": list(closed_material_ids),
                         },
                     }
 
@@ -1236,21 +1315,6 @@ class StructuredResearchProposalManager:
                     schema=schema,
                     schema_name=self._schema_name,
                 )
-                self.call_count += 1
-                draft = ResearchManagerSemanticDraft.model_validate(
-                    _draft_payload_from_transport(raw, schema)
-                )
-                if draft.intent not in effective_intents:
-                    raise ValueError(
-                        f"manager emitted {draft.intent.value} outside "
-                        "state-legal bounded intent set"
-                    )
-                return self._proposal_from_semantic(
-                    draft,
-                    snapshot=snapshot,
-                    target_parent_obligation=target_parent_obligation,
-                    allowed_parent_step_ids=allowed_parent_step_ids,
-                )
             except StructuredProviderError as exc:
                 self.call_count += 1
                 if exc.code not in {
@@ -1263,12 +1327,35 @@ class StructuredResearchProposalManager:
                         snapshot,
                         target_parent_obligation=target_parent_obligation,
                     )
-            except (json.JSONDecodeError, ValueError):
+                continue
+            self.call_count += 1
+            try:
+                draft = self._parse_provider_semantic(
+                    raw,
+                    schema=schema,
+                    effective_intents=effective_intents,
+                    target_objectives=target_objectives,
+                    closed_evidence_ids=closed_evidence_ids,
+                    closed_claim_ids=closed_claim_ids,
+                    closed_material_ids=closed_material_ids,
+                )
+            except ProviderProposalInvalid:
                 if attempt == 1:
                     return self._provider_inconclusive(
                         snapshot,
                         target_parent_obligation=target_parent_obligation,
                     )
+                continue
+
+            # Permanent V1 boundary: everything below is deterministic Dima
+            # state/identity/domain binding. Internal defects fail closed and
+            # are never repaired by asking the provider again.
+            return self._proposal_from_semantic(
+                draft,
+                snapshot=snapshot,
+                target_parent_obligation=target_parent_obligation,
+                allowed_parent_step_ids=allowed_parent_step_ids,
+            )
         raise AssertionError("bounded P17 provider loop exhausted unexpectedly")
 
     def propose(self, snapshot: ResearchManagerSnapshot) -> ManagerProposal:

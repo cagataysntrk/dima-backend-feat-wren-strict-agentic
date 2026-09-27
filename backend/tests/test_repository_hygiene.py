@@ -229,9 +229,23 @@ def test_readmes_describe_only_canonical_product():
 
 
 def test_backend_belgeler_has_single_active_story():
+    import json
+
     root = BACKEND / "belgeler"
-    children = sorted(p.name for p in root.iterdir())
-    assert children == ["metabase"], children
+    lifecycle_path = root / "STORY_LIFECYCLE.json"
+    assert lifecycle_path.exists(), "story lifecycle manifest is required"
+    payload = json.loads(lifecycle_path.read_text(encoding="utf-8"))
+    assert payload.get("schema_version") == "dima-story-lifecycle-v1"
+    stories = payload.get("stories")
+    assert isinstance(stories, dict) and stories
+
+    allowed = {"ACTIVE", "HISTORICAL_EVIDENCE"}
+    assert set(stories.values()).issubset(allowed), stories
+    story_dirs = {p.name for p in root.iterdir() if p.is_dir()}
+    assert story_dirs == set(stories), (story_dirs, stories)
+    active = sorted(name for name, state in stories.items() if state == "ACTIVE")
+    assert active == ["metabase"], active
+    assert stories.get("comparison") == "HISTORICAL_EVIDENCE"
 
 
 def test_final_cleanup_helpers_are_absent():

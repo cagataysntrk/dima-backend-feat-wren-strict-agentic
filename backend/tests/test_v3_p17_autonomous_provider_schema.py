@@ -746,3 +746,94 @@ def test_v1_provider_exhausted_contract_repair_is_governed_inconclusive():
     assert proposal.stop_reason == ManagerStopReason.INCONCLUSIVE
     assert proposal.target_parent_obligation == "g_source"
     assert manager.call_count == 2
+
+
+def test_v1_internal_parent_resolution_defect_is_not_provider_repaired(monkeypatch):
+    snapshot = _scoped_snapshot()
+    transport = _SequenceTransport([_semantic_response(), _semantic_response()])
+    manager = StructuredResearchProposalManager(transport=transport)
+
+    def broken_parent(*args, **kwargs):
+        raise ValueError("deterministic parent resolution defect")
+
+    monkeypatch.setattr(
+        StructuredResearchProposalManager,
+        "_deterministic_parent_step",
+        staticmethod(broken_parent),
+    )
+    with pytest.raises(ValueError, match="deterministic parent resolution defect"):
+        manager.propose_for_obligation(
+            snapshot,
+            target_parent_obligation="g_source",
+            allowed_evidence_refs=("evi_source",),
+        )
+    assert manager.call_count == 1
+    assert len(transport.users) == 1
+
+
+def test_v1_state_profile_contradiction_is_not_converted_to_inconclusive(monkeypatch):
+    snapshot = _scoped_snapshot()
+    transport = _SequenceTransport([_semantic_response(), _semantic_response()])
+    manager = StructuredResearchProposalManager(transport=transport)
+
+    def broken_binding(*args, **kwargs):
+        raise RuntimeError("state/action-profile contradiction")
+
+    monkeypatch.setattr(
+        StructuredResearchProposalManager,
+        "_proposal_from_semantic",
+        classmethod(broken_binding),
+    )
+    with pytest.raises(RuntimeError, match="state/action-profile contradiction"):
+        manager.propose_for_obligation(
+            snapshot,
+            target_parent_obligation="g_source",
+            allowed_evidence_refs=("evi_source",),
+        )
+    assert manager.call_count == 1
+    assert len(transport.users) == 1
+
+
+def test_v1_internal_machine_identity_binding_defect_is_not_provider_repaired(monkeypatch):
+    snapshot = _scoped_snapshot()
+    transport = _SequenceTransport([_semantic_response(), _semantic_response()])
+    manager = StructuredResearchProposalManager(transport=transport)
+
+    def broken_stable(*args, **kwargs):
+        raise ValueError("machine identity binding defect")
+
+    monkeypatch.setattr(
+        StructuredResearchProposalManager,
+        "_stable",
+        staticmethod(broken_stable),
+    )
+    with pytest.raises(ValueError, match="machine identity binding defect"):
+        manager.propose_for_obligation(
+            snapshot,
+            target_parent_obligation="g_source",
+            allowed_evidence_refs=("evi_source",),
+        )
+    assert manager.call_count == 1
+    assert len(transport.users) == 1
+
+
+def test_v1_provider_closed_choice_violation_repairs_once():
+    snapshot = _scoped_snapshot()
+    transport = _SequenceTransport(
+        [
+            _semantic_response(objective="not-a-governed-objective"),
+            _semantic_response(),
+        ]
+    )
+    manager = StructuredResearchProposalManager(transport=transport)
+
+    proposal = manager.propose_for_obligation(
+        snapshot,
+        target_parent_obligation="g_source",
+        allowed_evidence_refs=("evi_source",),
+    )
+
+    assert proposal.intent == InvestigationIntent.DEEPEN_EXPLANATION
+    assert manager.call_count == 2
+    assert len(transport.users) == 2
+    assert "PROVIDER-CONTRACT REPAIR" in transport.users[1]

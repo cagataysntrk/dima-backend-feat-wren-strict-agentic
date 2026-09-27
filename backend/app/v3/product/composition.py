@@ -99,6 +99,24 @@ class ProductRequirementState(StrEnum):
     PENDING = "PENDING"
 
 
+class ProductRequirementDisposition(StrEnum):
+    FULFILLED = "FULFILLED"
+    LIMITED = "LIMITED"
+    UNSUPPORTED = "UNSUPPORTED"
+    INCONCLUSIVE = "INCONCLUSIVE"
+
+
+class ProductRequirementCompletion(Frozen):
+    requirement_id: str = Field(min_length=1)
+    disposition: ProductRequirementDisposition
+    fulfilled_by_ref: str | None = None
+
+
+class ProductCompletionLedger(Frozen):
+    entries: tuple[ProductRequirementCompletion, ...]
+    trusted_complete: bool
+
+
 class ProductRequirementFulfillment(Frozen):
     requirement_id: str = Field(min_length=1)
     requirement_kind: ProductRequirementKind
@@ -124,6 +142,7 @@ class ProductCompositionResult(Frozen):
     user_must_total: int = 0
     user_must_accounted: int = 0
     user_must_fulfilled: int = 0
+    completion_ledger: ProductCompletionLedger | None = None
     terminal_state: ProductCompositionTerminal
     currentness: ProductCompositionCurrentness = ProductCompositionCurrentness.CURRENT
 
@@ -871,6 +890,55 @@ class HeadlessProductComposer:
         )
         return tuple(projected), len(projected), accounted, fulfilled
 
+    @staticmethod
+    def _completion_ledger(
+        *,
+        brief: ResearchBrief,
+        projected: tuple[ProductRequirementFulfillment, ...],
+        terminal: ProductCompositionTerminal,
+    ) -> ProductCompletionLedger:
+        unsupported = {
+            item.requirement_id
+            for item in brief.deliverables
+            if item.kind != PresentationKind.REPORT
+        }
+        entries: list[ProductRequirementCompletion] = []
+        for item in projected:
+            if item.state in {
+                ProductRequirementState.VERIFIED,
+                ProductRequirementState.FULFILLED,
+            }:
+                disposition = ProductRequirementDisposition.FULFILLED
+            elif item.state == ProductRequirementState.LIMITED:
+                disposition = ProductRequirementDisposition.LIMITED
+            elif item.requirement_id in unsupported:
+                disposition = ProductRequirementDisposition.UNSUPPORTED
+            elif terminal == ProductCompositionTerminal.INCONCLUSIVE:
+                disposition = ProductRequirementDisposition.INCONCLUSIVE
+            elif terminal == ProductCompositionTerminal.LIMITED:
+                disposition = ProductRequirementDisposition.LIMITED
+            else:
+                raise ValueError(
+                    "trusted Product completion cannot hide a pending USER_MUST requirement"
+                )
+            entries.append(
+                ProductRequirementCompletion(
+                    requirement_id=item.requirement_id,
+                    disposition=disposition,
+                    fulfilled_by_ref=item.fulfilled_by_ref,
+                )
+            )
+
+        ids = tuple(item.requirement_id for item in entries)
+        if ids != tuple(brief.must_requirement_ids):
+            raise ValueError(
+                "Product Completion Ledger must preserve exact USER_MUST identity"
+            )
+        return ProductCompletionLedger(
+            entries=tuple(entries),
+            trusted_complete=len(entries) == len(brief.must_requirement_ids),
+        )
+
     def compose(
         self,
         *,
@@ -882,6 +950,7 @@ class HeadlessProductComposer:
         investigation_requirements: (
             tuple[ProductInvestigationRequirement, ...] | None
         ) = None,
+        prior_research_session_id: str | None = None,
     ) -> ProductCompositionResult:
         if brief.status != ResearchBriefStatus.READY_FOR_RESEARCH:
             raise ValueError("Product Composition requires accepted READY ResearchBrief")
@@ -902,6 +971,7 @@ class HeadlessProductComposer:
             request_ref=request_ref,
             source_message_hash=source_message_hash,
             principal=principal,
+            prior_session_id=prior_research_session_id,
         )
         owner_calls.append("P14")
         accepted_investigation_requirements = (
@@ -1206,6 +1276,12 @@ class HeadlessProductComposer:
             )
         )
 
+        completion_ledger = self._completion_ledger(
+            brief=brief,
+            projected=user_must,
+            terminal=terminal,
+        )
+
         return ProductCompositionResult(
             research_session_id=session.session_id,
             child_research_session_ids=tuple(child_sessions),
@@ -1228,5 +1304,6 @@ class HeadlessProductComposer:
             user_must_total=user_must_total,
             user_must_accounted=user_must_accounted,
             user_must_fulfilled=user_must_fulfilled,
+            completion_ledger=completion_ledger,
             terminal_state=terminal,
         )

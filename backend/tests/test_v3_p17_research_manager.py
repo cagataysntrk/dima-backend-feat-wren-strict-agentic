@@ -1158,8 +1158,10 @@ def test_recursive_root_child_and_restart_reconstruct_exact_topology():
 
     assert root.parent_step_id is None
     assert root.depth == 0
+    assert root.contract_depth == 1
     assert child.parent_step_id == root.step_id
     assert child.depth == 1
+    assert child.contract_depth == 2
     assert child.branch_id == root.branch_id
 
     snap = service.snapshot(
@@ -1175,6 +1177,7 @@ def test_recursive_root_child_and_restart_reconstruct_exact_topology():
     assert root_node.child_step_ids == (child.step_id,)
     assert child_node.parent_step_id == root.step_id
     assert snap.investigation.max_observed_depth == 1
+    assert snap.investigation.max_contract_depth == 2
 
     restarted_store = ResearchSessionStore(db)
     restarted = ResearchInvestigationManager(
@@ -1357,7 +1360,7 @@ def test_recursive_depth_budget_is_bounded_and_not_a_target():
             max_reasoning_steps=12,
             max_followup_native_turns=12,
             max_counter_evidence_attempts=4,
-            max_depth=1,
+            max_depth=2,
         ),
         db_engine=db,
     )
@@ -1997,7 +2000,7 @@ def test_replan_continues_manager_selected_second_sibling_branch():
             max_reasoning_steps=10,
             max_followup_native_turns=4,
             max_counter_evidence_attempts=2,
-            max_depth=5,
+            max_depth=3,
         ),
         db_engine=db,
     )
@@ -2125,7 +2128,7 @@ def test_live_canary_replan_assertion_uses_runtime_selected_parent():
 # --- DMP-DEC-0053: thin investigation language / state-derived legality ---
 
 
-def _dmp0053_service(db, *, max_depth=5, followup=None):
+def _dmp0053_service(db, *, max_depth=3, followup=None):
     store, session, _, lead, claims, claim = setup_state(db)
     service = ResearchInvestigationManager(
         research_store=store,
@@ -2647,7 +2650,7 @@ def test_dmp0053_global_control_legality_survives_restart_after_branch_stop():
             max_reasoning_steps=12,
             max_followup_native_turns=6,
             max_counter_evidence_attempts=3,
-            max_depth=5,
+            max_depth=3,
         ),
         db_engine=db,
     )
@@ -2837,7 +2840,7 @@ def test_dmp0053_foreign_obligation_parent_is_rejected():
 
 def test_dmp0053_max_depth_exhaustion_rejects_deeper_parent():
     db = db_engine()
-    _, session, _, _, _, service = _dmp0053_service(db, max_depth=1)
+    _, session, _, _, _, service = _dmp0053_service(db, max_depth=2)
     root, _ = _dmp0053_run(
         service,
         session,
@@ -3200,3 +3203,32 @@ def test_p17_native_followup_unexpected_runtime_error_is_not_swallowed():
             principal=principal(),
             manager=manager,
         )
+
+
+def test_v1_reasoning_budget_hard_caps_contract_depth_at_three():
+    assert ResearchReasoningBudget().max_depth == 3
+    with pytest.raises(ValueError):
+        ResearchReasoningBudget(max_depth=4)
+
+
+def test_v1_depth_increasing_actions_require_typed_positive_gain_rule():
+    db = db_engine()
+    _, session, _, _, _, service = _dmp0053_service(db, max_depth=3)
+    root, _ = _dmp0053_run(
+        service,
+        session,
+        proposal_id="v1-gain-root",
+        objective_key="v1.gain.root",
+        intent=InvestigationIntent.INVESTIGATE_GAP,
+    )
+    snapshot = service.snapshot(
+        session_id=session.session_id,
+        principal=principal(),
+    )
+    deepen = snapshot.action_profile.rule_for(
+        InvestigationIntent.DEEPEN_EXPLANATION
+    )
+    assert deepen is not None
+    assert root.step_id in deepen.legal_parent_step_ids
+    assert deepen.gain_requirement.value == "POSITIVE_EXPECTED_GAIN"
+    assert deepen.depth_delta == 1

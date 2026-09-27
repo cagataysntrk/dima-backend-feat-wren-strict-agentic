@@ -7,11 +7,17 @@ access identity to P10, and receipt sealing to P5. It never parses or rewrites M
 from __future__ import annotations
 
 import copy
-from typing import Iterable
+from typing import Any, Iterable
 
 from pydantic import BaseModel, ConfigDict
 
 from app.v3.analytics_contract import ResolvedAnalyticsIntent
+from app.v3.analytical_request_contract import (
+    AnalyticalRequestContract,
+    AnalyticalRequestMismatch,
+    AnalyticalRequestObservation,
+    assert_request_invariants,
+)
 from app.v3.execution_identity import (
     DimaQueryReceiptSealer,
     ExecutionAccessSnapshot,
@@ -987,6 +993,31 @@ class NativeStandardTrustOrchestrator:
                 "Platform fingerprint differs from engine-attested exact pMBQL",
             )
         return candidate, expected_resources
+
+    @classmethod
+    def authorize_v1(
+        cls,
+        *,
+        request_contract: AnalyticalRequestContract,
+        request_observation: AnalyticalRequestObservation,
+        **existing_trust_inputs: Any,
+    ) -> NativeStandardAuthorizationResult:
+        """V1 request-correctness seam before retained trust/certification.
+
+        This gate owns only material accepted request invariants. On success the
+        existing sealed native trust path still owns exact occurrence, engine,
+        security, resource and provenance checks.
+        """
+        try:
+            assert_request_invariants(
+                request_contract,
+                request_observation,
+            )
+        except AnalyticalRequestMismatch as exc:
+            return NativeStandardAuthorizationResult(
+                authorization=_block(exc.code, exc.detail)
+            )
+        return cls.authorize(**existing_trust_inputs)
 
     @classmethod
     def authorize(

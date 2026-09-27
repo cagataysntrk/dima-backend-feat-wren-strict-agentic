@@ -30,6 +30,10 @@ from app.v3.research_contracts import (
     ResearchQuestion,
     ResearchScope,
     ResearchSemanticRef,
+    ScopeMutation,
+    ScopeMutationKind,
+    TurnScopeContract,
+    apply_scope_mutation,
 )
 from app.v3.structured_transport import (
     strict_json_schema,
@@ -170,6 +174,7 @@ class ModelResearchBriefDraft(Frozen):
     investigation_directives: tuple[ModelInvestigationDirectiveDraft, ...] = ()
     time_surfaces: tuple[str, ...] = ()
     required_domains: tuple[str, ...] = ()
+    scope_mutation_kind: ScopeMutationKind | None = None
     clarification_question: str | None = None
     unsupported_reason: str | None = None
 
@@ -207,6 +212,7 @@ class ResearchIntakeResult(Frozen):
     terminal: ResearchIntakeTerminal
     brief: ResearchBrief | None = None
     investigation_requirements: tuple[ProductInvestigationRequirement, ...] = ()
+    scope_contract: TurnScopeContract | None = None
     clarification_question: str | None = None
     unsupported_reason: str | None = None
     catalog_fingerprint: str = Field(pattern=r"^[a-f0-9]{64}$")
@@ -217,8 +223,14 @@ class ResearchIntakeResult(Frozen):
         if self.terminal == ResearchIntakeTerminal.READY:
             if self.brief is None:
                 raise ValueError("READY result requires ResearchBrief")
-        elif self.brief is not None or self.investigation_requirements:
-            raise ValueError("non-READY result cannot carry ResearchBrief or product routing")
+        elif (
+            self.brief is not None
+            or self.investigation_requirements
+            or self.scope_contract is not None
+        ):
+            raise ValueError(
+                "non-READY result cannot carry ResearchBrief, scope contract, or product routing"
+            )
         return self
 
 
@@ -236,6 +248,9 @@ Authority rules:
 - If the user's actual intent cannot be determined without one bounded question, return CLARIFY.
 - For explicit corrections, the CURRENT message is authoritative: do not silently merge removed
   obligations back from prior context.
+- If prior_brief is present and the CURRENT request materially changes semantic/time scope,
+  emit exactly one typed scope_mutation_kind from the closed enum. If scope is unchanged, emit null.
+- Never emit a scope version or lineage id. Dima deterministically binds those after validation.
 - Preserve every current MUST analytical/presentation obligation as a separate goal/deliverable.
 - Adaptive instructions such as "if verified evidence reveals a new material direction, follow it"
   are Core-B product-routing intent, NOT a second analytical goal. Emit the actual analytical goal
@@ -632,6 +647,73 @@ class ResearchIntakeCompiler:
                 "READY intake must contain at least one analytical goal",
             )
 
+        draft_scope = ResearchScope(
+            semantic_refs=tuple(scope_refs.values()),
+            time_surfaces=tuple(dict.fromkeys(draft.time_surfaces)),
+        )
+        scope_contract = None
+        accepted_scope = draft_scope
+        if prior_brief is None:
+            if draft.scope_mutation_kind is not None:
+                raise ResearchIntakeError(
+                    "INTAKE_SCOPE_MUTATION_WITHOUT_PRIOR",
+                    draft.scope_mutation_kind.value,
+                )
+        else:
+            if prior_brief.context_version != catalog.context_version:
+                raise ResearchIntakeError(
+                    "INTAKE_SCOPE_CONTEXT_MISMATCH",
+                    "follow-up scope must remain inside the accepted semantic context",
+                )
+            prior_ids = {
+                item.candidate_id for item in prior_brief.scope.semantic_refs
+            }
+            current_ids = {
+                item.candidate_id for item in draft_scope.semantic_refs
+            }
+            prior_times = set(prior_brief.scope.time_surfaces)
+            current_times = set(draft_scope.time_surfaces)
+            changed = (
+                prior_ids != current_ids
+                or prior_times != current_times
+            )
+            if changed:
+                if draft.scope_mutation_kind is None:
+                    raise ResearchIntakeError(
+                        "INTAKE_SCOPE_MUTATION_KIND_REQUIRED",
+                        "material follow-up scope change requires typed mutation kind",
+                    )
+                try:
+                    scope_contract = apply_scope_mutation(
+                        prior_brief.scope,
+                        ScopeMutation(
+                            kind=draft.scope_mutation_kind,
+                            source_version_id=(
+                                prior_brief.scope.scope_version.version_id
+                            ),
+                            target_semantic_refs=draft_scope.semantic_refs,
+                            target_time_surfaces=draft_scope.time_surfaces,
+                            reason=current,
+                        ),
+                    )
+                except ValueError as exc:
+                    raise ResearchIntakeError(
+                        "INTAKE_SCOPE_MUTATION_INVALID",
+                        str(exc),
+                    ) from exc
+                accepted_scope = scope_contract.current_scope
+            else:
+                if draft.scope_mutation_kind is not None:
+                    raise ResearchIntakeError(
+                        "INTAKE_SCOPE_MUTATION_KIND_UNEXPECTED",
+                        draft.scope_mutation_kind.value,
+                    )
+                accepted_scope = ResearchScope(
+                    semantic_refs=draft_scope.semantic_refs,
+                    time_surfaces=draft_scope.time_surfaces,
+                    scope_version=prior_brief.scope.scope_version,
+                )
+
         identity = {
             "question": current,
             "prior_brief_fingerprint": (
@@ -654,10 +736,7 @@ class ResearchIntakeCompiler:
         brief = ResearchBrief(
             brief_id=brief_id,
             objective=(draft.objective or "").strip(),
-            scope=ResearchScope(
-                semantic_refs=tuple(scope_refs.values()),
-                time_surfaces=tuple(dict.fromkeys(draft.time_surfaces)),
-            ),
+            scope=accepted_scope,
             required_domains=tuple(dict.fromkeys(draft.required_domains)),
             questions=tuple(questions),
             deliverables=tuple(deliverables),
@@ -670,6 +749,7 @@ class ResearchIntakeCompiler:
             terminal=ResearchIntakeTerminal.READY,
             brief=brief,
             investigation_requirements=tuple(investigation_requirements),
+            scope_contract=scope_contract,
             catalog_fingerprint=catalog.fingerprint,
             model_calls=calls,
         )

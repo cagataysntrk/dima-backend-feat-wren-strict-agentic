@@ -112,6 +112,71 @@ class ResearchSessionStore:
             db.commit()
         return session
 
+    def assert_lineage_head(
+        self,
+        session: ResearchSession,
+    ) -> ResearchSession:
+        """Reject stale accepted scope without creating a second scope store."""
+        if session.accepted_brief is None:
+            raise ResearchPersistenceError(
+                "P14_RESEARCH_ACCEPTED_BRIEF_MISSING",
+                "scope currentness requires an immutable accepted ResearchBrief",
+            )
+        current_ordinal = session.accepted_brief.scope.scope_version.ordinal
+        peers: list[ResearchSession] = []
+        with Session(self._engine) as db:
+            records = tuple(
+                db.exec(
+                    select(ResearchSessionRecord)
+                    .where(
+                        ResearchSessionRecord.tenant_binding
+                        == session.tenant_binding
+                    )
+                    .where(
+                        ResearchSessionRecord.principal_subject
+                        == session.principal_subject
+                    )
+                ).all()
+            )
+        for record in records:
+            restored = ResearchManager.restore_checkpoint(record.checkpoint_json)
+            if restored.lineage_id == session.lineage_id:
+                peers.append(restored)
+
+        ordinals = [
+            item.accepted_brief.scope.scope_version.ordinal
+            for item in peers
+            if item.accepted_brief is not None
+        ]
+        if not ordinals:
+            raise ResearchPersistenceError(
+                "P14_RESEARCH_SCOPE_LINEAGE_MISSING",
+                session.lineage_id,
+            )
+        latest = max(ordinals)
+        if current_ordinal < latest:
+            raise ResearchPersistenceError(
+                "P14_RESEARCH_SCOPE_SUPERSEDED",
+                (
+                    f"{session.session_id} is scope_v{current_ordinal}; "
+                    f"lineage head is scope_v{latest}"
+                ),
+            )
+        heads = tuple(
+            item
+            for item in peers
+            if (
+                item.accepted_brief is not None
+                and item.accepted_brief.scope.scope_version.ordinal == latest
+            )
+        )
+        if len({item.authority_id for item in heads}) != 1:
+            raise ResearchPersistenceError(
+                "P14_RESEARCH_SCOPE_LINEAGE_AMBIGUOUS",
+                session.lineage_id,
+            )
+        return session
+
     def load(self, session_id: str, *, tenant: str, principal: str) -> ResearchSession:
         with Session(self._engine) as db:
             record = db.get(ResearchSessionRecord, session_id)
