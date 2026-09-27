@@ -6851,7 +6851,7 @@ status: RATIFIED / WAVE_GREEN.
 date: 2026-09-27
 
 status:
-REOPENED / B1 CANDIDATE / FOCUSED PROOF PENDING
+RESEAL CANDIDATE / BEHAVIOR PROOF GREEN / FINAL PIN PROOF PENDING
 
 question:
 May Wave-B B1 add the single P19 eligibility predicate, multi-factor P19 visibility and
@@ -6955,11 +6955,38 @@ first candidate diagnostic:
 - canonical governance 36343560473 = SUCCESS;
 - no stale owner blob was re-pinned after these REDs.
 
+pre-reseal proof on corrected candidate:
+- corrected behavior candidate = 8145fafdc6c3ca8a0de0a7c1ee97d0a5a9171553;
+- dima-v1-phase1-focused 36343718776 = SUCCESS;
+- P6-P8 focused step = GREEN;
+- core-b-focused 36343718778:
+  Product focused = GREEN,
+  B1 P6-P8 = GREEN,
+  P14-P19 affected regressions = 161 PASS,
+  projection-only architecture = GREEN,
+  then RED exactly at stale P19 blob guard;
+- p19-provider-free 36343718850 = SUCCESS;
+- canonical governance 36343718717 = SUCCESS;
+- core-a-final 36343718789:
+  Core-A + ActionAuthorization + Human Adoption + P21-P14 regressions all GREEN,
+  then RED exactly at stale P19 blob guard;
+- provider-free seal 36343718746:
+  B1, adaptive, campaign, intake, structured cognition, USER_MUST,
+  Product, P14/P17/P18/P19/P20/P21, control-plane and frozen canary all GREEN,
+  then RED exactly at stale P19 blob guard;
+- engine unchanged = cbe313af9ac2d5960f662068e433d328d896fb06;
+- migration head unchanged = fc8a1d0e3b42;
+- UI/frontend = 0;
+- new durable family = 0.
+
+re-pin authority:
+The candidate P19 owner blob fb6c4bfe17cd4193b9584b79fa32b63dc6c85563 is now
+authorized to replace the historical 19e4f8a2403c7e133137c106c58fa61959c4ceff
+pin in active Core-A/Core-B seal workflows. No other sealed owner pin changes.
+
 proof rule:
-Do not update the historical P19 exact blob pin before the corrected B1 candidate has run
-the focused P6-P8 proof plus affected P17/P19/Product/Core-B regressions. The expected
-pre-reseal RED, if all behavior tests are GREEN, is the intentionally stale P19 blob guard
-only.
+The re-pin commit must pass the same focused B1 + affected P17/P19/Product/Core-B/Core-A
+proofs with all exact owner guards GREEN before DMP-DEC-0066 may become SEALED.
 
 rejected shortcuts:
 - two claim ids == two hypotheses;
