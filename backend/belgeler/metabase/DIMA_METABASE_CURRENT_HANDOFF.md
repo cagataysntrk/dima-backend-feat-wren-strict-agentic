@@ -4,9 +4,11 @@
 neutral comparison                     = COMPLETE
 winner / canonical V1 engine           = METABASE / METABOT
 engine selection                       = CLOSED
-exact V1 roadmap                       = backend/belgeler/metabase/DIMA_V1_NIHAI_3_FAZLI_YOL_HARITASI.md
-roadmap authority commit               = 6c9c438841bd747aa5f1969786453a69f6ed4728
-roadmap exact blob                     = 139a26d308606d2651f09489ac83062891ba3c0b
+canonical V1 roadmap                   = backend/belgeler/metabase/DIMA_V1_NIHAI_3_FAZLI_YOL_HARITASI.md
+roadmap authority commit               = ff9fdc4cc80f1c77d5de38236d089b772e6ebe3e
+roadmap canonical blob                 = 0d6155be37516a373b382e3a45b33cf8076c2789
+original exact-import commit           = 6c9c438841bd747aa5f1969786453a69f6ed4728
+original exact-import blob             = 139a26d308606d2651f09489ac83062891ba3c0b
 
 comparison candidate baseline          = 72641b39159f11b08757048ae96644438badcc20
 engine                                 = cbe313af9ac2d5960f662068e433d328d896fb06 / 0.63.18-dima.6
@@ -36,12 +38,14 @@ Canonical current handoff:
 
 `backend/belgeler/metabase/DIMA_V1_CURRENT_EXECUTION_HANDOFF.md`
 
-The roadmap file is an exact byte-preserving copy of the user-supplied roadmap and must not be silently edited.
+The roadmap originated as an exact byte-preserving import at `6c9c438841bd747aa5f1969786453a69f6ed4728` / `139a26d308606d2651f09489ac83062891ba3c0b`.
+The current canonical authority is the surgically hardened revision `ff9fdc4cc80f1c77d5de38236d089b772e6ebe3e` / `0d6155be37516a373b382e3a45b33cf8076c2789`.
+Do not silently edit or normalize it; future changes require explicit roadmap authority.
 
 Immediate next work:
 
 ~~~text
-READ exact roadmap
+READ canonical roadmap
 → build Phase-1 current-state gap map
 → build WREN_RESEARCH_HARVEST_MATRIX
 → close measured Phase-1 gaps generically

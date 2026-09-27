@@ -6561,3 +6561,95 @@ post-freeze rule:
 No semantic patch, prompt edit, migration, authority change or provider-schema change is authorized on the frozen candidate. Only non-behavioral documentation/receipt correction is permitted unless a new external authority explicitly reopens development.
 
 status: SEALED / COMPARISON-READY.
+
+
+---
+
+## DMP-DEC-0063 — POST-COMPARISON V1 ROADMAP CONTRACT HARDENING
+
+date: 2026-09-27
+
+question:
+After Metabase/Metabot won the neutral Round-2 comparison, which surgical roadmap contracts are required before Phase-1 implementation continues so that P19 callability, recursion, analytics boundaries, connector scope, lightweight closed-loop scope and phase seals are executable rather than interpretive?
+
+options_considered:
+- leave the roadmap unchanged and let future developers interpret "eligible", recursive depth and connector scope ad hoc;
+- reopen engine selection or run DEV80/Validation50/Hidden50;
+- rewrite the roadmap broadly;
+- preserve the winning Metabase/Metabot architecture and apply only explicit contract hardening to the existing three-phase roadmap.
+
+evidence:
+- final neutral comparison authority selects Metabase/Metabot as canonical production foundation;
+- original exact roadmap import commit: `6c9c438841bd747aa5f1969786453a69f6ed4728`;
+- original exact roadmap blob: `139a26d308606d2651f09489ac83062891ba3c0b`;
+- current surgical roadmap amendment commit: `ff9fdc4cc80f1c77d5de38236d089b772e6ebe3e`;
+- current canonical roadmap blob: `0d6155be37516a373b382e3a45b33cf8076c2789`;
+- roadmap already prohibited fake hypotheses and a second query planner but left P19 eligibility and CI enforcement partially interpretive;
+- roadmap depth text previously said `default = 3 / configurable max = 5`, which conflicted with the stated rule not to deepen merely to satisfy depth;
+- roadmap listed five connector targets but did not freeze the first Phase-2 acceptance subset;
+- roadmap described Decision/Action/Outcome as lightweight but did not explicitly prevent those surfaces from expanding into separate large V1 subsystems;
+- prior recovery history showed the need for explicit reopen + re-seal discipline when a later fix touches a sealed authority.
+
+decision:
+Ratify the surgically hardened V1 roadmap with exactly these forward contracts:
+
+~~~text
+1. P19_ELIGIBLE(snapshot) is a single executable predicate:
+   ROOT_CAUSE intent
+   + current scope
+   + >=2 materially distinct typed candidate explanations
+   + governed P16 claim refs
+   + governed Evidence refs.
+   False with an available discriminating path => NEED_MORE_EVIDENCE / P17.
+   False without a legal/available discriminating path => INCONCLUSIVE.
+
+2. Recursive depth starts at 1.
+   Deepen only on typed positive expected information gain.
+   V1 hard max_depth = 3.
+
+3. AnalyticalRequestContract CI must preserve only request invariants and must forbid
+   SQL/MBQL/join-plan/aggregation/temporal/query-optimality validation by Dima.
+
+4. Initial Phase-2 connector acceptance = Demo + CSV + one primary relational connector
+   (PostgreSQL OR SQL Server). Other connectors are second wave and do not block the first full loop.
+
+5. Decision / Action / Outcome / Memory remain lightweight V1 closed-loop capabilities:
+   contextual governed decision/adoption, manual/controlled ActionWork, observed Outcome,
+   reference-first Memory. Generic autonomous execution/orchestration remains deferred.
+
+6. Every phase closes with one canonical candidate SHA + immutable acceptance receipt.
+   Later changes to a sealed prior-phase contract require explicit reopen, re-proof and re-seal.
+~~~
+
+scope:
+- documentation/roadmap authority only;
+- no production behavior changed by this receipt;
+- Phase 1 remains the active development phase;
+- Metabase/Metabot remains the closed V1 engine decision;
+- Wren remains research/epistemic pattern reference only;
+- DEV80 / Validation50 / Hidden50 remain outside the forward plan;
+- UI implementation remains forbidden until explicit user authorization;
+- external execution/Resend live remains deferred.
+
+invariants:
+- no second analytics engine;
+- no second query planner;
+- no regex/fuzzy/morphology authority for candidate distinction or request semantics;
+- no fake hypothesis generation;
+- no depth-for-depth's-sake recursion;
+- no connector-count vanity gate;
+- no autonomous external execution creep in V1 lightweight loop;
+- no silent mutation of a sealed phase.
+
+rejected_shortcuts:
+- prompt-specific benchmark patch;
+- lexical/fuzzy definition of materially distinct candidates;
+- SQL/MBQL query validator in Dima;
+- requiring all listed connectors before Phase-2 first-loop acceptance;
+- turning lightweight closed-loop surfaces into separate large V1 products;
+- modifying sealed semantics under a later-phase "small fix" without reopening the owning gate.
+
+revisit_condition:
+Only explicit roadmap authority may alter these six contracts. Implementation defects are fixed at the owning contract with focused proof and affected regression; sealed phase contracts require formal reopen/re-seal when changed.
+
+status: RATIFIED / FORWARD AUTHORITY.

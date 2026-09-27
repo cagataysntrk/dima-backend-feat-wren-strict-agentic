@@ -30,22 +30,43 @@ Winner authority:
 The final comparison explicitly selects Metabase/Metabot as the canonical production foundation.
 This decision is no longer an open engine bake-off question.
 
-## 2. Exact roadmap authority
+## 2. Canonical roadmap authority
 
 The new forward V1 roadmap is:
 
 `backend/belgeler/metabase/DIMA_V1_NIHAI_3_FAZLI_YOL_HARITASI.md`
 
-Roadmap authority commit:
+Current roadmap authority commit:
+
+`ff9fdc4cc80f1c77d5de38236d089b772e6ebe3e`
+
+Current canonical roadmap Git blob:
+
+`0d6155be37516a373b382e3a45b33cf8076c2789`
+
+Historical exact-import commit:
 
 `6c9c438841bd747aa5f1969786453a69f6ed4728`
 
-Exact roadmap Git blob:
+Historical exact-import blob:
 
 `139a26d308606d2651f09489ac83062891ba3c0b`
 
-The roadmap file is an exact byte-preserving copy of the user-supplied source.
-Do not "clean up", translate, normalize, reorder, shorten, expand or silently correct it.
+The roadmap was initially imported byte-for-byte from the user-supplied source.
+It has now been surgically amended under explicit user authority without broad rewrite.
+
+Current hardening adds only these contract families:
+
+~~~text
+P19 single executable eligibility predicate
+typed recursive deepening gate with V1 hard max_depth = 3
+AnalyticalRequestContract anti-second-planner CI boundary
+narrow Phase-2 connector acceptance scope
+lightweight V1 Decision / Action / Outcome / Memory seal
+per-phase canonical SHA + immutable acceptance receipt governance
+~~~
+
+Do not "clean up", translate, normalize, reorder, shorten, expand or otherwise rewrite unrelated roadmap text.
 
 Permanent roadmap rule:
 
@@ -276,7 +297,7 @@ DO NOT RUN DEV80.
 DO NOT REOPEN ENGINE SELECTION.
 DO NOT START UI.
 
-READ THE EXACT ROADMAP.
+READ THE CANONICAL ROADMAP.
 BUILD THE PHASE-1 GAP / HARVEST MATRIX.
 PRESERVE THE WINNING METABASE/METABOT FOUNDATION.
 CLOSE BRAIN CONVERGENCE GENERICALLY.
