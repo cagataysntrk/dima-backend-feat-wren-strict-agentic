@@ -6654,3 +6654,123 @@ revisit_condition:
 Only explicit roadmap authority may alter these six contracts. Implementation defects are fixed at the owning contract with focused proof and affected regression; sealed phase contracts require formal reopen/re-seal when changed.
 
 status: RATIFIED / FORWARD AUTHORITY.
+
+
+---
+
+## DMP-DEC-0064 — PHASE-1 WAVE-A P2 P14 SCOPE-LINEAGE OWNER REOPEN / RE-SEAL
+
+date: 2026-09-27
+
+question:
+May the sealed P14 owner identities be re-authorized for the Wave-A P2 scope-lineage
+extension without changing analytical authority, Evidence ownership, tenant/principal
+security, USER_MUST ownership, or the pinned Metabase engine?
+
+reopen reason:
+Wave-A P2 introduced first-class turn scope lineage and restart-safe scope currentness.
+The change legitimately touched two historically exact-blob-sealed P14 owners, therefore
+the prior seal had to be explicitly reopened and re-proven before a new blob pin could
+become authority.
+
+roadmap authority:
+- DMP-DEC-0063;
+- DIMA V1 Phase-1 Wave-A formal closure directive;
+- P2 requires ScopeVersion lineage, follow-up accepted authority, current lineage-head
+  enforcement, stale-scope rejection, restart-safe supersession and cross-scope isolation.
+
+exact owner identities:
+
+~~~text
+research_product.py
+old blob = 4c319737e7f8d77b7b1b0bdb02c9d47fdb8b4aa8
+new blob = 443a2e699ffc92aeb700051e57b24a709cf97b2c
+
+research_store.py
+old blob = dc08a38920ea0e330de124ad93a5b467e48968cd
+new blob = 659664fa6c8c98e724adb45025ec5e69b9fd7cea
+~~~
+
+owner-scoped semantic delta proved by exact old/new inspection:
+
+~~~text
+CHANGED
+- accepted scope lineage can advance one version from an exact prior Research session;
+- follow-up AcceptedResearchAuthority preserves lineage_id and explicitly supersedes the prior authority;
+- start_from_brief may bind the exact prior_session_id and requires the prior lineage head;
+- current_scope_state rejects a superseded Research scope;
+- ResearchSessionStore.assert_lineage_head derives restart-safe currentness from durable
+  ResearchSession checkpoints inside the same tenant/principal and lineage.
+
+UNCHANGED
+- P14 analytical obligations remain exactly ResearchBrief.questions;
+- presentation deliverables remain outside P14 analytical obligations and stay in immutable USER_MUST authority;
+- Metabase/Metabot remains the only analytical authority;
+- P14 Evidence admission/receipt authority is unchanged;
+- native occurrence correlation/delegation ownership is unchanged;
+- tenant/principal load boundary is unchanged;
+- P20/Product retain USER_MUST publication/completion ownership;
+- no new ScopeStore, analytics engine, query planner, Evidence owner or truth owner exists.
+~~~
+
+focused P2 proof already GREEN before this re-pin:
+- dima-v1-phase1-focused Wave-A P2 suite = GREEN on production-behavior candidate
+  `6673c01705cf9af5d5040bd199b243d7ca70c22b`;
+- scope integration includes production follow-up, lineage-head currentness, restart,
+  stale-scope rejection and P14/P16/P19/P20 cross-scope negative isolation.
+
+formal affected owner proof BEFORE new blob authority:
+- Core-A reopen run `36339558966`;
+- repository/control-plane preflight = 26 PASS;
+- Core A five durable owners + UX = 70 PASS;
+- ActionAuthorization = 38 PASS;
+- Human Adoption = 29 PASS;
+- P21 = 25 PASS;
+- P20 = 19 PASS;
+- P19 = 44 PASS;
+- P18 = 24 PASS;
+- P17 = 125 PASS;
+- P16 = 6 PASS;
+- P15 = 5 PASS;
+- P14 = 15 PASS;
+- the run then failed exactly at the intentionally stale old research_store/research_product
+  blob seal and nowhere earlier.
+
+Core-B proof:
+- `feat/dima-metabase-platform@fe1e7eb28c1d4a7b479fa3be5bf20ca26a556096`;
+- core-b-focused `36337112976 = SUCCESS`;
+- canonical governance `36337112981 = SUCCESS`;
+- provider-free seal canary `36337113027 = SUCCESS`.
+
+engine identity:
+- gitlink / engine revision = `cbe313af9ac2d5960f662068e433d328d896fb06`;
+- runtime tag = `0.63.18-dima.6`;
+- engine change = 0.
+
+migration identity:
+- canonical Alembic head remains `fc8a1d0e3b42`;
+- no migration was added or changed by P2.
+
+forbidden semantics confirmed absent:
+- no second analytics engine;
+- no second query planner;
+- no Wren runtime/code import;
+- no UI/frontend;
+- no raw SQL/MBQL authority in P14;
+- no new Evidence owner;
+- no USER_MUST ownership transfer into P14;
+- no tenant/principal widening;
+- no silent fallback.
+
+seal lifecycle correction:
+- every exact-blob-guarded Core-A owner now participates in that workflow's push trigger;
+- canonical repository hygiene generically checks guarded-owner / trigger-path consistency;
+- exact blob validation now occurs after the affected owner regressions, so future reopens
+  can prove semantics before a new pin is accepted.
+
+pending final proof:
+- update the two exact owner pins to the new blob identities above;
+- run `dima-metabase-core-a-final-closure` from the exact candidate;
+- status may become SEALED only if that run is SUCCESS.
+
+status: REOPENED / RESEAL CANDIDATE / FINAL CORE-A SUCCESS PENDING.
