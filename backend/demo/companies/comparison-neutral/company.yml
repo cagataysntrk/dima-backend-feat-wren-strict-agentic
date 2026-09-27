@@ -1,6 +1,5 @@
 name: comparison-neutral
-sektorler:
-- manufacturing
+sektorler: []
 diller:
 - tr
 - en
