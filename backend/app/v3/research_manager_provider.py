@@ -1146,15 +1146,69 @@ class StructuredResearchProposalManager:
                         "enum": list(scoped_claim_ids),
                     }
             if scoped_material_ids:
+                props["inspected_material_refs"] = {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "enum": list(scoped_material_ids),
+                    },
+                }
+            props["branch_concept"] = (
+                {"type": "string"}
+                if rule.branch_key_policy
+                == InvestigationBranchKeyPolicy.REQUIRED
+                else {"type": "null"}
+            )
+
+        if allowed_parent_step_ids is not None:
+            requested = set(allowed_parent_step_ids)
+            for props in property_maps:
+                intent = InvestigationIntent(props["intent"]["enum"][0])
+                rule = snapshot.action_profile.rule_for(intent)
+                assert rule is not None
+                legal = set(rule.legal_parent_step_ids)
+                if rule.allow_parentless:
+                    legal.add(None)
+                if not requested.issubset(legal):
+                    raise ValueError(
+                        "provider parent constraint cannot broaden action-profile legality"
+                    )
+
+        if branch_key_mode is not None:
+            expected = (
+                "string"
+                if all(
+                    snapshot.action_profile.rule_for(
+                        InvestigationIntent(props["intent"]["enum"][0])
+                    ).branch_key_policy
+                    == InvestigationBranchKeyPolicy.REQUIRED
+                    for props in property_maps
+                )
+                else "null"
+                if all(
+                    snapshot.action_profile.rule_for(
+                        InvestigationIntent(props["intent"]["enum"][0])
+                    ).branch_key_policy
+                    == InvestigationBranchKeyPolicy.FORBIDDEN
+                    for props in property_maps
+                )
+                else None
+            )
+            if branch_key_mode != expected:
+                raise ValueError(
+                    "provider branch-key constraint cannot broaden action-profile legality"
+                )
+
+        if scoped_material_ids:
             for definition in (schema.get("$defs") or {}).values():
                 if not isinstance(definition, dict):
                     continue
-                props = definition.get("properties")
+                definition_props = definition.get("properties")
                 if (
-                    isinstance(props, dict)
-                    and "origin_material_refs" in props
+                    isinstance(definition_props, dict)
+                    and "origin_material_refs" in definition_props
                 ):
-                    props["origin_material_refs"] = {
+                    definition_props["origin_material_refs"] = {
                         "type": "array",
                         "items": {
                             "type": "string",
