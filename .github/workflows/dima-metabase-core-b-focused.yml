@@ -57,13 +57,14 @@ jobs:
           python -m py_compile tests/test_v3_product_contracts.py
           python -m py_compile tests/test_v3_product_composition.py
           python -m py_compile tests/test_v3_product_process_manager.py
+          python -m py_compile tests/test_v3_core_b_closure_v2.py
           python -m py_compile tests/test_v3_owner_scoped_must_accounting.py
           python -m py_compile tests/test_v3_research_intake.py
           python -m py_compile tests/test_v3_p19_provider.py
 
       - name: Core B product focused proof
         working-directory: backend
-        run: pytest -q tests/test_v3_product_contracts.py tests/test_v3_product_composition.py tests/test_v3_product_process_manager.py tests/test_v3_owner_scoped_must_accounting.py tests/test_v3_research_intake.py tests/test_v3_p19_provider.py
+        run: pytest -q tests/test_v3_product_contracts.py tests/test_v3_product_composition.py tests/test_v3_product_process_manager.py tests/test_v3_core_b_closure_v2.py tests/test_v3_owner_scoped_must_accounting.py tests/test_v3_research_intake.py tests/test_v3_p19_provider.py
 
       - name: Sealed P14-P19 affected regressions
         working-directory: backend
