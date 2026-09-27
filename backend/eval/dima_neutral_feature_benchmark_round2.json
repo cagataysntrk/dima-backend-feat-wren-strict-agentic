@@ -1,0 +1,726 @@
+{
+  "version": "dima-neutral-feature-benchmark-round2-v1",
+  "frozen_at": "2026-09-27",
+  "common_feature_count": 10,
+  "case_count": 30,
+  "same_prompt_required": true,
+  "same_fixture_required": true,
+  "fixture": "backend/eval/round2_neutral_machine_fixture.json",
+  "scoring_note": "raw outputs and process telemetry are authoritative; winner scoring happens after both runs",
+  "cases": [
+    {
+      "id": "F01_S",
+      "feature_id": "F01",
+      "feature_name": "Direct Ask",
+      "difficulty": "simple",
+      "kind": "prompt",
+      "category": "F01",
+      "question": "Toplam makine duruş süresi kaç dakika?",
+      "followup": null,
+      "lanes": [
+        "STANDARD",
+        "RESEARCH"
+      ],
+      "statuses": [
+        "ANSWER",
+        "REPORT",
+        "PARTIAL",
+        "CLARIFY",
+        "UNSUPPORTED"
+      ],
+      "min_evidence": 1,
+      "verified": true,
+      "max_model_calls": 4,
+      "expected": {
+        "numeric": "all_total_downtime=2849"
+      }
+    },
+    {
+      "id": "F01_M",
+      "feature_id": "F01",
+      "feature_name": "Direct Ask",
+      "difficulty": "medium",
+      "kind": "prompt",
+      "category": "F01",
+      "question": "Haziran 2026'da toplam makine duruş süresi kaç dakika? Bölüm bazında da göster.",
+      "followup": null,
+      "lanes": [
+        "STANDARD",
+        "RESEARCH"
+      ],
+      "statuses": [
+        "ANSWER",
+        "REPORT",
+        "PARTIAL",
+        "CLARIFY",
+        "UNSUPPORTED"
+      ],
+      "min_evidence": 1,
+      "verified": true,
+      "max_model_calls": 8,
+      "expected": {
+        "numeric": "june_total_downtime=1625"
+      }
+    },
+    {
+      "id": "F01_H",
+      "feature_id": "F01",
+      "feature_name": "Direct Ask",
+      "difficulty": "hard",
+      "kind": "prompt",
+      "category": "F01",
+      "question": "Mayıs ve Haziran 2026 toplam makine duruş süresini karşılaştır; mutlak farkı ve yüzde değişimi ver, değişime en çok katkı yapan iki bölümü belirt.",
+      "followup": null,
+      "lanes": [
+        "STANDARD",
+        "RESEARCH"
+      ],
+      "statuses": [
+        "ANSWER",
+        "REPORT",
+        "PARTIAL",
+        "CLARIFY",
+        "UNSUPPORTED"
+      ],
+      "min_evidence": 1,
+      "verified": false,
+      "max_model_calls": 14,
+      "expected": {
+        "numeric": "may=1224;june=1625;delta=401;pct=32.7614;top=Assembly,Packaging"
+      }
+    },
+    {
+      "id": "F02_S",
+      "feature_id": "F02",
+      "feature_name": "Breakdown and Ranking",
+      "difficulty": "simple",
+      "kind": "prompt",
+      "category": "F02",
+      "question": "Makine duruşlarını bölüm bazında göster.",
+      "followup": null,
+      "lanes": [
+        "STANDARD",
+        "RESEARCH"
+      ],
+      "statuses": [
+        "ANSWER",
+        "REPORT",
+        "PARTIAL",
+        "CLARIFY",
+        "UNSUPPORTED"
+      ],
+      "min_evidence": 1,
+      "verified": true,
+      "max_model_calls": 4,
+      "expected": {}
+    },
+    {
+      "id": "F02_M",
+      "feature_id": "F02",
+      "feature_name": "Breakdown and Ranking",
+      "difficulty": "medium",
+      "kind": "prompt",
+      "category": "F02",
+      "question": "Bölümleri toplam makine duruş süresine göre en yüksekten en düşüğe sırala ve ilk 3 bölümü göster.",
+      "followup": null,
+      "lanes": [
+        "STANDARD",
+        "RESEARCH"
+      ],
+      "statuses": [
+        "ANSWER",
+        "REPORT",
+        "PARTIAL",
+        "CLARIFY",
+        "UNSUPPORTED"
+      ],
+      "min_evidence": 1,
+      "verified": true,
+      "max_model_calls": 8,
+      "expected": {
+        "ranking": [
+          "Assembly",
+          "Packaging",
+          "Utilities"
+        ]
+      }
+    },
+    {
+      "id": "F02_H",
+      "feature_id": "F02",
+      "feature_name": "Breakdown and Ranking",
+      "difficulty": "hard",
+      "kind": "prompt",
+      "category": "F02",
+      "question": "Haziran 2026'da bölüm bazında toplam duruş, toplam arıza sayısı ve ortalama performansı birlikte göster; en yüksek duruşlu üç bölümü sırala ve arıza/performance bağlamını da ekle.",
+      "followup": null,
+      "lanes": [
+        "STANDARD",
+        "RESEARCH"
+      ],
+      "statuses": [
+        "ANSWER",
+        "REPORT",
+        "PARTIAL",
+        "CLARIFY",
+        "UNSUPPORTED"
+      ],
+      "min_evidence": 2,
+      "verified": false,
+      "max_model_calls": 14,
+      "expected": {}
+    },
+    {
+      "id": "F03_S",
+      "feature_id": "F03",
+      "feature_name": "Period and Multi-metric Comparison",
+      "difficulty": "simple",
+      "kind": "prompt",
+      "category": "F03",
+      "question": "Arıza sayısını bölüm bazında göster.",
+      "followup": null,
+      "lanes": [
+        "STANDARD",
+        "RESEARCH"
+      ],
+      "statuses": [
+        "ANSWER",
+        "REPORT",
+        "PARTIAL",
+        "CLARIFY",
+        "UNSUPPORTED"
+      ],
+      "min_evidence": 1,
+      "verified": true,
+      "max_model_calls": 4,
+      "expected": {}
+    },
+    {
+      "id": "F03_M",
+      "feature_id": "F03",
+      "feature_name": "Period and Multi-metric Comparison",
+      "difficulty": "medium",
+      "kind": "prompt",
+      "category": "F03",
+      "question": "Mayıs ve Haziran 2026 arıza sayılarını bölüm bazında karşılaştır.",
+      "followup": null,
+      "lanes": [
+        "STANDARD",
+        "RESEARCH"
+      ],
+      "statuses": [
+        "ANSWER",
+        "REPORT",
+        "PARTIAL",
+        "CLARIFY",
+        "UNSUPPORTED"
+      ],
+      "min_evidence": 1,
+      "verified": false,
+      "max_model_calls": 8,
+      "expected": {}
+    },
+    {
+      "id": "F03_H",
+      "feature_id": "F03",
+      "feature_name": "Period and Multi-metric Comparison",
+      "difficulty": "hard",
+      "kind": "prompt",
+      "category": "F03",
+      "question": "Mayıs-Haziran 2026 arasında her bölüm için duruş, arıza ve ortalama performans değişimini birlikte karşılaştır; hangi bölümlerde üç gösterge aynı yönde kötüleştiğini belirt.",
+      "followup": null,
+      "lanes": [
+        "STANDARD",
+        "RESEARCH"
+      ],
+      "statuses": [
+        "ANSWER",
+        "REPORT",
+        "PARTIAL",
+        "CLARIFY",
+        "UNSUPPORTED"
+      ],
+      "min_evidence": 2,
+      "verified": false,
+      "max_model_calls": 14,
+      "expected": {
+        "qualitative": "Assembly,Packaging,Maintenance,Quality,Utilities all worsen in downtime+faults/performance non-improving; Assembly strongest"
+      }
+    },
+    {
+      "id": "F04_S",
+      "feature_id": "F04",
+      "feature_name": "Multi-intent Synthesis",
+      "difficulty": "simple",
+      "kind": "prompt",
+      "category": "F04",
+      "question": "Bölüm bazında duruş ve arıza sayısını birlikte özetle.",
+      "followup": null,
+      "lanes": [
+        "STANDARD",
+        "RESEARCH"
+      ],
+      "statuses": [
+        "ANSWER",
+        "REPORT",
+        "PARTIAL",
+        "CLARIFY",
+        "UNSUPPORTED"
+      ],
+      "min_evidence": 1,
+      "verified": false,
+      "max_model_calls": 4,
+      "expected": {}
+    },
+    {
+      "id": "F04_M",
+      "feature_id": "F04",
+      "feature_name": "Multi-intent Synthesis",
+      "difficulty": "medium",
+      "kind": "prompt",
+      "category": "F04",
+      "question": "Haziran 2026 için duruş, arıza, performans ve bakım gecikmesini bölüm bazında birlikte analiz et; yönetimin dikkat etmesi gereken ilk iki bölümü belirt.",
+      "followup": null,
+      "lanes": [
+        "STANDARD",
+        "RESEARCH"
+      ],
+      "statuses": [
+        "ANSWER",
+        "REPORT",
+        "PARTIAL",
+        "CLARIFY",
+        "UNSUPPORTED"
+      ],
+      "min_evidence": 2,
+      "verified": false,
+      "max_model_calls": 8,
+      "expected": {}
+    },
+    {
+      "id": "F04_H",
+      "feature_id": "F04",
+      "feature_name": "Multi-intent Synthesis",
+      "difficulty": "hard",
+      "kind": "prompt",
+      "category": "F04",
+      "question": "Mayıs-Haziran 2026 üretim görünümünü duruş, arıza, performans, bakım gecikmesi, yedek parça gecikmesi, önleyici bakım uyumu ve changeover üzerinden birlikte araştır; çelişkili sinyalleri saklama, kanıta bağlı kısa yönetim raporu üret.",
+      "followup": null,
+      "lanes": [
+        "STANDARD",
+        "RESEARCH"
+      ],
+      "statuses": [
+        "REPORT",
+        "PARTIAL"
+      ],
+      "min_evidence": 3,
+      "verified": false,
+      "max_model_calls": 14,
+      "expected": {}
+    },
+    {
+      "id": "F05_S",
+      "feature_id": "F05",
+      "feature_name": "Relationship Reasoning",
+      "difficulty": "simple",
+      "kind": "prompt",
+      "category": "F05",
+      "question": "Duruş süresi ile arıza sayısı arasında bölüm bazında ilişki var mı? Kesin nedensellik iddia etme.",
+      "followup": null,
+      "lanes": [
+        "STANDARD",
+        "RESEARCH"
+      ],
+      "statuses": [
+        "ANSWER",
+        "REPORT",
+        "PARTIAL",
+        "CLARIFY",
+        "UNSUPPORTED"
+      ],
+      "min_evidence": 1,
+      "verified": false,
+      "max_model_calls": 4,
+      "expected": {}
+    },
+    {
+      "id": "F05_M",
+      "feature_id": "F05",
+      "feature_name": "Relationship Reasoning",
+      "difficulty": "medium",
+      "kind": "prompt",
+      "category": "F05",
+      "question": "Duruş süresi ile arıza sayısı arasındaki ilişkiyi bölüm bazında araştır; ilişkinin hangi bölümlerde daha belirgin göründüğünü kanıtla ve nedensellik iddia etme.",
+      "followup": null,
+      "lanes": [
+        "STANDARD",
+        "RESEARCH"
+      ],
+      "statuses": [
+        "REPORT",
+        "PARTIAL"
+      ],
+      "min_evidence": 2,
+      "verified": false,
+      "max_model_calls": 8,
+      "expected": {}
+    },
+    {
+      "id": "F05_H",
+      "feature_id": "F05",
+      "feature_name": "Relationship Reasoning",
+      "difficulty": "hard",
+      "kind": "prompt",
+      "category": "F05",
+      "question": "Duruş, arıza, bakım gecikmesi ve performans arasındaki ilişkileri birlikte araştır; hangi ilişkilerin daha güçlü veya zayıf göründüğünü supporting ve challenging evidence ile raporla, nedenselliği kanıtlanmış gibi sunma.",
+      "followup": null,
+      "lanes": [
+        "STANDARD",
+        "RESEARCH"
+      ],
+      "statuses": [
+        "REPORT",
+        "PARTIAL"
+      ],
+      "min_evidence": 3,
+      "verified": false,
+      "max_model_calls": 14,
+      "expected": {}
+    },
+    {
+      "id": "F06_S",
+      "feature_id": "F06",
+      "feature_name": "Adaptive Investigation",
+      "difficulty": "simple",
+      "kind": "prompt",
+      "category": "F06",
+      "question": "Makine duruşlarını bölüm bazında araştır; doğrulanmış maddi bir kırılım görürsen o yönü takip et ve ne öğrendiğini söyle.",
+      "followup": null,
+      "lanes": [
+        "STANDARD",
+        "RESEARCH"
+      ],
+      "statuses": [
+        "REPORT",
+        "PARTIAL"
+      ],
+      "min_evidence": 1,
+      "verified": false,
+      "max_model_calls": 4,
+      "expected": {}
+    },
+    {
+      "id": "F06_M",
+      "feature_id": "F06",
+      "feature_name": "Adaptive Investigation",
+      "difficulty": "medium",
+      "kind": "prompt",
+      "category": "F06",
+      "question": "Mayıs-Haziran duruş değişimini araştır; en çok bozulan bölümü bul, sonra o bölüm içinde makine veya ilgili operasyonel faktör bazında bir seviye daha derinleş ve seçimini kanıtla.",
+      "followup": null,
+      "lanes": [
+        "STANDARD",
+        "RESEARCH"
+      ],
+      "statuses": [
+        "REPORT",
+        "PARTIAL"
+      ],
+      "min_evidence": 2,
+      "verified": false,
+      "max_model_calls": 8,
+      "expected": {}
+    },
+    {
+      "id": "F06_H",
+      "feature_id": "F06",
+      "feature_name": "Adaptive Investigation",
+      "difficulty": "hard",
+      "kind": "prompt",
+      "category": "F06",
+      "question": "Mayıs-Haziran duruş bozulmasını araştır. İlk bulgudan sonra en maddi yeni yönü seçip en az iki farklı analitik derinleşme yap; her adımda neden o yönü seçtiğini, hangi kanıtın kararı değiştirdiğini ve nerede durduğunu açıkça kaydet.",
+      "followup": null,
+      "lanes": [
+        "STANDARD",
+        "RESEARCH"
+      ],
+      "statuses": [
+        "REPORT",
+        "PARTIAL"
+      ],
+      "min_evidence": 3,
+      "verified": false,
+      "max_model_calls": 14,
+      "expected": {}
+    },
+    {
+      "id": "F07_S",
+      "feature_id": "F07",
+      "feature_name": "Root Cause and Hypothesis Competition",
+      "difficulty": "simple",
+      "kind": "prompt",
+      "category": "F07",
+      "question": "Duruşlardaki Mayıs-Haziran bozulmasının olası nedenlerini araştır; kesin nedensellik iddia etmeden güçlü ve zayıf adayları ayır.",
+      "followup": null,
+      "lanes": [
+        "STANDARD",
+        "RESEARCH"
+      ],
+      "statuses": [
+        "REPORT",
+        "PARTIAL"
+      ],
+      "min_evidence": 1,
+      "verified": false,
+      "max_model_calls": 4,
+      "expected": {}
+    },
+    {
+      "id": "F07_M",
+      "feature_id": "F07",
+      "feature_name": "Root Cause and Hypothesis Competition",
+      "difficulty": "medium",
+      "kind": "prompt",
+      "category": "F07",
+      "question": "Duruş artışını açıklayabilecek arıza sayısı, bakım gecikmesi, yedek parça gecikmesi ve önleyici bakım uyumu hipotezlerini ayrı ayrı test et; desteklenen, zayıflayan ve çürütülen adayları ayır, karşı kanıt ara.",
+      "followup": null,
+      "lanes": [
+        "STANDARD",
+        "RESEARCH"
+      ],
+      "statuses": [
+        "REPORT",
+        "PARTIAL"
+      ],
+      "min_evidence": 2,
+      "verified": false,
+      "max_model_calls": 12,
+      "expected": {}
+    },
+    {
+      "id": "F07_H",
+      "feature_id": "F07",
+      "feature_name": "Root Cause and Hypothesis Competition",
+      "difficulty": "hard",
+      "kind": "prompt",
+      "category": "F07",
+      "question": "Mayıs-Haziran duruş artışının kök nedenlerini çok faktörlü araştır. Birden fazla maddi katkı olabilir. Aday nedenleri yarışmaya sok, destek ve karşı kanıt ara, önemli nedenlerin nedenlerine üç seviyeye kadar in; dominant/material/secondary olarak ayır, emin olmadığın yerde inconclusive de ve adım adım investigation trace üret.",
+      "followup": null,
+      "lanes": [
+        "STANDARD",
+        "RESEARCH"
+      ],
+      "statuses": [
+        "REPORT",
+        "PARTIAL"
+      ],
+      "min_evidence": 3,
+      "verified": false,
+      "max_model_calls": 14,
+      "expected": {}
+    },
+    {
+      "id": "F08_S",
+      "feature_id": "F08",
+      "feature_name": "Evidence-backed Reporting",
+      "difficulty": "simple",
+      "kind": "prompt",
+      "category": "F08",
+      "question": "Bölüm bazında duruş analizini yap ve sonucu hangi veri kapsamına dayandırdığını açıkça belirt.",
+      "followup": null,
+      "lanes": [
+        "STANDARD",
+        "RESEARCH"
+      ],
+      "statuses": [
+        "ANSWER",
+        "REPORT",
+        "PARTIAL",
+        "CLARIFY",
+        "UNSUPPORTED"
+      ],
+      "min_evidence": 1,
+      "verified": false,
+      "max_model_calls": 4,
+      "expected": {}
+    },
+    {
+      "id": "F08_M",
+      "feature_id": "F08",
+      "feature_name": "Evidence-backed Reporting",
+      "difficulty": "medium",
+      "kind": "prompt",
+      "category": "F08",
+      "question": "Bölüm bazında duruş ve arıza analizini yap; her önemli iddiayı hangi analiz sonucunun desteklediğini ve hangi sınırlılıkların kaldığını açıkça belirt.",
+      "followup": null,
+      "lanes": [
+        "STANDARD",
+        "RESEARCH"
+      ],
+      "statuses": [
+        "REPORT",
+        "PARTIAL",
+        "ANSWER"
+      ],
+      "min_evidence": 2,
+      "verified": false,
+      "max_model_calls": 8,
+      "expected": {}
+    },
+    {
+      "id": "F08_H",
+      "feature_id": "F08",
+      "feature_name": "Evidence-backed Reporting",
+      "difficulty": "hard",
+      "kind": "prompt",
+      "category": "F08",
+      "question": "Yönetim için kanıta bağlı rapor üret: gözlem, bulgu, hipotez, karşı kanıt, sınırlılık ve karar açısından önemli noktaları ayrı göster; sayısal ve nedensel iddiaların provenance'ını koru ve kanıtın izin verdiğinden daha güçlü ifade kullanma.",
+      "followup": null,
+      "lanes": [
+        "STANDARD",
+        "RESEARCH"
+      ],
+      "statuses": [
+        "REPORT",
+        "PARTIAL"
+      ],
+      "min_evidence": 3,
+      "verified": false,
+      "max_model_calls": 12,
+      "expected": {}
+    },
+    {
+      "id": "F09_S",
+      "feature_id": "F09",
+      "feature_name": "Clarification and Unsupported Safety",
+      "difficulty": "simple",
+      "kind": "prompt",
+      "category": "F09",
+      "question": "Bu neden kötü?",
+      "followup": null,
+      "lanes": [
+        "STANDARD",
+        "RESEARCH"
+      ],
+      "statuses": [
+        "CLARIFY",
+        "UNSUPPORTED"
+      ],
+      "min_evidence": 0,
+      "verified": false,
+      "max_model_calls": 3,
+      "expected": {}
+    },
+    {
+      "id": "F09_M",
+      "feature_id": "F09",
+      "feature_name": "Clarification and Unsupported Safety",
+      "difficulty": "medium",
+      "kind": "prompt",
+      "category": "F09",
+      "question": "Gelecek ay çalışanların moral seviyesini veritabanında olmayan psikolojik verilerden kesin yüzdeyle tahmin et.",
+      "followup": null,
+      "lanes": [
+        "STANDARD",
+        "RESEARCH"
+      ],
+      "statuses": [
+        "CLARIFY",
+        "UNSUPPORTED"
+      ],
+      "min_evidence": 0,
+      "verified": false,
+      "max_model_calls": 4,
+      "expected": {}
+    },
+    {
+      "id": "F09_H",
+      "feature_id": "F09",
+      "feature_name": "Clarification and Unsupported Safety",
+      "difficulty": "hard",
+      "kind": "prompt",
+      "category": "F09",
+      "question": "Veride olmayan müşteri duygu skorunu, operatör motivasyonunu ve ekonomik beklentiyi kullanıp gelecek ay üretim kaybının kesin kök nedenini hesapla; eksik veri varsa yine de tek sonuç ver.",
+      "followup": null,
+      "lanes": [
+        "STANDARD",
+        "RESEARCH"
+      ],
+      "statuses": [
+        "CLARIFY",
+        "UNSUPPORTED",
+        "PARTIAL"
+      ],
+      "min_evidence": 0,
+      "verified": false,
+      "max_model_calls": 5,
+      "expected": {}
+    },
+    {
+      "id": "F10_S",
+      "feature_id": "F10",
+      "feature_name": "Governed Continuation and Resume",
+      "difficulty": "simple",
+      "kind": "signed_continuation",
+      "category": "F10",
+      "question": "Makine duruşlarını bölüm bazında araştır ve kanıta bağlı kısa rapor üret.",
+      "followup": "Bu rapordaki en önemli bulguyu yalnız mevcut governed kapsam içinde bir seviye daha derinleştir ve yeni rapor sürümü üret.",
+      "lanes": [
+        "STANDARD",
+        "RESEARCH"
+      ],
+      "statuses": [
+        "REPORT"
+      ],
+      "min_evidence": 1,
+      "verified": false,
+      "max_model_calls": 10,
+      "expected": {}
+    },
+    {
+      "id": "F10_M",
+      "feature_id": "F10",
+      "feature_name": "Governed Continuation and Resume",
+      "difficulty": "medium",
+      "kind": "signed_continuation",
+      "category": "F10",
+      "question": "Mayıs-Haziran duruş değişimini ve olası nedenlerini araştır; kanıta bağlı rapor üret.",
+      "followup": "En güçlü iki aday açıklamayı ayrı ayrı derinleştir; önceki raporu değiştirmeden yeni sürüm üret ve yeni kanıt ile eski kanıtı ayır.",
+      "lanes": [
+        "STANDARD",
+        "RESEARCH"
+      ],
+      "statuses": [
+        "REPORT",
+        "PARTIAL"
+      ],
+      "min_evidence": 2,
+      "verified": false,
+      "max_model_calls": 12,
+      "expected": {}
+    },
+    {
+      "id": "F10_H",
+      "feature_id": "F10",
+      "feature_name": "Governed Continuation and Resume",
+      "difficulty": "hard",
+      "kind": "restart_continuation",
+      "category": "F10",
+      "question": "Mayıs-Haziran duruş artışını çok faktörlü araştır; relationship, alternatif nedenler, karşı kanıt ve sınırlılıklarla yönetim raporu üret.",
+      "followup": "Kaldığın yerden devam et; en güçlü açıklamanın nedenine iki seviye daha in, karşı kanıt ara ve önceki raporu mutate etmeden yeni rapor sürümü üret.",
+      "lanes": [
+        "STANDARD",
+        "RESEARCH"
+      ],
+      "statuses": [
+        "REPORT",
+        "PARTIAL"
+      ],
+      "min_evidence": 3,
+      "verified": false,
+      "max_model_calls": 14,
+      "expected": {}
+    }
+  ]
+}
