@@ -428,18 +428,27 @@ class HeadlessProductComposer:
         }
         claims = tuple(claims_by_id.values())
 
+        parent_verified = any(
+            item.obligation_id == target_obligation_id
+            and _state_value(item.state) == ObligationState.VERIFIED.value
+            for item in snapshot.parent_obligations
+        )
         scoped_move_available = False
-        for rule in snapshot.action_profile.rules:
-            legal_parents = set(rule.legal_parent_step_ids)
-            if not (
-                rule.allow_parentless
-                or bool(legal_parents.intersection(scoped_step_ids))
-            ):
-                continue
-            if _state_value(rule.intent) == "SEEK_COUNTER_EVIDENCE" and not claims:
-                continue
-            scoped_move_available = True
-            break
+        if parent_verified:
+            for rule in snapshot.action_profile.rules:
+                legal_parents = set(rule.legal_parent_step_ids)
+                if not (
+                    rule.allow_parentless
+                    or bool(legal_parents.intersection(scoped_step_ids))
+                ):
+                    continue
+                if (
+                    _state_value(rule.intent) == "SEEK_COUNTER_EVIDENCE"
+                    and not claims
+                ):
+                    continue
+                scoped_move_available = True
+                break
 
         stop = getattr(snapshot, "terminal_stop_reason", None)
         observation = ProductProcessObservation(

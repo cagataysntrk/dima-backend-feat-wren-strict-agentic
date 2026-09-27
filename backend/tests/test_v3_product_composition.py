@@ -211,8 +211,9 @@ class FakeResearch:
 
 
 class FakeInvestigation:
-    def __init__(self, *, claim_on_calls=None):
+    def __init__(self, *, research, claim_on_calls=None):
         self.states = {}
+        self.research = research
         self.claim_on_calls = (
             None if claim_on_calls is None else set(claim_on_calls)
         )
@@ -226,8 +227,16 @@ class FakeInvestigation:
     def snapshot(self, *, session_id, principal):
         del principal
         state = self._state(session_id)
+        session = self.research.sessions[session_id]
         return SimpleNamespace(
             source_revision=state["calls"] + 1,
+            parent_obligations=tuple(
+                SimpleNamespace(
+                    obligation_id=item.obligation_id,
+                    state=item.state,
+                )
+                for item in session.obligations
+            ),
             completed_reasoning_steps=tuple(state["steps"]),
             pending_reasoning_steps=(),
             claims=tuple(state["claims"]),
@@ -462,7 +471,10 @@ def composer(
     claim_on_calls=None,
 ):
     research = FakeResearch(limited_goal_ids=limited_goal_ids)
-    investigation = FakeInvestigation(claim_on_calls=claim_on_calls)
+    investigation = FakeInvestigation(
+        research=research,
+        claim_on_calls=claim_on_calls,
+    )
     reasoning = FakeReasoning(investigation)
     return (
         HeadlessProductComposer(
@@ -837,8 +849,8 @@ def test_relationship_unexpected_owner_error_fails_closed_instead_of_sealing_rep
 
 
 
-def test_repro_root_currently_enters_p17_when_p14_parent_is_limited():
-    """Provider-free reproduction for full-closure owner-callability RED."""
+def test_root_does_not_enter_p17_when_p14_parent_is_limited():
+    """Root investigation is callable only from VERIFIED durable P14 material."""
 
     c, research, investigation, reasoning = composer(
         limited_goal_ids=("g_root",),
@@ -859,7 +871,7 @@ def test_repro_root_currently_enters_p17_when_p14_parent_is_limited():
     result = c.compose(
         brief=b,
         principal=principal(),
-        request_ref="root-limited-repro",
+        request_ref="root-limited-proof",
         source_message_hash="e" * 64,
         native_session_token=None,
     )
@@ -870,5 +882,11 @@ def test_repro_root_currently_enters_p17_when_p14_parent_is_limited():
         if item.obligation_id == "g_root"
     )
     assert state == ObligationState.LIMITED
-    assert investigation._state(result.research_session_id)["calls"] > 0
-    assert result.p17_step_refs
+    assert investigation._state(result.research_session_id)["calls"] == 0
+    assert result.p17_step_refs == ()
+    assert result.p19_assessment_refs == ()
+    assert any(
+        item.code == "P17_NO_LEGAL_MOVE"
+        and item.obligation_id == "g_root"
+        for item in result.limitations
+    )
