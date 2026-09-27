@@ -256,3 +256,51 @@ def test_final_cleanup_helpers_are_absent():
         "backend/VIZ_STANDARDS.md",
     ):
         assert not (REPO_ROOT / relative).exists(), relative
+
+
+def test_exact_blob_guarded_owner_paths_trigger_their_workflow():
+    import fnmatch
+    import re
+
+    workflow_root = REPO_ROOT / ".github" / "workflows"
+    for path in workflow_root.glob("*.yml"):
+        text = path.read_text(encoding="utf-8")
+        pinned = tuple(
+            match.group(1)
+            for match in re.finditer(
+                r"^\s*assert_blob\s+([^\s]+)\s+[0-9a-f]{40}\s*$",
+                text,
+                flags=re.MULTILINE,
+            )
+        )
+        if not pinned:
+            continue
+
+        lines = text.splitlines()
+        patterns: list[str] = []
+        in_paths = False
+        paths_indent = -1
+        for line in lines:
+            stripped = line.strip()
+            indent = len(line) - len(line.lstrip())
+            if stripped == "paths:":
+                in_paths = True
+                paths_indent = indent
+                continue
+            if in_paths and stripped and indent <= paths_indent:
+                in_paths = False
+            if in_paths and stripped.startswith("- "):
+                value = stripped[2:].strip().strip('"').strip("'")
+                patterns.append(value)
+
+        assert patterns, (path.name, "exact blob guards require push paths")
+        missing = tuple(
+            owner
+            for owner in pinned
+            if not any(fnmatch.fnmatch(owner, pattern) for pattern in patterns)
+        )
+        assert not missing, (
+            path.name,
+            "exact-blob-guarded owners missing from workflow trigger paths",
+            missing,
+        )

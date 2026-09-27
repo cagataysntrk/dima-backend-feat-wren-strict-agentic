@@ -117,8 +117,9 @@ jobs:
           test "$(git -C .. ls-tree HEAD engine/metabase | awk '{print $3}')" = "cbe313af9ac2d5960f662068e433d328d896fb06"
 
 
-      # Wave-A P2 scope authority was formally reopened and re-sealed by
-      # dima-v1-phase1-focused. Keep exact blob pins for the new ratified owners.
+      # Wave-A P2 scope authority is reopened. Exact candidate blob pins are
+      # guarded here, but formal re-seal remains pending DMP-DEC-0064 plus a
+      # successful dima-metabase-core-a-final-closure run.
       - name: Guard sealed P14-P21 owner blobs
         shell: bash
         run: |
