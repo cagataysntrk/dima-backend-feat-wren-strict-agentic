@@ -5,3 +5,4 @@ retry=syntax-fixed
 retry=import-fixed
 retry=deps-before-import
 retry=budget-cli-fixed
+case_isolation_checkpoint=1
