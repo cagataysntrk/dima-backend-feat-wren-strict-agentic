@@ -1,5 +1,318 @@
 # Dima — Mimari Referansı
 
+<!-- DIMA-V2-DAY6_5-CLOSED-DAY7-CURRENT -->
+> ## 🔴 CURRENT ARCHITECTURE AUTHORITY — DAY6.5 CLOSED / DAY7 NEXT
+>
+> Single handoff:
+> `belgeler/plan/DIMA_DAY6_5_FINAL_CLOSURE_AND_DAY7_HANDOFF.md`.
+>
+> ```text
+> DAY6.5                         CLOSED
+> D65-SI                        FINAL GREEN / SEALED
+> provider topology             Semantic Luna / Temporal Sol / Research Sol
+> M0E-DEEP-DELTA                FINAL GREEN / SEALED
+> bridge terminal               HEAVY_SEMANTIC_DUPLICATION
+> Metabase structured execution REJECTED CURRENT RELEASE
+> X0-REST                       NOT RUN / NOT REQUIRED
+> Wren semantics                RETAINED / PRIMARY
+> Wren analytical execution     PRIMARY
+> Metabase production runtime   OFF
+> next ticket                   P10 / DAY7 RESULT-AWARE RESEARCH LOOP
+> production /ask-v2            OFF
+> ```
+>
+> Ownership:
+> Dima = cognition/authority/Research/Evidence/trust/decision intelligence.
+> Wren = MDL/metrics/formulas/cubes/relationships/grain-additivity/business knowledge/execution.
+> Metabase = reference/security/query-lifecycle/async-pattern source + separate product/workspace candidate.
+>
+> The Metabase execution REJECT is scoped to the current release architecture
+> `retained Wren semantic truth → thin Metabase structured execution`.
+> It is not a universal/permanent rejection of Metabase.
+>
+> Do not reopen semantic discovery/SI/substrate work without new independent invalidating P0 evidence.
+> Day7 owns Research loop work. Front-door ownership remains Day10 release debt.
+
+
+<!-- DIMA-V2-CURRENT-BRIDGE-ACTIVE — SUPERSEDED/HISTORICAL -->
+> ## HISTORICAL — DAY6.5 BRIDGE PREFLIGHT
+>
+> HEAD `6d65600842731112f2362261a30660217cbde05d`.
+> D65-SI and M0E-DEEP-DELTA are FINAL GREEN/SEALED.
+> Current sole architecture ticket = `D65-X0-BRIDGE-PREFLIGHT`.
+>
+> Allowed bridge input is already-accepted Dima/Wren semantic artifacts only.
+> Metabase is downstream execution candidate, never upstream semantic cognition.
+> Runtime identity mapping is allowed only when mechanically derived from existing accepted
+> Dima/Wren canonical/physical lineage and tenant/version scoped.
+>
+> Candidate seams: A=`StandardProjection+handles`, B=`resolved AnalyticsIR`,
+> C=`Wren-specific planned representation`. No fourth generic framework.
+>
+> Metabase runtime remains OFF until THIN_LOSSLESS preflight.
+
+
+<!-- DIMA-V2-POST-ANALYST-RECONCILIATION — SUPERSEDED/HISTORICAL -->
+> **D65-SI FINAL GREEN / SEALED**
+>
+> Tested HEAD `c72eb913...`; 73/73 provider-free, focused 001/005 GREEN, frozen six full-live GREEN.
+> Standard semantic/discovery architecture is closed absent new P0 evidence.
+> Current Day6.5 question is now substrate/build-vs-buy:
+> M0E-DEEP-DELTA → X0-BRIDGE-PREFLIGHT → X0 only if thin/lossless.
+
+> ## HISTORICAL — ARCHITECTURE AUTHORITY — POST ANALYST
+>
+> Continuation: `belgeler/plan/DIMA_DAY6_5_POST_ANALYST_RECONCILED_HANDOFF.md`.
+>
+> Verified HEAD `3774484167...`; SI focused `25/25`; real Wren sentinels `2/2`.
+> These prove partial SI, not final raw-language composition.
+>
+> Current open SI invariants:
+> `semantic surface completeness → shared Standard/Research authority arbiter → distinct
+> Research temporal role → full-live Standard composition`.
+>
+> M0E-v1 = valid baseline. Final exhaustion = `M0E-DEEP-DELTA`.
+> X0 runtime is blocked by mandatory bridge preflight.
+>
+> Permanent bridge authority:
+> Wren semantics retained; Metabase cannot reinterpret raw language, redefine metrics/relationships,
+> guess labels, introduce unapproved implicit FK joins, or mint a second semantic authority.
+>
+> `FRONTDOOR_OWNERSHIP_CLOSURE` is Day10 release-blocking debt. Current /ask-v2 remains legacy
+> Day4 orchestration and production flag stays OFF.
+
+
+<!-- DIMA-V2-POST-J1B-LUNA-M0E-OVERRIDE — SUPERSEDED/HISTORICAL -->
+> ## HISTORICAL — POST-J1B ARCHITECTURE OVERRIDE — 2026-09-22
+>
+> **Provider topology P0 closure:** Luna semantic `35716056419=20/20`; Sol temporal
+> exact-SHA `35716502261=8/8`. Day6.5 engineering topology:
+> `SEMANTIC_LINKER=Luna | TEMPORAL_NORMALIZER=Sol | RESEARCH_MANAGER=Sol`.
+> This is not production activation.
+>
+> Current handoff:
+> `belgeler/plan/DIMA_DAY6_5_POST_J1B_LUNA_M0E_HANDOFF.md`.
+>
+> J1B real-flow evidence rejects Jev AS-IS from the current semantic critical path:
+> `silent_semantic_wrong=8/20`, including high-confidence wrongs.
+> Do not derive a confidence threshold from J1/J1B.
+>
+> Current provider-control ladder:
+> ```text
+> Luna semantic → same frozen 20
+> Luna temporal → same frozen 8
+> failed role only → Sol REFERENCE_CEILING same frozen cases
+> Sol P0 → STOP / architecture consultation
+> ```
+>
+> Parallel M0 completion gate = D65-M0E capability exhaustion/build-vs-buy.
+>
+> Ownership default before X0:
+> ```text
+> DIMA = cognition / accepted authority / uncertainty / research / evidence /
+>        root-cause / recommendation / QueryContract trust
+>
+> WREN = retained semantic backbone:
+>        MDL / models / relationships / views / cubes / knowledge / semantic compilation
+>
+> METABASE = candidate mature runtime for overlapping generic BI/query lifecycle
+>            + architecture/reference source + future workspace/product candidate
+> ```
+>
+> X0 is NOT a Wren semantic-removal experiment.
+> It compares residual execution/query-lifecycle value under the SAME retained Wren semantic meaning
+> and SAME Dima authority/evidence.
+>
+> Current sequence:
+> `provider P0=0 + M0E → D65-SI → real Standard Wren sentinel → M0E final cross-check → X0`.
+>
+> Production /ask-v2 remains OFF. DEV80 remains final/end-only.
+
+
+<!-- DIMA-V2-FINAL-INTEGRATED-RELEASE-GATE -->
+> ## 🔴 FINAL INTEGRATED RELEASE GATE — 2026-09-22
+>
+> Release authority: `belgeler/plan/DIMA_RELEASE_FINAL_INTEGRATED_GATE.md`.
+>
+> `DEV80` is no longer a Day6.5 gate. It is the **FINAL BROAD ENGINEERING GATE** and may run exactly once for this release.
+>
+> Development sequence before DEV80:
+> ```text
+> J1S/J1T + M0/X0 decisions
+> → exactly one primary substrate
+> → Day7–15 correctness-sensitive implementation
+> → continuous focused real-LLM / failure-family / metamorphic / canary / sentinel testing
+> → 20–25 case final integration rehearsal
+> → FINAL ENGINEERING FREEZE
+> → DEV80 once
+> → CODE FREEZE
+> → Validation50 no tuning
+> → Hidden50 no tuning
+> → certification
+> → pilot activation
+> ```
+>
+> Any older MIMARI wording that places DEV80 before Day7–15 or D65-X after DEV80 is historical and superseded.
+>
+
+<!-- DIMA-V2-PREFREEZE-J1-M0-X0-OVERRIDE -->
+> ## 🔴 Day 6.5 CURRENT PRE-FREEZE OVERRIDE — 2026-09-22
+>
+> Current detailed authority: `belgeler/plan/DIMA_DAY6_5_PREFREEZE_DECISION_GATE_J1_M0_X0.md`.
+> This overlay supersedes older MIMARI wording that placed D65-X only after DEV80/engineering closure or scoped Jev only to candidate selection.
+>
+> Proven baseline: provider-free `35696652502=102/102`, reference canary `35697064833=16/16`, Wren+Research sentinel `35697471863=2/2`, tested code SHA `8dfde62d...`.
+> Freeze candidate and DEV80 are BLOCKED.
+>
+> Pre-freeze decisions:
+> ```text
+> D65-J1S = semantic candidate decision benchmark
+> D65-J1T = typed temporal-intent benchmark
+> D65-M0  = Metabase architecture/adoption audit
+> D65-X0  = thin separate-service Metabase Agent API feasibility
+> ```
+>
+> J1S/J1T are lab/eval only. Product semantic/temporal/authority code stays unchanged until a result is reviewed.
+> Jev is pinned to `typesafe/jev-1.13`, uses the native Decisions API, and never becomes semantic/date/numeric authority.
+>
+> Wren remains incumbent now. Metabase is not production-wired. If X0 is promising, STOP/CONSULT before full D65-X; exactly one primary substrate must be chosen before freeze.
+>
+> Current Metabase source check: historical `74216b...`; current master `fff70175...`; one commit ahead and no relevant agent/API/MCP family delta.
+>
+
+<!-- DIMA-V2-METABASE-SOURCE-REFERENCE-CONTRACT -->
+<!-- DIMA-V2-METABASE-SOURCE-REFERENCE-CONTRACT -->
+> ### Metabase source/reference boundary
+>
+> Canonical source authority: `metabase/metabase` @ `74216b30981d8310c4cf724d63ca282e2e63529d` for the current Day 6.5 reference snapshot.
+> Canonical files: `src/metabase/metabot/agent/core.clj`, `profiles.clj`, `agent_api/reference.md`, `agent_api/api.clj`, `agent_api/query_guards.clj`, `mcp/v2/tools/query.clj`.
+>
+> A local `public/metabase/master` checkout, if present, is read-only convenience only and never authority; exact SHA verification is mandatory.
+> Metabase source-copy/port/vendor into Dima is forbidden. D65-X uses a separate Metabase service via Agent API through a thin Dima adapter.
+>
+> Any Metabase-dependent architecture or implementation decision must execute the mandatory source-control/research protocol in `belgeler/plan/DIMA_DAY6_5_RUNTIME_KERNEL_AND_SUBSTRATE_DECISION.md §17A.5` before coding or interpreting results.
+> D65-X receipts pin both source identity and running artifact identity: source SHA, runtime version, immutable image digest, Dima tested SHA, adapter SHA, corpus version and permission context.
+>
+<!-- DIMA-V2-DAY6.5-RUNTIME-KERNEL-SUBSTRATE-OVERLAY -->
+> ## 🔴 Day 6.5 runtime-kernel / substrate decision overlay — 2026-09-22
+>
+> Active addendum: `belgeler/plan/DIMA_DAY6_5_RUNTIME_KERNEL_AND_SUBSTRATE_DECISION.md`.
+>
+> Product-level execution paths are now only:
+>
+> ```text
+> STANDARD
+> RESEARCH
+> ```
+>
+> `STANDARD_DIRECT` and `STANDARD_BUILDER` are telemetry/outcomes of the same Standard engine:
+>
+> ```text
+> standard_outcome = DIRECT | BUILDER
+> ```
+>
+> Standard loop mechanics must use a small generic `BoundedAgentRuntimeKernel` that owns only
+> counters, budgets, observation lifecycle, action/state fingerprints, duplicate prevention,
+> terminal/no-progress and telemetry. It does not own semantic/business/authority/evidence truth.
+>
+> Existing Research Manager remains on its current `ManagerRuntime`/`AcceptedTurnContract`/UOL
+> implementation through Day 7–10. No wholesale migration now.
+>
+> `AcceptedResearchAuthority` remains an alias/tag view of the existing `AcceptedTurnContract` body.
+> No second Research semantic contract.
+>
+> Wren remains the incumbent analytics substrate now. Metabase M0/X0 and any required D65-X are resolved before the release final freeze/DEV80; exactly one primary execution substrate is selected before Day7–15 final integration completes.
+>
+> Production must have exactly one primary analytics truth substrate. `Wren + Metabase` as equal
+> production truth engines is STOP-THE-LINE.
+>
+> Current sequencing exception: StandardBuilder/E4/E5 were implemented and focused-green before
+> the runtime-kernel decision. Do not rollback. Re-home only the generic loop mechanics into the
+> kernel, preserve Standard semantic behavior, then rerun provider-free family closure.
+>
+<!-- DIMA-V2-DAY6.5-ENGINEERING-CLOSURE-OVERLAY -->
+> ## 🔴 V2 Day 6.5 engineering-closure target — 2026-09-22
+>
+> Phase-local active decision:
+> `belgeler/plan/DIMA_DAY6_5_ENGINEERING_CLOSURE_PROTOCOL.md`.
+> Bu overlay henüz production certification seal beyanı DEĞİLDİR; current implementation
+> ile sıradaki closure target'ı ayırır.
+>
+> Legacy Day 6.5 telemetry labels below remain useful for eval, but architecture-level paths are now `STANDARD | RESEARCH`; `DIRECT | BUILDER` are Standard outcomes.
+>
+> Bunlar üç authority ailesi değildir:
+>
+> ```text
+> AcceptedAuthority
+> ├── AcceptedStandardAuthority
+> └── AcceptedResearchAuthority
+> ```
+>
+> `AcceptedResearchAuthority` = existing `AcceptedTurnContract` body. Ayrı ikinci research
+> semantic contract/body oluşturulmaz; isim yalnız owner/type view'dur.
+>
+> **StandardBuilder** tek governed analytical projection'ın discovery/repair problemidir.
+> **Research Manager** user obligations + evidence-aware adaptive investigation problemidir.
+> Standard path ağır UOL/Completion machinery'sini taşımaz.
+>
+> Semantic discovery ile authority ayrıdır:
+>
+> ```text
+> SemanticCatalogRetriever  = candidate discovery only
+> SemanticBindingGate       = canonical semantic authority
+> StandardProjectionCompiler/RepresentabilityGate = standard losslessness
+> CubePlanner               = analytical validity
+> Wren/DB                   = numeric truth
+> QueryContract/Evidence    = proof
+> CompletionGate            = research completion truth
+> ```
+>
+> `DIRECT` Standard engine'in ilk-attempt seal outcome'udur; `BUILDER` aynı engine'in bounded repair outcome'udur. Bunlar ayrı engine/router/authority değildir. Aynı action+state tekrarı `NO_PROGRESS`.
+>
+> Başarısız Standard attempt'tan Research authority'ye `sem_*`, projection, metric/operation/
+> comparison/temporal semantic seçimi taşınmaz. Yalnız raw SourceSpanRefs ve non-authoritative
+> discovery cache yeniden kullanılabilir.
+>
+> `c9629d9029db...` exact semantic-SHA recertification **70/70 GREEN**; Retriever seam **9/9 GREEN**. StandardBuilder/E4/E5 focused gates de green fakat runtime-kernel kararı nedeniyle provisional'dır.
+> Provider-free front-door family closure oracle sync sonrası `35691982389` üzerinde **88/88 PASS**.
+> Next product ticket: `D65-E3A-R` — minimal generic `BoundedAgentRuntimeKernel` + existing StandardBuilder mechanics realignment.
+> Release-level override: DEV80 this release runs exactly once on the final integrated candidate after Day15 code + final rehearsal. D65-X cannot occur after DEV80. Validation50/Hidden50 run only under post-DEV80 code freeze. Production hybrid route remains off until certification and pilot activation.
+>
+> STOP-THE-LINE: ikinci semantic owner, silent requirement loss, unsafe standard admission,
+> ambiguity auto-pick, rejected authority merge, candidate-set dışı truth, raw SQL/direct DB,
+> cross-tenant handle, post-acceptance raw-prompt reparse, unverified numeric claim,
+> evidence'siz VERIFIED completion veya silent fallback.
+
+<!-- DIMA-V2-DAY6.5-COGNITION-AUTHORITY-OVERLAY -->
+> ## 🔴 V2 Day 6.5 aktif cognition / semantic authority sınırı — 2026-09-22
+>
+> Bu branch'te V2 Manager semantik yorumlama için bağlayıcı addendum:
+> `belgeler/plan/DIMA_DAY6_5_COGNITION_AUTHORITY_BOUNDARY_ADR.md`.
+>
+> ```text
+> Semantic Catalog            = hangi kavramların var olduğunun truth'u
+> Bounded Semantic Linker     = surface → bounded cand_* yorumu; authority DEĞİL
+> Semantic Binding Gate       = candidate/tenant/context/kind doğrulaması ve sem_* authority
+> Typed Temporal Normalizer   = dil → kapalı temporal intent; tarih hesabı DEĞİL
+> Temporal Binding Engine     = deterministic tarih hesabı
+> Capability/Conflict gates   = contract validity
+> Wren/DB                     = sayısal truth
+> Evidence/Completion gates   = proof / completion truth
+> ```
+>
+> V2 Manager semantic hot path'te yeni regex, morphology/stemming, fuzzy/SequenceMatcher
+> threshold veya named-case phrase patch'i semantic authority olarak kullanılamaz.
+> Coverage critic yalnız omission/exclusion/directive coverage veto'sudur; canonical semantic
+> ve final clarification authority değildir. Model `open_questions` advisory'dir.
+> Semantic receipts anti-laundering provenance kanıtıdır; intent-completeness parser'ı değildir.
+>
+> Legacy `SemanticResolver` ve `temporal.py` mevcut/non-Manager yollar için compatibility
+> katmanı olarak korunur; bu onların Day 6.5 Manager language authority olduğu anlamına gelmez.
+>
+> Provider-free boundary proof: GitHub run `35660792599`, tested code SHA
+> `e2b00eabff26c0e3ee93a7a2327b33f6615a048d`, **70/70 PASS**.
+> Live DEV/validation/hidden certification tamamlanmadan production hybrid route açılmaz.
+
 > **Bu belge KANONİKTİR ve NORMATİFTİR.** Mimari bir soruda çelişki çıkarsa bu belge kazanır.
 > `belgeler/devir/*` tarihsel kayıttır, normatif değildir.
 > `belgeler/urun/Dima-0-100-Gorev-Takip.md` bir ÜRÜN şartnamesidir, mimari otorite değildir (§8).

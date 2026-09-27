@@ -1,0 +1,84 @@
+version: 1
+source_head: "869280db316d5bf3f76d3253b8b80e5609a000b9"
+purpose: "P3 Day 0 legacy baseline source lock"
+minimum_units: 30
+
+# Existing eval cases only. No new golden truth is invented here.
+eval_case_ids:
+  - oee-makine
+  - parti-ciro-musteri
+  - parti-fire-asama
+  - parti-fire-orani-kumas
+  - gran-ay
+  - gran-hafta
+  - gran-son4ay-tuzagi
+  - tarih-acik-aralik
+  - tarih-apostrof
+  - tarih-gecen-ay
+  - tarih-son30gun
+  - topn-taze
+  - parti-kar
+  - yoy-ciro
+  - yoy-uretim
+  - chip-olcu-surd
+  - chip-kismi-anlama
+  - chip-kismi-tedarikci
+  - chip-capraz-konu
+  - chip-konu-belirsiz
+  - chip-typo-sessiz-yanlis
+  - meta-selam
+  - meta-dima-nedir
+  - meta-randiman-tuzagi
+  - typo-deger-siyah
+  - typo-deger-beyaz
+  - typo-sozluk-vardya
+  - akis-olcu-duzeltme
+  - akis-varlik-topn
+  - akis-gecen-ay
+  - akis-anlasilmayan-takip
+  - akis-deger-filtre-degisimi
+
+# Existing experience scenarios. Each whole thread is one Day 0 baseline unit.
+experience_scenarios:
+  - analist_turu
+  - donem_duzeltme
+  - sosyal_isten_ise
+  - konu_degisimi
+  - kiyas_turu
+
+# Known old silent-wrong/regression families that MUST be represented above.
+known_silent_wrong_inventory:
+  ranking_limit:
+    - topn-taze
+    - akis-varlik-topn
+  period:
+    - gran-son4ay-tuzagi
+    - tarih-apostrof
+  comparison:
+    - yoy-ciro
+    - yoy-uretim
+  typo_partial_understanding:
+    - chip-typo-sessiz-yanlis
+  user_repair:
+    - akis-olcu-duzeltme
+  followup_filter_state:
+    - akis-deger-filtre-degisimi
+  ambiguous_topic:
+    - chip-capraz-konu
+    - chip-konu-belirsiz
+  period_default_contract:
+    - meta-randiman-tuzagi
+
+# Source-lock anchors from lab/gercek_dunya.py. These do not create new expected truth;
+# they prove Day 0 reviewed the real-world vocabulary source required by P3.2.
+real_world_source_anchors:
+  - "işler nasıl gidiyor"
+  - "bu ay iyi miyiz kötü müyüz"
+  - "en çok nerede kaybediyoruz"
+  - "geçen aya göre iyi miyiz"
+  - "neden böyle oldu"
+  - "bu yıl en çok duran makineleri listele"
+
+# Day 0 is intentionally reproducible/offline. A live-provider baseline is a pilot debt,
+# not permission to delay the greenfield core.
+execution_mode: "rule_offline"

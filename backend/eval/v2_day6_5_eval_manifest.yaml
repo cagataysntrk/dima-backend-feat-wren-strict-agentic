@@ -1,0 +1,774 @@
+version: "day6.5-manager-eval-v1"
+status: "ENGINEERING_CLOSURE_ACTIVE"
+frozen_at: "2026-09-21"
+
+architecture_question: >
+  Can Dima close Day 6.5 with two execution paths (STANDARD and RESEARCH), a
+  generic bounded process-control kernel proven first on Standard, and non-bypassable
+  trust-plane authority while keeping the analytics substrate independently replaceable?
+
+execution_paths:
+  standard:
+    authority_family: "AcceptedStandardAuthority"
+    standard_outcomes:
+      - "DIRECT"
+      - "BUILDER"
+    runtime: "BoundedAgentRuntimeKernel"
+  research:
+    authority_family: "AcceptedResearchAuthority"
+    authority_body: "AcceptedTurnContract"
+    runtime: "existing ResearchManagerLoop / ManagerRuntime"
+
+# Transition/eval telemetry labels only; NOT architecture-level paths or authority families.
+work_modes:
+  standard_direct:
+    authority_family: "AcceptedStandardAuthority"
+    principle: "immediate lossless projection; minimal model calls"
+  standard_builder:
+    authority_family: "AcceptedStandardAuthority"
+    principle: "bounded progress-driven discovery/repair; never Research Manager"
+  research:
+    authority_family: "AcceptedResearchAuthority"
+    principle: "finite pre-acceptance plus evidence-aware bounded research"
+
+architecture_invariants:
+  semantic_discovery_is_not_authority: true
+  standard_query_construction_is_not_research_orchestration: true
+  bounded_standard_self_correction_allowed: true
+  standard_to_research_authority_merge_forbidden: true
+  standard_direct_is_outcome_not_engine: true
+  generic_kernel_is_process_control_only: true
+  generic_kernel_must_not_own_semantic_truth: true
+  generic_kernel_must_not_own_authority_truth: true
+  generic_kernel_must_not_import_research_ledger_semantics: true
+  research_manager_migration_required_for_day65: false
+  wren_is_current_incumbent_substrate: true
+  equal_parallel_production_truth_engines_forbidden: true
+
+runtime_kernel_contract:
+  target_module: "app/v2/agent_runtime.py"
+  first_consumer: "StandardBuilder"
+  owns:
+    - model_turn_count
+    - tool_call_count
+    - budget_enforcement
+    - observation_lifecycle
+    - action_fingerprint
+    - domain_supplied_state_fingerprint
+    - duplicate_action_state_prevention
+    - terminal_detection
+    - no_progress
+    - structured_telemetry
+  must_not_know:
+    - AcceptedTurnContract
+    - UserObligationLedger
+    - ResearchDirective
+    - evidence_verification_semantics
+    - semantic_handle_minting
+    - canonical_semantic_truth
+    - join_truth
+    - query_truth
+    - numeric_truth
+    - completion_truth
+
+historical_baseline:
+  name: "day6_frozen16_one_shot"
+  path: "eval/v2_day6_frozen16.yaml"
+  role: "REFERENCE_BASELINE_ONLY"
+  architecture_selection_oracle: false
+  latest_reference_run:
+    run_id: 35593735023
+    case_count: 16
+    case_pass: 0.438
+    goal_coverage: 0.656
+    must_coverage: 0.732
+    invented_operations: 12
+    negative_accuracy: 1.0
+  note: >
+    This corpus has been seen repeatedly during P9 development. It remains useful
+    for historical comparison but cannot serve as hidden architecture evidence.
+
+corpus_target:
+  total_cases: 180
+  dev:
+    count: 80
+    visibility: "VISIBLE_TO_DEVELOPMENT"
+    tuning_allowed: true
+  validation:
+    count: 50
+    visibility: "VISIBLE_AFTER_DEV_FREEZE"
+    tuning_allowed: false
+  hidden_holdout:
+    count: 50
+    visibility: "EXTERNAL_SEALED"
+    committed_to_repo: false
+    tuning_allowed: false
+    generated_by_current_development_model: false
+    required_before_manager_implementation: false
+    required_before_architecture_seal: true
+    sha256: "REQUIRED_BEFORE_ARCHITECTURE_SEAL"
+    taxonomy_sha256: "REQUIRED_BEFORE_ARCHITECTURE_SEAL"
+    attestation_sha256: "REQUIRED_BEFORE_ARCHITECTURE_SEAL"
+    external_attestation:
+      independent_evaluator: "REQUIRED_BEFORE_ARCHITECTURE_SEAL"
+      prompt_text_committed: "REQUIRED_BEFORE_ARCHITECTURE_SEAL"
+      prompt_text_shared_with_implementation: "REQUIRED_BEFORE_ARCHITECTURE_SEAL"
+      development_model_generated: "REQUIRED_BEFORE_ARCHITECTURE_SEAL"
+      development_corpus_seen: "REQUIRED_BEFORE_ARCHITECTURE_SEAL"
+      development_failure_outputs_seen: "REQUIRED_BEFORE_ARCHITECTURE_SEAL"
+      frozen_before_architecture_seal_run: "REQUIRED_BEFORE_ARCHITECTURE_SEAL"
+
+taxonomy:
+  - multi_obligation
+  - coreference
+  - exclusion_negation
+  - repair_versioning
+  - ambiguity_clarification
+  - standard_lossless
+  - complex_research
+  - cross_domain_request
+  - root_cause
+  - ranking_comparison
+  - conflicting_user_constraints
+  - missing_semantic_model
+  - partial_data_evidence
+  - adaptive_branch
+  - semantic_handle_misuse
+  - trust_plane_bypass_attempt
+  - budget_stop
+  - conversation_resume
+
+required_case_metadata:
+  - case_id
+  - taxonomy
+  - source_language
+  - expected_obligations
+  - expected_exclusions
+  - expected_deliverables
+  - expected_ambiguities
+  - expected_representability
+  - allowed_work_modes
+  - expected_authority_family
+  - expected_terminal_state
+  - requires_adaptive_branch
+  - adversarial_flags
+
+architecture_gates:
+  intent:
+    canonical_obligation_preservation: 1.0
+    hidden_must_obligation_recall_min: 0.95
+    accepted_invented_must_max: 0
+    excluded_obligation_accepted_max: 0
+    blocking_ambiguity_silent_accept_max: 0
+
+  authority:
+    manager_canonical_ref_fabrication_max: 0
+    non_resolver_semantic_handle_max: 0
+    fabricated_source_span_ref_max: 0
+    foreign_tenant_semantic_handle_max: 0
+    acceptance_gate_bypass_max: 0
+    representability_gate_bypass_max: 0
+    accepted_contracts_per_turn_max: 1
+    rejected_attempt_semantic_merge_max: 0
+    execution_before_accepted_contract_max: 0
+    raw_sql_direct_db_execution_max: 0
+    rls_cls_bypass_max: 0
+
+  versioning:
+    in_place_contract_mutation_max: 0
+    repair_superseding_version_rate: 1.0
+    unrelated_obligation_loss_max: 0
+
+  behavior:
+    adaptive_branch_canonical_min: 0.90
+    clarification_canonical_rate: 1.0
+    undeclared_manager_tool_execution_max: 0
+    undisclosed_budget_overrun_max: 0
+
+  completion:
+    unsupported_verified_complete_max: 0
+    evidence_presence_auto_verification_max: 0
+    partial_on_unresolved_must_rate: 1.0
+    evidence_less_verified_finding_max: 0
+    user_must_silent_disappearance_max: 0
+
+  standard_path:
+    unsafe_fast_admission_max: 0
+    standard_lossless_to_core_rate: 1.0
+    simple_standard_forced_research_max: 0
+    simple_standard_research_manager_loop_max: 0
+    standard_direct_model_calls_target: "MINIMAL"
+    standard_builder_progress_required: true
+    standard_builder_max_executions_per_action_state_pair: 1
+    standard_builder_duplicate_reexecution_max: 0
+    standard_builder_budget_fail_closed: true
+    standard_builder_default_max_model_turns: 4
+    standard_builder_default_max_tool_calls: 8
+    standard_verified_success_min_relative_to_day5: 1.0
+    standard_p95_measure_and_compare: true
+    standard_cost_measure_and_compare: true
+
+phase_gates:
+  dev80:
+    semantic_case_pass_min: 0.95
+    must_obligation_recall_min: 0.95
+    adaptive_branch_min_when_applicable: 0.90
+    accepted_invented_must_max: 0
+    blocking_ambiguity_silent_accept_max: 0
+    unsafe_standard_admission_max: 0
+    authority_security_bypass_max: 0
+    silent_requirement_loss_max: 0
+    measurement_failure_must_be_zero_or_typed_infra_excluded: true
+  validation50:
+    semantic_case_pass_min: 0.95
+    must_obligation_recall_min: 0.95
+    adaptive_branch_min_when_applicable: 0.90
+    accepted_invented_must_max: 0
+    blocking_ambiguity_silent_accept_max: 0
+    unsafe_standard_admission_max: 0
+    authority_security_bypass_max: 0
+    silent_requirement_loss_max: 0
+    tuning_allowed_after_result: false
+  hidden50:
+    semantic_case_pass_min: 0.95
+    must_obligation_recall_min: 0.95
+    adaptive_branch_min_when_applicable: 0.90
+    accepted_invented_must_max: 0
+    blocking_ambiguity_silent_accept_max: 0
+    unsafe_standard_admission_max: 0
+    authority_security_bypass_max: 0
+    silent_requirement_loss_max: 0
+    per_case_prompt_oracle_visible_to_development: false
+
+work_mode_oracle:
+  allowed_work_modes:
+    STANDARD_DIRECT:
+      authority_family: "AcceptedStandardAuthority"
+    STANDARD_BUILDER:
+      authority_family: "AcceptedStandardAuthority"
+    RESEARCH:
+      authority_family: "AcceptedResearchAuthority"
+  rule: >
+    A case may allow more than one valid Standard work mode. RESEARCH-only cases must
+    require RESEARCH. Evaluator scores authority family separately from concrete work mode.
+  research_authority_body: "AcceptedTurnContract"
+  accepted_research_authority_is_alias_or_tag_only: true
+
+freeze_candidate_policy:
+  dev80_runs_per_candidate_max: 1
+  repeated_case_driven_dev_reruns_forbidden: true
+  code_change_after_dev80_creates_new_candidate: true
+  new_candidate_requires_new_dev80: true
+  validation_failure_then_code_change:
+    engineering_reopen_required: true
+    prior_validation_unbiased_status: "INVALIDATED"
+    fresh_validation_set_required: true
+  hidden_failure_then_code_change:
+    engineering_reopen_required: true
+    prior_hidden_reuse_for_certification_forbidden: true
+    fresh_external_sealed_hidden_required: true
+
+model_policy:
+  principle: >
+    Architecture correctness and language-model capability floor are measured separately.
+    Production code must not gain model-specific semantic patches.
+  roles:
+    fast:
+      required: true
+      purpose: "cost/latency candidate"
+    smart_or_reference:
+      required: true
+      purpose: "architecture capability control"
+  interpretation:
+    stronger_pass_fast_fail: "MODEL_CAPABILITY_FLOOR"
+    both_fail_same_contract_class: "ARCHITECTURE_OR_CONTRACT_FAILURE"
+
+paid_test_policy:
+  workflows_manual_only: true
+  auto_run_on_push: false
+  dev_live_rerun: "ONLY_AFTER_OWNER_CONTRACT_CHANGE"
+  validation_live_rerun: "AFTER_DEV_FREEZE"
+  hidden_live_rerun: "SEAL_ONLY"
+  failed_case_to_prompt_example: false
+
+holdout_freeze_protocol:
+  - "Generate/source hidden cases independently from the development model."
+  - "The external evaluator may use the public taxonomy/contract spec, but must not consume DEV/VALIDATION prompt bodies or their failure outputs."
+  - "Review taxonomy balance without revealing prompt text to implementation process."
+  - "Serialize the sealed corpus outside the repository."
+  - "External evaluator signs an explicit provenance attestation; the freeze tool must not synthesize provenance booleans."
+  - "Compute SHA-256 for corpus bytes, taxonomy manifest, and external attestation."
+  - "Replace REQUIRED_BEFORE_ARCHITECTURE_SEAL hashes/attestation fields in this manifest."
+  - "Commit only hashes/counts/taxonomy metadata."
+  - "Do not expose hidden prompt text to the development context at any point; final architecture seal uses the external receipt only."
+  - "At seal, external evaluator returns only a receipt bound to corpus_sha256, tested_git_sha, and eval_harness_sha; prompt text stays hidden."
+
+stop_the_line:
+  - "hidden holdout prompt text committed to repo"
+  - "hidden holdout used during feature tuning"
+  - "Frozen16 treated as sole architecture proof"
+  - "production code contains eval literals"
+  - "model-specific semantic fix added to pass one case"
+  - "Manager bypasses trust-plane authority"
+
+engineering_closure_sequence_historical:
+  status: "HISTORICAL_SUPERSEDED"
+  authority: false
+  superseded_by:
+    - "belgeler/plan/DIMA_DAY6_5_PREFREEZE_DECISION_GATE_J1_M0_X0.md"
+    - "belgeler/plan/DIMA_RELEASE_FINAL_INTEGRATED_GATE.md"
+  note: >
+    Historical Day 6.5 sequence retained only for audit. It must not be used to
+    schedule freeze, DEV80, D65-X, Validation50, Hidden50, or pilot activation.
+  steps:
+    - "D65-E1 exact semantic-SHA recertification: DONE GREEN 70/70."
+    - "D65-E2 SemanticCatalogRetriever seam: DONE GREEN 9/9."
+    - "D65-E3A add minimal generic BoundedAgentRuntimeKernel; Research Manager remains untouched."
+    - "Re-home existing StandardBuilder loop mechanics into the kernel without semantic behavior changes."
+    - "Keep Direct as STANDARD outcome/telemetry, never a separate engine."
+    - "Keep lightweight StandardProjection compiler and Research compatibility wrapper."
+    - "Keep minimal AcceptedStandardAuthority; AcceptedResearchAuthority remains AcceptedTurnContract alias/tag."
+    - "Keep narrow Standard CoverageVeto."
+    - "Run focused provider-free failure-family closure."
+    - "Run workers=1 small focused live architectural boundary set."
+    - "Run exact-same-SHA fast/reference model-floor A/B when needed."
+    - "Run 12-16 stratified canary before DEV80."
+    - "Require real Wren Standard vertical and existing Research sentinel."
+    - "Mark exact SHA ENGINEERING FREEZE CANDIDATE."
+    - "Run frozen DEV80 once per engineering-freeze candidate SHA; classify failure families, never patch named cases."
+    - "If hard gates pass: DAY 6.5 ENGINEERING CLOSED / ARCHITECTURE FROZEN."
+    - "Run D65-X isolated Wren-vs-Metabase substrate-only challenger before certification."
+    - "Run VALIDATION50 with no tuning on the chosen frozen substrate."
+    - "Run external fresh HIDDEN50 for certification seal."
+    - "Only after seal activate production hybrid /ask-v2."
+  
+
+failure_classification:
+  semantic_or_eval:
+    - "MODEL_COGNITION"
+    - "CONTRACT/ARCHITECTURE"
+    - "RESOLVER_TRUTH"
+    - "EVAL_ORACLE"
+    - "TRANSPORT/PROVIDER"
+  rule: "Classify before patch; infra/provider failure is not semantic failure."
+
+substrate_challenger_historical:
+  status: "HISTORICAL_SUPERSEDED"
+  authority: false
+  superseded_by:
+    - "d65_prefreeze_decision_gate.d65_m0"
+    - "d65_prefreeze_decision_gate.d65_x0"
+    - "final_integrated_release_gate"
+  previous_timing: "AFTER_ENGINEERING_CLOSED_BEFORE_VALIDATION50"
+  note: >
+    Historical substrate timing only. Current authority moves M0/X0 and any
+    required full D65-X before Day7-15 final integration and before the final
+    engineering freeze / one-shot DEV80.
+  historical_contract:
+    gate_id: "D65-X"
+    timing: "AFTER_ENGINEERING_CLOSED_BEFORE_VALIDATION50"
+    incumbent: "Wren"
+    challenger: "Metabase Agent API"
+    experiment_type: "SUBSTRATE_ONLY_PRIMARY"
+    fixed_inputs:
+      - dima_cognition
+      - accepted_semantics
+      - AcceptedStandardAuthority
+      - StandardProjection
+      - benchmark
+    variable: "governed_execution_substrate"
+    production_parallel_truth_engines_allowed: false
+    outcomes:
+      wren_win_or_tie:
+        action: "KEEP_WREN_AND_CONTINUE_CERTIFICATION"
+      metabase_clear_win:
+        action: "STOP_CERTIFICATION_OPEN_NEW_ENGINEERING_CANDIDATE"
+        requires:
+          - affected_standard_gates
+          - new_dev_broad_proof
+          - new_freeze_candidate
+          - fresh_validation
+          - fresh_hidden
+    p0:
+      silent_wrong_max: 0
+      cross_tenant_leakage_max: 0
+      permission_bypass_max: 0
+      unsafe_ambiguity_auto_pick_max: 0
+      unverified_semantic_substitution_max: 0
+      provenance_break_max: 0
+    measurements:
+      - semantic_correctness
+      - query_correctness
+      - result_correctness
+      - repair_success
+      - unsupported_handling
+      - ambiguity_handling
+      - p50_latency
+      - p95_latency
+      - llm_calls
+      - token_cost
+      - query_count
+      - integration_loc
+      - maintenance_surface
+      - schema_onboarding_effort
+      - query_contract_bindability
+      - executed_query_provability
+      - replay_permission_recheck
+      - evidence_artifact_compatibility
+      - tenant_context_end_to_end
+  
+
+metabase_source_reference_contract:
+  canonical_repo: "metabase/metabase"
+  reference_sha: "74216b30981d8310c4cf724d63ca282e2e63529d"
+  canonical_paths:
+    - "src/metabase/metabot/agent/core.clj"
+    - "src/metabase/metabot/agent/profiles.clj"
+    - "src/metabase/agent_api/reference.md"
+    - "src/metabase/agent_api/api.clj"
+    - "src/metabase/agent_api/query_guards.clj"
+    - "src/metabase/mcp/v2/tools/query.clj"
+  local_convenience_checkout:
+    path: "public/metabase/master"
+    authority: false
+    read_only: true
+    sha_verification_required: true
+  source_copy_port_vendor_forbidden: true
+  d65x_integration_mode: "SEPARATE_SERVICE_AGENT_API"
+  mandatory_research_protocol:
+    - "verify canonical repo and exact source SHA"
+    - "read all canonical source paths at the declared SHA"
+    - "classify findings as pattern/api/security/runtime/Dima inference"
+    - "cross-check Dima trust-plane invariants"
+    - "verify current upstream when behavior/version/license/API may have changed"
+    - "record decision receipt before implementation/result interpretation"
+  required_bakeoff_receipt:
+    - canonical_source_repo
+    - source_reference_sha
+    - runtime_version
+    - runtime_image_digest
+    - service_api_identity
+    - dima_tested_sha
+    - adapter_sha
+    - benchmark_corpus_version
+    - tenant_user_permission_context
+    - timestamp
+  stop_the_line:
+    - source_sha_unknown
+    - local_checkout_sha_unverified
+    - canonical_paths_not_inspected
+    - permission_or_query_guard_behavior_unverified
+    - runtime_version_or_image_digest_unpinned
+    - source_copy_port_or_vendor_attempt
+    - trust_plane_weakened_to_match_metabase
+    - equal_parallel_production_truth_engines
+
+failure_triage_receipt_gate:
+  required_after_red_phases:
+    - workers1_focused_live
+    - stratified_canary
+    - DEV80
+    - VALIDATION50
+    - HIDDEN50
+  no_product_semantic_code_before_receipt: true
+  same_sha_ab_required_when_owner_or_model_floor_uncertain: true
+  mandatory_fields:
+    - run_id
+    - tested_sha
+    - observed_failure
+    - failure_stage
+    - failure_class
+    - classification_evidence
+    - single_owner
+    - root_cause
+    - failure_family
+    - why_not_model_only
+    - why_not_oracle
+    - why_not_transport
+    - forbidden_patch_alternatives
+    - allowed_files_to_touch
+    - files_not_to_touch
+    - invariant_being_fixed
+    - focused_proof
+    - family_regression_proof
+    - status
+  one_failure_not_one_new_rule: true
+  forbidden_case_derived_prompt: true
+  forbidden_failed_phrase_example: true
+  forbidden_keyword_or_regex_semantic_patch: true
+  forbidden_legacy_resolver_fallback: true
+
+d65_prefreeze_decision_gate:
+  phase: "PRE_ENGINEERING_FREEZE"
+  freeze_blocked_until_resolved: true
+  dev80_blocked_until_resolved: true
+  canonical_roadmap_renumber: false
+  day7_10_unchanged: true
+
+  proven_baseline:
+    provider_free_run: 35696652502
+    provider_free_pass: "102/102"
+    reference_canary_run: 35697064833
+    reference_canary_pass: "16/16"
+    sentinel_run: 35697471863
+    sentinel_pass: "2/2"
+    tested_code_sha: "8dfde62d46d1418f05cce3ed44c26a8025b3b20e"
+
+  d65_j1:
+    mode: "ISOLATED_LAB_EVAL_ONLY"
+    product_code_no_touch: true
+    pinned_models:
+      cheap_structured: "google/gemini-2.5-flash-lite"
+      jev: "typesafe/jev-1.13"
+      reference_structured: "openai/gpt-5.6-sol"
+    forbidden_models:
+      - "~typesafe/jev-latest"
+    hidden_fallback_or_cascade: false
+    threshold_tuning_on_same_eval_set: false
+
+    j1s_semantic_candidate_decision:
+      manager_excluded: true
+      temporal_excluded: true
+      output:
+        - "SUPPLIED_CANDIDATE_ID"
+        - "ABSTAIN"
+      candidate_card_fields:
+        - candidate_id
+        - target_kind
+        - label
+        - verified_aliases
+        - cube_labels
+      required_strata:
+        - exact_alias_control
+        - turkish_non_exact_paraphrase
+        - synonym_surface
+        - multiple_plausible_candidates
+        - true_ambiguity
+        - no_match_abstain
+        - retrieval_miss
+        - bounded_high_cardinality
+        - entity_value
+        - sensitive_value_exact_only
+        - metric_dimension_variation
+        - metamorphic_permuted_schema_labels
+        - cross_tenant_candidate_isolation
+      p0:
+        candidate_outside_supplied_set: 0
+        silent_ambiguity_auto_pick: 0
+        cross_tenant_semantic_leak: 0
+        semantic_authority_minted_by_model: 0
+
+    j1t_typed_temporal_normalization:
+      manager_excluded: true
+      candidate_linker_excluded: true
+      calendar_arithmetic_by_model: false
+      deterministic_date_owner: "TemporalBindingEngine"
+      required_strata:
+        - this_month
+        - previous_month
+        - this_year
+        - previous_year
+        - last_n_days
+        - last_n_weeks
+        - last_n_months
+        - previous_period
+        - same_period_previous_year
+        - explicit_base_comparison
+        - implicit_base_comparison
+        - turkish_paraphrases
+        - ambiguous_temporal_phrase
+        - unsupported_temporal_request
+      jev_unrepresentable_contract_behavior: "MEASURE_AND_REPORT_NO_WORKAROUND"
+
+    shared_metrics:
+      - accuracy
+      - abstain_precision
+      - abstain_recall
+      - ambiguity_unsafe_pick_count
+      - candidate_escape_count
+      - turkish_paraphrase_accuracy
+      - metamorphic_consistency
+      - repeated_run_agreement
+      - p50_latency
+      - p95_latency
+      - cost
+      - provider_failures
+      - jev_choice_probabilities
+      - jev_brier_or_equivalent
+      - jev_ece_or_equivalent
+      - jev_high_confidence_wrong_count
+
+    decision:
+      reject:
+        product_change: false
+      promising:
+        stop_and_consult: true
+        next_ticket_if_approved: "D65-J1B"
+        requires_explicit_decision_provider_seam: true
+        requires_semantic_temporal_role_separation: true
+        requires_affected_gate_revalidation: true
+
+  d65_m0:
+    mode: "READ_RESEARCH_ADOPTION_AUDIT"
+    product_integration: false
+    canonical_repo: "metabase/metabase"
+    historical_pinned_sha: "74216b30981d8310c4cf724d63ca282e2e63529d"
+    current_upstream_sha: "fff70175e0b5f82dc0eb267593c717c4a6130206"
+    relevant_source_delta_between_shas: "NONE"
+    output: "DIMA_DAY6_5_METABASE_ADOPTION_MATRIX.md"
+
+  d65_x0:
+    mode: "THIN_SEPARATE_SERVICE_FEASIBILITY"
+    starts_after_m0_has_sufficient_evidence: true
+    representative_standard_projection_cases:
+      min: 5
+      max: 10
+    raw_sql_shortcut: false
+    remove_wren: false
+    production_route: false
+    equal_parallel_truth_engines: false
+    decision:
+      not_promising:
+        primary_substrate: "WREN"
+      promising:
+        stop_and_consult: true
+        next_ticket_if_approved: "D65-X"
+        must_choose_exactly_one_primary_substrate_before_freeze: true
+
+  consultation_gates:
+    - D65_J1B_PRODUCT_INTEGRATION
+    - PRODUCTION_MODEL_CASCADE_OR_THRESHOLD
+    - FULL_D65_X
+    - PRIMARY_SUBSTRATE_SWITCH
+    - AUTHORITY_OR_SECURITY_BOUNDARY_ADOPTION
+    - ENGINEERING_FREEZE_CANDIDATE
+    - DEV80
+
+final_integrated_release_gate:
+  authority: "belgeler/plan/DIMA_RELEASE_FINAL_INTEGRATED_GATE.md"
+  dev80_semantics: "FINAL_BROAD_ENGINEERING_GATE"
+  dev80_max_runs_for_release: 1
+  dev80_exploratory_debugging: false
+  final_freeze_after_day15_code: true
+  final_freeze_after_j1_decision: true
+  final_freeze_after_substrate_decision: true
+  final_freeze_after_rehearsal: true
+
+  development_test_policy:
+    continuous:
+      - focused_provider_free
+      - focused_real_llm
+      - failure_family
+      - metamorphic
+      - same_sha_ab_when_needed
+      - small_realistic_scenario_set
+      - material_change_canary_8_to_16
+      - relevant_real_sentinel
+    broad_final_sets_during_development: false
+
+  final_rehearsal:
+    case_count_min: 20
+    case_count_max: 25
+    real_llm: true
+    chosen_substrate_real_execution: true
+    research_complex_cases: true
+    must_be_green_before_dev80: true
+
+  required_before_dev80:
+    - j1s_resolved
+    - j1t_resolved
+    - m0_complete
+    - x0_resolved
+    - full_x_resolved_if_needed
+    - one_primary_substrate
+    - day7_research_loop_complete
+    - day8_hypothesis_root_cause_complete
+    - day9_report_document_complete
+    - day10_product_mvp_complete
+    - day11_eval_metamorphic_expansion_complete
+    - day12_querycontract_evidence_telemetry_hardening_complete
+    - day13_tenant_pii_principal_safety_complete
+    - day14_persistence_resume_complete
+    - day15_pilot_flag_and_rollback_code_complete_flag_off
+    - all_cheap_focused_live_metamorphic_canary_sentinel_green
+    - final_rehearsal_green
+
+  post_dev80:
+    code_freeze: true
+    allowed:
+      - validation50
+      - hidden50
+      - certification_receipts
+      - non_behavioral_deployment
+      - already_implemented_flag_activation
+      - monitoring
+      - log_analysis
+      - non_behavioral_docs_ui_polish
+    forbidden_behavior_changes:
+      - semantic_behavior
+      - temporal_behavior
+      - prompt_or_typed_cognition_contracts
+      - model_provider_policy
+      - jev_policy
+      - analytics_substrate
+      - retriever_or_binding_authority
+      - standard_research_routing
+      - research_tool_contracts
+      - cross_domain_join_gate
+      - querycontract_semantics
+      - evidence_completion_semantics
+      - tenant_security_execution_semantics
+      - persistence_resume_semantics
+
+  validation50:
+    semantics: "FINAL_UNSEEN_VALIDATION"
+    no_tuning: true
+    after_dev80: true
+
+  hidden50:
+    semantics: "FINAL_SEALED_CERTIFICATION"
+    no_tuning: true
+    after_validation50: true
+
+  consultation_required_before:
+    - d65_j1b_product_integration
+    - production_model_cascade_or_threshold
+    - full_d65_x
+    - primary_substrate_switch
+    - final_engineering_freeze_candidate
+    - dev80_start
+    - post_dev80_behavior_change
+    - pilot_activation
+
+current_release_sequence:
+  status: "ACTIVE"
+  authority: true
+  authorities:
+    day65_decisions: "belgeler/plan/DIMA_DAY6_5_PREFREEZE_DECISION_GATE_J1_M0_X0.md"
+    final_release_gate: "belgeler/plan/DIMA_RELEASE_FINAL_INTEGRATED_GATE.md"
+  steps:
+    - "D65-J1S semantic candidate benchmark"
+    - "D65-J1T typed temporal benchmark"
+    - "D65-M0 Metabase source/adoption audit"
+    - "D65-X0 thin Metabase feasibility"
+    - "full D65-X only if X0 promising and explicitly approved"
+    - "choose exactly ONE primary analytics substrate"
+    - "complete any explicitly-approved J1B / Metabase production integration"
+    - "Day7 Result-Aware Research Loop / ToolContract / CrossDomainJoinGate"
+    - "Day8 HypothesisLedger / root-cause"
+    - "Day9 ReportDocument + evidence linkage"
+    - "Day10 Product MVP end-to-end"
+    - "Day11 real-language / metamorphic eval expansion"
+    - "Day12 QueryContract / evidence / telemetry hardening"
+    - "Day13 tenant / PII / principal security"
+    - "Day14 persistence / resume"
+    - "Day15 pilot flag + rollback code complete; flag remains OFF"
+    - "all focused/provider-free/live/metamorphic/canary/sentinel gates GREEN"
+    - "20-25 case final integrated real-LLM rehearsal GREEN"
+    - "FINAL ENGINEERING FREEZE CANDIDATE"
+    - "DEV80 exactly once"
+    - "CODE FREEZE"
+    - "VALIDATION50 no tuning"
+    - "external fresh HIDDEN50 no tuning"
+    - "CERTIFICATION SEALED"
+    - "pilot flag activation"

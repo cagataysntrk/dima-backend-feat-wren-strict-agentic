@@ -1,0 +1,50 @@
+name: v2-precomparison-canary
+
+"on":
+  push:
+    branches:
+      - feat/ask-v2-mvp
+    paths:
+      - "backend/app/v2/**"
+      - "backend/app/routers/ask_v2.py"
+      - "backend/app/config.py"
+      - "backend/eval/v2_precomparison_canary_manifest.json"
+      - "backend/tests/test_v2_precomparison_canary.py"
+      - ".github/workflows/v2-precomparison-canary.yml"
+  workflow_dispatch:
+
+jobs:
+  provider-free-canary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+      - name: Install backend
+        working-directory: backend
+        run: pip install -e ".[dev]"
+      - name: Canary constitution
+        working-directory: backend
+        run: pytest -q tests/test_v2_precomparison_canary.py
+      - name: Execute high-risk canary nodes
+        working-directory: backend
+        shell: bash
+        run: |
+          mapfile -t nodes < <(python - <<'PY'
+          import json
+          from pathlib import Path
+          data = json.loads(Path("eval/v2_precomparison_canary_manifest.json").read_text())
+          for item in data["cases"]:
+              print(item["node"])
+          PY
+          )
+          pytest -q "${nodes[@]}"
+      - name: Assert large certification artifacts absent
+        run: |
+          test ! -e backend/lab/reports/v2_day6_5_dev80.json
+          test ! -e backend/lab/reports/v2_day6_5_validation50.json
+          test ! -e backend/lab/reports/v2_day6_5_hidden50.json

@@ -1,0 +1,153 @@
+version: day7-orchestration-ablation-v1
+
+policy:
+  workers: 1
+  manager_model: openai/gpt-5.6-sol
+  accepted_authority: typed_fixture_shared_per_case
+  semantic_linker_calls: 0
+  temporal_model_calls: 0
+  frozen13_rerun: false
+  arms:
+    - FREE_COGNITION
+    - GOVERNED_ORCHESTRATION
+  hard_trust_plane_shared: true
+  cases: 8
+
+cases:
+  - id: simple-performance
+    question: "Net geliri incele."
+    max_queries: 1
+    obligations:
+      - id: U1
+        capability: performance
+        source: "Net geliri"
+        semantics:
+          - kind: metric
+            canonical: net_value_x
+            cube: sales_omega
+
+  - id: rank-region-top2
+    question: "Bölgelerde en yüksek 2 net geliri sırala."
+    max_queries: 1
+    obligations:
+      - id: U1
+        capability: ranking
+        source: "Bölgelerde en yüksek 2 net geliri"
+        ranking_direction: desc
+        ranking_limit: 2
+        semantics:
+          - kind: metric
+            canonical: net_value_x
+            cube: sales_omega
+          - kind: dimension
+            canonical: region_axis_m
+            cube: sales_omega
+
+  - id: relationship-safe
+    question: "Duruş süresinin bölümlerle ilişkisini incele."
+    max_queries: 1
+    obligations:
+      - id: U1
+        capability: relationship
+        source: "Duruş süresinin bölümlerle ilişkisini"
+        semantics:
+          - kind: metric
+            canonical: downtime_min_d
+            cube: ops_delta
+          - kind: dimension
+            canonical: department_axis_d
+            cube: ops_delta
+
+  - id: adaptive-material
+    question: "Net geliri bölgelere göre araştır. Bir bölge belirgin ayrışırsa, kanıtı gördükten sonra uygun başka bir kırılımı yalnız gerekliyse aç."
+    max_queries: 3
+    obligations:
+      - id: U1
+        capability: breakdown
+        source: "Net geliri bölgelere göre araştır."
+        semantics:
+          - kind: metric
+            canonical: net_value_x
+            cube: sales_omega
+          - kind: dimension
+            canonical: region_axis_m
+            cube: sales_omega
+    directives:
+      - id: D1
+        type: ADAPT_ON_EVIDENCE
+        parent: U1
+        source: "Bir bölge belirgin ayrışırsa, kanıtı gördükten sonra uygun başka bir kırılımı yalnız gerekliyse aç."
+
+  - id: stable-no-extra-branch
+    question: "İstikrarlı marjı bölgelere göre incele. Fark küçükse gereksiz ek araştırma açma."
+    max_queries: 2
+    obligations:
+      - id: U1
+        capability: breakdown
+        source: "İstikrarlı marjı bölgelere göre incele."
+        semantics:
+          - kind: metric
+            canonical: stable_margin_s
+            cube: sales_omega
+          - kind: dimension
+            canonical: region_axis_m
+            cube: sales_omega
+    directives:
+      - id: D1
+        type: ADAPT_ON_EVIDENCE
+        parent: U1
+        source: "Fark küçükse gereksiz ek araştırma açma."
+
+  - id: high-cardinality-bounded
+    question: "Net geliri ürünlere göre incele. Sonuç bir alt araştırmayı haklı çıkarırsa yalnız kanıtlı ve bütçeli yönlere dallan; gereksiz genişleme yapma."
+    max_queries: 3
+    obligations:
+      - id: U1
+        capability: breakdown
+        source: "Net geliri ürünlere göre incele."
+        semantics:
+          - kind: metric
+            canonical: net_value_x
+            cube: sales_omega
+          - kind: dimension
+            canonical: product_axis_n
+            cube: sales_omega
+    directives:
+      - id: D1
+        type: ADAPT_ON_EVIDENCE
+        parent: U1
+        source: "Sonuç bir alt araştırmayı haklı çıkarırsa yalnız kanıtlı ve bütçeli yönlere dallan; gereksiz genişleme yapma."
+
+  - id: duplicate-side-effect
+    question: "Net geliri araştır. Aynı araştırma yönü yeni kanıt üretmiyorsa onu tekrar çalıştırma."
+    max_queries: 2
+    obligations:
+      - id: U1
+        capability: performance
+        source: "Net geliri araştır."
+        semantics:
+          - kind: metric
+            canonical: net_value_x
+            cube: sales_omega
+    directives:
+      - id: D1
+        type: ADAPT_ON_EVIDENCE
+        parent: U1
+        source: "Aynı araştırma yönü yeni kanıt üretmiyorsa onu tekrar çalıştırma."
+
+  - id: insufficient-evidence
+    question: "Seyrek sinyali araştır. Kanıt yoksa yeni sonuç uydurma ve gereksiz dallanma açma."
+    max_queries: 1
+    obligations:
+      - id: U1
+        capability: performance
+        source: "Seyrek sinyali araştır."
+        semantics:
+          - kind: metric
+            canonical: sparse_signal_q
+            cube: sales_omega
+    directives:
+      - id: D1
+        type: ADAPT_ON_EVIDENCE
+        parent: U1
+        source: "Kanıt yoksa yeni sonuç uydurma ve gereksiz dallanma açma."

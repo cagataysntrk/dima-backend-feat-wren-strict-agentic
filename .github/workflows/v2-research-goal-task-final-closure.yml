@@ -1,0 +1,116 @@
+name: v2-research-goal-task-final-closure
+
+"on":
+  push:
+    branches:
+      - feat/ask-v2-mvp
+    paths:
+      - ".github/workflows/v2-research-goal-task-final-closure.yml"
+  workflow_dispatch:
+
+jobs:
+  provider-free-final-closure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      DIMA_LLM_PROVIDER: "rule"
+      DIMA_V2_FAST_LANGUAGE_PROVIDER: "rule"
+      DIMA_V2_RESEARCH_MANAGER_PROVIDER: "rule"
+      DIMA_V2_SEMANTIC_LINKER_PROVIDER: "rule"
+      DIMA_V2_TEMPORAL_NORMALIZER_PROVIDER: "rule"
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_INTERACTION_LOG: "false"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install backend
+        working-directory: backend
+        run: pip install -e ".[dev]"
+
+      - name: 1 Goal-task quarantine
+        working-directory: backend
+        run: pytest -q tests/test_v2_research_goal_task_quarantine.py
+
+      - name: 2 Day6.5 preacceptance completeness
+        working-directory: backend
+        run: |
+          pytest -q \
+            tests/test_v2_day6_5_preacceptance_protocol.py \
+            tests/test_v2_day6_5_capability_algebra.py \
+            tests/test_v2_day6_5_semantic_linker.py
+
+      - name: 3 Day7 affected Research suite
+        working-directory: backend
+        run: |
+          pytest -q \
+            tests/test_v2_day7_research_tool_contract.py \
+            tests/test_v2_day7_research_task_lifecycle.py \
+            tests/test_v2_day7_research_task_registry.py \
+            tests/test_v2_day7_research_task_registry_execution.py \
+            tests/test_v2_day7_research_principal_binding.py \
+            tests/test_v2_day7_directive_contract.py \
+            tests/test_v2_day7_deferred_capability_boundary.py \
+            tests/test_v2_day7_obligation_local_semantic_recovery.py \
+            tests/test_v2_day7_research_fanout.py \
+            tests/test_v2_day7_seed_set.py \
+            tests/test_v2_day7_derived_evidence.py \
+            tests/test_v2_day7_same_domain_tools.py \
+            tests/test_v2_day7_real_same_domain_wren.py \
+            tests/test_v2_day7_cross_domain_facts.py \
+            tests/test_v2_day7_cross_domain_join_gate.py \
+            tests/test_v2_day7_fanout_certificate_version.py \
+            tests/test_v2_day7_research_manager_loop.py \
+            tests/test_v2_day7_total_manager_budget.py \
+            tests/test_v2_day7_result_aware_loop.py \
+            tests/test_v2_day7_wren_schema_grain_metadata.py \
+            tests/test_v2_day7_research_wren_vertical.py \
+            tests/test_v2_day7_real_adaptive_wren.py \
+            tests/test_v2_day7_orchestration_ablation.py
+
+      - name: 4 Day8 affected ROOT suite
+        working-directory: backend
+        run: |
+          pytest -q \
+            tests/test_v2_day8_root_cause_orchestration.py \
+            tests/test_v2_day8_manager_root_cause_loop.py \
+            tests/test_v2_day8_hypothesis_ledger.py \
+            tests/test_v2_day8_epistemic_label_gate.py \
+            tests/test_v2_day8_hypothesis_proposals.py
+
+      - name: 5 Day10 Product affected suite
+        working-directory: backend
+        run: |
+          pytest -q \
+            tests/test_v2_day6_5_standard_lane.py \
+            tests/test_v2_day6_5_standard_coverage.py \
+            tests/test_v2_day10_frontdoor.py \
+            tests/test_v2_day10_report_projection.py \
+            tests/test_v2_day10_product_events.py \
+            tests/test_v2_day10_product_control.py \
+            tests/test_v2_day10_continuation.py \
+            tests/test_v2_day10_prepaid_hardening.py \
+            tests/test_v2_day10_directive_lifecycle.py \
+            tests/test_v2_day10_s_action_availability.py \
+            tests/test_v2_day10_ns4_rehearsal.py \
+            tests/test_v2_day10_paid_harness_contract.py
+
+      - name: 6a real-Wren relationship regression
+        working-directory: backend
+        run: pytest -q tests/test_v2_day7_real_relationship_vertical.py
+
+      - name: 6b real-Wren ROOT Product regression
+        working-directory: backend
+        run: pytest -q tests/test_v2_day10_real_wren_root_product.py
+
+      - name: Assert closure stayed provider-free
+        run: |
+          test ! -e backend/lab/reports/v2_day6_5_dev80.json
+          test ! -e backend/lab/reports/v2_day6_5_validation50.json
+          test ! -e backend/lab/reports/v2_day6_5_hidden50.json

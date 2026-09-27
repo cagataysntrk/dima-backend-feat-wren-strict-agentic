@@ -1,0 +1,358 @@
+{
+  "version": "v2-precomparison-rehearsal-v1",
+  "status": "DEVELOPMENT_REHEARSAL",
+  "case_count": 20,
+  "real_llm_required": true,
+  "real_wren_required": true,
+  "large_certification_corpus": false,
+  "tuning_allowed": true,
+  "cases": [
+    {
+      "id": "std_breakdown_tr",
+      "kind": "prompt",
+      "category": "breakdown",
+      "question": "Makine duruşlarını bölüm bazında göster.",
+      "lanes": [
+        "STANDARD"
+      ],
+      "statuses": [
+        "ANSWER"
+      ],
+      "min_evidence": 1,
+      "verified": true,
+      "contract_class": "MUST_EXECUTE"
+    },
+    {
+      "id": "std_ranking_tr",
+      "kind": "prompt",
+      "category": "ranking",
+      "question": "Makine duruşlarına göre bölümleri en yüksekten en düşüğe sırala; ilk 5 bölümü göster.",
+      "lanes": [
+        "STANDARD"
+      ],
+      "statuses": [
+        "ANSWER"
+      ],
+      "min_evidence": 1,
+      "verified": true,
+      "contract_class": "MUST_EXECUTE"
+    },
+    {
+      "id": "std_failure_breakdown_tr",
+      "kind": "prompt",
+      "category": "standard_analytical_question",
+      "question": "Arıza sayısını bölüm bazında göster.",
+      "lanes": [
+        "STANDARD"
+      ],
+      "statuses": [
+        "ANSWER"
+      ],
+      "min_evidence": 1,
+      "verified": true,
+      "contract_class": "MUST_EXECUTE"
+    },
+    {
+      "id": "std_clause_order",
+      "kind": "prompt",
+      "category": "multi_intent",
+      "question": "Bölüm bazında makine duruşlarını göster.",
+      "lanes": [
+        "STANDARD",
+        "RESEARCH"
+      ],
+      "statuses": [
+        "ANSWER",
+        "REPORT"
+      ],
+      "min_evidence": 1,
+      "verified": true,
+      "contract_class": "MUST_EXECUTE"
+    },
+    {
+      "id": "std_english_surface",
+      "kind": "prompt",
+      "category": "standard_analytical_question",
+      "question": "Show machine downtime by department.",
+      "lanes": [
+        "STANDARD",
+        "RESEARCH"
+      ],
+      "statuses": [
+        "ANSWER",
+        "CLARIFY",
+        "UNSUPPORTED"
+      ],
+      "min_evidence": 0,
+      "verified": false,
+      "contract_class": "MAY_CLARIFY"
+    },
+    {
+      "id": "relationship_explicit_tr",
+      "kind": "prompt",
+      "category": "relationship",
+      "question": "Makine duruşlarını ve arıza sayısını bölüm bazında araştır; aralarındaki governed ilişkiyi kontrol et ve kanıta bağlı raporla.",
+      "lanes": [
+        "RESEARCH"
+      ],
+      "statuses": [
+        "REPORT",
+        "PARTIAL"
+      ],
+      "min_evidence": 1,
+      "verified": false,
+      "contract_class": "MUST_EXECUTE"
+    },
+    {
+      "id": "root_cause_tr",
+      "kind": "prompt",
+      "category": "root_cause",
+      "question": "Makine duruşlarındaki bozulmanın olası kök nedenlerini doğrulanmış kanıtlarla sınırla; kesin nedensellik iddia etmeden raporla.",
+      "lanes": [
+        "RESEARCH"
+      ],
+      "statuses": [
+        "REPORT",
+        "PARTIAL"
+      ],
+      "min_evidence": 1,
+      "verified": false,
+      "contract_class": "MUST_EXECUTE"
+    },
+    {
+      "id": "adaptive_tr",
+      "kind": "prompt",
+      "category": "adaptive_branch",
+      "question": "Makine duruşlarını bölüm bazında araştır; doğrulanmış kanıt yeni ve maddi bir bölüm kırılımı gösterirse o yönü takip et ve raporla.",
+      "lanes": [
+        "RESEARCH"
+      ],
+      "statuses": [
+        "REPORT",
+        "PARTIAL"
+      ],
+      "min_evidence": 1,
+      "verified": false,
+      "contract_class": "MUST_EXECUTE"
+    },
+    {
+      "id": "canonical_full",
+      "kind": "prompt",
+      "category": "multi_intent",
+      "question": "Makine duruşları, arıza sayısı ve bölüm bazındaki performansı birlikte araştır. Aralarındaki governed ilişkiyi kontrol et; doğrulanmış sonuçlar yeni bir maddi kırılıma işaret ederse onu takip et; gözlenen bozulma için olası kök nedenleri ayrı governed testlerle sınırla ve yönetim için kanıta bağlı bir rapor üret. Nedensel kesinlik iddia etme.",
+      "lanes": [
+        "RESEARCH"
+      ],
+      "statuses": [
+        "REPORT"
+      ],
+      "min_evidence": 4,
+      "verified": true,
+      "contract_class": "MUST_EXECUTE"
+    },
+    {
+      "id": "canonical_reordered",
+      "kind": "prompt",
+      "category": "multi_intent",
+      "question": "Yönetim için kanıta bağlı bir rapor üret; nedensel kesinlik iddia etme. Önce arıza sayısı ile makine duruşlarının governed ilişkisini kontrol et, bölüm bazındaki performansı araştır, maddi yeni kırılım çıkarsa takip et ve olası kök nedenleri ayrı governed testlerle sınırla.",
+      "lanes": [
+        "RESEARCH"
+      ],
+      "statuses": [
+        "REPORT",
+        "PARTIAL"
+      ],
+      "min_evidence": 3,
+      "verified": false,
+      "contract_class": "MUST_EXECUTE"
+    },
+    {
+      "id": "canonical_no_diacritics",
+      "kind": "prompt",
+      "category": "metamorphic_paraphrase",
+      "question": "Makine duruslari, ariza sayisi ve bolum bazindaki performansi birlikte arastir. Governed iliskiyi kontrol et; dogrulanmis yeni maddi kirilim varsa takip et; olasi kok nedenleri ayri testlerle sinirla ve kanita bagli raporla. Kesin nedensellik iddia etme.",
+      "lanes": [
+        "RESEARCH"
+      ],
+      "statuses": [
+        "REPORT",
+        "PARTIAL",
+        "CLARIFY"
+      ],
+      "min_evidence": 0,
+      "verified": false,
+      "contract_class": "MUST_EXECUTE"
+    },
+    {
+      "id": "broaden_policy",
+      "kind": "signed_continuation",
+      "category": "research",
+      "question": "Makine duruşları, arıza sayısı ve bölüm bazındaki performansı birlikte araştır. Aralarındaki governed ilişkiyi kontrol et; olası kök nedenleri doğrulanmış kanıtlarla sınırla ve yönetim raporu üret. Kesin nedensellik iddia etme.",
+      "lanes": [
+        "RESEARCH"
+      ],
+      "statuses": [
+        "REPORT"
+      ],
+      "min_evidence": 1,
+      "verified": true,
+      "followup": "Yalnızca imzalı bu rapor bölümünün governed kapsamını derinleştir; mevcut kanıt yetmezse bütçe içinde ilgili ek governed analizleri yap ve yeni rapor sürümü üret.",
+      "contract_class": "CONTINUATION"
+    },
+    {
+      "id": "report_control",
+      "kind": "signed_continuation",
+      "category": "presentation_control",
+      "question": "Makine duruşları, arıza sayısı ve bölüm bazındaki performansı birlikte araştır; doğrulanmış kanıta bağlı yönetim raporu üret ve kesin nedensellik iddia etme.",
+      "lanes": [
+        "RESEARCH"
+      ],
+      "statuses": [
+        "REPORT"
+      ],
+      "min_evidence": 1,
+      "verified": true,
+      "followup": "Yalnızca imzalı bölüm kapsamında yeni rapor sürümü üret; önceki raporu ve önceki doğrulanmış kanıtı mutate etme.",
+      "contract_class": "CONTINUATION"
+    },
+    {
+      "id": "unsupported_domain",
+      "kind": "prompt",
+      "category": "unsupported_request",
+      "question": "Çalışanların gelecek ayki moral seviyesini veritabanında olmayan psikolojik verilerden kesin olarak tahmin et.",
+      "lanes": [
+        "STANDARD",
+        "RESEARCH"
+      ],
+      "statuses": [
+        "UNSUPPORTED",
+        "CLARIFY"
+      ],
+      "min_evidence": 0,
+      "verified": false,
+      "contract_class": "MUST_REJECT"
+    },
+    {
+      "id": "ambiguous_request",
+      "kind": "prompt",
+      "category": "clarification",
+      "question": "Bunu neden kötü?",
+      "lanes": [
+        "STANDARD",
+        "RESEARCH"
+      ],
+      "statuses": [
+        "CLARIFY",
+        "UNSUPPORTED"
+      ],
+      "min_evidence": 0,
+      "verified": false,
+      "contract_class": "MUST_CLARIFY"
+    },
+    {
+      "id": "cross_domain_relationship",
+      "kind": "prompt",
+      "category": "relationship",
+      "question": "Bölüm performansı ile arıza sayısı arasında güvenli governed ilişki yolu varsa araştır; yol yoksa uydurma join yapmadan bunu açıkça belirt.",
+      "lanes": [
+        "RESEARCH"
+      ],
+      "statuses": [
+        "REPORT",
+        "PARTIAL",
+        "UNSUPPORTED"
+      ],
+      "min_evidence": 0,
+      "verified": false,
+      "contract_class": "MAY_CLARIFY"
+    },
+    {
+      "id": "repair_surface",
+      "kind": "prompt",
+      "category": "conversation_repair",
+      "question": "Düzeltme: yalnız makine duruşlarını bölüm bazında incele; arıza sayısını bu isteğe dahil etme.",
+      "lanes": [
+        "STANDARD",
+        "RESEARCH"
+      ],
+      "statuses": [
+        "ANSWER",
+        "REPORT",
+        "CLARIFY"
+      ],
+      "min_evidence": 0,
+      "verified": false,
+      "contract_class": "MAY_CLARIFY"
+    },
+    {
+      "id": "english_root",
+      "kind": "prompt",
+      "category": "root_cause",
+      "question": "Investigate possible causes of machine downtime with governed evidence, avoid claiming confirmed causation, and produce a management report.",
+      "lanes": [
+        "RESEARCH",
+        "STANDARD"
+      ],
+      "statuses": [
+        "REPORT",
+        "PARTIAL",
+        "CLARIFY",
+        "UNSUPPORTED"
+      ],
+      "min_evidence": 0,
+      "verified": false,
+      "contract_class": "MAY_CLARIFY"
+    },
+    {
+      "id": "restart_signed_continuation",
+      "kind": "restart_continuation",
+      "category": "persistence_resume",
+      "question": "Makine duruşları, arıza sayısı ve bölüm bazındaki performansı birlikte araştır. Aralarındaki governed ilişkiyi kontrol et; doğrulanmış sonuçlar yeni bir maddi kırılıma işaret ederse onu takip et; gözlenen bozulma için olası kök nedenleri ayrı governed testlerle sınırla ve yönetim için kanıta bağlı bir rapor üret. Nedensel kesinlik iddia etme.",
+      "followup": "Yalnızca imzalı bu rapor bölümünün governed kapsamını daha derinleştir. Yeni doğrulanmış kanıt gerekiyorsa araştır; önceki raporu mutate etmeden yeni sürüm üret.",
+      "lanes": [
+        "RESEARCH"
+      ],
+      "statuses": [
+        "REPORT",
+        "PARTIAL"
+      ],
+      "min_evidence": 4,
+      "verified": false,
+      "require_continuation_verified": false,
+      "contract_class": "PERSISTENCE"
+    },
+    {
+      "id": "foreign_principal_replay",
+      "kind": "foreign_principal_replay",
+      "category": "security_isolation",
+      "question": "Makine duruşları, arıza sayısı ve bölüm bazındaki performansı birlikte araştır. Aralarındaki governed ilişkiyi kontrol et; doğrulanmış sonuçlar yeni bir maddi kırılıma işaret ederse onu takip et; gözlenen bozulma için olası kök nedenleri ayrı governed testlerle sınırla ve yönetim için kanıta bağlı bir rapor üret. Nedensel kesinlik iddia etme.",
+      "followup": "İmzalı bölüm kapsamında derinleştir.",
+      "lanes": [
+        "RESEARCH"
+      ],
+      "statuses": [
+        "REPORT"
+      ],
+      "min_evidence": 4,
+      "verified": true,
+      "contract_class": "SECURITY_ATTACK"
+    }
+  ],
+  "forbidden": [
+    "DEV80",
+    "Validation50",
+    "Hidden50",
+    "pilot activation",
+    "CONFIRMED_CAUSE"
+  ],
+  "contract_classes": [
+    "MUST_EXECUTE",
+    "MAY_CLARIFY",
+    "MUST_CLARIFY",
+    "MUST_REJECT",
+    "SECURITY_ATTACK",
+    "CONTINUATION",
+    "PERSISTENCE"
+  ],
+  "contract_class_note": "Contract class is the primary behavioral dimension. Existing lanes/statuses remain secondary case-specific outcome constraints; orthogonal security/continuation/persistence runners score their own invariants independently."
+}

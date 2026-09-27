@@ -21,7 +21,7 @@ from app import intent_semasi as _intent_semasi
 import contextvars
 import re
 import time
-from typing import Protocol
+from typing import Any, Protocol
 
 from app.llm_guard import safe_call
 from app.logging_setup import get_logger
@@ -141,6 +141,15 @@ def _norm(text: str) -> str:
 
 class SqlGenerator(Protocol):
     def generate_sql(self, question: str, schema: dict) -> str: ...
+    def structured_text(self, system: str, user: str) -> str: ...
+    def structured_json(
+        self,
+        system: str,
+        user: str,
+        *,
+        schema: dict[str, Any],
+        schema_name: str,
+    ) -> str: ...
 
 
 # --- ortak prompt -----------------------------------------------------------
@@ -712,6 +721,14 @@ class AnthropicSqlGenerator:
         text = "".join(b.text for b in message.content if b.type == "text")
         return _FENCE.sub("", text.strip()).strip()
 
+    def structured_text(self, system: str, user: str) -> str:
+        """Semantic-agnostic structured-text transport.
+
+        The caller owns the schema/prompt/validation. This deliberately does NOT know
+        about cubes, turns or V2; it only reuses the configured low-latency select model.
+        """
+        return self._ask(system, user, model=self._select_model)
+
     def generate_sql(self, question: str, schema: dict) -> str:
         return self._ask(_build_system(schema, self._dialect), question)
 
@@ -868,8 +885,17 @@ class OpenAICompatibleSqlGenerator:
     Groq: base_url=https://api.groq.com/openai/v1 (Bearer key).
     Ollama: base_url=http://localhost:11434/v1 (key gerekmez)."""
 
-    def __init__(self, base_url: str, api_key: str, model: str, provider: str = "openai", dialect: str = "",
-                 select_model: str | None = None):
+    def __init__(
+        self,
+        base_url: str,
+        api_key: str,
+        model: str,
+        provider: str = "openai",
+        dialect: str = "",
+        select_model: str | None = None,
+        structured_reasoning_enabled: bool = False,
+        structured_max_tokens: int = 16384,
+    ):
         self._url = base_url.rstrip("/") + "/chat/completions"
         # 🔴 **ANAHTAR ZİNCİRİ.** `api_key` virgüllü bir liste olabilir; ilk eleman
         # bugünkü tek anahtarla **birebir aynı** davranır. Kota dolunca (`402`/`429`)
@@ -886,8 +912,21 @@ class OpenAICompatibleSqlGenerator:
         self._select_model = select_model or model
         self._provider = provider
         self._dialect = dialect
+        # V2 structured inference can carry a role-scoped reasoning policy. Legacy
+        # callers still default to False, preserving the historical hot path.
+        self._structured_reasoning_enabled = bool(structured_reasoning_enabled)
+        self._structured_max_tokens = max(256, int(structured_max_tokens))
 
-    def _chat(self, system: str, user: str, model: str | None = None) -> str:
+    def _chat(
+        self,
+        system: str,
+        user: str,
+        model: str | None = None,
+        *,
+        response_format: dict[str, Any] | None = None,
+        require_parameters: bool = False,
+        reasoning_enabled: bool = False,
+    ) -> str:
         import requests  # wrenai zaten requests'e bağımlı
 
         use_model = model or self._model
@@ -896,12 +935,29 @@ class OpenAICompatibleSqlGenerator:
             headers["Authorization"] = f"Bearer {self._keys[self._key_ix]}"
         payload = {
             "model": use_model,
-            "temperature": 0,
             "messages": [
                 {"role": "system", "content": system},
                 {"role": "user", "content": user},
             ],
         }
+        if response_format is not None:
+            payload["response_format"] = response_format
+            payload["max_tokens"] = self._structured_max_tokens
+            # OpenRouter may otherwise route to a provider endpoint that silently
+            # ignores an unsupported parameter. Structured interpretation must never
+            # degrade to free-form text under the same method name.
+            if self._provider == "openrouter" and require_parameters:
+                payload["provider"] = {"require_parameters": True}
+        # OpenRouter's current OpenAI reasoning families (GPT-5+/o-series) do not
+        # advertise temperature as a supported chat-completions parameter. Sending
+        # temperature=0 can therefore turn a healthy model into HTTP 400. Keep the
+        # deterministic hint for other compatible providers/models only.
+        _or_openai_reasoning = (
+            self._provider == "openrouter"
+            and use_model.startswith(("openai/gpt-5", "openai/o"))
+        )
+        if not _or_openai_reasoning:
+            payload["temperature"] = 0
         # 🔴🔴 **AKIL YÜRÜTME SICAK YOLDA KAPALIDIR — ve bu ÖLÇÜLDÜ.**
         #
         # `deepseek/deepseek-v4-flash` bir kasetli korpus koşumunda **384 saniye** sürdü
@@ -931,7 +987,7 @@ class OpenAICompatibleSqlGenerator:
         #
         # *Bir modelin yavaşlığı bazen bilgisizliğinden değil, düşüncesini nereye
         # yazdığından gelir.*
-        payload["reasoning"] = {"enabled": False}
+        payload["reasoning"] = {"enabled": bool(reasoning_enabled)}
         _t0 = time.monotonic()
         try:
             resp = safe_call(
@@ -955,8 +1011,14 @@ class OpenAICompatibleSqlGenerator:
                              self._provider, self._key_ix + 1, len(self._keys))
             # Log-and-rethrow — bkz. AnthropicSqlGenerator._ask (aynı desen). Groq/Ollama/
             # Gemini/xAI HEPSİ bu sınıftan geçer; `provider` alanı hangisi olduğunu netleştirir.
-            _log.warning("%s API çağrısı başarısız (model=%s, %dms): %s",
-                        self._provider, use_model, int((time.monotonic() - _t0) * 1000), exc, exc_info=True)
+            _body = ""
+            try:
+                _body = str(getattr(locals().get("resp"), "text", "") or "")[:800]
+            except Exception:
+                _body = ""
+            _log.warning("%s API çağrısı başarısız (model=%s, %dms): %s%s",
+                        self._provider, use_model, int((time.monotonic() - _t0) * 1000), exc,
+                        f" | body={_body}" if _body else "", exc_info=True)
             raise
         elapsed_ms = int((time.monotonic() - _t0) * 1000)
         try:  # telemetri — asla yanıtı bozmaz
@@ -966,6 +1028,39 @@ class OpenAICompatibleSqlGenerator:
             pass
         _log.info("%s API başarılı (model=%s, %dms)", self._provider, use_model, elapsed_ms)
         return _icerik_cikar(data, self._provider, use_model)
+
+    def structured_text(self, system: str, user: str) -> str:
+        """Legacy free-form structured transport; V2 typed language does not use it."""
+        return self._chat(system, user, model=self._select_model)
+
+    def structured_json(
+        self,
+        system: str,
+        user: str,
+        *,
+        schema: dict[str, Any],
+        schema_name: str,
+    ) -> str:
+        """Native JSON-Schema transport; semantic meaning remains caller-owned."""
+        if self._provider not in {"openrouter", "openai"}:
+            raise RuntimeError(
+                f"{self._provider} native json_schema transport is not declared"
+            )
+        return self._chat(
+            system,
+            user,
+            model=self._select_model,
+            response_format={
+                "type": "json_schema",
+                "json_schema": {
+                    "name": schema_name,
+                    "strict": True,
+                    "schema": schema,
+                },
+            },
+            require_parameters=True,
+            reasoning_enabled=self._structured_reasoning_enabled,
+        )
 
     def generate_sql(self, question: str, schema: dict) -> str:
         return self._chat(_build_system(schema, self._dialect), question)
@@ -1187,6 +1282,22 @@ class RuleBasedSqlGenerator:
     - `oee_vardiya` (OEE): makine/vardiya bazlı verimlilik (47-tablo rebind, eski adı
       `vardiya_kayitlari` — bkz. app/llm.py Faz 2b notu, kolon adları da değişti).
     - `partiler` (boya partileri): fire, su/enerji, maliyet, renk sapması, ağırlık, ciro."""
+
+    def structured_text(self, system: str, user: str) -> str:  # noqa: ARG002
+        # V2 TurnInterpreter'ın regex/kural fallback'e sessizce düşmesi yasaktır.
+        raise RuntimeError("Structured language interpretation için gerçek LLM sağlayıcı gerekli.")
+
+    def structured_json(
+        self,
+        system: str,
+        user: str,
+        *,
+        schema: dict[str, Any],
+        schema_name: str,
+    ) -> str:  # noqa: ARG002
+        raise RuntimeError(
+            "Native structured language interpretation için gerçek LLM sağlayıcı gerekli."
+        )
 
     def generate_followup_sql(self, question: str, schema: dict, prev_question: str,  # noqa: ARG002
                               prev_sql: str, history: list[str]) -> str:  # noqa: ARG002
@@ -1624,6 +1735,57 @@ class FailoverSqlGenerator:
         except Exception:  # noqa: BLE001 — kayıt, dayanıklılığı KIRAMAZ
             _log.warning("kademeli düşüş audit'e yazılamadı", exc_info=True)
 
+    def structured_text(self, system: str, user: str) -> str:
+        """Use the existing provider failover without importing any semantic owner."""
+        errs = []
+        for sira, g in enumerate(self._gens):
+            fn = getattr(g, "structured_text", None)
+            if not callable(fn):
+                continue
+            try:
+                out = fn(system, user)
+                if sira:
+                    self._dususu_kaydet(g, sira)
+                self._last = g
+                return out
+            except Exception as exc:
+                errs.append(f"{getattr(g, '_provider', type(g).__name__)}: {exc}")
+        _log.error("FailoverSqlGenerator.structured_text: TÜM sağlayıcılar başarısız: %s",
+                   " | ".join(errs))
+        raise RuntimeError("structured_text: tüm LLM sağlayıcıları başarısız: "
+                           + " | ".join(errs))
+
+    def structured_json(
+        self,
+        system: str,
+        user: str,
+        *,
+        schema: dict[str, Any],
+        schema_name: str,
+    ) -> str:
+        """Fail over only among providers that explicitly expose native schema output."""
+        errs = []
+        for sira, g in enumerate(self._gens):
+            fn = getattr(g, "structured_json", None)
+            if not callable(fn):
+                continue
+            try:
+                out = fn(system, user, schema=schema, schema_name=schema_name)
+                if sira:
+                    self._dususu_kaydet(g, sira)
+                self._last = g
+                return out
+            except Exception as exc:
+                errs.append(f"{getattr(g, '_provider', type(g).__name__)}: {exc}")
+        _log.error(
+            "FailoverSqlGenerator.structured_json: native schema sağlayıcısı başarısız: %s",
+            " | ".join(errs),
+        )
+        raise RuntimeError(
+            "structured_json: native schema destekli LLM sağlayıcısı yok/başarısız: "
+            + " | ".join(errs)
+        )
+
     def generate_sql(self, question: str, schema: dict) -> str:
         errs = []
         for sira, g in enumerate(self._gens):
@@ -1804,16 +1966,22 @@ def _make(provider: str, settings, dialect: str):
         return OpenAICompatibleSqlGenerator(
             settings.xai_base_url, settings.xai_api_key, settings.xai_model, "xai", dialect,
             select_model=settings.xai_select_model,
+            structured_reasoning_enabled=getattr(settings, "v2_structured_reasoning_enabled", False),
+            structured_max_tokens=getattr(settings, "v2_structured_max_tokens", 16384),
         )
     if provider == "gemini" and settings.gemini_api_key:
         return OpenAICompatibleSqlGenerator(
             settings.gemini_base_url, settings.gemini_api_key, settings.gemini_model, "gemini", dialect,
             select_model=settings.gemini_select_model,
+            structured_reasoning_enabled=getattr(settings, "v2_structured_reasoning_enabled", False),
+            structured_max_tokens=getattr(settings, "v2_structured_max_tokens", 16384),
         )
     if provider == "groq" and settings.groq_api_key:
         return OpenAICompatibleSqlGenerator(
             settings.groq_base_url, settings.groq_api_key, settings.groq_model, "groq", dialect,
             select_model=settings.groq_select_model,
+            structured_reasoning_enabled=getattr(settings, "v2_structured_reasoning_enabled", False),
+            structured_max_tokens=getattr(settings, "v2_structured_max_tokens", 16384),
         )
     if provider == "openrouter" and settings.openrouter_api_key:
         return OpenAICompatibleSqlGenerator(
@@ -1822,11 +1990,15 @@ def _make(provider: str, settings, dialect: str):
             settings.openrouter_api_keys or settings.openrouter_api_key,
             settings.openrouter_model, "openrouter", dialect,
             select_model=settings.openrouter_select_model,
+            structured_reasoning_enabled=getattr(settings, "v2_structured_reasoning_enabled", False),
+            structured_max_tokens=getattr(settings, "v2_structured_max_tokens", 16384),
         )
     if provider == "ollama" and _reachable(settings.ollama_base_url):
         return OpenAICompatibleSqlGenerator(
             settings.ollama_base_url, "", settings.ollama_model, "ollama", dialect,
             select_model=settings.ollama_select_model,
+            structured_reasoning_enabled=getattr(settings, "v2_structured_reasoning_enabled", False),
+            structured_max_tokens=getattr(settings, "v2_structured_max_tokens", 16384),
         )
     return None
 
@@ -1834,6 +2006,19 @@ def _make(provider: str, settings, dialect: str):
 class NoLlmGenerator:
     """A#5: rule_fallback KAPALI + hiç sağlayıcı yok → tahmin YOK. generate_sql hata
     fırlatır; routers/ask.py bunu dürüst redde çevirir (sessiz-yanlış SQL yerine)."""
+
+    def structured_text(self, system: str, user: str) -> str:  # noqa: ARG002
+        raise RuntimeError("Structured language interpretation için LLM sağlayıcısı yok.")
+
+    def structured_json(
+        self,
+        system: str,
+        user: str,
+        *,
+        schema: dict[str, Any],
+        schema_name: str,
+    ) -> str:  # noqa: ARG002
+        raise RuntimeError("Native structured language interpretation için LLM sağlayıcısı yok.")
 
     def generate_sql(self, question: str, schema: dict) -> str:  # noqa: ARG002
         raise RuntimeError("LLM sağlayıcısı yok ve kural yedeği kapalı (DIMA_RULE_FALLBACK)")

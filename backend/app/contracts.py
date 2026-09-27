@@ -232,6 +232,79 @@ class ContractStore:
                 _log.warning("contract DB VE spool yazılamadı (kanıt kaybı)", exc_info=True)
         return cid
 
+    def record_v2_minimum(
+        self,
+        *,
+        session_id: str | None,
+        question: str,
+        cube_query: dict,
+        sql: str,
+        result: dict,
+        schema_version: str,
+        tenant_id: str | None,
+        provenance: dict,
+    ) -> dict:
+        """Persist one immutable Day-3 execution contract and report real durability.
+
+        Legacy record() intentionally stays best-effort and is not changed. V2 needs a
+        stronger answer: an execution may be called official only after its evidence is
+        durably written either to the primary DB or to the existing replay spool.
+        """
+        cid = "c-" + uuid.uuid4().hex[:10]
+        rhash = result_hash(result)
+        payload = {
+            "id": cid,
+            "session_id": session_id,
+            "tenant_id": tenant_id,
+            "question": question,
+            "cube_query_json": json.dumps(cube_query, ensure_ascii=False),
+            "sql": sql,
+            "result_hash": rhash,
+            "row_count": result.get("row_count"),
+            "schema_version": schema_version,
+            "source": "v2_standard",
+            "provenance_json": json.dumps(
+                provenance,
+                ensure_ascii=False,
+                default=str,
+                sort_keys=True,
+            ),
+            "ts": datetime.utcnow().isoformat(),
+        }
+
+        try:
+            _persist(_row_from_payload(payload))
+            return {
+                "id": cid,
+                "result_hash": rhash,
+                "durability": "db",
+                "sealed": True,
+            }
+        except Exception as db_exc:
+            try:
+                _spool_append(payload)
+                _log.warning(
+                    "V2 minimum contract DB'ye yazılamadı, spool'a alındı: %s",
+                    db_exc,
+                )
+                return {
+                    "id": cid,
+                    "result_hash": rhash,
+                    "durability": "spool_pending",
+                    "sealed": True,
+                }
+            except Exception:
+                _log.warning(
+                    "V2 minimum contract DB VE spool yazılamadı — official seal yok",
+                    exc_info=True,
+                )
+                return {
+                    "id": cid,
+                    "result_hash": rhash,
+                    "durability": "none",
+                    "sealed": False,
+                }
+
     @staticmethod
     def _visible_row(r, tenant_id: str | None, include_legacy: bool) -> bool:
         """Tenant-RLS: kayıt sahibinin tenant'ı eşleşmeli. tenant_id'siz (RLS-öncesi)

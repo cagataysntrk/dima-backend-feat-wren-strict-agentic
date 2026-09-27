@@ -1,0 +1,49 @@
+name: v2-day0-baseline
+
+# P3 source-lock measurement. Runs once when the V2 draft PR is opened.
+# Later pushes do NOT re-run this workflow; Day 0 is a frozen before-picture.
+"on":
+  pull_request:
+    branches:
+      - wren-bağımsız
+    types:
+      - opened
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: backend
+
+jobs:
+  day0:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Wren Rust engine binding
+        run: pip install "wren-core-py==0.7.2"
+
+      - name: Backend + dev dependencies
+        run: pip install -e ".[dev]"
+
+      - name: Focused Day 0 gates
+        run: pytest -q tests/test_v2_day0.py
+
+      - name: Freeze legacy baseline
+        run: python lab/v2_day0_baseline.py --output lab/reports/v2_day0_baseline.json
+
+      - name: Upload Day 0 baseline
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v2-day0-baseline
+          path: backend/lab/reports/v2_day0_baseline.json
+          retention-days: 30
+          if-no-files-found: error

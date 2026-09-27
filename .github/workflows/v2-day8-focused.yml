@@ -1,0 +1,138 @@
+# Final adaptive-handoff closure receipt: product=deba0432148beaa3910eb9fac534b959eedb2bb1
+# Final continuation-finding provenance closure receipt: product=0de015202ceea983fe08183f29264adc7703dce8
+# Final signed-continuation closure receipt: product=a5cac9c2b0ac7b90fbe403c4b01b9e9128c420d1
+name: v2-day8-focused
+
+"on":
+  push:
+    branches:
+      - feat/ask-v2-mvp
+    paths:
+      - "backend/app/fanout.py"
+      - "backend/app/v2/models.py"
+      - "backend/app/v2/epistemics.py"
+      - "backend/app/v2/hypothesis_proposals.py"
+      - "backend/app/v2/manager_policy.py"
+      - "backend/app/v2/capability_bindings.py"
+      - "backend/app/v2/acceptance.py"
+      - "backend/app/v2/manager_preacceptance.py"
+      - "backend/app/v2/manager_semantics.py"
+      - "backend/app/v2/relationship_adapter.py"
+      - "backend/app/v2/semantic_linker.py"
+      - "backend/app/v2/semantic_retriever.py"
+      - "backend/app/v2/representability.py"
+      - "backend/app/v2/root_cause_orchestration.py"
+      - "backend/app/v2/manager_loop.py"
+      - "backend/app/v2/manager_runtime.py"
+      - "backend/app/v2/manager_action_availability.py"
+      - "backend/app/v2/manager_action_set.py"
+      - "backend/app/v2/authority_invariants.py"
+      - "backend/lab/v2_manager_action_set_script_adapter.py"
+      - "backend/tests/helpers/manager_action_set_adapter.py"
+      - "backend/app/v2/manager_lab.py"
+      - "backend/app/v2/research_tasks.py"
+      - "backend/tests/test_v2_day8_hypothesis_ledger.py"
+      - "backend/tests/test_v2_day8_epistemic_label_gate.py"
+      - "backend/tests/test_v2_day8_hypothesis_proposals.py"
+      - "backend/tests/test_v2_day8_capability_execution_mode.py"
+      - "backend/tests/test_v2_day8_root_cause_orchestration.py"
+      - "backend/tests/test_v2_day8_manager_root_cause_loop.py"
+      - "backend/tests/test_v2_day8_real_wren_root_cause.py"
+      - "backend/tests/test_v2_day8_live_sol_contract.py"
+      - "backend/lab/v2_day8_root_cause_live_sol.py"
+      - "backend/lab/v2_certification_oracle.py"
+      - "backend/tests/test_v2_day10_paid_harness_contract.py"
+      - "backend/tests/test_v2_day7_deferred_capability_boundary.py"
+      - "backend/tests/test_v2_day6_5_preacceptance_protocol.py"
+      - "backend/tests/test_v2_day6_5_semantic_linker.py"
+      - "backend/tests/test_v2_day7_real_relationship_vertical.py"
+      - ".github/workflows/v2-day8-focused.yml"
+  workflow_dispatch:
+
+jobs:
+  provider-free:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DIMA_LLM_PROVIDER: rule
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_INTERACTION_LOG: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install backend
+        working-directory: backend
+        run: pip install -e ".[dev]"
+
+      - name: Compile Day8 epistemic slice
+        working-directory: backend
+        run: python -m compileall -q app/v2/models.py app/v2/epistemics.py app/v2/hypothesis_proposals.py app/v2/root_cause_orchestration.py app/v2/manager_loop.py app/v2/manager_action_set.py app/v2/authority_invariants.py app/v2/manager_lab.py app/v2/manager_preacceptance.py app/v2/manager_semantics.py app/v2/semantic_linker.py app/v2/semantic_retriever.py lab/v2_day8_root_cause_live_sol.py
+
+      - name: Day8 capability execution-mode attacks
+        working-directory: backend
+        run: |
+          pytest -q \
+            tests/test_v2_day8_capability_execution_mode.py \
+            tests/test_v2_day7_deferred_capability_boundary.py
+
+      - name: D10-N semantic preacceptance regression
+        working-directory: backend
+        run: |
+          pytest -q \
+            tests/test_v2_day6_5_preacceptance_protocol.py \
+            tests/test_v2_day6_5_semantic_linker.py
+
+      - name: D10-P relationship execution regression
+        working-directory: backend
+        run: pytest -q tests/test_v2_day7_real_relationship_vertical.py
+
+      - name: Day8 root-cause orchestration attacks
+        working-directory: backend
+        run: pytest -q tests/test_v2_day8_root_cause_orchestration.py
+
+      - name: Day8 Manager-loop root-cause wiring
+        working-directory: backend
+        run: pytest -q tests/test_v2_day8_manager_root_cause_loop.py
+
+      - name: Day8 hypothesis ledger attacks
+        working-directory: backend
+        run: pytest -q tests/test_v2_day8_hypothesis_ledger.py
+
+      - name: Day8 epistemic label attacks
+        if: ${{ hashFiles('backend/tests/test_v2_day8_epistemic_label_gate.py') != '' }}
+        working-directory: backend
+        run: pytest -q tests/test_v2_day8_epistemic_label_gate.py
+
+      - name: Day8 hypothesis proposal attacks
+        working-directory: backend
+        run: pytest -q tests/test_v2_day8_hypothesis_proposals.py
+
+      - name: Relevant Day7 Evidence regression
+        working-directory: backend
+        run: pytest -q tests/test_v2_day7_derived_evidence.py
+
+      - name: Relevant Day7 ResearchTask regressions
+        working-directory: backend
+        run: |
+          pytest -q \
+            tests/test_v2_day7_research_task_lifecycle.py \
+            tests/test_v2_day7_research_task_registry.py \
+            tests/test_v2_day7_research_task_registry_execution.py
+
+      - name: Day8 live Sol harness contract (provider-free)
+        working-directory: backend
+        run: pytest -q tests/test_v2_day8_live_sol_contract.py
+
+      - name: Day8 one real-Wren root-cause sentinel
+        working-directory: backend
+        run: pytest -q tests/test_v2_day8_real_wren_root_cause.py
+
+      - name: Final certification oracle behavior
+        working-directory: backend
+        run: pytest -q tests/test_v2_day10_paid_harness_contract.py

@@ -166,20 +166,80 @@ def oku(project_dir: str | Path) -> dict:
     return d if isinstance(d, dict) else {}
 
 
-def rozet(sert: dict, rel_adi: str | None) -> str | None:
-    """Tek ilişkinin özeti: `"olculdu:saglikli"` / `"olculdu:riskli"` / `"olculmedi"` / None.
+def kanit(
+    sert: dict,
+    rel_adi: str | None,
+    *,
+    current_mdl_version: str | None = None,
+) -> dict | None:
+    """Typed-ish fanout proof without inventing freshness.
 
-    `dimension_origin` ve Query Contract bunu taşır; UI (Faz H5) bunu rozete çevirir.
-    `None` = ilişki adı yok (yerel boyut — sertifika sorusu anlamsız).
+    Backward/legacy callers may omit `current_mdl_version`; in that compatibility mode
+    the historical measured relationship status is exposed exactly as before.  Day7
+    governed consumers MUST pass the current Wren MDL version.  Missing/corrupt/mismatched
+    certificates then fail closed to `olculmedi`.
     """
     if not rel_adi:
         return None
-    k = ((sert or {}).get("relationships") or {}).get(rel_adi)
-    if not k:
-        return "olculmedi"
-    if k.get("durum") != "olculdu":
-        return "olculmedi"
-    return "olculdu:saglikli" if k.get("saglikli") else "olculdu:riskli"
+
+    sert = sert if isinstance(sert, dict) else {}
+    certificate_mdl_version = sert.get("mdl_version")
+    measured_at = sert.get("olculme_zamani")
+    relationship = ((sert.get("relationships") or {}).get(rel_adi))
+
+    status = "MISSING"
+    certified = "olculmedi"
+    if current_mdl_version is not None:
+        if not certificate_mdl_version:
+            status = "MDL_VERSION_MISSING"
+        elif str(certificate_mdl_version) != str(current_mdl_version):
+            status = "MDL_MISMATCH"
+        elif not isinstance(relationship, dict):
+            status = "RELATIONSHIP_UNMEASURED"
+        elif relationship.get("durum") != "olculdu":
+            status = "RELATIONSHIP_UNMEASURED"
+        elif relationship.get("saglikli"):
+            status = "HEALTHY"
+            certified = "olculdu:saglikli"
+        else:
+            status = "RISKY"
+            certified = "olculdu:riskli"
+    else:
+        # Historical behavior for non-Day7 callers.
+        if not isinstance(relationship, dict):
+            status = "RELATIONSHIP_UNMEASURED"
+        elif relationship.get("durum") != "olculdu":
+            status = "RELATIONSHIP_UNMEASURED"
+        elif relationship.get("saglikli"):
+            status = "HEALTHY"
+            certified = "olculdu:saglikli"
+        else:
+            status = "RISKY"
+            certified = "olculdu:riskli"
+
+    return {
+        "relationship": rel_adi,
+        "status": status,
+        "certified": certified,
+        "certificate_mdl_version": certificate_mdl_version,
+        "current_mdl_version": current_mdl_version,
+        "measured_at": measured_at,
+    }
+
+
+def rozet(
+    sert: dict,
+    rel_adi: str | None,
+    *,
+    current_mdl_version: str | None = None,
+) -> str | None:
+    """Relationship badge; Day7 callers may bind it to the exact current MDL."""
+    proof = kanit(
+        sert,
+        rel_adi,
+        current_mdl_version=current_mdl_version,
+    )
+    return None if proof is None else str(proof["certified"])
 
 
 #: 🔴 `§F3` — ROZETİN TÜRKÇESİ, TEK SAHİPLİ (`KAT-1`).
@@ -235,34 +295,63 @@ def konnektor_sorgu(svc) -> Sorgu:
     return _q
 
 
+def certify_wren_service(svc) -> dict:
+    """Measure the compiled Wren project's declared relationships against current MDL.
+
+    This is an explicit build/preflight operation. It never runs from `schema()` and
+    therefore does not move the 2×COUNT-per-relationship cost onto the Product hot path.
+    The returned certificate is not authority until ordinary consumers bind it to the
+    exact current `mdl_version`.
+    """
+    import yaml
+
+    proje = Path(svc.project_dir)
+    rels_f = proje / "relationships.yml"
+    if not rels_f.exists():
+        raise FileNotFoundError(f"relationships.yml yok: {rels_f}")
+    rels = (
+        yaml.safe_load(rels_f.read_text(encoding="utf-8")) or {}
+    ).get("relationships") or []
+
+    mdl = json.loads(svc._mdl_bytes())
+    # Keep physical-name ownership in WrenService/the service implementation instead of
+    # duplicating tableReference rules here.
+    fiziksel = {
+        model.get("name"): svc._physical_name(model)
+        for model in (mdl.get("models") or [])
+        if model.get("name")
+    }
+    return certify(
+        rels,
+        konnektor_sorgu(svc),
+        tablolar=set(fiziksel),
+        nitelikli=lambda table: fiziksel.get(table, f"main.{table}"),
+        mdl_version=svc.mdl_version,
+    )
+
+
+def refresh_wren_service_certificate(svc) -> tuple[Path, dict]:
+    """Refresh the derived fanout artifact for one compiled Wren service."""
+    certificate = certify_wren_service(svc)
+    return yaz(svc.project_dir, certificate), certificate
+
+
 def _cli() -> int:
     """`python -m app.fanout [proje_dizini]` → sertifikayı üretir ve özetini basar."""
     import sys
-
-    import yaml
 
     from app.config import get_settings
     from app.wren_service import WrenService
 
     s = get_settings()
     proje = Path(sys.argv[1]) if len(sys.argv) > 1 else s.resolved_project_dir()
-    rels_f = Path(proje) / "relationships.yml"
-    if not rels_f.exists():
-        print(f"relationships.yml yok: {rels_f}")
-        return 1
-    rels = (yaml.safe_load(rels_f.read_text(encoding="utf-8")) or {}).get("relationships") or []
     svc = WrenService(project_dir=proje, datasource=s.datasource,
                       connection_info=s.connection_dict())
-    # MDL'de bildirilen modeller = ölçülebilir tablo evreni. Sertifika bunun DIŞINDAKİ bir
-    # tabloya dokunan ilişkiyi `atlandi` diye kaydeder — sessizce düşürmez.
-    import json as _json
-
-    mdl = _json.loads(svc._mdl_bytes())
-    fiziksel = {m.get("name"): WrenService._physical_name(m) for m in (mdl.get("models") or [])}
-    sert = certify(rels, konnektor_sorgu(svc), tablolar=set(fiziksel),
-                   nitelikli=lambda t: fiziksel.get(t, f"main.{t}"),
-                   mdl_version=svc.mdl_version)
-    hedef = yaz(proje, sert)
+    try:
+        hedef, sert = refresh_wren_service_certificate(svc)
+    except FileNotFoundError as exc:
+        print(str(exc))
+        return 1
     kayit = sert["relationships"]
     olculdu = [k for k in kayit.values() if k.get("durum") == "olculdu"]
     riskli = [a for a, k in kayit.items() if k.get("durum") == "olculdu" and not k.get("saglikli")]

@@ -145,6 +145,23 @@ def hash_token(token: str) -> str:
     return hashlib.sha256(token.encode()).hexdigest()
 
 
+def derive_hmac_key(purpose: str, *, plane: str = "public") -> bytes:
+    """Derive a domain-separated integrity key from the active access-token secret.
+
+    Callers get a purpose-specific key without learning JWT secret selection/fallback
+    details. This is for integrity-only opaque state such as signed UI continuation
+    tokens; it does not replace authentication or authorization.
+    """
+    if not purpose or not purpose.strip():
+        raise ValueError("HMAC purpose boş olamaz")
+    access, _, _ = _secrets(plane)
+    return hmac.new(
+        access.encode("utf-8"),
+        f"dima:hmac:{purpose.strip()}".encode("utf-8"),
+        hashlib.sha256,
+    ).digest()
+
+
 def new_family_id() -> str:
     return uuid.uuid4().hex
 

@@ -1,0 +1,43 @@
+{
+  "kind": "dima_v2_day1_acceptance",
+  "measured_at": "2026-09-21",
+  "roadmap": "P4",
+  "report": "R7",
+  "product_code_snapshot": "5b541d0ba4e928eb1a86c7e437ddcfbc60cdcc11",
+  "provider": {
+    "provider": "openrouter",
+    "model": "openai/gpt-5.6-luna",
+    "transport_smoke": "pass"
+  },
+  "structural": {
+    "workflow_run_id": 35540119438,
+    "focused_tests_passed": 23,
+    "focused_tests_failed": 0,
+    "status": "pass"
+  },
+  "live_kpis": {
+    "corpus_cases": 28,
+    "structured_output_success": 28,
+    "structured_output_success_rate": 1,
+    "turn_act_correct": 27,
+    "turn_act_accuracy": 0.9643,
+    "surface_grounding_violations": 0,
+    "total_llm_calls": 31,
+    "max_calls_per_case": 2,
+    "status": "pass"
+  },
+  "non_green_cases": [
+    {
+      "id": "refine-filter",
+      "question": "sadece RAM-3",
+      "expected_act": "ANALYTIC_REFINE",
+      "actual_act": "USER_REPAIR",
+      "disposition": "non_blocking_day4_conversation_sentinel"
+    }
+  ],
+  "artifact": {
+    "id": 10614537238,
+    "digest": "sha256:e0034a9bf67000f2c943c55e5d8a3563d9f3deae3037338595111ff3f97ad274"
+  },
+  "transition_policy": "P4 strict exit passed. Day 2 may open after P5 + R8 reread and ticket creation."
+}

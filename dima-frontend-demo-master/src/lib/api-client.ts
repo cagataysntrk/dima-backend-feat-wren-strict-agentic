@@ -10,6 +10,8 @@ import type {
   AskJobStatus,
   AskRequest,
   AskResponse,
+  AskV2CoreResponse,
+  AskV2Request,
   BlastRadius,
   ConnectionConfirmResult,
   ConnectionDraft,
@@ -535,6 +537,32 @@ export async function ask(
   }
   return data;
 }
+
+/** Day 5 Core MVP transport. No legacy /ask fallback is allowed here. */
+export async function askV2(body: AskV2Request): Promise<AskV2CoreResponse> {
+  const { data } = await apiClient.post<AskV2CoreResponse>("/ask-v2", body);
+  return data;
+}
+
+/**
+ * Keep the existing thread shell without pretending V2 is a legacy AskResponse.
+ * ReportPanel detects v2_core first and renders the typed Core MVP payload directly.
+ */
+export function v2CoreThreadItem(data: AskV2CoreResponse, question: string): AskResponse {
+  return {
+    question,
+    sql: "",
+    planned_sql: null,
+    result: null,
+    source: "v2",
+    cube_query: null,
+    note: data.response.text,
+    thread_id: data.thread_id ?? null,
+    contract_id: data.response.evidence_refs[0]?.contract_id ?? null,
+    v2_core: data,
+  };
+}
+
 
 // FAZ 2.2b — METRİK SAHİPLİĞİ. Bir terimi ("satış") birden fazla cube sinonim olarak
 // iddia ediyorsa yönlendirici hangisini seçeceğini bilemez; kayıt bunu GÖRÜNÜR kılar,

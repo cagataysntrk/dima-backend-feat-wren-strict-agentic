@@ -1,0 +1,83 @@
+name: v2-day7-capability-cognition-diagnostic
+
+"on":
+  workflow_dispatch:
+    inputs:
+      case_ids:
+        description: "Required comma-separated diagnostic case ids; blank is rejected"
+        required: true
+        default: ""
+        type: string
+      max_model_calls:
+        description: "Explicit hard paid-call ceiling; must be >= 1"
+        required: true
+        default: 0
+        type: number
+
+jobs:
+  cognition-diagnostic:
+    runs-on: ubuntu-latest
+    environment: DIMA_OPENROUTER_API_KEY
+    timeout-minutes: 30
+    env:
+      DIMA_OPENROUTER_API_KEY: ${{ secrets.DIMA_OPENROUTER_API_KEY || secrets.OPENROUTER_API_KEY }}
+      DIMA_DAY7_LIVE_MANAGER_MODEL: "openai/gpt-5.6-sol"
+      DIMA_DAY7_LIVE_LINKER_MODEL: "openai/gpt-5.6-luna"
+      DIMA_DAY7_LIVE_TEMPORAL_MODEL: "openai/gpt-5.6-sol"
+      DIMA_LLM_PROVIDER: openrouter
+      DIMA_V2_RESEARCH_MANAGER_PROVIDER: openrouter
+      DIMA_V2_SEMANTIC_LINKER_PROVIDER: openrouter
+      DIMA_V2_TEMPORAL_NORMALIZER_PROVIDER: openrouter
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_INTERACTION_LOG: "false"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install backend
+        working-directory: backend
+        run: pip install -e ".[dev]"
+
+      - name: Provider-free evaluator contract
+        working-directory: backend
+        run: pytest -q tests/test_v2_day7_live_sol_contract.py
+
+      - name: Workers=1 capability cognition diagnostic
+        working-directory: backend
+        shell: bash
+        run: |
+          set -euo pipefail
+          raw_case_ids="${{ inputs.case_ids }}"
+          budget="${{ inputs.max_model_calls }}"
+          if [[ -z "${raw_case_ids// /}" ]]; then
+            echo "ERROR: explicit cognition diagnostic case_ids are required." >&2
+            exit 64
+          fi
+          if (( budget < 1 )); then
+            echo "ERROR: max_model_calls must be >= 1." >&2
+            exit 64
+          fi
+          args=()
+          IFS=',' read -ra ids <<< "${raw_case_ids}"
+          for id in "${ids[@]}"; do
+            clean="${id// /}"
+            [[ -n "${clean}" ]] && args+=(--case-id "${clean}")
+          done
+          python lab/v2_day7_capability_cognition_diagnostic.py \
+            --cases eval/v2_day7_capability_cognition_diagnostic.yaml \
+            --max-model-calls "${budget}" \
+            "${args[@]}" \
+            --output lab/reports/v2_day7_capability_cognition_diagnostic.json
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v2-day7-capability-cognition-diagnostic-${{ github.run_id }}
+          path: backend/lab/reports/v2_day7_capability_cognition_diagnostic.json
+          retention-days: 90

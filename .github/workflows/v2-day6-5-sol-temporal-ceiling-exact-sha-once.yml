@@ -1,0 +1,289 @@
+name: v2-day6-5-sol-temporal-ceiling-exact-sha-once
+
+"on":
+  push:
+    branches:
+      - feat/ask-v2-mvp
+    paths:
+      - ".github/workflows/v2-day6-5-sol-temporal-ceiling-exact-sha-once.yml"
+
+jobs:
+  sol-temporal-ceiling:
+    if: "github.event.head_commit.message == 'test(v2-day6.5): run Sol temporal exact-SHA ceiling'"
+    runs-on: ubuntu-latest
+    environment: DIMA_OPENROUTER_API_KEY
+    timeout-minutes: 45
+    env:
+      DIMA_OPENROUTER_API_KEY: ${{ secrets.DIMA_OPENROUTER_API_KEY || secrets.OPENROUTER_API_KEY }}
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_INTERACTION_LOG: "false"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: c256ebfda765ac35f1d3b51f59d53d1018dd695e
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install exact-SHA backend
+        working-directory: backend
+        run: pip install -e ".[dev]"
+
+      - name: Prove exact-SHA Luna control boundary unchanged
+        working-directory: backend
+        run: |
+          python -m py_compile             lab/v2_day6_5_luna_same_frozen_control.py             app/v2/manager_semantics.py             app/v2/semantic_linker.py             app/v2/temporal_intent.py
+          pytest -q             tests/test_v2_day6_5_luna_same_frozen_control.py             tests/test_v2_day6_5_j1b_real_flow_harness.py             tests/test_v2_day6_5_j1b_providers.py             tests/test_v2_day6_5_semantic_linker.py             tests/test_v2_day6_5_typed_temporal.py             tests/test_v2_day6_5_no_legacy_semantic_fallback.py
+
+      - name: Sol temporal-only reference ceiling on same frozen 8
+        working-directory: backend
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import time
+          from pathlib import Path
+
+          import httpx
+
+          import lab.v2_day6_5_luna_same_frozen_control as base
+          from app.v2.manager_semantics import ManagerSemanticResolutionAdapter
+          from app.v2.manager_tools import ResolveSemanticsArgs
+          from app.v2.models import BoundedSemanticContextV0, ConversationStateV2
+          from app.v2.semantic_handles import SemanticHandleRegistry
+          from app.v2.source_spans import SourceSpanRegistry
+          from app.v2.temporal_intent import (
+              StructuredTemporalNormalizationProvider,
+              TemporalNormalizationProviderError,
+          )
+
+          MODEL = "openai/gpt-5.6-sol"
+          OUT = Path("lab/reports/v2_day6_5_sol_temporal_exact_sha.json")
+
+          class SolStructured:
+              def __init__(self, *, api_key: str, timeout_s: float = 60.0):
+                  self.api_key = api_key
+                  self.timeout_s = timeout_s
+                  self.calls = 0
+                  self.costs = []
+                  self.latencies = []
+                  self.response_ids = []
+
+              def __call__(self, system, user, *, schema, schema_name):
+                  payload = {
+                      "model": MODEL,
+                      "messages": [
+                          {"role": "system", "content": system},
+                          {"role": "user", "content": user},
+                      ],
+                      "response_format": {
+                          "type": "json_schema",
+                          "json_schema": {
+                              "name": schema_name,
+                              "strict": True,
+                              "schema": schema,
+                          },
+                      },
+                      "provider": {"allow_fallbacks": False},
+                      "reasoning": {"enabled": True},
+                      "max_tokens": 512,
+                  }
+                  started = time.perf_counter()
+                  try:
+                      with httpx.Client(timeout=self.timeout_s) as client:
+                          response = client.post(
+                              base.CHAT_URL,
+                              headers={
+                                  "Authorization": f"Bearer {self.api_key}",
+                                  "Content-Type": "application/json",
+                              },
+                              json=payload,
+                          )
+                  except Exception as exc:
+                      raise RuntimeError(
+                          f"transport failed: {type(exc).__name__}: {exc}"
+                      ) from exc
+                  latency = time.perf_counter() - started
+                  self.latencies.append(latency)
+                  if response.status_code != 200:
+                      raise RuntimeError(
+                          f"provider HTTP {response.status_code}: {response.text[:500]}"
+                      )
+                  raw = response.json()
+                  usage = raw.get("usage") or {}
+                  if isinstance(usage.get("cost"), (int, float)):
+                      self.costs.append(float(usage["cost"]))
+                  if raw.get("id"):
+                      self.response_ids.append(str(raw["id"]))
+                  self.calls += 1
+                  return raw["choices"][0]["message"]["content"]
+
+          def invalid_typed(exc):
+              text = f"{type(exc).__name__}: {exc}"
+              return (
+                  "ValidationError" in text
+                  or "JSONDecodeError" in text
+                  or "response contract" in text.lower()
+                  or "response IDs do not match" in text
+              )
+
+          doc = base._load()
+          key = base._api_key()
+          structured = SolStructured(api_key=key)
+          provider = StructuredTemporalNormalizationProvider(structured=structured)
+
+          records = []
+          wrong = 0
+          invalid = 0
+          provider_failure = 0
+
+          for scenario in doc["temporal_scenarios"]:
+              spans = SourceSpanRegistry()
+              handles = SemanticHandleRegistry()
+              spans.register_message(
+                  message_id=scenario["id"],
+                  text=scenario["message"],
+              )
+              refs = []
+              hints = []
+              for surface, hint in scenario["spans"]:
+                  span = spans.mint_exact(
+                      message_id=scenario["id"],
+                      surface=surface,
+                  )
+                  refs.append(span.source_ref)
+                  hints.append(hint)
+
+              adapter = ManagerSemanticResolutionAdapter(
+                  source_spans=spans,
+                  semantic_handles=handles,
+                  semantic_context=BoundedSemanticContextV0.model_validate(doc["context"]),
+                  conversation=ConversationStateV2(),
+                  schema=doc["schema"],
+                  tenant_binding="tenant-sol-temporal-ceiling",
+                  session_id=None,
+                  thread_id=None,
+                  semantic_decision_provider=None,
+                  temporal_normalization_provider=provider,
+              )
+
+              try:
+                  result = adapter.resolve(
+                      ResolveSemanticsArgs(
+                          provenance="USER_SOURCE",
+                          source_refs=tuple(refs),
+                          target_kind_hints=tuple(hints),
+                      )
+                  )
+              except TemporalNormalizationProviderError as exc:
+                  if invalid_typed(exc):
+                      invalid += 1
+                      status = "INVALID_TYPED_CONTRACT"
+                  else:
+                      provider_failure += 1
+                      status = "PROVIDER_FAILURE"
+                  records.append({
+                      "id": scenario["id"],
+                      "message": scenario["message"],
+                      "expected_resolved": scenario["expect_resolved"],
+                      "status": status,
+                      "error": f"{type(exc).__name__}: {exc}",
+                  })
+                  continue
+              except Exception as exc:
+                  provider_failure += 1
+                  records.append({
+                      "id": scenario["id"],
+                      "message": scenario["message"],
+                      "expected_resolved": scenario["expect_resolved"],
+                      "status": "UNEXPECTED_FAILURE",
+                      "error": f"{type(exc).__name__}: {exc}",
+                  })
+                  continue
+
+              resolved = len(result.resolved)
+              correct = resolved == scenario["expect_resolved"]
+              kinds = []
+              date_shapes_ok = True
+              for item in result.resolved:
+                  binding = handles.binding_for_execution(
+                      item.handle.handle_id,
+                      tenant_binding="tenant-sol-temporal-ceiling",
+                      context_version=doc["context"]["context_version"]["version"],
+                  )
+                  kinds.append(item.handle.target_kind)
+                  target = binding.canonical_target
+                  if item.handle.target_kind == "period":
+                      date_shapes_ok = date_shapes_ok and bool(
+                          getattr(target, "start", None)
+                      )
+                  elif item.handle.target_kind == "comparison":
+                      date_shapes_ok = date_shapes_ok and bool(
+                          getattr(getattr(target, "base_period", None), "start", None)
+                          and getattr(
+                              getattr(target, "reference_period", None), "start", None
+                          )
+                      )
+              if not date_shapes_ok:
+                  correct = False
+              if not correct:
+                  wrong += 1
+              records.append({
+                  "id": scenario["id"],
+                  "message": scenario["message"],
+                  "expected_resolved": scenario["expect_resolved"],
+                  "actual_resolved": resolved,
+                  "resolved_kinds": kinds,
+                  "correct": correct,
+                  "unresolved_count": len(result.unresolved_source_refs),
+                  "date_shapes_ok": date_shapes_ok,
+              })
+
+          payload = {
+              "kind": "d65_sol_temporal_reference_ceiling_exact_sha",
+              "tested_backend_sha": "c256ebfda765ac35f1d3b51f59d53d1018dd695e",
+              "model": MODEL,
+              "reasoning_enabled": True,
+              "corpus_version": doc["version"],
+              "scenario_count": len(doc["temporal_scenarios"]),
+              "correct": sum(int(bool(r.get("correct"))) for r in records),
+              "real_flow_temporal_wrong": wrong,
+              "invalid_typed_contract": invalid,
+              "provider_failure_count": provider_failure,
+              "hidden_fallback_count": 0,
+              "calls": structured.calls,
+              "cost": sum(structured.costs) if structured.costs else None,
+              "p50_latency_s": (
+                  sorted(structured.latencies)[len(structured.latencies)//2]
+                  if structured.latencies else None
+              ),
+              "records": records,
+          }
+          payload["green"] = (
+              payload["real_flow_temporal_wrong"] == 0
+              and payload["invalid_typed_contract"] == 0
+              and payload["provider_failure_count"] == 0
+              and payload["hidden_fallback_count"] == 0
+          )
+          OUT.parent.mkdir(parents=True, exist_ok=True)
+          OUT.write_text(
+              json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+              encoding="utf-8",
+          )
+          print(json.dumps({
+              k: v for k, v in payload.items()
+              if k != "records"
+          }, ensure_ascii=False))
+          raise SystemExit(0 if payload["green"] else 2)
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v2-day6-5-sol-temporal-exact-sha
+          path: backend/lab/reports/v2_day6_5_sol_temporal_exact_sha.json
+          retention-days: 90

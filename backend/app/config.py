@@ -41,6 +41,22 @@ class Settings(BaseSettings):
     # 15-20 az. duckdb'de UYGULANMAZ (gömülü — ağ yok, kilitlenecek uzak sunucu yok).
     db_statement_timeout: int = 60
 
+    # --- Dima V2 rollout --------------------------------------------------
+    # Day 0: new semantic/conversation core is dark by default. Rollback is an
+    # explicit tenant-server setting, never a per-request silent legacy fallback.
+    ask_v2_enabled: bool = False
+
+    # Day15 pilot layer. Master V2 remains dark by default; when pilot mode is
+    # explicitly enabled, only exact tenant bindings in this comma-separated allowlist
+    # may start new /ask-v2 work. No request-level silent legacy fallback exists.
+    ask_v2_pilot_enabled: bool = False
+    ask_v2_pilot_tenants: str = ""
+    ask_v2_pilot_contract_version: str = "day15-pilot-v1"
+
+    # Day14 durable canonical checkpoint root. ProductCoordinator receives the
+    # storage adapter explicitly; tests may inject an isolated store.
+    ask_v2_checkpoint_dir: str = str(BASE_DIR / "data" / "v2-checkpoints")
+
     # --- LLM sağlayıcı ---------------------------------------------------
     # auto: anthropic → xai → gemini → groq → ollama (ayakta ise) → kural-tabanlı.
     # Açık değerler: auto | anthropic | xai | gemini | groq | openrouter | ollama | rule
@@ -106,8 +122,49 @@ class Settings(BaseSettings):
     openrouter_api_keys: str = ""
 
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
-    openrouter_model: str = "openai/gpt-oss-120b"
+    # V2 operational default (2026-09-21): tek source-of-truth model.
+    # GitHub Environment variable DIMA_OPENROUTER_MODEL bunu override edebilir.
+    # select_model boş bırakılırsa LLM adapter ana modeli aynen kullanır.
+    # Cost-first hot path: structured turn interpretation/extraction/clarification/repair.
+    # Harder reasoning is escalated explicitly; the fast default must stay cheap.
+    openrouter_model: str = "google/gemini-2.5-flash-lite"
     openrouter_select_model: str = ""
+
+    # --- Dima V2 model roles ---------------------------------------------
+    # Concrete model names are configuration; V2 product code asks for a role.
+    # Blank FAST model falls back to the configured provider default. REFERENCE is
+    # intentionally blank by default so a production-certification run must name or
+    # configure the stronger candidate explicitly instead of silently reusing FAST.
+    v2_fast_language_provider: str = "openrouter"
+    v2_fast_language_model: str = ""
+    v2_reference_language_provider: str = "openrouter"
+    v2_reference_language_model: str = ""
+    v2_research_manager_provider: str = "openrouter"
+    v2_research_manager_model: str = ""
+    # Bounded semantic interpretation role. Blank values intentionally fall back to
+    # FAST_LANGUAGE configuration; semantic truth/handle minting remains deterministic.
+    v2_semantic_linker_provider: str = ""
+    v2_semantic_linker_model: str = ""
+    # Typed temporal cognition is a distinct contract from semantic candidate selection.
+    # Blank values fall back to REFERENCE_LANGUAGE; deterministic TemporalBindingEngine
+    # remains the calendar/date authority after the model emits a typed choice.
+    v2_temporal_normalizer_provider: str = ""
+    v2_temporal_normalizer_model: str = ""
+    # Role-scoped structured inference policy. FAST keeps reasoning off for latency/cost;
+    # REFERENCE may use reasoning because correctness certification is its purpose and
+    # some capable endpoints require it. Concrete model names do not participate here.
+    v2_fast_language_reasoning: bool = False
+    v2_reference_language_reasoning: bool = True
+    v2_research_manager_reasoning: bool = True
+    v2_semantic_linker_reasoning: bool = False
+    v2_temporal_normalizer_reasoning: bool = True
+    # Native JSON-schema replies are compact. Bound only the provider output reservation;
+    # semantic contracts/context are unchanged. Prevents OpenRouter reserving full 65k.
+    v2_structured_max_tokens: int = 16384
+    v2_manager_lab_enabled: bool = False
+    # Internal scoped setting written by ModelRolePolicy before build_generator().
+    # Legacy callers retain False, preserving the historical hot-path behavior.
+    v2_structured_reasoning_enabled: bool = False
     # Ollama (tam yerel, anahtarsız: `brew install ollama` + `ollama pull ...`)
     ollama_base_url: str = "http://localhost:11434/v1"
     ollama_model: str = "qwen2.5-coder:7b"

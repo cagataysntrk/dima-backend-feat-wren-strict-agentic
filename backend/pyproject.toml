@@ -37,6 +37,8 @@ dependencies = [
   # biçim korur) eklemek için — pyyaml safe_load+dump reponun elle yazılmış, açıklayıcı
   # yorumlarla dolu cube YAML'larını sessizce siler (app/mdl_writer.py).
   "ruamel.yaml>=0.18",
+  # V2 semantic grounding: Turkish inflection normalization over verified aliases.
+  "py-rust-stemmers>=0.1.8,<0.2",
 ]
 
 [project.optional-dependencies]

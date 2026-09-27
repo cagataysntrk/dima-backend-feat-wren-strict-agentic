@@ -1,0 +1,84 @@
+version: 1
+purpose: "P4 Day 1 TurnInterpreter live acceptance corpus"
+metric: "dialogue_act accuracy; structured-output reliability; surface-grounding safety"
+
+cases:
+  - {id: new-ciro-ay, q: "bu ay ciro", expected_act: ANALYTIC_NEW}
+  - {id: new-oee-makine, q: "makine bazında OEE", expected_act: ANALYTIC_NEW}
+  - {id: new-fire-siyah, q: "siyah fire", expected_act: ANALYTIC_NEW}
+  - {id: new-top5, q: "son 3 ay en çok fire veren 5 makine", expected_act: ANALYTIC_NEW}
+  - {id: new-compare, q: "bu ay ciroyu geçen ayla kıyasla", expected_act: ANALYTIC_NEW}
+  - {id: new-bakiye, q: "bakiye ne?", expected_act: ANALYTIC_NEW}
+
+  - {id: social-thanks, q: "teşekkürler", expected_act: SOCIAL}
+  - {id: social-hi, q: "merhaba", expected_act: SOCIAL}
+  - {id: social-ok, q: "tamamdır sağ ol", expected_act: SOCIAL}
+  - {id: social-bye, q: "iyi çalışmalar", expected_act: SOCIAL}
+
+  - id: explain-comment
+    q: "bunu yorumla"
+    expected_act: RESULT_EXPLAIN
+    conversation: {has_active_result: true, has_prior_analytical_request: true}
+  - id: explain-meaning
+    q: "bu ne anlama geliyor?"
+    expected_act: RESULT_EXPLAIN
+    conversation: {has_active_result: true, has_prior_analytical_request: true}
+  - id: explain-open
+    q: "biraz daha aç"
+    expected_act: RESULT_EXPLAIN
+    conversation: {has_active_result: true, has_prior_analytical_request: true}
+  - id: explain-summary
+    q: "sonucu özetle"
+    expected_act: RESULT_EXPLAIN
+    conversation: {has_active_result: true, has_prior_analytical_request: true}
+
+  - id: repair-time
+    q: "hayır son üç ay"
+    expected_act: USER_REPAIR
+    conversation: {has_prior_analytical_request: true}
+  - id: repair-metric
+    q: "fire değil kar oranı"
+    expected_act: USER_REPAIR
+    conversation: {has_prior_analytical_request: true}
+  - id: repair-dimension
+    q: "müşteri değil renk"
+    expected_act: USER_REPAIR
+    conversation: {has_prior_analytical_request: true}
+  - id: repair-period
+    q: "yok bu yıl demek istemedim geçen yıl"
+    expected_act: USER_REPAIR
+    conversation: {has_prior_analytical_request: true}
+
+  - id: refine-filter
+    q: "sadece RAM-3"
+    expected_act: ANALYTIC_REFINE
+    conversation: {has_prior_analytical_request: true}
+  - id: refine-breakdown
+    q: "vardiya bazında da aç"
+    expected_act: ANALYTIC_REFINE
+    conversation: {has_prior_analytical_request: true}
+  - id: refine-monthly
+    q: "aylık göster"
+    expected_act: ANALYTIC_REFINE
+    conversation: {has_prior_analytical_request: true}
+  - id: refine-top3
+    q: "ilk 3'ünü göster"
+    expected_act: ANALYTIC_REFINE
+    conversation: {has_prior_analytical_request: true}
+
+  - id: clarification-color
+    q: "renk olan siyah"
+    expected_act: CLARIFICATION_ANSWER
+    conversation: {pending_clarification: true}
+  - id: clarification-balance
+    q: "müşteri bakiyesi"
+    expected_act: CLARIFICATION_ANSWER
+    conversation: {pending_clarification: true}
+  - id: clarification-shift
+    q: "gece vardiyası"
+    expected_act: CLARIFICATION_ANSWER
+    conversation: {pending_clarification: true}
+
+  - {id: unsupported-weather, q: "yarın hava nasıl", expected_act: UNSUPPORTED}
+  - {id: unsupported-poem, q: "bana aşk şiiri yaz", expected_act: UNSUPPORTED}
+  - {id: unsupported-travel, q: "Roma için gezi planı yap", expected_act: UNSUPPORTED}

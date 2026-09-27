@@ -1,0 +1,1748 @@
+# DIMA DAY 6.5 — RUNTIME KERNEL, STANDARD PATH VE ANALYTICS SUBSTRATE KARAR ADDENDUMU
+
+**Tarih:** 22 Eylül 2026  
+**Branch:** `feat/ask-v2-mvp`  
+**Statü:** **ACTIVE PHASE-LOCAL AUTHORITY**  
+**Mühürlü roadmap/report:** DEĞİŞMEZ  
+**Amaç:** Day 6.5 engineering closure'ın D65-E3 ve sonrasını, yeni runtime-kernel ve analytics-substrate kararlarıyla çelişkisiz yürütmek.
+
+Bu belge yeni bir Day veya roadmap reset'i değildir. Mühürlü nihai roadmap ve denetim raporunun
+Day 6.5 implementation addendum'udur. Çelişki halinde current Day 6.5 uygulama ayrıntısında bu belge
+ve `DIMA_V2_GELISTIRME_DURUM.md`; üst seviye ürün hedefinde mühürlü roadmap/report authority'dir.
+
+---
+
+## 1. Karar özeti
+
+```text
+Day 6.5 RESET                              HAYIR
+SemanticCatalogRetriever geri alınsın      HAYIR
+StandardBuilder durdurulsun                HAYIR
+ikinci bespoke Standard agent loop         HAYIR
+minimal generic bounded runtime kernel     EVET
+ResearchManager şimdi kernel'e migrate     HAYIR
+Metabase source copy / port                HAYIR
+Metabase production dependency şimdi       HAYIR
+Wren current canonical incumbent           EVET
+Metabase pre-freeze M0/X0 challenger       EVET
+production'da iki equal truth engine       STOP-THE-LINE
+```
+
+Temel prensip:
+
+> Generic runtime process-control sahibidir; business truth / semantic truth / authority sahibi değildir.
+
+---
+
+## 2. Nihai ürün zihinsel modeli
+
+Ürün/mimari seviyesinde iki execution path vardır:
+
+```text
+execution_path:
+  STANDARD
+  RESEARCH
+```
+
+`STANDARD_DIRECT` üçüncü path, üçüncü engine veya üçüncü authority değildir.
+
+```text
+STANDARD outcome:
+  DIRECT
+  BUILDER
+```
+
+DIRECT:
+
+```text
+model_turns = 1
+repair_count = 0
+sealed = true
+```
+
+BUILDER:
+
+```text
+same STANDARD engine
++ bounded discovery / inspect / bind / propose / validate / repair
++ progress required
++ budget bounded
++ final seal
+```
+
+Transition eval corpus telemetry için `STANDARD_DIRECT` / `STANDARD_BUILDER` label'larını taşıyabilir.
+Fakat architecture-level authority ailesi değildir.
+
+Accepted authority:
+
+```text
+AcceptedAuthority
+├── AcceptedStandardAuthority
+└── AcceptedResearchAuthority
+    = existing AcceptedTurnContract semantic body
+    = alias / tagged view only
+```
+
+İkinci Research semantic contract oluşturmak yasaktır.
+
+---
+
+## 3. Nihai architecture target
+
+```text
+                         USER
+                          │
+                          ▼
+                 DIMA CONVERSATION
+                          │
+                          ▼
+                 cognition / intent
+                          │
+                          ▼
+                   EXECUTION PATH
+                    /           \
+             STANDARD          RESEARCH
+                │                 │
+                ▼                 ▼
+      Standard profile      existing bounded
+                │            ResearchManager
+                ▼                 │
+      BoundedAgentRuntime          │
+          Kernel                   │
+                │                 │
+                ▼                 ▼
+      StandardProjection     AcceptedTurnContract
+                │            + UOL / Directives
+                ▼                 │
+ AcceptedStandardAuthority        │
+                └────────┬────────┘
+                         ▼
+                  DIMA TRUST PLANE
+                         │
+                SemanticBindingGate
+                         │
+                      Planner
+                         │
+                ANALYTICS SUBSTRATE
+                         │
+                  WREN — incumbent
+                         │
+                         DB
+                         │
+               QueryContract / Evidence
+                         │
+                  Findings / Research
+                         │
+              Recommendation / Decision
+```
+
+Metabase bu target'ın production hot path'inde bugün YOKTUR.
+
+Şimdilik:
+
+```text
+METABASE
+1. architecture reference
+2. isolated analytics substrate challenger
+3. future BI workspace candidate
+```
+
+---
+
+## 4. D65-E3A — minimal generic bounded runtime kernel
+
+Yeni modül:
+
+```text
+app/v2/agent_runtime.py
+```
+
+Tercih edilen minimal primitive'ler:
+
+```text
+BoundedLoopBudget
+LoopCounters
+LoopTerminalReason
+ActionStateGuard
+BoundedAgentRuntimeKernel
+```
+
+Kernel yalnız ortak process mechanics bilir:
+
+```text
+model turn counting
+tool-call counting
+budget enforcement
+generic dispatch lifecycle
+observation append
+terminal detection
+action fingerprint
+state fingerprint
+duplicate action/state detection
+NO_PROGRESS
+budget exhausted
+generic telemetry
+```
+
+Kernel kesinlikle BİLMEZ:
+
+```text
+metric / dimension semantics
+USER_MUST
+root cause
+AcceptedTurnContract
+UserObligationLedger
+ResearchDirective
+Evidence VERIFIED semantics
+sem_* minting
+canonical semantic choice
+join validity
+query correctness
+numeric truth
+authority acceptance
+research completion
+RLS/CLS policy meaning
+```
+
+Kernel gate'leri tanımlamaz. Domain gate'leri profile/domain layer çağırır.
+
+---
+
+## 5. Profile / domain sınırı
+
+Profile şunları seçebilir/tanımlayabilir:
+
+```text
+tool surface
+action schema
+allowed process states
+budget defaults
+terminal outcome types
+prompt/instruction surface
+state fingerprint projection
+```
+
+Profile şunları tanımlayamaz:
+
+```text
+authority policy
+canonical semantic truth
+security truth
+numeric truth
+completion truth
+```
+
+Authority domain-level/type-level kalır:
+
+```text
+StandardAuthorityGate / StandardAuthoritySealer
+Research IntentAcceptanceGate
+CompletionGate
+SemanticBindingGate
+Planner / Wren / DB
+```
+
+---
+
+## 6. manager_progress.py reuse sınırı
+
+Reuse edilebilir generic primitive'ler:
+
+```text
+_digest
+action_fingerprint
+result_fingerprint
+```
+
+Research-specific olarak kalır:
+
+```text
+progress_fingerprint(runtime)
+DynamicActionFrontier.progress(runtime)
+```
+
+Çünkü bunlar şu Research state'ini okur:
+
+```text
+ledger
+AcceptedTurnContract
+evidence refs
+semantic receipts
+research runtime snapshot
+```
+
+Generic kernel contract:
+
+```text
+ActionFingerprint
++
+StateFingerprint (domain/profile supplies it)
+```
+
+Runtime yalnız pair'ı izler:
+
+```text
+(action_fingerprint, state_fingerprint)
+```
+
+Invariant:
+
+```text
+max_executions_per_action_state_pair = 1
+duplicate_reexecution_max = 0
+```
+
+Aynı action aynı authoritative state üzerinde ikinci kez execute edilmez → `NO_PROGRESS`.
+
+---
+
+## 7. D65-E3B — Standard profile / StandardBuilder
+
+StandardBuilder tek governed analytical projection kurar.
+
+Allowed:
+
+```text
+semantic candidate discovery
+exact semantic resource inspection
+bounded semantic selection
+typed temporal normalization
+standard projection proposal
+deterministic validator feedback üzerinden representation repair
+alternate verified candidate/source
+genuine clarification
+```
+
+Forbidden:
+
+```text
+hypothesis tree
+root-cause research
+evidence-driven new business question
+UserObligationLedger
+ResearchDirective ownership
+adaptive research branch
+raw SQL
+direct DB
+join authority
+numeric truth
+RLS/CLS bypass
+Research CompletionGate
+```
+
+Önerilen Standard tool surface:
+
+```text
+retrieve_semantic_candidates
+read_semantic_resource
+resolve_semantics
+normalize_temporal
+propose_standard_projection
+request_clarification
+```
+
+State flow:
+
+```text
+INITIAL
+→ DISCOVER / INSPECT
+→ BIND
+→ PROPOSE
+→ VALIDATE
+
+PASS
+→ narrow CoverageVeto
+→ SEAL
+
+retryable representation error
+→ REPAIR
+→ PROPOSE
+
+blocking ambiguity
+→ CLARIFY
+
+actual research-only capability
+→ RESEARCH_REQUIRED
+
+unsupported
+→ UNSUPPORTED
+
+same action + same state
+→ NO_PROGRESS
+
+budget exhausted
+→ FAILED CLOSED
+```
+
+Standard failure otomatik Research DEĞİLDİR.
+
+---
+
+## 8. D65-E3C — StandardProjection compiler decoupling
+
+Compiler core lightweight grounded Standard input alır:
+
+```text
+validated standard bindings
+→ StandardProjection
+```
+
+Research compatibility wrapper korunabilir:
+
+```text
+compile(contract, ledger, ...)
+→ wrapper
+→ lightweight compiler core
+```
+
+Standard'ın `AcceptedTurnContract + UserObligationLedger` üretmesi gerekmez.
+
+Aynı semantic body ikinci kez modellenmez.
+
+---
+
+## 9. STANDARD_DIRECT kararı
+
+`STANDARD_DIRECT` ayrı:
+
+```text
+engine        HAYIR
+router        HAYIR
+authority     HAYIR
+runtime       HAYIR
+```
+
+Yalnız StandardBuilder telemetry/outcome'udur:
+
+```text
+execution_path  = STANDARD
+standard_outcome = DIRECT
+```
+
+İlk attempt lossless seal değilse:
+
+```text
+execution_path   = STANDARD
+standard_outcome = BUILDER
+```
+
+---
+
+## 10. AcceptedStandardAuthority
+
+Minimal seal:
+
+```text
+authority_id
+turn_id
+request_ref
+source_message_hash
+context_version
+projection_hash
+semantic_handle_refs
+temporal_handle_refs where applicable
+projection_kind
+accepted_attempt_id
+model_role
+standard_outcome
+created_at
+```
+
+`StandardProjection` semantic body olmaya devam eder.
+
+Authority object projection'ı duplicate AST olarak tekrar taşımaz.
+
+Execution yalnız sealed Standard authority ile Core'a ilerler.
+
+---
+
+## 11. Semantic authority değişmez
+
+```text
+Semantic Catalog
+→ SemanticCatalogRetriever        discovery only
+→ bounded linker SELECT/ABSTAIN   cognition only
+→ SemanticBindingGate             canonical truth + sem_*
+```
+
+Kalıcı invariant:
+
+```text
+retrieval score != semantic truth
+retrieval miss  != semantic does not exist
+```
+
+LLM:
+
+```text
+canonical ID uyduramaz
+candidate set dışına çıkamaz
+sem_* mint edemez
+SQL yazamaz
+numeric truth veremez
+```
+
+---
+
+## 12. Standard → Research izolasyonu
+
+Rejected/failed Standard attempt'tan Research'e taşınmaz:
+
+```text
+sem_*
+StandardProjection
+accepted metric selection
+accepted dimension selection
+inferred operation
+comparison choice
+temporal semantic decision
+Standard accepted authority
+```
+
+Taşınabilir yalnız non-authoritative cache:
+
+```text
+raw SourceSpanRefs
+retrieved CandidateRefs
+LLM-safe candidate cards
+immutable catalog lookup cache
+```
+
+Research original user message üzerinden fresh bind eder.
+
+```text
+rejected Standard authority merge = 0
+```
+
+---
+
+## 13. Narrow Standard CoverageVeto
+
+Standard path ağır UOL/Completion taşımaz.
+
+Final seal öncesi Coverage yalnız şu sorulara veto koyabilir:
+
+```text
+material user request omitted?
+explicit exclusion omitted / wrong polarity?
+research-only request/capability silently omitted?
+```
+
+Coverage:
+
+```text
+semantic seçemez
+handle mint edemez
+canonical ID öneremez
+query/projection repair edemez
+clarification truth sahibi değildir
+obligation ekleyemez
+authority commit edemez
+```
+
+---
+
+## 14. Standard başlangıç bütçesi
+
+```text
+max_model_turns = 4
+max_tool_calls = 8
+max_executions_per_action_state_pair = 1
+duplicate_reexecution_max = 0
+```
+
+Sayısal değerler benchmark-tunable config'dir.
+
+Architecture invariant:
+
+```text
+progress varsa bounded devam
+sealed projection terminal
+duplicate/no-progress stop
+real research-only request typed escalation
+budget fail-closed
+```
+
+---
+
+## 15. Research Manager — NO-TOUCH
+
+Day 6.5 boyunca şu dosyalar generic runtime uğruna wholesale refactor edilmez:
+
+```text
+manager_loop.py
+manager_runtime.py
+manager_tools.py
+manager_preacceptance.py
+```
+
+Current Research path:
+
+```text
+AcceptedTurnContract
+UserObligationLedger
+ResearchDirective
+CompletionGate
+ResearchRunTerminal
+Evidence
+semantic receipts
+```
+
+ile test edilmiş ve bounded kalır.
+
+`ManagerRuntime` Standard için reuse edilmez.
+
+Research generic-kernel migration:
+
+```text
+Day 6.5 prerequisite DEĞİL
+Day 7–10 prerequisite DEĞİL
+Day 10 Product MVP sonrası duplication ölçümüne bağlı
+optional
+```
+
+Migration hiç yapılmayabilir; bu kabul edilebilir.
+
+---
+
+## 16. Wren current incumbent
+
+Day 6.5 boyunca canonical analytics substrate:
+
+```text
+WREN
+```
+
+Current role:
+
+```text
+company/customer MDL
+models
+relationships
+measures
+dimensions
+cubes
+governed planning/query execution boundary
+```
+
+Bu sunk-cost kararı değildir; bugün kanıtlı incumbent budur.
+
+Şimdi yapılmayacak:
+
+```text
+Wren'i çıkarma
+production'a ikinci query truth engine koyma
+büyük AnalyticsExecutionPort framework yazma
+```
+
+---
+
+## 17. Metabase kararı
+
+Metabase:
+
+```text
+source-copy / port              NO
+Dima fork of Metabase           NO
+production engine today         NO
+runtime architecture reference  YES
+substrate challenger            YES
+future BI workspace candidate   YES
+```
+
+Metabase OSS/agent subsystem kaynak kodunu Dima proprietary backend'e kopyalama/port etme yapılmaz.
+Lisans/compliance ayrı değerlendirme gerektirir.
+
+Metabase pattern'den alınan fikir:
+
+```text
+GENERIC LOOP MECHANICS
++
+DOMAIN-SPECIFIC PROFILE
+```
+
+Dima-native uygulanır.
+
+---
+
+
+---
+
+## 17A. Metabase Source Reference Contract
+
+**Canonical upstream authority**
+
+```text
+repository = metabase/metabase
+reference_sha = 74216b30981d8310c4cf724d63ca282e2e63529d
+authority = canonical upstream Git source at the pinned SHA
+```
+
+Bu SHA Day 6.5 runtime/substrate kararı için current source-reference snapshot'ıdır.
+Yeni bir Metabase mimari kararı verilecekse önce upstream güncelliği ayrıca araştırılır;
+fakat geçmiş kararın neye dayanarak verildiği bu SHA ile audit edilir.
+
+**Canonical source paths — pinned SHA üzerinde doğrulandı**
+
+```text
+src/metabase/metabot/agent/core.clj
+src/metabase/metabot/agent/profiles.clj
+src/metabase/agent_api/reference.md
+src/metabase/agent_api/api.clj
+src/metabase/agent_api/query_guards.clj
+src/metabase/mcp/v2/tools/query.clj
+```
+
+Kısa referans adları:
+
+```text
+metabot/agent/core.clj
+metabot/agent/profiles.clj
+agent_api/reference.md
+agent_api/api.clj
+agent_api/query_guards.clj
+mcp/v2/tools/query.clj
+```
+
+### 17A.1 Local checkout contract
+
+Repo veya çalışma ortamında ileride `public/metabase/master` bulunursa:
+
+```text
+role = read-only convenience checkout
+authority = NONE
+write / vendor / patch / import into Dima = FORBIDDEN
+canonical comparison target = metabase/metabase @ pinned/declared SHA
+```
+
+Şu an Dima Git tree'sinde `public/metabase/master` yoktur. Varlığı hiçbir zaman upstream
+authority'nin yerine geçmez; stale olabileceği varsayılır ve SHA doğrulanmadan karar verilmez.
+
+### 17A.2 Source-copy / port / vendor yasağı
+
+Kesin yasak:
+
+```text
+Metabase Clojure source copy into Dima backend
+Metabase agent loop port into Python by transliteration
+vendor directory / subtree import
+copy-paste query guards as Dima implementation
+forked embedded Metabase runtime hidden inside Dima
+local checkout'u canonical source gibi kabul etmek
+```
+
+İzin verilen:
+
+```text
+architecture pattern study
+behavioral contract study
+API contract study
+permission/query-guard study
+independent Dima-native implementation
+separate-service integration through supported Agent API
+```
+
+### 17A.3 D65-X integration boundary
+
+D65-X gerçek Metabase challenger entegrasyonu **separate-service Agent API** üzerinden yapılır.
+
+```text
+Dima
+  StandardProjection / AcceptedStandardAuthority
+        ↓ thin challenger adapter
+Metabase separate service
+  /api/agent ...
+        ↓ Metabase permission/query guards
+database
+```
+
+Metabase process/library Dima backend içine linklenmez veya vendored edilmez.
+Dima adapter Metabase'in public/supported Agent API contract'ına konuşur.
+
+D65-X'te Metabase native agent/NLQ experience ayrıca ölçülecekse bu **secondary experiment**
+olarak tutulur; substrate-only primary bake-off ile karıştırılmaz.
+
+### 17A.4 Required bake-off receipt
+
+Her Metabase D65-X measurement receipt en az şunları pinler:
+
+```text
+canonical_source_repo = metabase/metabase
+source_reference_sha
+runtime_version
+runtime_image_digest
+service/API base identity
+Agent API contract/version evidence
+Dima tested SHA
+adapter SHA
+benchmark/corpus version
+tenant/user permission context
+timestamp
+```
+
+`runtime_image_digest` mümkünse immutable container digest (`sha256:...`) olmalıdır;
+yalnız mutable image tag receipt için yeterli değildir.
+
+Source SHA ile çalışan runtime image aynı artifact olmak zorunda değildir; ikisi ayrı ayrı
+kaydedilir. Uyuşmazlık varsa receipt bunu açıkça belirtir ve benchmark yorumu buna göre yapılır.
+
+### 17A.5 Mandatory Metabase source-control / analysis / research protocol
+
+Metabase ile ilgili hiçbir önemli implementation veya architecture adımı körlemesine yapılmaz.
+Aşağıdaki protokol **D65-X başlamadan önce ve Metabase davranışına dayanan her önemli karar öncesinde** zorunludur.
+
+**A — Source identity**
+
+1. Canonical repo `metabase/metabase` olduğunu doğrula.
+2. Kararın dayandığı exact source SHA'yı yaz.
+3. Local checkout varsa `git rev-parse HEAD` ile SHA'sını doğrula; uyuşmazsa local source'a güvenme.
+4. Gerekirse current upstream'i ayrıca araştır; pinned historical snapshot ile current upstream'i karıştırma.
+
+**B — Required source reading**
+
+En az şu dosyaları exact source SHA üzerinde tekrar oku:
+
+```text
+src/metabase/metabot/agent/core.clj
+src/metabase/metabot/agent/profiles.clj
+src/metabase/agent_api/reference.md
+src/metabase/agent_api/api.clj
+src/metabase/agent_api/query_guards.clj
+src/metabase/mcp/v2/tools/query.clj
+```
+
+İncelenecek başlıklar:
+
+```text
+agent-loop continuation/termination semantics
+profile-specific tool surfaces and iteration budgets
+terminal-tool behavior
+Agent API request/response and authentication surface
+permission/scope enforcement
+query guards / native SQL separation
+query validation-repair-resolution pipeline
+query execution/result envelope
+handle/cursor/replay behavior
+current runtime/version/deployment contract
+```
+
+**C — Distinguish pattern from authority**
+
+Her bulgu şu sınıflardan biriyle not edilir:
+
+```text
+PATTERN_REFERENCE
+API_CONTRACT
+SECURITY_GUARD
+RUNTIME_BEHAVIOR
+DIMA_INFERENCE
+NOT_APPLICABLE_TO_DIMA
+```
+
+Metabase implementation detail'i otomatik Dima requirement'ı sayılmaz.
+
+**D — Dima cross-check**
+
+Metabase bulgusu her zaman Dima'nın şu authority'leriyle çaprazlanır:
+
+```text
+AcceptedStandardAuthority
+StandardProjection
+SemanticBindingGate
+planner validity
+RLS/CLS / tenant identity
+QueryContract
+EvidenceArtifact
+replay permission re-check
+exactly-one primary substrate rule
+```
+
+Metabase bir davranışı desteklemiyorsa Dima invariant'ı sessizce gevşetilmez.
+
+**E — Security and truth-plane review**
+
+Agent API veya query path kullanmadan önce:
+
+```text
+auth identity mapping
+tenant/user permission propagation
+raw SQL/native-query boundary
+query guard fail-closed behavior
+result provenance
+executed-query identity
+permission re-check on replay/handle
+cross-tenant leakage risk
+```
+
+ayrı ayrı doğrulanır.
+
+**F — External/current verification**
+
+Metabase sürümü, Agent API, lisans/edition, deployment veya API behavior'u değişebilecek
+bir konuysa current upstream docs/source/release state ayrıca araştırılır. Eski pinned SHA'dan
+current behavior varsayılmaz.
+
+**G — Decision receipt**
+
+Her önemli Metabase kararı living status'a şu formatta girer:
+
+```text
+question
+canonical repo
+source SHA
+files inspected
+runtime version/image digest if executed
+observed fact
+Dima inference
+risk / limitation
+decision
+next verification
+```
+
+**H — STOP-THE-LINE**
+
+Aşağıdakilerde Metabase integration/decision work durur:
+
+```text
+source SHA unknown
+local checkout SHA unverified
+required source files not inspected
+API contract inferred only from memory
+permission/query guard behavior unverified
+runtime image/version unpinned
+copy/port/vendor proposal
+Metabase behavior used to weaken Dima trust-plane invariant
+second equal production truth engine introduced
+```
+
+Bu protokol product development sequence'ini değiştirmez; yalnız Metabase'e temas edilen
+relevant gate/decision'larda zorunlu preflight ve receipt discipline ekler.
+## 18. D65-X — analytics substrate challenger gate
+
+Bu gate Day 6.5 engineering closure'dan SONRA, final certification seal'den ÖNCE gelir.
+
+```text
+DAY 6.5 ENGINEERING CLOSED
+ARCHITECTURE FROZEN
+        ↓
+D65-X ANALYTICS SUBSTRATE CHALLENGER
+        ↓
+VALIDATION50
+        ↓
+external fresh HIDDEN50
+        ↓
+CERTIFICATION SEALED
+```
+
+### 18.1 Primary experiment — substrate-only bake-off
+
+Aynı:
+
+```text
+Dima cognition
+accepted semantics
+AcceptedStandardAuthority
+StandardProjection
+benchmark
+```
+
+Yalnız execution substrate değişir:
+
+```text
+StandardProjection
+       │
+  ┌────┴─────┐
+  │          │
+Wren      Metabase
+Adapter    Adapter
+  │          │
+ DB         DB
+```
+
+Bu deney şu soruyu cevaplar:
+
+> Hangi governed execution substrate Dima'nın trust/receipt contract'ını daha doğru, ekonomik ve sürdürülebilir sağlıyor?
+
+### 18.2 Secondary experiment — full agent experience
+
+Ayrı, daha sonra:
+
+```text
+Dima STANDARD profile
+vs
+Metabase native NLQ/Metabot
+```
+
+Bu substrate-only karar deneyiyle karıştırılmaz.
+
+---
+
+
+---
+
+## 18A. D65-J1 — Jev Decision-Model Challenger
+
+D65-J1 is **not** an analytics substrate decision and does not alter D65-X.
+
+```text
+D65-J1 = cognition / bounded semantic candidate decision model
+D65-X  = analytics execution substrate
+```
+
+### 18A.1 Pinned challenger / native API contract
+
+Pinned model:
+```text
+typesafe/jev-1.13
+```
+
+`~typesafe/jev-latest` is forbidden for certification/bake-off because it is a moving alias.
+
+Jev is not treated as a generic chat LLM. J1A uses its native OpenRouter Decisions surface:
+```text
+POST https://openrouter.ai/api/alpha/decisions
+state
++ choice question
+→ choice + probabilities
+```
+
+Do not force Jev through Dima's current `structured_json()` / chat-completions abstraction.
+
+### 18A.2 Existing role debt discovered
+
+Current `SEMANTIC_LINKER` model role supplies one structured-language callable to both:
+```text
+BoundedSemanticLinker
+TypedTemporalNormalizer
+```
+
+These are different cognition contracts.
+
+`d65-dev-019` Flash-Lite floor was measured in typed temporal comparison normalization, not bounded catalog candidate selection. Therefore:
+```text
+case019 != Jev justification
+case019 != Jev patch target
+```
+
+J1A intentionally excludes temporal normalization so the decision-model question is not contaminated by this role conflation.
+
+### 18A.3 J1A semantic boundary
+
+Frozen experimental boundary:
+```text
+USER SURFACE
+→ frozen safe CandidateSet[cand_*]
+→ challenger decision model
+→ candidate_id | ABSTAIN
+→ authority gate is conceptually downstream and unchanged
+```
+
+Jev can only propose one supplied candidate or ABSTAIN/NONE.
+
+Jev cannot:
+```text
+mint sem_*
+emit or infer canonical IDs outside candidate cards
+escape supplied candidate set
+see DB/raw SQL/numeric truth
+perform temporal arithmetic
+accept an authority contract
+change tenant/context identity
+silently trigger fallback/cascade
+```
+
+Canonical target names are omitted from Jev payload unless a future separately-approved benchmark proves them necessary. Candidate cards use the same bounded, LLM-safe surface class as current linker inputs.
+
+### 18A.4 J1A benchmark
+
+Three challengers over the same frozen candidate decision cases:
+```text
+A = google/gemini-2.5-flash-lite
+B = typesafe/jev-1.13
+C = openai/gpt-5.6-sol
+```
+
+Manager and TemporalNormalizer are outside the experiment.
+
+Required strata:
+```text
+exact alias control
+Turkish non-exact paraphrase
+synonym
+multiple plausible candidates
+true ambiguity → ABSTAIN
+no-match → ABSTAIN
+retrieval miss
+bounded high-cardinality set
+entity-value
+sensitive-value exact-only
+metric/dimension variation
+metamorphic/permuted schema labels
+cross-tenant isolation
+```
+
+Required metrics:
+```text
+candidate selection accuracy
+ABSTAIN precision / recall
+ambiguity unsafe-pick
+candidate escape
+Turkish paraphrase accuracy
+metamorphic consistency
+same-input repeated-run agreement
+p50 / p95 latency
+cost
+provider failures
+Jev choice probabilities
+Jev calibration (Brier/ECE or equivalent)
+Jev high-confidence-wrong count
+```
+
+P0:
+```text
+candidate outside supplied set = 0
+silent ambiguity auto-pick = 0
+cross-tenant semantic leak = 0
+high-confidence wrong accepted = 0
+semantic authority minted by model = 0
+```
+
+No production threshold/cascade policy is created in J1A. Raw probability calibration is measurement only.
+
+### 18A.5 J1A decision rule
+
+If Jev is clearly worse or Turkish robustness is inadequate:
+```text
+REJECT JEV
+product code = NO CHANGE
+resume current architecture closure
+```
+
+If Jev is promising:
+```text
+OPEN D65-J1B
+SemanticLinkDecisionProvider
+  ├─ StructuredLLMDecisionProvider
+  └─ JevDecisionProvider
+        ↓
+BoundedSemanticLinker
+        ↓
+SemanticBindingGate
+```
+
+Before any Jev production candidate wiring, split cognition roles:
+```text
+SEMANTIC_LINKER
+= bounded catalog candidate decision
+
+TEMPORAL_NORMALIZER
+= temporal language → TemporalNormalizationChoice
+```
+
+Minimal backward-compatible temporal provider/model settings may be introduced only in J1B and only if J1A is promising. Blank setting preserves existing current structured-language default.
+
+J1B is a new engineering candidate and must re-run focused provider-free → family closure → workers=1 live → stratified canary → Wren/Research sentinel before freeze.
+
+### 18A.6 Anti-patch
+
+Forbidden rationales/usages:
+```text
+use Jev to pass case019
+hide a Flash-Lite failure
+replace legacy resolver fallback with Jev fallback
+Sol failure → silent Jev
+Jev failure → silent Gemini/Sol
+case-derived prompt/question criteria
+threshold tuning on the same evaluation set
+```
+
+Every model attempt must be explicit in telemetry/receipt. Any future cascade requires its own measured and accepted policy.
+
+### 18A.7 Sequence effect
+
+D65-J1 is resolved **before ENGINEERING FREEZE CANDIDATE / DEV80**.
+
+Day7–10 and D65-X remain unchanged.
+
+## 19. D65-X ölçütleri
+
+P0:
+
+```text
+silent wrong                        = 0
+cross-tenant leakage                = 0
+permission bypass                   = 0
+unsafe ambiguity auto-pick          = 0
+unverified semantic substitution    = 0
+provenance break                    = 0
+```
+
+Standard correctness:
+
+```text
+semantic correctness
+query correctness
+result correctness
+repair success
+unsupported handling
+ambiguity handling
+```
+
+Operational:
+
+```text
+p50 / p95 latency
+LLM calls
+token cost
+query count
+integration LOC
+maintenance surface
+schema onboarding effort
+```
+
+Dima-specific:
+
+```text
+exact execution QueryContract'a bağlanabiliyor mu?
+gerçekte çalışan query kanıtlanabiliyor mu?
+AcceptedStandardAuthority execution identity referanslayabiliyor mu?
+replay current permissions'ı tekrar doğrulayabiliyor mu?
+result EvidenceArtifact'a semantic laundering olmadan dönüşebiliyor mu?
+tenant/context identity end-to-end korunuyor mu?
+```
+
+Commercial:
+
+```text
+license
+embedding
+SSO
+multi-tenancy
+per-user cost
+operations
+upgrade cost
+```
+
+Karar:
+
+```text
+Wren wins / tie
+→ Wren incumbent stays
+→ certification continues
+
+Metabase clearly wins
+→ certification STOP
+→ isolated Metabase adapter becomes new engineering candidate
+→ affected Standard gates rerun
+→ new DEV broad proof
+→ new freeze candidate
+→ fresh Validation/Hidden certification
+```
+
+Production'da Wren + Metabase equal truth engines YASAK.
+
+---
+
+## 20. UI / BI workspace sınırı
+
+Metabase gelecekte:
+
+```text
+dashboards
+collections
+chart editor
+exploration UI
+saved questions
+```
+
+için değerlendirilebilir.
+
+Temiz entegrasyon:
+
+```text
+Dima sealed artifacts
+→ Metabase
+```
+
+veya:
+
+```text
+Dima governed analytical views/materialized surface
+→ Metabase
+```
+
+Aynı production DB'ye serbest Query Builder vermek “UI only” değildir; ikinci query semantics/execution
+yolu yaratır ve ayrıca karar gerektirir.
+
+---
+
+## 21. Engine-independent Dima kimliği
+
+```text
+DIMA
+= cognition
++ accepted authority
++ research
++ evidence
++ decision intelligence
+```
+
+Analytics substrate replaceable olabilir; cognition/authority/evidence contract sabit kalmalıdır.
+
+Fakat Day 6.5'te premature büyük abstraction framework açılmaz.
+
+Bake-off zamanı en dar seam:
+
+```text
+StandardProjection
+→ execute
+→ governed execution receipt/result
+```
+
+Önce current Wren path ince adapter ile sarılır; challenger lab adapter aynı seam'i uygular.
+
+---
+
+## 22. Exact Day 6.5 engineering sequence
+
+Canonical sequence:
+
+```text
+D65-E1 exact semantic-SHA recert
+→ D65-E2 SemanticCatalogRetriever
+→ D65-E3A minimal generic bounded runtime kernel
+→ focused kernel tests
+→ D65-E3B StandardBuilder/Profile uses kernel
+→ D65-E3C lightweight StandardProjection compiler
+→ D65-E4 AcceptedStandardAuthority / Research alias split
+→ D65-E5 narrow CoverageVeto
+→ provider-free failure-family closure
+→ workers=1 focused live
+→ same-SHA model-floor A/B only if needed
+→ 12–16 stratified canary
+→ real Wren Standard vertical + Research sentinel
+→ ENGINEERING FREEZE CANDIDATE
+→ DEV80 once-per-candidate
+→ frozen hard gates
+→ DAY 6.5 ENGINEERING CLOSED / ARCHITECTURE FROZEN
+→ D65-X Wren vs Metabase substrate challenger
+→ VALIDATION50 no tuning
+→ external fresh HIDDEN50
+→ CERTIFICATION SEALED
+→ production hybrid activation
+```
+
+### 22.1 Current-repo sequencing exception — NO ROLLBACK
+
+Yeni karar geldiğinde repo D65-E3B/C, E4 ve E5'in bazı parçalarını zaten yazmıştı.
+
+Bunları geri alma:
+
+```text
+standard_builder.py core        focused GREEN
+lightweight compiler            focused GREEN
+AcceptedStandardAuthority       focused GREEN
+narrow CoverageVeto             focused GREEN
+```
+
+Ancak bunlar generic kernel kararı öncesinde yazıldığı için:
+
+```text
+PROVISIONAL GREEN
+!=
+ARCHITECTURE SEALED
+```
+
+Sıradaki iş:
+
+```text
+D65-E3A generic kernel
+→ existing StandardBuilder mechanics kernel consumer olacak şekilde re-home
+→ semantic behavior değiştirme
+→ E4/E5'i koru
+→ family closure tekrar
+```
+
+Bu bir reset değildir; internal-structure correction'dır.
+
+---
+
+## 23. Eval terminology / oracle
+
+Architecture-level:
+
+```text
+execution_path:
+  STANDARD | RESEARCH
+
+standard_outcome:
+  DIRECT | BUILDER
+```
+
+Transition eval metadata:
+
+```text
+allowed_work_modes:
+  STANDARD_DIRECT
+  STANDARD_BUILDER
+  RESEARCH
+
+expected_authority_family:
+  AcceptedStandardAuthority
+  AcceptedResearchAuthority
+  NONE
+```
+
+Interpretation:
+
+- standard representable case: DIRECT veya BUILDER geçerli olabilir,
+- research-only case: RESEARCH zorunlu,
+- clarification/unsupported before acceptance: authority family NONE olabilir.
+
+Work mode authority family değildir.
+
+---
+
+## 24. Phase thresholds
+
+Run başlamadan dondurulur:
+
+```text
+DEV80 case pass        >= .95
+DEV80 MUST recall      >= .95
+VALIDATION50 case pass >= .95
+VALIDATION50 MUST      >= .95
+HIDDEN50 case pass     >= .95
+HIDDEN50 MUST          >= .95
+adaptive branch        >= .90 where applicable
+
+P0 authority/security/silent-loss = 0
+```
+
+Moving goalpost yok.
+
+---
+
+## 25. Freeze / corpus invalidation
+
+```text
+one DEV80 per engineering-freeze candidate SHA
+```
+
+Named-case tuning için aynı candidate DEV80 tekrar tekrar koşturulmaz.
+
+Systemic family bug fix → yeni SHA → yeni freeze candidate → yeni DEV80 broad proof.
+
+Validation fail + code change:
+
+```text
+certification invalid
+→ engineering reopen
+→ new freeze
+→ fresh validation set
+```
+
+Hidden fail + code/architecture change:
+
+```text
+same hidden certification için reuse edilmez
+→ external evaluator fresh sealed hidden üretir
+```
+
+---
+
+## 26. Day 7–10 değişmiyor
+
+```text
+Day 7 / P10  RESULT-AWARE RESEARCH LOOP
+Day 8 / P11  ROOT-CAUSE BRANCH
+Day 9 / P12  REPORTDOCUMENT
+Day10 / P13  PRODUCT MVP GATE
+```
+
+Yeni:
+
+```text
+Day 6.6 Agent Runtime  YOK
+Day 7 Metabase         YOK
+```
+
+Day 7 gate:
+
+```text
+valid tool selection        >= 95%
+adaptive branch             >= 90%
+undeclared tool execution   = 0
+budget overrun undisclosed  = 0
+```
+
+Research generic-runtime migration bu günlerin prerequisite'i değildir.
+
+---
+
+## 27. Parallelism / sequencing of challengers — CURRENT OVERRIDE
+
+Current pre-freeze sequence is governed by
+`DIMA_DAY6_5_PREFREEZE_DECISION_GATE_J1_M0_X0.md`.
+
+```text
+D65-J1S + D65-J1T
++
+D65-M0
+↓
+D65-X0 thin feasibility
+↓
+if needed full D65-X
+↓
+ONE primary substrate
+↓
+ENGINEERING FREEZE CANDIDATE
+↓
+DEV80
+```
+
+J1S/J1T and M0 may run in parallel because they are isolated lab/research work.
+D65-X0 begins only after M0 has enough source/audit evidence to define a bounded spike.
+
+> Freeze/DEV80 is blocked until these pre-freeze decisions are resolved.
+
+Production hot-path still never runs two equal query truth engines.
+
+---
+
+## 28. STOP-THE-LINE
+
+Aşağıdakilerde feature work durur, abstraction düzeltilir:
+
+```text
+second semantic authority
+Standard kernel learns Research semantics
+silent user requirement loss
+blocking ambiguity auto-pick
+retrieval score becomes truth
+rejected Standard authority leaks into Research
+raw SQL/direct DB authority
+cross-tenant/context handle
+post-acceptance raw-prompt semantic reparse
+unverified numeric truth
+evidence-less VERIFIED completion
+model-specific/case-specific semantic branch
+silent fallback
+Wren + Metabase equal production truth engines
+```
+
+---
+
+## 29. Failure taxonomy
+
+Patch'ten önce:
+
+```text
+MODEL_COGNITION
+CONTRACT/ARCHITECTURE
+RESOLVER_TRUTH
+EVAL_ORACLE
+TRANSPORT/PROVIDER
+```
+
+Infra/provider fail semantic fail değildir.
+
+Corpus schema / manifest / evaluator expectation uyuşmazlığı `EVAL_ORACLE` sınıfıdır; product semantic
+patch gerekçesi değildir.
+
+---
+
+## 30. Geliştirme protokolü
+
+- Plan + report + bu addendum çapraz okunur.
+- Mühürlü nihai roadmap/report değiştirilmez.
+- Living status her commit/test/debt/next-ticket bilgisini taşır.
+- Vertical slice önceliklidir.
+- Normal loop: code → 3–15 sn focused provider-free → devam.
+- Büyük suite milestone/family/freeze gate'te.
+- Workers=1 semantic certification önce.
+- Paid live test manuel/ölçülü.
+- Failure owner sınıflandırılmadan patch yok.
+- Regex/morphology/keyword/testcase-ID/case-derived prompt yok.
+- Resolver corpus'a göre eğilip bükülmez.
+- Exactly-one semantic authority.
+- Coverage veto-only.
+- Receipt provenance-only.
+- USER_MUST != ResearchDirective/AGENT_DERIVED.
+- Freeze öncesi checkpoint; A/B exact same SHA.
+- Hidden final certification blocker.
+- Vaka geçirerek sistem yapılmaz; doğru abstraction kurulur.
+
+---
+
+## 31. Current handoff — 22 Eylül 2026
+
+Bu addendum yazılırken gerçek repo durumu living status'ta authoritative olarak tutulur.
+
+Bilinen completed focused proofs:
+
+```text
+D65-E1 exact semantic-SHA recert       70/70 GREEN
+D65-E2 Retriever seam                  9/9 GREEN
+D65-E3 provisional StandardBuilder     20/20 GREEN
+D65-E4 Standard authority split        25/25 GREEN
+D65-E5 narrow CoverageVeto             16/16 GREEN
+D65-E3A-R runtime kernel focused       22/22 GREEN
+runtime-aligned provider-free family   94/94 GREEN
+```
+
+Front-door family closure history:
+```text
+run 35691397377
+87 PASS / 1 FAIL
+failure class = EVAL_ORACLE
+
+run 35691982389
+88 / 88 PASS
+5 warnings
+12.46s
+```
+
+İlk fail'in sebebi manifest ile DEV corpus schema-integrity oracle arasındaki metadata uyumsuzluğuydu (`allowed_work_modes`, `expected_authority_family`). Corpus/oracle hizalandı; semantic/product patch yapılmadı. Bu nedenle family closure şu anda GREEN kabul edilir.
+
+---
+
+## 32. Current exact work — PRE-FREEZE DECISION GATE
+
+Current baseline:
+
+```text
+D65-G family                  35696652502 = 102/102 PASS
+reference-floor canary        35697064833 = 16/16 PASS
+Wren + Research sentinel      35697471863 = 2/2 PASS
+tested semantic SHA           8dfde62d46d1418f05cce3ed44c26a8025b3b20e
+production hybrid             OFF
+```
+
+Current next work:
+
+```text
+D65-J1S semantic candidate-decision benchmark
++
+D65-J1T typed temporal-intent benchmark
++
+D65-M0 Metabase source/adoption audit
+↓
+separate receipts
+↓
+D65-X0 thin feasibility
+↓
+Wren primary OR consult → full D65-X → ONE primary substrate
+↓
+DAY 6.5 ARCHITECTURE DECISIONS CLOSED
+↓
+DAY 7–15 RELEASE DEVELOPMENT
+↓
+FINAL INTEGRATED RELEASE GATE
+↓
+FINAL ENGINEERING FREEZE
+↓
+DEV80 ONCE
+```
+
+Product semantic/temporal/authority code is NO-TOUCH during J1 lab benchmarks.
+Freeze is not authorized yet.
+
+## 33. Kaynak karar provenance
+
+Yeni karar iki ayrı rapordan birleştirilmiştir:
+
+1. **Nihai Mimari Karar ve Güncellenmiş Yol Haritası** — genel architecture/roadmap kararı.
+2. **Current Implementation Handoff** — D65-E3'ün repo üzerinde bugün nasıl uygulanacağı.
+
+Raporların kritik dış referans snapshot'ı:
+
+```text
+Metabase pinned master in report: 74216b30981d8310c4cf724d63ca282e2e63529d
+pattern taken: generic loop mechanics + domain-specific profiles
+source-copy/port: forbidden
+
+Wren: current incumbent governed semantic/query substrate
+replacement decision: only through isolated D65-X bake-off
+```
+
+Metabase reference'i Dima'ya source import yetkisi vermez. Mimari desen alınır; kod kopyalanmaz.
+
+
+---
+
+## 34. PRE-FREEZE OVERRIDE — J1S/J1T + M0/X0
+
+This section supersedes earlier J1 candidate-only scope and any earlier wording that places
+Metabase challenger only after DEV80/engineering closure.
+
+### J1 scope now has two independent lab tracks
+
+```text
+D65-J1S
+= bounded semantic candidate decision
+Gemini Flash-Lite vs typesafe/jev-1.13 vs Sol
+
+D65-J1T
+= language → closed typed temporal ontology decision
+Gemini Flash-Lite vs typesafe/jev-1.13 vs Sol
+```
+
+J1T tests intent classification, not calendar arithmetic.
+Actual dates remain deterministic in `TemporalBindingEngine`.
+
+If Jev is promising, stop and consult before D65-J1B.
+No DecisionProvider seam, model cascade, role split, threshold policy or production wiring is
+authorized by benchmark success alone.
+
+### Metabase timing moved before freeze
+
+```text
+D65-M0
+= source/adoption audit
+
+D65-X0
+= thin separate-service Agent API feasibility
+
+full D65-X
+= only if X0 is promising and after consultation
+```
+
+Historical pinned source:
+`74216b30981d8310c4cf724d63ca282e2e63529d`.
+
+Current upstream master verified on 2026-09-22:
+`fff70175e0b5f82dc0eb267593c717c4a6130206`.
+
+The current head is one commit ahead; comparison shows no changes in the relevant
+`src/metabase/metabot/agent`, `src/metabase/agent_api` or `src/metabase/mcp/v2`
+source families.
+
+Current detailed authority:
+`DIMA_DAY6_5_PREFREEZE_DECISION_GATE_J1_M0_X0.md`.
+
+
+---
+
+## 35. FINAL INTEGRATED RELEASE GATE OVERRIDE
+
+`DIMA_RELEASE_FINAL_INTEGRATED_GATE.md` is the release-level authority for final freeze and
+broad expensive evaluation.
+
+Binding changes:
+
+```text
+DEV80 is NOT a Day6.5 gate.
+DEV80 runs exactly once for this release.
+Day6.5 closes architecture decisions, then Day7–15 implementation continues.
+Final freeze is created only after Day15 code + final integration rehearsal.
+```
+
+Development testing remains continuous and targeted:
+provider-free → focused real LLM → failure-family/metamorphic → small canary → relevant sentinel.
+
+After final freeze:
+DEV80 once → code freeze → Validation50 no tuning → Hidden50 no tuning → certification.
+
+No wording elsewhere in this addendum may be interpreted to move DEV80 earlier than the release
+authority.

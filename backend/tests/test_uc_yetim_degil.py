@@ -52,6 +52,9 @@ from tests.kapi_ortak import fe_kaynak, tam_yol_deseni, tuketiliyor
 SARMALAYICI_MUAF: dict[str, str] = {}
 
 API_ONLY: dict[str, str] = {
+    "/ask-v2": "V2 geliştirme yüzeyi feature-flag ile karanlık; çağıranı P4/P5/P6 geliştirici "
+               "acceptance akışı ve HTTP contract testleridir. UI tüketicisi Core MVP'de "
+               "bağlanacak; request-level legacy fallback yerine bu uç bilinçli olarak ayrı tutulur.",
     "/stats/plan": "🔴 `A9` — bir **ÖLÇÜM ALETİDİR**, bir ürün özelliği değil. Garson "
                    "planlarının red sınıflarını (`boyut_yok` · `olcu_yok` · `operator` …) "
                    "ve onarım tutma oranını yayımlar; tüketicisi kapıyı koşan "

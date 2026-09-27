@@ -1,0 +1,370 @@
+{
+  "version": "d65-j1b-semantic-family-v1-frozen",
+  "frozen_before_live_result": true,
+  "purpose": "Fresh family-level J1B semantic proof. No threshold tuning; no named-case patch.",
+  "context": {
+    "context_version": {
+      "version": "ctx-j1b-family-v1",
+      "mdl_version": "mdl-j1b-family-v1",
+      "compact_catalog_builder_version": "j1b-family",
+      "business_rules_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "prompt_context_policy_version": "j1b-family"
+    },
+    "cubes": [
+      {
+        "canonical_name": "sales",
+        "display": "Satış",
+        "measures": [
+          {
+            "canonical_name": "sales.net_revenue",
+            "display": "Net Gelir",
+            "synonyms": [
+              "net satış",
+              "net ciro",
+              "iadeler sonrası gelir"
+            ]
+          },
+          {
+            "canonical_name": "sales.gross_revenue",
+            "display": "Brüt Gelir",
+            "synonyms": [
+              "brüt satış",
+              "brüt ciro"
+            ]
+          },
+          {
+            "canonical_name": "sales.avg_customer_revenue",
+            "display": "Müşteri Başına Ortalama Gelir",
+            "synonyms": [
+              "müşteri başına gelir",
+              "ortalama müşteri geliri"
+            ]
+          },
+          {
+            "canonical_name": "sales.order_count",
+            "display": "Sipariş Adedi",
+            "synonyms": [
+              "sipariş sayısı"
+            ]
+          },
+          {
+            "canonical_name": "sales.units_sold",
+            "display": "Satış Miktarı",
+            "synonyms": [
+              "satılan miktar",
+              "satılan adet"
+            ]
+          }
+        ],
+        "dimensions": [],
+        "time_dimensions": [
+          "event_date"
+        ]
+      },
+      {
+        "canonical_name": "production",
+        "display": "Üretim",
+        "measures": [
+          {
+            "canonical_name": "production.quantity",
+            "display": "Üretim Miktarı",
+            "synonyms": [
+              "üretilen miktar",
+              "üretilen adet"
+            ]
+          }
+        ],
+        "dimensions": [],
+        "time_dimensions": [
+          "event_date"
+        ]
+      }
+    ],
+    "kpis": [
+      {
+        "canonical_name": "finance.gross_margin",
+        "display": "Brüt Marj",
+        "synonyms": [
+          "brüt kâr marjı",
+          "brüt kar marjı"
+        ]
+      },
+      {
+        "canonical_name": "finance.contribution_margin",
+        "display": "Katkı Marjı",
+        "synonyms": [
+          "katkı marjı"
+        ]
+      },
+      {
+        "canonical_name": "commerce.conversion_rate",
+        "display": "Dönüşüm Oranı",
+        "synonyms": [
+          "dönüşüm oranı"
+        ]
+      },
+      {
+        "canonical_name": "production.defect_rate",
+        "display": "Hata Oranı",
+        "synonyms": [
+          "kusur oranı",
+          "hata oranı"
+        ]
+      }
+    ]
+  },
+  "schema": {
+    "models": [],
+    "cubes": [
+      {
+        "name": "sales",
+        "dimension_values": {}
+      },
+      {
+        "name": "production",
+        "dimension_values": {}
+      }
+    ],
+    "company_vocabulary": []
+  },
+  "cases": [
+    {
+      "id": "sf-001",
+      "family": "ambiguous_generic_metric",
+      "surface": "gelir",
+      "kind_hint": "metric",
+      "expected": "ABSTAIN"
+    },
+    {
+      "id": "sf-002",
+      "family": "ambiguous_generic_metric",
+      "surface": "satış",
+      "kind_hint": "metric",
+      "expected": "ABSTAIN"
+    },
+    {
+      "id": "sf-003",
+      "family": "ambiguous_generic_metric",
+      "surface": "marj",
+      "kind_hint": "metric",
+      "expected": "ABSTAIN"
+    },
+    {
+      "id": "sf-004",
+      "family": "ambiguous_generic_metric",
+      "surface": "oran",
+      "kind_hint": "metric",
+      "expected": "ABSTAIN"
+    },
+    {
+      "id": "sf-005",
+      "family": "multiple_plausible_candidate",
+      "surface": "toplam gelir",
+      "kind_hint": "metric",
+      "expected": "ABSTAIN"
+    },
+    {
+      "id": "sf-006",
+      "family": "multiple_plausible_candidate",
+      "surface": "müşteri geliri",
+      "kind_hint": "metric",
+      "expected": "ABSTAIN"
+    },
+    {
+      "id": "sf-007",
+      "family": "multiple_plausible_candidate",
+      "surface": "satış geliri",
+      "kind_hint": "metric",
+      "expected": "ABSTAIN"
+    },
+    {
+      "id": "sf-008",
+      "family": "under_specified_measure",
+      "surface": "performans",
+      "kind_hint": "metric",
+      "expected": "ABSTAIN"
+    },
+    {
+      "id": "sf-009",
+      "family": "under_specified_measure",
+      "surface": "adet",
+      "kind_hint": "metric",
+      "expected": "ABSTAIN"
+    },
+    {
+      "id": "sf-010",
+      "family": "under_specified_measure",
+      "surface": "miktar",
+      "kind_hint": "metric",
+      "expected": "ABSTAIN"
+    },
+    {
+      "id": "sf-011",
+      "family": "under_specified_measure",
+      "surface": "ortalama",
+      "kind_hint": "metric",
+      "expected": "ABSTAIN"
+    },
+    {
+      "id": "sf-012",
+      "family": "under_specified_measure",
+      "surface": "net sonuç",
+      "kind_hint": "metric",
+      "expected": "ABSTAIN"
+    },
+    {
+      "id": "sf-013",
+      "family": "partial_business_alias_unique",
+      "surface": "iade sonrası gelir",
+      "kind_hint": "metric",
+      "expected": "sales.net_revenue"
+    },
+    {
+      "id": "sf-014",
+      "family": "partial_business_alias_unique",
+      "surface": "ortalama müşteri kazancı",
+      "kind_hint": "metric",
+      "expected": "sales.avg_customer_revenue"
+    },
+    {
+      "id": "sf-015",
+      "family": "partial_business_alias_unique",
+      "surface": "dönüşüm yüzdesi",
+      "kind_hint": "metric",
+      "expected": "commerce.conversion_rate"
+    },
+    {
+      "id": "sf-016",
+      "family": "partial_business_alias_unique",
+      "surface": "brüt kârlılık",
+      "kind_hint": "metric",
+      "expected": "finance.gross_margin"
+    },
+    {
+      "id": "sf-017",
+      "family": "unique_paraphrase",
+      "surface": "kaç sipariş geldi",
+      "kind_hint": "metric",
+      "expected": "sales.order_count"
+    },
+    {
+      "id": "sf-018",
+      "family": "unique_paraphrase",
+      "surface": "satılan ürün adedi",
+      "kind_hint": "metric",
+      "expected": "sales.units_sold"
+    },
+    {
+      "id": "sf-019",
+      "family": "unique_paraphrase",
+      "surface": "toplam üretilen adet",
+      "kind_hint": "metric",
+      "expected": "production.quantity"
+    },
+    {
+      "id": "sf-020",
+      "family": "unique_paraphrase",
+      "surface": "kusurlu üretim yüzdesi",
+      "kind_hint": "metric",
+      "expected": "production.defect_rate"
+    }
+  ],
+  "temporal_scenarios": [
+    {
+      "id": "tf-001",
+      "message": "bu ay önceki dönemle karşılaştır",
+      "spans": [
+        [
+          "bu ay",
+          "time"
+        ],
+        [
+          "önceki dönemle karşılaştır",
+          "comparison"
+        ]
+      ],
+      "expect_resolved": 2
+    },
+    {
+      "id": "tf-002",
+      "message": "son 30 günü önceki dönemle karşılaştır",
+      "spans": [
+        [
+          "son 30 günü",
+          "time"
+        ],
+        [
+          "önceki dönemle karşılaştır",
+          "comparison"
+        ]
+      ],
+      "expect_resolved": 2
+    },
+    {
+      "id": "tf-003",
+      "message": "bu ayı geçen yılın aynı ayıyla karşılaştır",
+      "spans": [
+        [
+          "bu ayı geçen yılın aynı ayıyla karşılaştır",
+          "comparison"
+        ]
+      ],
+      "expect_resolved": 1
+    },
+    {
+      "id": "tf-004",
+      "message": "son 30 günü önceki 30 günle karşılaştır",
+      "spans": [
+        [
+          "son 30 günü önceki 30 günle karşılaştır",
+          "comparison"
+        ]
+      ],
+      "expect_resolved": 1
+    },
+    {
+      "id": "tf-005",
+      "message": "geçen yıl",
+      "spans": [
+        [
+          "geçen yıl",
+          "time"
+        ]
+      ],
+      "expect_resolved": 1
+    },
+    {
+      "id": "tf-006",
+      "message": "son 6 hafta",
+      "spans": [
+        [
+          "son 6 hafta",
+          "time"
+        ]
+      ],
+      "expect_resolved": 1
+    },
+    {
+      "id": "tf-007",
+      "message": "son dönem",
+      "spans": [
+        [
+          "son dönem",
+          "time"
+        ]
+      ],
+      "expect_resolved": 0
+    },
+    {
+      "id": "tf-008",
+      "message": "2024 ile 2026 arasında",
+      "spans": [
+        [
+          "2024 ile 2026 arasında",
+          "time"
+        ]
+      ],
+      "expect_resolved": 0
+    }
+  ]
+}

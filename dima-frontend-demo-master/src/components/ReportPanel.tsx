@@ -11,6 +11,7 @@ import { DurdurDugmesi } from "@/components/DurdurDugmesi";
 import { NextStepChips } from "@/components/NextStepChips";
 import { ReportCard } from "@/components/ReportCard";
 import { ReportView } from "@/components/ReportView";
+import { V2CoreCard } from "@/components/V2CoreCard";
 
 // ⚠️ FAZ 0.23 — RAPORLANABİLİRLİK TEK SAHİPTE.
 //
@@ -55,7 +56,7 @@ const SAF_NOT_ALANLARI = new Set<keyof AskResponse | string>([
   "reply_to_label", "explain", "job_id", "contract_id", "agent_run",
   "calculation_explanation",
   // — istemci-tarafı alanlar (backend göndermez, `page.tsx` ekler) —
-  "steering_golgede",
+  "steering_golgede", "v2_core",
   // 🔴🔴 `§7 ②` — **MAKRO'NUN İKİ META ALANI, VE BU KÜMENİN KENDİ UYARISININ AYNEN
   // TEKRARI.** `POST /oneri/makro` cevabına iki alan ekliyor: `makro` (koşan reçetenin
   // **adı**) ve `adim_sayisi` (kaç adım koştu). İkisi de bir **gövde** değil bir
@@ -146,6 +147,7 @@ export function ReportPanel({
   onContinue,
   onReply,
   onReplyMulti,
+  onV2Clarification,
   sonBakilanlar = [],
   tuval = null,
 }: {
@@ -187,6 +189,8 @@ export function ReportPanel({
              hucre?: { dimension: string; value: string }) => void;
   // Birden fazla kart seçip birleşik bağlamla sor: çapa = seçilenlerin EN SONuncusu.
   onReplyMulti?: (threadId: string, anchorIndex: number, extraIndices: number[], text: string) => void;
+  // Day5 V2: signed clarification token backend authority'sidir; UI yalnız aynen geri taşır.
+  onV2Clarification?: (threadId: string, anchorIndex: number, token: string, label: string) => void;
   // 🔴 `5.9` — boş girdide gösterilen **son bakılanlar**. ⚠ Burada TÜRETİLMEZ, alınır:
   // kaynağı sohbetin TÜM thread'leridir (`page.tsx::sonBakilanEtiketler(threads)`) ve bu
   // panel yalnız AKTİF thread'i görür. Kendi listesini kursaydı, iki yerde iki farklı
@@ -405,6 +409,19 @@ export function ReportPanel({
         {/* 🔴 GÖVDE = tuval **ya da** kart yığını **ya da** boş durum. Üçü de aynı
             kaydırılan alanın içeriğidir; besteci hepsinin altında AYNI yerde kalır. */}
         {tuval ? tuval : !thread ? bosGovde : thread.items.map((it, i) => {
+          if (it.v2_core) {
+            return (
+              <V2CoreCard
+                key={`${thread.id}-${i}-v2`}
+                data={it.v2_core}
+                onClarification={
+                  onV2Clarification
+                    ? (token, label) => onV2Clarification(thread.id, i, token, label)
+                    : undefined
+                }
+              />
+            );
+          }
           if (raporlanabilir(it)) {
             return (
               <ReportCard

@@ -3,7 +3,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState } from "react";
-import { apiErrorMessage, ask, askCube, getConversation, postMakro, postPlanKos, uploadDataset } from "@/lib/api-client";
+import { apiErrorMessage, ask, askCube, askV2, getConversation, postMakro, postPlanKos, uploadDataset, v2CoreThreadItem } from "@/lib/api-client";
 import { useOnizleme, type MakroIstegi } from "@/lib/onizleme";
 import { AnalysisCanvas } from "@/components/AnalysisCanvas";
 import { ChatPanel } from "@/components/ChatPanel";
@@ -24,10 +24,14 @@ import { useHistory } from "@/stores/history";
 import { useFeature } from "@/lib/useFeature";
 import { usePermission } from "@/lib/usePermission";
 import { groupIntoThreads, mintThreadId, replyAnchorLabel, sonBakilanEtiketler } from "@/lib/threads";
-import type { AskResponse, CubeQuery} from "@/lib/types";
+import type { AskResponse, CubeQuery, V2ConversationState } from "@/lib/types";
 import { DcmAkisi } from "@/components/DcmAkisi";
 
 type Drawer = "settings" | "help" | "notifications" | "history" | "dashboards" | null;
+
+// Day5 development selector only. Backend ask_v2_enabled remains the kill-switch authority.
+// There is deliberately no silent fallback from /ask-v2 to legacy /ask.
+const CORE_V2 = process.env.NEXT_PUBLIC_DIMA_CORE_V2 === "1";
 
 // Oturum kimliği — crypto.randomUUID yalnız güvenli bağlamda (https/localhost) var;
 // http://*.localtld'de yok, bu yüzden fallback.
@@ -119,6 +123,8 @@ export default function Home() {
   const router = useRouter();
   const [startedLatch, setStarted] = useState(false);
   const [sessionId, setSessionId] = useState(makeSessionId);
+  // V2 Core state is opaque to the UI: backend owns semantics; client only echoes/reset it.
+  const [v2Conversation, setV2Conversation] = useState<V2ConversationState>({});
   const qc = useQueryClient();
   const items = useHistory((s) => s.items);
   const addHistory = useHistory((s) => s.add);
@@ -187,6 +193,7 @@ export default function Home() {
     setContextCq(lastReport?.cube_query ?? null);
     setContextRapor(lastReport?.rapor ?? null);   // `§RD` — kardeş alan, aynı yaşam döngüsü
     setDiyalogDurumu(lastReport?.diyalog_durumu ?? null);
+    setV2Conversation(msgs.find((m) => m.v2_core)?.v2_core?.conversation ?? {});
     setCanvasItems([]); // tuval sohbet-oturumu kapsamlı — devralınan sohbette sıfırdan başlar
     setViewHint(lastReport?.view_hint ? { kind: lastReport.view_hint, nonce: Date.now() } : null);
     setPrevSql(lastReport?.sql || null);
@@ -201,6 +208,7 @@ export default function Home() {
     setContextCq(null);
     setContextRapor(null);
     setDiyalogDurumu(null);
+    setV2Conversation({});
     setPrevSql(null);
     setCanvasItems([]); // tuval sohbet-oturumu kapsamlı — yeni sohbet sıfırdan başlar
     setStarted(false);
@@ -243,11 +251,55 @@ export default function Home() {
     | { kind: "reply"; question: string; threadId: string; anchorIndex: number;
         hucre?: { dimension: string; value: string }; sira?: number }
     | { kind: "reply-multi"; question: string; threadId: string; anchorIndex: number;
-        extraIndices: number[]; sira?: number };
+        extraIndices: number[]; sira?: number }
+    | { kind: "v2-clarify"; question: string; threadId: string; anchorIndex: number;
+        clarificationToken: string; sira?: number };
 
   const mutation = useMutation<AskResponse, unknown, AskMutationVars>({
     mutationFn: (vars) => {
       setLiveTrace([]);
+
+      if (CORE_V2) {
+        if (vars.kind === "reply-multi") {
+          throw new Error("V2 Core MVP çoklu-kart bağlamını henüz desteklemiyor; silent legacy fallback yok.");
+        }
+
+        if (vars.kind === "new") {
+          return askV2({
+            question: vars.question,
+            session_id: sessionId,
+            thread_id: null,
+            conversation: {},
+          }).then((data) => v2CoreThreadItem(data, vars.question));
+        }
+
+        const sourceThread =
+          vars.kind === "continue"
+            ? activeThread
+            : threads.find((th) => th.id === vars.threadId) ?? null;
+        const anchorV2 =
+          vars.kind === "continue"
+            ? null
+            : sourceThread?.items[vars.anchorIndex]?.v2_core ?? null;
+        const conversation =
+          vars.kind === "continue" ? v2Conversation : anchorV2?.conversation;
+        if (!conversation) {
+          throw new Error("V2 conversation state bulunamadı; yeni bir V2 sohbet başlat.");
+        }
+
+        return askV2({
+          question: vars.question,
+          session_id: sessionId,
+          thread_id: vars.kind === "continue" ? activeThreadId : vars.threadId,
+          conversation,
+          clarification_token: vars.kind === "v2-clarify" ? vars.clarificationToken : null,
+        }).then((data) => v2CoreThreadItem(data, vars.question));
+      }
+
+      if (vars.kind === "v2-clarify") {
+        throw new Error("V2 clarification yalnız V2 Core modunda kullanılabilir.");
+      }
+
       if (vars.kind === "new") {
         // Sol komposer: cube_query/prev_sql/history/thread_id HEPSİ boş — gerçekten taze
         // bir istek, aktif thread'in bağlamından TAMAMEN bağımsız.
@@ -361,6 +413,7 @@ export default function Home() {
         : vars.threadId;
       data.thread_id = targetThreadId;
       setActiveThreadId(targetThreadId);
+      if (data.v2_core) setV2Conversation(data.v2_core.conversation);
       addHistory(data);
       // Rapor paneli artık `activeThread`'den (yukarıda türetilir) OTOMATİK güncellenir —
       // sayfa-seviyeli AYRI bir "aktif rapor" state'i GEREKMEZ (Faz 1.5'in "note VARLIĞI tek
@@ -409,7 +462,7 @@ export default function Home() {
   // takibin takibi… ve kullanıcı zinciri kestiğinde **aynı thread içinde** yeni bir
   // konu başlar. Zincir semantiktir, thread görseldir.
   const zinciriKes = () => {
-    setContextCq(null); setContextRapor(null); setDiyalogDurumu(null); setPrevSql(null); setViewHint(null);
+    setContextCq(null); setContextRapor(null); setDiyalogDurumu(null); setV2Conversation({}); setPrevSql(null); setViewHint(null);
   };
   // `+ yeni sohbet` **ayrı** bir edimdir: zinciri keser **ve** thread'den çıkar.
   const yeniSohbet = () => { zinciriKes(); setActiveThreadId(null); };
@@ -439,6 +492,23 @@ export default function Home() {
     setStarted(true);
     mutation.mutate({ kind: "reply-multi", question: q, threadId, anchorIndex, extraIndices,
                       sira: ++istekSirasi.current });
+  };
+  const submitV2Clarification = (
+    threadId: string,
+    anchorIndex: number,
+    token: string,
+    label: string,
+  ) => {
+    setDrawer(null);
+    setStarted(true);
+    mutation.mutate({
+      kind: "v2-clarify",
+      question: label,
+      threadId,
+      anchorIndex,
+      clarificationToken: token,
+      sira: ++istekSirasi.current,
+    });
   };
   // §B DÜZELTMESİ (1 Ağustos 2026, 2. tur) — öneri-chip'leri ARTIK yalnız sağ panelde
   // (ReportPanel) render ediliyor, HER ZAMAN aktif thread'in İÇİNDE — bu yüzden ayrı bir
@@ -625,6 +695,7 @@ export default function Home() {
                 setActiveThreadId(t.id);
                 const last = t.items.at(-1) ?? null;
                 setContextCq(last?.cube_query ?? null);
+                setV2Conversation(last?.v2_core?.conversation ?? {});
                 setPrevSql(last?.sql || null);
                 setViewHint(null); // yeniden girişte zorla remount YOK — kartlar kendi view_hint'ini kullanır
               }}
@@ -704,6 +775,7 @@ export default function Home() {
                 onContinue={submitContinue}
                 onReply={submitReply}
                 onReplyMulti={submitReplyMulti}
+                onV2Clarification={submitV2Clarification}
                 sonBakilanlar={sonBakilanEtiketler(threads)}
                 tuval={canvasMode ? (
                   // 🔴🔴 **ÖLÇÜLMÜŞ GERİLEME KAPANDI (2026-08-13).** Tuval eskiden

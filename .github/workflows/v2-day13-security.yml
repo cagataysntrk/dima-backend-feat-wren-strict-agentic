@@ -1,0 +1,61 @@
+# Pre-comparison final Product receipt: product=495203f58556e0ff9571671478b7022d01afe2ab
+name: v2-day13-security
+
+"on":
+  push:
+    branches:
+      - feat/ask-v2-mvp
+    paths:
+      - "backend/app/v2/research_state.py"
+      - "backend/app/v2/report_narration.py"
+      - "backend/tests/test_v2_day13_security.py"
+      - "backend/belgeler/plan/DIMA_DAY13_SECURITY_THREAT_MODEL.md"
+      - ".github/workflows/v2-day13-security.yml"
+  workflow_dispatch:
+
+jobs:
+  day13-provider-free:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+      - name: Install backend
+        working-directory: backend
+        run: pip install -e ".[dev]"
+      - name: Day13 PII and provider egress
+        working-directory: backend
+        run: |
+          python -m compileall -q app/v2
+          pytest -q tests/test_v2_day13_security.py tests/test_pii.py
+      - name: Day13 tenant principal session thread context isolation
+        working-directory: backend
+        run: |
+          pytest -q \
+            tests/test_v2_day10_continuation.py::test_section_token_contains_only_opaque_control_identity \
+            tests/test_v2_day10_continuation.py::test_tampered_and_foreign_context_tokens_fail_closed \
+            tests/test_v2_day10_continuation.py::test_registry_revalidates_current_principal_and_exact_section_identity \
+            tests/test_v2_day10_continuation.py::test_evicted_or_missing_registry_context_requires_rebind \
+            tests/test_v2_day10_continuation.py::test_signed_section_authority_projection_uses_typed_provenance_not_random_active_ledger \
+            tests/test_v2_day10_continuation.py::test_arbitrary_active_ledger_parent_is_rejected_without_section_admission \
+            tests/test_v2_day10_frontdoor.py::test_research_preserves_frontdoor_principal_and_tenant_binding \
+            tests/test_v2_day7_research_tool_contract.py::test_missing_principal_fails_closed_before_any_execution \
+            tests/test_v2_day7_research_tool_contract.py::test_task_tool_mismatch_is_rejected_before_execution
+      - name: Day13 foreign authority attack matrix
+        working-directory: backend
+        run: |
+          pytest -q \
+            tests/test_v2_day10_s_action_availability.py::test_action_ref_is_state_bound_and_stale_choice_fails_closed \
+            tests/test_v2_day10_s_action_availability.py::test_invented_action_ref_fails_closed \
+            tests/test_v2_day10_s_action_availability.py::test_resolve_semantics_parent_cannot_select_sibling_evidence \
+            tests/test_v2_day10_s_action_availability.py::test_multi_directive_never_produces_directive_evidence_cross_product \
+            tests/test_v2_day8_hypothesis_proposals.py::test_foreign_run_evidence_is_rejected_even_if_marked_inspected \
+            tests/test_v2_day8_hypothesis_proposals.py::test_unverified_trigger_is_rejected \
+            tests/test_v2_day8_hypothesis_proposals.py::test_model_minted_semantic_handle_is_rejected \
+            tests/test_v2_day9_report_builder.py::test_unknown_evidence_ref_is_not_magically_true \
+            tests/test_v2_day9_report_builder.py::test_finding_with_missing_derived_parent_lineage_never_becomes_cached_truth \
+            tests/test_v2_day7_research_tool_contract.py::test_query_rejects_semantic_handle_not_declared_by_task
