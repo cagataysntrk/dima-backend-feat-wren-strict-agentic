@@ -1146,12 +1146,12 @@ def resolve_investigation_topology(
         if (
             parent is not None
             and intent in depth_advancing
-            and parent.depth >= snapshot.action_profile.max_depth
+            and parent.contract_depth >= snapshot.action_profile.max_depth
         ):
             raise ResearchManagerMaturationError(
                 "P17_DEPTH_BUDGET_EXHAUSTED",
                 (
-                    f"parent depth {parent.depth} reached "
+                    f"parent contract depth {parent.contract_depth} reached "
                     f"max_depth={snapshot.action_profile.max_depth}"
                 ),
             )
@@ -1195,12 +1195,12 @@ def resolve_investigation_topology(
         if (
             parent is not None
             and intent in depth_advancing
-            and parent.depth >= snapshot.action_profile.max_depth
+            and parent.contract_depth >= snapshot.action_profile.max_depth
         ):
             raise ResearchManagerMaturationError(
                 "P17_DEPTH_BUDGET_EXHAUSTED",
                 (
-                    f"parent depth {parent.depth} reached "
+                    f"parent contract depth {parent.contract_depth} reached "
                     f"max_depth={snapshot.action_profile.max_depth}"
                 ),
             )

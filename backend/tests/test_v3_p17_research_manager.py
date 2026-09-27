@@ -2069,22 +2069,7 @@ def test_replan_continues_manager_selected_second_sibling_branch():
     assert task is not None
     assert tested_b.branch_id == alt_b.branch_id
 
-    deep_b, _ = service.run_one(
-        session_id=session.session_id,
-        principal=principal(),
-        manager=ScriptedManager(
-            lambda snap: recursive_proposal(
-                snap,
-                proposal_id="selected-b-deepen",
-                objective_key="selected-b.deepen",
-                intent=InvestigationIntent.DEEPEN_EXPLANATION,
-                parent_step_id=tested_b.step_id,
-                target_kind=InvestigationTargetKind.EXPLANATION,
-                target_ref="candidate-b-child",
-            )
-        ),
-    )
-    assert deep_b.branch_id == alt_b.branch_id
+    assert tested_b.contract_depth == 3
 
     replan_b, _ = service.run_one(
         session_id=session.session_id,
@@ -2095,7 +2080,7 @@ def test_replan_continues_manager_selected_second_sibling_branch():
                 proposal_id="selected-b-replan",
                 objective_key="selected-b.replan",
                 intent=InvestigationIntent.REPLAN,
-                parent_step_id=deep_b.step_id,
+                parent_step_id=tested_b.step_id,
                 target_kind=InvestigationTargetKind.QUESTION,
                 target_ref="candidate-b-next",
             )
@@ -2987,22 +2972,18 @@ def test_dmp0053_fake_manager_trajectory_two_alternatives_second_tested():
         intent=InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE,
         parent_step_id=b.step_id,
     )
-    deep, _ = _dmp0053_run(
-        service, session, proposal_id="db", objective_key="db",
-        intent=InvestigationIntent.DEEPEN_EXPLANATION,
-        parent_step_id=tested.step_id,
-    )
+    assert tested.contract_depth == 3
     _dmp0053_run(
         service, session, proposal_id="sa", objective_key="sa",
         intent=InvestigationIntent.STOP_BRANCH,
         parent_step_id=a.step_id,
     )
-    _dmp0053_run(
+    stopped, _ = _dmp0053_run(
         service, session, proposal_id="sg", objective_key="sg",
         intent=InvestigationIntent.STOP_INVESTIGATION,
-        parent_step_id=deep.step_id,
+        parent_step_id=tested.step_id,
     )
-    assert tested.branch_id == deep.branch_id == b.branch_id
+    assert tested.branch_id == stopped.branch_id == b.branch_id
 
 
 def test_dmp0053_fake_manager_counter_evidence_retains_sibling_until_stop():

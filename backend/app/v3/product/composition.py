@@ -966,13 +966,15 @@ class HeadlessProductComposer:
         correlated_evidence_refs: list[str] = []
         limitation_codes: dict[str, str] = {}
 
-        session = self._research.start_from_brief(
-            brief=brief,
-            request_ref=request_ref,
-            source_message_hash=source_message_hash,
-            principal=principal,
-            prior_session_id=prior_research_session_id,
-        )
+        start_kwargs = {
+            "brief": brief,
+            "request_ref": request_ref,
+            "source_message_hash": source_message_hash,
+            "principal": principal,
+        }
+        if prior_research_session_id is not None:
+            start_kwargs["prior_session_id"] = prior_research_session_id
+        session = self._research.start_from_brief(**start_kwargs)
         owner_calls.append("P14")
         accepted_investigation_requirements = (
             tuple(investigation_requirements)
