@@ -33,6 +33,7 @@ from app.v3.research_manager import (
     FollowupResult,
     InvestigationIntent,
     InvestigationTargetKind,
+    InvestigationTaskStatus,
     ManagerAction,
     ManagerProposal,
     ManagerStopReason,
