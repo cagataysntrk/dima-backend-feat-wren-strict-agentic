@@ -3196,3 +3196,127 @@ HISTORICAL RUNS ARE IMMUTABLE
 
 Transport remains permanent `workflow_dispatch`-only. No paid retry, Day11, DEV80,
 Validation50 or Hidden50 is authorized by this correction.
+
+---
+
+## 2026-09-27 — WREN vs METABASE NEUTRAL COMPARISON / ROUND-2 FINAL RESULT
+
+This is a **documentation-only comparison receipt** recorded after both candidates had been sealed for neutral comparison.
+
+Purpose:
+
+```text
+Compare the two independently developed Dima analytical/research architectures
+under the same user-facing feature corpus and the same neutral data fixture,
+without modifying either sealed Product implementation for the benchmark.
+```
+
+Canonical full report:
+
+`backend/belgeler/comparison/DIMA_WREN_METABASE_NEUTRAL_COMPARISON_FINAL_2026-09-27.md`
+
+Comparison date:
+
+`2026-09-27`
+
+Sealed Product sources compared:
+
+```text
+Wren source:
+feat/ask-v2-mvp
+8f472fb252f1f81d7357c6edcdbedf89bf60f666
+
+Metabase source:
+feat/dima-metabase-platform
+72938742188b83427f303256b5168dbea61eead9
+
+Metabase engine:
+cbe313af9ac2d5960f662068e433d328d896fb06
+runtime:
+v0.63.18-dima.6
+digest:
+sha256:40e9a44be49904de3ddf12d4683c768e70955851c10a928a9c8f7d8f60780353
+```
+
+Round-2 fairness controls:
+
+```text
+common features              = 10
+difficulty levels            = simple / medium / hard
+total shared user cases      = 30
+same prompt corpus           = YES
+same physical neutral data   = YES
+benchmark Product tuning     = NO
+backend/app/** benchmark diff= ZERO on both comparison branches
+```
+
+Frozen common inputs:
+
+```text
+manifest
+backend/eval/dima_neutral_feature_benchmark_round2.json
+blob = b08fbf6601b8c47a6f336c4efcc0cdab95a6c2da
+
+fixture
+backend/eval/round2_neutral_machine_fixture.json
+blob = 44c02edee3333ddd048e8f7d9aeb94dcd399ad7c
+```
+
+Wren Round-2 evidence:
+
+```text
+comparison HEAD              = 8e5a3c0d6e05ab2d112a1c2ad1fd91fa007d5e22
+GitHub Actions run           = 36321181023
+artifact                     = 10932199443
+30 / 30 cases executed       = YES
+direct provider calls        = 145
+Wren query / dry-plan / SQL  = 17 / 17 / 17
+raw harness PASS label       = 10 / 30
+```
+
+Metabase Round-2 evidence:
+
+```text
+comparison HEAD              = 40129d985986d9acb1577d5a8f4216c099a5c0a6
+GitHub Actions run           = 36324477672
+workflow                     = SUCCESS
+artifact                     = 10933992837
+30 / 30 cases executed       = YES
+observable model boundaries  = 139
+Metabase analytical calls    = 63
+raw harness PASS label       = 16 / 30
+```
+
+The raw harness PASS counts above are **not the final comparison score**. Both benchmark harnesses retained conservative acceptance assumptions from their native certification paths. Final adjudication was performed from raw outputs, generated analytical work, Evidence/provenance, process telemetry, task completion, safety behavior and the frozen neutral oracle.
+
+Final Round-2 adjudication:
+
+```text
+Wren      = 38.5 / 100
+Metabase  = 70.8 / 100
+
+neutral-comparison winner
+= METABASE / METABOT
+```
+
+Interpretation:
+
+- Metabase/Metabot is the selected canonical production analytical foundation.
+- Wren is **not discarded**. Its strongest research-manager, hypothesis, dry-plan, adaptive-investigation and root-cause orchestration ideas remain reference architecture / R&D input for Dima Brain.
+- The comparison does **not** prove that Metabase currently implements the final desired recursive multi-factor root-cause vision. Both candidates still have material RCA gaps.
+- Wren remained stronger in several research-orchestration patterns, but had materially weaker Round-2 coverage on temporal comparison, multi-intent work, relationship grounding and multi-turn scope repair.
+- Metabase had stronger overall Round-2 coverage and native analytical execution, but P19 root-cause synthesis remained underused and conversational scope repair remained incomplete.
+- Exact provider-dollar comparison is **not certified** by Round-2: Wren exposes direct provider calls; Metabase's 139 units are observable model boundaries and are not guaranteed to equal internal provider calls.
+
+Authority / history rule:
+
+```text
+THIS RECEIPT DOES NOT CHANGE THE SEALED PRODUCT SOURCE SHA.
+THIS RECEIPT DOES NOT RETROACTIVELY REWRITE HISTORICAL RUNS.
+THIS RECEIPT DOES NOT AUTHORIZE PRODUCT PATCHES BY ITSELF.
+COMPARISON BRANCH CHANGES WERE BENCHMARK/DOCS ONLY.
+SEALED PRODUCT SOURCE REMAINS THE SOURCE IDENTIFIED ABOVE.
+```
+
+For independent reproduction, audit the canonical report, exact run/artifact IDs, frozen manifest/fixture blobs and the two comparison HEADs before interpreting the ordinal final score.
+
