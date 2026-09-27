@@ -11,6 +11,7 @@ on:
       - "backend/app/v3/report_document.py"
       - "backend/tests/test_v3_product_*.py"
       - "backend/tests/test_v3_owner_scoped_must_accounting.py"
+      - "backend/tests/test_v3_core_b_relationship_root_regression.py"
       - "backend/eval/core_b/**"
       - "backend/product_contracts/**"
       - "backend/belgeler/metabase/DIMA_METABASE_CORE_B_CLOSURE_RECEIPT.md"
@@ -52,6 +53,11 @@ jobs:
           python -m py_compile tests/test_v3_product_contracts.py
           python -m py_compile tests/test_v3_product_composition.py
           python -m py_compile tests/test_v3_owner_scoped_must_accounting.py
+          python -m py_compile tests/test_v3_core_b_relationship_root_regression.py
+
+      - name: Relationship and root-cause shadow-budget regression
+        working-directory: backend
+        run: pytest -q tests/test_v3_core_b_relationship_root_regression.py
 
       - name: Core B product focused proof
         working-directory: backend
