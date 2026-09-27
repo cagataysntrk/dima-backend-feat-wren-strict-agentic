@@ -2447,6 +2447,58 @@ def test_dmp0053_global_stop_and_replan_never_mint_branch():
     assert set(snap.investigation.open_branch_ids) == {root.branch_id}
 
 
+def test_dmp0053_global_control_stop_after_stopped_root_is_legal():
+    db = db_engine()
+    _, session, _, _, _, service = _dmp0053_service(db)
+    root, _ = _dmp0053_run(
+        service,
+        session,
+        proposal_id="root-before-global-stop",
+        objective_key="root.before-global-stop",
+        intent=InvestigationIntent.INVESTIGATE_GAP,
+    )
+    branch_stop, _ = _dmp0053_run(
+        service,
+        session,
+        proposal_id="stop-root-branch",
+        objective_key="stop.root.branch",
+        intent=InvestigationIntent.STOP_BRANCH,
+        parent_step_id=root.step_id,
+    )
+    assert branch_stop.branch_id == root.branch_id
+
+    snapshot = service.snapshot(
+        session_id=session.session_id,
+        principal=principal(),
+    )
+    assert root.branch_id in snapshot.investigation.stopped_branch_ids
+    assert snapshot.investigation.open_branch_ids == ()
+    rule = snapshot.action_profile.rule_for(
+        InvestigationIntent.STOP_INVESTIGATION
+    )
+    assert rule is not None
+    assert rule.branch_behavior == InvestigationBranchBehavior.GLOBAL_CONTROL
+    assert rule.allow_parentless is True
+
+    global_stop, task = _dmp0053_run(
+        service,
+        session,
+        proposal_id="global-stop-after-branch-stop",
+        objective_key="stop.investigation.after-branch-stop",
+        intent=InvestigationIntent.STOP_INVESTIGATION,
+    )
+
+    assert task is None
+    assert global_stop.stop_scope == StopScope.INVESTIGATION
+    assert (
+        service.snapshot(
+            session_id=session.session_id,
+            principal=principal(),
+        ).terminal_stop_reason
+        == ManagerStopReason.INCONCLUSIVE
+    )
+
+
 def test_dmp0053_early_global_stop_exposes_no_new_open_branch():
     db = db_engine()
     _, session, _, _, _, service = _dmp0053_service(db)
