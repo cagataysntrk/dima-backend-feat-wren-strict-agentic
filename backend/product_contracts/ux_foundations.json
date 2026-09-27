@@ -1,6 +1,6 @@
 {
-  "version": "wave-1-core-a-v1",
-  "architecture": "shared-motors + domain/sector configuration + headless contracts; no UI and no feature-specific backend forks",
+  "version": "wave-1-comparison-ready-v2",
+  "architecture": "shared-motors + domain/sector configuration + headless contracts; comparison-readiness statuses are explicit; no UI and no feature-specific backend forks",
   "descriptors": [
     {
       "ux_id": "general-01",
@@ -36,7 +36,7 @@
         "deterministic_pagination",
         "artifact_deep_links"
       ],
-      "current_feasibility": "FOUNDATION_PARTIAL",
+      "current_feasibility": "FOUNDATION_ONLY",
       "deferred_capabilities": [],
       "shared_motors": [
         "CompanyMap",
@@ -78,7 +78,7 @@
         "deterministic_pagination",
         "artifact_deep_links"
       ],
-      "current_feasibility": "FOUNDATION_READY",
+      "current_feasibility": "DATA_DEPENDENT",
       "deferred_capabilities": [],
       "shared_motors": [
         "CompanyMap",
@@ -125,7 +125,7 @@
         "deterministic_pagination",
         "artifact_deep_links"
       ],
-      "current_feasibility": "FOUNDATION_READY",
+      "current_feasibility": "FOUNDATION_ONLY",
       "deferred_capabilities": [],
       "shared_motors": [
         "CompanyMap",
@@ -175,7 +175,7 @@
         "deterministic_pagination",
         "artifact_deep_links"
       ],
-      "current_feasibility": "FOUNDATION_READY",
+      "current_feasibility": "HEADLESS_READY",
       "deferred_capabilities": [],
       "shared_motors": [
         "CompanyMap",
@@ -224,7 +224,7 @@
         "deterministic_pagination",
         "artifact_deep_links"
       ],
-      "current_feasibility": "FOUNDATION_READY",
+      "current_feasibility": "HEADLESS_READY",
       "deferred_capabilities": [],
       "shared_motors": [
         "CompanyMap",
@@ -269,7 +269,7 @@
         "deterministic_pagination",
         "artifact_deep_links"
       ],
-      "current_feasibility": "FOUNDATION_READY",
+      "current_feasibility": "DATA_DEPENDENT",
       "deferred_capabilities": [],
       "shared_motors": [
         "CompanyMap",
@@ -315,7 +315,7 @@
         "deterministic_pagination",
         "artifact_deep_links"
       ],
-      "current_feasibility": "FOUNDATION_READY",
+      "current_feasibility": "HEADLESS_READY",
       "deferred_capabilities": [],
       "shared_motors": [
         "CompanyMap",
@@ -364,7 +364,7 @@
         "deterministic_pagination",
         "artifact_deep_links"
       ],
-      "current_feasibility": "FOUNDATION_READY",
+      "current_feasibility": "HEADLESS_READY",
       "deferred_capabilities": [],
       "shared_motors": [
         "CompanyMap",
@@ -413,7 +413,7 @@
         "deterministic_pagination",
         "artifact_deep_links"
       ],
-      "current_feasibility": "FOUNDATION_READY",
+      "current_feasibility": "PRODUCTIZATION_DEFERRED",
       "deferred_capabilities": [],
       "shared_motors": [
         "CompanyMap",
@@ -460,7 +460,7 @@
         "deterministic_pagination",
         "artifact_deep_links"
       ],
-      "current_feasibility": "FOUNDATION_READY",
+      "current_feasibility": "PRODUCTIZATION_DEFERRED",
       "deferred_capabilities": [],
       "shared_motors": [
         "CompanyMap",
@@ -521,7 +521,7 @@
         "deterministic_pagination",
         "artifact_deep_links"
       ],
-      "current_feasibility": "FOUNDATION_READY",
+      "current_feasibility": "DATA_DEPENDENT",
       "deferred_capabilities": [],
       "shared_motors": [
         "CompanyMap",
@@ -583,7 +583,7 @@
         "deterministic_pagination",
         "artifact_deep_links"
       ],
-      "current_feasibility": "FOUNDATION_READY",
+      "current_feasibility": "DATA_DEPENDENT",
       "deferred_capabilities": [],
       "shared_motors": [
         "CompanyMap",
@@ -645,7 +645,7 @@
         "deterministic_pagination",
         "artifact_deep_links"
       ],
-      "current_feasibility": "FOUNDATION_READY",
+      "current_feasibility": "DATA_DEPENDENT",
       "deferred_capabilities": [],
       "shared_motors": [
         "CompanyMap",
@@ -771,7 +771,7 @@
         "deterministic_pagination",
         "artifact_deep_links"
       ],
-      "current_feasibility": "FOUNDATION_READY",
+      "current_feasibility": "DATA_DEPENDENT",
       "deferred_capabilities": [],
       "shared_motors": [
         "CompanyMap",
@@ -833,7 +833,7 @@
         "deterministic_pagination",
         "artifact_deep_links"
       ],
-      "current_feasibility": "FOUNDATION_READY",
+      "current_feasibility": "DATA_DEPENDENT",
       "deferred_capabilities": [],
       "shared_motors": [
         "CompanyMap",
@@ -1153,7 +1153,7 @@
         "deterministic_pagination",
         "artifact_deep_links"
       ],
-      "current_feasibility": "FOUNDATION_READY",
+      "current_feasibility": "DATA_DEPENDENT",
       "deferred_capabilities": [],
       "shared_motors": [
         "CompanyMap",
@@ -1217,7 +1217,7 @@
         "deterministic_pagination",
         "artifact_deep_links"
       ],
-      "current_feasibility": "FOUNDATION_READY",
+      "current_feasibility": "DATA_DEPENDENT",
       "deferred_capabilities": [],
       "shared_motors": [
         "CompanyMap",
@@ -1281,7 +1281,7 @@
         "deterministic_pagination",
         "artifact_deep_links"
       ],
-      "current_feasibility": "FOUNDATION_READY",
+      "current_feasibility": "DATA_DEPENDENT",
       "deferred_capabilities": [],
       "shared_motors": [
         "CompanyMap",
@@ -1411,7 +1411,7 @@
         "deterministic_pagination",
         "artifact_deep_links"
       ],
-      "current_feasibility": "FOUNDATION_READY",
+      "current_feasibility": "DATA_DEPENDENT",
       "deferred_capabilities": [],
       "shared_motors": [
         "CompanyMap",
@@ -1475,7 +1475,7 @@
         "deterministic_pagination",
         "artifact_deep_links"
       ],
-      "current_feasibility": "FOUNDATION_READY",
+      "current_feasibility": "DATA_DEPENDENT",
       "deferred_capabilities": [],
       "shared_motors": [
         "CompanyMap",
@@ -1605,7 +1605,7 @@
         "deterministic_pagination",
         "artifact_deep_links"
       ],
-      "current_feasibility": "FOUNDATION_READY",
+      "current_feasibility": "DATA_DEPENDENT",
       "deferred_capabilities": [],
       "shared_motors": [
         "CompanyMap",
@@ -1735,7 +1735,7 @@
         "deterministic_pagination",
         "artifact_deep_links"
       ],
-      "current_feasibility": "FOUNDATION_READY",
+      "current_feasibility": "DATA_DEPENDENT",
       "deferred_capabilities": [],
       "shared_motors": [
         "CompanyMap",
@@ -1801,7 +1801,7 @@
         "deterministic_pagination",
         "artifact_deep_links"
       ],
-      "current_feasibility": "FOUNDATION_READY",
+      "current_feasibility": "DATA_DEPENDENT",
       "deferred_capabilities": [],
       "shared_motors": [
         "CompanyMap",
@@ -1935,7 +1935,7 @@
         "deterministic_pagination",
         "artifact_deep_links"
       ],
-      "current_feasibility": "FOUNDATION_READY",
+      "current_feasibility": "DATA_DEPENDENT",
       "deferred_capabilities": [],
       "shared_motors": [
         "CompanyMap",
@@ -2001,7 +2001,7 @@
         "deterministic_pagination",
         "artifact_deep_links"
       ],
-      "current_feasibility": "FOUNDATION_READY",
+      "current_feasibility": "DATA_DEPENDENT",
       "deferred_capabilities": [],
       "shared_motors": [
         "CompanyMap",
@@ -2067,7 +2067,7 @@
         "deterministic_pagination",
         "artifact_deep_links"
       ],
-      "current_feasibility": "FOUNDATION_READY",
+      "current_feasibility": "DATA_DEPENDENT",
       "deferred_capabilities": [],
       "shared_motors": [
         "CompanyMap",
@@ -2269,7 +2269,7 @@
         "deterministic_pagination",
         "artifact_deep_links"
       ],
-      "current_feasibility": "FOUNDATION_READY",
+      "current_feasibility": "DATA_DEPENDENT",
       "deferred_capabilities": [],
       "shared_motors": [
         "CompanyMap",
@@ -2403,7 +2403,7 @@
         "deterministic_pagination",
         "artifact_deep_links"
       ],
-      "current_feasibility": "FOUNDATION_READY",
+      "current_feasibility": "DATA_DEPENDENT",
       "deferred_capabilities": [],
       "shared_motors": [
         "CompanyMap",
@@ -2469,7 +2469,7 @@
         "deterministic_pagination",
         "artifact_deep_links"
       ],
-      "current_feasibility": "FOUNDATION_READY",
+      "current_feasibility": "DATA_DEPENDENT",
       "deferred_capabilities": [],
       "shared_motors": [
         "CompanyMap",
@@ -2603,7 +2603,7 @@
         "deterministic_pagination",
         "artifact_deep_links"
       ],
-      "current_feasibility": "FOUNDATION_READY",
+      "current_feasibility": "DATA_DEPENDENT",
       "deferred_capabilities": [],
       "shared_motors": [
         "CompanyMap",
@@ -2669,7 +2669,7 @@
         "deterministic_pagination",
         "artifact_deep_links"
       ],
-      "current_feasibility": "FOUNDATION_READY",
+      "current_feasibility": "DATA_DEPENDENT",
       "deferred_capabilities": [],
       "shared_motors": [
         "CompanyMap",
@@ -2735,7 +2735,7 @@
         "deterministic_pagination",
         "artifact_deep_links"
       ],
-      "current_feasibility": "FOUNDATION_READY",
+      "current_feasibility": "DATA_DEPENDENT",
       "deferred_capabilities": [],
       "shared_motors": [
         "CompanyMap",
@@ -2801,7 +2801,7 @@
         "deterministic_pagination",
         "artifact_deep_links"
       ],
-      "current_feasibility": "FOUNDATION_READY",
+      "current_feasibility": "DATA_DEPENDENT",
       "deferred_capabilities": [],
       "shared_motors": [
         "CompanyMap",
@@ -2867,7 +2867,7 @@
         "deterministic_pagination",
         "artifact_deep_links"
       ],
-      "current_feasibility": "FOUNDATION_READY",
+      "current_feasibility": "DATA_DEPENDENT",
       "deferred_capabilities": [],
       "shared_motors": [
         "CompanyMap",
@@ -3069,7 +3069,7 @@
         "deterministic_pagination",
         "artifact_deep_links"
       ],
-      "current_feasibility": "FOUNDATION_READY",
+      "current_feasibility": "DATA_DEPENDENT",
       "deferred_capabilities": [],
       "shared_motors": [
         "CompanyMap",

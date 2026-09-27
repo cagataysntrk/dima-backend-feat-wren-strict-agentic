@@ -68,6 +68,22 @@ EXPECTED_NAMES = {
     ),
 }
 
+CANONICAL_READINESS = {
+    "HEADLESS_READY",
+    "FOUNDATION_ONLY",
+    "DATA_DEPENDENT",
+    "SPECIAL_ENGINE_DEFERRED",
+    "PRODUCTIZATION_DEFERRED",
+}
+
+EXPECTED_READINESS_COUNTS = {
+    "HEADLESS_READY": 4,
+    "FOUNDATION_ONLY": 2,
+    "DATA_DEPENDENT": 27,
+    "SPECIAL_ENGINE_DEFERRED": 15,
+    "PRODUCTIZATION_DEFERRED": 2,
+}
+
 EXPECTED_SPECIALIZED = {
     "finance-04": "constraint_optimizer",
     "finance-07": "advanced_anomaly_model",
@@ -198,6 +214,23 @@ def test_ux_foundations_are_backend_only_and_create_no_frontend_surface():
     ):
         assert token not in module
         assert token not in catalog
+
+
+def test_comparison_ready_status_vocabulary_is_exact_and_honest():
+    catalog = load_ux_foundations()
+    statuses = Counter(item.current_feasibility for item in catalog.descriptors)
+    assert set(statuses) == CANONICAL_READINESS
+    assert statuses == EXPECTED_READINESS_COUNTS
+    assert catalog.version == "wave-1-comparison-ready-v2"
+
+    by_id = {item.ux_id: item for item in catalog.descriptors}
+    assert by_id["general-01"].current_feasibility == "FOUNDATION_ONLY"
+    assert by_id["general-03"].current_feasibility == "FOUNDATION_ONLY"
+    assert by_id["general-09"].current_feasibility == "PRODUCTIZATION_DEFERRED"
+    assert by_id["general-10"].current_feasibility == "PRODUCTIZATION_DEFERRED"
+    assert by_id["general-06"].current_feasibility == "DATA_DEPENDENT"
+    for ux_id in ("general-04", "general-05", "general-07", "general-08"):
+        assert by_id[ux_id].current_feasibility == "HEADLESS_READY"
 
 
 def test_catalog_load_is_deterministic():

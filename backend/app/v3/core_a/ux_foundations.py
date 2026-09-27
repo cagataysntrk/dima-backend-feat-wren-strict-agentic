@@ -45,10 +45,11 @@ class UXFoundationDescriptor(Frozen):
     specialized_engine_gap: str | None = None
     headless_api_needs: tuple[str, ...]
     current_feasibility: Literal[
-        "FOUNDATION_READY",
-        "FOUNDATION_PARTIAL",
+        "HEADLESS_READY",
+        "FOUNDATION_ONLY",
+        "DATA_DEPENDENT",
         "SPECIAL_ENGINE_DEFERRED",
-        "PRODUCTIZATION_DEBT",
+        "PRODUCTIZATION_DEFERRED",
     ]
     deferred_capabilities: tuple[str, ...]
     shared_motors: tuple[str, ...]
