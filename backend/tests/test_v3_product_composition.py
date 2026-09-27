@@ -209,8 +209,11 @@ class FakeResearch:
 
 
 class FakeInvestigation:
-    def __init__(self):
+    def __init__(self, *, claim_on_calls=None):
         self.states = {}
+        self.claim_on_calls = (
+            None if claim_on_calls is None else set(claim_on_calls)
+        )
 
     def _state(self, session_id):
         return self.states.setdefault(
@@ -222,9 +225,22 @@ class FakeInvestigation:
         del principal
         state = self._state(session_id)
         return SimpleNamespace(
+            source_revision=state["calls"] + 1,
             completed_reasoning_steps=tuple(state["steps"]),
+            pending_reasoning_steps=(),
             claims=tuple(state["claims"]),
             terminal_stop_reason=None,
+            remaining_reasoning_steps=max(0, 8 - state["calls"]),
+            action_profile=SimpleNamespace(
+                rules=(
+                    SimpleNamespace(
+                        intent=SimpleNamespace(value="INVESTIGATE_GAP"),
+                        legal_parent_step_ids=tuple(state["steps"]),
+                        allow_parentless=True,
+                    ),
+                ),
+                legal_intents=("INVESTIGATE_GAP",),
+            ),
         )
 
     def run_one(
@@ -251,13 +267,14 @@ class FakeInvestigation:
         if not step_id.startswith("rrs_"):
             step_id = "rrs_" + f"{n:024x}"
         state["steps"].append(step_id)
-        state["claims"].append(
-            SimpleNamespace(
-                claim_id="clm_" + f"{n:024x}",
-                obligation_id=self._obligation(session_id),
-                claim_text=f"Sealed P17 claim {n}",
+        if self.claim_on_calls is None or n in self.claim_on_calls:
+            state["claims"].append(
+                SimpleNamespace(
+                    claim_id="clm_" + f"{n:024x}",
+                    obligation_id=self._obligation(session_id),
+                    claim_text=f"Sealed P17 claim {n}",
+                )
             )
-        )
         return SimpleNamespace(step_id=step_id), None
 
     def _obligation(self, session_id):
@@ -436,9 +453,14 @@ class FakeReports:
         return SimpleNamespace(report_id="p20r_" + "3" * 24)
 
 
-def composer(*, relationship_blocked=True, limited_goal_ids=()):
+def composer(
+    *,
+    relationship_blocked=True,
+    limited_goal_ids=(),
+    claim_on_calls=None,
+):
     research = FakeResearch(limited_goal_ids=limited_goal_ids)
-    investigation = FakeInvestigation()
+    investigation = FakeInvestigation(claim_on_calls=claim_on_calls)
     reasoning = FakeReasoning(investigation)
     return (
         HeadlessProductComposer(
@@ -735,5 +757,48 @@ def test_product_composition_has_no_direct_truth_store_or_text_case_routing():
         "relationship_explicit_tr",
         "root_cause_tr",
         "askv2_case_id",
+    ):
+        assert forbidden not in source
+
+
+def test_relationship_waits_for_p17_owned_fifth_turn_without_product_shadow_budget():
+    c, research, investigation, reasoning = composer(claim_on_calls={5})
+    b = brief(question("g_relationship", ResearchGoalKind.RELATIONSHIP,
+                       subjects=(DOWNTIME, FAULTS), related=(DEPT,)))
+    original = c._resolve_relationship
+    def wrapped(**kwargs):
+        reasoning.current_obligation_by_session[kwargs["material_session_id"]] = kwargs["material_goal"].goal_id
+        return original(**kwargs)
+    c._resolve_relationship = wrapped
+    result = c.compose(brief=b, principal=principal(), request_ref="rel-fifth",
+                       source_message_hash="9"*64, native_session_token=None)
+    child = result.child_research_session_ids[0]
+    assert investigation._state(child)["calls"] == 5
+    assert result.p18_policy_use_refs
+
+def test_root_waits_for_p17_owned_seventh_turn_for_second_candidate():
+    c, research, investigation, reasoning = composer(claim_on_calls={3, 7})
+    b = brief(question("g_root", ResearchGoalKind.ROOT_CAUSE))
+    original = c._assess_root_cause
+    def wrapped(**kwargs):
+        reasoning.current_obligation_by_session[kwargs["session_id"]] = kwargs["goal"].goal_id
+        return original(**kwargs)
+    c._assess_root_cause = wrapped
+    result = c.compose(brief=b, principal=principal(), request_ref="root-seventh",
+                       source_message_hash="6"*64, native_session_token=None)
+    assert investigation._state(result.research_session_id)["calls"] == 7
+    assert result.p19_assessment_refs
+
+def test_product_composition_has_no_independent_p17_budget_or_output_quota():
+    source = inspect.getsource(__import__(
+        "app.v3.product.composition",
+        fromlist=["HeadlessProductComposer"],
+    ))
+    for forbidden in (
+        "max_turns",
+        "minimum_claims",
+        "ProductInvestigationOutputNeed",
+        "RELATIONSHIP_INTERPRETATION_INPUT",
+        "COMPETING_EXPLANATION_INPUTS",
     ):
         assert forbidden not in source
