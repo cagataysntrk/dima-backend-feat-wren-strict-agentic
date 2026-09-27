@@ -215,9 +215,22 @@ def main() -> int:
       relationships=p18,epistemics=p19,epistemic_manager=p19_manager,reports=p20,investigation_requirements=routing,
     )
     observations=[]
+    used_units=0
     try:
       for case in cases:
-        observations.append(run_case(
+        if used_units + int(case.get("max_model_calls",14)) > args.max_total_model_units:
+          observations.append({
+            "id":case["id"],"feature_id":case["feature_id"],"feature_name":case["feature_name"],
+            "difficulty":case["difficulty"],"kind":case["kind"],"question":case["question"],
+            "turn_count_expected":len(case.get("turns") or [case["question"]]),"turn_count_executed":0,
+            "turns":[],"terminal_state":"BUDGET_EXHAUSTED","evidence_count":0,"lineage_valid":True,
+            "observable_model_boundary_units":0,"case_model_call_ceiling":case.get("max_model_calls"),
+            "metabase_analytical_calls":0,"total_latency_ms":0,"budget_ok":False,
+            "all_turns_executed":False,"passed":False,"expected":case.get("expected",{}),
+            "failure_class":"GLOBAL_MODEL_BUDGET_EXHAUSTED",
+          })
+          continue
+        result=run_case(
           case=case,intake=intake,product=product,composer=composer,p17_manager=p17_manager,p19_manager=p19_manager,
           reasoning=reasoning,orchestrator=orchestrator,db_engine=db_engine,native_token=token,
         ))
@@ -231,7 +244,7 @@ def main() -> int:
       "model_topology":{"research_intake":MODEL,"p17_manager":MODEL,"p19_manager":MODEL,"metabot":"openrouter/openai/gpt-5.6-luna"},
       "case_count":len(observations),"passed":sum(bool(x["passed"]) for x in observations),
       "failed":sum(not bool(x["passed"]) for x in observations),
-      "observable_model_boundary_units":total_units,
+      "observable_model_boundary_units":total_units,"model_budget_ceiling":args.max_total_model_units,
       "metabase_analytical_calls":sum(x["metabase_analytical_calls"] for x in observations),
       "cases":observations,
     }
