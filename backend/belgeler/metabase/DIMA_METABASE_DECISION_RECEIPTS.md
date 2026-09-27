@@ -7040,7 +7040,7 @@ closure are GREEN on the re-authorized P19 owner identity.
 date: 2026-09-27
 
 status:
-REOPENED / B2 CANDIDATE / FOCUSED PROOF PENDING
+RESEAL CANDIDATE / B2 BEHAVIOR PROOF GREEN / FINAL PIN PROOF PENDING
 
 question:
 May Wave-B B2 complete the V1 relationship-result surface, scope-aware report currentness
@@ -7144,10 +7144,41 @@ required focused proof:
 - RCA / adaptive / counter-evidence are INVESTIGATION;
 - Product execution behavior still calls only the existing sealed owners.
 
+pre-reseal proof on B2 behavior candidate:
+- behavior candidate = e27e84b76c7176daa86cf50578d036879bf08ce3;
+- dima-v1-phase1-focused 36345910032 = SUCCESS;
+- P9-P11 focused step = GREEN;
+- p20-provider-free 36345910153 = SUCCESS;
+- canonical governance 36345910017 = SUCCESS;
+- core-b-focused 36345910085:
+  Product focused = GREEN,
+  B1 = GREEN,
+  B2 = GREEN,
+  P14-P20 affected regressions = 195 PASS,
+  projection-only architecture = GREEN,
+  then RED exactly at stale P20 owner blob guard;
+- core-a-final 36345910058:
+  Core-A + ActionAuthorization + Human Adoption + P21/P20(scope integration)/P19-P14
+  regressions all GREEN,
+  then RED exactly at stale P20 owner blob guard;
+- provider-free seal 36345910143:
+  B1, B2, adaptive, campaign, intake, structured cognition, USER_MUST,
+  Product, P14/P17/P18/P19/P20/P21, control-plane and frozen canary all GREEN,
+  then RED exactly at stale P20 owner blob guard;
+- P18 owner blob remained 1c533667bd080331f4f2231b9d37ee0c5e532fa8;
+- P19 owner blob remained fb6c4bfe17cd4193b9584b79fa32b63dc6c85563;
+- engine unchanged = cbe313af9ac2d5960f662068e433d328d896fb06;
+- migration head unchanged = fc8a1d0e3b42;
+- new durable family = 0.
+
+re-pin authority:
+The candidate P20 owner blob c2d1e266c4a7335bf7c62349b3229d7a55a38bee is now
+authorized to replace 9eaa1478b3c3924a8b6c4e4dfe547bda1bcb343d in active
+Core-A/Core-B exact-owner guards. No other exact owner pin changes.
+
 reopen lifecycle:
-Do not update the historical P20 exact blob pin before the B2 candidate has passed focused P9-P11,
-P20 scope-currentness, Product, P18/P20 and affected owner regressions. If those are GREEN, the
-expected pre-reseal RED is the intentionally stale P20 blob guard only.
+The re-pin commit must pass the same focused B2 + affected P14-P20/Product/Core-A/Core-B
+provider-free proofs with all exact-owner guards GREEN before DMP-DEC-0067 becomes SEALED.
 
 rejected shortcuts:
 - P18 correlation calculator;
