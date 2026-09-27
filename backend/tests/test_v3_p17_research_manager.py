@@ -2760,12 +2760,17 @@ class NoExecutableQueryOccurrenceRunner:
         )
 
 
-def test_p17_native_followup_no_query_reproduces_raw_bridge_failure_and_durable_pending_state():
-    db = db_engine()
+class UnexpectedRuntimeOccurrenceRunner:
+    def execute(self, **kwargs):
+        del kwargs
+        raise RuntimeError("unexpected follow-up implementation failure")
+
+
+def _native_followup_failure_service(db, runner):
     store, session, _, _, claims, _ = setup_state(db)
     followup = NativeResearchFollowupExecutor(
         store=store,
-        occurrence_runner=NoExecutableQueryOccurrenceRunner(),
+        occurrence_runner=runner,
     )
     service = ResearchInvestigationManager(
         research_store=store,
@@ -2773,7 +2778,6 @@ def test_p17_native_followup_no_query_reproduces_raw_bridge_failure_and_durable_
         followup_executor=followup,
         db_engine=db,
     )
-
     manager = ScriptedManager(
         lambda snap: recursive_proposal(
             snap,
@@ -2785,32 +2789,30 @@ def test_p17_native_followup_no_query_reproduces_raw_bridge_failure_and_durable_
             wording="Test one bounded native follow-up.",
         )
     )
+    return store, session, service, manager
 
-    with pytest.raises(
-        NativeEngineBridgeError,
-        match="did not expose exactly one executable query payload",
-    ):
-        service.run_one(
-            session_id=session.session_id,
-            principal=principal(),
-            manager=manager,
-        )
+
+def test_p17_native_followup_no_query_is_durable_typed_limitation_not_raw_failure():
+    db = db_engine()
+    _, session, service, manager = _native_followup_failure_service(
+        db,
+        NoExecutableQueryOccurrenceRunner(),
+    )
+
+    step, task = service.run_one(
+        session_id=session.session_id,
+        principal=principal(),
+        manager=manager,
+    )
+
+    assert task is not None
+    assert step.status == ReasoningStepStatus.COMPLETED
+    assert task.status == InvestigationTaskStatus.COMPLETED
+    assert task.evidence_refs == ()
+    assert task.material_refs == ()
+    assert len(task.native_execution_refs) == 1
 
     with Session(db) as s:
-        steps = tuple(
-            s.exec(
-                select(ResearchReasoningStepRecord).where(
-                    ResearchReasoningStepRecord.session_id == session.session_id
-                )
-            ).all()
-        )
-        tasks = tuple(
-            s.exec(
-                select(ResearchInvestigationTaskRecord).where(
-                    ResearchInvestigationTaskRecord.session_id == session.session_id
-                )
-            ).all()
-        )
         links = tuple(
             s.exec(
                 select(ResearchExecutionLink)
@@ -2819,19 +2821,42 @@ def test_p17_native_followup_no_query_reproduces_raw_bridge_failure_and_durable_
             ).all()
         )
 
-    assert len(steps) == 1
-    assert steps[0].status == ReasoningStepStatus.PENDING.value
-    assert len(tasks) == 1
-    assert tasks[0].status == InvestigationTaskStatus.PENDING.value
     assert len(links) == 1
-    assert links[0].status == "DELEGATED"
-    assert links[0].native_query_id is None
-    assert links[0].reasoning_step_id == steps[0].step_id
-    assert links[0].investigation_task_id == tasks[0].task_id
+    link = links[0]
+    assert link.status == "LIMITED"
+    assert link.native_query_id is None
+    assert link.limitation_code == "P14_NATIVE_TRANSPORT_FAILED"
+    assert (
+        link.limitation_detail
+        == "native Metabot turn did not expose exactly one executable query payload"
+    )
+    assert str(link.id) in task.native_execution_refs
+    assert link.reasoning_step_id == step.step_id
+    assert link.investigation_task_id == task.task_id
 
     snap = service.snapshot(
         session_id=session.session_id,
         principal=principal(),
     )
-    assert snap.pending_reasoning_steps == (steps[0].step_id,)
+    assert snap.pending_reasoning_steps == ()
+    assert step.step_id in snap.completed_reasoning_steps
     assert snap.terminal_stop_reason is None
+    assert snap.remaining_followup_native_turns == 3
+
+
+def test_p17_native_followup_unexpected_runtime_error_is_not_swallowed():
+    db = db_engine()
+    _, session, service, manager = _native_followup_failure_service(
+        db,
+        UnexpectedRuntimeOccurrenceRunner(),
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match="unexpected follow-up implementation failure",
+    ):
+        service.run_one(
+            session_id=session.session_id,
+            principal=principal(),
+            manager=manager,
+        )
