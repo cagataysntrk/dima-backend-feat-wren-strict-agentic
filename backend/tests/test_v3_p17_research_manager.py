@@ -1786,15 +1786,11 @@ def test_structured_live_manager_adapter_is_typed_provider_free():
             assert schema_name == "dima_p17_research_manager_proposal"
             assert schema["type"] == "object"
             payload = {
-                "proposal_id": "live-fake-1",
-                "source_revision": snapshot.source_revision,
-                "target_parent_obligation": "g1",
+                "target_objective": snapshot.parent_obligations[0].objective,
                 "intent": "INVESTIGATE_GAP",
-                "parent_step_id": None,
-                "branch_key": None,
+                "branch_concept": None,
                 "target_kind": "GAP",
-                "target_ref": "observed-gap",
-                "objective_key": "live.gap.root",
+                "target_concept": "observed-gap",
                 "bounded_objective": (
                     "Investigate the unresolved bounded gap."
                 ),
@@ -1818,7 +1814,12 @@ def test_structured_live_manager_adapter_is_typed_provider_free():
     assert manager.call_count == 1
     assert proposal.intent == InvestigationIntent.INVESTIGATE_GAP
     assert proposal.action == ManagerAction.EXPLORE_NATIVE
+    assert proposal.source_revision == snapshot.source_revision
+    assert proposal.target_parent_obligation == "g1"
+    assert proposal.parent_step_id is None
     assert proposal.branch_key is None
+    assert proposal.proposal_id.startswith("p17-sem-")
+    assert proposal.objective_key.startswith("v1.investigate_gap.")
 
 
 def test_structured_live_manager_cannot_emit_legacy_intent():
@@ -1838,18 +1839,17 @@ def test_structured_live_manager_cannot_emit_legacy_intent():
     )
 
     class LegacyTransport:
+        calls = 0
+
         def structured_json(self, *args, **kwargs):
+            self.calls += 1
             schema = kwargs["schema"]
             payload = {
-                "proposal_id": "legacy-not-allowed",
-                "source_revision": snapshot.source_revision,
-                "target_parent_obligation": "g1",
+                "target_objective": snapshot.parent_obligations[0].objective,
                 "intent": "LEGACY",
-                "parent_step_id": None,
-                "branch_key": None,
+                "branch_concept": None,
                 "target_kind": "GAP",
-                "target_ref": None,
-                "objective_key": "legacy.bad",
+                "target_concept": None,
                 "bounded_objective": "bad",
                 "rationale": "bad",
                 "inspected_evidence_refs": [],
@@ -1860,10 +1860,16 @@ def test_structured_live_manager_cannot_emit_legacy_intent():
             assert set(schema["properties"]) == {"proposal"}
             return json.dumps({"proposal": payload})
 
-    with pytest.raises(ValueError, match="LEGACY"):
-        StructuredResearchProposalManager(
-            transport=LegacyTransport()
-        ).propose(snapshot)
+    transport = LegacyTransport()
+    manager = StructuredResearchProposalManager(transport=transport)
+    proposal = manager.propose(snapshot)
+
+    assert transport.calls == 2
+    assert manager.call_count == 2
+    assert proposal.action == ManagerAction.STOP
+    assert proposal.intent == InvestigationIntent.STOP_INVESTIGATION
+    assert proposal.stop_reason == ManagerStopReason.INCONCLUSIVE
+    assert proposal.target_parent_obligation == "g1"
 
 def test_live_manager_schema_is_strict_transport_safe():
     from app.v3.research_manager_provider import _schema_for_intents
