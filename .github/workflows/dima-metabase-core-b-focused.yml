@@ -65,6 +65,18 @@ jobs:
         working-directory: backend
         run: pytest -q tests/test_v3_product_contracts.py tests/test_v3_product_composition.py tests/test_v3_product_process_manager.py tests/test_v3_owner_scoped_must_accounting.py tests/test_v3_research_intake.py tests/test_v3_p19_provider.py
 
+      - name: Sealed P14-P19 affected regressions
+        working-directory: backend
+        run: |
+          pytest -q \
+            tests/test_v3_p14_research.py \
+            tests/test_v3_p16_claim_lineage.py \
+            tests/test_v3_p17_research_manager.py \
+            tests/test_v3_p17_autonomous_provider_schema.py \
+            tests/test_v3_p18_business_relationship_policy.py \
+            tests/test_v3_p19_hypothesis_root_cause.py \
+            tests/test_v3_p19_provider.py
+
       - name: Guard projection-only architecture
         working-directory: backend
         run: |
