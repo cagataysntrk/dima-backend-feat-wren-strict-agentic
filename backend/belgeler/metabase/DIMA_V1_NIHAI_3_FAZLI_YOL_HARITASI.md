@@ -492,12 +492,15 @@ Yalnız mevcut state’e bakacak.
 P19 callability tek bir executable predicate ile belirlenmeli:
 
 ```text
+eligible_candidates(snapshot) :=
+    candidate explanations
+    WHERE scope_version == current_scope_version
+      AND governed P16 claim refs are present
+      AND governed Evidence refs are present
+
 P19_ELIGIBLE(snapshot) :=
     request.intent == ROOT_CAUSE
-    AND candidate.scope_version == current_scope_version
-    AND materially_distinct(candidate explanations) >= 2
-    AND every eligible candidate has governed P16 claim refs
-    AND every eligible candidate has governed Evidence refs
+    AND materially_distinct(eligible_candidates(snapshot)) >= 2
 ```
 
 `materially_distinct` lexical farklılık değildir.
@@ -516,6 +519,8 @@ Predicate false fakat legal bir discriminating investigation ile eksik Evidence 
 NEED_MORE_EVIDENCE
 → P17 legal next investigation
 ```
+
+`NEED_MORE_EVIDENCE` burada P19 epistemic assessment status’u değildir; P19 callability oluşmadan önce Product/P17 routing disposition’ıdır.
 
 Predicate false ve yeni ayırıcı Evidence için legal/available yol yoksa:
 
