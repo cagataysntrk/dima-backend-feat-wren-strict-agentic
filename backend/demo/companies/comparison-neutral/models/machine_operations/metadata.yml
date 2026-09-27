@@ -1,0 +1,17 @@
+name: machine_operations
+table_reference:
+  catalog: neutral
+  schema: main
+  table: machine_operations
+columns:
+- {name: event_date, type: DATE}
+- {name: department, type: VARCHAR}
+- {name: machine_id, type: VARCHAR}
+- {name: machine_downtime_minutes, type: INTEGER}
+- {name: fault_count, type: INTEGER}
+- {name: performance_score, type: DOUBLE}
+- {name: maintenance_delay_hours, type: DOUBLE}
+- {name: spare_part_delay_hours, type: DOUBLE}
+- {name: pm_compliance_pct, type: DOUBLE}
+- {name: changeover_count, type: INTEGER}
+- {name: operator_absence_hours, type: DOUBLE}
