@@ -2,7 +2,7 @@
   "schema_version": "core_b_root_v2_live_authorization_v1",
   "mode": "relationship",
   "case_id": "relationship_explicit_tr",
-  "candidate_product_sha": "818dd80f69ecbc0d6e6ae06384cedeaedd96e5bf",
+  "candidate_product_sha": "4e4c7f251746f4e3cc36582dcd0640d816c9eb20",
   "recovery_base_sha": "eae1fd6856d75e7e2738f869d5bbe1f24fd5d309",
   "forensic_sha": "266c25a08a7f9136dd6b4d809992ccec8177aadd",
   "engine_sha": "cbe313af9ac2d5960f662068e433d328d896fb06",
@@ -14,5 +14,5 @@
   "intake_live_run_id": 36296740234,
   "intake_live_status": "GREEN",
   "max_observable_model_boundary_units": 16,
-  "purpose": "Run exactly one frozen relationship_explicit_tr end-to-end case under Closure Sentinel v2 owner-legality semantics."
+  "purpose": "Run exactly one frozen relationship_explicit_tr end-to-end case under Closure Sentinel v2 owner-legality semantics after the fail-closed Product correction."
 }
