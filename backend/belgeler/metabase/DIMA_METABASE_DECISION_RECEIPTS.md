@@ -6937,10 +6937,29 @@ migration:
 - canonical Alembic head remains fc8a1d0e3b42;
 - B1 adds no durable family and no migration.
 
+closure-v2 projection reopen:
+- prior closure_v2 blob = 43c7ee03cfe9066acb870bcc554bccad91135a25;
+- candidate closure_v2 blob = 7a81679abbf359fcdebc078e48c6457dd92d28be;
+- reason: the oracle already delegates owner legality to decide_next_owner(), but its
+  state-only projection omitted the new canonical root_cause_candidates field and thereby
+  accidentally revived the historical claim-count rule;
+- correction: preserve typed candidates in the state-only projection and keep the oracle
+  dependent on the single Product process-manager predicate;
+- no oracle threshold, outcome rule or P0 classification is weakened.
+
+first candidate diagnostic:
+- 9d0d1cf958666e6225fd196ef51b401d16e3deb5 = RED / NOT SEALABLE;
+- dima-v1-phase1-focused 36343560534: 109 PASS / 1 fixture assertion mismatch;
+- core-b-focused 36343560454: Product suite exposed closure-v2 projection drift;
+- provider-free seal 36343560513: same P7 fixture mismatch;
+- canonical governance 36343560473 = SUCCESS;
+- no stale owner blob was re-pinned after these REDs.
+
 proof rule:
-Do not update the historical P19 exact blob pin before the B1 candidate has run the focused
-P6-P8 proof plus affected P17/P19/Product/Core-B regressions. The expected pre-reseal RED,
-if all behavior tests are GREEN, is the intentionally stale P19 blob guard only.
+Do not update the historical P19 exact blob pin before the corrected B1 candidate has run
+the focused P6-P8 proof plus affected P17/P19/Product/Core-B regressions. The expected
+pre-reseal RED, if all behavior tests are GREEN, is the intentionally stale P19 blob guard
+only.
 
 rejected shortcuts:
 - two claim ids == two hypotheses;

@@ -49,6 +49,7 @@ def evaluate_owner_legality(
         remaining_reasoning_steps=observation.remaining_reasoning_steps,
         scoped_move_available=observation.scoped_move_available,
         downstream_ref_present=False,
+        root_cause_candidates=observation.root_cause_candidates,
     )
     expected = decide_next_owner(purpose, state_only)
     expected_value = expected.value

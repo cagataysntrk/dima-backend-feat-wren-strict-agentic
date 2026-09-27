@@ -229,7 +229,9 @@ def test_p7_multifactor_projection_exposes_evidence_temporal_alternative_materia
     assert len(factors) == 2
     assert factors[0].scope_lineage_id == "atl_wave_b"
     assert factors[0].scope_version_id == "scope_v2"
-    assert factors[0].supporting_evidence_refs == ("evi_" + "1" * 24,)
+    assert factors[0].supporting_evidence_refs == (
+        "evi_" + f"{1:024x}",
+    )
     assert factors[0].challenging_evidence_refs == ()
     assert factors[0].missing_evidence is False
     assert factors[0].temporal_consistency == TemporalConsistencyState.UNESTABLISHED
