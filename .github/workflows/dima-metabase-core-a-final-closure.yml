@@ -24,6 +24,7 @@ on:
       - "backend/tests/test_v3_institutional_memory.py"
       - "backend/tests/test_v3_watch_signal.py"
       - "backend/tests/test_v3_ux_foundations.py"
+      - "backend/tests/test_v3_v1_scope_integration.py"
       - "backend/control_plane/models.py"
       - "backend/control_plane/authorize.py"
       - "backend/migrations/versions/fb4e6d2a1074_core_a_closed_loop.py"
@@ -161,7 +162,7 @@ jobs:
 
       - name: P20 regression
         working-directory: backend
-        run: pytest -q tests/test_v3_p20_report_document.py
+        run: pytest -q tests/test_v3_p20_report_document.py tests/test_v3_v1_scope_integration.py
 
       - name: P19 regression
         working-directory: backend

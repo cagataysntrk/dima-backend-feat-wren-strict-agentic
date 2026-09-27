@@ -19,6 +19,10 @@ from app.v3.product.contracts import (
     ProductInvestigationRequirement,
     ProductInvestigationRequirementKind,
 )
+from app.v3.product.execution_mode import (
+    ProductExecutionMode,
+    classify_execution_mode,
+)
 from app.v3.product.process_manager import (
     ProductProcessError,
     ProductProcessNext,
@@ -31,6 +35,10 @@ from app.v3.product.process_manager import (
 from app.v3.business_relationship_policy import (
     BusinessRelationshipPolicyStore,
     RelationshipPolicyRequirement,
+)
+from app.v3.business_relationship_v1 import (
+    RelationshipResultProjection,
+    project_relationship_result,
 )
 from app.v3.hypothesis_root_cause import (
     GroundingRelation,
@@ -153,6 +161,8 @@ class ProductCompositionResult(Frozen):
     user_must_accounted: int = 0
     user_must_fulfilled: int = 0
     completion_ledger: ProductCompletionLedger | None = None
+    execution_mode: ProductExecutionMode
+    relationship_results: tuple[RelationshipResultProjection, ...] = ()
     terminal_state: ProductCompositionTerminal
     currentness: ProductCompositionCurrentness = ProductCompositionCurrentness.CURRENT
 
@@ -756,7 +766,7 @@ class HeadlessProductComposer:
         completed = set(observation.completed_step_ids)
         steps = tuple(step for step in all_steps if step.step_id in completed)
         if next_owner != ProductProcessNext.P18:
-            return None, snapshot, self._p17_terminal_code(
+            return None, None, snapshot, self._p17_terminal_code(
                 snapshot=snapshot,
                 last_error=last_error,
             )
@@ -805,7 +815,21 @@ class HeadlessProductComposer:
             principal=principal,
         )
         owner_calls.append("P18")
-        return decision, snapshot, None
+        current_material = self._research.resume_state(
+            session_id=material_session_id,
+            principal=principal,
+        )
+        relationship_result = project_relationship_result(
+            research_session_id=material_session_id,
+            claim=claims[-1],
+            decision=decision,
+            scope_lineage_id=current_material.lineage_id,
+            scope_version_id=(
+                current_material.accepted_brief.scope.scope_version.version_id
+            ),
+            applicability_scope=scope,
+        )
+        return decision, relationship_result, snapshot, None
 
     def _assess_root_cause(
         self,
@@ -1196,6 +1220,7 @@ class HeadlessProductComposer:
         p17_refs: list[str] = []
         p18_refs: list[str] = []
         p19_refs: list[str] = []
+        relationship_results: list[RelationshipResultProjection] = []
         limitations: list[CompositionLimitation] = []
         p17_required: list[str] = []
         fulfilled_investigation_requirements: list[str] = []
@@ -1234,6 +1259,11 @@ class HeadlessProductComposer:
                     research_session_id=session.session_id,
                 )
             )
+        execution_mode = classify_execution_mode(
+            brief,
+            investigation_requirements=accepted_investigation_requirements,
+        ).mode
+
         owner_calls.append("P14")
         session = self._run_p14(
             research=self._research,
@@ -1281,7 +1311,7 @@ class HeadlessProductComposer:
                 correlated_evidence_refs.extend(
                     item.evidence_id for item in material_session.evidence_refs
                 )
-                decision, p17_snapshot, error = self._resolve_relationship(
+                decision, relationship_result, p17_snapshot, error = self._resolve_relationship(
                     original_goal=goal,
                     material_session_id=material_session_id,
                     material_goal=material_goal,
@@ -1294,6 +1324,8 @@ class HeadlessProductComposer:
                     code = error or "PRODUCT_RELATIONSHIP_INCONCLUSIVE"
                 else:
                     p18_refs.append(decision.policy_use_id)
+                    if relationship_result is not None:
+                        relationship_results.append(relationship_result)
                     code = (
                         decision.limitation_code
                         or f"P18_{decision.resolution_status.value}"
@@ -1543,5 +1575,7 @@ class HeadlessProductComposer:
             user_must_accounted=user_must_accounted,
             user_must_fulfilled=user_must_fulfilled,
             completion_ledger=completion_ledger,
+            execution_mode=execution_mode,
+            relationship_results=tuple(relationship_results),
             terminal_state=terminal,
         )

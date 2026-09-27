@@ -12,6 +12,7 @@ on:
       - "backend/app/v3/research_product.py"
       - "backend/app/v3/research_followup.py"
       - "backend/app/v3/report_document.py"
+      - "backend/app/v3/business_relationship_v1.py"
       - "backend/app/v3/research_intake.py"
       - "backend/app/v3/research_manager_provider.py"
       - "backend/app/v3/hypothesis_root_cause.py"
@@ -22,6 +23,8 @@ on:
       - "backend/tests/test_v3_p17_research_manager.py"
       - "backend/tests/test_v3_p19_provider.py"
       - "backend/tests/test_v3_v1_wave_b_b1.py"
+      - "backend/tests/test_v3_v1_wave_b_b2.py"
+      - "backend/tests/test_v3_v1_scope_integration.py"
       - "backend/tests/test_v3_product_*.py"
       - "backend/tests/test_v3_core_b_closure_v2.py"
       - "backend/tests/test_v3_owner_scoped_must_accounting.py"
@@ -67,6 +70,9 @@ jobs:
           python -m py_compile app/v3/research_manager.py
           python -m py_compile app/v3/hypothesis_root_cause.py
           python -m py_compile app/v3/hypothesis_root_cause_v1.py
+          python -m py_compile app/v3/business_relationship_v1.py
+          python -m py_compile app/v3/product/execution_mode.py
+          python -m py_compile app/v3/report_document.py
           python -m py_compile tests/test_v3_product_contracts.py
           python -m py_compile tests/test_v3_product_composition.py
           python -m py_compile tests/test_v3_product_process_manager.py
@@ -86,7 +92,15 @@ jobs:
             tests/test_v3_product_process_manager.py \
             tests/test_v3_v1_wave_b_b1.py
 
-      - name: Sealed P14-P19 affected regressions
+      - name: Wave-B B2 P9-P11 focused proof
+        working-directory: backend
+        run: |
+          pytest -q \
+            tests/test_v3_v1_wave_b_b2.py \
+            tests/test_v3_v1_scope_integration.py \
+            tests/test_v3_product_composition.py
+
+      - name: Sealed P14-P20 affected regressions
         working-directory: backend
         run: |
           pytest -q \
@@ -96,7 +110,9 @@ jobs:
             tests/test_v3_p17_autonomous_provider_schema.py \
             tests/test_v3_p18_business_relationship_policy.py \
             tests/test_v3_p19_hypothesis_root_cause.py \
-            tests/test_v3_p19_provider.py
+            tests/test_v3_p19_provider.py \
+            tests/test_v3_p20_report_document.py \
+            tests/test_v3_v1_scope_integration.py
 
       - name: Guard projection-only architecture
         working-directory: backend

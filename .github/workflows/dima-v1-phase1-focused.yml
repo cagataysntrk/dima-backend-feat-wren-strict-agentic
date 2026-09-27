@@ -19,6 +19,7 @@ on:
       - "backend/app/v3/product/**"
       - "backend/app/v3/hypothesis_root_cause.py"
       - "backend/app/v3/hypothesis_root_cause_v1.py"
+      - "backend/app/v3/business_relationship_v1.py"
       - "backend/app/v3/hypothesis_root_cause_provider.py"
       - "backend/app/v3/business_relationship_policy.py"
       - "backend/app/v3/report_document.py"
@@ -72,7 +73,10 @@ jobs:
             app/v3/research_manager.py \
             app/v3/research_manager_provider.py \
             app/v3/hypothesis_root_cause_v1.py \
+            app/v3/business_relationship_v1.py \
             app/v3/product/process_manager.py \
+            app/v3/product/execution_mode.py \
+            app/v3/report_document.py \
             app/v3/analytical_request_contract.py \
             app/v3/native_standard/trust.py \
             app/v3/product/composition.py \
@@ -128,6 +132,16 @@ jobs:
             tests/test_v3_v1_wave_b_b1.py \
             tests/test_v3_p19_hypothesis_root_cause.py \
             tests/test_v3_p17_research_manager.py
+
+      - name: Wave-B B2 P9-P11 focused proof
+        working-directory: backend
+        run: |
+          pytest -q \
+            tests/test_v3_v1_wave_b_b2.py \
+            tests/test_v3_v1_scope_integration.py \
+            tests/test_v3_product_composition.py \
+            tests/test_v3_p18_business_relationship_policy.py \
+            tests/test_v3_p20_report_document.py
 
       - name: Wave-A affected provider-free closure
         working-directory: backend

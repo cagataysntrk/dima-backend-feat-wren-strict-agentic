@@ -7030,3 +7030,139 @@ final seal condition:
 SATISFIED. The focused B1, affected owner regressions, exact owner guard and provider-free
 closure are GREEN on the re-authorized P19 owner identity.
 
+
+
+
+---
+
+## DMP-DEC-0067 — PHASE-1 WAVE-B B2 P9/P10/P11 REOPEN CONTRACT
+
+date: 2026-09-27
+
+status:
+REOPENED / B2 CANDIDATE / FOCUSED PROOF PENDING
+
+question:
+May Wave-B B2 complete the V1 relationship-result surface, scope-aware report currentness
+and explicit FAST/GUIDED/INVESTIGATION routing without creating a second relationship
+engine, reporting authority, analytics planner or execution substrate?
+
+roadmap authority:
+- DMP-DEC-0063;
+- DMP-DEC-0065;
+- DMP-DEC-0066;
+- DIMA V1 Phase-1 gap map fixed order;
+- B2 = P9 + P10 + P11.
+
+P9 owner contract:
+- P18 remains the only durable business-relationship policy authority;
+- P16 remains the only durable Claim/Evidence lineage authority;
+- P9 adds one transient RelationshipResultProjection only;
+- the projection may expose association/co-movement from the exact governed P16 claim state,
+  P18 policy-use resolution, supporting/challenging/context/insufficient Evidence refs,
+  exact scope lineage/version and limitations;
+- P9 may never establish contribution or causality;
+- unknown stronger relationship kinds must fail closed and require another governed authority;
+- no correlation calculation, join discovery, query execution, causal identification or persistence
+  is added.
+
+P18 durable owner:
+- business_relationship_policy.py remains unchanged;
+- historical exact P18 owner blob remains
+  1c533667bd080331f4f2231b9d37ee0c5e532fa8.
+
+P10 owner reopen:
+The P20 report authority is reopened only for report-currentness propagation across the already
+sealed P14 scope lineage.
+
+~~~text
+report_document.py
+old blob = 9eaa1478b3c3924a8b6c4e4dfe547bda1bcb343d
+candidate blob = c2d1e266c4a7335bf7c62349b3229d7a55a38bee
+~~~
+
+Authorized P20 delta:
+- ReportDocument seal/publication semantics are unchanged;
+- source legality, numeric provenance, causal publication gates, USER_MUST coverage and revisions
+  are unchanged;
+- currentness() now requires the report's Research session to remain the current P14 lineage head;
+- a report tied to a superseded scope version becomes STALE_SOURCE_SET;
+- the check reuses ResearchSessionStore.assert_lineage_head; no second scope/currentness store exists.
+
+P11 contract:
+- Product receives one deterministic typed execution-mode router;
+- FAST = direct accepted simple analytical path;
+- GUIDED = relationship / complex multi-metric bounded owner composition;
+- INVESTIGATION = root cause, typed adaptive investigation or typed counter-evidence path;
+- router input is accepted ResearchBrief plus explicit typed Product requirements only;
+- router owns no SQL, MBQL, joins, aggregation, temporal interpretation, semantic resolution,
+  provider prompt or analytical result.
+
+B2 production candidate components:
+
+~~~text
+business_relationship_v1.py
+candidate blob = aeceb182c5a3891d30e9e0e209fa3600e3042ad3
+
+product/execution_mode.py
+candidate blob = b6cfb7c3940267f7d95dc30096f02dce546c0a04
+
+product/composition.py
+candidate blob = d52c0b01d6038f5be3ca67f910f3c93c2210f8cd
+
+report_document.py
+candidate blob = c2d1e266c4a7335bf7c62349b3229d7a55a38bee
+~~~
+
+durability:
+- new durable family = 0;
+- migration change = 0;
+- canonical Alembic head remains fc8a1d0e3b42.
+
+unchanged:
+- DMP-DEC-0066 B1 P19 eligibility and recursive discrimination;
+- P14 scope authority and Evidence ownership;
+- P16 Claim/Evidence ownership;
+- P17 investigation legality and hard depth=3;
+- P18 policy authority;
+- P19 epistemic/causal authority;
+- P20 publication authority except the narrow currentness observation;
+- P21 decision authority;
+- engine = cbe313af9ac2d5960f662068e433d328d896fb06 / 0.63.18-dima.6;
+- UI/frontend = 0;
+- Wren runtime/code import = 0;
+- external execution = 0.
+
+required focused proof:
+- P9 exact Evidence and exact scope survive into the transient relationship result;
+- challenged/contested relationship Evidence remains visible;
+- P9 cannot promote contribution or causality;
+- P10 old scope report becomes STALE_SOURCE_SET after the same lineage advances;
+- no-governed-publishable-fact remains a legal LIMITED P20 outcome;
+- P11 simple one-metric analytical goals are FAST with zero P17/P19;
+- relationship and complex multi-metric goals are GUIDED;
+- RCA / adaptive / counter-evidence are INVESTIGATION;
+- Product execution behavior still calls only the existing sealed owners.
+
+reopen lifecycle:
+Do not update the historical P20 exact blob pin before the B2 candidate has passed focused P9-P11,
+P20 scope-currentness, Product, P18/P20 and affected owner regressions. If those are GREEN, the
+expected pre-reseal RED is the intentionally stale P20 blob guard only.
+
+rejected shortcuts:
+- P18 correlation calculator;
+- P18 join discovery;
+- P9 causal/contribution inference;
+- Product-authored trusted report narrative;
+- second report currentness store;
+- query-planning execution-mode router;
+- keyword routing over raw user text;
+- model-selected execution mode;
+- generic P20 redesign;
+- changing P18/P19/engine to satisfy B2.
+
+final seal condition:
+DMP-DEC-0067 becomes SEALED only after focused B2 and affected Core-A/Core-B/provider-free proofs
+are GREEN, the exact candidate P20 owner blob is formally re-authorized, and final exact-owner
+guards are GREEN.
+

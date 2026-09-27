@@ -19,6 +19,7 @@ on:
       - "backend/app/v3/research_manager.py"
       - "backend/app/v3/research_product.py"
       - "backend/app/v3/report_document.py"
+      - "backend/app/v3/business_relationship_v1.py"
       - "backend/app/v3/hypothesis_root_cause.py"
       - "backend/app/v3/hypothesis_root_cause_v1.py"
       - "backend/app/v3/research_intake.py"
@@ -39,6 +40,8 @@ on:
       - "backend/tests/test_v3_p17_research_manager.py"
       - "backend/tests/test_v3_p19_hypothesis_root_cause.py"
       - "backend/tests/test_v3_v1_wave_b_b1.py"
+      - "backend/tests/test_v3_v1_wave_b_b2.py"
+      - "backend/tests/test_v3_v1_scope_integration.py"
       - "backend/tests/test_v3_product_process_manager.py"
       - "backend/tests/test_v3_v1_analytical_request_contract.py"
       - "backend/tests/test_v3_p13d_native_standard.py"
@@ -76,7 +79,7 @@ jobs:
       - name: Compile canonical composition and owner-scoped lifecycle
         working-directory: backend
         run: |
-          python -m py_compile             app/v3/analytical_request_contract.py             app/v3/native_standard/trust.py             app/v3/research.py             app/v3/research_manager.py             app/v3/hypothesis_root_cause.py             app/v3/hypothesis_root_cause_v1.py             app/v3/research_product.py             app/v3/report_document.py             app/v3/research_intake.py             app/v3/research_manager_provider.py             app/v3/product/contracts.py             app/v3/product/composition.py             app/v3/product_routing_store.py             migrations/versions/fc8a1d0e3b42_product_investigation_routing.py             tests/test_v3_product_routing_store.py             tests/test_v3_owner_scoped_must_accounting.py             lab/metabase/core_b/live_sentinel.py
+          python -m py_compile             app/v3/analytical_request_contract.py             app/v3/native_standard/trust.py             app/v3/research.py             app/v3/research_manager.py             app/v3/hypothesis_root_cause.py             app/v3/hypothesis_root_cause_v1.py             app/v3/business_relationship_v1.py             app/v3/product/execution_mode.py             app/v3/research_product.py             app/v3/report_document.py             app/v3/research_intake.py             app/v3/research_manager_provider.py             app/v3/product/contracts.py             app/v3/product/composition.py             app/v3/product_routing_store.py             migrations/versions/fc8a1d0e3b42_product_investigation_routing.py             tests/test_v3_product_routing_store.py             tests/test_v3_owner_scoped_must_accounting.py             lab/metabase/core_b/live_sentinel.py
 
       - name: Verify single Alembic head
         working-directory: backend
@@ -102,6 +105,14 @@ jobs:
           pytest -q \
             tests/test_v3_product_process_manager.py \
             tests/test_v3_v1_wave_b_b1.py
+
+      - name: Wave-B B2 P9-P11 focused proof
+        working-directory: backend
+        run: |
+          pytest -q \
+            tests/test_v3_v1_wave_b_b2.py \
+            tests/test_v3_v1_scope_integration.py \
+            tests/test_v3_product_composition.py
 
       - name: Adaptive source-scope regression first
         working-directory: backend

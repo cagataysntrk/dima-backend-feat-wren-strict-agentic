@@ -786,9 +786,10 @@ class ReportDocumentStore:
         report = self.load(report_id=report_id, principal=principal)
         try:
             session, mandatory = self._gate._session(report.research_session_id, principal)
+            self._research.assert_lineage_head(session)
             snapshots = tuple((self._gate._source_snapshot(session=session, ref=ref, principal=principal) for ref in report.source_refs))
             current = _canonical_json({'research_authority_id': session.authority_id, 'research_session_id': session.session_id, 'semantic_context_version': session.context_version, 'mandatory_obligation_ids': list(mandatory), 'sources': list(snapshots)}, code='P20_SOURCE_SET_NOT_CANONICAL')[1]
-        except P20ReportError:
+        except (P20ReportError, ResearchPersistenceError):
             return ReportCurrentness.STALE_SOURCE_SET
         if current == report.source_set_fingerprint:
             return ReportCurrentness.CURRENT

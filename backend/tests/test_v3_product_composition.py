@@ -11,6 +11,8 @@ from app.v3.product.composition import (
     HeadlessProductComposer,
     ProductCompositionTerminal,
 )
+from app.v3.product.execution_mode import ProductExecutionMode
+from app.v3.business_relationship_v1 import RelationshipLayerState
 from app.v3.product.contracts import (
     ProductInvestigationRequirement,
     ProductInvestigationRequirementKind,
@@ -290,6 +292,7 @@ class FakeInvestigation:
             state["claims"].append(
                 SimpleNamespace(
                     claim_id="clm_" + f"{n:024x}",
+                    research_session_id=session_id,
                     obligation_id=self._obligation(session_id),
                     claim_text=f"Sealed P17 claim {n}",
                     proposition={
@@ -297,6 +300,8 @@ class FakeInvestigation:
                         "predicate": "explained_by",
                         "object": f"mechanism:{n}",
                     },
+                    epistemic_state=SimpleNamespace(value="SUPPORTED"),
+                    limitations=(),
                     evidence_links=tuple(
                         SimpleNamespace(
                             evidence_id=item.evidence_id,
@@ -360,6 +365,7 @@ class FakeRelationshipStore:
         self.calls.append(requirement)
         return SimpleNamespace(
             policy_use_id="bru_" + "1" * 24,
+            policy_id=(None if self.blocked else "brp_" + "2" * 24),
             resolution_status=(
                 RelationshipPolicyResolutionStatus.BLOCKED_MISSING
                 if self.blocked
@@ -542,6 +548,7 @@ def test_ordinary_composition_uses_p14_only():
     assert result.p18_policy_use_refs == ()
     assert result.p19_assessment_refs == ()
     assert result.p20_report_ref is None
+    assert result.execution_mode == ProductExecutionMode.FAST
 
 
 def test_relationship_composes_p14_material_p17_and_p18_without_creating_policy():
@@ -579,6 +586,13 @@ def test_relationship_composes_p14_material_p17_and_p18_without_creating_policy(
     assert result.terminal_state == ProductCompositionTerminal.REPORT
     assert "P18" in result.owner_calls
     assert "P19" not in result.owner_calls
+    assert result.execution_mode == ProductExecutionMode.GUIDED
+    assert len(result.relationship_results) == 1
+    relationship = result.relationship_results[0]
+    assert relationship.policy_use_id == "bru_" + "1" * 24
+    assert relationship.supporting_evidence_refs
+    assert relationship.causality_state == RelationshipLayerState.NOT_ESTABLISHED
+    assert relationship.contribution_state == RelationshipLayerState.NOT_ESTABLISHED
 
 
 def test_root_cause_composes_p17_then_p19_and_preserves_inconclusive_outcome():
@@ -609,6 +623,7 @@ def test_root_cause_composes_p17_then_p19_and_preserves_inconclusive_outcome():
         item.code == "NO_DEFENSIBLE_ROOT_CAUSE_ESTABLISHED"
         for item in result.limitations
     )
+    assert result.execution_mode == ProductExecutionMode.INVESTIGATION
 
 
 def test_adaptive_requirement_roots_p17_in_exact_verified_source_obligation():
@@ -645,6 +660,7 @@ def test_adaptive_requirement_roots_p17_in_exact_verified_source_obligation():
     assert result.p18_policy_use_refs == ()
     assert result.p19_assessment_refs == ()
     assert result.p20_report_ref is not None
+    assert result.execution_mode == ProductExecutionMode.INVESTIGATION
 
 
 def test_verified_evidence_does_not_auto_route_unrelated_unverified_goal_to_p17():

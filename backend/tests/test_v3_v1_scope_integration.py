@@ -42,7 +42,11 @@ from app.v3.research_intake import (
     ResearchIntakeCatalog,
     ResearchIntakeCompiler,
 )
-from app.v3.report_document import CoverageStatus, ReportDocumentStore
+from app.v3.report_document import (
+    CoverageStatus,
+    ReportCurrentness,
+    ReportDocumentStore,
+)
 from app.v3.research_product import ResearchAskOrchestrator
 from app.v3.research_store import ResearchPersistenceError, ResearchSessionStore
 from control_plane.authorize import Principal
@@ -480,3 +484,51 @@ def test_scope_v1_material_cannot_become_scope_v2_report_evidence():
         for statement in draft.statements
         for ref in statement.source_refs
     }
+
+
+
+def test_scope_v1_report_becomes_stale_when_scope_v2_supersedes_lineage():
+    db = db_engine()
+    store, research, _, session_v1 = start_v1(db)
+    session_v1 = verify_without_evidence(store, session_v1)
+
+    reports = ReportDocumentStore(research_store=store, db_engine=db)
+    draft_v1 = reports.draft_from_governed_research(
+        research_session_id=session_v1.session_id,
+        report_key="scope-v1-currentness",
+        principal=principal(),
+    )
+    report_v1 = reports.seal(
+        draft=draft_v1,
+        principal=principal(),
+    )
+    assert (
+        reports.currentness(
+            report_id=report_v1.report_id,
+            principal=principal(),
+        )
+        == ReportCurrentness.CURRENT
+    )
+
+    brief_v2 = ResearchIntakeCompiler(
+        transport=FakeTransport(narrowed_payload())
+    ).compile(
+        question="Assembly only.",
+        catalog=catalog(),
+        prior_brief=session_v1.accepted_brief,
+    ).brief
+    session_v2 = research.start_from_brief(
+        brief=brief_v2,
+        request_ref="scope-turn-2-report-currentness",
+        source_message_hash="9" * 64,
+        principal=principal(),
+        prior_session_id=session_v1.session_id,
+    )
+    assert session_v2.lineage_id == session_v1.lineage_id
+    assert (
+        reports.currentness(
+            report_id=report_v1.report_id,
+            principal=principal(),
+        )
+        == ReportCurrentness.STALE_SOURCE_SET
+    )
