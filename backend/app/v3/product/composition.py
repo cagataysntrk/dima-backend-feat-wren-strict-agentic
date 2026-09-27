@@ -946,65 +946,52 @@ class HeadlessProductComposer:
                 p17_required.append(goal.goal_id)
 
             if goal.kind == ResearchGoalKind.RELATIONSHIP:
-                try:
-                    material_session_id, material_goal = (
-                        self._material_session_for_relationship(
-                            parent_session_id=session.session_id,
-                            brief=brief,
-                            goal=goal,
-                            principal=principal,
-                            native_session_token=native_session_token,
-                            owner_calls=owner_calls,
-                        )
-                    )
-                    child_sessions.append(material_session_id)
-                    material_session = self._research.resume_state(
-                        session_id=material_session_id,
-                        principal=principal,
-                    )
-                    correlated_evidence_refs.extend(
-                        item.evidence_id for item in material_session.evidence_refs
-                    )
-                    decision, p17_snapshot, error = self._resolve_relationship(
-                        original_goal=goal,
-                        material_session_id=material_session_id,
-                        material_goal=material_goal,
+                material_session_id, material_goal = (
+                    self._material_session_for_relationship(
+                        parent_session_id=session.session_id,
+                        brief=brief,
+                        goal=goal,
                         principal=principal,
                         native_session_token=native_session_token,
                         owner_calls=owner_calls,
                     )
-                    p17_refs.extend(p17_snapshot.completed_reasoning_steps)
-                    if decision is None:
-                        code = error or "PRODUCT_RELATIONSHIP_INCONCLUSIVE"
-                    else:
-                        p18_refs.append(decision.policy_use_id)
-                        code = (
-                            decision.limitation_code
-                            or f"P18_{decision.resolution_status.value}"
-                        )
-                    limitation_codes[goal.goal_id] = code
-                    if decision is None or decision.limitation_code:
-                        limitations.append(
-                            CompositionLimitation(
-                                obligation_id=goal.goal_id,
-                                code=code,
-                                detail="Relationship authority reached a governed limited terminal.",
-                                owner="P18",
-                            )
-                        )
-                except (RuntimeError, ValueError) as exc:
-                    code = getattr(
-                        exc,
-                        "code",
-                        "PRODUCT_RELATIONSHIP_COMPOSITION_INCONCLUSIVE",
+                )
+                child_sessions.append(material_session_id)
+                material_session = self._research.resume_state(
+                    session_id=material_session_id,
+                    principal=principal,
+                )
+                correlated_evidence_refs.extend(
+                    item.evidence_id for item in material_session.evidence_refs
+                )
+                decision, p17_snapshot, error = self._resolve_relationship(
+                    original_goal=goal,
+                    material_session_id=material_session_id,
+                    material_goal=material_goal,
+                    principal=principal,
+                    native_session_token=native_session_token,
+                    owner_calls=owner_calls,
+                )
+                p17_refs.extend(p17_snapshot.completed_reasoning_steps)
+                if decision is None:
+                    code = error or "PRODUCT_RELATIONSHIP_INCONCLUSIVE"
+                else:
+                    p18_refs.append(decision.policy_use_id)
+                    code = (
+                        decision.limitation_code
+                        or f"P18_{decision.resolution_status.value}"
                     )
-                    limitation_codes[goal.goal_id] = str(code)
+                limitation_codes[goal.goal_id] = code
+                if decision is None or decision.limitation_code:
                     limitations.append(
                         CompositionLimitation(
                             obligation_id=goal.goal_id,
-                            code=str(code),
-                            detail="Relationship composition did not reach a publishable governed terminal.",
-                            owner="PRODUCT",
+                            code=code,
+                            detail=(
+                                "Relationship authority reached a governed "
+                                "limited terminal."
+                            ),
+                            owner="P18",
                         )
                     )
                 continue

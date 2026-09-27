@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import inspect
+
+import pytest
 from types import SimpleNamespace
 from uuid import UUID
 
@@ -802,3 +804,33 @@ def test_product_composition_has_no_independent_p17_budget_or_output_quota():
         "COMPETING_EXPLANATION_INPUTS",
     ):
         assert forbidden not in source
+
+
+
+def test_relationship_unexpected_owner_error_fails_closed_instead_of_sealing_report():
+    c, _, _, _ = composer()
+    b = brief(
+        question(
+            "g_relationship",
+            ResearchGoalKind.RELATIONSHIP,
+            subjects=(DOWNTIME, FAULTS),
+            related=(DEPT,),
+        ),
+        report=True,
+    )
+
+    def explode(**_kwargs):
+        raise ValueError("unexpected upstream owner/transport contract failure")
+
+    c._resolve_relationship = explode
+    with pytest.raises(
+        ValueError,
+        match="unexpected upstream owner/transport contract failure",
+    ):
+        c.compose(
+            brief=b,
+            principal=principal(),
+            request_ref="relationship-fail-closed",
+            source_message_hash="f" * 64,
+            native_session_token=None,
+        )
