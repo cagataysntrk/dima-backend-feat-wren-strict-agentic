@@ -6,13 +6,17 @@ analytics, executes queries, mutates Research authority, or sets P16/P19 truth s
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
 from typing import Any, Literal, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.v3.claim_lineage import ClaimFreshness
-from app.v3.structured_transport import validate_provider_strict_schema
+from app.v3.structured_transport import (
+    StructuredProviderError,
+    validate_provider_strict_schema,
+)
 from app.v3.research_manager import (
     InvestigationBranchKeyPolicy,
     InvestigationIntent,
@@ -254,6 +258,88 @@ class ResearchManagerProposalDraft(_Frozen):
 ResearchManagerProposalDraft.model_rebuild()
 
 
+class ResearchManagerSemanticDraft(_Frozen):
+    """V1 provider-owned cognition only; Dima binds all machine identities."""
+
+    target_objective: str = Field(min_length=1, max_length=2000)
+    intent: InvestigationIntent
+    branch_concept: str | None = Field(default=None, max_length=512)
+    target_kind: InvestigationTargetKind = InvestigationTargetKind.GAP
+    target_concept: str | None = Field(default=None, max_length=512)
+    bounded_objective: str | None = Field(default=None, max_length=2000)
+    rationale: str = Field(min_length=1, max_length=4000)
+    inspected_evidence_refs: tuple[str, ...] = ()
+    inspected_claim_refs: tuple[str, ...] = ()
+    inspected_material_refs: tuple[str, ...] = ()
+    expected_information_gain: str | None = Field(default=None, max_length=2000)
+    stop_reason: ManagerStopReason | None = None
+    counter_to_claim_id: str | None = None
+    claim: ProviderClaimDraft | None = None
+
+    @model_validator(mode="after")
+    def coherent_live_semantics(self):
+        if self.intent == InvestigationIntent.LEGACY:
+            raise ValueError("live manager cannot emit LEGACY intent")
+        for name, refs in (
+            ("Evidence", self.inspected_evidence_refs),
+            ("claim", self.inspected_claim_refs),
+            ("material", self.inspected_material_refs),
+        ):
+            if len(refs) != len(set(refs)):
+                raise ValueError(f"{name} refs must be unique")
+
+        if self.intent == InvestigationIntent.EXPLORE_ALTERNATIVES:
+            if not self.branch_concept or not self.branch_concept.strip():
+                raise ValueError("EXPLORE_ALTERNATIVES requires branch_concept")
+        elif self.branch_concept is not None:
+            raise ValueError("branch_concept is only valid for EXPLORE_ALTERNATIVES")
+
+        stop_intents = {
+            InvestigationIntent.STOP_BRANCH,
+            InvestigationIntent.STOP_INVESTIGATION,
+        }
+        if self.intent in stop_intents:
+            if self.stop_reason is None:
+                raise ValueError("live STOP intent requires stop_reason")
+            if self.claim is not None or self.counter_to_claim_id is not None:
+                raise ValueError("live STOP intent cannot carry follow-up payload")
+            return self
+
+        if not self.bounded_objective or not self.bounded_objective.strip():
+            raise ValueError("live non-STOP intent requires bounded_objective")
+        if (
+            not self.expected_information_gain
+            or not self.expected_information_gain.strip()
+        ):
+            raise ValueError(
+                "live non-STOP intent requires expected_information_gain"
+            )
+        if self.stop_reason is not None:
+            raise ValueError("live non-STOP intent cannot carry stop_reason")
+        if (
+            self.intent == InvestigationIntent.SEEK_COUNTER_EVIDENCE
+            and not self.counter_to_claim_id
+        ):
+            raise ValueError(
+                "live SEEK_COUNTER_EVIDENCE requires counter_to_claim_id"
+            )
+        if (
+            self.intent != InvestigationIntent.SEEK_COUNTER_EVIDENCE
+            and self.counter_to_claim_id is not None
+        ):
+            raise ValueError(
+                "counter_to_claim_id is only valid for SEEK_COUNTER_EVIDENCE"
+            )
+        if self.intent == InvestigationIntent.FORM_CLAIM and self.claim is None:
+            raise ValueError("live FORM_CLAIM requires claim")
+        if self.intent != InvestigationIntent.FORM_CLAIM and self.claim is not None:
+            raise ValueError("claim is only valid for FORM_CLAIM")
+        return self
+
+
+ResearchManagerSemanticDraft.model_rebuild()
+
+
 _ACTION_FOR_INTENT = {
     InvestigationIntent.INVESTIGATE_GAP: ManagerAction.EXPLORE_NATIVE,
     InvestigationIntent.EXPLORE_ALTERNATIVES: (
@@ -291,8 +377,7 @@ Architecture:
 - Counter-evidence and inconclusive/branch-stop outcomes are first-class.
 - Do not invent numerical confidence or information-gain scores.
 - P19 causal/contribution truth is outside your authority.
-- Return exactly one typed next proposal. Keep rationale concise and factual.
-"""
+- Return exactly one typed next proposal. Keep rationale concise and factual.\n- Never create or echo proposal/step/branch/task/scope/hypothesis IDs; Dima binds machine identities.\n- Existing governed Evidence/claim/material refs may be selected only from closed legal choices exposed by the schema.\n"""
 
 
 def _strict_json_schema(schema: dict[str, Any]) -> dict[str, Any]:
@@ -379,15 +464,11 @@ _STOP_INTENTS = {
     InvestigationIntent.STOP_INVESTIGATION,
 }
 _COMMON_TRANSPORT_FIELDS = (
-    "proposal_id",
-    "source_revision",
-    "target_parent_obligation",
+    "target_objective",
     "intent",
-    "parent_step_id",
-    "branch_key",
+    "branch_concept",
     "target_kind",
-    "target_ref",
-    "objective_key",
+    "target_concept",
     "rationale",
     "inspected_evidence_refs",
     "inspected_claim_refs",
@@ -469,7 +550,7 @@ def _schema_for_intents(
     not representable merely because nullable Pydantic fields share one model.
     """
 
-    raw = ResearchManagerProposalDraft.model_json_schema()
+    raw = ResearchManagerSemanticDraft.model_json_schema()
     effective = intents or tuple(_ACTION_FOR_INTENT)
     if not effective:
         raise ValueError("at least one live intent is required")
@@ -675,6 +756,7 @@ class StructuredResearchProposalManager:
 
     @staticmethod
     def _proposal(draft: ResearchManagerProposalDraft) -> ManagerProposal:
+        """Historical/internal compatibility mapper; not provider-facing in V1."""
         action = _ACTION_FOR_INTENT.get(draft.intent)
         if action is None:
             raise ValueError(
@@ -685,6 +767,222 @@ class StructuredResearchProposalManager:
             payload["claim"] = _domain_claim(draft.claim).model_dump()
         payload["action"] = action
         return ManagerProposal.model_validate(payload)
+
+    @staticmethod
+    def _stable(prefix: str, value: Any, *, length: int = 24) -> str:
+        raw = json.dumps(
+            value,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+            allow_nan=False,
+            default=str,
+        )
+        return prefix + hashlib.sha256(raw.encode("utf-8")).hexdigest()[:length]
+
+    @staticmethod
+    def _target_obligation(
+        snapshot: ResearchManagerSnapshot,
+        draft: ResearchManagerSemanticDraft,
+        *,
+        target_parent_obligation: str | None,
+    ) -> str:
+        candidates = tuple(
+            item
+            for item in snapshot.parent_obligations
+            if (
+                target_parent_obligation is None
+                or item.obligation_id == target_parent_obligation
+            )
+        )
+        matches = tuple(
+            item for item in candidates
+            if item.objective == draft.target_objective
+        )
+        if len(matches) != 1:
+            raise ValueError(
+                "provider target_objective must identify exactly one governed obligation"
+            )
+        return matches[0].obligation_id
+
+    @staticmethod
+    def _deterministic_parent_step(
+        snapshot: ResearchManagerSnapshot,
+        *,
+        intent: InvestigationIntent,
+        target_obligation_id: str,
+        allowed_parent_step_ids: tuple[str | None, ...] | None,
+    ) -> str | None:
+        rule = snapshot.action_profile.rule_for(intent)
+        if rule is None:
+            raise ValueError("intent is not legal in current P17 action profile")
+
+        legal = list(rule.legal_parent_step_ids)
+        if allowed_parent_step_ids is not None:
+            allowed = {item for item in allowed_parent_step_ids if item is not None}
+            legal = [step_id for step_id in legal if step_id in allowed]
+
+        node_by_id = {
+            node.step_id: node for node in snapshot.investigation.nodes
+        }
+        legal = [
+            step_id for step_id in legal
+            if (
+                step_id in node_by_id
+                and node_by_id[step_id].root_obligation_id
+                == target_obligation_id
+            )
+        ]
+
+        if (
+            intent == InvestigationIntent.STOP_INVESTIGATION
+            and rule.allow_parentless
+            and (
+                allowed_parent_step_ids is None
+                or None in allowed_parent_step_ids
+            )
+        ):
+            return None
+        if legal:
+            order = {
+                node.step_id: index
+                for index, node in enumerate(snapshot.investigation.nodes)
+            }
+            return max(legal, key=lambda step_id: order.get(step_id, -1))
+        if rule.allow_parentless and (
+            allowed_parent_step_ids is None
+            or None in allowed_parent_step_ids
+        ):
+            return None
+        raise ValueError(
+            "no deterministic legal parent remains for provider semantic proposal"
+        )
+
+    @classmethod
+    def _proposal_from_semantic(
+        cls,
+        draft: ResearchManagerSemanticDraft,
+        *,
+        snapshot: ResearchManagerSnapshot,
+        target_parent_obligation: str | None,
+        allowed_parent_step_ids: tuple[str | None, ...] | None,
+    ) -> ManagerProposal:
+        target_obligation_id = cls._target_obligation(
+            snapshot,
+            draft,
+            target_parent_obligation=target_parent_obligation,
+        )
+        parent_step_id = cls._deterministic_parent_step(
+            snapshot,
+            intent=draft.intent,
+            target_obligation_id=target_obligation_id,
+            allowed_parent_step_ids=allowed_parent_step_ids,
+        )
+        rule = snapshot.action_profile.rule_for(draft.intent)
+        if rule is None:
+            raise ValueError("semantic proposal intent is not state-legal")
+
+        branch_key = None
+        if rule.branch_key_policy == InvestigationBranchKeyPolicy.REQUIRED:
+            if not draft.branch_concept:
+                raise ValueError("state-legal child branch requires branch_concept")
+            branch_key = cls._stable(
+                "branch.",
+                {
+                    "session": snapshot.research_session_id,
+                    "obligation": target_obligation_id,
+                    "parent": parent_step_id,
+                    "concept": draft.branch_concept,
+                },
+                length=20,
+            )
+        elif draft.branch_concept is not None:
+            raise ValueError("branch_concept supplied for non-branching move")
+
+        semantic_identity = {
+            "snapshot": snapshot.fingerprint,
+            "target_obligation": target_obligation_id,
+            "parent_step": parent_step_id,
+            "intent": draft.intent.value,
+            "target_kind": draft.target_kind.value,
+            "target_concept": draft.target_concept,
+            "bounded_objective": draft.bounded_objective,
+            "branch_concept": draft.branch_concept,
+            "counter_to_claim_id": draft.counter_to_claim_id,
+            "claim": (
+                draft.claim.model_dump(mode="json")
+                if draft.claim is not None
+                else None
+            ),
+        }
+        legacy = ResearchManagerProposalDraft(
+            proposal_id=cls._stable("p17-sem-", semantic_identity),
+            source_revision=snapshot.source_revision,
+            target_parent_obligation=target_obligation_id,
+            intent=draft.intent,
+            parent_step_id=parent_step_id,
+            branch_key=branch_key,
+            target_kind=draft.target_kind,
+            target_ref=draft.target_concept,
+            objective_key=cls._stable(
+                f"v1.{draft.intent.value.lower()}.",
+                semantic_identity,
+                length=16,
+            ),
+            bounded_objective=draft.bounded_objective,
+            rationale=draft.rationale,
+            inspected_evidence_refs=draft.inspected_evidence_refs,
+            inspected_claim_refs=draft.inspected_claim_refs,
+            inspected_material_refs=draft.inspected_material_refs,
+            expected_information_gain=draft.expected_information_gain,
+            stop_reason=draft.stop_reason,
+            counter_to_claim_id=draft.counter_to_claim_id,
+            claim=draft.claim,
+        )
+        return cls._proposal(legacy)
+
+    @classmethod
+    def _provider_inconclusive(
+        cls,
+        snapshot: ResearchManagerSnapshot,
+        *,
+        target_parent_obligation: str | None,
+    ) -> ManagerProposal:
+        target = target_parent_obligation
+        if target is None:
+            if not snapshot.parent_obligations:
+                raise ValueError("P17 snapshot has no parent obligation")
+            target = snapshot.parent_obligations[0].obligation_id
+        return ManagerProposal(
+            proposal_id=cls._stable(
+                "p17-provider-inconclusive-",
+                {
+                    "snapshot": snapshot.fingerprint,
+                    "target": target,
+                },
+                length=16,
+            ),
+            source_revision=snapshot.source_revision,
+            target_parent_obligation=target,
+            action=ManagerAction.STOP,
+            intent=InvestigationIntent.STOP_INVESTIGATION,
+            parent_step_id=None,
+            branch_key=None,
+            target_kind=InvestigationTargetKind.GAP,
+            target_ref=None,
+            objective_key="provider_contract.inconclusive",
+            bounded_objective=None,
+            rationale=(
+                "Provider output remained invalid after the single bounded repair."
+            ),
+            inspected_evidence_refs=(),
+            inspected_claim_refs=(),
+            inspected_material_refs=(),
+            expected_information_gain=None,
+            stop_reason=ManagerStopReason.INCONCLUSIVE,
+            counter_to_claim_id=None,
+            claim=None,
+        )
 
     def _propose(
         self,
@@ -795,6 +1093,21 @@ class StructuredResearchProposalManager:
 
         schema = _schema_for_intents(effective_intents)
         property_maps = _schema_property_maps(schema)
+
+        target_rows = tuple(
+            item
+            for item in snapshot.parent_obligations
+            if (
+                target_parent_obligation is None
+                or item.obligation_id == target_parent_obligation
+            )
+        )
+        target_objectives = tuple(item.objective for item in target_rows)
+        if not target_objectives or len(target_objectives) != len(set(target_objectives)):
+            raise ValueError(
+                "provider target objectives must be present and unambiguous"
+            )
+
         for props in property_maps:
             intent_values = props["intent"].get("enum") or []
             if len(intent_values) != 1:
@@ -807,32 +1120,10 @@ class StructuredResearchProposalManager:
                 raise ValueError(
                     f"missing action-profile rule for {intent.value}"
                 )
-            props["source_revision"] = {
-                "type": "integer",
-                "enum": [snapshot.source_revision],
-            }
-            target_ids = (
-                [target_parent_obligation]
-                if target_parent_obligation is not None
-                else [
-                    x.obligation_id for x in snapshot.parent_obligations
-                ]
-            )
-            props["target_parent_obligation"] = {
+            props["target_objective"] = {
                 "type": "string",
-                "enum": target_ids,
+                "enum": list(target_objectives),
             }
-            legal_parent_step_ids = rule.legal_parent_step_ids
-            if scoped_step_ids is not None:
-                legal_parent_step_ids = tuple(
-                    step_id
-                    for step_id in legal_parent_step_ids
-                    if step_id in scoped_step_ids
-                )
-            props["parent_step_id"] = _parent_schema(
-                legal_parent_step_ids=legal_parent_step_ids,
-                allow_parentless=rule.allow_parentless,
-            )
             if scoped_evidence_ids is not None:
                 props["inspected_evidence_refs"] = {
                     "type": "array",
@@ -855,6 +1146,60 @@ class StructuredResearchProposalManager:
                         "enum": list(scoped_claim_ids),
                     }
             if scoped_material_ids:
+                props["inspected_material_refs"] = {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "enum": list(scoped_material_ids),
+                    },
+                }
+            props["branch_concept"] = (
+                {"type": "string"}
+                if rule.branch_key_policy
+                == InvestigationBranchKeyPolicy.REQUIRED
+                else {"type": "null"}
+            )
+
+        if allowed_parent_step_ids is not None:
+            requested = set(allowed_parent_step_ids)
+            for props in property_maps:
+                intent = InvestigationIntent(props["intent"]["enum"][0])
+                rule = snapshot.action_profile.rule_for(intent)
+                assert rule is not None
+                legal = set(rule.legal_parent_step_ids)
+                if rule.allow_parentless:
+                    legal.add(None)
+                if not requested.issubset(legal):
+                    raise ValueError(
+                        "provider parent constraint cannot broaden action-profile legality"
+                    )
+
+        if branch_key_mode is not None:
+            expected = (
+                "string"
+                if all(
+                    snapshot.action_profile.rule_for(
+                        InvestigationIntent(props["intent"]["enum"][0])
+                    ).branch_key_policy
+                    == InvestigationBranchKeyPolicy.REQUIRED
+                    for props in property_maps
+                )
+                else "null"
+                if all(
+                    snapshot.action_profile.rule_for(
+                        InvestigationIntent(props["intent"]["enum"][0])
+                    ).branch_key_policy
+                    == InvestigationBranchKeyPolicy.FORBIDDEN
+                    for props in property_maps
+                )
+                else None
+            )
+            if branch_key_mode != expected:
+                raise ValueError(
+                    "provider branch-key constraint cannot broaden action-profile legality"
+                )
+
+        if scoped_material_ids:
                 props["inspected_material_refs"] = {
                     "type": "array",
                     "items": {
@@ -940,20 +1285,54 @@ class StructuredResearchProposalManager:
         # strict-schema object.
         validate_provider_strict_schema(schema)
 
-        raw = self._transport.structured_json(
-            _SYSTEM,
-            user,
-            schema=schema,
-            schema_name=self._schema_name,
+        repair_guidance = (
+            "\n\nPROVIDER-CONTRACT REPAIR: the previous structured response "
+            "was invalid. Return exactly one schema-valid semantic proposal. "
+            "Use only the governed snapshot and closed legal choices. Do not "
+            "invent or echo machine identities."
         )
-        self.call_count += 1
-        draft = ResearchManagerProposalDraft.model_validate(
-            _draft_payload_from_transport(raw, schema)
-        )
-        if draft.intent not in effective_intents:
-            raise ValueError(
-                f"manager emitted {draft.intent.value} outside state-legal bounded intent set"            )
-        return self._proposal(draft)
+        for attempt in range(2):
+            try:
+                raw = self._transport.structured_json(
+                    _SYSTEM,
+                    user if attempt == 0 else user + repair_guidance,
+                    schema=schema,
+                    schema_name=self._schema_name,
+                )
+                self.call_count += 1
+                draft = ResearchManagerSemanticDraft.model_validate(
+                    _draft_payload_from_transport(raw, schema)
+                )
+                if draft.intent not in effective_intents:
+                    raise ValueError(
+                        f"manager emitted {draft.intent.value} outside "
+                        "state-legal bounded intent set"
+                    )
+                return self._proposal_from_semantic(
+                    draft,
+                    snapshot=snapshot,
+                    target_parent_obligation=target_parent_obligation,
+                    allowed_parent_step_ids=allowed_parent_step_ids,
+                )
+            except StructuredProviderError as exc:
+                self.call_count += 1
+                if exc.code not in {
+                    "COGNITION_RESPONSE_INVALID",
+                    "COGNITION_RESPONSE_EMPTY",
+                }:
+                    raise
+                if attempt == 1:
+                    return self._provider_inconclusive(
+                        snapshot,
+                        target_parent_obligation=target_parent_obligation,
+                    )
+            except (json.JSONDecodeError, ValueError):
+                if attempt == 1:
+                    return self._provider_inconclusive(
+                        snapshot,
+                        target_parent_obligation=target_parent_obligation,
+                    )
+        raise AssertionError("bounded P17 provider loop exhausted unexpectedly")
 
     def propose(self, snapshot: ResearchManagerSnapshot) -> ManagerProposal:
         return self._propose(snapshot)

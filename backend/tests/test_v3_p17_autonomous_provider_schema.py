@@ -12,6 +12,8 @@ from app.v3.research_manager import (
     InvestigationIntent,
     InvestigationNodeView,
     InvestigationTargetKind,
+    ManagerAction,
+    ManagerStopReason,
     MaterialCognitionView,
     ParentObligationView,
     ReasoningStepStatus,
@@ -610,9 +612,21 @@ def test_obligation_scoped_provider_view_exposes_no_cross_obligation_refs():
         assert forbidden not in serialized_schema
         assert forbidden not in serialized_view
 
+    forbidden_outputs = {
+        "proposal_id",
+        "source_revision",
+        "target_parent_obligation",
+        "parent_step_id",
+        "branch_key",
+        "objective_key",
+        "task_id",
+        "scope_version",
+        "hypothesis_id",
+    }
     for variant in _variants(transport.schema):
         props = variant["properties"]
-        assert props["target_parent_obligation"]["enum"] == ["g_source"]
+        assert not forbidden_outputs.intersection(props)
+        assert props["target_objective"]["enum"] == ["Source objective."]
         assert props["inspected_evidence_refs"]["items"]["enum"] == [
             "evi_source"
         ]
@@ -622,3 +636,113 @@ def test_obligation_scoped_provider_view_exposes_no_cross_obligation_refs():
         assert props["inspected_material_refs"]["items"]["enum"] == [
             "lead_source"
         ]
+
+
+class _SequenceTransport:
+    def __init__(self, responses):
+        self.responses = list(responses)
+        self.users = []
+        self.schemas = []
+
+    def structured_json(self, system, user, *, schema, schema_name):
+        del system, schema_name
+        self.users.append(user)
+        self.schemas.append(schema)
+        value = self.responses.pop(0)
+        if isinstance(value, Exception):
+            raise value
+        return value
+
+
+def _semantic_response(*, objective="Source objective."):
+    return json.dumps(
+        {
+            "proposal": {
+                "target_objective": objective,
+                "intent": "DEEPEN_EXPLANATION",
+                "branch_concept": None,
+                "target_kind": "EXPLANATION",
+                "target_concept": "governed source mechanism",
+                "rationale": "The current material leaves one bounded explanation gap.",
+                "inspected_evidence_refs": ["evi_source"],
+                "inspected_claim_refs": ["clm_" + "a" * 24],
+                "inspected_material_refs": ["lead_source"],
+                "bounded_objective": "Deepen the governed source explanation.",
+                "expected_information_gain": "Distinguishes whether the explanation remains material.",
+            }
+        }
+    )
+
+
+def test_v1_provider_binds_machine_identities_deterministically():
+    snapshot = _scoped_snapshot()
+    transport = _SequenceTransport([_semantic_response()])
+    manager = StructuredResearchProposalManager(transport=transport)
+
+    proposal = manager.propose_for_obligation(
+        snapshot,
+        target_parent_obligation="g_source",
+        allowed_evidence_refs=("evi_source",),
+    )
+
+    source_step = "rrs_" + "1" * 24
+    assert proposal.source_revision == snapshot.source_revision
+    assert proposal.target_parent_obligation == "g_source"
+    assert proposal.parent_step_id == source_step
+    assert proposal.branch_key is None
+    assert proposal.proposal_id.startswith("p17-sem-")
+    assert proposal.objective_key.startswith("v1.deepen_explanation.")
+    assert manager.call_count == 1
+
+    props = _variant_by_intent(
+        transport.schemas[0],
+        InvestigationIntent.DEEPEN_EXPLANATION,
+    )["properties"]
+    for forbidden in (
+        "proposal_id",
+        "source_revision",
+        "target_parent_obligation",
+        "parent_step_id",
+        "branch_key",
+        "objective_key",
+        "task_id",
+        "scope_version",
+        "hypothesis_id",
+    ):
+        assert forbidden not in props
+
+
+def test_v1_provider_gets_exactly_one_generic_contract_repair():
+    snapshot = _scoped_snapshot()
+    transport = _SequenceTransport(["{}", _semantic_response()])
+    manager = StructuredResearchProposalManager(transport=transport)
+
+    proposal = manager.propose_for_obligation(
+        snapshot,
+        target_parent_obligation="g_source",
+        allowed_evidence_refs=("evi_source",),
+    )
+
+    assert proposal.intent == InvestigationIntent.DEEPEN_EXPLANATION
+    assert manager.call_count == 2
+    assert len(transport.users) == 2
+    assert "PROVIDER-CONTRACT REPAIR" not in transport.users[0]
+    assert "PROVIDER-CONTRACT REPAIR" in transport.users[1]
+
+
+def test_v1_provider_exhausted_contract_repair_is_governed_inconclusive():
+    snapshot = _scoped_snapshot()
+    transport = _SequenceTransport(["{}", "{}"])
+    manager = StructuredResearchProposalManager(transport=transport)
+
+    proposal = manager.propose_for_obligation(
+        snapshot,
+        target_parent_obligation="g_source",
+        allowed_evidence_refs=("evi_source",),
+    )
+
+    assert proposal.action == ManagerAction.STOP
+    assert proposal.intent == InvestigationIntent.STOP_INVESTIGATION
+    assert proposal.stop_reason == ManagerStopReason.INCONCLUSIVE
+    assert proposal.target_parent_obligation == "g_source"
+    assert manager.call_count == 2
