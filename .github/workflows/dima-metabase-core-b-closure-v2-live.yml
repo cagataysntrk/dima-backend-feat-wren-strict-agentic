@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - recovery/core-b-root-v2
+      - feat/dima-metabase-platform
     paths:
       - ".github/workflows/dima-metabase-core-b-closure-v2-live.yml"
       - "backend/lab/metabase/core_b/live_sentinel_v2.py"

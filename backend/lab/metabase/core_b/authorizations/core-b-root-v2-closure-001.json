@@ -2,7 +2,7 @@
   "schema_version": "core_b_root_v2_live_authorization_v1",
   "mode": "closure",
   "case_id": "ALL",
-  "candidate_product_sha": "e01d0cc077b843baa253aa49f8226dc68bf25cac",
+  "candidate_product_sha": "50d6d2fb15d6bf9a62638a3e77e7dbd950d819a6",
   "semantic_candidate_sha": "e01d0cc077b843baa253aa49f8226dc68bf25cac",
   "recovery_base_sha": "eae1fd6856d75e7e2738f869d5bbe1f24fd5d309",
   "forensic_sha": "266c25a08a7f9136dd6b4d809992ccec8177aadd",
@@ -14,12 +14,12 @@
   "relationship_live_status": "GREEN",
   "root_live_run_id": 36303748649,
   "root_live_status": "GREEN",
-  "provider_free_run_id": 36307274990,
+  "provider_free_run_id": 36307689543,
   "provider_free_status": "GREEN",
-  "governance_run_id": 36307274989,
+  "governance_run_id": 36307689605,
   "governance_status": "GREEN",
   "max_observable_model_boundary_units": 30,
-  "purpose": "Re-run full Closure Sentinel v2 after deterministic provider-free reproduction and the single generic Product parent-callability correction. No feature development.",
+  "purpose": "Run exactly one full Closure Sentinel v2 on the active merged candidate to prove reintegration preserved certified recovery behavior.",
   "original_semantic_candidate_sha": "1e11af5764d3c98507a31d4ea0c38aba9ad1dcc0",
   "prior_full_closure_run_id": 36306001321,
   "prior_full_closure_status": "RED",
@@ -40,5 +40,10 @@
   "provider_free_reproduction_runs": [
     36306504761,
     36307092235
-  ]
+  ],
+  "recovery_certified_head": "67af244d3097dbaf221c15ba76d007586edcbc45",
+  "recovery_full_closure_run_id": 36307340478,
+  "recovery_full_closure_status": "GREEN",
+  "active_merge_sha": "50d6d2fb15d6bf9a62638a3e77e7dbd950d819a6",
+  "integration_mode": "ACTIVE_BRANCH_INTEGRATED_CLOSURE_V2"
 }
