@@ -12,6 +12,7 @@ from typing import Any, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from app.v3.structured_transport import validate_provider_strict_schema
 from app.v3.hypothesis_root_cause import (
     AggregateOutcome,
     CandidateAssessment,
@@ -178,8 +179,79 @@ def _strict_json_schema(schema: dict[str, Any]) -> dict[str, Any]:
     return value
 
 
-def provider_schema() -> dict[str, Any]:
-    return _strict_json_schema(ModelAssessmentDraft.model_json_schema())
+def provider_schema(
+    snapshot: P19CaseSnapshot,
+    *,
+    policy_statuses: dict[str, str] | None = None,
+) -> dict[str, Any]:
+    """Build an exact-case closed authority schema for the P19 provider."""
+
+    schema = _strict_json_schema(ModelAssessmentDraft.model_json_schema())
+    definitions = schema.get("$defs") or {}
+    candidate_definition = definitions.get("ModelCandidateJudgment")
+    if not isinstance(candidate_definition, dict):
+        raise ValueError("P19 candidate schema definition is absent")
+    base_properties = candidate_definition.get("properties")
+    if not isinstance(base_properties, dict):
+        raise ValueError("P19 candidate schema properties are absent")
+
+    policy_ids = tuple(sorted((policy_statuses or {}).keys()))
+    variants: list[dict[str, Any]] = []
+    known_hypothesis_ids: list[str] = []
+    for item in sorted(
+        snapshot.hypotheses,
+        key=lambda value: value.hypothesis.hypothesis_id,
+    ):
+        hypothesis_id = item.hypothesis.hypothesis_id
+        known_hypothesis_ids.append(hypothesis_id)
+        properties = copy.deepcopy(base_properties)
+        properties["hypothesis_id"] = {
+            "type": "string",
+            "enum": [hypothesis_id],
+        }
+        properties["grounding_link_ids"] = {
+            "type": "array",
+            "items": {
+                "type": "string",
+                "enum": sorted(
+                    link.grounding_link_id
+                    for link in item.groundings
+                ),
+            },
+        }
+        properties["relationship_policy_use_id"] = (
+            {
+                "anyOf": [
+                    {"type": "null"},
+                    {
+                        "type": "string",
+                        "enum": list(policy_ids),
+                    },
+                ]
+            }
+            if policy_ids
+            else {"type": "null"}
+        )
+        variants.append(
+            {
+                "type": "object",
+                "properties": properties,
+                "required": list(properties),
+                "additionalProperties": False,
+            }
+        )
+    if not variants:
+        raise ValueError("P19 provider schema requires governed hypotheses")
+
+    candidate_definition.clear()
+    candidate_definition["anyOf"] = variants
+    root_ids = schema["properties"]["root_cause_hypothesis_ids"]
+    root_ids["items"] = {
+        "type": "string",
+        "enum": known_hypothesis_ids,
+    }
+    validate_provider_strict_schema(schema)
+    return schema
 
 
 def _packet(
@@ -267,7 +339,10 @@ class StructuredP19AssessmentManager:
         raw = self._transport.structured_json(
             _SYSTEM,
             user,
-            schema=provider_schema(),
+            schema=provider_schema(
+                snapshot,
+                policy_statuses=policy_statuses,
+            ),
             schema_name=self._schema_name,
         )
         self.call_count += 1

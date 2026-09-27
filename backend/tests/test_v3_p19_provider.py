@@ -177,7 +177,10 @@ def valid_payload():
 
 
 def test_provider_schema_is_portable_strict_and_has_no_numeric_confidence_field():
-    schema = provider_schema()
+    schema = provider_schema(
+        snapshot(),
+        policy_statuses={"bru_" + "1" * 24: "SATISFIED"},
+    )
     assert_strict_objects(schema)
     raw = json.dumps(schema, sort_keys=True)
     for forbidden in (
@@ -277,3 +280,47 @@ def test_model_draft_has_no_numeric_or_causal_source_authority_fields():
     assert "confidence" not in fields
     assert "numeric_provenance" not in fields
     assert "causal_identification_refs" not in fields
+
+
+
+def test_p19_request_scoped_schema_closes_hypothesis_grounding_root_and_policy_ids():
+    snap = snapshot()
+    policy_id = "bru_" + "1" * 24
+    schema = provider_schema(
+        snap,
+        policy_statuses={policy_id: "SATISFIED"},
+    )
+    candidate = schema["$defs"]["ModelCandidateJudgment"]
+    variants = candidate["anyOf"]
+    assert len(variants) == len(snap.hypotheses)
+
+    by_hypothesis = {
+        item["properties"]["hypothesis_id"]["enum"][0]: item
+        for item in variants
+    }
+    for hypothesis in snap.hypotheses:
+        variant = by_hypothesis[hypothesis.hypothesis.hypothesis_id]
+        assert variant["properties"]["hypothesis_id"]["enum"] == [
+            hypothesis.hypothesis.hypothesis_id
+        ]
+        assert set(
+            variant["properties"]["grounding_link_ids"]["items"]["enum"]
+        ) == {
+            link.grounding_link_id for link in hypothesis.groundings
+        }
+        policy_schema = variant["properties"]["relationship_policy_use_id"]
+        assert {"type": "string", "enum": [policy_id]} in policy_schema["anyOf"]
+
+    assert set(
+        schema["properties"]["root_cause_hypothesis_ids"]["items"]["enum"]
+    ) == {
+        item.hypothesis.hypothesis_id for item in snap.hypotheses
+    }
+
+
+def test_p19_schema_without_governed_policy_use_makes_policy_identity_unrepresentable():
+    schema = provider_schema(snapshot(), policy_statuses={})
+    for variant in schema["$defs"]["ModelCandidateJudgment"]["anyOf"]:
+        assert variant["properties"]["relationship_policy_use_id"] == {
+            "type": "null"
+        }
