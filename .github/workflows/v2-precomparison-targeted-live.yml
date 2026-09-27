@@ -41,9 +41,8 @@ jobs:
       - name: Initialize rehearsal contract store
         working-directory: backend
         run: |
+          python -m alembic upgrade head
           python - <<'PY'
-          from control_plane.db import init_db
-          init_db()
           from sqlalchemy import inspect
           from control_plane.db import engine
           assert "contract_log" in inspect(engine).get_table_names()
