@@ -1,5 +1,5 @@
 {
-  "version": "dima-neutral-feature-benchmark-round2-v1",
+  "version": "dima-neutral-feature-benchmark-round2-v2",
   "frozen_at": "2026-09-27",
   "common_feature_count": 10,
   "case_count": 30,
@@ -660,12 +660,11 @@
     {
       "id": "F10_S",
       "feature_id": "F10",
-      "feature_name": "Governed Continuation and Resume",
+      "feature_name": "Conversation Repair and Scope Refinement",
       "difficulty": "simple",
-      "kind": "signed_continuation",
-      "category": "F10",
-      "question": "Makine duruşlarını bölüm bazında araştır ve kanıta bağlı kısa rapor üret.",
-      "followup": "Bu rapordaki en önemli bulguyu yalnız mevcut governed kapsam içinde bir seviye daha derinleştir ve yeni rapor sürümü üret.",
+      "kind": "multi_turn",
+      "category": "conversation_repair",
+      "question": "Makine duruşları ve arıza sayısını bölüm bazında incele.",
       "lanes": [
         "STANDARD",
         "RESEARCH"
@@ -675,18 +674,47 @@
       ],
       "min_evidence": 1,
       "verified": false,
-      "max_model_calls": 10,
-      "expected": {}
+      "max_model_calls": 8,
+      "expected": {},
+      "turns": [
+        "Makine duruşları ve arıza sayısını bölüm bazında incele.",
+        "Düzeltme: yalnız makine duruşlarını göster; arıza sayısını mevcut kapsamdan çıkar."
+      ]
     },
     {
       "id": "F10_M",
       "feature_id": "F10",
-      "feature_name": "Governed Continuation and Resume",
+      "feature_name": "Conversation Repair and Scope Refinement",
       "difficulty": "medium",
-      "kind": "signed_continuation",
-      "category": "F10",
-      "question": "Mayıs-Haziran duruş değişimini ve olası nedenlerini araştır; kanıta bağlı rapor üret.",
-      "followup": "En güçlü iki aday açıklamayı ayrı ayrı derinleştir; önceki raporu değiştirmeden yeni sürüm üret ve yeni kanıt ile eski kanıtı ayır.",
+      "kind": "multi_turn",
+      "category": "conversation_repair",
+      "question": "Duruş, arıza ve performansı bölüm bazında araştır.",
+      "lanes": [
+        "STANDARD",
+        "RESEARCH"
+      ],
+      "statuses": [
+        "REPORT",
+        "PARTIAL"
+      ],
+      "min_evidence": 1,
+      "verified": false,
+      "max_model_calls": 12,
+      "expected": {},
+      "turns": [
+        "Duruş, arıza ve performansı bölüm bazında araştır.",
+        "Şimdi yalnız Assembly ve Packaging bölümlerine odaklan; diğer bölümleri mevcut kapsamdan çıkar.",
+        "Bu daraltılmış kapsam içinde Mayıs-Haziran değişimini karşılaştır."
+      ]
+    },
+    {
+      "id": "F10_H",
+      "feature_id": "F10",
+      "feature_name": "Conversation Repair and Scope Refinement",
+      "difficulty": "hard",
+      "kind": "multi_turn",
+      "category": "conversation_repair",
+      "question": "Mayıs-Haziran duruş artışını çok faktörlü araştır; alternatif nedenleri ve karşı kanıtı da değerlendir.",
       "lanes": [
         "STANDARD",
         "RESEARCH"
@@ -697,30 +725,13 @@
       ],
       "min_evidence": 2,
       "verified": false,
-      "max_model_calls": 12,
-      "expected": {}
-    },
-    {
-      "id": "F10_H",
-      "feature_id": "F10",
-      "feature_name": "Governed Continuation and Resume",
-      "difficulty": "hard",
-      "kind": "restart_continuation",
-      "category": "F10",
-      "question": "Mayıs-Haziran duruş artışını çok faktörlü araştır; relationship, alternatif nedenler, karşı kanıt ve sınırlılıklarla yönetim raporu üret.",
-      "followup": "Kaldığın yerden devam et; en güçlü açıklamanın nedenine iki seviye daha in, karşı kanıt ara ve önceki raporu mutate etmeden yeni rapor sürümü üret.",
-      "lanes": [
-        "STANDARD",
-        "RESEARCH"
-      ],
-      "statuses": [
-        "REPORT",
-        "PARTIAL"
-      ],
-      "min_evidence": 3,
-      "verified": false,
       "max_model_calls": 14,
-      "expected": {}
+      "expected": {},
+      "turns": [
+        "Mayıs-Haziran duruş artışını çok faktörlü araştır; alternatif nedenleri ve karşı kanıtı da değerlendir.",
+        "Düzeltme: yalnız Assembly bölümüne odaklan; Packaging ve diğer bölümleri yeni kapsamdan çıkar.",
+        "Şimdi yalnız düzeltilmiş Assembly kapsamı içinde en güçlü iki açıklamayı derinleştir; eski geniş kapsamın bulgularını yeni kanıt gibi kullanma."
+      ]
     }
   ]
 }
