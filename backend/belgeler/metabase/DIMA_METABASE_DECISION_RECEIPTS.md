@@ -6494,3 +6494,70 @@ from the typed state before product changes are considered.
 
 status: SEALED.
 
+
+
+---
+
+## DMP-DEC-0062 — PLATFORM COMPARISON CANDIDATE SEALED
+
+date: 2026-09-27
+
+question:
+Has the Dima Metabase Platform completed its own headless product, durability, UX-foundation and provider-free closure sufficiently to become an immutable neutral-comparison candidate without running a private competitive exam?
+
+evidence:
+- Platform comparison candidate SHA: `72641b39159f11b08757048ae96644438badcc20`;
+- final provider-free integrated closure `36313727354 = SUCCESS`;
+- canonical governance `36313727413 = SUCCESS`;
+- provider-free final stack: 527 assertions PASS;
+- repository/control-plane security: 25 PASS;
+- headless Product closure: 111 PASS;
+- Core A closed-loop + UX freeze: 70 PASS;
+- ActionAuthorization: 38 PASS;
+- Human Adoption: 29 PASS;
+- P21/P20/P19/P18/P17/P16/P15/P14: 25 / 19 / 44 / 24 / 116 / 6 / 5 / 15 PASS;
+- exact Alembic head: `fc8a1d0e3b42`;
+- exact engine: `cbe313af9ac2d5960f662068e433d328d896fb06` / `0.63.18-dima.6`;
+- exact engine digest: `sha256:40e9a44be49904de3ddf12d4683c768e70955851c10a928a9c8f7d8f60780353`;
+- product contract: `core-b-product-v1`;
+- UX matrix: `wave-1-comparison-ready-v2`;
+- UX readiness distribution: HEADLESS_READY 4, FOUNDATION_ONLY 2, DATA_DEPENDENT 27, SPECIAL_ENGINE_DEFERRED 15, PRODUCTIZATION_DEFERRED 2;
+- candidate artifact `dima-metabase-comparison-candidate`, digest `sha256:c842390a1d3850f58805411d0c3b0c50731acf56eed51a4405e0a740bcae0dcf`;
+- prior certified Core-B integrated live Closure-v2 `36311996172 = SUCCESS`, 6/6, 19 model-boundary units, 8 Metabase calls, silent wrong 0, security violations 0, causal overclaim 0, invented numeric truth 0;
+- no cognition behavior changed after the Core-B live seal, therefore new paid/live calls after that seal = 0;
+- UI/frontend implementation remains absent;
+- external Action execution remains absent;
+- Wren comparison counterpart observed at handoff only as `feat/ask-v2-mvp@8f472fb252f1f81d7357c6edcdbedf89bf60f666`.
+
+decision:
+`PLATFORM INTERNAL CLOSURE = SEALED`.
+
+`PLATFORM COMPARISON CANDIDATE = SEALED`.
+
+`NEUTRAL COMPARISON = PENDING EXTERNAL AUTHORITY`.
+
+`WINNER = NOT SELECTED HERE`.
+
+`DEV80 / Validation50 / Hidden50 = NOT RUN / NOT REQUIRED FOR PLATFORM COMPARISON-READY SEAL`.
+
+`UI IMPLEMENTATION = NOT STARTED / NOT AUTHORIZED`.
+
+comparison input contract:
+`backend/belgeler/metabase/DIMA_METABASE_NEUTRAL_COMPARISON_INPUT_CONTRACT.md`
+
+neutral comparison dossier:
+`backend/belgeler/metabase/DIMA_METABASE_NEUTRAL_COMPARISON_DOSSIER.md`
+
+scope:
+- freezes Platform as a clean measurable candidate;
+- does not score or evaluate Wren;
+- does not authorize Wren merge/import/tuning;
+- does not authorize UI;
+- does not authorize Resend live or external execution;
+- does not create another paid campaign;
+- preserves all historical REDs as historical evidence.
+
+post-freeze rule:
+No semantic patch, prompt edit, migration, authority change or provider-schema change is authorized on the frozen candidate. Only non-behavioral documentation/receipt correction is permitted unless a new external authority explicitly reopens development.
+
+status: SEALED / COMPARISON-READY.

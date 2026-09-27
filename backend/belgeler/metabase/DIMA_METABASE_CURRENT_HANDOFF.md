@@ -1,5 +1,85 @@
 # Dima Metabase Platform — Current Handoff
 
+## FINAL HANDOFF — 2026-09-27 — COMPARISON-READY
+
+This block supersedes all older forward-plan language below. Historical receipts remain append-only.
+
+~~~text
+branch                                = feat/dima-metabase-platform
+Platform comparison candidate SHA     = 72641b39159f11b08757048ae96644438badcc20
+candidate artifact                    = dima-metabase-comparison-candidate
+candidate artifact digest             = sha256:c842390a1d3850f58805411d0c3b0c50731acf56eed51a4405e0a740bcae0dcf
+
+final provider-free integrated closure = 36313727354 SUCCESS
+governance                            = 36313727413 SUCCESS
+provider-free assertions              = 527 PASS
+repository/security                   = 25 PASS
+headless Product closure              = 111 PASS
+Core A closed-loop + UX freeze        = 70 PASS
+ActionAuthorization                   = 38 PASS
+Human Adoption                        = 29 PASS
+P21                                   = 25 PASS
+P20                                   = 19 PASS
+P19                                   = 44 PASS
+P18                                   = 24 PASS
+P17                                   = 116 PASS
+P16                                   = 6 PASS
+P15                                   = 5 PASS
+P14                                   = 15 PASS
+
+Core-B integrated live Closure-v2      = 36311996172 SUCCESS / 6 of 6
+Core-B observable model units          = 19 / 30
+Core-B Metabase analytical calls       = 8
+Core-B silent wrong                    = 0
+Core-B security violations             = 0
+Core-B causal overclaim                = 0
+Core-B invented numeric truth          = 0
+new paid/live calls after Core-B seal  = 0
+
+engine SHA                            = cbe313af9ac2d5960f662068e433d328d896fb06
+engine release                        = 0.63.18-dima.6
+engine digest                         = sha256:40e9a44be49904de3ddf12d4683c768e70955851c10a928a9c8f7d8f60780353
+Alembic head                          = fc8a1d0e3b42
+product contract                      = core-b-product-v1
+UX foundation matrix                  = wave-1-comparison-ready-v2
+model topology                        = openai/gpt-5.6-luna / no cascade / no Sol / no C1
+UI implementation                     = NOT STARTED
+external action execution             = ABSENT
+
+50 UX readiness distribution:
+HEADLESS_READY                         = 4
+FOUNDATION_ONLY                        = 2
+DATA_DEPENDENT                        = 27
+SPECIAL_ENGINE_DEFERRED               = 15
+PRODUCTIZATION_DEFERRED               = 2
+
+PLATFORM INTERNAL CLOSURE              = SEALED
+PLATFORM COMPARISON CANDIDATE          = SEALED
+NEUTRAL COMPARISON                     = PENDING EXTERNAL AUTHORITY
+WINNER                                 = NOT SELECTED HERE
+DEV80                                  = NOT RUN / NOT REQUIRED HERE
+Validation50                           = NOT RUN / NOT REQUIRED HERE
+Hidden50                               = NOT RUN / NOT REQUIRED HERE
+UI                                     = NOT AUTHORIZED
+~~~
+
+Canonical comparison handoff:
+
+- input contract: `backend/belgeler/metabase/DIMA_METABASE_NEUTRAL_COMPARISON_INPUT_CONTRACT.md`
+- Platform dossier: `backend/belgeler/metabase/DIMA_METABASE_NEUTRAL_COMPARISON_DOSSIER.md`
+- Wren counterpart observed only for identity: `feat/ask-v2-mvp@8f472fb252f1f81d7357c6edcdbedf89bf60f666`
+- no Wren evaluation, tuning, merge, scoring or winner selection occurred here.
+
+Forward sequence is now final:
+
+~~~text
+PLATFORM INTERNAL CLOSURE
+→ CANDIDATE FREEZE
+→ NEUTRAL COMPARISON HANDOFF
+→ STOP
+~~~
+
+
 
 ## FORWARD HANDOFF — 2026-09-27 — ROOT RECOVERY SEALED
 
