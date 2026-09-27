@@ -6324,3 +6324,48 @@ next action                           = SUPERVISOR DECISION REQUIRED
 ~~~
 
 No blind live retry is authorized by this receipt.
+
+
+---
+
+## CORE-B ADAPTIVE ROOT CORRECTION RETURN — 2026-09-27
+
+This is a closure receipt, not a new semantic authority decision.
+
+~~~text
+adaptive root-fix SHA                 = 773caa54540e495f52a53d44cf9dabe67acda8c4
+focused adaptive live                 = 36279322283 SUCCESS
+provider-free seal                    = 36279494493 SUCCESS
+governance                            = 36279494473 SUCCESS
+final frozen sentinel                 = 36279494474 FAILURE
+final score                           = 4 / 6
+~~~
+
+Verified invariants:
+
+~~~text
+P17 target = exact source analytical obligation
+Evidence refs = same source obligation
+typed investigation requirement = explicit + restart-safe
+raw prompt reinterpretation on resume = 0
+research_manager.py semantic diff = 0
+P17 scope validation weakening = 0
+Metabase engine diff = 0
+frozen sentinel manifest/prompt/fixture diff = 0
+silent wrong = 0
+security violations = 0
+external side effects = 0
+~~~
+
+Final sentinel STOP:
+
+~~~text
+relationship_explicit_tr
+→ P18_RELATIONSHIP_AUTHORITY_NOT_COMPOSED
+
+root_cause_tr
+→ P19_EPISTEMIC_AUTHORITY_NOT_COMPOSED
+~~~
+
+Because these are new failure families outside the adaptive dependency repair and touch sealed
+relationship/root-cause authority composition, this directive terminates at supervisor STOP.

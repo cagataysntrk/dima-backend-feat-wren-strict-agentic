@@ -51,6 +51,34 @@ Core B product DTO/projection layer
 No Wren evaluation, winner selection, broad final-certification corpus, UI implementation or
 external execution is part of this sequence.
 
+## CURRENT CORE-B RETURN — 2026-09-27
+
+~~~text
+adaptive dependency correction        = GREEN
+adaptive root-fix SHA                 = 773caa54540e495f52a53d44cf9dabe67acda8c4
+focused adaptive live                 = 36279322283 SUCCESS
+final frozen sentinel                 = 36279494474 FAILURE
+final score                           = 4 / 6
+
+failed family 1                       = P18_RELATIONSHIP_AUTHORITY_NOT_COMPOSED
+failed family 2                       = P19_EPISTEMIC_AUTHORITY_NOT_COMPOSED
+
+P17 core semantic diff                = 0
+P18 core semantic diff                = 0
+P19 core semantic diff                = 0
+engine diff                           = 0
+frozen manifest/prompt/fixture diff   = 0
+~~~
+
+The adaptive product requirement is now an explicit typed product-routing contract rooted in its
+source analytical goal. It is not a synthetic P14 obligation. Restart persistence is carried by the
+immutable Product routing correlation surface. P17 remains the final legality owner.
+
+No further change is authorized under the adaptive directive because the final sentinel reached two
+different sealed-owner composition failure families. Wait for supervisor authority before any
+relationship/root-cause composition change.
+
+
 ## HISTORICAL / SUPERSEDED P17 RECOVERY AND PRIOR CURRENT-STATE SECTIONS
 
 ## P17 SEALED — DMP-DEC-0053
