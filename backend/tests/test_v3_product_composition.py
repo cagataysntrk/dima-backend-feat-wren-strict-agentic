@@ -209,8 +209,9 @@ class FakeResearch:
 
 
 class FakeInvestigation:
-    def __init__(self):
+    def __init__(self, *, claim_turns=()):
         self.states = {}
+        self.claim_turns = tuple(claim_turns)
 
     def _state(self, session_id):
         return self.states.setdefault(
@@ -225,6 +226,7 @@ class FakeInvestigation:
             completed_reasoning_steps=tuple(state["steps"]),
             claims=tuple(state["claims"]),
             terminal_stop_reason=None,
+            remaining_reasoning_steps=max(0, 8 - state["calls"]),
         )
 
     def run_one(
@@ -251,13 +253,14 @@ class FakeInvestigation:
         if not step_id.startswith("rrs_"):
             step_id = "rrs_" + f"{n:024x}"
         state["steps"].append(step_id)
-        state["claims"].append(
-            SimpleNamespace(
-                claim_id="clm_" + f"{n:024x}",
-                obligation_id=self._obligation(session_id),
-                claim_text=f"Sealed P17 claim {n}",
+        if n in self.claim_turns:
+            state["claims"].append(
+                SimpleNamespace(
+                    claim_id="clm_" + f"{len(state['claims'])+1:024x}",
+                    obligation_id=self._obligation(session_id),
+                    claim_text=f"Sealed P17 claim {len(state['claims'])+1}",
+                )
             )
-        )
         return SimpleNamespace(step_id=step_id), None
 
     def _obligation(self, session_id):
@@ -436,9 +439,9 @@ class FakeReports:
         return SimpleNamespace(report_id="p20r_" + "3" * 24)
 
 
-def composer(*, relationship_blocked=True, limited_goal_ids=()):
+def composer(*, relationship_blocked=True, limited_goal_ids=(), claim_turns=()):
     research = FakeResearch(limited_goal_ids=limited_goal_ids)
-    investigation = FakeInvestigation()
+    investigation = FakeInvestigation(claim_turns=claim_turns)
     reasoning = FakeReasoning(investigation)
     return (
         HeadlessProductComposer(
@@ -487,7 +490,7 @@ def test_ordinary_composition_uses_p14_only():
 
 
 def test_relationship_composes_p14_material_p17_and_p18_without_creating_policy():
-    c, research, investigation, reasoning = composer()
+    c, research, investigation, reasoning = composer(claim_turns=(5,))
     b = brief(
         question(
             "g_relationship",
@@ -497,15 +500,6 @@ def test_relationship_composes_p14_material_p17_and_p18_without_creating_policy(
         ),
         report=True,
     )
-
-    # Fake P17 needs the child obligation identity after child creation.
-    original = c._resolve_relationship
-    def wrapped(**kwargs):
-        reasoning.current_obligation_by_session[kwargs["material_session_id"]] = (
-            kwargs["material_goal"].goal_id
-        )
-        return original(**kwargs)
-    c._resolve_relationship = wrapped
 
     result = c.compose(
         brief=b,
@@ -524,19 +518,11 @@ def test_relationship_composes_p14_material_p17_and_p18_without_creating_policy(
 
 
 def test_root_cause_composes_p17_then_p19_and_preserves_inconclusive_outcome():
-    c, research, investigation, reasoning = composer()
+    c, research, investigation, reasoning = composer(claim_turns=(2, 5))
     b = brief(
         question("g_root", ResearchGoalKind.ROOT_CAUSE),
         report=True,
     )
-    original = c._assess_root_cause
-    def wrapped(**kwargs):
-        reasoning.current_obligation_by_session[kwargs["session_id"]] = (
-            kwargs["goal"].goal_id
-        )
-        return original(**kwargs)
-    c._assess_root_cause = wrapped
-
     result = c.compose(
         brief=b,
         principal=principal(),
@@ -646,7 +632,10 @@ def test_adaptive_requirement_does_not_open_p17_when_source_is_limited():
 
 
 def test_p18_blocked_resolution_is_preserved_as_limitation_not_fake_success():
-    c, research, _, reasoning = composer(relationship_blocked=True)
+    c, research, _, reasoning = composer(
+        relationship_blocked=True,
+        claim_turns=(5,),
+    )
     b = brief(
         question(
             "g_relationship",
@@ -656,13 +645,6 @@ def test_p18_blocked_resolution_is_preserved_as_limitation_not_fake_success():
         ),
         report=True,
     )
-    original = c._resolve_relationship
-    def wrapped(**kwargs):
-        reasoning.current_obligation_by_session[kwargs["material_session_id"]] = (
-            kwargs["material_goal"].goal_id
-        )
-        return original(**kwargs)
-    c._resolve_relationship = wrapped
     result = c.compose(
         brief=b,
         principal=principal(),

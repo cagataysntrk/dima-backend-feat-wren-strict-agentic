@@ -43,6 +43,17 @@ class ProductInvestigationRequirementKind(StrEnum):
     FOLLOW_VERIFIED_MATERIAL = "FOLLOW_VERIFIED_MATERIAL"
 
 
+class ProductInvestigationOutputNeed(StrEnum):
+    """Closed transient Core-B downstream artifact need.
+
+    This describes only what artifact family Product needs before a downstream
+    sealed owner is callable. It carries no analytical or epistemic content.
+    """
+
+    RELATIONSHIP_INTERPRETATION_INPUT = "RELATIONSHIP_INTERPRETATION_INPUT"
+    COMPETING_EXPLANATION_INPUTS = "COMPETING_EXPLANATION_INPUTS"
+
+
 class ProductInvestigationRequirement(Frozen):
     """Core-B orchestration intent only; never analytical or epistemic truth."""
 

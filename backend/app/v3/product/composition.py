@@ -16,6 +16,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from control_plane.authorize import Principal
 
 from app.v3.product.contracts import (
+    ProductInvestigationOutputNeed,
     ProductInvestigationRequirement,
     ProductInvestigationRequirementKind,
 )
@@ -167,10 +168,12 @@ class _ObligationScopedProposalManager:
         inner: ProposalManager,
         target_parent_obligation: str,
         allowed_evidence_refs: tuple[str, ...],
+        output_need: ProductInvestigationOutputNeed | None = None,
     ) -> None:
         self._inner = inner
         self.target_parent_obligation = target_parent_obligation
         self._allowed_evidence_refs = allowed_evidence_refs
+        self._output_need = output_need
 
     @property
     def call_count(self) -> int:
@@ -179,11 +182,13 @@ class _ObligationScopedProposalManager:
     def propose(self, snapshot):
         scoped = getattr(self._inner, "propose_for_obligation", None)
         if callable(scoped):
-            return scoped(
-                snapshot,
-                target_parent_obligation=self.target_parent_obligation,
-                allowed_evidence_refs=self._allowed_evidence_refs,
-            )
+            kwargs = {
+                "target_parent_obligation": self.target_parent_obligation,
+                "allowed_evidence_refs": self._allowed_evidence_refs,
+            }
+            if self._output_need is not None:
+                kwargs["output_need"] = self._output_need
+            return scoped(snapshot, **kwargs)
         proposal = self._inner.propose(snapshot)
         target = getattr(proposal, "target_parent_obligation", None)
         if target is not None and target != self.target_parent_obligation:
@@ -402,22 +407,29 @@ class HeadlessProductComposer:
         session_id: str,
         principal: Principal,
         native_session_token: str | None,
-        minimum_claims: int,
         owner_calls: list[str],
-        max_turns: int = 4,
         manager: ProposalManager | None = None,
         target_obligation_id: str | None = None,
+        output_need: ProductInvestigationOutputNeed | None = None,
     ):
+        """Run only until the downstream artifact shape is ready or sealed P17 stops.
+
+        Product owns no independent turn budget. The durable P17 snapshot remains
+        the only budget authority.
+        """
+
         executed = 0
         last_error: Exception | None = None
         effective_manager = manager or self._investigation_manager
-        for _ in range(max_turns):
+
+        while True:
             snapshot = self._investigation.snapshot(
                 session_id=session_id,
                 principal=principal,
             )
             completed = tuple(snapshot.completed_reasoning_steps)
             claims = tuple(snapshot.claims)
+
             if target_obligation_id is not None:
                 scoped_step_ids = {
                     step.step_id
@@ -434,13 +446,21 @@ class HeadlessProductComposer:
                     for claim in claims
                     if claim.obligation_id == target_obligation_id
                 )
-            if (
-                len(completed) >= 1
-                and len(claims) >= minimum_claims
-            ):
+
+            if output_need == ProductInvestigationOutputNeed.RELATIONSHIP_INTERPRETATION_INPUT:
+                ready = bool(completed) and bool(claims)
+            elif output_need == ProductInvestigationOutputNeed.COMPETING_EXPLANATION_INPUTS:
+                ready = len({claim.claim_id for claim in claims}) >= 2
+            else:
+                ready = bool(completed)
+
+            if ready:
                 return snapshot, executed, last_error
             if snapshot.terminal_stop_reason is not None:
                 return snapshot, executed, last_error
+            if snapshot.remaining_reasoning_steps == 0:
+                return snapshot, executed, last_error
+
             try:
                 self._investigation.run_one(
                     session_id=session_id,
@@ -455,6 +475,7 @@ class HeadlessProductComposer:
                 if exc.code == "P17_INVESTIGATION_TERMINAL":
                     break
                 raise
+
         return (
             self._investigation.snapshot(
                 session_id=session_id,
@@ -490,20 +511,45 @@ class HeadlessProductComposer:
         native_session_token: str | None,
         owner_calls: list[str],
     ):
+        material_session = self._research.resume_state(
+            session_id=material_session_id,
+            principal=principal,
+        )
+        allowed_evidence_refs = tuple(
+            item.evidence_id
+            for item in material_session.evidence_refs
+            if item.obligation_id == material_goal.goal_id
+        )
+        scoped_manager = _ObligationScopedProposalManager(
+            inner=self._investigation_manager,
+            target_parent_obligation=material_goal.goal_id,
+            allowed_evidence_refs=allowed_evidence_refs,
+            output_need=(
+                ProductInvestigationOutputNeed.RELATIONSHIP_INTERPRETATION_INPUT
+            ),
+        )
         snapshot, _, _ = self._run_p17(
             session_id=material_session_id,
             principal=principal,
             native_session_token=native_session_token,
-            minimum_claims=1,
             owner_calls=owner_calls,
+            manager=scoped_manager,
+            target_obligation_id=material_goal.goal_id,
+            output_need=(
+                ProductInvestigationOutputNeed.RELATIONSHIP_INTERPRETATION_INPUT
+            ),
         )
         claims = tuple(
             item for item in snapshot.claims
             if item.obligation_id == material_goal.goal_id
         )
+        completed_step_ids = set(snapshot.completed_reasoning_steps)
         steps = tuple(
             item for item in self._reasoning.steps(material_session_id)
-            if item.parent_obligation_id == material_goal.goal_id
+            if (
+                item.parent_obligation_id == material_goal.goal_id
+                and item.step_id in completed_step_ids
+            )
         )
         if not claims or not steps:
             return None, snapshot, "PRODUCT_RELATIONSHIP_LINEAGE_INCOMPLETE"
@@ -563,17 +609,36 @@ class HeadlessProductComposer:
         native_session_token: str | None,
         owner_calls: list[str],
     ):
+        source_session = self._research.resume_state(
+            session_id=session_id,
+            principal=principal,
+        )
+        allowed_evidence_refs = tuple(
+            item.evidence_id
+            for item in source_session.evidence_refs
+            if item.obligation_id == goal.goal_id
+        )
+        scoped_manager = _ObligationScopedProposalManager(
+            inner=self._investigation_manager,
+            target_parent_obligation=goal.goal_id,
+            allowed_evidence_refs=allowed_evidence_refs,
+            output_need=ProductInvestigationOutputNeed.COMPETING_EXPLANATION_INPUTS,
+        )
         snapshot, _, _ = self._run_p17(
             session_id=session_id,
             principal=principal,
             native_session_token=native_session_token,
-            minimum_claims=2,
             owner_calls=owner_calls,
+            manager=scoped_manager,
+            target_obligation_id=goal.goal_id,
+            output_need=ProductInvestigationOutputNeed.COMPETING_EXPLANATION_INPUTS,
         )
-        claims = tuple(
-            item for item in snapshot.claims
+        claims_by_id = {
+            item.claim_id: item
+            for item in snapshot.claims
             if item.obligation_id == goal.goal_id
-        )
+        }
+        claims = tuple(claims_by_id.values())
         if len(claims) < 2:
             return None, snapshot, "PRODUCT_P19_COMPETING_HYPOTHESES_INCOMPLETE"
 
@@ -964,7 +1029,6 @@ class HeadlessProductComposer:
                 session_id=session.session_id,
                 principal=principal,
                 native_session_token=native_session_token,
-                minimum_claims=0,
                 owner_calls=owner_calls,
                 manager=scoped_manager,
                 target_obligation_id=source_goal.goal_id,

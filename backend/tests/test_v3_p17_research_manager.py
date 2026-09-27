@@ -2744,3 +2744,230 @@ def test_dmp0053_store_persists_resolved_topology_without_reinterpreting_branch_
     )
     assert "topology: ResolvedInvestigationTopology" in create
     assert "proposal.branch_key" not in create
+
+
+
+def test_core_b_output_need_uses_real_p17_structured_path_until_fifth_turn():
+    """Core-B may expose artifact-family need; P17 legality remains authoritative."""
+
+    from app.v3.product.composition import (
+        HeadlessProductComposer,
+        _ObligationScopedProposalManager,
+    )
+    from app.v3.product.contracts import ProductInvestigationOutputNeed
+    from app.v3.research_manager import ResearchReasoningStore
+    from app.v3.research_manager_provider import (
+        StructuredResearchProposalManager,
+    )
+
+    db = db_engine()
+    store, session, _, lead, claims, first_claim = setup_state(db)
+    service = ResearchInvestigationManager(
+        research_store=store,
+        claim_store=claims,
+        followup_executor=PersistedFirstFollowup(db),
+        db_engine=db,
+    )
+
+    class DelayedSecondClaimTransport:
+        def __init__(self):
+            self.calls = 0
+            self.saw_output_need = False
+
+        @staticmethod
+        def _variants(schema):
+            proposal = (schema.get("properties") or {}).get("proposal")
+            if isinstance(proposal, dict):
+                values = proposal.get("anyOf")
+                if isinstance(values, list):
+                    return values
+            return [schema]
+
+        @staticmethod
+        def _parent_value(node):
+            if node.get("type") == "null":
+                return None
+            if node.get("type") == "string":
+                enum = node.get("enum") or []
+                return enum[0] if enum else None
+            for choice in node.get("anyOf") or []:
+                if choice.get("type") == "string":
+                    enum = choice.get("enum") or []
+                    if enum:
+                        return enum[0]
+            return None
+
+        @staticmethod
+        def _provider_string(value):
+            return {
+                "kind": "STRING",
+                "string_value": value,
+                "integer_value": None,
+                "number_value": None,
+                "boolean_value": None,
+                "object_entries": [],
+                "array_items": [],
+            }
+
+        def structured_json(
+            self,
+            system,
+            user,
+            *,
+            schema,
+            schema_name,
+        ):
+            del system, schema_name
+            self.calls += 1
+            self.saw_output_need = self.saw_output_need or (
+                '"kind":"COMPETING_EXPLANATION_INPUTS"' in user
+            )
+            snapshot = json.loads(
+                user.split("GOVERNED SNAPSHOT JSON:\n", 1)[1]
+            )
+            variants = self._variants(schema)
+            by_intent = {
+                variant["properties"]["intent"]["enum"][0]: variant
+                for variant in variants
+            }
+
+            if self.calls >= 5:
+                assert "FORM_CLAIM" in by_intent
+                variant = by_intent["FORM_CLAIM"]
+            else:
+                preferred = (
+                    "INVESTIGATE_GAP",
+                    "SEEK_COUNTER_EVIDENCE",
+                    "EXPLORE_ALTERNATIVES",
+                    "TEST_DISCRIMINATING_EVIDENCE",
+                    "DEEPEN_EXPLANATION",
+                    "REPLAN",
+                )
+                intent = next(
+                    (
+                        item for item in preferred
+                        if item in by_intent and item != "FORM_CLAIM"
+                    ),
+                    None,
+                )
+                assert intent is not None, tuple(by_intent)
+                variant = by_intent[intent]
+
+            props = variant["properties"]
+            intent = props["intent"]["enum"][0]
+            parent_step_id = self._parent_value(props["parent_step_id"])
+            branch_key = (
+                f"core-b-{self.calls}"
+                if props["branch_key"].get("type") == "string"
+                else None
+            )
+            payload = {
+                "proposal_id": f"core-b-real-{self.calls}",
+                "source_revision": props["source_revision"]["enum"][0],
+                "target_parent_obligation": (
+                    props["target_parent_obligation"]["enum"][0]
+                ),
+                "intent": intent,
+                "parent_step_id": parent_step_id,
+                "branch_key": branch_key,
+                "target_kind": "GAP",
+                "target_ref": f"core-b-target-{self.calls}",
+                "objective_key": f"core-b.real.{self.calls}",
+                "rationale": (
+                    "Exercise one state-legal governed P17 transition."
+                ),
+                "inspected_evidence_refs": list(snapshot["evidence_refs"]),
+                "inspected_claim_refs": [
+                    item["claim_id"] for item in snapshot["claims"]
+                ],
+                "inspected_material_refs": list(snapshot["material_refs"]),
+            }
+            if "bounded_objective" in props:
+                payload["bounded_objective"] = (
+                    f"Bounded governed step {self.calls}."
+                )
+            if "expected_information_gain" in props:
+                payload["expected_information_gain"] = (
+                    "May distinguish a governed candidate explanation."
+                )
+            if "counter_to_claim_id" in props:
+                payload["counter_to_claim_id"] = first_claim.claim_id
+            if "claim" in props:
+                payload["claim"] = {
+                    "claim_text": (
+                        "A distinct governed candidate explanation remains "
+                        "compatible with the inspected material."
+                    ),
+                    "proposition": {
+                        "entries": [
+                            {
+                                "key": "candidate",
+                                "value": self._provider_string(
+                                    "alternate-governed-explanation"
+                                ),
+                            }
+                        ]
+                    },
+                    "scope": {
+                        "entries": [
+                            {
+                                "key": "population",
+                                "value": self._provider_string(
+                                    "sales_orders"
+                                ),
+                            }
+                        ]
+                    },
+                    "freshness": freshness().model_dump(mode="json"),
+                    "origin_material_refs": [lead.lead_id],
+                    "limitations": [
+                        "Provider-free candidate only; no causal conclusion."
+                    ],
+                }
+            return json.dumps({"proposal": payload})
+
+    transport = DelayedSecondClaimTransport()
+    manager = StructuredResearchProposalManager(transport=transport)
+    initial = service.snapshot(
+        session_id=session.session_id,
+        principal=principal(),
+    )
+    scoped = _ObligationScopedProposalManager(
+        inner=manager,
+        target_parent_obligation="g1",
+        allowed_evidence_refs=initial.evidence_refs,
+        output_need=(
+            ProductInvestigationOutputNeed.COMPETING_EXPLANATION_INPUTS
+        ),
+    )
+    composer = object.__new__(HeadlessProductComposer)
+    composer._investigation = service
+    composer._reasoning = ResearchReasoningStore(db)
+    composer._investigation_manager = manager
+
+    snapshot, executed, error = composer._run_p17(
+        session_id=session.session_id,
+        principal=principal(),
+        native_session_token=None,
+        owner_calls=[],
+        manager=scoped,
+        target_obligation_id="g1",
+        output_need=(
+            ProductInvestigationOutputNeed.COMPETING_EXPLANATION_INPUTS
+        ),
+    )
+
+    assert error is None
+    assert executed == 5
+    assert transport.calls == 5
+    assert transport.saw_output_need is True
+    scoped_claims = tuple(
+        item for item in snapshot.claims
+        if item.obligation_id == "g1"
+    )
+    assert len({item.claim_id for item in scoped_claims}) == 2
+    assert snapshot.remaining_reasoning_steps == 3
+    assert service.snapshot(
+        session_id=session.session_id,
+        principal=principal(),
+    ).terminal_stop_reason is None

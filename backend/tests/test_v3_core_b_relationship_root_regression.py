@@ -3,6 +3,7 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 from app.v3.product.composition import HeadlessProductComposer
+from app.v3.product.contracts import ProductInvestigationOutputNeed
 
 
 class BudgetOwnedInvestigation:
@@ -95,8 +96,8 @@ def test_relationship_readiness_may_legally_arrive_on_fifth_p17_turn():
         session_id="rs_" + "1" * 24,
         principal=object(),
         native_session_token=None,
-        minimum_claims=1,
         owner_calls=[],
+        output_need=ProductInvestigationOutputNeed.RELATIONSHIP_INTERPRETATION_INPUT,
         manager=ScopedManager(obligation_id),
         target_obligation_id=obligation_id,
     )
@@ -120,8 +121,8 @@ def test_root_cause_second_candidate_may_legally_arrive_on_fifth_p17_turn():
         session_id="rs_" + "2" * 24,
         principal=object(),
         native_session_token=None,
-        minimum_claims=2,
         owner_calls=[],
+        output_need=ProductInvestigationOutputNeed.COMPETING_EXPLANATION_INPUTS,
         manager=ScopedManager(obligation_id),
         target_obligation_id=obligation_id,
     )
