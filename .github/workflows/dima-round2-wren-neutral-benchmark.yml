@@ -1,0 +1,89 @@
+name: dima-round2-wren-neutral-benchmark
+
+"on":
+  push:
+    branches:
+      - comparison/round2-wren-20260927
+    paths:
+      - ".github/ROUND2_WREN_TRIGGER"
+      - ".github/workflows/dima-round2-wren-neutral-benchmark.yml"
+      - "backend/eval/dima_neutral_feature_benchmark_round2.json"
+      - "backend/eval/round2_neutral_machine_fixture.json"
+      - "backend/lab/comparison_round2_wren.py"
+      - "backend/demo/companies/comparison-neutral/**"
+
+jobs:
+  targeted:
+    runs-on: ubuntu-latest
+    environment: DIMA_OPENROUTER_API_KEY
+    timeout-minutes: 50
+    env:
+      DIMA_OPENROUTER_API_KEY: ${{ secrets.DIMA_OPENROUTER_API_KEY || secrets.OPENROUTER_API_KEY }}
+      DIMA_LLM_PROVIDER: openrouter
+      DIMA_V2_FAST_LANGUAGE_PROVIDER: openrouter
+      DIMA_V2_FAST_LANGUAGE_MODEL: google/gemini-2.5-flash-lite
+      DIMA_V2_RESEARCH_MANAGER_PROVIDER: openrouter
+      DIMA_V2_RESEARCH_MANAGER_MODEL: openai/gpt-5.6-sol
+      DIMA_V2_SEMANTIC_LINKER_PROVIDER: openrouter
+      DIMA_V2_SEMANTIC_LINKER_MODEL: openai/gpt-5.6-luna
+      DIMA_V2_TEMPORAL_NORMALIZER_PROVIDER: openrouter
+      DIMA_V2_TEMPORAL_NORMALIZER_MODEL: openai/gpt-5.6-sol
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_INTERACTION_LOG: "false"
+      DIMA_COMPANY: comparison-neutral
+      DIMA_PROJECT_DIR: demo/comparison-round2-wren-project
+      DIMA_DATASOURCE: duckdb
+      DIMA_CONNECTION_INFO: '{"url":"lab/round2_data","format":"duckdb"}'
+      DIMA_DATABASE_URL: "sqlite:////tmp/dima-precomparison-control-plane.db"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+      - name: Install backend
+        working-directory: backend
+        run: pip install -e ".[dev]"
+      - name: Initialize rehearsal contract store
+        working-directory: backend
+        run: |
+          python - <<'PY'
+          from control_plane.db import init_db
+          init_db()
+          from sqlalchemy import inspect
+          from control_plane.db import engine
+          assert "contract_log" in inspect(engine).get_table_names()
+          PY
+      - name: Provider-free comparison harness preflight
+        working-directory: backend
+        run: |
+          python -m py_compile lab/comparison_round2_wren.py
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          m=json.loads(Path("eval/dima_neutral_feature_benchmark_round2.json").read_text())
+          assert m["case_count"] == 30
+          assert len(m["cases"]) == 30
+          assert len({(x["feature_id"],x["difficulty"]) for x in m["cases"]}) == 30
+          PY
+
+      - name: Targeted live robustness rerun
+        working-directory: backend
+        run: |
+          python lab/v2_precomparison_rehearsal_live.py \
+            --max-total-model-calls 70 \
+            --output lab/reports/v2_precomparison_targeted_live.json \
+            --case-id std_clause_order \
+            --case-id relationship_explicit_tr \
+            --case-id adaptive_tr \
+            --case-id canonical_reordered \
+            --case-id restart_signed_continuation \
+            --case-id foreign_principal_replay
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dima-round2-wren-${{ github.run_id }}
+          path: backend/lab/reports/round2_wren_feature_benchmark.json
+          retention-days: 90
