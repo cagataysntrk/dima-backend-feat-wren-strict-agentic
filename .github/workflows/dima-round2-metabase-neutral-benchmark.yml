@@ -39,7 +39,6 @@ jobs:
         run: |
           python -m py_compile lab/metabase/core_b/round2_feature_benchmark.py
           python -m py_compile lab/metabase/core_b/runtime/seed_round2_fixture.py
-          PYTHONPATH=. python -c "import lab.metabase.core_b.round2_feature_benchmark"
           python - <<'PY'
           import json
           from pathlib import Path
@@ -91,6 +90,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
           pip install "psycopg[binary]==3.3.3"
+
+      - name: Import-check benchmark harness
+        working-directory: backend
+        env:
+          PYTHONPATH: .
+        run: python -c "import lab.metabase.core_b.round2_feature_benchmark"
 
       - name: Start neutral databases
         shell: bash
