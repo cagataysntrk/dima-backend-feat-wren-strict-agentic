@@ -1,0 +1,65 @@
+name: machine_operations
+label: machine operations
+base_object: machine_operations
+synonyms: [makine operasyonları, üretim operasyonları, machine operations]
+measures:
+  - name: total_downtime_minutes
+    expression: SUM(machine_downtime_minutes)
+    type: DOUBLE
+    unit: "dk"
+    synonyms: [toplam makine duruş süresi, toplam duruş, duruş süresi, makine duruşları, machine downtime]
+    lower_is_better: true
+  - name: total_fault_count
+    expression: SUM(fault_count)
+    type: DOUBLE
+    unit: "adet"
+    synonyms: [toplam arıza sayısı, arıza sayısı, fault count]
+    lower_is_better: true
+  - name: avg_performance_score
+    expression: AVG(performance_score)
+    type: DOUBLE
+    synonyms: [ortalama performans, performans skoru, performance]
+  - name: total_maintenance_delay_hours
+    expression: SUM(maintenance_delay_hours)
+    type: DOUBLE
+    unit: "saat"
+    synonyms: [bakım gecikmesi, toplam bakım gecikmesi, maintenance delay]
+    lower_is_better: true
+  - name: total_spare_part_delay_hours
+    expression: SUM(spare_part_delay_hours)
+    type: DOUBLE
+    unit: "saat"
+    synonyms: [yedek parça gecikmesi, spare part delay]
+    lower_is_better: true
+  - name: avg_pm_compliance_pct
+    expression: AVG(pm_compliance_pct)
+    type: DOUBLE
+    unit: "%"
+    synonyms: [önleyici bakım uyumu, bakım uyumu, preventive maintenance compliance]
+  - name: total_changeover_count
+    expression: SUM(changeover_count)
+    type: DOUBLE
+    synonyms: [changeover sayısı, değişim sayısı, setup değişimi]
+    lower_is_better: true
+  - name: total_operator_absence_hours
+    expression: SUM(operator_absence_hours)
+    type: DOUBLE
+    unit: "saat"
+    synonyms: [operatör devamsızlığı, operatör yokluğu, operator absence]
+    lower_is_better: true
+dimensions:
+  - name: department
+    expression: department
+    type: VARCHAR
+    label: bölüm
+    synonyms: [bölüm, departman, department]
+  - name: machine_id
+    expression: machine_id
+    type: VARCHAR
+    label: makine
+    synonyms: [makine, machine]
+time_dimensions:
+  - name: event_date
+    expression: event_date
+    type: DATE
+    label: tarih
