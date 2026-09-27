@@ -283,6 +283,54 @@ def _run_prompt(case, *, settings, budget, service, principal, checkpoint_root):
     )
 
 
+
+def _run_multi_turn(case, *, settings, budget, service, principal, checkpoint_root):
+    coordinator, research_lane, standard_lane, _ = _coordinator(
+        settings=settings,
+        budget=budget,
+        service=service,
+        principal=principal,
+    )
+    session = f"round2:{case['id']}"
+    budget_start = len(budget.calls)
+    wren_start = (service.query_calls, service.dry_plan_calls, service.cube_sql_calls)
+    started = time.monotonic()
+    responses = []
+    for turn_no, question in enumerate(case.get("turns") or (), start=1):
+        response = _handle(
+            coordinator,
+            principal=principal,
+            question=question,
+            session_id=session,
+            thread_id=session,
+        )
+        responses.append({
+            "turn": turn_no,
+            "question": question,
+            "response": response.model_dump(mode="json") if hasattr(response, "model_dump") else None,
+        })
+    if not responses:
+        raise RuntimeError("multi_turn case has no turns")
+    final = response
+    elapsed_ms = int((time.monotonic() - started) * 1000)
+    checks = _base_checks(case, final)
+    checks["all_turns_executed"] = len(responses) == len(case.get("turns") or ())
+    return _case_receipt(
+        case=case,
+        response=final,
+        elapsed_ms=elapsed_ms,
+        budget=budget,
+        budget_start=budget_start,
+        service=service,
+        wren_start=wren_start,
+        checks=checks,
+        extra={"turns": responses},
+        lane_diagnostics=_lane_diagnostics(
+            research_lane=research_lane,
+            standard_lane=standard_lane,
+        ),
+    )
+
 def _run_signed_continuation(case, *, settings, budget, service, principal, checkpoint_root):
     coordinator, _, _, _ = _coordinator(
         settings=settings,
@@ -617,7 +665,7 @@ def run(
         user_id="precomparison-rehearsal-user",
         tenant_id="precomparison-rehearsal-tenant",
         roles=["owner"],
-        tenant_slug="demo-boyahane",
+        tenant_slug="comparison-neutral",
     )
 
     records: list[dict[str, Any]] = []
@@ -639,6 +687,15 @@ def run(
             try:
                 if case["kind"] == "prompt":
                     record = _run_prompt(
+                        case,
+                        settings=settings,
+                        budget=budget,
+                        service=service,
+                        principal=principal,
+                        checkpoint_root=checkpoint_root,
+                    )
+                elif case["kind"] == "multi_turn":
+                    record = _run_multi_turn(
                         case,
                         settings=settings,
                         budget=budget,
@@ -733,7 +790,7 @@ def main() -> int:
     )
     print(
         f"precomparison rehearsal: {payload['passed']}/{payload['case_count']} "
-        f"provider_calls={payload['provider_budget']['total']} "
+        f"provider_calls={payload['provider_budget']['used']} "
         f"wren_queries={payload['wren_calls']['query']}"
     )
     for item in payload["records"]:
