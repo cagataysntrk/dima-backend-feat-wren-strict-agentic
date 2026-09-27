@@ -55,7 +55,7 @@ def catalog() -> ResearchIntakeCatalog:
     return ResearchIntakeCatalog(context_version=CONTEXT,semantic_refs=refs,allowed_relationships=rels,supported_domains=("machine_operations",))
 
 def principal() -> Principal:
-    return Principal(user_id=USER_ID,tenant_id=TENANT_ID,roles=["owner"],tenant_slug="comparison-neutral")
+    return sealed._principal()
 
 def links(db_engine, session_ids: tuple[str,...]):
     out=[]
