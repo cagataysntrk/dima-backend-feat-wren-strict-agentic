@@ -346,6 +346,12 @@ class ParentObligationView(Frozen):
     state: str
 
 
+class ClaimEvidenceCognitionView(Frozen):
+    evidence_id: str
+    receipt_id: str
+    relation: str
+
+
 class ClaimView(Frozen):
     claim_id: str
     obligation_id: str
@@ -355,6 +361,7 @@ class ClaimView(Frozen):
     epistemic_state: str
     origin_material_refs: tuple[str, ...] = ()
     evidence_relations: tuple[str, ...] = ()
+    evidence_links: tuple[ClaimEvidenceCognitionView, ...] = ()
     limitations: tuple[str, ...] = ()
 
 
@@ -1383,6 +1390,14 @@ class ResearchInvestigationManager:
                     evidence_relations=tuple(
                         x.relation.value for x in claim.evidence_links
                     ),
+                    evidence_links=tuple(
+                        ClaimEvidenceCognitionView(
+                            evidence_id=x.evidence_id,
+                            receipt_id=x.receipt_id,
+                            relation=x.relation.value,
+                        )
+                        for x in claim.evidence_links
+                    ),
                     limitations=claim.limitations,
                 )
             )
@@ -1973,6 +1988,7 @@ class ResearchInvestigationManager:
         principal: Principal,
         manager: ResearchProposalManager,
         native_session_token: str | None = None,
+        downstream_reentry_intent: InvestigationIntent | None = None,
     ) -> tuple[ResearchReasoningStep, ResearchInvestigationTask | None]:
         session = self._session(session_id, principal)
         snapshot = self.snapshot(
@@ -1981,10 +1997,21 @@ class ResearchInvestigationManager:
         )
 
         if snapshot.terminal_stop_reason is not None:
-            raise ResearchManagerMaturationError(
-                "P17_INVESTIGATION_TERMINAL",
-                snapshot.terminal_stop_reason.value,
+            legal_reentry = (
+                snapshot.terminal_stop_reason
+                == ManagerStopReason.OBJECTIVE_SATISFIED
+                and downstream_reentry_intent
+                == InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE
+                and snapshot.action_profile.rule_for(
+                    InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE
+                )
+                is not None
             )
+            if not legal_reentry:
+                raise ResearchManagerMaturationError(
+                    "P17_INVESTIGATION_TERMINAL",
+                    snapshot.terminal_stop_reason.value,
+                )
 
         if len(snapshot.pending_reasoning_steps) > 1:
             raise ResearchManagerMaturationError(
@@ -2018,6 +2045,17 @@ class ResearchInvestigationManager:
             )
 
         proposal = manager.propose(snapshot)
+        if (
+            downstream_reentry_intent is not None
+            and proposal.effective_intent != downstream_reentry_intent
+        ):
+            raise ResearchManagerMaturationError(
+                "P17_DOWNSTREAM_REENTRY_INTENT_MISMATCH",
+                (
+                    f"authorized {downstream_reentry_intent.value}, "
+                    f"received {proposal.effective_intent.value}"
+                ),
+            )
         topology = resolve_investigation_topology(
             snapshot=snapshot,
             proposal=proposal,

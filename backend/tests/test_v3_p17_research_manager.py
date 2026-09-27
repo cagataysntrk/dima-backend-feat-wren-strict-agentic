@@ -3213,3 +3213,153 @@ def test_v1_depth_increasing_actions_require_typed_positive_gain_rule():
     assert root.step_id in deepen.legal_parent_step_ids
     assert deepen.gain_requirement.value == "POSITIVE_EXPECTED_GAIN"
     assert deepen.depth_delta == 1
+
+
+
+def test_v1_p8_objective_satisfied_allows_only_typed_discriminating_reentry():
+    db = db_engine()
+    _, session, _, _, _, service = _dmp0053_service(db)
+    _, alt_a, alt_b = _dmp0053_root_with_two_alternatives(
+        service,
+        session,
+        prefix="reentry",
+    )
+    snapshot = service.snapshot(
+        session_id=session.session_id,
+        principal=principal(),
+    )
+    stop = ManagerProposal(
+        proposal_id="reentry-objective-satisfied",
+        source_revision=snapshot.source_revision,
+        target_parent_obligation="g1",
+        action=ManagerAction.STOP,
+        intent=InvestigationIntent.STOP_INVESTIGATION,
+        parent_step_id=alt_a.step_id,
+        target_kind=InvestigationTargetKind.EXPLANATION,
+        target_ref="root-ready",
+        objective_key="reentry.objective.satisfied",
+        rationale="Downstream P19 is now callable.",
+        inspected_evidence_refs=snapshot.evidence_refs,
+        inspected_claim_refs=tuple(x.claim_id for x in snapshot.claims),
+        inspected_material_refs=snapshot.material_refs,
+        stop_reason=ManagerStopReason.OBJECTIVE_SATISFIED,
+    )
+    service.run_one(
+        session_id=session.session_id,
+        principal=principal(),
+        manager=ScriptedManager(lambda _: stop),
+    )
+    terminal = service.snapshot(
+        session_id=session.session_id,
+        principal=principal(),
+    )
+    assert terminal.terminal_stop_reason == ManagerStopReason.OBJECTIVE_SATISFIED
+    rule = terminal.action_profile.rule_for(
+        InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE
+    )
+    assert rule is not None
+    parent = max(
+        rule.legal_parent_step_ids,
+        key=lambda step_id: next(
+            index
+            for index, node in enumerate(terminal.investigation.nodes)
+            if node.step_id == step_id
+        ),
+    )
+
+    tested, task = service.run_one(
+        session_id=session.session_id,
+        principal=principal(),
+        manager=ScriptedManager(
+            lambda snap: recursive_proposal(
+                snap,
+                proposal_id="reentry-test",
+                objective_key="reentry.test",
+                intent=InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE,
+                parent_step_id=parent,
+                target_kind=InvestigationTargetKind.EXPLANATION,
+                target_ref="ntr_" + "1" * 24,
+            )
+        ),
+        downstream_reentry_intent=(
+            InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE
+        ),
+    )
+    assert task is not None
+    assert tested.intent == InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE
+
+    latest = service.snapshot(
+        session_id=session.session_id,
+        principal=principal(),
+    )
+    with pytest.raises(ResearchManagerMaturationError) as exc:
+        service.run_one(
+            session_id=session.session_id,
+            principal=principal(),
+            manager=ScriptedManager(
+                lambda snap: recursive_proposal(
+                    snap,
+                    proposal_id="reentry-wrong-intent",
+                    objective_key="reentry.wrong",
+                    intent=InvestigationIntent.REPLAN,
+                    parent_step_id=alt_b.step_id,
+                )
+            ),
+            downstream_reentry_intent=(
+                InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE
+            ),
+        )
+    assert exc.value.code == "P17_DOWNSTREAM_REENTRY_INTENT_MISMATCH"
+
+
+def test_v1_p8_non_objective_terminal_remains_fail_closed_for_reentry():
+    db = db_engine()
+    _, session, _, _, _, service = _dmp0053_service(db)
+    root, _, _ = _dmp0053_root_with_two_alternatives(
+        service,
+        session,
+        prefix="blocked-reentry",
+    )
+    snapshot = service.snapshot(
+        session_id=session.session_id,
+        principal=principal(),
+    )
+    stop = ManagerProposal(
+        proposal_id="blocked-reentry-stop",
+        source_revision=snapshot.source_revision,
+        target_parent_obligation="g1",
+        action=ManagerAction.STOP,
+        intent=InvestigationIntent.STOP_INVESTIGATION,
+        parent_step_id=root.step_id,
+        target_kind=InvestigationTargetKind.EXPLANATION,
+        target_ref="blocked",
+        objective_key="blocked.reentry",
+        rationale="No defensible next step remains.",
+        inspected_evidence_refs=snapshot.evidence_refs,
+        inspected_claim_refs=tuple(x.claim_id for x in snapshot.claims),
+        inspected_material_refs=snapshot.material_refs,
+        stop_reason=ManagerStopReason.INCONCLUSIVE,
+    )
+    service.run_one(
+        session_id=session.session_id,
+        principal=principal(),
+        manager=ScriptedManager(lambda _: stop),
+    )
+    with pytest.raises(ResearchManagerMaturationError) as exc:
+        service.run_one(
+            session_id=session.session_id,
+            principal=principal(),
+            manager=ScriptedManager(
+                lambda snap: recursive_proposal(
+                    snap,
+                    proposal_id="blocked-reentry-test",
+                    objective_key="blocked.reentry.test",
+                    intent=InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE,
+                    parent_step_id=root.step_id,
+                )
+            ),
+            downstream_reentry_intent=(
+                InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE
+            ),
+        )
+    assert exc.value.code == "P17_INVESTIGATION_TERMINAL"

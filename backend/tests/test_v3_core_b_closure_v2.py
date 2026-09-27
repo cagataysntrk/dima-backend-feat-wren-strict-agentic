@@ -7,6 +7,7 @@ import pytest
 from app.v3.product.process_manager import (
     ProductProcessObservation,
     ProductProcessPurpose,
+    RootCauseCandidate,
 )
 from lab.metabase.core_b.closure_v2 import evaluate_owner_legality
 from lab.metabase.core_b.live_sentinel_v2 import (
@@ -16,12 +17,22 @@ from lab.metabase.core_b.live_sentinel_v2 import (
 
 
 def state(*, claims=(), steps=(), terminal=None, remaining=8, progress=True):
+    root_candidates = tuple(
+        RootCauseCandidate(
+            claim_id=claim_id,
+            relation_ref="explains",
+            mechanism_ref=f"mechanism:{claim_id}",
+            evidence_refs=(f"evidence:{claim_id}",),
+        )
+        for claim_id in claims
+    )
     return ProductProcessObservation(
         claim_ids=tuple(claims),
         completed_step_ids=tuple(steps),
         terminal_stop_reason=terminal,
         remaining_reasoning_steps=remaining,
         scoped_move_available=progress,
+        root_cause_candidates=root_candidates,
     )
 
 

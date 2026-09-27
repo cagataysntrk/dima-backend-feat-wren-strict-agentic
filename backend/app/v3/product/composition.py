@@ -24,6 +24,7 @@ from app.v3.product.process_manager import (
     ProductProcessNext,
     ProductProcessObservation,
     ProductProcessPurpose,
+    RootCauseCandidate,
     decide_next_owner,
 )
 
@@ -35,6 +36,11 @@ from app.v3.hypothesis_root_cause import (
     GroundingRelation,
     GroundingSourceKind,
     HypothesisRootCauseStore,
+)
+from app.v3.hypothesis_root_cause_v1 import (
+    NextTestRequest,
+    discriminating_test_is_callable,
+    next_test_request,
 )
 from app.v3.report_document import (
     CoverageEntry,
@@ -57,6 +63,10 @@ from app.v3.research_contracts import (
     SemanticTargetKind,
 )
 from app.v3.research_manager import (
+    InvestigationIntent,
+    InvestigationTargetKind,
+    ManagerAction,
+    ManagerProposal,
     ResearchInvestigationManager,
     ResearchManagerMaturationError,
     ResearchReasoningStore,
@@ -217,6 +227,76 @@ class _ObligationScopedProposalManager:
                 "provider proposal escaped Core-B source-obligation scope"
             )
         return proposal
+
+
+class _NextTestProposalManager:
+    """Deterministic Product adapter: typed P19 need -> one legal P17 intent."""
+
+    def __init__(
+        self,
+        *,
+        request: NextTestRequest,
+        target_parent_obligation: str,
+    ) -> None:
+        self.request = request
+        self.target_parent_obligation = target_parent_obligation
+        self.call_count = 0
+
+    def propose(self, snapshot):
+        self.call_count += 1
+        rule = snapshot.action_profile.rule_for(
+            InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE
+        )
+        if rule is None:
+            raise ProductProcessError(
+                "PRODUCT_NEXT_TEST_NOT_STATE_LEGAL",
+                self.request.request_id,
+            )
+        ordered = {
+            node.step_id: index
+            for index, node in enumerate(snapshot.investigation.nodes)
+        }
+        legal = tuple(
+            step_id for step_id in rule.legal_parent_step_ids
+            if next(
+                (
+                    node.root_obligation_id
+                    for node in snapshot.investigation.nodes
+                    if node.step_id == step_id
+                ),
+                None,
+            )
+            == self.target_parent_obligation
+        )
+        if not legal:
+            raise ProductProcessError(
+                "PRODUCT_NEXT_TEST_PARENT_MISSING",
+                self.request.request_id,
+            )
+        parent = max(legal, key=lambda item: ordered.get(item, -1))
+        return ManagerProposal(
+            proposal_id="p17-next-" + self.request.request_id[4:],
+            source_revision=snapshot.source_revision,
+            target_parent_obligation=self.target_parent_obligation,
+            action=ManagerAction.EXPLORE_NATIVE,
+            intent=InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE,
+            parent_step_id=parent,
+            branch_key=None,
+            target_kind=InvestigationTargetKind.EXPLANATION,
+            target_ref=self.request.request_id,
+            objective_key="next_test." + self.request.request_id[4:],
+            bounded_objective=self.request.bounded_objective(),
+            rationale=(
+                "P19 exposed a typed unresolved ambiguity; Product routes only "
+                "the governed test need and does not predict the result."
+            ),
+            inspected_evidence_refs=(),
+            inspected_claim_refs=(),
+            inspected_material_refs=(),
+            expected_information_gain=(
+                self.request.expected_discriminatory_value.value
+            ),
+        )
 
 
 def _canonical(value: Any) -> str:
@@ -422,6 +502,30 @@ class HeadlessProductComposer:
             )
         return final.session_id, child_goal
 
+    @staticmethod
+    def _root_cause_candidate(claim) -> RootCauseCandidate | None:
+        proposition = getattr(claim, "proposition", {}) or {}
+        relation = proposition.get("predicate")
+        mechanism = proposition.get("object")
+        if not isinstance(relation, str) or not relation.strip():
+            return None
+        if not isinstance(mechanism, str) or not mechanism.strip():
+            return None
+        evidence_refs = tuple(
+            dict.fromkeys(
+                link.evidence_id
+                for link in getattr(claim, "evidence_links", ())
+            )
+        )
+        if not evidence_refs:
+            return None
+        return RootCauseCandidate(
+            claim_id=claim.claim_id,
+            relation_ref=relation,
+            mechanism_ref=mechanism,
+            evidence_refs=evidence_refs,
+        )
+
     def _observe_p17_process(
         self,
         *,
@@ -470,9 +574,15 @@ class HeadlessProductComposer:
                 break
 
         stop = getattr(snapshot, "terminal_stop_reason", None)
+        root_candidates = tuple(
+            candidate
+            for claim in claims
+            if (candidate := self._root_cause_candidate(claim)) is not None
+        )
         observation = ProductProcessObservation(
             claim_ids=tuple(claims_by_id),
             completed_step_ids=completed,
+            root_cause_candidates=root_candidates,
             terminal_stop_reason=(
                 _state_value(stop) if stop is not None else None
             ),
@@ -729,7 +839,7 @@ class HeadlessProductComposer:
             manager=scoped_manager,
             target_obligation_id=goal.goal_id,
         )
-        _, claims, _ = self._observe_p17_process(
+        observation, claims, _ = self._observe_p17_process(
             snapshot=snapshot,
             session_id=session_id,
             target_obligation_id=goal.goal_id,
@@ -740,13 +850,27 @@ class HeadlessProductComposer:
                 last_error=last_error,
             )
 
+        eligible_claim_ids = {
+            item.claim_id for item in observation.root_cause_candidates
+        }
+        hypothesis_by_claim: dict[str, Any] = {}
+        relation_map = {
+            "SUPPORTS": GroundingRelation.SUPPORTS,
+            "CHALLENGES": GroundingRelation.CHALLENGES,
+            "CONTEXTUALIZES": GroundingRelation.CONTEXT,
+            "INSUFFICIENT": GroundingRelation.INSUFFICIENT,
+        }
         for claim in claims:
+            if claim.claim_id not in eligible_claim_ids:
+                continue
             hypothesis = self._epistemics.create_hypothesis(
                 research_session_id=session_id,
                 obligation_id=goal.goal_id,
                 statement=claim.claim_text,
                 principal=principal,
+                candidate_identity_ref=claim.claim_id,
             )
+            hypothesis_by_claim[claim.claim_id] = hypothesis
             self._epistemics.create_grounding(
                 hypothesis_id=hypothesis.hypothesis_id,
                 source_kind=GroundingSourceKind.P16_CLAIM,
@@ -754,21 +878,133 @@ class HeadlessProductComposer:
                 relation=GroundingRelation.CONTEXT,
                 principal=principal,
             )
-        p19_snapshot = self._epistemics.snapshot(
-            research_session_id=session_id,
-            obligation_id=goal.goal_id,
+            for link in claim.evidence_links:
+                relation = relation_map.get(link.relation)
+                if relation is None:
+                    raise ProductProcessError(
+                        "PRODUCT_P16_EVIDENCE_RELATION_UNKNOWN",
+                        link.relation,
+                    )
+                self._epistemics.create_grounding(
+                    hypothesis_id=hypothesis.hypothesis_id,
+                    source_kind=GroundingSourceKind.P14_EVIDENCE,
+                    source_ref=link.evidence_id,
+                    source_receipt_id=link.receipt_id,
+                    relation=relation,
+                    principal=principal,
+                )
+
+        scope_version_id = (
+            source_session.accepted_brief.scope.scope_version.version_id
+            if source_session.accepted_brief is not None
+            else "scope_v1"
+        )
+        scope_lineage_id = source_session.lineage_id
+        feedback_code = None
+        assessment = None
+
+        while True:
+            p19_snapshot = self._epistemics.snapshot(
+                research_session_id=session_id,
+                obligation_id=goal.goal_id,
+                principal=principal,
+            )
+            draft = self._epistemic_manager.propose(
+                p19_snapshot,
+                policy_statuses={},
+                deterministic_feedback_code=feedback_code,
+            )
+            assessment = self._epistemics.assess(
+                draft=draft,
+                principal=principal,
+            )
+            owner_calls.append("P19")
+
+            request = next_test_request(
+                snapshot=p19_snapshot,
+                assessment=assessment,
+                scope_lineage_id=scope_lineage_id,
+                scope_version_id=scope_version_id,
+            )
+            if request is None:
+                break
+
+            latest = self._investigation.snapshot(
+                session_id=session_id,
+                principal=principal,
+            )
+            if not discriminating_test_is_callable(
+                snapshot=latest,
+                request=request,
+                evidence_surface_available=bool(native_session_token),
+            ):
+                break
+
+            before_evidence = {
+                item.evidence_id
+                for item in self._research.resume_state(
+                    session_id=session_id,
+                    principal=principal,
+                ).evidence_refs
+                if item.obligation_id == goal.goal_id
+            }
+            step, task = self._investigation.run_one(
+                session_id=session_id,
+                principal=principal,
+                manager=_NextTestProposalManager(
+                    request=request,
+                    target_parent_obligation=goal.goal_id,
+                ),
+                native_session_token=native_session_token,
+                downstream_reentry_intent=(
+                    InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE
+                ),
+            )
+            owner_calls.append("P17")
+
+            target_hypotheses = {
+                item.hypothesis.hypothesis_id
+                for item in p19_snapshot.hypotheses
+                if item.hypothesis.hypothesis_id in request.hypothesis_ids
+            }
+            for hypothesis_id in target_hypotheses:
+                self._epistemics.create_grounding(
+                    hypothesis_id=hypothesis_id,
+                    source_kind=GroundingSourceKind.P17_REASONING_STEP,
+                    source_ref=step.step_id,
+                    relation=GroundingRelation.CONTEXT,
+                    principal=principal,
+                )
+
+            current = self._research.resume_state(
+                session_id=session_id,
+                principal=principal,
+            )
+            new_evidence = tuple(
+                item for item in current.evidence_refs
+                if (
+                    item.obligation_id == goal.goal_id
+                    and item.evidence_id not in before_evidence
+                )
+            )
+            for hypothesis_id in target_hypotheses:
+                for evidence in new_evidence:
+                    self._epistemics.create_grounding(
+                        hypothesis_id=hypothesis_id,
+                        source_kind=GroundingSourceKind.P14_EVIDENCE,
+                        source_ref=evidence.evidence_id,
+                        source_receipt_id=evidence.receipt_id,
+                        relation=GroundingRelation.CONTEXT,
+                        principal=principal,
+                    )
+            feedback_code = "P19_DISCRIMINATING_TEST_COMPLETED"
+
+        assert assessment is not None
+        latest_snapshot = self._investigation.snapshot(
+            session_id=session_id,
             principal=principal,
         )
-        draft = self._epistemic_manager.propose(
-            p19_snapshot,
-            policy_statuses={},
-        )
-        assessment = self._epistemics.assess(
-            draft=draft,
-            principal=principal,
-        )
-        owner_calls.append("P19")
-        return assessment, snapshot, None
+        return assessment, latest_snapshot, None
 
     def _seal_report(
         self,

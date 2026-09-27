@@ -8,16 +8,20 @@ on:
     paths:
       - "backend/app/v3/product/**"
       - "backend/app/v3/research.py"
+      - "backend/app/v3/research_manager.py"
       - "backend/app/v3/research_product.py"
       - "backend/app/v3/research_followup.py"
       - "backend/app/v3/report_document.py"
       - "backend/app/v3/research_intake.py"
       - "backend/app/v3/research_manager_provider.py"
+      - "backend/app/v3/hypothesis_root_cause.py"
+      - "backend/app/v3/hypothesis_root_cause_v1.py"
       - "backend/app/v3/hypothesis_root_cause_provider.py"
       - "backend/tests/test_v3_research_intake.py"
       - "backend/tests/test_v3_p17_autonomous_provider_schema.py"
       - "backend/tests/test_v3_p17_research_manager.py"
       - "backend/tests/test_v3_p19_provider.py"
+      - "backend/tests/test_v3_v1_wave_b_b1.py"
       - "backend/tests/test_v3_product_*.py"
       - "backend/tests/test_v3_core_b_closure_v2.py"
       - "backend/tests/test_v3_owner_scoped_must_accounting.py"
@@ -60,6 +64,9 @@ jobs:
         working-directory: backend
         run: |
           python -m py_compile app/v3/product/*.py
+          python -m py_compile app/v3/research_manager.py
+          python -m py_compile app/v3/hypothesis_root_cause.py
+          python -m py_compile app/v3/hypothesis_root_cause_v1.py
           python -m py_compile tests/test_v3_product_contracts.py
           python -m py_compile tests/test_v3_product_composition.py
           python -m py_compile tests/test_v3_product_process_manager.py
@@ -71,6 +78,13 @@ jobs:
       - name: Core B product focused proof
         working-directory: backend
         run: pytest -q tests/test_v3_product_contracts.py tests/test_v3_product_composition.py tests/test_v3_product_process_manager.py tests/test_v3_core_b_closure_v2.py tests/test_v3_owner_scoped_must_accounting.py tests/test_v3_research_intake.py tests/test_v3_p19_provider.py
+
+      - name: Wave-B B1 P6-P8 focused proof
+        working-directory: backend
+        run: |
+          pytest -q \
+            tests/test_v3_product_process_manager.py \
+            tests/test_v3_v1_wave_b_b1.py
 
       - name: Sealed P14-P19 affected regressions
         working-directory: backend
@@ -125,9 +139,9 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD:backend/app/v3/research_product.py)" = "443a2e699ffc92aeb700051e57b24a709cf97b2c"
-          # P17 is an explicitly mutable owner in the active root-recovery closure.
-          # Its current semantics are protected by the P17 provider-free + sealed
-          # deterministic suites above; do not pin its mutable implementation blob.
+          # P17 root-recovery semantics remain sealed by DMP-DEC-0061. Wave-B B1
+          # narrowly reopens only typed downstream discriminating-test re-entry;
+          # DMP-DEC-0066 must re-prove this before the B1 candidate is sealed.
           grep -q 'InvestigationBranchBehavior.GLOBAL_CONTROL' backend/app/v3/research_manager.py
           grep -q 'P17_BRANCH_TERMINAL' backend/app/v3/research_manager.py
           test "$(git rev-parse HEAD:backend/app/v3/business_relationship_policy.py)" = "1c533667bd080331f4f2231b9d37ee0c5e532fa8"

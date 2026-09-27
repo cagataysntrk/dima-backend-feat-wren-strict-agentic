@@ -487,6 +487,7 @@ class HypothesisRootCauseStore:
         obligation_id: str,
         statement: str,
         principal: Principal,
+        candidate_identity_ref: str | None = None,
         now: datetime | None = None,
     ) -> P19Hypothesis:
         session = self._case(
@@ -495,6 +496,14 @@ class HypothesisRootCauseStore:
             principal=principal,
         )
         text = _clean(statement, code="P19_HYPOTHESIS_STATEMENT_REQUIRED")
+        candidate_ref = (
+            _clean(
+                candidate_identity_ref,
+                code="P19_CANDIDATE_IDENTITY_REF_REQUIRED",
+            )
+            if candidate_identity_ref is not None
+            else None
+        )
         identity = {
             "research_authority_id": session.authority_id,
             "research_session_id": session.session_id,
@@ -502,6 +511,9 @@ class HypothesisRootCauseStore:
             "tenant_binding": session.tenant_binding,
             "semantic_context_version": session.context_version,
             "statement": text,
+            # Optional V1 discriminator is a durable governed source identity.
+            # It never changes the human statement and is not lexical/fuzzy truth.
+            "candidate_identity_ref": candidate_ref,
         }
         _, fingerprint = _canonical_json(
             identity,

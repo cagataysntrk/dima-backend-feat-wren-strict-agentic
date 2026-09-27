@@ -1316,3 +1316,29 @@ def test_p19_records_reference_lower_truth_without_copying_it():
     assert forbidden.isdisjoint(
         hypothesis_fields | grounding_fields | assessment_fields
     )
+
+
+
+def test_v1_same_statement_distinct_durable_candidate_refs_do_not_collapse():
+    db = db_engine()
+    state = make_state(db, suffix="v1-candidate-identity")
+    statement = "Aynı insan-okur açıklaması."
+    a = state["p19"].create_hypothesis(
+        research_session_id=state["session"].session_id,
+        obligation_id="g1",
+        statement=statement,
+        principal=state["principal"],
+        candidate_identity_ref="clm_" + "a" * 24,
+        now=STAMP + timedelta(minutes=30),
+    )
+    b = state["p19"].create_hypothesis(
+        research_session_id=state["session"].session_id,
+        obligation_id="g1",
+        statement=statement,
+        principal=state["principal"],
+        candidate_identity_ref="clm_" + "b" * 24,
+        now=STAMP + timedelta(minutes=31),
+    )
+    assert a.statement == b.statement == statement
+    assert a.hypothesis_id != b.hypothesis_id
+    assert a.identity_fingerprint != b.identity_fingerprint

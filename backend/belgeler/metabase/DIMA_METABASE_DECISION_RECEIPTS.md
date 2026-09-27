@@ -6841,3 +6841,120 @@ invariants:
 - preserve sealed owners and formally reopen/re-seal if Wave B must change one.
 
 status: RATIFIED / WAVE_GREEN.
+
+
+
+---
+
+## DMP-DEC-0066 — PHASE-1 WAVE-B B1 P17/P19 OWNER REOPEN + P6-P8 CONTRACT
+
+date: 2026-09-27
+
+status:
+REOPENED / B1 CANDIDATE / FOCUSED PROOF PENDING
+
+question:
+May Wave-B B1 add the single P19 eligibility predicate, multi-factor P19 visibility and
+typed discriminating-test recursion while preserving the sealed Core-B root architecture,
+P19 epistemic authority, hard depth=3 and the Metabase-only analytical boundary?
+
+roadmap authority:
+- DMP-DEC-0063;
+- DMP-DEC-0065;
+- DIMA V1 Phase-1 Wave-B directive, B1 = P6 + P7 + P8.
+
+owning prior seals:
+- DMP-DEC-0061 seals the active Core-B root/P17 architecture;
+- DMP-DEC-0065 seals Wave-A P1-P5;
+- P19 durable domain semantics were exact-blob sealed in the provider-free/Core-A stack.
+
+exact owner reopen identities:
+
+~~~text
+P17 research_manager.py
+old blob = aff8cc1946159fef4004982fa7ffef5526babe8b
+candidate blob = 5232b936a96a9e7f050ae6775799ab86f5e5495b
+
+P19 hypothesis_root_cause.py
+old blob = 19e4f8a2403c7e133137c106c58fa61959c4ceff
+candidate blob = fb6c4bfe17cd4193b9584b79fa32b63dc6c85563
+~~~
+
+P6 contract:
+- exactly one executable eligibility owner lives at Product process-manager callability;
+- CALL_P19 requires at least two governed current-session P16 claims with governed Evidence
+  and at least two materially distinct typed mechanism/relation identities;
+- NEED_MORE_EVIDENCE routes back to P17 only while a legal scoped move remains;
+- otherwise INCONCLUSIVE;
+- claim prose, lexical difference, similarity, morphology and embedding thresholds are not authority.
+
+P7 contract:
+- existing durable P19 families remain exactly HypothesisRecord,
+  HypothesisGroundingLink and RootCauseAssessment;
+- no causal graph, hypothesis graph or generic scoring table is added;
+- the new V1 factor surface is a transient typed projection only;
+- it exposes scope lineage+version, supporting/challenging/missing Evidence,
+  temporal consistency, alternative-explanation state, materiality and typed next-test need;
+- no invented numeric probability.
+
+P8 contract:
+- NextTestRequest is transient and contains ambiguity, governed hypothesis ids,
+  required Evidence surface, positive discriminatory value and scope lineage/version;
+- no SQL, MBQL or query plan lives in the request;
+- P17 re-entry is legal only for TEST_DISCRIMINATING_EVIDENCE after
+  OBJECTIVE_SATISFIED and only when the current typed action profile still exposes
+  that exact intent;
+- all other terminal reasons remain fail closed;
+- any returned proposal must exactly match the authorized downstream re-entry intent;
+- same NextTestRequest cannot be consumed twice;
+- V1 hard max contract depth remains 3.
+
+minimal P19 identity extension:
+- create_hypothesis may include an optional durable P16 candidate identity ref in its
+  deterministic fingerprint;
+- human-readable statement is unchanged;
+- no column/table/migration is added;
+- the existing P16 grounding edge remains the durable source relationship;
+- this prevents same-wording but materially distinct typed claims from collapsing to one
+  hypothesis id without making wording authoritative.
+
+unchanged:
+- DMP-DEC-0061 GLOBAL_CONTROL / branch-terminal correction;
+- non-OBJECTIVE_SATISFIED terminal legality;
+- P17 depth contract and provider authority;
+- P19 causal promotion gates and epistemic assessment authority;
+- P18 relationship authority;
+- P14 Evidence ownership;
+- P20 publication authority;
+- engine and native analytical execution authority;
+- tenant/principal boundary;
+- external execution and UI remain absent.
+
+engine:
+cbe313af9ac2d5960f662068e433d328d896fb06 / 0.63.18-dima.6
+
+migration:
+- canonical Alembic head remains fc8a1d0e3b42;
+- B1 adds no durable family and no migration.
+
+proof rule:
+Do not update the historical P19 exact blob pin before the B1 candidate has run the focused
+P6-P8 proof plus affected P17/P19/Product/Core-B regressions. The expected pre-reseal RED,
+if all behavior tests are GREEN, is the intentionally stale P19 blob guard only.
+
+rejected shortcuts:
+- two claim ids == two hypotheses;
+- different wording == materially distinct;
+- regex/fuzzy/morph/embedding candidate identity;
+- Product-generated causal truth;
+- P17 evaluation of root cause;
+- P19 SQL/query planning;
+- generic terminal reopening;
+- increasing max_depth;
+- new retry budget;
+- new durable hypothesis graph.
+
+final seal condition:
+DMP-DEC-0066 becomes SEALED only after focused B1 + affected Core-B/provider-free proof is
+GREEN and the exact candidate P19 owner blob is re-authorized.
+

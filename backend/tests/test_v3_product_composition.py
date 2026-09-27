@@ -147,6 +147,7 @@ class FakeResearch:
             obligations=tuple(obligations),
             evidence_refs=(),
             context_version=brief.context_version,
+            lineage_id="atl_" + f"{self.counter:020x}",
             accepted_brief=brief,
         )
         self.sessions[sid] = session
@@ -261,8 +262,9 @@ class FakeInvestigation:
         principal,
         manager,
         native_session_token,
+        downstream_reentry_intent=None,
     ):
-        del principal, native_session_token
+        del principal, native_session_token, downstream_reentry_intent
         state = self._state(session_id)
         state["obligation"] = getattr(
             manager,
@@ -279,11 +281,30 @@ class FakeInvestigation:
             step_id = "rrs_" + f"{n:024x}"
         state["steps"].append(step_id)
         if self.claim_on_calls is None or n in self.claim_on_calls:
+            session = self.research.sessions[session_id]
+            evidence = tuple(
+                item
+                for item in session.evidence_refs
+                if item.obligation_id == self._obligation(session_id)
+            )
             state["claims"].append(
                 SimpleNamespace(
                     claim_id="clm_" + f"{n:024x}",
                     obligation_id=self._obligation(session_id),
                     claim_text=f"Sealed P17 claim {n}",
+                    proposition={
+                        "subject": "observed-scope",
+                        "predicate": "explained_by",
+                        "object": f"mechanism:{n}",
+                    },
+                    evidence_links=tuple(
+                        SimpleNamespace(
+                            evidence_id=item.evidence_id,
+                            receipt_id=item.receipt_id,
+                            relation="SUPPORTS",
+                        )
+                        for item in evidence
+                    ),
                 )
             )
         return SimpleNamespace(step_id=step_id), None
@@ -363,8 +384,9 @@ class FakeP19:
         obligation_id,
         statement,
         principal,
+        candidate_identity_ref=None,
     ):
-        del principal
+        del principal, candidate_identity_ref
         item = SimpleNamespace(
             hypothesis_id="p19h_" + f"{len(self.hypotheses)+1:024x}",
             research_session_id=research_session_id,
