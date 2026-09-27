@@ -833,7 +833,7 @@ cross-tenant leak                 = 0
 invented numeric fact             = 0
 unsupported causal promotion      = 0
 
-eligible RCA → P19                = yes
+P19_ELIGIBLE(snapshot) → P19      = yes
 scope replacement                 = correct
 Evidence-free trusted report      = 0
 restart/resume                    = stable
