@@ -7226,3 +7226,138 @@ final seal condition:
 SATISFIED. Focused B2, scope-currentness propagation, affected owner regressions,
 exact P20 owner re-authorization and all final exact-owner guards are GREEN.
 
+
+
+
+---
+
+## DMP-DEC-0068 — PHASE-1 P12 EVAL AUTHORITY / PROVIDER-FREE FIRST GATE
+
+date: 2026-09-27
+
+status:
+AUTHORIZED / PROVIDER-FREE P12 CANDIDATE / LIVE DISPATCH PENDING
+
+question:
+How may Phase-1 P12 recover the frozen 30-case Round-2 benchmark and add a new structural
+metamorphic/P0 gate without allowing the benchmark to become runtime authority or silently spending
+a new paid/model-boundary campaign?
+
+roadmap authority:
+- DMP-DEC-0063;
+- DMP-DEC-0065;
+- DMP-DEC-0066;
+- DMP-DEC-0067;
+- DIMA V1 Phase-1 gap map fixed order P12 then P13.
+
+historical immutable Round-2 inputs:
+~~~text
+manifest path = backend/eval/dima_neutral_feature_benchmark_round2.json
+manifest blob = b08fbf6601b8c47a6f336c4efcc0cdab95a6c2da
+
+fixture path = backend/eval/round2_neutral_machine_fixture.json
+fixture blob = 44c02edee3333ddd048e8f7d9aeb94dcd399ad7c
+
+historical Metabase Round-2 run = 36324477672 SUCCESS
+historical executed cases = 30 / 30
+historical observable model-boundary units = 139
+historical Metabase analytical invocations = 63
+~~~
+
+historical-evidence rule:
+The historical Round-2 run remains valid comparison evidence for the old sealed comparison
+candidate. It is not sufficient by itself to certify the post-P1-P11 Phase-1 candidate because
+P6-P11 materially changed current Product/Research behavior.
+
+restoration rule:
+- restore the frozen manifest and fixture byte-for-byte by exact Git blob identity;
+- restore the substrate-neutral fixture seeder;
+- adapt only the eval harness where current sealed contracts require it;
+- backend/app/** benchmark-specific diff = 0;
+- no prompt/case-specific Product patch;
+- no score/winner threshold becomes runtime logic.
+
+current harness correction:
+The historical multi-turn F10 harness carried prior_brief but did not carry the exact prior Research
+session into Product composition. P2 now requires exact prior_session_id for durable scope-lineage
+continuity. The current P12 harness therefore carries both prior brief and prior Research session and
+calls Product with prior_research_session_id on follow-up turns.
+
+This is eval-only continuity wiring. It does not change Product semantics.
+
+provider-free P12 components:
+~~~text
+current Round-2 harness blob = 5295b75ee996feea83a19cfea4f369afff84e395
+historical neutral seeder blob = 20307eb8e544395099387f615be8df130919516b
+metamorphic manifest blob = f6341ad7c1bffca27f4218bfe1393d7edf464f24
+metamorphic tests blob = 7ca6dac19a3ee34315fdd54fa2d4ae483edb4f8e
+eval-contract tests blob = 32b622c7482c3ea92f876e5b2bd673c6e63a8913
+P0 receipt writer blob = 092254744f0fd927f5766146a55067906de74537
+provider-free workflow blob = 9a33bd5774094b57575f6830f378f528831e250f
+manual-live workflow blob = b2c20d714eacadd3abdc50aa8c49142e32d7050d
+~~~
+
+metamorphic authority:
+The new corpus is structural and EVAL_ONLY. It tests invariants rather than exact answer prose:
+- typed P19 eligibility is unchanged by wording/paraphrase and candidate order;
+- Evidence removal or duplicate typed mechanism cannot fake P19 eligibility;
+- challenging Evidence remains visible without causal promotion;
+- NextTestRequest is one-shot and hard depth=3 remains fail-closed;
+- raw wording changes cannot alter typed execution mode;
+- a second typed metric may change FAST to GUIDED without producing a query plan;
+- scope narrowing advances exact scope version/parent lineage;
+- existing owner suites remain authority for stale-report, Evidence-free publication, cross-tenant,
+  restart/resume and USER_MUST invariants.
+
+P0 provider-free gate must record exactly:
+~~~text
+provider_contract_exceptions      = 0
+silent_semantic_drift             = 0
+cross_tenant_leak                 = 0
+invented_numeric_fact             = 0
+unsupported_causal_promotion      = 0
+eligible_p19_misroutes            = 0
+scope_replacement_failures        = 0
+evidence_free_trusted_reports     = 0
+restart_resume_failures           = 0
+~~~
+
+These zeroes are not manually asserted as evidence. The machine-readable receipt is written only
+after the named provider-free test groups all pass.
+
+paid/live dispatch governance:
+- the current 30-case live workflow is workflow_dispatch only;
+- it has no push trigger;
+- it requires explicit confirm_current_phase1_benchmark = YES;
+- hard observable model-boundary ceiling <= 180;
+- observable model-boundary units are not represented as exact provider/token/dollar cost;
+- this receipt DOES NOT authorize dispatch;
+- dispatch remains MANUAL / SUPERVISOR AUTHORIZATION PENDING after provider-free P12 is GREEN.
+
+unchanged:
+- engine = cbe313af9ac2d5960f662068e433d328d896fb06 / 0.63.18-dima.6;
+- migration head = fc8a1d0e3b42;
+- Product/app runtime semantics = Wave-B sealed candidate;
+- no UI/frontend;
+- no Wren runtime/code import;
+- no external execution;
+- no DEV80 / Validation50 / Hidden50.
+
+P12 provider-free close condition:
+- frozen input exact-blob guards GREEN;
+- current harness compile/import contract GREEN;
+- structural metamorphic suite GREEN;
+- all P0 owner/regression groups GREEN;
+- machine-readable provider-free receipt artifact produced;
+- canonical governance GREEN.
+
+P12 full close condition:
+Provider-free close plus one of:
+1. explicit authorization and successful current 30-case live benchmark; or
+2. explicit supervisor authority declaring the historical live benchmark admissible for P13 despite
+   post-comparison P1-P11 behavior changes.
+
+Until then:
+P12 = IN_PROGRESS.
+P13 = NOT AUTHORIZED TO SEAL.
+
