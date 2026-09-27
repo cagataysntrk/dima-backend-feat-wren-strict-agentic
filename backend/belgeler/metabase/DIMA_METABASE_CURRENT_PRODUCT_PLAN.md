@@ -1,3 +1,64 @@
+## FORWARD AUTHORITY — 2026-09-27 — METABASE/METABOT WINNER → DIMA V1 3-PHASE ROADMAP ACTIVE
+
+~~~text
+neutral comparison                     = COMPLETE
+winner / canonical V1 engine           = METABASE / METABOT
+engine selection                       = CLOSED
+exact V1 roadmap                       = backend/belgeler/metabase/DIMA_V1_NIHAI_3_FAZLI_YOL_HARITASI.md
+roadmap authority commit               = 6c9c438841bd747aa5f1969786453a69f6ed4728
+roadmap exact blob                     = 139a26d308606d2651f09489ac83062891ba3c0b
+
+comparison candidate baseline          = 72641b39159f11b08757048ae96644438badcc20
+engine                                 = cbe313af9ac2d5960f662068e433d328d896fb06 / 0.63.18-dima.6
+final provider-free comparison closure = 36313727354 SUCCESS / 527 PASS
+Core-B live closure                    = 36311996172 SUCCESS / 6 of 6
+silent wrong                           = 0
+security violations                    = 0
+
+current forward phase                  = FAZ 1 — BRAIN CONVERGENCE & INTELLIGENCE CLOSURE
+Phase-1 exit                           = SEALED DIMA BRAIN V1
+Phase 2                                = BLOCKED UNTIL PHASE 1 EXIT
+Phase 3 UI implementation              = REQUIRES EXPLICIT USER AUTHORIZATION
+
+DEV80                                  = CANCELLED FROM FORWARD PLAN / DO NOT RUN
+Validation50                           = CANCELLED FROM FORWARD PLAN / DO NOT RUN
+Hidden50                               = CANCELLED FROM FORWARD PLAN / DO NOT RUN
+Wren production runtime                = NOT SELECTED
+Wren code merge                        = FORBIDDEN
+Wren research-pattern harvest          = AUTHORIZED BY ROADMAP
+UI implementation                      = NOT AUTHORIZED
+~~~
+
+The neutral comparison is complete and Metabase/Metabot is the selected production foundation.
+The former comparison-ready STOP is superseded as forward execution state.
+
+Canonical current handoff:
+
+`backend/belgeler/metabase/DIMA_V1_CURRENT_EXECUTION_HANDOFF.md`
+
+The roadmap file is an exact byte-preserving copy of the user-supplied roadmap and must not be silently edited.
+
+Immediate next work:
+
+~~~text
+READ exact roadmap
+→ build Phase-1 current-state gap map
+→ build WREN_RESEARCH_HARVEST_MATRIX
+→ close measured Phase-1 gaps generically
+→ same Round-2 development benchmark without prompt-specific patches
+→ new metamorphic / hidden-like validation corpus
+→ seal Phase 1
+→ only then Phase 2
+~~~
+
+Existing sealed P14-P21/Core-A/Core-B/comparison receipts remain baseline evidence; do not mechanically destroy or reopen them.
+
+UI/UX remains forbidden until explicit user authorization even when the roadmap later reaches Phase 3.
+
+This block supersedes older "neutral comparison pending / winner not selected / comparison-ready STOP" forward language below. Historical sections remain evidence.
+
+
+
 # DIMA + METABASE — CURRENT PRODUCT PLAN OVERLAY
 
 ## CURRENT FORWARD AUTHORITY — 2026-09-27 — COMPARISON-READY STOP
