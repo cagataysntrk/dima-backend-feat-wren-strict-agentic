@@ -316,7 +316,6 @@ def _strict_json_schema(schema: dict[str, Any]) -> dict[str, Any]:
         "exclusiveMaximum",
         "minItems",
         "maxItems",
-        "format",
     }
 
     def visit(node: Any) -> None:
