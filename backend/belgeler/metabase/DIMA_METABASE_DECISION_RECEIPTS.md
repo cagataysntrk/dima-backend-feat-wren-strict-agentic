@@ -6851,7 +6851,7 @@ status: RATIFIED / WAVE_GREEN.
 date: 2026-09-27
 
 status:
-RESEAL CANDIDATE / BEHAVIOR PROOF GREEN / FINAL PIN PROOF PENDING
+SEALED / B1 GREEN
 
 question:
 May Wave-B B1 add the single P19 eligibility predicate, multi-factor P19 visibility and
@@ -7000,7 +7000,33 @@ rejected shortcuts:
 - new retry budget;
 - new durable hypothesis graph.
 
+final re-seal proof:
+- re-pin lifecycle candidate = eede7e7bdff8311f32ef02e79798259dd376f382;
+- core-b-focused 36345000584 = SUCCESS;
+- p19-provider-free 36345000612 = SUCCESS;
+- core-a-final 36345000636 = SUCCESS;
+- provider-free seal canary 36345000639 = SUCCESS;
+- canonical governance 36345000586 = SUCCESS;
+- exact P19 owner pin = fb6c4bfe17cd4193b9584b79fa32b63dc6c85563;
+- P17 typed re-entry behavior remains 5232b936a96a9e7f050ae6775799ab86f5e5495b;
+- closure-v2 projection remains 7a81679abbf359fcdebc078e48c6457dd92d28be;
+- frozen provider-free canary = GREEN;
+- engine = cbe313af9ac2d5960f662068e433d328d896fb06 / 0.63.18-dima.6;
+- migration head = fc8a1d0e3b42;
+- UI/frontend = 0;
+- Wren runtime/code import = 0;
+- new durable families = 0.
+
+decision:
+- DMP-DEC-0066 = SEALED;
+- B1 = GREEN;
+- P6 = FOCUSED_GREEN;
+- P7 = FOCUSED_GREEN;
+- P8 = FOCUSED_GREEN;
+- Wave B remains IN_PROGRESS and B2 (P9/P10/P11) is the active continuation;
+- no Phase-2, DEV80, Validation50 or Hidden50 authority is granted.
+
 final seal condition:
-DMP-DEC-0066 becomes SEALED only after focused B1 + affected Core-B/provider-free proof is
-GREEN and the exact candidate P19 owner blob is re-authorized.
+SATISFIED. The focused B1, affected owner regressions, exact owner guard and provider-free
+closure are GREEN on the re-authorized P19 owner identity.
 
