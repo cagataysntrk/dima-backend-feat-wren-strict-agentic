@@ -6781,3 +6781,63 @@ re-authorized Core-A identities. No analytical/Evidence/USER_MUST/security owner
 boundary changed.
 
 status: SEALED.
+
+
+---
+
+## DMP-DEC-0065 — DIMA V1 PHASE-1 WAVE-A FORMAL CLOSURE
+
+date: 2026-09-27
+
+question:
+Have P1-P5 and both formal Wave-A blockers closed on one coherent Metabase/Metabot V1
+architecture without reopening the engine decision or introducing a second analytics/trust authority?
+
+production behavior:
+- `e04c5f8758206c1f669c5dab8917d6c11299aad2`.
+
+seal lifecycle:
+- `ffeb2caa5d0eefaf95320856c2f4953d670b7b03`.
+
+proof:
+- dima-v1-phase1-focused `36340438247 = SUCCESS`;
+- canonical governance `36340438249 = SUCCESS`;
+- cleanup-focused `36340438281 = SUCCESS`;
+- Core-B focused `36340438213 = SUCCESS`;
+- Core-A final closure `36340438285 = SUCCESS`;
+- Core-B provider-free seal `36340594609 = SUCCESS`;
+- frozen provider-free canary = 13/13 PASS;
+- DMP-DEC-0064 P14 owner re-seal = SEALED;
+- engine = `cbe313af9ac2d5960f662068e433d328d896fb06` / `0.63.18-dima.6`;
+- engine diff = 0;
+- UI/frontend diff = 0;
+- Wren runtime/code import = 0.
+
+item closure:
+- P1 = WAVE_GREEN;
+- P2 = WAVE_GREEN;
+- P3 = WAVE_GREEN;
+- P4 = WAVE_GREEN;
+- P5 = WAVE_GREEN.
+
+P5 scope clarification:
+`WAVE_GREEN` here seals one-based depth, hard max_depth=3, typed positive-gain
+requirement and state-legal depth transition only. Full recursive hypothesis
+discrimination remains P8.
+
+decision:
+- WAVE A = WAVE_GREEN;
+- PHASE 1 = IN_PROGRESS;
+- WAVE B is automatically authorized and becomes the active wave;
+- Wave B order remains B1(P6/P7/P8) then B2(P9/P10/P11);
+- Phase 2, DEV80, Validation50 and Hidden50 remain unauthorized.
+
+invariants:
+- one authority per invariant;
+- no regex/fuzzy/morphology semantic truth;
+- no silent fallback;
+- no second engine;
+- no second query planner;
+- preserve sealed owners and formally reopen/re-seal if Wave B must change one.
+
+status: RATIFIED / WAVE_GREEN.

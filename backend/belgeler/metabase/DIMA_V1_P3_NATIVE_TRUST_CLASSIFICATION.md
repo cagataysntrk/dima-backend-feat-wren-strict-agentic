@@ -1,6 +1,6 @@
 # DIMA V1 — P3 NATIVE TRUST CLASSIFICATION
 
-Status: WAVE-A OWNER CLASSIFICATION  
+Status: WAVE-A WAVE_GREEN / FORWARD V1 TRUST RATIFIED  
 Engine remains pinned: `cbe313af9ac2d5960f662068e433d328d896fb06`
 
 Purpose: prevent `AnalyticalRequestContract` from becoming a second query planner while
@@ -128,4 +128,13 @@ Provider-free candidate proofs cover:
 - missing attestation proof → BLOCK;
 - exact-occurrence execution request is emitted only after forward authorization.
 
-Status remains `IN_PROGRESS` until the coherent Wave-A closure run is GREEN.
+Wave-A closure proof:
+- production behavior SHA `e04c5f8758206c1f669c5dab8917d6c11299aad2`;
+- Phase-1 focused `36340438247 = SUCCESS`, P3 = 43 PASS;
+- Core-B provider-free seal `36340594609 = SUCCESS`;
+- provider-free canary = 13 / 13 PASS;
+- canonical governance `36340438249 = SUCCESS`;
+- Core-A final `36340438285 = SUCCESS`.
+
+Status: `WAVE_GREEN`. Historical P13D certification remains retained evidence;
+the forward V1 trust path is the canonical Phase-1 request-correctness path.

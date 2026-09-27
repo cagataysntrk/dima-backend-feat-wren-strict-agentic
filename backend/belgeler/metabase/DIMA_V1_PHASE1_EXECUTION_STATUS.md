@@ -1,45 +1,114 @@
 # DIMA V1 — PHASE-1 EXECUTION STATUS
 
-Status: LIVING EXECUTION LEDGER  
+Status: LIVING EXECUTION LEDGER
+
+```text
+IS PHASE 1 COMPLETE?
+NO
+
+PHASE 1 = IN_PROGRESS
+WAVE A   = WAVE_GREEN
+WAVE B   = IN_PROGRESS
+WAVE C   = NOT_STARTED
+
+PHASE 1 REMAINING
+= P6, P7, P8, P9, P10 affected closure, P11,
+  Round-2 benchmark, new metamorphic corpus,
+  P0 invariant audit, canonical Phase-1 freeze,
+  immutable Phase-1 acceptance receipt
+```
+
 Baseline authority: `4906c99f7f52aa800c42279b2fb68fc4435b911f`  
+Wave-A production behavior SHA: `e04c5f8758206c1f669c5dab8917d6c11299aad2`  
+Wave-A seal-lifecycle SHA: `ffeb2caa5d0eefaf95320856c2f4953d670b7b03`  
 Engine: `cbe313af9ac2d5960f662068e433d328d896fb06` / `0.63.18-dima.6`
 
-The historical baseline remains `DIMA_V1_PHASE1_GAP_MAP.md`. This file records
-execution progress only.
+The historical baseline remains `DIMA_V1_PHASE1_GAP_MAP.md`.
 
-Status vocabulary is exact:
+Status vocabulary:
 
 `NOT_STARTED | IN_PROGRESS | FOCUSED_GREEN | WAVE_GREEN | SEALED`
 
-| ID | Baseline classification | Current status | Behavior SHA | Focused proof | Affected regression | Remaining blocker |
+| ID | Baseline classification | Current status | Behavior SHA | Focused proof | Affected regression / seal | Sealed owner / remaining blocker |
 |---|---|---|---|---|---|---|
-| P1 | CONTRACT_MISMATCH | IN_PROGRESS | PENDING_WAVE_A_SHA | semantic-only DTO; server-bound IDs; one repair; internal/provider split candidate | P17/Core-B affected closure pending Wave-A CI | focused rerun after final hardening |
-| P2 | MISSING | IN_PROGRESS | PENDING_WAVE_A_SHA | ScopeVersion/mutations + production follow-up/lineage-head candidate | P14/P16/P19/P20 cross-scope suite pending Wave-A CI | Wave-A focused proof |
-| P3 | CONTRACT_MISMATCH | IN_PROGRESS | PENDING_WAVE_A_SHA | AnalyticalRequestContract structural boundary candidate | P13D retained-trust regression pending Wave-A CI | focused proof |
-| P4 | PARTIAL_MUST_EXTEND | IN_PROGRESS | PENDING_WAVE_A_SHA | Completion Ledger candidate | owner-scoped MUST/Product regression pending Wave-A CI | focused proof |
-| P5 | PARTIAL_MUST_EXTEND | IN_PROGRESS | PENDING_WAVE_A_SHA | one-based V1 depth contract + hard cap 3 + typed positive-gain action rule candidate | P17 regression pending Wave-A CI | focused proof |
-| P6 | CONTRACT_MISMATCH | NOT_STARTED | - | - | - | Wave A must close first |
-| P7 | PARTIAL_MUST_EXTEND | NOT_STARTED | - | - | - | Wave A must close first |
-| P8 | MISSING | NOT_STARTED | - | - | - | Wave A must close first |
-| P9 | PARTIAL_MUST_EXTEND | NOT_STARTED | - | - | - | Wave A must close first |
-| P10 | ALREADY_PROVEN | NOT_STARTED | retained | existing P20 proof retained | Wave-B affected proof only | Wave B |
-| P11 | PARTIAL_MUST_EXTEND | NOT_STARTED | - | - | - | Wave B |
+| P1 | CONTRACT_MISMATCH | WAVE_GREEN | `e04c5f8758206c1f669c5dab8917d6c11299aad2` | phase1 `36340438247`: P1 32 PASS | Wave-A Product 83 PASS; Core-B focused `36340438213` | provider-invalid-only repair boundary closed |
+| P2 | MISSING | WAVE_GREEN | `e04c5f8758206c1f669c5dab8917d6c11299aad2` | phase1 `36340438247`: P2 41 PASS | Core-A final `36340438285`; provider-free seal `36340594609` | DMP-DEC-0064 SEALED; P14 owner blobs re-authorized |
+| P3 | CONTRACT_MISMATCH | WAVE_GREEN | `e04c5f8758206c1f669c5dab8917d6c11299aad2` | phase1 `36340438247`: P3 43 PASS | provider-free seal `36340594609`: P3 43 PASS + canary 13/13 | one trust owner; forward V1 request path separated from historical physical certification |
+| P4 | PARTIAL_MUST_EXTEND | WAVE_GREEN | `e04c5f8758206c1f669c5dab8917d6c11299aad2` | phase1 `36340438247`: P4 12 PASS | Wave-A Product/Core-B 83 PASS | Completion Ledger exact USER_MUST disposition closed |
+| P5 | PARTIAL_MUST_EXTEND | WAVE_GREEN | `e04c5f8758206c1f669c5dab8917d6c11299aad2` | phase1 `36340438247`: P5/affected P17 69 PASS | provider-free seal `36340594609`: P17 125 PASS | foundational only: one-based depth, hard max=3, typed positive-gain requirement |
+| P6 | CONTRACT_MISMATCH | NOT_STARTED | - | - | - | Wave B / B1 |
+| P7 | PARTIAL_MUST_EXTEND | NOT_STARTED | - | - | - | Wave B / B1 |
+| P8 | MISSING | NOT_STARTED | - | - | - | Wave B / B1 |
+| P9 | PARTIAL_MUST_EXTEND | NOT_STARTED | - | - | - | Wave B / B2 |
+| P10 | ALREADY_PROVEN | NOT_STARTED | retained | existing P20 baseline retained | Wave-B affected scope proof pending | Wave B / B2 |
+| P11 | PARTIAL_MUST_EXTEND | NOT_STARTED | - | - | - | Wave B / B2 |
 | P12 | PARTIAL/MISSING | NOT_STARTED | - | - | - | Wave C only |
 | P13 | MISSING | NOT_STARTED | - | - | - | Wave C only |
 
-## Wave A acceptance
+## Wave-A formal closure receipts
 
-Wave A becomes `WAVE_GREEN` only when all are true:
+```text
+dima-v1-phase1-focused
+36340438247 = SUCCESS
 
-- repository story lifecycle governance GREEN;
-- P1 provider invalidity is the only repairable family;
-- P2 stale/cross-scope negative proofs GREEN;
-- P3 request-contract architecture proof GREEN while retained trust/security proof stays GREEN;
-- every USER_MUST has a terminal P4 completion disposition;
-- P5 hard contract depth is 1..3 and depth-increasing moves carry typed positive-gain requirement;
-- affected provider-free closure GREEN;
+canonical governance
+36340438249 = SUCCESS
+
+cleanup-focused
+36340438281 = SUCCESS
+
+Core-B focused
+36340438213 = SUCCESS
+
+Core-A final closure
+36340438285 = SUCCESS
+
+Core-B provider-free seal
+36340594609 = SUCCESS
+provider-free canary = 13 / 13 PASS
+```
+
+Phase-1 focused exact slices on the Wave-A behavior candidate:
+
+```text
+repository lifecycle          20 PASS
+P1 provider boundary          32 PASS
+P2 scope integration          41 PASS
+P3 analytical request         43 PASS
+P4 completion ledger          12 PASS
+P5 / affected P17             69 PASS
+Wave-A Product/Core-B         83 PASS
+```
+
+Formal P14 owner re-seal:
+
+```text
+DMP-DEC-0064 = SEALED
+Core-A re-seal run 36339715760 = SUCCESS
+```
+
+Permanent Wave-A closure invariants:
+
 - engine diff = 0;
 - UI/frontend diff = 0;
-- Wren runtime/code import = 0.
+- Wren runtime/code import = 0;
+- no second analytics engine;
+- no second query planner;
+- no regex/fuzzy/morphology semantic authority;
+- no silent fallback;
+- no external execution;
+- historical P13D certification retained as historical evidence;
+- forward V1 request correctness is `AnalyticalRequestContract + shared security/provenance trust`.
 
-Wave A GREEN authorizes automatic entry into Wave B. It does not authorize Phase 2.
+## Active continuation
+
+Wave B is active automatically.
+
+Execution order:
+
+```text
+B1 = P6 + P7 + P8
+B2 = P9 + P10 + P11
+```
+
+No Phase-2 work, DEV80, Validation50 or Hidden50 is authorized here.
