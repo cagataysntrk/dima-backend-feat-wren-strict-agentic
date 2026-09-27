@@ -1,5 +1,62 @@
 # DIMA + METABASE — CURRENT PRODUCT PLAN OVERLAY
 
+
+## CURRENT FORWARD AUTHORITY — 2026-09-27 — ROOT RECOVERY SEALED
+
+This block overrides older current/blocked language below; historical sections remain evidence.
+
+~~~text
+branch                                = feat/dima-metabase-platform
+Core Closure A                        = SEALED
+Core-B root architecture recovery     = FINALLY SEALED ON ACTIVE BRANCH
+
+active merge                          = 50d6d2fb15d6bf9a62638a3e77e7dbd950d819a6
+certified recovery                    = 67af244d3097dbaf221c15ba76d007586edcbc45
+P17 GLOBAL_CONTROL fix                = ef3f775d3dfd148bdced6c403ab7dbda219a23f8
+active certified behavior             = 8b56fd56e864873b851ddbeeb5480abbd0a6dd28
+
+Core-B focused                        = 36311623955 SUCCESS / 118 PASS
+sealed P14-P19 affected               = 149 PASS
+P17 provider-free                     = 36311756394 SUCCESS
+diagnostic lifecycle guard            = 36311756577 SUCCESS
+governance                            = 36311756380 SUCCESS
+focused relationship-v2               = 36311835463 SUCCESS
+full active Closure-v2                = 36311996172 SUCCESS / 6 of 6
+provider-free seal canary             = 36312261896 SUCCESS
+
+model boundary units                  = 19 / 30
+Metabase analytical calls             = 8
+silent wrong                          = 0
+security violations                   = 0
+causal overclaim                      = 0
+invented numeric truth                = 0
+engine                                = cbe313af9ac2d5960f662068e433d328d896fb06
+engine runtime                        = 0.63.18-dima.6
+
+Research Intake closed-world          = SEALED
+Product process-manager correction    = SEALED
+P17 provider schema fidelity          = SEALED
+P17 GLOBAL_CONTROL validator          = SEALED
+Closure-v2 owner-legality             = SEALED
+P18/P19 semantics                     = UNCHANGED
+~~~
+
+Forward sequence now resumes the existing Core-B roadmap immediately before broad/final
+certification. No new architecture phase is created and root recovery is not reopened.
+
+~~~text
+next = existing Core-B finalization / pre-broad-certification work
+DEV80 = NOT AUTHORIZED
+Validation50 = NOT AUTHORIZED
+Hidden50 = NOT AUTHORIZED
+UI / UX = NOT STARTED
+Wren merge/evaluation = NOT AUTHORIZED
+Resend live = NOT AUTHORIZED
+external execution = NOT AUTHORIZED
+dima.7 = NOT AUTHORIZED
+~~~
+
+
 ## CURRENT FORWARD AUTHORITY — 2026-09-26
 
 ~~~text

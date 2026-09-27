@@ -1,6 +1,81 @@
 # Dima Metabase Platform — Current Handoff
 
-**Date:** 2026-09-26  
+
+## FORWARD HANDOFF — 2026-09-27 — ROOT RECOVERY SEALED
+
+This block supersedes older current/STOP language below. Historical receipts remain append-only.
+
+~~~text
+active branch                         = feat/dima-metabase-platform
+P17 global-control fix                = ef3f775d3dfd148bdced6c403ab7dbda219a23f8
+active certified behavior             = 8b56fd56e864873b851ddbeeb5480abbd0a6dd28
+merge history preserved               = 50d6d2fb15d6bf9a62638a3e77e7dbd950d819a6
+certified recovery                    = 67af244d3097dbaf221c15ba76d007586edcbc45
+
+deterministic reproduction            = 36311214618
+reproduction result                   = 143 PASS / 1 expected FAIL
+expected failure                      = P17_BRANCH_TERMINAL
+
+Core-B focused                        = 36311623955 SUCCESS
+focused                               = 118 PASS
+sealed P14-P19 affected               = 149 PASS
+P17 provider-free                     = 36311756394 SUCCESS
+diagnostic provider-free              = 36311756577 SUCCESS
+governance                            = 36311756380 SUCCESS
+
+focused relationship-v2               = 36311835463 SUCCESS
+relationship lineage_valid            = true
+relationship security_valid           = true
+relationship silent wrong             = 0
+relationship causal overclaim         = false
+
+full integrated Closure-v2            = 36311996172 SUCCESS
+result                                = 6 / 6 GREEN
+observable model units                = 19
+Metabase calls                        = 8
+silent wrong                          = 0
+security violations                   = 0
+causal overclaim                      = 0
+invented numeric truth                = 0
+
+final governance                      = 36311996153 SUCCESS
+lifecycle governance                  = 36312261855 SUCCESS
+provider-free seal canary             = 36312261896 SUCCESS
+
+engine                                = cbe313af9ac2d5960f662068e433d328d896fb06
+runtime                               = 0.63.18-dima.6
+P18/P19 semantics                     = UNCHANGED
+UI / UX                               = NOT STARTED
+external execution                    = ABSENT
+
+CORE-B ROOT RECOVERY                  = FINALLY SEALED ON ACTIVE BRANCH
+~~~
+
+Permanent P17 invariant:
+
+~~~text
+PERSISTED COMPATIBILITY BRANCH_ID != SEMANTIC BRANCH OWNERSHIP
+
+BRANCH TERMINALITY
+applies to BRANCH-SCOPED transitions only.
+
+GLOBAL_CONTROL
+must not be invalidated by a storage-only branch_id.
+
+LEGAL PROFILE
+→ RESOLVABLE TOPOLOGY
+→ VALID VALIDATION.
+~~~
+
+The next developer resumes the existing Core-B roadmap at the point immediately before broad/final
+certification. This handoff does not authorize DEV80, Validation50, Hidden50, UI, Wren, Resend,
+external execution, dima.7 or a new recovery architecture phase.
+
+Historical REDs below remain historical evidence. In particular 36307875786 is
+HISTORICAL / CLOSED and must not be rerun or rewritten.
+
+
+**Date:** 2026-09-27  
 **Branch:** `feat/dima-metabase-platform`  
 **Cleanup behavior SHA:** `2a8534990757d6b84634aac1e70fdf78f99798f0`
 

@@ -6369,3 +6369,128 @@ root_cause_tr
 
 Because these are new failure families outside the adaptive dependency repair and touch sealed
 relationship/root-cause authority composition, this directive terminates at supervisor STOP.
+
+---
+
+## DMP-DEC-0061 — CORE-B ROOT RECOVERY FINALLY SEALED ON ACTIVE BRANCH
+
+date: 2026-09-27
+
+question:
+Did the structural Core-B recovery survive active-branch integration and the stochastic P17
+GLOBAL_CONTROL trajectory without restoring the old failure patterns?
+
+options_considered:
+- roll back the active merge and reinterpret recovery as failed;
+- patch prompts/retries or special-case STOP_INVESTIGATION;
+- weaken branch terminality globally;
+- treat compatibility branch_id as semantic ownership;
+- reproduce provider-free, correct the typed validator invariant, re-prove the affected stack,
+  then certify one focused relationship path and one full integrated Closure-v2.
+
+evidence:
+- recovery architecture remained valid: recovery full Closure-v2
+  36307340478 = SUCCESS, 6/6, 21 model-boundary units, 9 Metabase calls,
+  silent wrong 0, security violations 0;
+- active historical RED 36307875786 exposed the latent
+  P17_BRANCH_TERMINAL path in ResearchInvestigationManager._validate();
+- deterministic provider-free reproduction 36311214618 produced
+  143 PASS + exactly 1 expected FAIL at P17_BRANCH_TERMINAL;
+- generic typed fix SHA:
+  ef3f775d3dfd148bdced6c403ab7dbda219a23f8;
+- Core-B focused 36311623955 = SUCCESS: 118 PASS;
+- sealed P14-P19 affected regression: 149 PASS;
+- P17 provider-free 36311756394 = SUCCESS;
+- lifecycle-stable diagnostic provider-free 36311756577 = SUCCESS;
+- governance 36311756380 = SUCCESS;
+- exactly one focused active relationship-v2:
+  36311835463 = SUCCESS, lineage/security valid, silent wrong 0,
+  causal overclaim false;
+- exactly one full active integrated Closure-v2:
+  36311996172 = SUCCESS, 6/6, failed 0, 19/30 model-boundary units,
+  8 Metabase analytical calls, silent wrong 0, security violations 0,
+  causal overclaim 0, invented numeric truth 0;
+- final dispatch governance 36311996153 = SUCCESS;
+- lifecycle governance 36312261855 = SUCCESS;
+- provider-free seal canary 36312261896 = SUCCESS;
+- P18 blob remained 1c533667bd080331f4f2231b9d37ee0c5e532fa8;
+- P19 domain blob remained 19e4f8a2403c7e133137c106c58fa61959c4ceff;
+- engine remained cbe313af9ac2d5960f662068e433d328d896fb06 / 0.63.18-dima.6;
+- UI/frontend diff = 0 and external execution remained absent.
+
+decision:
+CORE-B ROOT RECOVERY = FINALLY SEALED ON ACTIVE BRANCH.
+
+Exact root cause:
+
+~~~text
+Recovery architecture was not invalid.
+
+Active integrated RED exposed
+a latent P17 global-control validation defect.
+
+ActionProfile correctly advertised
+STOP_INVESTIGATION as GLOBAL_CONTROL.
+
+Topology persisted a compatibility branch_id.
+
+Validator incorrectly treated
+that compatibility identity as semantic branch membership.
+
+Generic correction:
+branch terminality applies only
+to branch-scoped transitions,
+never GLOBAL_CONTROL.
+~~~
+
+The validator now derives branch-terminal legality from the existing typed
+InvestigationBranchBehavior. It does not special-case an intent name. Persistence compatibility
+branch_id remains intact, but it no longer confers semantic branch ownership on GLOBAL_CONTROL.
+
+scope:
+- seals the Core-B root architecture recovery on feat/dima-metabase-platform;
+- seals the P17 GLOBAL_CONTROL / branch-terminal consistency correction;
+- seals the lifecycle-stable P17 diagnostic governance correction;
+- does not redesign Research Intake, P18, P19, Product orchestration or engine;
+- does not authorize broad/final certification corpora, UI or external execution.
+
+invariants:
+- PERSISTED COMPATIBILITY BRANCH_ID != SEMANTIC BRANCH OWNERSHIP;
+- branch terminality governs branch-scoped transitions only;
+- GLOBAL_CONTROL cannot be invalidated by a storage-only branch identity;
+- ActionProfile → topology → validator must agree for advertised legal moves;
+- non-global moves on stopped branches remain fail-closed;
+- repeated STOP_BRANCH remains illegal through existing typed legality;
+- terminal investigation still blocks later transitions;
+- provider authority remains closed-world;
+- P18/P19 semantics remain unchanged;
+- engine remains dima.6;
+- no prompt patch, retry patch, regex/fuzzy/morph rule, case-specific product branch or output quota.
+
+historical evidence:
+- 36307875786 = HISTORICAL / CLOSED — active P17 GLOBAL_CONTROL validator RED;
+- 36307689602 = HISTORICAL / CLOSED — stale diagnostic lifecycle blob-pin RED;
+- v1 sentinel 4/6 = HISTORICAL / CLOSED;
+- INTAKE_RELATIONSHIP_UNAUTHORIZED = HISTORICAL / CLOSED;
+- PROCESS_LEFT_NONTERMINAL = HISTORICAL / CLOSED;
+- claim.freshness.as_of provider-schema failure = HISTORICAL / CLOSED.
+
+rejected_shortcuts:
+- merge rollback;
+- hard reset / force push;
+- prompt instruction against STOP_INVESTIGATION;
+- retry on P17_BRANCH_TERMINAL;
+- string-name STOP_INVESTIGATION special case;
+- weakening all branch protections;
+- deleting diagnostic tests to make CI green;
+- restoring historical mutable-file blob pins;
+- dima.7 / engine patch;
+- extra root-focused paid proof after relationship GREEN.
+
+revisit_condition:
+Do not reopen root recovery. Resume the existing Core-B roadmap immediately before broad/final
+certification. Any future P17 RED must first prove ActionProfile / topology / validator consistency
+from the typed state before product changes are considered.
+
+status: SEALED.
+
