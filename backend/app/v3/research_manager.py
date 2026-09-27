@@ -1647,11 +1647,19 @@ class ResearchInvestigationManager:
                     f"max_depth={self._budget.max_depth}"
                 ),
             )
+        rule = snapshot.action_profile.rule_for(
+            proposal.effective_intent
+        )
+        if rule is None:
+            raise ResearchManagerMaturationError(
+                "P17_INTENT_NOT_LEGAL_IN_STATE",
+                proposal.effective_intent.value,
+            )
         if (
-            topology.branch_id
+            rule.branch_behavior
+            != InvestigationBranchBehavior.GLOBAL_CONTROL
+            and topology.branch_id
             in snapshot.investigation.stopped_branch_ids
-            and proposal.effective_intent
-            != InvestigationIntent.STOP_BRANCH
         ):
             raise ResearchManagerMaturationError(
                 "P17_BRANCH_TERMINAL",

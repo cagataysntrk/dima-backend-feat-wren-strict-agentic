@@ -2501,6 +2501,286 @@ def test_dmp0053_global_control_stop_after_stopped_root_is_legal():
     )
 
 
+def _dmp0053_root_with_two_alternatives(service, session, *, prefix):
+    root, _ = _dmp0053_run(
+        service,
+        session,
+        proposal_id=f"{prefix}-root",
+        objective_key=f"{prefix}.root",
+        intent=InvestigationIntent.INVESTIGATE_GAP,
+    )
+    alt_a, _ = _dmp0053_run(
+        service,
+        session,
+        proposal_id=f"{prefix}-alt-a",
+        objective_key=f"{prefix}.alt.a",
+        intent=InvestigationIntent.EXPLORE_ALTERNATIVES,
+        parent_step_id=root.step_id,
+        branch_key=f"{prefix}-a",
+        target_kind=InvestigationTargetKind.ALTERNATIVE,
+    )
+    alt_b, _ = _dmp0053_run(
+        service,
+        session,
+        proposal_id=f"{prefix}-alt-b",
+        objective_key=f"{prefix}.alt.b",
+        intent=InvestigationIntent.EXPLORE_ALTERNATIVES,
+        parent_step_id=root.step_id,
+        branch_key=f"{prefix}-b",
+        target_kind=InvestigationTargetKind.ALTERNATIVE,
+    )
+    return root, alt_a, alt_b
+
+
+def test_dmp0053_global_control_stop_with_mixed_open_and_stopped_branches_is_legal():
+    db = db_engine()
+    _, session, _, _, _, service = _dmp0053_service(db)
+    root, alt_a, alt_b = _dmp0053_root_with_two_alternatives(
+        service,
+        session,
+        prefix="mixed",
+    )
+    _dmp0053_run(
+        service,
+        session,
+        proposal_id="mixed-stop-a",
+        objective_key="mixed.stop.a",
+        intent=InvestigationIntent.STOP_BRANCH,
+        parent_step_id=alt_a.step_id,
+    )
+    snapshot = service.snapshot(
+        session_id=session.session_id,
+        principal=principal(),
+    )
+    assert alt_a.branch_id in snapshot.investigation.stopped_branch_ids
+    assert root.branch_id in snapshot.investigation.open_branch_ids
+    assert alt_b.branch_id in snapshot.investigation.open_branch_ids
+
+    global_stop, task = _dmp0053_run(
+        service,
+        session,
+        proposal_id="mixed-global-stop",
+        objective_key="mixed.global.stop",
+        intent=InvestigationIntent.STOP_INVESTIGATION,
+    )
+    assert task is None
+    assert global_stop.stop_scope == StopScope.INVESTIGATION
+
+
+def test_dmp0053_global_control_stop_after_all_multiple_branches_closed_is_legal():
+    db = db_engine()
+    _, session, _, _, _, service = _dmp0053_service(db)
+    root, alt_a, alt_b = _dmp0053_root_with_two_alternatives(
+        service,
+        session,
+        prefix="closed",
+    )
+    for suffix, step in (
+        ("a", alt_a),
+        ("b", alt_b),
+        ("root", root),
+    ):
+        _dmp0053_run(
+            service,
+            session,
+            proposal_id=f"closed-stop-{suffix}",
+            objective_key=f"closed.stop.{suffix}",
+            intent=InvestigationIntent.STOP_BRANCH,
+            parent_step_id=step.step_id,
+        )
+
+    snapshot = service.snapshot(
+        session_id=session.session_id,
+        principal=principal(),
+    )
+    assert snapshot.investigation.open_branch_ids == ()
+    assert {
+        root.branch_id,
+        alt_a.branch_id,
+        alt_b.branch_id,
+    }.issubset(set(snapshot.investigation.stopped_branch_ids))
+    assert snapshot.action_profile.legal_intents == (
+        InvestigationIntent.STOP_INVESTIGATION,
+    )
+
+    global_stop, task = _dmp0053_run(
+        service,
+        session,
+        proposal_id="closed-global-stop",
+        objective_key="closed.global.stop",
+        intent=InvestigationIntent.STOP_INVESTIGATION,
+    )
+    assert task is None
+    assert global_stop.stop_scope == StopScope.INVESTIGATION
+
+
+def test_dmp0053_global_control_legality_survives_restart_after_branch_stop():
+    db = db_engine()
+    store, session, _, _, claims, service = _dmp0053_service(db)
+    root, _ = _dmp0053_run(
+        service,
+        session,
+        proposal_id="restart-root",
+        objective_key="restart.root",
+        intent=InvestigationIntent.INVESTIGATE_GAP,
+    )
+    _dmp0053_run(
+        service,
+        session,
+        proposal_id="restart-stop-root",
+        objective_key="restart.stop.root",
+        intent=InvestigationIntent.STOP_BRANCH,
+        parent_step_id=root.step_id,
+    )
+
+    restarted = ResearchInvestigationManager(
+        research_store=store,
+        claim_store=claims,
+        followup_executor=PersistedFirstFollowup(db),
+        budget=ResearchReasoningBudget(
+            max_reasoning_steps=12,
+            max_followup_native_turns=6,
+            max_counter_evidence_attempts=3,
+            max_depth=5,
+        ),
+        db_engine=db,
+    )
+    snapshot = restarted.snapshot(
+        session_id=session.session_id,
+        principal=principal(),
+    )
+    assert root.branch_id in snapshot.investigation.stopped_branch_ids
+    rule = snapshot.action_profile.rule_for(
+        InvestigationIntent.STOP_INVESTIGATION
+    )
+    assert rule is not None
+    assert rule.branch_behavior == InvestigationBranchBehavior.GLOBAL_CONTROL
+
+    stopped, task = _dmp0053_run(
+        restarted,
+        session,
+        proposal_id="restart-global-stop",
+        objective_key="restart.global.stop",
+        intent=InvestigationIntent.STOP_INVESTIGATION,
+    )
+    assert task is None
+    assert stopped.stop_scope == StopScope.INVESTIGATION
+
+
+def test_dmp0053_advertised_profile_moves_resolve_and_validate_consistently():
+    db = db_engine()
+    _, session, _, _, _, service = _dmp0053_service(db)
+    root, alt_a, _ = _dmp0053_root_with_two_alternatives(
+        service,
+        session,
+        prefix="profile",
+    )
+    _dmp0053_run(
+        service,
+        session,
+        proposal_id="profile-stop-a",
+        objective_key="profile.stop.a",
+        intent=InvestigationIntent.STOP_BRANCH,
+        parent_step_id=alt_a.step_id,
+    )
+    snapshot = service.snapshot(
+        session_id=session.session_id,
+        principal=principal(),
+    )
+    profile = manager_module._build_action_profile(
+        graph=snapshot.investigation,
+        claims=(),
+        materials=(),
+        remaining_followup_native_turns=snapshot.remaining_followup_native_turns,
+        remaining_counter_evidence_attempts=(
+            snapshot.remaining_counter_evidence_attempts
+        ),
+        max_depth=service._budget.max_depth,
+    )
+    governed = snapshot.model_copy(
+        update={
+            "claims": (),
+            "materials": (),
+            "material_refs": (),
+            "action_profile": profile,
+        }
+    )
+
+    for index, rule in enumerate(profile.rules):
+        parent_step_id = (
+            rule.legal_parent_step_ids[0]
+            if rule.legal_parent_step_ids
+            else None
+        )
+        branch_key = (
+            f"profile-{index}"
+            if rule.branch_key_policy
+            == manager_module.InvestigationBranchKeyPolicy.REQUIRED
+            else None
+        )
+        proposal = recursive_proposal(
+            governed,
+            proposal_id=f"profile-rule-{index}",
+            objective_key=f"profile.rule.{index}",
+            intent=rule.intent,
+            parent_step_id=parent_step_id,
+            branch_key=branch_key,
+        )
+        topology = manager_module.resolve_investigation_topology(
+            snapshot=governed,
+            proposal=proposal,
+        )
+        service._validate(
+            session=session,
+            snapshot=governed,
+            proposal=proposal,
+            topology=topology,
+        )
+
+
+def test_dmp0053_unadvertised_branch_move_on_stopped_branch_remains_illegal():
+    db = db_engine()
+    _, session, _, _, _, service = _dmp0053_service(db)
+    root, _ = _dmp0053_run(
+        service,
+        session,
+        proposal_id="illegal-root",
+        objective_key="illegal.root",
+        intent=InvestigationIntent.INVESTIGATE_GAP,
+    )
+    _dmp0053_run(
+        service,
+        session,
+        proposal_id="illegal-stop-root",
+        objective_key="illegal.stop.root",
+        intent=InvestigationIntent.STOP_BRANCH,
+        parent_step_id=root.step_id,
+    )
+    snapshot = service.snapshot(
+        session_id=session.session_id,
+        principal=principal(),
+    )
+    assert (
+        snapshot.action_profile.rule_for(
+            InvestigationIntent.DEEPEN_EXPLANATION
+        )
+        is None
+    )
+    proposal = recursive_proposal(
+        snapshot,
+        proposal_id="illegal-deepen-stopped",
+        objective_key="illegal.deepen.stopped",
+        intent=InvestigationIntent.DEEPEN_EXPLANATION,
+        parent_step_id=root.step_id,
+    )
+    with pytest.raises(ResearchManagerMaturationError) as exc:
+        manager_module.resolve_investigation_topology(
+            snapshot=snapshot,
+            proposal=proposal,
+        )
+    assert exc.value.code == "P17_PARENT_STEP_NOT_LEGAL"
+
+
 def test_dmp0053_early_global_stop_exposes_no_new_open_branch():
     db = db_engine()
     _, session, _, _, _, service = _dmp0053_service(db)
