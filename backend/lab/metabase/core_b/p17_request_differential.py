@@ -309,7 +309,7 @@ def run_differential() -> dict[str, Any]:
         "user_prompt_hash",
         "request_envelope_fingerprint",
         "response_format_family",
-        "max_tokens",
+        "max_completion_tokens",
         "provider_routing_policy_fingerprint",
     )
     fixed_equal = all(

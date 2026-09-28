@@ -123,8 +123,22 @@ def _sanitize_text(value: str, *, sensitive_values: tuple[str, ...]) -> str:
     return _bounded_utf8(sanitized)
 
 
+_SAFE_TELEMETRY_KEYS = frozenset(
+    {
+        "prompt_tokens",
+        "completion_tokens",
+        "reasoning_tokens",
+        "input_tokens",
+        "output_tokens",
+        "total_tokens",
+    }
+)
+
+
 def _is_secret_key(key: str) -> bool:
     normalized = key.casefold().replace("-", "_")
+    if normalized in _SAFE_TELEMETRY_KEYS:
+        return False
     if any(fragment in normalized for fragment in _SECRET_KEY_FRAGMENTS):
         return True
     return (
