@@ -365,8 +365,8 @@ def test_forward_scope_accepts_same_governed_metric_with_different_physical_plan
         expected_metabase_subject=7,
     )
 
-    assert observed.metric_refs == ("cand_sales_order_count",)
-    assert observed.scope_identity.version_id == "scope_v1"
+    assert observed.request.metric_refs == ("cand_sales_order_count",)
+    assert observed.request.scope_identity.version_id == "scope_v1"
 
 
 def test_research_forward_scope_is_not_a_query_implementation_validator():

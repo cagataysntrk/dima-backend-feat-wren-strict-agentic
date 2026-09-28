@@ -20,6 +20,7 @@ from app.v3.native_standard.contracts import (
     NativeAttestedRuntimeIdentity,
     NativeBreakoutFact,
     NativeExecutionManifest,
+    NativeMetricReferenceFact,
     NativeOrderByFact,
     NativePermissionProvenance,
     NativeTemporalPredicate,
@@ -79,13 +80,21 @@ ENGINE = NativeEngineIdentity(
 )
 
 
-def binding(candidate_id, column=None, *, aggregation=None, argument_kind=None):
+def binding(
+    candidate_id,
+    column=None,
+    *,
+    aggregation=None,
+    argument_kind=None,
+    native_metric_entity_id=None,
+):
     return ResearchNativeVerificationBinding(
         candidate_id=candidate_id,
         table_name="machine_operations",
         column_name=column,
         aggregation=aggregation,
         argument_kind=argument_kind,
+        native_metric_entity_id=native_metric_entity_id,
     )
 
 
@@ -142,12 +151,14 @@ VERIFICATION_BINDINGS = (
         "machine_downtime_minutes",
         aggregation="sum",
         argument_kind="field_or_expression",
+        native_metric_entity_id="metric-machine-downtime-v1",
     ),
     binding(
         FAULTS.candidate_id,
         "fault_count",
         aggregation="sum",
         argument_kind="field_or_expression",
+        native_metric_entity_id="metric-fault-count-v1",
     ),
     binding(DEPARTMENT.candidate_id, "department"),
     binding(EVENT_DATE.candidate_id, "event_date"),
@@ -296,6 +307,7 @@ def attestation(
     start="2026-06-01",
     end="2026-07-01",
     time=True,
+    temporal_shape="bounds",
     ranking=False,
 ):
     aggregations=tuple(
@@ -317,8 +329,10 @@ def attestation(
         )
         for index,field_id in enumerate(breakout_field_ids)
     )
-    temporal=(
-        (
+    if not time:
+        temporal=()
+    elif temporal_shape == "bounds":
+        temporal=(
             NativeTemporalPredicate(
                 time_field_id=301,
                 operator=">=",
@@ -334,9 +348,20 @@ def attestation(
                 field_temporal_type="type/Date",
             ),
         )
-        if time
-        else ()
-    )
+    elif temporal_shape == "during":
+        temporal=(
+            NativeTemporalPredicate(
+                time_field_id=301,
+                operator="during",
+                lower_bound=start,
+                upper_bound=end,
+                lower_inclusive=True,
+                upper_inclusive=False,
+                field_temporal_type="type/Date",
+            ),
+        )
+    else:
+        raise ValueError(f"unsupported temporal_shape: {temporal_shape}")
     textual=(
         (
             NativeTextualEqualityPredicate(
@@ -376,6 +401,19 @@ def attestation(
         referenced_source_table_ids=(10,),
         aggregation_count=len(aggregations),
         aggregations=aggregations,
+        native_metric_references=tuple(
+            NativeMetricReferenceFact(
+                stage_number=0,
+                aggregation_index=index,
+                metabase_metric_id=(501 if field_id == 101 else 502),
+                metabase_metric_entity_id=(
+                    "metric-machine-downtime-v1"
+                    if field_id == 101
+                    else "metric-fault-count-v1"
+                ),
+            )
+            for index, field_id in enumerate(metric_field_ids)
+        ),
         breakout_count=len(breakouts),
         breakouts=breakouts,
         material_filter_count=len(temporal)+len(textual),
@@ -646,6 +684,23 @@ def test_r1_attested_native_scope_accepts_exact_june_department_request():
     )
     assert observed.request.period == contract.period
     assert observed.request.dimension_refs == ("dimension.department",)
+
+
+def test_r1_attested_native_scope_accepts_equivalent_during_temporal_shape():
+    current=session()
+    contract=analytical_scope_contract(session=current,obligation_id="g_scope")
+    observed=assert_attested_native_scope(
+        session=current,
+        obligation_id="g_scope",
+        contract=contract,
+        attestation=attestation(temporal_shape="during"),
+        field_locators=LOCATORS,
+        table_locators=TABLE_LOCATORS,
+        expected_engine=ENGINE,
+        expected_metabase_subject=77,
+    )
+    assert observed.request.period == contract.period
+    assert observed.request.metric_refs == ("metric.downtime",)
 
 
 def test_r1_attested_native_scope_rejects_implicit_time_broadening():
