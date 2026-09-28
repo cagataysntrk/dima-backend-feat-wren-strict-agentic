@@ -102,7 +102,7 @@ def test_metric_fixture_setup_is_closed_and_creates_metric_cards():
 
 def test_pinpoint_workflow_is_one_probe_per_run_and_no_broad_scorer():
     workflow = (
-        Path(__file__).parents[1]
+        Path(__file__).parents[2]
         / ".github"
         / "workflows"
         / "dima-v1-phase1-p12-pinpoint-live.yml"
