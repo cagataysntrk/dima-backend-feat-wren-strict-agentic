@@ -1,8 +1,14 @@
 name: dima-v1-phase1-pinpoint-live
 
-# Steady-state recovery workflow. Paid execution is manual-only until a fresh
-# exact-file authorization bridge is explicitly installed after provider-free GREEN.
+# DMP-DEC-0074C temporary exact-file execution bridge.
+# Push is legal only for the single authorization file below and must be removed
+# immediately when the A/B sequence stops or completes.
 on:
+  push:
+    branches:
+      - feat/dima-metabase-platform
+    paths:
+      - "backend/eval/v1/authorizations/phase1-final-pinpoint-live-001.json"
   workflow_dispatch:
     inputs:
       probe_id:
@@ -49,16 +55,72 @@ jobs:
           fetch-depth: 64
           submodules: false
 
-      - name: Resolve manual pinpoint request
+      - name: Resolve exact pinpoint authorization
         id: auth
         shell: bash
         run: |
           set -euo pipefail
-          test "${{ github.event_name }}" = "workflow_dispatch"
-          test "${{ inputs.confirm_pinpoint_paid }}" = "YES"
-          echo "candidate_sha=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
-          echo "probe_id=${{ inputs.probe_id }}" >> "$GITHUB_OUTPUT"
-          echo "max_orchestration_units=12" >> "$GITHUB_OUTPUT"
+          if [ "${{ github.event_name }}" = "push" ]; then
+            python - <<'PY'
+          import json
+          import os
+          import subprocess
+          from pathlib import Path
+
+          path=Path("backend/eval/v1/authorizations/phase1-final-pinpoint-live-001.json")
+          item=json.loads(path.read_text(encoding="utf-8"))
+          assert item["schema_version"]=="dima_v1_phase1_final_pinpoint_authorization_v2"
+          assert item["decision"]=="PINPOINT_PAID_ONLY"
+          assert item["confirm"]=="YES"
+          assert item["authorization_id"] in {
+              "phase1-recovery-probe-a-v2-001",
+              "phase1-recovery-probe-b-001",
+          }
+          assert item["probe_id"] in {
+              "SCOPE_CURRENTNESS_HARD_V2",
+              "RCA_P19_HARD",
+          }
+          assert item["candidate_product_sha"]=="46b3d9b6b19c9d837ed5a32664d10a3d3442392a"
+          assert item["max_orchestration_boundary_units"]==12
+          assert item["hard_provider_request_ceiling"]==24
+          assert item["engine_sha"]=="cbe313af9ac2d5960f662068e433d328d896fb06"
+          assert item["engine_digest"]=="sha256:40e9a44be49904de3ddf12d4683c768e70955851c10a928a9c8f7d8f60780353"
+          assert item["migration_head"]=="fd2a7c9e4b61"
+          assert item["broad_paid_allowed"] is False
+          assert item["automatic_retry"] is False
+          assert item["third_probe_allowed"] is False
+
+          candidate=item["candidate_product_sha"]
+          subprocess.run(["git","merge-base","--is-ancestor",candidate,"HEAD"],check=True)
+          subprocess.run(
+              [
+                  "git","diff","--exit-code",candidate,"HEAD","--",
+                  "backend/app","backend/migrations","engine/metabase",
+              ],
+              check=True,
+          )
+
+          if item["probe_id"]=="SCOPE_CURRENTNESS_HARD_V2":
+              assert item["authorization_id"]=="phase1-recovery-probe-a-v2-001"
+              assert item.get("probe_a_run_id") is None
+              assert item.get("probe_a_adjudication") is None
+          else:
+              assert item["authorization_id"]=="phase1-recovery-probe-b-001"
+              assert isinstance(item.get("probe_a_run_id"), int)
+              assert item.get("probe_a_adjudication")=="GREEN"
+
+          with open(os.environ["GITHUB_OUTPUT"],"a",encoding="utf-8") as out:
+              out.write(f"candidate_sha={candidate}\n")
+              out.write(f"probe_id={item['probe_id']}\n")
+              out.write("max_orchestration_units=12\n")
+          PY
+          else
+            test "${{ github.event_name }}" = "workflow_dispatch"
+            test "${{ inputs.confirm_pinpoint_paid }}" = "YES"
+            echo "candidate_sha=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+            echo "probe_id=${{ inputs.probe_id }}" >> "$GITHUB_OUTPUT"
+            echo "max_orchestration_units=12" >> "$GITHUB_OUTPUT"
+          fi
 
       - uses: actions/setup-python@v5
         with:
