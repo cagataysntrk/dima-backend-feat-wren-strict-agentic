@@ -7737,3 +7737,90 @@ P13 = NOT STARTED / BLOCKED PENDING USER-AUTHORIZED FINAL VALIDATION
 
 No P13 or Phase-2 work is authorized by this receipt.
 
+
+
+---
+
+## DMP-DEC-0073 — SUPERVISOR ARCHITECTURE AUDIT / R1-P3 + R3 LOCALIZED REOPEN
+
+date: 2026-09-28
+
+status:
+`OPEN / LOCALIZED ARCHITECTURE CORRECTION AUTHORIZED`
+
+authority:
+A later supervisor architecture audit found two contract-boundary defects that were not adequately
+covered by the historical DMP-DEC-0072 provider-free proof. DMP-DEC-0072 remains historical fact.
+Only the two seams below are reopened.
+
+reopened:
+- R1/P3 forward analytical request admission boundary;
+- R3 P17 -> P19 materially-distinct mechanism identity.
+
+explicitly not reopened:
+- R2 currentness/security;
+- R4 relationship composition;
+- P18 policy legality;
+- P19 causal/assessment authority;
+- P20 report authority;
+- engine;
+- UI/frontend;
+- external execution.
+
+Correction A invariant:
+```text
+forward V1 correctness
+= accepted material request
++ security/provenance
++ observed material semantics
+
+forward V1 correctness
+!= Dima-preferred query implementation
+```
+
+Dima may enforce metric identity, dimension identity, time/entity/filter scope, comparison intent,
+ranking semantic target/direction/limit, requested grain, scope lineage/version and requested output
+surface. Forward correctness must not depend on exact aggregation operator, aggregation argument
+shape, physical query-count topology, SQL/MBQL, join planning, query optimization, or a preferred
+native stage/order-by implementation.
+
+Correction B invariant:
+```text
+materially_distinct
+= distinct(relation_kind, governed_mechanism_semantic_ref)
+```
+
+Provider narrative `branch_concept` may remain investigation cognition, but free-form prose,
+including any deterministic hash derived from it, must not become P19 material mechanism identity.
+The provider may select only from a closed set of governed semantic refs; Dima binds and validates
+the selected ref against accepted governed state.
+
+preserve:
+- accepted ResearchScope, typed periods/filters and scope lineage/version;
+- P14/P17 shared analytical scope model;
+- native attestation, engine identity and subject identity;
+- Evidence admission boundary;
+- R2 currentness semantics;
+- R4 relationship layers;
+- USER_MUST accounting;
+- P20 Evidence legality;
+- security/non-oracle behavior.
+
+fixed identities at reopen:
+- branch HEAD before reopen receipt = `6f9aec71ab306c0bb17a74b9450ced4690f1af09`;
+- engine SHA = `cbe313af9ac2d5960f662068e433d328d896fb06`;
+- engine release = `0.63.18-dima.6`;
+- engine digest = `sha256:40e9a44be49904de3ddf12d4683c768e70955851c10a928a9c8f7d8f60780353`;
+- migration head = `fd2a7c9e4b61`;
+- broad paid runs authorized by this receipt = 0.
+
+next legal sequence:
+```text
+Correction A -> focused GREEN
+Correction B -> focused GREEN
+integrated provider-free GREEN
+DMP-DEC-0073 re-seal
+then and only then paid-governance hardening / pinpoint-live preparation
+```
+
+No paid/model call is authorized by this reopen receipt.

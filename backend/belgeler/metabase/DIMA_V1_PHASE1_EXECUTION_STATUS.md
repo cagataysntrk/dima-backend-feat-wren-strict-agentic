@@ -7,15 +7,32 @@ IS PHASE 1 COMPLETE?
 NO
 
 PHASE 1 = IN_PROGRESS
-WAVE A   = WAVE_GREEN
-WAVE B   = WAVE_GREEN + POST-P12 INTEGRATION RECERTIFIED
-WAVE C   = IN_PROGRESS / FINAL VALIDATION BLOCKED
 
-PHASE 1 REMAINING
-= user/supervisor-authorized final validation decision,
-  P13 canonical Phase-1 freeze,
-  immutable Phase-1 acceptance receipt
-NO broad live rerun is authorized
+WAVE A
+= WAVE_GREEN
+
+WAVE B
+= HISTORICAL WAVE_GREEN
+= POST-P12 PROVIDER-FREE RECERTIFIED
+= SUPERVISOR AUDIT REOPENED TWO LOCAL SEAMS
+
+R1/P3 = REOPENED
+R2    = GREEN / DO NOT REOPEN
+R3    = REOPENED
+R4    = GREEN / DO NOT REOPEN
+
+P12 provider-free
+= PRIOR GREEN
+= REVALIDATION PENDING AFTER CORRECTIONS
+
+P12 pinpoint paid
+= NOT RUN
+
+BROAD PAID BENCHMARK
+= FORBIDDEN
+
+P13
+= NOT STARTED
 ```
 
 Baseline authority: `4906c99f7f52aa800c42279b2fb68fc4435b911f`  
@@ -324,3 +341,54 @@ PINPOINT PAID TEST = AUTHORIZED IF NEEDED / NOT RUN
 P13 = NOT STARTED / BLOCKED PENDING USER-AUTHORIZED FINAL VALIDATION
 ```
 
+
+
+## SUPERVISOR ARCHITECTURE REOPEN — DMP-DEC-0073
+
+Authority date: 2026-09-28
+
+```text
+PHASE 1 = IN_PROGRESS
+
+WAVE A = WAVE_GREEN
+
+WAVE B
+= HISTORICAL WAVE_GREEN
+= POST-P12 PROVIDER-FREE RECERTIFIED
+= SUPERVISOR AUDIT REOPENED TWO LOCAL SEAMS
+
+R1/P3 = REOPENED
+R2 = GREEN / DO NOT REOPEN
+R3 = REOPENED
+R4 = GREEN / DO NOT REOPEN
+
+P12 provider-free
+= PRIOR GREEN
+= REVALIDATION PENDING AFTER CORRECTION
+
+P12 pinpoint paid
+= NOT RUN
+
+P13
+= NOT STARTED
+```
+
+Localized correction scope:
+- R1/P3: forward request trust must validate accepted material semantics and trust/provenance,
+  not Metabase's physical query implementation;
+- R3: material P19 mechanism identity must come from a closed governed semantic ref,
+  never free-form `branch_concept` or a hash derived from it.
+
+Explicitly preserved:
+- R2 currentness/security;
+- R4 relationship semantics;
+- P18 policy legality;
+- P19 causal/assessment authority;
+- P20 report legality;
+- engine `cbe313af9ac2d5960f662068e433d328d896fb06` / `0.63.18-dima.6`;
+- migration head `fd2a7c9e4b61`;
+- no UI/frontend work;
+- no external action execution;
+- no broad paid run.
+
+Historical DMP-DEC-0072 evidence remains historical fact. It is not rewritten or deleted.
