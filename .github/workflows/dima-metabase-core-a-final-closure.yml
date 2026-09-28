@@ -208,7 +208,7 @@ jobs:
           assert_blob backend/app/v3/research.py 95f08cf20ab409cec384e1041736537b528c836a
           assert_blob backend/app/v3/research_store.py 659664fa6c8c98e724adb45025ec5e69b9fd7cea
           assert_blob backend/app/v3/research_product.py 443a2e699ffc92aeb700051e57b24a709cf97b2c
-          assert_blob backend/app/v3/research_native_gateway.py 714d392f0ab4a3cb4bfd4b7dbcc5e3741d38e290
+          assert_blob backend/app/v3/research_native_gateway.py b28e2d84fc795fbe336d78bd93a178a50f4726ee
           test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "cbe313af9ac2d5960f662068e433d328d896fb06"
 
       - name: Final Core A invariant budget

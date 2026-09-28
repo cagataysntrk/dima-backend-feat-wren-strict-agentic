@@ -8,6 +8,7 @@ on:
     paths:
       - "backend/app/v3/hypothesis_root_cause.py"
       - "backend/app/v3/hypothesis_root_cause_provider.py"
+      - "backend/app/v3/research_native_gateway.py"
       - "backend/control_plane/models.py"
       - "backend/migrations/versions/f6b2e8c4a917_p19_hypothesis_root_cause.py"
       - "backend/tests/test_v3_p19_hypothesis_root_cause.py"
