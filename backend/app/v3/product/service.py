@@ -38,10 +38,15 @@ from .contracts import (
     CompanyContext,
     OperationTrace,
     ProductArtifact,
+    ProductCurrentness,
     ProductErrorCode,
     TimelineItem,
 )
-from .errors import ProductError, normalize_owner_error
+from .errors import (
+    ProductError,
+    ProductOwnerDiagnostic,
+    normalize_owner_error,
+)
 from . import projections
 
 T = TypeVar("T")
@@ -91,7 +96,12 @@ def _subject(principal: Principal) -> str:
     return raw
 
 
-def _owner_call(call: Callable[[], T]) -> T:
+def _owner_call(
+    call: Callable[[], T],
+    *,
+    owner: str = "UNKNOWN_OWNER",
+    diagnostic: ProductOwnerDiagnostic | None = None,
+) -> T:
     try:
         return call()
     except ProductError:
@@ -99,7 +109,11 @@ def _owner_call(call: Callable[[], T]) -> T:
     except Exception as exc:
         if not hasattr(exc, "code"):
             raise
-        raise normalize_owner_error(exc) from exc
+        raise normalize_owner_error(
+            exc,
+            owner=owner,
+            diagnostic=diagnostic,
+        ) from exc
 
 
 def _require(value: T | None, capability: str) -> T:
@@ -137,6 +151,44 @@ class HeadlessProductService:
     def __init__(self, *, sources: ProductSources) -> None:
         self._s=sources
 
+    def _research_currentness(
+        self,
+        *,
+        session,
+        principal: Principal,
+        artifact_kind: ArtifactKind,
+        artifact_id: str,
+    ) -> ProductCurrentness:
+        scope = (
+            session.accepted_brief.scope.scope_version
+            if getattr(session, "accepted_brief", None) is not None
+            else None
+        )
+        diagnostic = ProductOwnerDiagnostic(
+            owner="P14_RESEARCH",
+            owner_error_code="P14_RESEARCH_SCOPE_CURRENTNESS",
+            artifact_kind=artifact_kind.value,
+            artifact_id=artifact_id,
+            artifact_lineage=getattr(session, "lineage_id", None),
+            artifact_scope_version=(
+                scope.version_id if scope is not None else None
+            ),
+        )
+        try:
+            _owner_call(
+                lambda: self._s.research.current_scope_state(
+                    session_id=session.session_id,
+                    principal=principal,
+                ),
+                owner="P14_RESEARCH",
+                diagnostic=diagnostic,
+            )
+        except ProductError as exc:
+            if exc.code == ProductErrorCode.SUPERSEDED:
+                return ProductCurrentness.SUPERSEDED
+            raise
+        return ProductCurrentness.CURRENT
+
     def research_question(
         self,
         *,
@@ -159,7 +211,8 @@ class HeadlessProductService:
                 question=question,
                 catalog=catalog,
                 prior_brief=prior_brief,
-            )
+            ),
+            owner="RESEARCH_INTAKE",
         )
 
     def research_follow_up_question(
@@ -175,7 +228,8 @@ class HeadlessProductService:
             lambda: self._s.research.current_scope_state(
                 session_id=prior_session_id,
                 principal=principal,
-            )
+            ),
+            owner="P14_RESEARCH",
         )
         if prior.accepted_brief is None:
             raise ProductError(
@@ -208,16 +262,59 @@ class HeadlessProductService:
         kind=ref.kind
 
         if kind == ArtifactKind.RESEARCH:
-            item=_owner_call(lambda: self._s.research.resume_state(session_id=ref.artifact_id,principal=principal))
-            return projections.research(item)
+            diagnostic = ProductOwnerDiagnostic(
+                owner="P14_RESEARCH",
+                owner_error_code="P14_RESEARCH_RESUME",
+                artifact_kind=kind.value,
+                artifact_id=ref.artifact_id,
+            )
+            item=_owner_call(
+                lambda: self._s.research.resume_state(
+                    session_id=ref.artifact_id,
+                    principal=principal,
+                ),
+                owner="P14_RESEARCH",
+                diagnostic=diagnostic,
+            )
+            state = self._research_currentness(
+                session=item,
+                principal=principal,
+                artifact_kind=kind,
+                artifact_id=ref.artifact_id,
+            )
+            return projections.research(item, state)
 
         if kind == ArtifactKind.INVESTIGATION:
             reasoning=_require(self._s.reasoning,"investigation")
-            session=_owner_call(lambda: self._s.research.resume_state(session_id=ref.artifact_id,principal=principal))
+            diagnostic = ProductOwnerDiagnostic(
+                owner="P14_RESEARCH",
+                owner_error_code="P14_RESEARCH_RESUME",
+                artifact_kind=kind.value,
+                artifact_id=ref.artifact_id,
+            )
+            session=_owner_call(
+                lambda: self._s.research.resume_state(
+                    session_id=ref.artifact_id,
+                    principal=principal,
+                ),
+                owner="P14_RESEARCH",
+                diagnostic=diagnostic,
+            )
+            state = self._research_currentness(
+                session=session,
+                principal=principal,
+                artifact_kind=kind,
+                artifact_id=ref.artifact_id,
+            )
             # Principal was reauthorized on the Research owner before the ledger is projected.
             steps=reasoning.steps(session.session_id)
             tasks=reasoning.tasks(session.session_id)
-            return projections.investigation(session=session,steps=steps,tasks=tasks)
+            return projections.investigation(
+                session=session,
+                steps=steps,
+                tasks=tasks,
+                state=state,
+            )
 
         if kind == ArtifactKind.EVIDENCE:
             if not ref.scope_id:
@@ -225,37 +322,77 @@ class HeadlessProductService:
                     ProductErrorCode.UNAVAILABLE,
                     "Evidence resume requires durable Research session scope",
                 )
-            session=_owner_call(lambda: self._s.research.resume_state(session_id=ref.scope_id,principal=principal))
-            matches=tuple(x for x in session.evidence_refs if x.evidence_id==ref.artifact_id)
+            diagnostic = ProductOwnerDiagnostic(
+                owner="P14_RESEARCH",
+                owner_error_code="P14_RESEARCH_EVIDENCE_RESUME",
+                artifact_kind=kind.value,
+                artifact_id=ref.artifact_id,
+                requested_lineage=ref.scope_id,
+            )
+            session=_owner_call(
+                lambda: self._s.research.resume_state(
+                    session_id=ref.scope_id,
+                    principal=principal,
+                ),
+                owner="P14_RESEARCH",
+                diagnostic=diagnostic,
+            )
+            matches=tuple(
+                x for x in session.evidence_refs
+                if x.evidence_id==ref.artifact_id
+            )
             if len(matches)!=1:
-                raise ProductError(ProductErrorCode.UNAVAILABLE,"artifact unavailable in caller scope")
+                raise ProductError(
+                    ProductErrorCode.UNAVAILABLE,
+                    "artifact unavailable in caller scope",
+                    diagnostic=ProductOwnerDiagnostic(
+                        owner="P14_RESEARCH",
+                        owner_error_code="P14_EVIDENCE_NOT_IN_SESSION_SCOPE",
+                        artifact_kind=kind.value,
+                        artifact_id=ref.artifact_id,
+                        requested_lineage=ref.scope_id,
+                        artifact_lineage=getattr(session, "lineage_id", None),
+                    ),
+                )
+            research_state = self._research_currentness(
+                session=session,
+                principal=principal,
+                artifact_kind=kind,
+                artifact_id=ref.artifact_id,
+            )
+            evidence_state = (
+                ProductCurrentness.CURRENT
+                if research_state == ProductCurrentness.CURRENT
+                else ProductCurrentness.HISTORICAL
+            )
             return projections.evidence_from_ref(
                 ref=matches[0],
                 tenant_binding=session.tenant_binding,
                 research_session_id=session.session_id,
                 created_at=session.updated_at,
+                state=evidence_state,
             )
 
         if kind == ArtifactKind.WATCH:
             owner=_require(self._s.watch_signal,"watch")
-            item=_owner_call(lambda: owner.load_watch(watch_id=ref.artifact_id,principal=principal))
+            item=_owner_call(lambda: owner.load_watch(watch_id=ref.artifact_id,principal=principal), owner="WATCH")
             return projections.watch(item)
 
         if kind == ArtifactKind.SIGNAL:
             owner=_require(self._s.watch_signal,"signal")
-            item=_owner_call(lambda: owner.load_signal(signal_id=ref.artifact_id,principal=principal))
-            state=_owner_call(lambda: owner.currentness(signal_id=ref.artifact_id,principal=principal))
+            item=_owner_call(lambda: owner.load_signal(signal_id=ref.artifact_id,principal=principal), owner="SIGNAL")
+            state=_owner_call(lambda: owner.currentness(signal_id=ref.artifact_id,principal=principal), owner="SIGNAL")
             return projections.signal(item,state)
 
         if kind == ArtifactKind.EPISTEMIC_ASSESSMENT:
             owner=_require(self._s.epistemics,"epistemic assessment")
-            item=_owner_call(lambda: owner.load_assessment(assessment_id=ref.artifact_id,principal=principal))
+            item=_owner_call(lambda: owner.load_assessment(assessment_id=ref.artifact_id,principal=principal), owner="P19")
             return projections.epistemic(item)
 
         if kind == ArtifactKind.REPORT:
             owner=_require(self._s.reports,"report")
-            item=_owner_call(lambda: owner.load(report_id=ref.artifact_id,principal=principal))
-            state=_owner_call(lambda: owner.currentness(report_id=ref.artifact_id,principal=principal))
+            item=_owner_call(lambda: owner.load(report_id=ref.artifact_id,principal=principal), owner="P20")
+            state=_owner_call(lambda: owner.currentness(report_id=ref.artifact_id,principal=principal), owner="P20")
             return projections.report(item,state)
 
         if kind == ArtifactKind.DECISION:

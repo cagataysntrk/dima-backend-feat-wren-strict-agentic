@@ -84,12 +84,16 @@ def _header(
     )
 
 
-def research(session: ResearchSession) -> ResearchDTO:
+def research(
+    session: ResearchSession,
+    state: object | None = None,
+) -> ResearchDTO:
     return ResearchDTO(
         header=_header(
             kind=ArtifactKind.RESEARCH,
             artifact_id=session.session_id,
             tenant_binding=session.tenant_binding,
+            state=state,
             created_at=session.created_at,
             revision=session.revision,
             terminal_state=session.stopping.status.value,
@@ -160,6 +164,7 @@ def investigation(
     session: ResearchSession,
     steps: tuple[ResearchReasoningStep, ...],
     tasks: tuple[ResearchInvestigationTask, ...],
+    state: object | None = None,
 ) -> InvestigationDTO:
     active = tuple(
         item.task_id
@@ -176,6 +181,7 @@ def investigation(
             kind=ArtifactKind.INVESTIGATION,
             artifact_id=session.session_id,
             tenant_binding=session.tenant_binding,
+            state=state,
             created_at=steps[0].created_at if steps else session.created_at,
             revision=session.revision,
             lineage_refs=(_ref(ArtifactKind.RESEARCH, session.session_id),),
@@ -195,12 +201,14 @@ def evidence_from_ref(
     tenant_binding: str,
     research_session_id: str,
     created_at: datetime | None = None,
+    state: object | None = None,
 ) -> EvidenceDTO:
     return EvidenceDTO(
         header=_header(
             kind=ArtifactKind.EVIDENCE,
             artifact_id=ref.evidence_id,
             tenant_binding=tenant_binding,
+            state=state,
             created_at=created_at,
             lineage_refs=(
                 _ref(ArtifactKind.RESEARCH, research_session_id),

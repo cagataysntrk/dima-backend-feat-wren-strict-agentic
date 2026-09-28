@@ -229,13 +229,23 @@ def memory():
 
 
 class FakeResearch:
-    def __init__(self):
+    def __init__(self, state="CURRENT"):
         self.calls=[]
+        self.state=state
     def resume_state(self,*,session_id,principal):
-        self.calls.append((session_id,principal.tenant_id,tuple(principal.roles)))
+        self.calls.append(("resume",session_id,principal.tenant_id,tuple(principal.roles)))
         if session_id!=research_session().session_id or str(principal.tenant_id)!=TENANT or "viewer" in principal.roles:
             raise OwnerError("P14_RESEARCH_UNAVAILABLE")
         return research_session()
+    def current_scope_state(self,*,session_id,principal):
+        self.calls.append(("currentness",session_id,principal.tenant_id,tuple(principal.roles)))
+        item=self.resume_state(session_id=session_id,principal=principal)
+        if self.state=="SUPERSEDED":
+            raise OwnerError(
+                "P14_RESEARCH_SCOPE_SUPERSEDED",
+                "historical scope is not the lineage head",
+            )
+        return item
 
 
 class FakeReasoning:
@@ -275,9 +285,9 @@ class FakeSingleOwner:
         self._check(key,principal); return self.item
 
 
-def sources(*,signal_state="CURRENT",report_state="CURRENT",decision_state="CURRENT",work_state="CURRENT",outcome_state="CURRENT",memory_state="CURRENT"):
+def sources(*,research_state="CURRENT",signal_state="CURRENT",report_state="CURRENT",decision_state="CURRENT",work_state="CURRENT",outcome_state="CURRENT",memory_state="CURRENT"):
     return ProductSources(
-        research=FakeResearch(),
+        research=FakeResearch(research_state),
         reasoning=FakeReasoning(),
         epistemics=FakeSingleOwner(epistemic(),"assessment_id"),
         reports=FakeSingleOwner(report(),"report_id",report_state),
@@ -354,7 +364,7 @@ def test_resume_reauthorizes_current_principal():
     with pytest.raises(ProductError) as exc:
         service.resume(ref=ref,principal=principal(roles=("viewer",)))
     assert exc.value.code==ProductErrorCode.UNAVAILABLE
-    assert len(src.research.calls)==2
+    assert len(src.research.calls)==4
 
 
 def test_foreign_and_missing_are_non_oracle():
@@ -367,6 +377,26 @@ def test_foreign_and_missing_are_non_oracle():
         service.resume(ref=missing,principal=principal())
     assert foreign.value.code==absent.value.code==ProductErrorCode.UNAVAILABLE
     assert foreign.value.detail==absent.value.detail
+
+
+def test_internal_owner_diagnostic_preserves_code_without_public_oracle():
+    foreign=normalize_owner_error(
+        OwnerError("P20_REPORT_TENANT_MISMATCH","foreign report"),
+        owner="P20",
+    )
+    missing=normalize_owner_error(
+        OwnerError("P20_REPORT_NOT_FOUND","missing report"),
+        owner="P20",
+    )
+    assert foreign.code==missing.code==ProductErrorCode.UNAVAILABLE
+    assert foreign.detail==missing.detail=="artifact unavailable in caller scope"
+    assert "TENANT_MISMATCH" not in str(foreign)
+    assert "NOT_FOUND" not in str(missing)
+    assert foreign.diagnostic is not None
+    assert missing.diagnostic is not None
+    assert foreign.diagnostic.owner=="P20"
+    assert foreign.diagnostic.owner_error_code=="P20_REPORT_TENANT_MISMATCH"
+    assert missing.diagnostic.owner_error_code=="P20_REPORT_NOT_FOUND"
 
 
 def test_evidence_resume_requires_durable_session_scope():
@@ -382,6 +412,27 @@ def test_evidence_resume_uses_session_lineage():
     assert dto.header.kind==ArtifactKind.EVIDENCE
     assert dto.state=="VERIFIED"
     assert dto.receipt_refs==("dqr_"+"3"*24,)
+
+
+def test_authorized_historical_research_and_evidence_remain_traceable():
+    service=HeadlessProductService(sources=sources(research_state="SUPERSEDED"))
+    research_dto=service.resume(ref=refs()[2],principal=principal())
+    investigation_dto=service.resume(ref=refs()[3],principal=principal())
+    evidence_dto=service.resume(ref=refs()[4],principal=principal())
+    assert research_dto.header.currentness==ProductCurrentness.SUPERSEDED
+    assert investigation_dto.header.currentness==ProductCurrentness.SUPERSEDED
+    assert evidence_dto.header.currentness==ProductCurrentness.HISTORICAL
+    assert evidence_dto.state=="VERIFIED"
+
+
+def test_current_research_evidence_remain_current():
+    service=HeadlessProductService(sources=sources(research_state="CURRENT"))
+    assert service.resume(
+        ref=refs()[2],principal=principal()
+    ).header.currentness==ProductCurrentness.CURRENT
+    assert service.resume(
+        ref=refs()[4],principal=principal()
+    ).header.currentness==ProductCurrentness.CURRENT
 
 
 @pytest.mark.parametrize(
