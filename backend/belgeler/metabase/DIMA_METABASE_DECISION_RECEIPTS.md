@@ -7656,3 +7656,84 @@ decision:
 `R4 = PROVIDER-FREE GREEN / RE-SEALED`.
 Proceed to one integrated provider-free root-recovery closure on the current HEAD.
 
+---
+
+## DMP-DEC-0072 — POST-P12 INTEGRATED ROOT-RECOVERY PROVIDER-FREE RE-CERTIFICATION
+
+date: 2026-09-28
+
+status:
+`SEALED / PROVIDER-FREE GREEN / PHASE 1 REMAINS IN_PROGRESS`
+
+authority:
+This receipt closes the bounded POST-P12 R1 -> R2 -> R3 -> R4 root-recovery program.
+It does not authorize P13, Phase 2, a broad paid benchmark, a new owner, or a new execution substrate.
+
+proof HEAD:
+`06b810c6b74acc55e501deb1fefb507b4a2bfb69`
+
+root-family state:
+- R1 accepted analytical scope propagation = PROVIDER-FREE GREEN;
+- R2 artifact visibility/currentness lineage = PROVIDER-FREE GREEN / RE-SEALED under DMP-DEC-0069;
+- R3 P17 -> P19 typed candidate contract = PROVIDER-FREE GREEN / RE-SEALED under DMP-DEC-0070;
+- R4 relationship result / P18 composition = PROVIDER-FREE GREEN / RE-SEALED under DMP-DEC-0071.
+
+integrated provider-free evidence:
+- Core-B provider-free seal `36421931991 = SUCCESS`;
+- Core-A final closure `36421931956 = SUCCESS`;
+- P12 provider-free `36421931837 = SUCCESS`;
+- Phase-1 focused `36421931936 = SUCCESS`;
+- P18 provider-free `36421931791 = SUCCESS`;
+- P19 provider-free `36421931818 = SUCCESS`;
+- P20 provider-free `36421932009 = SUCCESS`;
+- cleanup-focused `36421931779 = SUCCESS`;
+- canonical governance `36421931801 = SUCCESS`;
+- ActionAuthorization `36421931815 = SUCCESS`;
+- Human Adoption `36421931816 = SUCCESS`;
+- P21 provider-free `36421931953 = SUCCESS`.
+
+cross-owner closure:
+- accepted scope -> native base/follow-up and persisted child analytical scope = GREEN;
+- authorized historical artifact -> readable historical/currentness projection = GREEN;
+- historical Evidence -> cannot satisfy current scope truth = GREEN;
+- P17 typed root claim -> P16 governed claim/Evidence -> Product candidate -> P19 eligibility/call path = GREEN;
+- relationship analytical material -> P16 claim -> Product relationship projection -> sealed P18 policy result = GREEN;
+- P19 NextTestRequest -> bounded P17 re-entry -> native Evidence -> P19 continuation = GREEN;
+- FAST/GUIDED/INVESTIGATION routing remains deterministic and typed;
+- cross-tenant non-oracle behavior remains GREEN.
+
+hard invariants:
+- engine remains `cbe313af9ac2d5960f662068e433d328d896fb06` / `0.63.18-dima.6`;
+- Alembic head remains `fd2a7c9e4b61`;
+- UI/frontend diff = 0;
+- Wren runtime/code import diff = 0;
+- external execution diff = 0;
+- benchmark case-specific production code = 0;
+- semantic regex/fuzzy/morphology/embedding-threshold authority = 0;
+- silent fallback = 0;
+- second query planner = 0;
+- second analytics engine = 0.
+
+provider-free artifacts:
+- P12 P0 artifact `10969836703`, digest `sha256:516ac43e806827a4b060c0a6a47d308cde8af050a3443d06578995ec1d8d10fc`;
+- Core-B provider-free canary artifact `10969817013`, digest `sha256:adf664421665f32827e6ba4e3fe509e53a04e1c111dc8fb3ccea9a4013329de1`.
+
+paid-test accounting:
+- broad paid/model runs after the POST-P12 directive = 0;
+- pinpoint paid validation was explicitly allowed by the user if needed;
+- no pinpoint paid validation was required or dispatched for this provider-free closure.
+
+decision:
+```text
+PHASE 1 = IN_PROGRESS
+POST-P12 ROOT RECOVERY = PROVIDER-FREE GREEN
+WAVE A = WAVE_GREEN
+WAVE B = WAVE_GREEN + POST-P12 INTEGRATION RECERTIFIED
+P12 provider-free = GREEN
+P12 prior live = HISTORICAL DIAGNOSTIC RED / NOT ACCEPTED
+NEW BROAD LIVE RUN = NOT AUTHORIZED
+P13 = NOT STARTED / BLOCKED PENDING USER-AUTHORIZED FINAL VALIDATION
+```
+
+No P13 or Phase-2 work is authorized by this receipt.
+

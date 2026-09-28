@@ -8,13 +8,14 @@ NO
 
 PHASE 1 = IN_PROGRESS
 WAVE A   = WAVE_GREEN
-WAVE B   = WAVE_GREEN
-WAVE C   = IN_PROGRESS
+WAVE B   = WAVE_GREEN + POST-P12 INTEGRATION RECERTIFIED
+WAVE C   = IN_PROGRESS / FINAL VALIDATION BLOCKED
 
 PHASE 1 REMAINING
-= P12 Round-2 benchmark + new metamorphic corpus,
-  P0 invariant audit, P13 canonical Phase-1 freeze,
+= user/supervisor-authorized final validation decision,
+  P13 canonical Phase-1 freeze,
   immutable Phase-1 acceptance receipt
+NO broad live rerun is authorized
 ```
 
 Baseline authority: `4906c99f7f52aa800c42279b2fb68fc4435b911f`  
@@ -45,7 +46,7 @@ Status vocabulary:
 | P9 | PARTIAL_MUST_EXTEND | WAVE_GREEN | `e27e84b76c7176daa86cf50578d036879bf08ce3` | B2 focused GREEN | Core-B `36346079648`; provider-free `36346079680` | transient relationship result; P18 durable authority unchanged |
 | P10 | ALREADY_PROVEN | WAVE_GREEN | `e27e84b76c7176daa86cf50578d036879bf08ce3` | scope-currentness GREEN | P20 `36346079630`; Core-A `36346079740` | DMP-DEC-0067 SEALED; superseded-scope reports become stale |
 | P11 | PARTIAL_MUST_EXTEND | WAVE_GREEN | `e27e84b76c7176daa86cf50578d036879bf08ce3` | execution-mode matrix GREEN | Phase-1 `36345910032`; Core-B `36346079648` | deterministic FAST/GUIDED/INVESTIGATION owner router |
-| P12 | PARTIAL/MISSING | IN_PROGRESS | `8abb59fdeee394617fd140b13e77adce4a04e867` | provider-free first run RED: eval-test assumption only | live benchmark authorized only after provider-free GREEN | frozen Round-2 + new metamorphic/P0 gate |
+| P12 | PARTIAL/MISSING | PROVIDER-FREE GREEN / PRIOR LIVE DIAGNOSTIC RED | `ee1fd64c4b819669dd2751d99ccece474ebba75c` | current P12 provider-free `36421931837`: GREEN | POST-P12 integrated closure `36421931991` + `36421931956`: GREEN | prior 30-case live is historical/not accepted; no broad rerun authorized |
 | P13 | MISSING | NOT_STARTED | - | - | - | Wave C only |
 
 ## Wave-A formal closure receipts
@@ -165,7 +166,10 @@ R4 relationship result / P18 authority composition
 = PROVIDER-FREE GREEN / RE-SEALED
 
 POST-P12 integrated provider-free closure
-= PENDING CURRENT-HEAD RECERTIFICATION
+= PROVIDER-FREE GREEN
+
+WAVE B
+= WAVE_GREEN + POST-P12 INTEGRATION RECERTIFIED
 
 P12 prior live
 = historical diagnostic artifact
@@ -177,10 +181,12 @@ new broad live run
 
 pinpoint paid validation
 = USER-AUTHORIZED IF NEEDED
+= NOT REQUIRED FOR PROVIDER-FREE CLOSURE
 = NOT RUN
 
 P13
-= BLOCKED / NOT STARTED
+= BLOCKED PENDING USER-AUTHORIZED FINAL VALIDATION
+= NOT STARTED
 ```
 
 R1 evidence:
@@ -267,5 +273,54 @@ Current fixed identities:
 - broad P12 live rerun = `NOT AUTHORIZED`;
 - P13 = `BLOCKED / NOT STARTED`.
 
-The next allowed step is one current-HEAD integrated provider-free recertification across the existing owners. No new orchestration owner is introduced.
+Integrated provider-free recertification completed on proof HEAD `06b810c6b74acc55e501deb1fefb507b4a2bfb69`.
+No new orchestration owner was introduced. No paid/model live call was required.
+
+Integrated POST-P12 provider-free closure evidence at proof HEAD `06b810c6b74acc55e501deb1fefb507b4a2bfb69`:
+- Core-B provider-free seal `36421931991 = SUCCESS`;
+- Core-A final closure `36421931956 = SUCCESS`;
+- P12 provider-free `36421931837 = SUCCESS`;
+- Phase-1 focused `36421931936 = SUCCESS`;
+- P18 provider-free `36421931791 = SUCCESS`;
+- P19 provider-free `36421931818 = SUCCESS`;
+- P20 provider-free `36421932009 = SUCCESS`;
+- cleanup-focused `36421931779 = SUCCESS`;
+- canonical governance `36421931801 = SUCCESS`;
+- ActionAuthorization `36421931815 = SUCCESS`;
+- Human Adoption `36421931816 = SUCCESS`;
+- P21 provider-free `36421931953 = SUCCESS`;
+- dedicated P17 workflow was path-skipped, while P17 regressions were executed inside the integrated Core-B/Core-A/P18/P19/P20/Phase-1 gates.
+
+Affected regression counts observed in the integrated provider-free proof:
+- Core-B seal: P3 43 PASS; B1 24 PASS; B2 49 PASS; adaptive scope 6 PASS; campaign/fixture 11 PASS; intake 16 PASS; scoped P17 provider 1 PASS; structured cognition 23 PASS; USER_MUST 9 PASS; Product composition 53 PASS; P14 15 PASS; P17 128 PASS; P18 24 PASS; P19 45 PASS; P20 19 PASS; P21 25 PASS; control-plane security 6 PASS.
+- Core-A final: repository/security 26 PASS; Core-A owners 70 PASS; ActionAuthorization 38 PASS; Human Adoption 29 PASS; P21 25 PASS; P20/scope 35 PASS; P19 45 PASS; P18 24 PASS; P17 128 PASS; P16 6 PASS; P15 5 PASS; P14 15 PASS.
+- P12 provider-free: preflight 3 PASS; metamorphic 8 PASS; provider boundary 32 PASS; P19 routing 46 PASS; scope/USER_MUST 38 PASS; epistemic/publication 59 PASS; cross-tenant security 6 PASS.
+- Phase-1 focused: repository 20 PASS; P1 32 PASS; P2 51 PASS; P3 43 PASS; P4 12 PASS; P5/P17 72 PASS; Wave-B B1 112 PASS; Wave-B B2 92 PASS; affected Product/Core-B 94 PASS.
+
+Provider-free artifacts:
+- P12 P0 artifact `10969836703`, digest `sha256:516ac43e806827a4b060c0a6a47d308cde8af050a3443d06578995ec1d8d10fc`;
+- Core-B canary artifact `10969817013`, digest `sha256:adf664421665f32827e6ba4e3fe509e53a04e1c111dc8fb3ccea9a4013329de1`.
+
+Closure scans:
+- root-recovery diff `e9501236... -> 06b810c6b74acc55e501deb1fefb507b4a2bfb69` contains no engine/metabase gitlink change and no frontend/UI/web path change;
+- production diff contains no benchmark case ID or case-specific branch;
+- no semantic regex classifier was introduced;
+- no Levenshtein/fuzzy/embedding-threshold/morphology authority was introduced;
+- no silent fallback was introduced;
+- no Wren runtime/code import was introduced;
+- no second query planner or analytics engine was introduced;
+- no external execution capability was introduced.
+
+Final recovery state:
+```text
+PHASE 1 = IN_PROGRESS
+POST-P12 ROOT RECOVERY = PROVIDER-FREE GREEN
+WAVE A = WAVE_GREEN
+WAVE B = WAVE_GREEN + POST-P12 INTEGRATION RECERTIFIED
+P12 provider-free = GREEN
+P12 prior live = HISTORICAL DIAGNOSTIC RED / NOT ACCEPTED
+NEW BROAD LIVE RUN = NOT AUTHORIZED
+PINPOINT PAID TEST = AUTHORIZED IF NEEDED / NOT RUN
+P13 = NOT STARTED / BLOCKED PENDING USER-AUTHORIZED FINAL VALIDATION
+```
 
