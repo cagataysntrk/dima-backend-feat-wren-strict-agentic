@@ -45,7 +45,7 @@ Status vocabulary:
 | P9 | PARTIAL_MUST_EXTEND | WAVE_GREEN | `e27e84b76c7176daa86cf50578d036879bf08ce3` | B2 focused GREEN | Core-B `36346079648`; provider-free `36346079680` | transient relationship result; P18 durable authority unchanged |
 | P10 | ALREADY_PROVEN | WAVE_GREEN | `e27e84b76c7176daa86cf50578d036879bf08ce3` | scope-currentness GREEN | P20 `36346079630`; Core-A `36346079740` | DMP-DEC-0067 SEALED; superseded-scope reports become stale |
 | P11 | PARTIAL_MUST_EXTEND | WAVE_GREEN | `e27e84b76c7176daa86cf50578d036879bf08ce3` | execution-mode matrix GREEN | Phase-1 `36345910032`; Core-B `36346079648` | deterministic FAST/GUIDED/INVESTIGATION owner router |
-| P12 | PARTIAL/MISSING | IN_PROGRESS | eval-only candidate | provider-free gate pending | live dispatch NOT AUTHORIZED | frozen Round-2 + new metamorphic/P0 gate |
+| P12 | PARTIAL/MISSING | IN_PROGRESS | `8abb59fdeee394617fd140b13e77adce4a04e867` | provider-free first run RED: eval-test assumption only | live benchmark authorized only after provider-free GREEN | frozen Round-2 + new metamorphic/P0 gate |
 | P13 | MISSING | NOT_STARTED | - | - | - | Wave C only |
 
 ## Wave-A formal closure receipts
@@ -138,8 +138,8 @@ canonical governance = 36346079655 SUCCESS
 
 Wave B is now WAVE_GREEN.
 
-Fixed Phase-1 order is now at P12. DMP-DEC-0068 authorizes provider-free eval
-infrastructure first. The current 30-case live workflow is manual-only and explicitly NOT authorized
-for dispatch by this receipt. P13 cannot seal until P12 full close.
+Fixed Phase-1 order is now at P12. DMP-DEC-0068 authorizes provider-free-first P12 execution.
+The Phase-1 directive also authorizes one bounded current 30-case benchmark after provider-free
+GREEN. P13 cannot seal until P12 full close.
 
 No Phase-2 work, DEV80, Validation50 or Hidden50 is authorized here.

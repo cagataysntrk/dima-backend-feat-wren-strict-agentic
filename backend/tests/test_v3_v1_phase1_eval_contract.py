@@ -42,9 +42,10 @@ def test_round2_neutral_fixture_is_frozen_substrate_neutral_40_rows():
     fixture = json.loads(FIXTURE.read_text(encoding="utf-8"))
     assert fixture["schema_version"] == "round2_neutral_machine_fixture_v1"
     assert len(fixture["rows"]) == 40
-    metadata = fixture.get("metadata") or {}
-    assert metadata.get("wren_mdl_encoded") is False
-    assert metadata.get("expected_sql_encoded") is False
+    serialized = json.dumps(fixture, ensure_ascii=False).lower()
+    assert "wren_mdl" not in serialized
+    assert "expected_sql" not in serialized
+    assert "mbql" not in serialized
     assert {row["department"] for row in fixture["rows"]} == {
         "Assembly",
         "Packaging",

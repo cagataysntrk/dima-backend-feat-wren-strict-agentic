@@ -7236,7 +7236,7 @@ exact P20 owner re-authorization and all final exact-owner guards are GREEN.
 date: 2026-09-27
 
 status:
-AUTHORIZED / PROVIDER-FREE P12 CANDIDATE / LIVE DISPATCH PENDING
+AUTHORIZED / PROVIDER-FREE FIRST / LIVE BENCHMARK AUTHORIZED AFTER GREEN
 
 question:
 How may Phase-1 P12 recover the frozen 30-case Round-2 benchmark and add a new structural
@@ -7294,7 +7294,7 @@ metamorphic tests blob = 7ca6dac19a3ee34315fdd54fa2d4ae483edb4f8e
 eval-contract tests blob = 32b622c7482c3ea92f876e5b2bd673c6e63a8913
 P0 receipt writer blob = 092254744f0fd927f5766146a55067906de74537
 provider-free workflow blob = 9a33bd5774094b57575f6830f378f528831e250f
-manual-live workflow blob = b2c20d714eacadd3abdc50aa8c49142e32d7050d
+live workflow superseded after first provider-free diagnostic; exact corrected blob recorded on the next candidate
 ~~~
 
 metamorphic authority:
@@ -7325,14 +7325,23 @@ restart_resume_failures           = 0
 These zeroes are not manually asserted as evidence. The machine-readable receipt is written only
 after the named provider-free test groups all pass.
 
-paid/live dispatch governance:
-- the current 30-case live workflow is workflow_dispatch only;
-- it has no push trigger;
-- it requires explicit confirm_current_phase1_benchmark = YES;
-- hard observable model-boundary ceiling <= 180;
-- observable model-boundary units are not represented as exact provider/token/dollar cost;
-- this receipt DOES NOT authorize dispatch;
-- dispatch remains MANUAL / SUPERVISOR AUTHORIZATION PENDING after provider-free P12 is GREEN.
+current live benchmark authority:
+The Phase-1 autonomous execution directive explicitly authorizes bounded model tests where
+cognition genuinely requires them and the canonical Phase-1 benchmark at the final coherent
+candidate, with provider-free first, Luna by default, no Sol dependency and no model cascade.
+
+Therefore no extra supervisor round is required after provider-free P12 is GREEN.
+
+The available GitHub connector cannot directly create workflow_dispatch events. The live workflow
+therefore supports one auditable authorization-file push:
+backend/eval/v1/authorizations/phase1-p12-live-001.json
+
+The live workflow must verify candidate_product_sha == git rev-parse HEAD^, exact frozen
+manifest/fixture blobs, exact engine SHA, case_count=30 and max_total_model_units <= 180.
+
+Live acceptance requires >=90% common pass rate, 30 exact cases, all turns executed, every case
+budget_ok, every case lineage_valid, no CASE_EXCEPTION and total observable model units within
+the authorized ceiling. P0 remains an independent provider-free gate.
 
 unchanged:
 - engine = cbe313af9ac2d5960f662068e433d328d896fb06 / 0.63.18-dima.6;
@@ -7351,11 +7360,21 @@ P12 provider-free close condition:
 - machine-readable provider-free receipt artifact produced;
 - canonical governance GREEN.
 
+first provider-free diagnostic:
+- candidate 8abb59fdeee394617fd140b13e77adce4a04e867 = RED;
+- run 36346837036 failed only in eval-contract preflight;
+- frozen fixture had no metadata.wren_mdl_encoded / expected_sql_encoded fields;
+- the failing test incorrectly required explicit False values instead of proving those
+  substrate-specific encodings are absent;
+- runtime/app semantics were untouched and all contemporaneous sealed stack workflows remained GREEN.
+
+correction:
+Keep the exact fixture blob unchanged. Validate absence of Wren MDL / expected SQL / MBQL encoding
+from the immutable fixture content instead.
+
 P12 full close condition:
-Provider-free close plus one of:
-1. explicit authorization and successful current 30-case live benchmark; or
-2. explicit supervisor authority declaring the historical live benchmark admissible for P13 despite
-   post-comparison P1-P11 behavior changes.
+Provider-free close plus one successful current 30-case live benchmark satisfying the Phase-1
+acceptance gate.
 
 Until then:
 P12 = IN_PROGRESS.
