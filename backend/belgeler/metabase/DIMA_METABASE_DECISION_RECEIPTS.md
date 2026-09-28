@@ -7824,3 +7824,48 @@ then and only then paid-governance hardening / pinpoint-live preparation
 ```
 
 No paid/model call is authorized by this reopen receipt.
+
+
+---
+
+## DMP-DEC-0073A — LOCALIZED CORRECTIONS FOCUSED GREEN / INTEGRATED RECERTIFICATION CANDIDATE
+
+date: 2026-09-28
+
+status:
+`CORRECTIONS FOCUSED GREEN / INTEGRATED PROVIDER-FREE RECERTIFICATION PENDING`
+
+behavior candidate:
+`f52b7199f8c510e1963ccdb5e34fb9308fc9737f`
+
+Correction A / R1-P3 focused evidence:
+- Phase-1 focused `36429055269 = SUCCESS`;
+- Core-B focused `36429055394 = SUCCESS`;
+- Core-B provider-free seal `36429055309 = SUCCESS`;
+- Core-A final closure `36429055406 = SUCCESS`;
+- canonical governance `36429055180 = SUCCESS`.
+- forward correctness no longer depends on exact aggregation operator/argument shape,
+  physical material-query count, or a preferred native ranking implementation;
+- governed Metabase metric identity, typed period/filter/dimension/ranking semantics,
+  exact scope identity, native attestation, engine identity and principal remain enforced.
+
+Correction B / R3 focused evidence:
+- Phase-1 focused `36432221157 = SUCCESS`;
+- Core-B focused `36432221337 = SUCCESS`;
+- Core-B provider-free seal `36432221345 = SUCCESS`;
+- canonical governance `36432221215 = SUCCESS`.
+- root-candidate mechanism identity is now `mechanism_semantic_ref`, selected only
+  from a closed governed semantic set and revalidated against accepted Research scope;
+- `branch_concept`, `branch_key`, hashes derived from prose, and `step.branch_id`
+  do not become P19 material mechanism identity;
+- out-of-scope/provider-minted mechanism refs fail closed.
+
+integration action:
+This docs-only commit intentionally triggers the current integrated provider-free workflow family.
+No Product semantics, engine, migration, UI, Wren runtime, or external execution capability changes
+are authorized or introduced by this receipt.
+
+paid accounting:
+- broad paid run = FORBIDDEN;
+- pinpoint paid probes = user-authorized, but remain blocked until integrated provider-free GREEN;
+- provider/model calls consumed by this candidate receipt = 0.
