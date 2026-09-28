@@ -32,6 +32,7 @@ from app.v3.research_intake import (
 )
 from app.v3.structured_transport import (
     OpenRouterStructuredJSONTransport,
+    StructuredProviderError,
     strict_json_schema,
 )
 from control_plane.authorize import Principal
@@ -517,6 +518,43 @@ def test_headless_product_checks_principal_before_paid_intake_call():
         )
     assert exc.value.code == ProductErrorCode.FORBIDDEN
     assert transport.call_count == 0
+
+
+def test_product_normalization_preserves_exact_structured_transport_owner_code():
+    class ExhaustedTransport:
+        call_count = 0
+
+        def structured_json(self, system, user, *, schema, schema_name):
+            del system, user, schema, schema_name
+            self.call_count += 1
+            raise StructuredProviderError(
+                "COGNITION_OUTPUT_BUDGET_EXHAUSTED",
+                "provider exhausted the structured completion budget before content",
+            )
+
+    service = HeadlessProductService(
+        sources=ProductSources(
+            research=object(),
+            intake=ResearchIntakeCompiler(
+                transport=ExhaustedTransport()
+            ),
+        )
+    )
+    with pytest.raises(ProductError) as caught:
+        service.research_question(
+            question="Rank the first three departments by downtime.",
+            catalog=catalog(),
+            principal=principal(),
+        )
+
+    assert caught.value.code == ProductErrorCode.UNAVAILABLE
+    diagnostic = caught.value.diagnostic
+    assert diagnostic is not None
+    assert diagnostic.owner == "RESEARCH_INTAKE"
+    assert (
+        diagnostic.owner_error_code
+        == "COGNITION_OUTPUT_BUDGET_EXHAUSTED"
+    )
 
 
 def test_headless_product_delegates_raw_question_to_intake_owner():
