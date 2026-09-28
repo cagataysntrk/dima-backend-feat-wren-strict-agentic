@@ -16,6 +16,7 @@ on:
       - "backend/app/main.py"
       - "backend/migrations/versions/fc8a1d0e3b42_product_investigation_routing.py"
       - "backend/app/v3/research.py"
+      - "backend/app/v3/research_analytical_scope.py"
       - "backend/app/v3/research_manager.py"
       - "backend/app/v3/research_product.py"
       - "backend/app/v3/report_document.py"

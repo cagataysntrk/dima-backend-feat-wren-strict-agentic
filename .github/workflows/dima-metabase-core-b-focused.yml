@@ -8,6 +8,7 @@ on:
     paths:
       - "backend/app/v3/product/**"
       - "backend/app/v3/research.py"
+      - "backend/app/v3/research_analytical_scope.py"
       - "backend/app/v3/research_manager.py"
       - "backend/app/v3/research_product.py"
       - "backend/app/v3/research_followup.py"

@@ -14,6 +14,7 @@ on:
       - "backend/app/v3/business_relationship_policy.py"
       - "backend/app/v3/claim_lineage.py"
       - "backend/app/v3/research.py"
+      - "backend/app/v3/research_analytical_scope.py"
       - "backend/app/v3/research_store.py"
       - "backend/app/v3/research_product.py"
       - "backend/app/v3/research_native_gateway.py"
