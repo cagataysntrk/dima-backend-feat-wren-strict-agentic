@@ -532,3 +532,41 @@ The prior exact-two paid RED family is classified as an upstream structured-cogn
 failure, not as evidence that R1 ranking, R3/P19 root-cause semantics or Metabase execution failed.
 Historical receipts remain historical; this section supersedes only the next-live execution rule.
 
+
+
+## FINAL PINPOINT VALIDATION POLICY — DMP-DEC-0074A
+
+Fresh supervisor authority supersedes the historical F02_M/F07_M next-live rule.
+
+```text
+PHASE 1 = IN_PROGRESS
+
+R1/P3 = RE-SEALED
+R2 = GREEN / DO NOT REOPEN
+R3 = RE-SEALED
+R4 = GREEN / DO NOT REOPEN
+
+POST-P12 ROOT RECOVERY V2 = PROVIDER-FREE GREEN
+R0 STRUCTURED COGNITION TRANSPORT = PROVIDER-FREE GREEN
+
+FINAL LIVE POLICY
+= EXACTLY TWO SEQUENTIAL PROBES
+= SCOPE_CURRENTNESS_HARD -> RCA_P19_HARD
+= 12 MODEL-BOUNDARY UNITS MAX PER PROBE
+= 24 TOTAL MAX
+= NO AUTOMATIC RETRY
+= NO THIRD PROBE
+= NO BROAD PAID
+= NO BENCHMARK CASE IDS
+
+temporary exact-file push bridge
+= USER-AUTHORIZED FOR AUTONOMOUS DISPATCH
+= MUST BE REMOVED WHEN SEQUENCE STOPS OR COMPLETES
+
+PINPOINT PROBE A = BLOCKED ON FINAL HARNESS PROVIDER-FREE GREEN
+PINPOINT PROBE B = BLOCKED ON A
+P13 = NOT STARTED
+```
+
+The final live harness records raw typed product/authority evidence and hard mechanical invariants.
+It does not emit a single quality score. Final acceptance is manual artifact adjudication.

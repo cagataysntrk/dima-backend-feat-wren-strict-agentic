@@ -8062,3 +8062,65 @@ F07_M
 
 P13 remains NOT STARTED / BLOCKED until the narrowed live proofs are resolved.
 
+
+
+---
+
+## DMP-DEC-0074A — PHASE-1 FINAL VALIDATION POLICY AMENDMENT / PINPOINT PAID ONLY
+
+date: 2026-09-28
+
+status:
+`RATIFIED / PROVIDER-FREE LIVE-HARNESS RECERTIFICATION IN PROGRESS`
+
+authority:
+- the fresh supervisor handoff supersedes the historical F02_M/F07_M next-live rule without rewriting that historical receipt;
+- broad paid validation remains prohibited;
+- final Phase-1 live validation is exactly two sequential, high-information probes over one frozen candidate;
+- user explicitly authorized a temporary exact-file push bridge so the two probes can be dispatched autonomously;
+- the temporary push bridge MUST be removed after the two-probe sequence stops or completes.
+
+current live policy:
+```text
+broad 30-case paid benchmark = FORBIDDEN
+DEV80 / Validation50 / Hidden50 = FORBIDDEN
+benchmark-case live validation = SUPERSEDED
+
+Probe A = SCOPE_CURRENTNESS_HARD
+Probe B = RCA_P19_HARD
+ordering = A then B
+B legal only if A = GREEN
+
+observable model-boundary ceiling = 12 per probe
+aggregate ceiling = 24
+automatic retry = 0
+third paid probe = FORBIDDEN
+final quality score = FORBIDDEN
+manual artifact adjudication = REQUIRED
+```
+
+probe implementation boundary:
+- new live harness: `backend/lab/metabase/core_b/phase1_pinpoint_live.py`;
+- governed native metric fixture binder:
+  `backend/lab/metabase/core_b/runtime/seed_phase1_pinpoint_metrics.py`;
+- one-probe workflow: `.github/workflows/dima-v1-phase1-p12-pinpoint-live.yml`;
+- temporary push authorization path:
+  `backend/eval/v1/authorizations/phase1-final-pinpoint-live-001.json`;
+- frozen 30-case benchmark remains historical/eval-only and is not used to select or score these final probes;
+- no Product semantic branch, regex/fuzzy matcher, hardcoded expected answer, retry loop, second planner, or engine change was introduced.
+
+implementation commits before final provider-free re-certification:
+- `e18c48e911225707247dba8634b51276a6a6823a` — exact final pinpoint live harness;
+- `e9f7cd87764d9e939d9b0ba93daefd67c47be5fc` — sequential final-probe workflow;
+- `d01ec276dc0ea902742e63aefa2a65e71fd152f4` — provider-free workflow-path test correction.
+
+frozen candidate:
+`PENDING FINAL PROVIDER-FREE GREEN / NO PAID DISPATCH YET`
+
+paid accounting under DMP-DEC-0074A:
+- Probe A runs = 0;
+- Probe B runs = 0;
+- observable model-boundary units = 0;
+- broad paid runs = 0.
+
+P13 remains NOT STARTED.
