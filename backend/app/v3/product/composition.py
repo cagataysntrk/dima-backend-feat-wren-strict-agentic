@@ -472,7 +472,9 @@ class HeadlessProductComposer:
         return ResearchBrief(
             brief_id=_stable("rbpc_", seed, 24),
             objective=source_text,
-            scope=ResearchScope(semantic_refs=refs),
+            # Relationship material is a derived analytical task, not a new
+            # user-intent scope. Preserve the exact accepted R1 scope authority.
+            scope=parent.scope,
             required_domains=parent.required_domains,
             questions=(child_goal,),
             deliverables=(),

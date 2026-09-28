@@ -18,6 +18,7 @@ from app.v3.product.contracts import (
     ProductInvestigationRequirementKind,
 )
 from app.v3.research import ObligationState
+from app.v3.research_analytical_scope import analytical_scope_contract
 from app.v3.root_cause_candidate_contract import (
     RootCauseCandidateRelation,
     RootCauseCandidateSemantics,
@@ -33,6 +34,8 @@ from app.v3.research_contracts import (
     ResearchQuestion,
     ResearchScope,
     ResearchSemanticRef,
+    ResearchTimePeriod,
+    ScopeVersion,
     SemanticTargetKind,
 )
 from control_plane.authorize import Principal
@@ -300,19 +303,28 @@ class FakeInvestigation:
                     research_session_id=session_id,
                     obligation_id=self._obligation(session_id),
                     claim_text=f"Sealed P17 claim {n}",
-                    proposition=embed_root_cause_candidate_semantics(
-                        {"subject": "observed-scope"},
-                        RootCauseCandidateSemantics(
-                            explanatory_subject_ref=self._obligation(session_id),
-                            relation_kind=(
-                                RootCauseCandidateRelation.EXPLANATORY_CANDIDATE
+                    proposition=(
+                        embed_root_cause_candidate_semantics(
+                            {"subject": "observed-scope"},
+                            RootCauseCandidateSemantics(
+                                explanatory_subject_ref=self._obligation(session_id),
+                                relation_kind=(
+                                    RootCauseCandidateRelation.EXPLANATORY_CANDIDATE
+                                ),
+                                mechanism_ref=f"ibr_fake_{n}",
+                                scope_lineage_id=session.lineage_id,
+                                scope_version_id=(
+                                    session.accepted_brief.scope.scope_version.version_id
+                                ),
                             ),
-                            mechanism_ref=f"ibr_fake_{n}",
-                            scope_lineage_id=session.lineage_id,
-                            scope_version_id=(
-                                session.accepted_brief.scope.scope_version.version_id
-                            ),
-                        ),
+                        )
+                        if getattr(
+                            manager,
+                            "_claim_semantic_contract",
+                            None,
+                        )
+                        is not None
+                        else {"relationship_kind": "ASSOCIATION"}
                     ),
                     epistemic_state=SimpleNamespace(value="SUPPORTED"),
                     limitations=(),
@@ -605,8 +617,125 @@ def test_relationship_composes_p14_material_p17_and_p18_without_creating_policy(
     relationship = result.relationship_results[0]
     assert relationship.policy_use_id == "bru_" + "1" * 24
     assert relationship.supporting_evidence_refs
+    assert relationship.association_state == RelationshipLayerState.SUPPORTED
+    assert relationship.business_relationship_state == RelationshipLayerState.BLOCKED
+    assert "P18_RELATIONSHIP_POLICY_MISSING" in relationship.limitation_codes
     assert relationship.causality_state == RelationshipLayerState.NOT_ESTABLISHED
     assert relationship.contribution_state == RelationshipLayerState.NOT_ESTABLISHED
+
+
+def test_r4_relationship_child_preserves_parent_r1_scope_contract():
+    event_date = ResearchSemanticRef(
+        source_mention="event date",
+        candidate_id="dimension.event_date",
+        target_kind=SemanticTargetKind.DIMENSION,
+        canonical_name="Event Date",
+        cube_names=("machine_operations",),
+    )
+    assembly = ResearchSemanticRef(
+        source_mention="Assembly",
+        candidate_id="entity.department.assembly",
+        target_kind=SemanticTargetKind.ENTITY_VALUE,
+        canonical_name="Assembly",
+        dimension_name="department",
+        value="Assembly",
+        cube_names=("machine_operations",),
+    )
+    period = ResearchTimePeriod(
+        source_text="June 2026",
+        time_dimension_candidate_id=event_date.candidate_id,
+        start="2026-06-01",
+        end="2026-07-01",
+    )
+    goal = question(
+        "g_relationship_scoped",
+        ResearchGoalKind.RELATIONSHIP,
+        subjects=(DOWNTIME, FAULTS),
+        related=(DEPT,),
+    )
+    parent = ResearchBrief(
+        brief_id="rb-r4-parent",
+        objective="Scoped relationship material.",
+        scope=ResearchScope(
+            semantic_refs=(DOWNTIME, FAULTS, DEPT, event_date, assembly),
+            time_surfaces=("June 2026",),
+            periods=(period,),
+            temporal_dimension_ids=(event_date.candidate_id,),
+            scope_version=ScopeVersion(
+                version_id="scope_v2",
+                ordinal=2,
+                parent_version_id="scope_v1",
+            ),
+        ),
+        questions=(goal,),
+        must_requirement_ids=(goal.goal_id,),
+        context_version="ctx-r4",
+        status=ResearchBriefStatus.READY_FOR_RESEARCH,
+    )
+    child = HeadlessProductComposer._relationship_material_brief(
+        parent_session_id="rs_" + "a" * 24,
+        parent=parent,
+        goal=goal,
+    )
+    assert child.scope == parent.scope
+
+    child_session = SimpleNamespace(
+        accepted_brief=child,
+        authority_id="atc_r4_child",
+        session_id="rs_" + "b" * 24,
+        context_version=child.context_version,
+        lineage_id="atl_r4_child",
+    )
+    contract = analytical_scope_contract(
+        session=child_session,
+        obligation_id=child.questions[0].goal_id,
+    )
+    assert contract.scope_identity.version_id == "scope_v2"
+    assert contract.period is not None
+    assert contract.period.start == "2026-06-01"
+    assert contract.period.end == "2026-07-01"
+    assert tuple(item.value for item in contract.filters) == ("Assembly",)
+
+
+def test_r4_exact_active_p18_policy_promotes_only_business_relationship_layer():
+    c, _, _, reasoning = composer(relationship_blocked=False)
+    b = brief(
+        question(
+            "g_relationship",
+            ResearchGoalKind.RELATIONSHIP,
+            subjects=(DOWNTIME, FAULTS),
+            related=(DEPT,),
+        ),
+    )
+    original = c._resolve_relationship
+
+    def wrapped(**kwargs):
+        reasoning.current_obligation_by_session[kwargs["material_session_id"]] = (
+            kwargs["material_goal"].goal_id
+        )
+        return original(**kwargs)
+
+    c._resolve_relationship = wrapped
+    result = c.compose(
+        brief=b,
+        principal=principal(),
+        request_ref="r4-active-policy",
+        source_message_hash="4" * 64,
+        native_session_token=None,
+    )
+    assert len(result.relationship_results) == 1
+    relationship = result.relationship_results[0]
+    assert relationship.association_state == RelationshipLayerState.SUPPORTED
+    assert (
+        relationship.business_relationship_state
+        == RelationshipLayerState.SATISFIED
+    )
+    assert relationship.contribution_state == RelationshipLayerState.NOT_ESTABLISHED
+    assert relationship.causality_state == RelationshipLayerState.NOT_ESTABLISHED
+    assert not any(
+        item.code == "P18_RELATIONSHIP_POLICY_MISSING"
+        for item in result.limitations
+    )
 
 
 def test_root_cause_composes_p17_then_p19_and_preserves_inconclusive_outcome():

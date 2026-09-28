@@ -155,6 +155,30 @@ def test_p9_contested_claim_and_blocked_policy_remain_explicit():
     assert "ASSOCIATION_ONLY" in result.limitation_codes
 
 
+@pytest.mark.parametrize(
+    ("epistemic", "expected"),
+    [
+        ("CHALLENGED", RelationshipLayerState.CHALLENGED),
+        ("INSUFFICIENT_EVIDENCE", RelationshipLayerState.INSUFFICIENT),
+    ],
+)
+def test_r4_weaker_epistemic_relationship_layers_are_preserved(
+    epistemic,
+    expected,
+):
+    result = project_relationship_result(
+        research_session_id="rs_" + "2" * 24,
+        claim=relationship_claim(epistemic=epistemic),
+        decision=policy_decision(satisfied=False),
+        scope_lineage_id="atl_b2",
+        scope_version_id="scope_v1",
+        applicability_scope={"department": ["Assembly"]},
+    )
+    assert result.association_state == expected
+    assert result.business_relationship_state == RelationshipLayerState.BLOCKED
+    assert result.causality_state == RelationshipLayerState.NOT_ESTABLISHED
+
+
 @pytest.mark.parametrize("kind", ["CAUSALITY", "CONTRIBUTION"])
 def test_p9_rejects_unowned_stronger_relationship_kind(kind):
     with pytest.raises(
