@@ -74,6 +74,20 @@ def result_payload(link):
     try: return json.loads(raw)
     except Exception: return {"_invalid_native_result_json":True}
 
+def exception_payload(exc: Exception) -> dict[str, Any]:
+    diagnostic=getattr(exc,"diagnostic",None)
+    cause=getattr(exc,"__cause__",None)
+    return {
+      "error_type":type(exc).__name__,
+      "error":str(exc),
+      "error_code":getattr(getattr(exc,"code",None),"value",getattr(exc,"code",None)),
+      "owner_diagnostic":safe_dump(diagnostic),
+      "cause_type":type(cause).__name__ if cause is not None else None,
+      "cause_code":getattr(cause,"code",None) if cause is not None else None,
+      "cause_detail":getattr(cause,"detail",None) if cause is not None else None,
+      "cause":str(cause) if cause is not None else None,
+    }
+
 def execute_turn(*,case,turn_no,question,prior_brief,prior_research_session_id,intake,product,composer,p17_manager,p19_manager,reasoning,orchestrator,db_engine,native_token):
     started=time.monotonic()
     before=(intake.call_count,p17_manager.call_count,p19_manager.call_count)
@@ -290,7 +304,7 @@ def main() -> int:
             "metabase_analytical_calls":0,"total_latency_ms":int((time.monotonic()-started_case)*1000),
             "budget_ok":consumed<=int(case.get("max_model_calls",14)),
             "all_turns_executed":False,"passed":False,"expected":case.get("expected",{}),
-            "failure_class":"CASE_EXCEPTION","error_type":type(exc).__name__,"error":str(exc),
+            "failure_class":"CASE_EXCEPTION",**exception_payload(exc),
             "model_calls_by_role":{"intake":intake_delta,"p17_manager":p17_delta,"p19_manager":p19_delta},
           }
         observations.append(result)
