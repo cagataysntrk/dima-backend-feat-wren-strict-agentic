@@ -8333,3 +8333,99 @@ R1 typed ranking correction
 No engine change, Wren runtime change, UI/frontend change, external execution, retry-until-green,
 benchmark-case branch, regex/fuzzy/morphology semantic authority, invented top-N, or first-metric
 ranking shortcut is authorized.
+
+
+### DMP-DEC-0074C PROVIDER-FREE RE-SEAL / NEW CANDIDATE FREEZE
+
+date: 2026-09-28
+
+status:
+`R1 RANKING RE-SEALED / REAL PROVIDER CEILING GREEN / INTEGRATED PROVIDER-FREE GREEN / NEW CANDIDATE FROZEN`
+
+canonical Product candidate SHA:
+`46b3d9b6b19c9d837ed5a32664d10a3d3442392a`
+
+R1 ranking correction lineage:
+- `9bf6b72d3ee2168352d14afcd53ba67a08b72c81` — accepted ranking surface can carry an optional governed metric basis;
+- `354898afd536de3c6267a8853b98df873684afe5` — native-metric and evidence-synthesis ranking invariants are distinct typed contracts;
+- `9f70f28aa16d9e9eee91733d0e92205b7d0b7141` — ranking basis is supplied only by typed cognition and must belong to current goal scope;
+- `6fff3a0186a78d0550e628755c1ecd2f46e71c5a` — multi-metric ranking without an explicit single governed basis remains evidence synthesis; no native ORDER BY basis or top-N is invented;
+- `39f6131ee713afc12e60500cc20c61ed3de12514` — provider schema import repair only;
+- `46b3d9b6b19c9d837ed5a32664d10a3d3442392a` — singleton destructuring removes even the syntactic first-metric shortcut.
+
+real provider-ceiling infrastructure:
+- `6e7ade9fed5250281303c668ea1f09b66860b285` — eval-only counting OpenRouter proxy;
+- `54694574b60fe7b447e4fab1bfe8896e45cd0c70` — deterministic N+1/local-block/privacy/provider-source tests;
+- `3ad67fef035f664ec67457486fb584e57f647112` — live artifact separates orchestration-boundary units from actual provider requests;
+- `c285be265022a1924b8c035899e60f157915d48b` — live workflow uses zero-spend startup window and explicit real provider hard ceiling;
+- `c93794add18196aea393d221bb5c27f085c7db75` + `81e29e33f2e2572a952a15f5e6dd85ed5a2aaeda` — P12 provider-free guard coverage.
+
+provider-free final evidence on the frozen Product behavior:
+- Phase-1 focused `36469478135 = SUCCESS`;
+- P12 provider-free / metamorphic `36469477928 = SUCCESS`;
+- Core-B focused `36469477842 = SUCCESS`;
+- Core-B provider-free seal `36469477994 = SUCCESS`;
+- Core-A final `36469478015 = SUCCESS`;
+- governance `36469478183 = SUCCESS`;
+- cleanup-focused `36469477927 = SUCCESS`.
+
+forbidden-pattern scan before live authorization:
+```text
+regex semantic authority = 0
+fuzzy semantic authority = 0
+morphology semantic authority = 0
+Levenshtein authority = 0
+embedding-threshold semantic identity = 0
+benchmark-case branching in Product = 0
+hardcoded probe answer = 0
+default top-N invention = 0
+metric[0] ranking shortcut = 0
+silent fallback = 0
+retry-until-lucky = 0
+UI/frontend diff = 0
+Wren runtime/code diff = 0
+external execution diff = 0
+engine diff = 0
+```
+
+provider accounting contract:
+```text
+orchestration_boundary_units
+!= actual_provider_request_count
+
+setup/startup chat-completion ceiling = 0
+final probe actual provider hard ceiling = 24 per probe
+N+1 = rejected locally before forwarding
+automatic provider retry = 0
+provider keys persisted = 0
+prompt text persisted = 0
+reasoning text persisted = 0
+Suggested Prompts paid calls before probe = required 0
+```
+
+compact cumulative Phase-1 live-validation ledger:
+| run | purpose | run head / candidate | provider/model | Dima orchestration units | actual provider requests | tokens/cost | result |
+| --- | --- | --- | --- | ---: | --- | --- | --- |
+| `36448131392` | pre-R0 exact-two diagnostic | run head `c141898071773e6a1d4d4e1acca24a75b995ee0f`; artifact platform `cd31e6e54edaf3171908bf93bde6336db88af2b3` | OpenRouter / GPT-5.6 Luna | 2 | UNKNOWN / NOT RECOVERABLE | UNKNOWN / NOT RECOVERABLE | RED |
+| `36449010299` | pre-R0 exact-two diagnostic | run head `7edbcc0a7b210bc860422e935f2632e679de5ead`; artifact platform `adc91ed8339878670b5fe8c654930dc08af06ab1` | OpenRouter / GPT-5.6 Luna | 2 | UNKNOWN / NOT RECOVERABLE | UNKNOWN / NOT RECOVERABLE | RED |
+| `36458656999` | historical final Probe A | authorization head `5997b69b78f0a040fc158a38a9dbaf0472a7b7a9`; Product candidate `e959efaf4f683482908c70ce158e1fca45ed8b96` | OpenRouter / GPT-5.6 Luna | 2 | UNKNOWN / NOT RECOVERABLE | UNKNOWN / NOT RECOVERABLE | RED / IMMUTABLE |
+
+Historical `observable_model_boundary_units` labels above are preserved as historical telemetry only;
+for forward receipts the field is named `orchestration_boundary_units`.
+
+freeze invariant:
+```text
+candidate_product_sha = 46b3d9b6b19c9d837ed5a32664d10a3d3442392a
+engine_sha = cbe313af9ac2d5960f662068e433d328d896fb06
+engine_release = 0.63.18-dima.6
+engine_digest = sha256:40e9a44be49904de3ddf12d4683c768e70955851c10a928a9c8f7d8f60780353
+migration_head = fd2a7c9e4b61
+R1 ranking sub-contract = RE-SEALED
+real provider ceiling = GREEN
+provider-free integrated closure = GREEN
+Probe A V2 = READY FOR ONE RUN
+Probe B = BLOCKED ON A V2
+P13 = NOT STARTED
+```
+
+No Product semantic change is permitted between Probe A V2 and Probe B.
