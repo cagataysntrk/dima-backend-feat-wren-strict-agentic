@@ -1,0 +1,27 @@
+{
+  "schema_version": "dima_v1_phase1_final_pinpoint_authorization_v1",
+  "decision": "PINPOINT_PAID_ONLY",
+  "confirm": "YES",
+  "probe_id": "SCOPE_CURRENTNESS_HARD",
+  "max_model_units": 12,
+  "candidate_product_sha": "e959efaf4f683482908c70ce158e1fca45ed8b96",
+  "engine_sha": "cbe313af9ac2d5960f662068e433d328d896fb06",
+  "engine_digest": "sha256:40e9a44be49904de3ddf12d4683c768e70955851c10a928a9c8f7d8f60780353",
+  "migration_head": "fd2a7c9e4b61",
+  "provider_free_receipts": {
+    "p12": 36457981188,
+    "phase1_focused": 36457981132,
+    "core_b_seal": 36457981111,
+    "core_a_final": 36457981288,
+    "p19": 36457981145,
+    "governance": 36457981108,
+    "cleanup": 36457981155,
+    "final_workflow_contract_p12": 36458454129,
+    "final_workflow_contract_governance": 36458454117
+  },
+  "probe_a_run_id": null,
+  "probe_a_adjudication": null,
+  "broad_paid_allowed": false,
+  "automatic_retry": false,
+  "third_probe_allowed": false
+}
