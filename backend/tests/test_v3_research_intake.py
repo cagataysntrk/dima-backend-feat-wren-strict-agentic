@@ -115,7 +115,7 @@ class FakeTransport:
                 "schema_name": schema_name,
             }
         )
-        return json.dumps(self.payload)
+        return json.dumps({"result": self.payload})
 
 
 def ready_payload(
@@ -549,6 +549,51 @@ def test_request_scoped_intake_schema_closes_authority_ids_before_domain_executi
     assert set(
         breakdown["properties"]["related_semantic_ids"]["items"]["enum"]
     ) == legal_ids
+
+
+def test_provider_intake_schema_is_terminal_payload_not_domain_kitchen_sink():
+    schema = _intake_provider_schema(catalog())
+    assert set(schema["properties"]) == {"result"}
+    result_schema = schema["properties"]["result"]
+    refs = {
+        item["$ref"].rsplit("/", 1)[-1]
+        for item in result_schema["anyOf"]
+        if "$ref" in item
+    }
+    assert refs == {
+        "ModelReadyResearchIntake",
+        "ModelClarifyResearchIntake",
+        "ModelUnsupportedResearchIntake",
+    }
+
+    ready = schema["$defs"]["ModelReadyResearchIntake"]
+    ready_props = set(ready["properties"])
+    assert "time_surfaces" not in ready_props
+    assert "time_periods" not in ready_props
+    assert "scope_mutation_kind" not in ready_props
+    assert "clarification_question" not in ready_props
+    assert "unsupported_reason" not in ready_props
+    assert "native_verification_bindings" not in json.dumps(schema)
+    assert "scope_version" not in json.dumps(schema)
+    assert "lineage_id" not in json.dumps(schema)
+
+
+def test_provider_intake_schema_exposes_time_and_mutation_only_when_governed():
+    base = catalog()
+    temporal = ResearchIntakeCatalog(
+        context_version=base.context_version,
+        semantic_refs=base.semantic_refs,
+        allowed_relationships=base.allowed_relationships,
+        supported_domains=base.supported_domains,
+        temporal_dimension_ids=("dimension.event_date",),
+    )
+    schema = _intake_provider_schema(
+        temporal,
+        has_prior_brief=True,
+    )
+    ready = schema["$defs"]["ModelReadyResearchIntake"]
+    assert "time_periods" in ready["properties"]
+    assert "scope_mutation_kind" in ready["properties"]
 
 
 def test_relationship_provider_cannot_reconstruct_left_right_dimension_tuple():

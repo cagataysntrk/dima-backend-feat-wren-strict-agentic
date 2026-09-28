@@ -161,7 +161,7 @@ class FakeTransport:
     def structured_json(self, system, user, *, schema, schema_name):
         del system, user, schema, schema_name
         self.call_count += 1
-        return json.dumps(self.payload)
+        return json.dumps({"result": self.payload})
 
 
 def narrowed_payload():
@@ -182,7 +182,6 @@ def narrowed_payload():
         ],
         "deliverables": [],
         "investigation_directives": [],
-        "time_surfaces": ["2026-H1"],
         "time_periods": [
             {
                 "source_text": "2026-H1",

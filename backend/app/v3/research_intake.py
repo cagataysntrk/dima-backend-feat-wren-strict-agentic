@@ -10,7 +10,7 @@ import copy
 import hashlib
 import json
 from enum import StrEnum
-from typing import Any, Protocol
+from typing import Any, Literal, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -254,6 +254,39 @@ class ModelResearchBriefDraft(Frozen):
         return self
 
 
+class ModelReadyResearchIntake(Frozen):
+    """Provider-facing READY semantics only; Dima binds machine authority."""
+
+    terminal: Literal["READY"]
+    objective: str = Field(min_length=1)
+    goals: tuple[ModelGoalDraft, ...] = Field(min_length=1)
+    deliverables: tuple[ModelDeliverableDraft, ...] = ()
+    investigation_directives: tuple[ModelInvestigationDirectiveDraft, ...] = ()
+    time_periods: tuple[ModelTimePeriodDraft, ...] = ()
+    required_domains: tuple[str, ...] = ()
+    scope_mutation_kind: ScopeMutationKind | None = None
+
+
+class ModelClarifyResearchIntake(Frozen):
+    terminal: Literal["CLARIFY"]
+    clarification_question: str = Field(min_length=1)
+
+
+class ModelUnsupportedResearchIntake(Frozen):
+    terminal: Literal["UNSUPPORTED"]
+    unsupported_reason: str = Field(min_length=1)
+
+
+class ModelResearchIntakeEnvelope(Frozen):
+    """Small closed provider DTO; not a persisted/domain authority contract."""
+
+    result: (
+        ModelReadyResearchIntake
+        | ModelClarifyResearchIntake
+        | ModelUnsupportedResearchIntake
+    )
+
+
 class ResearchIntakeResult(Frozen):
     terminal: ResearchIntakeTerminal
     brief: ResearchBrief | None = None
@@ -325,6 +358,8 @@ def _canonical(value: Any) -> str:
 
 def _intake_provider_schema(
     catalog: ResearchIntakeCatalog,
+    *,
+    has_prior_brief: bool = False,
 ) -> dict[str, Any]:
     """Close every provider-selected authority ID to this exact catalog.
 
@@ -333,7 +368,7 @@ def _intake_provider_schema(
     deterministic compiler expands the selected relationship afterwards.
     """
 
-    schema = strict_json_schema(ModelResearchBriefDraft)
+    schema = strict_json_schema(ModelResearchIntakeEnvelope)
     definitions = schema.get("$defs") or {}
     goal_definition = definitions.get("ModelGoalDraft")
     if not isinstance(goal_definition, dict):
@@ -347,6 +382,40 @@ def _intake_provider_schema(
             "INTAKE_SCHEMA_INVALID",
             "ModelGoalDraft properties are absent",
         )
+
+    ready_definition = definitions.get("ModelReadyResearchIntake")
+    if not isinstance(ready_definition, dict):
+        raise ResearchIntakeError(
+            "INTAKE_SCHEMA_INVALID",
+            "provider READY definition is absent",
+        )
+    ready_properties = ready_definition.get("properties")
+    if not isinstance(ready_properties, dict):
+        raise ResearchIntakeError(
+            "INTAKE_SCHEMA_INVALID",
+            "provider READY properties are absent",
+        )
+
+    # Provider emits semantic intent only. Fields that are impossible for the
+    # current governed catalog/turn are absent from the provider contract,
+    # rather than being required null/empty boilerplate.
+    if not catalog.temporal_dimension_ids:
+        ready_properties.pop("time_periods", None)
+        definitions.pop("ModelTimePeriodDraft", None)
+    if not has_prior_brief:
+        ready_properties.pop("scope_mutation_kind", None)
+        definitions.pop("ScopeMutationKind", None)
+    if catalog.supported_domains:
+        ready_properties["required_domains"] = {
+            "type": "array",
+            "items": {
+                "type": "string",
+                "enum": list(sorted(catalog.supported_domains)),
+            },
+        }
+    else:
+        ready_properties.pop("required_domains", None)
+    ready_definition["required"] = list(ready_properties)
 
     semantic_ids = tuple(
         sorted(item.candidate_id for item in catalog.semantic_refs)
@@ -563,11 +632,48 @@ class ResearchIntakeCompiler:
         raw = self._transport.structured_json(
             _SYSTEM,
             _canonical(user_payload),
-            schema=_intake_provider_schema(catalog),
+            schema=_intake_provider_schema(
+                catalog,
+                has_prior_brief=prior_brief is not None,
+            ),
             schema_name=self._schema_name,
         )
         try:
-            draft = ModelResearchBriefDraft.model_validate_json(raw)
+            envelope = ModelResearchIntakeEnvelope.model_validate_json(raw)
+            provider_result = envelope.result
+            if isinstance(provider_result, ModelReadyResearchIntake):
+                draft = ModelResearchBriefDraft(
+                    terminal=ResearchIntakeTerminal.READY,
+                    objective=provider_result.objective,
+                    goals=provider_result.goals,
+                    deliverables=provider_result.deliverables,
+                    investigation_directives=(
+                        provider_result.investigation_directives
+                    ),
+                    # Surface identity is deterministic from the typed periods;
+                    # the model no longer repeats the same semantic fact twice.
+                    time_surfaces=tuple(
+                        item.source_text
+                        for item in provider_result.time_periods
+                    ),
+                    time_periods=provider_result.time_periods,
+                    required_domains=provider_result.required_domains,
+                    scope_mutation_kind=(
+                        provider_result.scope_mutation_kind
+                    ),
+                )
+            elif isinstance(provider_result, ModelClarifyResearchIntake):
+                draft = ModelResearchBriefDraft(
+                    terminal=ResearchIntakeTerminal.CLARIFY,
+                    clarification_question=(
+                        provider_result.clarification_question
+                    ),
+                )
+            else:
+                draft = ModelResearchBriefDraft(
+                    terminal=ResearchIntakeTerminal.UNSUPPORTED,
+                    unsupported_reason=provider_result.unsupported_reason,
+                )
         except Exception as exc:
             raise ResearchIntakeError(
                 "INTAKE_MODEL_OUTPUT_INVALID",
@@ -729,16 +835,11 @@ class ResearchIntakeCompiler:
                 "READY intake must contain at least one analytical goal",
             )
 
-        time_surfaces = tuple(dict.fromkeys(draft.time_surfaces))
-        if len(time_surfaces) != len(draft.time_surfaces):
+        time_surfaces = tuple(draft.time_surfaces)
+        if len(time_surfaces) != len(set(time_surfaces)):
             raise ResearchIntakeError(
                 "INTAKE_TIME_SURFACE_DUPLICATE",
-                "accepted time surfaces must be unique",
-            )
-        if bool(time_surfaces) != bool(draft.time_periods):
-            raise ResearchIntakeError(
-                "INTAKE_TIME_SCOPE_BINDING_REQUIRED",
-                "every accepted time surface requires one typed period binding",
+                "accepted typed period surfaces must be unique",
             )
         period_by_source: dict[str, ModelTimePeriodDraft] = {}
         periods: list[ResearchTimePeriod] = []
@@ -777,11 +878,6 @@ class ResearchIntakeCompiler:
                     "INTAKE_TIME_PERIOD_INVALID",
                     str(exc),
                 ) from exc
-        if set(period_by_source) != set(time_surfaces):
-            raise ResearchIntakeError(
-                "INTAKE_TIME_PERIOD_SURFACE_MISMATCH",
-                "typed periods must exactly cover accepted time surfaces",
-            )
         periods_by_surface = {
             item.source_text: item for item in periods
         }
