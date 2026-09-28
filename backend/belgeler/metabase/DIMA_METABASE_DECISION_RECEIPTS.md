@@ -8124,3 +8124,39 @@ paid accounting under DMP-DEC-0074A:
 - broad paid runs = 0.
 
 P13 remains NOT STARTED.
+
+
+### DMP-DEC-0074A FINAL PROVIDER-FREE GATE / CANDIDATE FREEZE
+
+Final provider-free candidate:
+`e959efaf4f683482908c70ce158e1fca45ed8b96`
+
+GREEN evidence on that exact candidate:
+- P12 provider-free `36457981188 = SUCCESS`;
+- Phase-1 focused `36457981132 = SUCCESS`;
+- Core-B provider-free seal `36457981111 = SUCCESS`;
+- Core-A final closure `36457981288 = SUCCESS`;
+- P18 provider-free `36457981193 = SUCCESS`;
+- P19 provider-free `36457981145 = SUCCESS`;
+- P20 provider-free `36457981382 = SUCCESS`;
+- P21 provider-free `36457981321 = SUCCESS`;
+- governance `36457981108 = SUCCESS`;
+- cleanup-focused `36457981155 = SUCCESS`;
+- Human Adoption `36457981079 = SUCCESS`.
+
+The final pinpoint harness contract itself is provider-free GREEN inside P12.
+The earlier path-only test defect `36457726038` was a harness test-path error and consumed zero paid/model units;
+it was corrected by `d01ec276dc0ea902742e63aefa2a65e71fd152f4`.
+
+Candidate freeze:
+```text
+candidate_product_sha = e959efaf4f683482908c70ce158e1fca45ed8b96
+engine_sha = cbe313af9ac2d5960f662068e433d328d896fb06
+engine_digest = sha256:40e9a44be49904de3ddf12d4683c768e70955851c10a928a9c8f7d8f60780353
+migration_head = fd2a7c9e4b61
+Product semantic changes after freeze = FORBIDDEN
+Probe A = READY FOR ONE LIVE DISPATCH
+Probe B = BLOCKED ON A
+```
+
+Broad paid runs after the final-validation directive remain 0.

@@ -570,3 +570,24 @@ P13 = NOT STARTED
 
 The final live harness records raw typed product/authority evidence and hard mechanical invariants.
 It does not emit a single quality score. Final acceptance is manual artifact adjudication.
+
+
+## FINAL PROVIDER-FREE FREEZE
+
+```text
+canonical final-live candidate
+= e959efaf4f683482908c70ce158e1fca45ed8b96
+
+P12 provider-free = 36457981188 SUCCESS
+Phase-1 focused = 36457981132 SUCCESS
+Core-B seal = 36457981111 SUCCESS
+Core-A final = 36457981288 SUCCESS
+P19 provider-free = 36457981145 SUCCESS
+governance = 36457981108 SUCCESS
+cleanup = 36457981155 SUCCESS
+
+PINPOINT A = READY
+PINPOINT B = BLOCKED ON A
+BROAD PAID = FORBIDDEN / 0 NEW RUNS
+P13 = NOT STARTED
+```
