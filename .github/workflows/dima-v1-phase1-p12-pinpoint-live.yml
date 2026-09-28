@@ -1,8 +1,13 @@
 name: dima-v1-phase1-p12-pinpoint-live
 
-# DMP-DEC-0073B: exactly two user-authorized paid probes.
-# Manual dispatch only. No push/repository/authorization-file trigger.
+# DMP-DEC-0073D TEMPORARY: exactly two user-authorized paid probes.
+# Push is temporarily allowed ONLY through one exact authorization file.
 on:
+  push:
+    branches:
+      - feat/dima-metabase-platform
+    paths:
+      - "backend/eval/v1/authorizations/phase1-p12-pinpoint-live-001.json"
   workflow_dispatch:
     inputs:
       confirm_exact_two_pinpoint_probes:
@@ -45,12 +50,35 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "${{ github.event_name }}" = "workflow_dispatch"
-          test "${{ inputs.confirm_exact_two_pinpoint_probes }}" = "YES"
-          echo "candidate_sha=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
-          echo "max_units=20" >> "$GITHUB_OUTPUT"
-          echo "r1_case=F02_M" >> "$GITHUB_OUTPUT"
-          echo "r3_case=F07_M" >> "$GITHUB_OUTPUT"
+          if [ "${{ github.event_name }}" = "push" ]; then
+            python - <<'PY'
+          import json, os, subprocess
+          from pathlib import Path
+          path=Path("backend/eval/v1/authorizations/phase1-p12-pinpoint-live-001.json")
+          item=json.loads(path.read_text(encoding="utf-8"))
+          assert item["schema_version"]=="dima_v1_phase1_pinpoint_live_authorization_v1"
+          assert item["mode"]=="PINPOINT_EXACT_TWO"
+          assert item["case_ids"]==["F02_M","F07_M"]
+          assert item["max_total_model_units"]==20
+          assert item["engine_sha"]=="cbe313af9ac2d5960f662068e433d328d896fb06"
+          assert item["round2_manifest_blob"]=="b08fbf6601b8c47a6f336c4efcc0cdab95a6c2da"
+          assert item["round2_fixture_blob"]=="44c02edee3333ddd048e8f7d9aeb94dcd399ad7c"
+          parent=subprocess.check_output(["git","rev-parse","HEAD^"],text=True).strip()
+          assert item["candidate_product_sha"]==parent,(item["candidate_product_sha"],parent)
+          with open(os.environ["GITHUB_OUTPUT"],"a",encoding="utf-8") as out:
+              out.write(f"candidate_sha={parent}\n")
+              out.write("max_units=20\n")
+              out.write("r1_case=F02_M\n")
+              out.write("r3_case=F07_M\n")
+          PY
+          else
+            test "${{ github.event_name }}" = "workflow_dispatch"
+            test "${{ inputs.confirm_exact_two_pinpoint_probes }}" = "YES"
+            echo "candidate_sha=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+            echo "max_units=20" >> "$GITHUB_OUTPUT"
+            echo "r1_case=F02_M" >> "$GITHUB_OUTPUT"
+            echo "r3_case=F07_M" >> "$GITHUB_OUTPUT"
+          fi
 
       - uses: actions/setup-python@v5
         with:
