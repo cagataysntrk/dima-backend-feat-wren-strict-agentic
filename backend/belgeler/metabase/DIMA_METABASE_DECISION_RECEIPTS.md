@@ -7869,3 +7869,55 @@ paid accounting:
 - broad paid run = FORBIDDEN;
 - pinpoint paid probes = user-authorized, but remain blocked until integrated provider-free GREEN;
 - provider/model calls consumed by this candidate receipt = 0.
+
+
+---
+
+## DMP-DEC-0073B — SUPERVISOR ARCHITECTURE AUDIT RE-SEALED PROVIDER-FREE
+
+date: 2026-09-28
+
+status:
+`SEALED / INTEGRATED PROVIDER-FREE GREEN / PAID PINPOINT PREPARATION AUTHORIZED`
+
+behavior candidate:
+`f52b7199f8c510e1963ccdb5e34fb9308fc9737f`
+
+docs-only integration trigger heads:
+- `88ffe657a8358822cfaaaa18f3d9684035284b99`;
+- `5f02efd42dc2be1fb473a670e2d8231df65f6815`.
+
+integrated provider-free evidence:
+- P12 provider-free `36432692572 = SUCCESS`;
+- P18 provider-free `36432692545 = SUCCESS`;
+- P19 provider-free `36432692602 = SUCCESS`;
+- P20 provider-free `36432692537 = SUCCESS`;
+- P21 provider-free `36432692518 = SUCCESS`;
+- Core-A final closure `36432692531 = SUCCESS`;
+- Human Adoption `36432692517 = SUCCESS`;
+- ActionAuthorization `36432692579 = SUCCESS`;
+- cleanup `36432692601 = SUCCESS`;
+- governance `36432692628 = SUCCESS`;
+- current P12 provider-free `36432698686 = SUCCESS`;
+- current Phase-1 focused `36432698606 = SUCCESS`;
+- current Core-B seal `36432698594 = SUCCESS`;
+- current cleanup `36432698949 = SUCCESS`;
+- current governance `36432699006 = SUCCESS`.
+
+sealed conclusions:
+- R1/P3 forward analytical trust is material-semantics based and no longer owns Metabase physical implementation;
+- R3 P19 material distinctness consumes a Dima-validated governed mechanism semantic ref, never branch prose or prose-derived identity;
+- R2, R4, P18, P19, P20, security/currentness, USER_MUST and engine boundaries remain GREEN and unopened;
+- engine remains `cbe313af9ac2d5960f662068e433d328d896fb06` / `0.63.18-dima.6`;
+- migration head remains `fd2a7c9e4b61`;
+- provider/model calls used by the DMP-DEC-0073 correction and provider-free recertification = 0.
+
+next legal step:
+```text
+paid-governance hardening
+-> exactly two manual pinpoint live probes
+-> human inspection of case artifacts
+-> if both acceptable, P13 final Phase-1 freeze/seal
+```
+
+Broad 30-case paid execution remains forbidden.

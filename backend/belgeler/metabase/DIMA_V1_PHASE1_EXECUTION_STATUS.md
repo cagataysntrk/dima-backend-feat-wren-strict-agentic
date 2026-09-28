@@ -424,3 +424,32 @@ Focused receipts:
   governance `36432221215` = SUCCESS.
 
 This section changes authority/status documentation only and is the integration-proof trigger.
+
+
+## DMP-DEC-0073 PROVIDER-FREE RE-SEAL
+
+```text
+Correction A / R1-P3 = GREEN / SEALED
+Correction B / R3    = GREEN / SEALED
+
+Integrated provider-free = GREEN
+
+P12 provider-free = GREEN
+Engine = dima.6 / unchanged
+Migration head = fd2a7c9e4b61 / unchanged
+
+Broad paid benchmark = FORBIDDEN
+
+Paid pinpoint validation
+= USER-AUTHORIZED
+= PREPARATION NOW LEGAL
+= EXACTLY TWO TARGETED CASES ONLY
+
+P13 = NOT STARTED
+```
+
+Integrated evidence:
+`36432692572, 36432692545, 36432692602, 36432692537, 36432692518,
+36432692531, 36432692517, 36432692579, 36432692601, 36432692628,
+36432698686, 36432698606, 36432698594, 36432698949, 36432699006`
+all SUCCESS.
