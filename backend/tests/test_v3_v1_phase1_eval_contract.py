@@ -101,9 +101,17 @@ def test_pinpoint_paid_workflow_is_sequential_closed_budget():
     assert "\n  push:\n" not in source
     assert "phase1-final-pinpoint-live-001.json" not in source
     assert "repository_dispatch" not in source
-    assert "SCOPE_CURRENTNESS_HARD_V2" in source
-    assert "RCA_P19_HARD" in source
+    assert "SCOPE_CURRENTNESS_HARD_V3" in source
+    assert "RCA_P19_HARD_V2" in source
     assert 'HARD_PROVIDER_REQUEST_CEILING: "24"' in source
+    assert 'PROMPT_TOKEN_CEILING: "350000"' in source
+    assert 'COMPLETION_TOKEN_CEILING: "16000"' in source
+    assert 'REASONING_TOKEN_CEILING: "12000"' in source
+    assert 'PROVIDER_COST_CEILING: "1.00"' in source
+    assert "--source-ceiling research_intake=2" in source
+    assert "--source-ceiling metabase=16" in source
+    assert "--source-ceiling p17_manager=4" in source
+    assert "--source-ceiling p19_manager=2" in source
     assert "--ceiling 0" in source
     assert "actual_provider_request_count" in source
     assert "MB_LLM_OPENROUTER_API_BASE_URL" in source
