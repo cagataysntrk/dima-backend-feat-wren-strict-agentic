@@ -1,0 +1,21 @@
+{
+  "schema_version": "dima_v1_phase1_live_authorization_v1",
+  "mode": "ROUND2_ALL",
+  "case_count": 30,
+  "candidate_product_sha": "4c693f7061303d57cc0ae58cfc95ba10113203fa",
+  "engine_sha": "cbe313af9ac2d5960f662068e433d328d896fb06",
+  "engine_release": "0.63.18-dima.6",
+  "round2_manifest_blob": "b08fbf6601b8c47a6f336c4efcc0cdab95a6c2da",
+  "round2_fixture_blob": "44c02edee3333ddd048e8f7d9aeb94dcd399ad7c",
+  "metamorphic_manifest_blob": "f6341ad7c1bffca27f4218bfe1393d7edf464f24",
+  "provider_free_run_id": 36370623402,
+  "phase1_focused_run_id": 36370623362,
+  "governance_run_id": 36370623344,
+  "max_total_model_units": 180,
+  "model_policy": {
+    "default": "openai/gpt-5.6-luna",
+    "sol": false,
+    "model_cascade": false
+  },
+  "purpose": "One canonical current-candidate Phase-1 P12 30-case benchmark after provider-free P0 GREEN."
+}
