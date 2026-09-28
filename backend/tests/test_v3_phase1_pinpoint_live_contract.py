@@ -34,10 +34,12 @@ def _bindings():
 
 def test_final_pinpoint_probes_are_closed_and_not_benchmark_cases():
     assert tuple(PROBES) == (
-        "SCOPE_CURRENTNESS_HARD_V2",
-        "RCA_P19_HARD",
+        "SCOPE_CURRENTNESS_HARD_V3",
+        "RCA_P19_HARD_V2",
     )
     assert MAX_ORCHESTRATION_BOUNDARY_UNITS == 12
+    from lab.metabase.core_b.phase1_pinpoint_live import MODEL
+    assert MODEL == "openai/gpt-5.6-terra"
     serialized = json.dumps(PROBES, ensure_ascii=False)
     assert "F02_M" not in serialized
     assert "F07_M" not in serialized
@@ -107,8 +109,8 @@ def test_pinpoint_workflow_is_one_probe_per_run_and_no_broad_scorer():
         / "workflows"
         / "dima-v1-phase1-p12-pinpoint-live.yml"
     ).read_text(encoding="utf-8")
-    assert "SCOPE_CURRENTNESS_HARD_V2" in workflow
-    assert "RCA_P19_HARD" in workflow
+    assert "SCOPE_CURRENTNESS_HARD_V3" in workflow
+    assert "RCA_P19_HARD_V2" in workflow
     assert "probe_id" in workflow
     assert "max-orchestration-boundary-units \"12\"" in workflow
     assert "F02_M" not in workflow
@@ -120,6 +122,17 @@ def test_pinpoint_workflow_is_one_probe_per_run_and_no_broad_scorer():
     assert "openrouter_counting_proxy.py" in workflow
     assert "--ceiling 0" in workflow
     assert 'HARD_PROVIDER_REQUEST_CEILING: "24"' in workflow
+    assert 'PROMPT_TOKEN_CEILING: "350000"' in workflow
+    assert 'COMPLETION_TOKEN_CEILING: "16000"' in workflow
+    assert 'REASONING_TOKEN_CEILING: "12000"' in workflow
+    assert 'PROVIDER_COST_CEILING: "1.00"' in workflow
+    for source_limit in (
+        "research_intake=2",
+        "metabase=16",
+        "p17_manager=4",
+        "p19_manager=2",
+    ):
+        assert source_limit in workflow
     assert '--ceiling "$HARD_PROVIDER_REQUEST_CEILING"' in workflow
     assert "MB_LLM_OPENROUTER_API_BASE_URL" in workflow
     assert "actual_provider_request_count" in workflow

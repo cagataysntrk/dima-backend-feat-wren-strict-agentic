@@ -261,3 +261,82 @@ def test_streaming_usage_parser_reads_only_numeric_usage():
 )
 def test_source_routing_is_structural(path, expected):
     assert source_and_upstream_path(path) == expected
+
+
+def test_source_ceiling_and_unknown_source_fail_before_upstream(tmp_path):
+    calls: list[httpx.Request] = []
+    ledger = ProviderRequestLedger(
+        ceiling=24,
+        receipt_path=tmp_path / "receipt.json",
+        source_ceilings={
+            "research_intake": 1,
+            "metabase": 2,
+            "p17_manager": 1,
+            "p19_manager": 1,
+        },
+    )
+    proxy = CountingOpenRouterProxy(
+        upstream_base_url="https://provider.invalid/api",
+        ledger=ledger,
+        client=_client(calls),
+    )
+    proxy.forward(
+        method="POST",
+        request_path="/source/research_intake/v1/chat/completions",
+        headers={},
+        body=b"{}",
+    )
+    with pytest.raises(ProviderCeilingExceeded):
+        proxy.forward(
+            method="POST",
+            request_path="/source/research_intake/v1/chat/completions",
+            headers={},
+            body=b"{}",
+        )
+    with pytest.raises(ProviderCeilingExceeded):
+        proxy.forward(
+            method="POST",
+            request_path="/source/unexpected/v1/chat/completions",
+            headers={},
+            body=b"{}",
+        )
+    receipt = ledger.snapshot()
+    assert len(calls) == 1
+    assert receipt["actual_provider_request_count"] == 1
+    assert receipt["blocked_request_count"] == 2
+    assert receipt["source_request_ceilings"]["research_intake"] == 1
+    assert receipt["events"][-1]["blocked_reason"] == "PROVIDER_SOURCE_CEILING_EXHAUSTED"
+
+
+def test_numeric_ceiling_reached_blocks_next_request_locally(tmp_path):
+    calls: list[httpx.Request] = []
+    ledger = ProviderRequestLedger(
+        ceiling=24,
+        receipt_path=tmp_path / "receipt.json",
+        prompt_token_ceiling=11,
+        completion_token_ceiling=16,
+        reasoning_token_ceiling=12,
+        provider_cost_ceiling=1.0,
+    )
+    proxy = CountingOpenRouterProxy(
+        upstream_base_url="https://provider.invalid/api",
+        ledger=ledger,
+        client=_client(calls),
+    )
+    proxy.forward(
+        method="POST",
+        request_path="/v1/chat/completions",
+        headers={},
+        body=b"{}",
+    )
+    with pytest.raises(ProviderCeilingExceeded):
+        proxy.forward(
+            method="POST",
+            request_path="/v1/chat/completions",
+            headers={},
+            body=b"{}",
+        )
+    receipt = ledger.snapshot()
+    assert len(calls) == 1
+    assert receipt["prompt_tokens"] == 11
+    assert receipt["events"][-1]["blocked_reason"] == "PROVIDER_PROMPT_TOKEN_CEILING_REACHED"

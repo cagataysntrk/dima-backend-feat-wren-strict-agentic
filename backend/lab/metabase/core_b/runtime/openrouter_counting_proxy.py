@@ -16,7 +16,7 @@ from collections import Counter
 from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
 from urllib.parse import urlsplit
 
 import httpx
@@ -148,13 +148,45 @@ class ProviderCeilingExceeded(RuntimeError):
 
 
 class ProviderRequestLedger:
-    """Thread-safe hard ceiling and privacy-safe numeric receipt."""
+    """Thread-safe fail-closed provider budgets and privacy-safe numeric receipt."""
 
-    def __init__(self, *, ceiling: int, receipt_path: Path) -> None:
+    def __init__(
+        self,
+        *,
+        ceiling: int,
+        receipt_path: Path,
+        source_ceilings: Mapping[str, int] | None = None,
+        prompt_token_ceiling: int | None = None,
+        completion_token_ceiling: int | None = None,
+        reasoning_token_ceiling: int | None = None,
+        provider_cost_ceiling: float | None = None,
+    ) -> None:
         if ceiling < 0:
             raise ValueError("provider request ceiling must be non-negative")
+        for name, value in (
+            ("prompt token", prompt_token_ceiling),
+            ("completion token", completion_token_ceiling),
+            ("reasoning token", reasoning_token_ceiling),
+        ):
+            if value is not None and value < 0:
+                raise ValueError(f"{name} ceiling must be non-negative")
+        if provider_cost_ceiling is not None and provider_cost_ceiling < 0:
+            raise ValueError("provider cost ceiling must be non-negative")
+        normalized_sources = None
+        if source_ceilings is not None:
+            normalized_sources = {}
+            for source, limit in source_ceilings.items():
+                source = str(source).strip()
+                if not source or int(limit) < 0:
+                    raise ValueError("source ceilings require non-empty sources and non-negative limits")
+                normalized_sources[source] = int(limit)
         self.ceiling = ceiling
         self.receipt_path = receipt_path
+        self.source_ceilings = normalized_sources
+        self.prompt_token_ceiling = prompt_token_ceiling
+        self.completion_token_ceiling = completion_token_ceiling
+        self.reasoning_token_ceiling = reasoning_token_ceiling
+        self.provider_cost_ceiling = provider_cost_ceiling
         self._lock = threading.Lock()
         self._actual = 0
         self._blocked = 0
@@ -169,22 +201,47 @@ class ProviderRequestLedger:
         self._events: list[dict[str, Any]] = []
         self.persist()
 
+    def _blocked_reason_locked(self, source: str) -> str | None:
+        if self._actual >= self.ceiling:
+            return "PROVIDER_REQUEST_CEILING_EXHAUSTED"
+        if self.source_ceilings is not None:
+            source_limit = self.source_ceilings.get(source, 0)
+            if self._by_source[source] >= source_limit:
+                return "PROVIDER_SOURCE_CEILING_EXHAUSTED"
+        if self.prompt_token_ceiling is not None and self._prompt_tokens >= self.prompt_token_ceiling:
+            return "PROVIDER_PROMPT_TOKEN_CEILING_REACHED"
+        if self.completion_token_ceiling is not None and self._completion_tokens >= self.completion_token_ceiling:
+            return "PROVIDER_COMPLETION_TOKEN_CEILING_REACHED"
+        if self.reasoning_token_ceiling is not None and self._reasoning_tokens >= self.reasoning_token_ceiling:
+            return "PROVIDER_REASONING_TOKEN_CEILING_REACHED"
+        if (
+            self.provider_cost_ceiling is not None
+            and self._cost_observed
+            and self._provider_reported_cost >= self.provider_cost_ceiling
+        ):
+            return "PROVIDER_COST_CEILING_REACHED"
+        return None
+
+    def _block_locked(self, source: str, reason: str) -> None:
+        self._blocked += 1
+        self._blocked_by_source[source] += 1
+        self._events.append(
+            {
+                "ordinal": self._actual + self._blocked,
+                "source": source,
+                "forwarded": False,
+                "blocked_reason": reason,
+            }
+        )
+        self._persist_locked()
+
     def reserve(self, source: str) -> Reservation:
         with self._lock:
-            if self._actual >= self.ceiling:
-                self._blocked += 1
-                self._blocked_by_source[source] += 1
-                self._events.append(
-                    {
-                        "ordinal": self._actual + self._blocked,
-                        "source": source,
-                        "forwarded": False,
-                        "blocked_reason": "PROVIDER_REQUEST_CEILING_EXHAUSTED",
-                    }
-                )
-                self._persist_locked()
+            reason = self._blocked_reason_locked(source)
+            if reason is not None:
+                self._block_locked(source, reason)
                 raise ProviderCeilingExceeded(
-                    f"provider request ceiling {self.ceiling} exhausted"
+                    f"{reason}: provider request blocked locally for source={source}"
                 )
             self._actual += 1
             self._by_source[source] += 1
@@ -213,10 +270,8 @@ class ProviderRequestLedger:
     ) -> None:
         with self._lock:
             event = next(
-                item
-                for item in self._events
-                if item.get("forwarded") is True
-                and item.get("ordinal") == reservation.ordinal
+                item for item in self._events
+                if item.get("forwarded") is True and item.get("ordinal") == reservation.ordinal
             )
             event["upstream_status"] = upstream_status
             observed = False
@@ -253,19 +308,23 @@ class ProviderRequestLedger:
         return {
             "schema_version": SCHEMA_VERSION,
             "hard_provider_request_ceiling": self.ceiling,
+            "source_request_ceilings": (
+                dict(sorted(self.source_ceilings.items()))
+                if self.source_ceilings is not None else None
+            ),
+            "prompt_token_ceiling": self.prompt_token_ceiling,
+            "completion_token_ceiling": self.completion_token_ceiling,
+            "reasoning_token_ceiling": self.reasoning_token_ceiling,
+            "provider_cost_ceiling": self.provider_cost_ceiling,
             "actual_provider_request_count": self._actual,
             "provider_requests_by_source": dict(sorted(self._by_source.items())),
             "blocked_request_count": self._blocked,
-            "blocked_requests_by_source": dict(
-                sorted(self._blocked_by_source.items())
-            ),
+            "blocked_requests_by_source": dict(sorted(self._blocked_by_source.items())),
             "prompt_tokens": self._prompt_tokens,
             "completion_tokens": self._completion_tokens,
             "reasoning_tokens": self._reasoning_tokens,
             "provider_reported_cost": (
-                round(self._provider_reported_cost, 12)
-                if self._cost_observed
-                else None
+                round(self._provider_reported_cost, 12) if self._cost_observed else None
             ),
             "responses_with_usage_telemetry": self._responses_with_usage,
             "privacy_contract": {
@@ -283,13 +342,7 @@ class ProviderRequestLedger:
         self.receipt_path.parent.mkdir(parents=True, exist_ok=True)
         tmp = self.receipt_path.with_suffix(self.receipt_path.suffix + ".tmp")
         tmp.write_text(
-            json.dumps(
-                self._snapshot_locked(),
-                ensure_ascii=False,
-                sort_keys=True,
-                indent=2,
-            )
-            + "\n",
+            json.dumps(self._snapshot_locked(), ensure_ascii=False, sort_keys=True, indent=2) + "\n",
             encoding="utf-8",
         )
         tmp.replace(self.receipt_path)
@@ -465,12 +518,34 @@ def main() -> int:
         default="https://openrouter.ai/api",
     )
     ap.add_argument("--ceiling", type=int, required=True)
+    ap.add_argument("--source-ceiling", action="append", default=[], metavar="SOURCE=LIMIT")
+    ap.add_argument("--prompt-token-ceiling", type=int)
+    ap.add_argument("--completion-token-ceiling", type=int)
+    ap.add_argument("--reasoning-token-ceiling", type=int)
+    ap.add_argument("--provider-cost-ceiling", type=float)
     ap.add_argument("--receipt", type=Path, required=True)
     args = ap.parse_args()
+
+    source_ceilings: dict[str, int] | None = None
+    if args.source_ceiling:
+        source_ceilings = {}
+        for raw in args.source_ceiling:
+            if "=" not in raw:
+                raise SystemExit("--source-ceiling requires SOURCE=LIMIT")
+            source, raw_limit = raw.split("=", 1)
+            source = source.strip()
+            if not source or source in source_ceilings:
+                raise SystemExit("source ceilings must be unique and non-empty")
+            source_ceilings[source] = int(raw_limit)
 
     ledger = ProviderRequestLedger(
         ceiling=args.ceiling,
         receipt_path=args.receipt,
+        source_ceilings=source_ceilings,
+        prompt_token_ceiling=args.prompt_token_ceiling,
+        completion_token_ceiling=args.completion_token_ceiling,
+        reasoning_token_ceiling=args.reasoning_token_ceiling,
+        provider_cost_ceiling=args.provider_cost_ceiling,
     )
     proxy = CountingOpenRouterProxy(
         upstream_base_url=args.upstream_base_url,

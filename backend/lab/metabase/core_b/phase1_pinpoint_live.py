@@ -38,18 +38,18 @@ from app.v3.root_cause_candidate_contract import (
 from control_plane.models import NativeResourceBinding
 from lab.metabase.core_b import live_sentinel as sealed
 
-MODEL = "openai/gpt-5.6-luna"
+MODEL = "openai/gpt-5.6-terra"
 CONTEXT = "phase1-final-pinpoint-v1"
 MAX_ORCHESTRATION_BOUNDARY_UNITS = 12
 
 PROBES = {
-    "SCOPE_CURRENTNESS_HARD_V2": {
+    "SCOPE_CURRENTNESS_HARD_V3": {
         "turns": (
             "Mayıs ve Haziran 2026’da bölüm bazında machine downtime ve fault count değişimini karşılaştır. Kötüleşmeyi sıralayıp hangi bölümlerin dikkat istediğini göster.",
             "Şimdi yalnız Haziran 2026’ya daralt. En yüksek downtime olan iki bölümü fault count ile birlikte incele. Önceki analizi tarihsel bağlam olarak koru ama yeni kapsam için eski Evidence’ı current truth sayma; yeni veriye dayan.",
         ),
     },
-    "RCA_P19_HARD": {
+    "RCA_P19_HARD_V2": {
         "turns": (
             "Haziran’daki machine downtime artışının ana açıklaması maintenance delay mi yoksa spare-part delay mi?\n\nMayıs-Haziran verisini incele.\n\nİki açıklamayı destekleyen ve zayıflatan kanıtları ayrı göster.\n\nGerekirse ikisini ayırmak için tek bir ek analitik test yap.\n\nVeri nedensellik için yeterli değilse bunu açıkça koru.",
         ),
@@ -896,6 +896,11 @@ def main() -> int:
         "candidate_product_sha": args.candidate_product_sha,
         "engine_sha": args.engine_sha,
         "engine_runtime_tag": args.runtime_tag,
+        "model_topology": {
+            "dima_cognition": MODEL,
+            "metabot": "openrouter/openai/gpt-5.6-terra",
+            "policy": "phase1-terra-default-no-cascade",
+        },
         "max_orchestration_boundary_units": MAX_ORCHESTRATION_BOUNDARY_UNITS,
         "binding_manifest": binding_manifest,
         "turn_count_expected": len(PROBES[args.probe_id]["turns"]),
@@ -935,7 +940,7 @@ def main() -> int:
                 break
 
         if (
-            args.probe_id == "SCOPE_CURRENTNESS_HARD_V2"
+            args.probe_id == "SCOPE_CURRENTNESS_HARD_V3"
             and len(report["turns"]) == 2
             and all(item.get("ready") for item in report["turns"])
         ):
@@ -955,7 +960,7 @@ def main() -> int:
                 currentness,
             )
         elif (
-            args.probe_id == "RCA_P19_HARD"
+            args.probe_id == "RCA_P19_HARD_V2"
             and report["turns"]
         ):
             report["mechanical_observations"] = _mechanical_b(
