@@ -85,6 +85,7 @@ def exception_payload(exc: Exception) -> dict[str, Any]:
       "cause_type":type(cause).__name__ if cause is not None else None,
       "cause_code":getattr(cause,"code",None) if cause is not None else None,
       "cause_detail":getattr(cause,"detail",None) if cause is not None else None,
+      "cause_diagnostic":safe_dump(getattr(cause,"diagnostic",None)) if cause is not None else None,
       "cause":str(cause) if cause is not None else None,
     }
 
