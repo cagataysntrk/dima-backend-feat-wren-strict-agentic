@@ -175,6 +175,7 @@ class ManagerProposal(Frozen):
     stop_reason: ManagerStopReason | None = None
     counter_to_claim_id: str | None = None
     claim: ProposedClaimDraft | None = None
+    mechanism_semantic_ref: str | None = Field(default=None, max_length=512)
     claim_semantic_contract: ClaimSemanticContract | None = None
     child_analytical_scope: AnalyticalRequestContract | None = None
 
@@ -232,6 +233,13 @@ class ManagerProposal(Frozen):
         ):
             raise ValueError(
                 "claim semantic contract is only valid for FORM_CLAIM"
+            )
+        if (
+            self.mechanism_semantic_ref is not None
+            and self.action != ManagerAction.FORM_CLAIM
+        ):
+            raise ValueError(
+                "mechanism semantic ref is only valid for FORM_CLAIM"
             )
 
         if self.action == ManagerAction.STOP:
@@ -2045,12 +2053,27 @@ class ResearchInvestigationManager:
                         "P17_ROOT_CANDIDATE_SCOPE_REQUIRED",
                         "typed root candidate requires accepted Research scope",
                     )
+                mechanism_ref = proposal.mechanism_semantic_ref
+                if mechanism_ref is None:
+                    raise ResearchManagerMaturationError(
+                        "P17_ROOT_CANDIDATE_MECHANISM_REQUIRED",
+                        "typed root candidate requires a governed mechanism semantic ref",
+                    )
+                accepted_refs = {
+                    item.candidate_id
+                    for item in session.accepted_brief.scope.semantic_refs
+                }
+                if mechanism_ref not in accepted_refs:
+                    raise ResearchManagerMaturationError(
+                        "P17_ROOT_CANDIDATE_MECHANISM_OUT_OF_SCOPE",
+                        mechanism_ref,
+                    )
                 semantics = RootCauseCandidateSemantics(
                     explanatory_subject_ref=proposal.target_parent_obligation,
                     relation_kind=(
                         RootCauseCandidateRelation.EXPLANATORY_CANDIDATE
                     ),
-                    mechanism_ref=step.branch_id,
+                    mechanism_ref=mechanism_ref,
                     scope_lineage_id=session.lineage_id,
                     scope_version_id=(
                         session.accepted_brief.scope.scope_version.version_id
