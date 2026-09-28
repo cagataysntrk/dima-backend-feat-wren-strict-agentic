@@ -36,6 +36,10 @@ from app.v3.product.process_manager import (
     RootCauseCandidate,
     p19_eligibility,
 )
+from app.v3.root_cause_candidate_contract import (
+    RootCauseCandidateRelation,
+    RootCauseCandidateSemantics,
+)
 from app.v3.research_contracts import (
     ResearchBrief,
     ResearchBriefStatus,
@@ -58,8 +62,13 @@ MANIFEST = Path("eval/v1/phase1_metamorphic_manifest.json")
 def _candidate(claim_id: str, mechanism: str, evidence: str) -> RootCauseCandidate:
     return RootCauseCandidate(
         claim_id=claim_id,
-        relation_ref="explains",
-        mechanism_ref=mechanism,
+        semantics=RootCauseCandidateSemantics(
+            explanatory_subject_ref="g_root",
+            relation_kind=RootCauseCandidateRelation.EXPLANATORY_CANDIDATE,
+            mechanism_ref=mechanism,
+            scope_lineage_id="atl_meta",
+            scope_version_id="scope_v2",
+        ),
         evidence_refs=(evidence,),
     )
 
