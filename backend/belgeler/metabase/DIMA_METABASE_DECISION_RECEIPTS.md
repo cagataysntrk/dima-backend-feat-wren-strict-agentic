@@ -7372,6 +7372,50 @@ correction:
 Keep the exact fixture blob unchanged. Validate absence of Wren MDL / expected SQL / MBQL encoding
 from the immutable fixture content instead.
 
+second provider-free diagnostic:
+- candidate aff8dfd34999d6368d1da14de3df3e60f4ad3d17 = RED;
+- run 36370552337 failed only in the same eval-contract preflight;
+- frozen fixture rows are positional arrays governed by the frozen columns tuple, not dictionaries;
+- correction commit 4c693f7061303d57cc0ae58cfc95ba10113203fa changed only the eval test to read the
+  department column from its frozen position; fixture bytes remained unchanged.
+
+provider-free P12 closure:
+- candidate 4c693f7061303d57cc0ae58cfc95ba10113203fa;
+- p12-provider-free 36370623402 = SUCCESS;
+- phase1-focused 36370623362 = SUCCESS;
+- canonical governance 36370623344 = SUCCESS;
+- provider contract exceptions = 0;
+- silent semantic drift = 0;
+- cross-tenant leak = 0;
+- invented numeric fact = 0;
+- unsupported causal promotion = 0;
+- eligible P19 misroutes = 0;
+- scope replacement failures = 0;
+- Evidence-free trusted reports = 0;
+- restart/resume failures = 0;
+- P0 artifact id = 10948059249;
+- P0 artifact digest = 850f6fffc3d824e2458aade4186b231d586c87d798fc40a445a81966a5ea9f10.
+
+first current live diagnostic:
+- authorization commit fa94fb902be2a15274ea553cdc805558b09a8b58;
+- p12-live 36370731650 = RED before any benchmark case executed;
+- authorization, frozen corpus and engine SHA guards = GREEN;
+- failure owner = live workflow/runtime bootstrap;
+- raw image error = GHCR denied for the incorrectly hard-coded
+  ghcr.io/cagataysntrk/metabase-dima digest;
+- environment-scoped DIMA_OPENROUTER_API_KEY was also not bound in that simplified workflow;
+- benchmark cognition units consumed = 0;
+- Product/app behavior was not exercised by the failed run.
+
+live workflow correction:
+Restore the already-proven Round-2 bootstrap rather than inventing a new runtime:
+- environment-scoped DIMA_OPENROUTER_API_KEY binding;
+- packages: read;
+- engine_runtime_lock.json as exact certified image/runtime authority;
+- IMMUTABLE_IMAGE_REF from the lock;
+- the historical neutral PostgreSQL/restricted-principal bootstrap;
+- retain exact authorization-file guard and current Phase-1 >=90% acceptance validator.
+
 P12 full close condition:
 Provider-free close plus one successful current 30-case live benchmark satisfying the Phase-1
 acceptance gate.
