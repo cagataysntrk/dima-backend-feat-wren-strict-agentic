@@ -17,6 +17,8 @@ on:
       - "backend/migrations/versions/fc8a1d0e3b42_product_investigation_routing.py"
       - "backend/app/v3/research.py"
       - "backend/app/v3/research_analytical_scope.py"
+      - "backend/app/v3/research_followup.py"
+      - "backend/app/v3/research_native_gateway.py"
       - "backend/app/v3/research_manager.py"
       - "backend/app/v3/research_product.py"
       - "backend/app/v3/report_document.py"
@@ -35,6 +37,7 @@ on:
       - "backend/tests/test_v3_product_routing_store.py"
       - "backend/tests/test_v3_owner_scoped_must_accounting.py"
       - "backend/tests/test_v3_research_intake.py"
+      - "backend/tests/test_v3_p14_native_gateway.py"
       - "backend/tests/test_v3_structured_transport.py"
       - "backend/tests/test_v3_p17_autonomous_provider_schema.py"
       - "backend/tests/test_v3_p17_request_differential.py"
@@ -188,7 +191,7 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD:backend/app/v3/research_product.py)" = "443a2e699ffc92aeb700051e57b24a709cf97b2c"
-          test "$(git rev-parse HEAD:backend/app/v3/research.py)" = "d2fa436269bec498cfc6c6a25b41cb2a6909340c"
+          test "$(git rev-parse HEAD:backend/app/v3/research.py)" = "95f08cf20ab409cec384e1041736537b528c836a"
           # P17 is intentionally mutable under the certified active root-recovery fix.
           # Its current semantics are certified by the Sealed P17 regression above;
           # keep exact blob pins only for owners that remained sealed/unchanged.
