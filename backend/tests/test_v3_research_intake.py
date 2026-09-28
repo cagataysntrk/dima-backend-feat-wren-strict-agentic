@@ -464,7 +464,7 @@ def test_openrouter_transport_uses_strict_json_schema_without_model_cascade():
     payload = seen["payload"]
     assert payload["model"] == "openai/gpt-5.6-luna"
     assert payload["provider"] == {"require_parameters": True}
-    assert payload["reasoning"] == {"enabled": False}
+    assert payload["reasoning"] == {"effort": "none"}
     assert payload["response_format"]["type"] == "json_schema"
     assert "temperature" not in payload
     assert "secret-test-key" not in json.dumps(payload)

@@ -348,7 +348,7 @@ def test_request_payload_still_uses_same_sealed_structured_parameters():
 
     assert seen["json"]["model"] == MODEL
     assert seen["json"]["provider"] == {"require_parameters": True}
-    assert seen["json"]["reasoning"] == {"enabled": False}
+    assert seen["json"]["reasoning"] == {"effort": "none"}
     assert seen["json"]["response_format"] == {
         "type": "json_schema",
         "json_schema": {

@@ -88,7 +88,7 @@ def build_provider_bound_payload(
             },
         },
         "provider": provider,
-        "reasoning": {"enabled": False},
+        "reasoning": {"effort": "none"},
         "max_tokens": int(max_tokens),
     }
 
