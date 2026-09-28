@@ -7,6 +7,7 @@ on:
     paths:
       - ".github/workflows/dima-v1-phase1-p12-provider-free.yml"
       - ".github/workflows/dima-v1-phase1-p12-live.yml"
+      - ".github/workflows/dima-v1-phase1-p12-pinpoint-live.yml"
       - "backend/eval/dima_neutral_feature_benchmark_round2.json"
       - "backend/eval/round2_neutral_machine_fixture.json"
       - "backend/eval/v1/**"

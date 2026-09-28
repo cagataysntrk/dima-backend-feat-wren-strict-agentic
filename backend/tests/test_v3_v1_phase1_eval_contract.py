@@ -11,6 +11,8 @@ from lab.metabase.core_b.round2_feature_benchmark import _select_cases
 ROUND2 = Path("eval/dima_neutral_feature_benchmark_round2.json")
 FIXTURE = Path("eval/round2_neutral_machine_fixture.json")
 METAMORPHIC = Path("eval/v1/phase1_metamorphic_manifest.json")
+BROAD_PAID_WORKFLOW = Path("../.github/workflows/dima-v1-phase1-p12-live.yml")
+PINPOINT_PAID_WORKFLOW = Path("../.github/workflows/dima-v1-phase1-p12-pinpoint-live.yml")
 
 
 def test_round2_frozen_manifest_is_exact_shape_and_eval_only_data():
@@ -83,6 +85,27 @@ def test_round2_neutral_fixture_is_frozen_substrate_neutral_40_rows():
         "Maintenance",
         "Quality",
     }
+
+
+def test_paid_governance_forbids_broad_execution_and_push_paid_triggers():
+    source = BROAD_PAID_WORKFLOW.read_text(encoding="utf-8")
+    assert "\n  push:" not in source
+    assert "DIMA_OPENROUTER_API_KEY" not in source
+    assert "round2_feature_benchmark.py" not in source
+    assert "broad 30-case paid benchmark is forbidden" in source
+
+
+def test_pinpoint_paid_workflow_is_manual_exact_two_case_closed_budget():
+    source = PINPOINT_PAID_WORKFLOW.read_text(encoding="utf-8")
+    assert "\n  push:" not in source
+    assert "workflow_dispatch:" in source
+    assert source.count('--case-id "F02_M"') == 1
+    assert source.count('--case-id "F07_M"') == 1
+    assert '--max-total-model-units "20"' in source
+    assert 'echo "max_units=20"' in source
+    assert "validate_phase1_round2.py" not in source
+    assert "180" not in source
+    assert "PINPOINT_ARTIFACT_READY_FOR_HUMAN_INSPECTION" in source
 
 
 def test_phase1_metamorphic_manifest_is_structural_not_prose_scoring():
