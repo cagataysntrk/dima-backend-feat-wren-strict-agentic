@@ -64,8 +64,7 @@ class ResearchBriefStatus(StrEnum):
 
 
 class ResearchNativeVerificationBinding(FrozenModel):
-    """Grounded native metadata used only to verify an observed query occurrence."""
-
+    """Grounded native metadata for one observed query occurrence.\n\n    native_metric_entity_id is the forward V1 governed metric identity.\n    aggregation and argument_kind remain historical/diagnostic metadata and\n    must not become forward semantic authority over Metabase query planning.\n    """\n
     candidate_id: str = Field(min_length=1)
     table_name: str = Field(min_length=1)
     schema_name: str | None = None

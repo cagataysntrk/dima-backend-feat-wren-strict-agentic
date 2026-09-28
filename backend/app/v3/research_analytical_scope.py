@@ -316,20 +316,20 @@ def _assert_metric_scope(
     refs: Mapping[str, ResearchSemanticRef],
     bindings: Mapping[str, ResearchNativeVerificationBinding],
     attestation: NativeAttestationEnvelope,
-    locators: Mapping[int, NativeFieldLocator],
-    table_locators: Mapping[int, NativeTableLocator],
 ) -> None:
+    """Verify governed metric identity, never Metabase's physical aggregation plan."""
+
     manifest = attestation.manifest
-    if manifest.aggregation_count != len(contract.metric_refs):
-        raise ResearchAnalyticalScopeError(
-            "R1_NATIVE_METRIC_SCOPE_MISMATCH",
-            "native aggregation count differs from accepted metric scope",
-        )
-    unmatched = list(manifest.aggregations)
-    metric_refs_by_entity = {
-        item.metabase_metric_entity_id: item
-        for item in manifest.native_metric_references
-    }
+    observed_metric_ids: set[str] = set()
+    for item in manifest.native_metric_references:
+        if item.aggregation_index >= len(manifest.aggregations):
+            raise ResearchAnalyticalScopeError(
+                "R1_NATIVE_METRIC_ATTESTATION_INVALID",
+                item.metabase_metric_entity_id,
+            )
+        observed_metric_ids.add(item.metabase_metric_entity_id)
+
+    expected_metric_ids: set[str] = set()
     for semantic_ref in contract.metric_refs:
         if semantic_ref not in refs:
             raise ResearchAnalyticalScopeError(
@@ -341,75 +341,29 @@ def _assert_metric_scope(
             semantic_ref,
             column_required=False,
         )
-        if binding.native_metric_entity_id is not None:
-            native_ref = metric_refs_by_entity.get(binding.native_metric_entity_id)
-            if native_ref is None:
-                raise ResearchAnalyticalScopeError(
-                    "R1_NATIVE_METRIC_IDENTITY_MISMATCH",
-                    semantic_ref,
-                )
-            if native_ref.aggregation_index >= len(manifest.aggregations):
-                raise ResearchAnalyticalScopeError(
-                    "R1_NATIVE_METRIC_ATTESTATION_INVALID",
-                    semantic_ref,
-                )
-            fact = manifest.aggregations[native_ref.aggregation_index]
-            if binding.aggregation and fact.operator != binding.aggregation:
-                raise ResearchAnalyticalScopeError(
-                    "R1_NATIVE_METRIC_AGGREGATION_MISMATCH",
-                    semantic_ref,
-                )
-            if fact in unmatched:
-                unmatched.remove(fact)
-            continue
+        native_metric_id = binding.native_metric_entity_id
+        if native_metric_id is None:
+            raise ResearchAnalyticalScopeError(
+                "R1_NATIVE_METRIC_RESOURCE_BINDING_REQUIRED",
+                (
+                    f"{semantic_ref}: forward V1 metric identity requires a "
+                    "governed Metabase-native metric resource"
+                ),
+            )
+        if native_metric_id in expected_metric_ids:
+            raise ResearchAnalyticalScopeError(
+                "R1_NATIVE_METRIC_RESOURCE_BINDING_AMBIGUOUS",
+                native_metric_id,
+            )
+        expected_metric_ids.add(native_metric_id)
 
-        if binding.aggregation is None:
-            raise ResearchAnalyticalScopeError(
-                "R1_NATIVE_METRIC_BINDING_INCOMPLETE",
-                semantic_ref,
-            )
-        match = None
-        for fact in unmatched:
-            if fact.operator != binding.aggregation:
-                continue
-            if binding.argument_kind is not None and (
-                fact.argument_kind != binding.argument_kind
-            ):
-                continue
-            if binding.argument_kind == "all_rows":
-                if fact.referenced_field_ids:
-                    continue
-                table_id = manifest.primary_source_table_id
-                table = (
-                    table_locators.get(table_id)
-                    if table_id is not None
-                    else None
-                )
-                if table is None:
-                    continue
-                if (
-                    table.table_name != binding.table_name
-                    or table.schema_name != binding.schema_name
-                ):
-                    continue
-                match = fact
-                break
-            if binding.column_name is None or len(fact.referenced_field_ids) != 1:
-                continue
-            locator = _locator(locators, fact.referenced_field_ids[0])
-            if _matches_binding(binding, locator):
-                match = fact
-                break
-        if match is None:
-            raise ResearchAnalyticalScopeError(
-                "R1_NATIVE_METRIC_SCOPE_MISMATCH",
-                semantic_ref,
-            )
-        unmatched.remove(match)
-    if unmatched:
+    if observed_metric_ids != expected_metric_ids:
         raise ResearchAnalyticalScopeError(
-            "R1_NATIVE_METRIC_SCOPE_MISMATCH",
-            "native occurrence contains an unaccepted aggregation",
+            "R1_NATIVE_METRIC_IDENTITY_MISMATCH",
+            (
+                "observed governed Metabase metric identities differ from "
+                "the accepted material request"
+            ),
         )
 
 
@@ -527,10 +481,10 @@ def _assert_time_scope(
         )
 
     predicates = tuple(attestation.manifest.temporal_predicates)
-    if len(predicates) != 2:
+    if not predicates:
         raise ResearchAnalyticalScopeError(
             "R1_NATIVE_TIME_SCOPE_MISMATCH",
-            "exact half-open accepted period requires two attested bounds",
+            "accepted bounded period is absent from the native occurrence",
         )
     field_ids = {item.time_field_id for item in predicates}
     if len(field_ids) != 1:
@@ -552,31 +506,26 @@ def _assert_time_scope(
             "R1_NATIVE_TIME_FIELD_MISMATCH",
             time_ref,
         )
-    lower = next(
-        (
-            item for item in predicates
-            if item.lower_bound is not None and item.upper_bound is None
-        ),
-        None,
-    )
-    upper = next(
-        (
-            item for item in predicates
-            if item.upper_bound is not None and item.lower_bound is None
-        ),
-        None,
-    )
+
+    # Observe the material half-open interval, independent of whether Metabase
+    # encoded it as two predicates, BETWEEN/during, or another attested form.
+    lower_bounds = {
+        (item.lower_bound, item.lower_inclusive)
+        for item in predicates
+        if item.lower_bound is not None
+    }
+    upper_bounds = {
+        (item.upper_bound, item.upper_inclusive)
+        for item in predicates
+        if item.upper_bound is not None
+    }
     if (
-        lower is None
-        or upper is None
-        or lower.lower_bound != expected.start
-        or lower.lower_inclusive is not True
-        or upper.upper_bound != expected.end
-        or upper.upper_inclusive is not False
+        lower_bounds != {(expected.start, True)}
+        or upper_bounds != {(expected.end, False)}
     ):
         raise ResearchAnalyticalScopeError(
             "R1_NATIVE_TIME_SCOPE_MISMATCH",
-            "native temporal bounds differ from accepted half-open period",
+            "observed temporal bounds differ from accepted half-open period",
         )
     return field_id
 
@@ -642,15 +591,44 @@ def _assert_breakout_and_ranking(
                 "native occurrence introduced an unaccepted LIMIT",
             )
         return
-    if (
-        manifest.limit != ranking.limit
-        or len(manifest.order_bys) != 1
-        or manifest.order_bys[0].target_kind != "aggregation"
-        or manifest.order_bys[0].direction != ranking.direction
-    ):
+    if manifest.limit != ranking.limit:
         raise ResearchAnalyticalScopeError(
             "R1_NATIVE_RANKING_SCOPE_MISMATCH",
-            "native ranking differs from accepted ranking invariant",
+            "native ranking limit differs from accepted ranking invariant",
+        )
+
+    ranking_binding = _require_binding(
+        bindings,
+        ranking.measure,
+        column_required=False,
+    )
+    ranking_metric_id = ranking_binding.native_metric_entity_id
+    if ranking_metric_id is None:
+        raise ResearchAnalyticalScopeError(
+            "R1_NATIVE_RANKING_RESOURCE_BINDING_REQUIRED",
+            (
+                f"{ranking.measure}: ranking target requires a governed "
+                "Metabase-native metric resource"
+            ),
+        )
+
+    metric_by_occurrence = {
+        (item.stage_number, item.aggregation_index): item.metabase_metric_entity_id
+        for item in manifest.native_metric_references
+    }
+    observed_semantic_orders = {
+        (
+            metric_by_occurrence[(item.stage_number, item.aggregation_index)],
+            item.direction,
+        )
+        for item in manifest.order_bys
+        if item.aggregation_index is not None
+        and (item.stage_number, item.aggregation_index) in metric_by_occurrence
+    }
+    if (ranking_metric_id, ranking.direction) not in observed_semantic_orders:
+        raise ResearchAnalyticalScopeError(
+            "R1_NATIVE_RANKING_SCOPE_MISMATCH",
+            "observed ranking target/direction differs from accepted ranking invariant",
         )
 
 
@@ -689,12 +667,6 @@ def assert_attested_native_scope(
             "R1_NATIVE_SUBJECT_MISMATCH",
             "scope attestation belongs to a different Metabase subject",
         )
-    if manifest.material_query_count != 1:
-        raise ResearchAnalyticalScopeError(
-            "R1_NATIVE_QUERY_COUNT_MISMATCH",
-            "one Research occurrence must attest exactly one material query",
-        )
-
     refs = _refs(session)
     bindings = _bindings(session)
     _assert_metric_scope(
@@ -702,8 +674,6 @@ def assert_attested_native_scope(
         refs=refs,
         bindings=bindings,
         attestation=attestation,
-        locators=field_locators,
-        table_locators=table_locators,
     )
     _assert_filter_scope(
         contract=contract,

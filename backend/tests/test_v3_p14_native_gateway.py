@@ -10,7 +10,9 @@ import pytest
 from sqlalchemy.pool import StaticPool
 from sqlmodel import SQLModel, Session, create_engine, select
 
+import app.v3.research_analytical_scope as scope_module
 import app.v3.research_native_gateway as gateway_module
+from app.v3.native_standard.contracts import NativeAttestationEnvelope
 from app.v3.research_contracts import (
     ResearchBrief,
     ResearchBriefStatus,
@@ -142,6 +144,7 @@ def brief() -> ResearchBrief:
                     table_name="sales_orders",
                     aggregation="count",
                     argument_kind="all_rows",
+                    native_metric_entity_id="metric-sales-order-count-v1",
                 ),
                 ResearchNativeVerificationBinding(
                     candidate_id=channel.candidate_id,
@@ -259,7 +262,14 @@ def attestation_payload(query):
                     "distinct": False,
                 }
             ],
-            "native_metric_references": [],
+            "native_metric_references": [
+                {
+                    "stage_number": 0,
+                    "aggregation_index": 0,
+                    "metabase_metric_id": 501,
+                    "metabase_metric_entity_id": "metric-sales-order-count-v1",
+                }
+            ],
             "breakout_count": 1,
             "breakouts": [
                 {
@@ -297,6 +307,80 @@ def attestation_payload(query):
             "runtime_identity": identity_payload(),
         },
     }
+
+
+def test_forward_scope_accepts_same_governed_metric_with_different_physical_plan():
+    engine = db_engine()
+    seed(engine)
+    _, session, _, query = session_and_link(engine)
+    base = NativeAttestationEnvelope.model_validate(attestation_payload(query))
+
+    physical_variant = base.manifest.model_copy(
+        update={
+            "aggregation_count": 2,
+            "aggregations": (
+                base.manifest.aggregations[0].model_copy(
+                    update={
+                        "operator": "sum",
+                        "argument_kind": "field_or_expression",
+                        "referenced_field_ids": (20,),
+                    }
+                ),
+                base.manifest.aggregations[0],
+            ),
+            "native_metric_references": (
+                base.manifest.native_metric_references[0].model_copy(
+                    update={"aggregation_index": 0}
+                ),
+            ),
+            "material_query_count": 2,
+        }
+    )
+    attestation = base.model_copy(update={"manifest": physical_variant})
+    contract = scope_module.analytical_scope_contract(
+        session=session,
+        obligation_id="g1",
+    )
+
+    observed = scope_module.assert_attested_native_scope(
+        session=session,
+        obligation_id="g1",
+        contract=contract,
+        attestation=attestation,
+        field_locators={
+            20: scope_module.NativeFieldLocator(
+                field_id=20,
+                table_id=10,
+                table_name="sales_orders",
+                column_name="channel",
+            )
+        },
+        table_locators={
+            10: scope_module.NativeTableLocator(
+                table_id=10,
+                table_name="sales_orders",
+            )
+        },
+        expected_engine=expected_identity(),
+        expected_metabase_subject=7,
+    )
+
+    assert observed.metric_refs == ("cand_sales_order_count",)
+    assert observed.scope_identity.version_id == "scope_v1"
+
+
+def test_research_forward_scope_is_not_a_query_implementation_validator():
+    metric_source = inspect.getsource(scope_module._assert_metric_scope)
+    ranking_source = inspect.getsource(scope_module._assert_breakout_and_ranking)
+    forward_source = inspect.getsource(scope_module.assert_attested_native_scope)
+    module_source = inspect.getsource(scope_module)
+
+    for forbidden in ("aggregation_count", "argument_kind", ".operator"):
+        assert forbidden not in metric_source
+    assert "material_query_count" not in forward_source
+    assert 'target_kind != "aggregation"' not in ranking_source
+    for forbidden in ("sqlparse", "parse_mbql", "query_optimizer"):
+        assert forbidden not in module_source
 
 
 class MaterialBridge:
