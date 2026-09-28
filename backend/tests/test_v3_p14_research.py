@@ -10,6 +10,16 @@ import pytest
 
 from app.v3.authority import AcceptedResearchAuthority
 from app.v3.evidence import DimaQueryReceipt, EvidenceArtifact, EvidenceState
+from app.v3.research_contracts import (
+    ResearchBrief,
+    ResearchBriefStatus,
+    ResearchGoalKind,
+    ResearchGoalStatus,
+    ResearchQuestion,
+    ResearchScope,
+    ResearchSemanticRef,
+    SemanticTargetKind,
+)
 from app.v3.research import (
     EvidenceRelation,
     HypothesisState,
@@ -50,18 +60,43 @@ def _authority(*obligation_ids: str) -> AcceptedResearchAuthority:
 
 def _session(*obligation_ids: str):
     authority = _authority(*obligation_ids)
+    metric = ResearchSemanticRef(
+        source_mention="sales order count",
+        candidate_id="metric.sales_order_count",
+        target_kind=SemanticTargetKind.METRIC,
+        canonical_name="Sales Order Count",
+    )
+    questions = tuple(
+        ResearchQuestion(
+            goal_id=item,
+            kind=ResearchGoalKind.PERFORMANCE,
+            source_text=f"Investigate accepted obligation {item} using native analytics.",
+            subject_refs=(metric,),
+            status=ResearchGoalStatus.RESOLVED,
+        )
+        for item in obligation_ids
+    )
+    brief = ResearchBrief(
+        brief_id="rb-p14-unit",
+        objective="Satış performansındaki değişimi kanıtlarla araştır.",
+        scope=ResearchScope(semantic_refs=(metric,)),
+        questions=questions,
+        must_requirement_ids=tuple(obligation_ids),
+        context_version=CONTEXT,
+        status=ResearchBriefStatus.READY_FOR_RESEARCH,
+    )
     return ResearchManager.start(
         authority=authority,
-        objective="Satış performansındaki değişimi kanıtlarla araştır.",
+        objective=brief.objective,
         obligation_objectives={
-            item: f"Investigate accepted obligation {item} using native analytics."
-            for item in obligation_ids
+            item.goal_id: item.source_text for item in questions
         },
         tenant_binding=TENANT,
         principal_subject=PRINCIPAL,
         budget=ResearchBudget(max_native_turns=4, max_material_executions=4),
         now=NOW,
         session_id="rs_" + "1" * 24,
+        accepted_brief=brief,
     )
 
 
@@ -125,7 +160,9 @@ def test_p14_durable_state_delegates_objective_to_real_native_bridge_without_que
     )
 
     assert prepared.request.message == session.obligations[0].objective
-    assert prepared.request.context == {}
+    assert prepared.request.context["dima_analytical_scope"]["metric_refs"] == [
+        "metric.sales_order_count"
+    ]
     assert prepared.request.state == {}
     assert prepared.session.obligations[0].state == ObligationState.DELEGATED
     assert prepared.session.budget.native_turns_used == 1
@@ -169,7 +206,7 @@ def test_p14_durable_state_delegates_objective_to_real_native_bridge_without_que
     assert observation.status_code == 202
     assert not observation.errors
     assert captured["message"] == session.obligations[0].objective
-    assert captured["context"] == {}
+    assert captured["context"] == prepared.request.context
     assert captured["state"] == {}
     assert "query" not in captured
     assert "sql" not in captured

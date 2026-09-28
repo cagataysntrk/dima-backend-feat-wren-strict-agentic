@@ -9,6 +9,7 @@ from uuid import UUID, uuid4
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.v3.research_contracts import ResearchBrief, ResearchBriefStatus
+from app.v3.research_analytical_scope import analytical_scope_contract
 from app.v3.authority import AcceptedResearchAuthority
 from app.v3.evidence import DimaQueryReceipt, EvidenceArtifact, EvidenceState
 from app.v3.substrate.metabase.native_engine import NativeEngineBridge
@@ -263,7 +264,25 @@ class ResearchManager:
         conv=session.native_conversation or NativeMetabotConversationRef(conversation_id=uuid4(),profile_id=profile_id,metabot_id=metabot_id)
         if (conv.profile_id,conv.metabot_id)!=(profile_id,metabot_id): raise ResearchStateError("P14_NATIVE_CONVERSATION_IDENTITY_MISMATCH","profile/metabot changed")
         turn=session.budget.native_turns_used+1; rid=f"p14-{session.session_id}-{obligation_id}-t{turn}"
-        req=NativeEngineRequest(profile_id=conv.profile_id,metabot_id=conv.metabot_id,message=item.objective,context={},conversation_id=conv.conversation_id,history=None,state={},dima_request_id=rid,dima_trace_id=rid+"-trace")
+        analytical_scope=analytical_scope_contract(
+            session=session,
+            obligation_id=obligation_id,
+        )
+        req=NativeEngineRequest(
+            profile_id=conv.profile_id,
+            metabot_id=conv.metabot_id,
+            message=item.objective,
+            context={
+                "dima_analytical_scope": analytical_scope.model_dump(
+                    mode="json"
+                )
+            },
+            conversation_id=conv.conversation_id,
+            history=None,
+            state={},
+            dima_request_id=rid,
+            dima_trace_id=rid+"-trace",
+        )
         conv=conv.model_copy(update={"native_turns":conv.native_turns+1,"last_request_id":rid,"last_trace_id":rid+"-trace"})
         item=item.model_copy(update={"state":ObligationState.DELEGATED})
         budget=session.budget.model_copy(update={"native_turns_used":turn})

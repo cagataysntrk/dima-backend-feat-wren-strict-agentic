@@ -28,8 +28,10 @@ from app.v3.research_contracts import (
     ResearchGoalKind,
     ResearchGoalStatus,
     ResearchQuestion,
+    ResearchNativeVerificationBinding,
     ResearchScope,
     ResearchSemanticRef,
+    ResearchTimePeriod,
     ScopeMutation,
     ScopeMutationKind,
     TurnScopeContract,
@@ -83,6 +85,10 @@ class ResearchIntakeCatalog(Frozen):
     semantic_refs: tuple[ResearchSemanticRef, ...] = Field(min_length=1)
     allowed_relationships: tuple[AllowedRelationship, ...] = ()
     supported_domains: tuple[str, ...] = ()
+    temporal_dimension_ids: tuple[str, ...] = ()
+    native_verification_bindings: tuple[
+        ResearchNativeVerificationBinding, ...
+    ] = ()
 
     @model_validator(mode="after")
     def unique_and_grounded(self):
@@ -102,6 +108,26 @@ class ResearchIntakeCatalog(Frozen):
                 and rel.dimension_semantic_id not in known
             ):
                 raise ValueError("relationship dimension is unknown")
+        by_id = {item.candidate_id: item for item in self.semantic_refs}
+        if len(self.temporal_dimension_ids) != len(
+            set(self.temporal_dimension_ids)
+        ):
+            raise ValueError("temporal dimension ids must be unique")
+        for candidate_id in self.temporal_dimension_ids:
+            ref = by_id.get(candidate_id)
+            if ref is None or ref.target_kind.value != "dimension":
+                raise ValueError(
+                    "temporal dimension id must reference a catalog dimension"
+                )
+        binding_ids = [
+            item.candidate_id for item in self.native_verification_bindings
+        ]
+        if len(binding_ids) != len(set(binding_ids)):
+            raise ValueError("native verification bindings must be unique")
+        if not set(binding_ids).issubset(known):
+            raise ValueError(
+                "native verification binding references unknown semantic id"
+            )
         return self
 
     @property
@@ -126,6 +152,18 @@ class ResearchIntakeCatalog(Frozen):
             ],
             "supported_domains": sorted(self.supported_domains),
         }
+        if self.temporal_dimension_ids:
+            payload["temporal_dimension_ids"] = sorted(
+                self.temporal_dimension_ids
+            )
+        if self.native_verification_bindings:
+            payload["native_verification_bindings"] = [
+                item.model_dump(mode="json")
+                for item in sorted(
+                    self.native_verification_bindings,
+                    key=lambda value: value.candidate_id,
+                )
+            ]
         return hashlib.sha256(
             json.dumps(
                 payload,
@@ -153,6 +191,13 @@ class ModelGoalDraft(Frozen):
     comparison_texts: tuple[str, ...] = ()
 
 
+class ModelTimePeriodDraft(Frozen):
+    source_text: str = Field(min_length=1)
+    time_dimension_semantic_id: str = Field(min_length=1)
+    start: str = Field(min_length=1)
+    end: str = Field(min_length=1)
+
+
 class ModelDeliverableDraft(Frozen):
     key: str = Field(min_length=1, max_length=120)
     kind: PresentationKind
@@ -173,6 +218,7 @@ class ModelResearchBriefDraft(Frozen):
     deliverables: tuple[ModelDeliverableDraft, ...] = ()
     investigation_directives: tuple[ModelInvestigationDirectiveDraft, ...] = ()
     time_surfaces: tuple[str, ...] = ()
+    time_periods: tuple[ModelTimePeriodDraft, ...] = ()
     required_domains: tuple[str, ...] = ()
     scope_mutation_kind: ScopeMutationKind | None = None
     clarification_question: str | None = None
@@ -251,6 +297,10 @@ Authority rules:
 - If prior_brief is present and the CURRENT request materially changes semantic/time scope,
   emit exactly one typed scope_mutation_kind from the closed enum. If scope is unchanged, emit null.
 - Never emit a scope version or lineage id. Dima deterministically binds those after validation.
+- For every explicit calendar/time surface in READY, emit exactly one time_periods entry.
+  Select time_dimension_semantic_id only from the grounded catalog, and resolve exact ISO-8601
+  half-open [start,end) bounds. If the period cannot be resolved unambiguously, return CLARIFY.
+- Do not use implementation-specific SQL/MBQL temporal syntax; time_periods are semantic scope only.
 - Preserve every current MUST analytical/presentation obligation as a separate goal/deliverable.
 - Adaptive instructions such as "if verified evidence reveals a new material direction, follow it"
   are Core-B product-routing intent, NOT a second analytical goal. Emit the actual analytical goal
@@ -307,6 +357,15 @@ def _intake_provider_schema(
             for item in catalog.allowed_relationships
         )
     )
+    time_dimension_ids = tuple(sorted(catalog.temporal_dimension_ids))
+    period_definition = definitions.get("ModelTimePeriodDraft")
+    if isinstance(period_definition, dict):
+        period_properties = period_definition.get("properties")
+        if isinstance(period_properties, dict):
+            period_properties["time_dimension_semantic_id"] = {
+                "type": "string",
+                "enum": list(time_dimension_ids),
+            }
     common_names = (
         "goal_key",
         "source_text",
@@ -392,12 +451,19 @@ class ResearchIntakeCompiler:
                     "value": item.value,
                     "cube_names": list(item.cube_names),
                     "sensitive": item.sensitive,
+                    "temporal": (
+                        item.candidate_id
+                        in set(catalog.temporal_dimension_ids)
+                    ),
                 }
                 for item in sorted(
                     catalog.semantic_refs,
                     key=lambda value: value.candidate_id,
                 )
             ],
+            "temporal_dimension_ids": sorted(
+                catalog.temporal_dimension_ids
+            ),
             "allowed_relationships": [
                 item.model_dump(mode="json")
                 for item in sorted(
@@ -406,6 +472,26 @@ class ResearchIntakeCompiler:
                 )
             ],
         }
+
+    @staticmethod
+    def _provider_prior_brief_payload(
+        brief: ResearchBrief | None,
+    ) -> dict[str, Any] | None:
+        if brief is None:
+            return None
+        payload = brief.model_dump(mode="json")
+
+        def strip(value: Any) -> None:
+            if isinstance(value, dict):
+                value.pop("native_verification_bindings", None)
+                for item in value.values():
+                    strip(item)
+            elif isinstance(value, list):
+                for item in value:
+                    strip(item)
+
+        strip(payload)
+        return payload
 
     @staticmethod
     def _relationship_for_goal(
@@ -468,11 +554,7 @@ class ResearchIntakeCompiler:
         user_payload: dict[str, Any] = {
             "current_user_message": current,
             "grounded_catalog": self._catalog_payload(catalog),
-            "prior_brief": (
-                prior_brief.model_dump(mode="json")
-                if prior_brief is not None
-                else None
-            ),
+            "prior_brief": self._provider_prior_brief_payload(prior_brief),
             "instruction": (
                 "Return the complete CURRENT intent only. Prior brief is context, "
                 "not authority to restore obligations the user removed."
@@ -647,9 +729,83 @@ class ResearchIntakeCompiler:
                 "READY intake must contain at least one analytical goal",
             )
 
+        time_surfaces = tuple(dict.fromkeys(draft.time_surfaces))
+        if len(time_surfaces) != len(draft.time_surfaces):
+            raise ResearchIntakeError(
+                "INTAKE_TIME_SURFACE_DUPLICATE",
+                "accepted time surfaces must be unique",
+            )
+        if bool(time_surfaces) != bool(draft.time_periods):
+            raise ResearchIntakeError(
+                "INTAKE_TIME_SCOPE_BINDING_REQUIRED",
+                "every accepted time surface requires one typed period binding",
+            )
+        period_by_source: dict[str, ModelTimePeriodDraft] = {}
+        periods: list[ResearchTimePeriod] = []
+        for item in draft.time_periods:
+            if item.source_text in period_by_source:
+                raise ResearchIntakeError(
+                    "INTAKE_TIME_PERIOD_DUPLICATE",
+                    item.source_text,
+                )
+            period_by_source[item.source_text] = item
+            dimension_ref = by_id.get(item.time_dimension_semantic_id)
+            if (
+                dimension_ref is None
+                or dimension_ref.target_kind.value != "dimension"
+                or item.time_dimension_semantic_id
+                not in set(catalog.temporal_dimension_ids)
+            ):
+                raise ResearchIntakeError(
+                    "INTAKE_TIME_DIMENSION_UNAUTHORIZED",
+                    item.time_dimension_semantic_id,
+                )
+            scope_refs.setdefault(dimension_ref.candidate_id, dimension_ref)
+            try:
+                periods.append(
+                    ResearchTimePeriod(
+                        source_text=item.source_text,
+                        time_dimension_candidate_id=(
+                            item.time_dimension_semantic_id
+                        ),
+                        start=item.start,
+                        end=item.end,
+                    )
+                )
+            except ValueError as exc:
+                raise ResearchIntakeError(
+                    "INTAKE_TIME_PERIOD_INVALID",
+                    str(exc),
+                ) from exc
+        if set(period_by_source) != set(time_surfaces):
+            raise ResearchIntakeError(
+                "INTAKE_TIME_PERIOD_SURFACE_MISMATCH",
+                "typed periods must exactly cover accepted time surfaces",
+            )
+        periods_by_surface = {
+            item.source_text: item for item in periods
+        }
+        ordered_periods = tuple(
+            periods_by_surface[item] for item in time_surfaces
+        )
+
+        accepted_ids = set(scope_refs)
+        scope_bindings = tuple(
+            item
+            for item in catalog.native_verification_bindings
+            if item.candidate_id in accepted_ids
+        )
+        scope_temporal_ids = tuple(
+            item
+            for item in catalog.temporal_dimension_ids
+            if item in accepted_ids
+        )
         draft_scope = ResearchScope(
             semantic_refs=tuple(scope_refs.values()),
-            time_surfaces=tuple(dict.fromkeys(draft.time_surfaces)),
+            time_surfaces=time_surfaces,
+            periods=ordered_periods,
+            temporal_dimension_ids=scope_temporal_ids,
+            native_verification_bindings=scope_bindings,
         )
         scope_contract = None
         accepted_scope = draft_scope
@@ -676,7 +832,19 @@ class ResearchIntakeCompiler:
             changed = (
                 prior_ids != current_ids
                 or prior_times != current_times
+                or tuple(prior_brief.scope.periods)
+                != tuple(draft_scope.periods)
             )
+            if not changed and (
+                tuple(prior_brief.scope.temporal_dimension_ids)
+                != tuple(draft_scope.temporal_dimension_ids)
+                or tuple(prior_brief.scope.native_verification_bindings)
+                != tuple(draft_scope.native_verification_bindings)
+            ):
+                raise ResearchIntakeError(
+                    "INTAKE_SCOPE_CONTEXT_MISMATCH",
+                    "execution verification metadata changed inside one semantic context",
+                )
             if changed:
                 if draft.scope_mutation_kind is None:
                     raise ResearchIntakeError(
@@ -693,6 +861,13 @@ class ResearchIntakeCompiler:
                             ),
                             target_semantic_refs=draft_scope.semantic_refs,
                             target_time_surfaces=draft_scope.time_surfaces,
+                            target_periods=draft_scope.periods,
+                            target_temporal_dimension_ids=(
+                                draft_scope.temporal_dimension_ids
+                            ),
+                            target_native_verification_bindings=(
+                                draft_scope.native_verification_bindings
+                            ),
                             reason=current,
                         ),
                     )
@@ -711,6 +886,11 @@ class ResearchIntakeCompiler:
                 accepted_scope = ResearchScope(
                     semantic_refs=draft_scope.semantic_refs,
                     time_surfaces=draft_scope.time_surfaces,
+                    periods=draft_scope.periods,
+                    temporal_dimension_ids=draft_scope.temporal_dimension_ids,
+                    native_verification_bindings=(
+                        draft_scope.native_verification_bindings
+                    ),
                     scope_version=prior_brief.scope.scope_version,
                 )
 

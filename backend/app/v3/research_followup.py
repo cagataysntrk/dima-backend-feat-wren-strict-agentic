@@ -49,11 +49,19 @@ class NativeResearchFollowupExecutor:
                 "P17 follow-up requires the sealed Research native conversation",
             )
         request_id = f"p17-{step.step_id}-{task.task_id}"
+        analytical_scope = analytical_scope_contract(
+            session=session,
+            obligation_id=task.parent_obligation_id,
+        )
         return NativeEngineRequest(
             profile_id=conversation.profile_id,
             metabot_id=conversation.metabot_id,
             message=task.bounded_objective,
-            context={},
+            context={
+                "dima_analytical_scope": analytical_scope.model_dump(
+                    mode="json"
+                )
+            },
             conversation_id=conversation.conversation_id,
             history=None,
             state={},

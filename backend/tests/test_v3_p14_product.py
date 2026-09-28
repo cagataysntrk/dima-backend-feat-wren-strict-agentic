@@ -20,6 +20,7 @@ from app.v3.research_contracts import (
     ResearchQuestion,
     ResearchScope,
     ResearchSemanticRef,
+    ResearchTimePeriod,
     RankingSurface,
     SemanticTargetKind,
 )
@@ -80,6 +81,13 @@ def _brief(two: bool = True) -> ResearchBrief:
         canonical_name="Sales Order Channel",
         cube_names=("satis_siparisleri",),
     )
+    event_date = ResearchSemanticRef(
+        source_mention="tarih",
+        candidate_id="cand_sales_order_date",
+        target_kind=SemanticTargetKind.DIMENSION,
+        canonical_name="Sales Order Date",
+        cube_names=("satis_siparisleri",),
+    )
     questions = [
         ResearchQuestion(
             goal_id="g1",
@@ -110,8 +118,17 @@ def _brief(two: bool = True) -> ResearchBrief:
         brief_id="rb-product-p14",
         objective="Satış performansındaki değişimi kanıtlarla araştır.",
         scope=ResearchScope(
-            semantic_refs=(metric, channel),
+            semantic_refs=(metric, channel, event_date),
             time_surfaces=("Haziran 2026",),
+            periods=(
+                ResearchTimePeriod(
+                    source_text="Haziran 2026",
+                    time_dimension_candidate_id=event_date.candidate_id,
+                    start="2026-06-01",
+                    end="2026-07-01",
+                ),
+            ),
+            temporal_dimension_ids=(event_date.candidate_id,),
         ),
         questions=tuple(questions),
         must_requirement_ids=tuple(item.goal_id for item in questions),
