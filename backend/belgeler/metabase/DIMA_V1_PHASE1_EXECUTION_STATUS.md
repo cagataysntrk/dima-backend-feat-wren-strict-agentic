@@ -485,3 +485,50 @@ Final paid-governance provider-free evidence:
 After the manual run, inspect both case artifacts individually. Do not accept/reject Phase 1 from
 the benchmark scorer alone. If either case exposes a real architecture/owner defect, reopen only
 that seam. If both are acceptable, record the exact run/artifact receipts and proceed to P13.
+
+## DMP-DEC-0074 — R0 STRUCTURED COGNITION TRANSPORT CLOSED PROVIDER-FREE
+
+Current behavior candidate:
+`ed23b6b55188793614f2b3633b7539bdf0918bd6`
+
+```text
+PHASE 1 = NEAR CLOSURE / NOT SEALED
+
+WAVE A = GREEN
+WAVE B = GREEN / PROVIDER-FREE RECERTIFIED
+
+R1 = PROVIDER-FREE GREEN / LIVE VALIDATION BLOCKED UPSTREAM UNTIL R0; R0 NOW CLOSED
+R2 = GREEN / DO NOT REOPEN
+R3 = PROVIDER-FREE GREEN / LIVE VALIDATION BLOCKED UPSTREAM UNTIL R0; R0 NOW CLOSED
+R4 = GREEN / DO NOT REOPEN
+
+STRUCTURED COGNITION TRANSPORT
+= R0 PROVIDER-FREE GREEN
+
+P12 broad paid
+= FORBIDDEN / FAIL-CLOSED
+
+NEXT LIVE
+= F02_M ONLY
+
+F07_M
+= NOT YET LEGAL
+= ONLY AFTER F02_M REACHES NATIVE EXECUTION ACCEPTABLY
+
+P13
+= BLOCKED
+```
+
+R0 proof receipts:
+- Phase-1 focused `36453729353 = SUCCESS`;
+- Core-B focused `36453523768 = SUCCESS`;
+- structured/P17 provider-free diagnostic `36454016428 = SUCCESS`;
+- Core-B seal `36454016465 = SUCCESS`;
+- governance `36454016409 = SUCCESS`.
+
+No paid/model call was consumed by R0 provider-free closure.
+
+The prior exact-two paid RED family is classified as an upstream structured-cognition transport
+failure, not as evidence that R1 ranking, R3/P19 root-cause semantics or Metabase execution failed.
+Historical receipts remain historical; this section supersedes only the next-live execution rule.
+

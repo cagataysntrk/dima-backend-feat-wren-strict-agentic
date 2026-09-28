@@ -7985,3 +7985,80 @@ Current tool boundary:
 The repository-side workflow is ready, but the active GitHub connector exposes workflow reads,
 artifacts and re-runs only; it does not expose creation of a new `workflow_dispatch` event.
 Therefore no paid call has been silently substituted with a push trigger.
+
+---
+
+## DMP-DEC-0074 — R0 STRUCTURED COGNITION TRANSPORT PROVIDER-FREE CLOSURE
+
+date: 2026-09-28
+
+status:
+`R0 PROVIDER-FREE GREEN / LIVE VALIDATION NARROWED TO F02_M FIRST`
+
+behavior candidate:
+`ed23b6b55188793614f2b3633b7539bdf0918bd6`
+
+first wrong transition evidence:
+- latest pre-R0 exact-two live `36449010299`: `F02_M = EXCEPTION`, `F07_M = EXCEPTION`;
+- previous exact-two live `36448131392` showed the same upstream failure family;
+- both failed before native analytics: Research Intake -> structured cognition provider -> HTTP 200 ->
+  `finish_reason=length` / `native_finish_reason=max_output_tokens` -> null content;
+- latest pre-R0 run consumed 2 observable model-boundary units and made 0 Metabase, 0 P17 and 0 P19 calls.
+
+localized owner:
+```text
+STRUCTURED COGNITION TRANSPORT / RESEARCH INTAKE PROVIDER CONTRACT
+```
+
+R0 generic closure:
+- provider-bound request envelope uses canonical `reasoning_effort=none` and
+  `max_completion_tokens`; deprecated wire `max_tokens` is not emitted;
+- output-budget exhaustion is typed as `COGNITION_OUTPUT_BUDGET_EXHAUSTED`, not collapsed into
+  generic `COGNITION_RESPONSE_EMPTY`;
+- safe provider diagnostics retain model/provider, HTTP status, finish reasons, request/schema
+  fingerprints, completion ceiling, safe token counters and latency while provider reasoning text
+  and secrets remain redacted;
+- Product may keep its non-oracle public `UNAVAILABLE` surface, but diagnostic owner/code retains
+  `RESEARCH_INTAKE / COGNITION_OUTPUT_BUDGET_EXHAUSTED`;
+- provider-facing Research Intake DTO is separated from persisted `ResearchBrief` authority;
+- model owns semantic interpretation only; Dima continues to own durable IDs, scope/version lineage,
+  verification bindings and machine authority;
+- provider prior-turn context is semantic-only; no provider selection of machine authority;
+- temporal provider fields are capability-gated: when temporal semantics are legal, raw time surface
+  and typed period must still match fail-closed; otherwise temporal boilerplate is absent from the
+  provider contract;
+- no free-form fallback, regex semantic patch, benchmark-case branch, retry-until-lucky, query planner,
+  Wren runtime, UI or external execution capability was introduced.
+
+R0 provider-free evidence:
+- Phase-1 focused `36453729353 = SUCCESS`;
+- Core-B focused `36453523768 = SUCCESS`;
+- structured/P17 provider-free diagnostic `36454016428 = SUCCESS`;
+- Core-B provider-free seal `36454016465 = SUCCESS`;
+- governance `36454016409 = SUCCESS`;
+- R0 paid/model calls = 0.
+
+preserved seals:
+- R1/P3 material-semantics boundary remains GREEN;
+- R2 currentness/security remains GREEN and unopened;
+- R3 governed mechanism identity remains GREEN and unopened;
+- R4 relationship semantics remains GREEN and unopened;
+- P18/P19/P20 semantics remain unopened;
+- engine remains `cbe313af9ac2d5960f662068e433d328d896fb06` / `0.63.18-dima.6`;
+- migration head remains `fd2a7c9e4b61`.
+
+superseding live rule:
+```text
+DMP-DEC-0073C exact-two readiness
+= HISTORICAL
+
+next paid Product validation
+= EXACTLY F02_M FIRST
+= BROAD PAID FORBIDDEN
+
+F07_M
+= BLOCKED UNTIL F02_M PROVES INTAKE READY -> P14 -> NATIVE METABASE -> EVIDENCE
+```
+
+P13 remains NOT STARTED / BLOCKED until the narrowed live proofs are resolved.
+
