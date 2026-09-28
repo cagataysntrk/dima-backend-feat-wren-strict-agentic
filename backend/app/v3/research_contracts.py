@@ -25,9 +25,12 @@ class PresentationKind(StrEnum):
 
 
 class RankingSurface(FrozenModel):
+    """Accepted user/product ranking obligation, not automatically native ORDER BY."""
+
     text: str = Field(min_length=1)
     direction: Literal["asc", "desc", "unspecified"] = "unspecified"
     limit: int | None = Field(default=None, ge=1, le=1000)
+    measure_semantic_id: str | None = Field(default=None, min_length=1)
 
 
 class ComparisonSurface(FrozenModel):
