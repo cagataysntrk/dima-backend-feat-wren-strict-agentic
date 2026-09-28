@@ -99,6 +99,7 @@ def test_empty_success_response_retains_sanitized_provider_diagnostic():
                 "choices": [
                     {
                         "finish_reason": "length",
+                        "native_finish_reason": "max_output_tokens",
                         "message": {
                             "content": "",
                             "reasoning": "PRIVATE PROVIDER REASONING",
@@ -108,6 +109,9 @@ def test_empty_success_response_retains_sanitized_provider_diagnostic():
                 "usage": {
                     "prompt_tokens": 100,
                     "completion_tokens": 4096,
+                    "completion_tokens_details": {
+                        "reasoning_tokens": 4096,
+                    },
                 },
             },
         )
@@ -117,22 +121,75 @@ def test_empty_success_response_retains_sanitized_provider_diagnostic():
             _call(client)
 
     error = caught.value
-    assert error.code == "COGNITION_RESPONSE_EMPTY"
+    assert error.code == "COGNITION_OUTPUT_BUDGET_EXHAUSTED"
     assert error.diagnostic is not None
     diagnostic = error.diagnostic
     assert diagnostic.status_code == 200
     assert diagnostic.provider_request_id == "req_empty"
     assert diagnostic.provider_backend_identity == "provider-empty"
+    assert diagnostic.finish_reason == "length"
+    assert diagnostic.native_finish_reason == "max_output_tokens"
+    assert diagnostic.prompt_tokens == 100
+    assert diagnostic.completion_tokens == 4096
+    assert diagnostic.reasoning_tokens == 4096
+    assert diagnostic.non_reasoning_completion_tokens == 0
+    assert diagnostic.latency_ms is not None
     serialized = json.dumps(
         diagnostic.provider_error_metadata,
         ensure_ascii=False,
         sort_keys=True,
     )
     assert '"finish_reason": "length"' in serialized
-    assert '"completion_tokens": "[REDACTED]"' in serialized
-    assert '"prompt_tokens": "[REDACTED]"' in serialized
+    assert '"completion_tokens": 4096' in serialized
+    assert '"prompt_tokens": 100' in serialized
     assert "PRIVATE PROVIDER REASONING" not in serialized
     assert "[REDACTED]" in serialized
+
+
+def test_empty_success_without_budget_signal_remains_typed_empty():
+    def handler(request: httpx.Request):
+        return httpx.Response(
+            200,
+            json={
+                "choices": [
+                    {
+                        "finish_reason": "stop",
+                        "message": {"content": None},
+                    }
+                ]
+            },
+        )
+
+    with _transport(handler) as client:
+        with pytest.raises(StructuredProviderError) as caught:
+            _call(client)
+
+    assert caught.value.code == "COGNITION_RESPONSE_EMPTY"
+    assert caught.value.diagnostic is not None
+    assert caught.value.diagnostic.finish_reason == "stop"
+
+
+def test_malformed_success_content_is_typed_before_domain_validation():
+    def handler(request: httpx.Request):
+        return httpx.Response(
+            200,
+            json={
+                "choices": [
+                    {
+                        "finish_reason": "stop",
+                        "message": {"content": '{"value":'},
+                    }
+                ]
+            },
+        )
+
+    with _transport(handler) as client:
+        with pytest.raises(StructuredProviderError) as caught:
+            _call(client)
+
+    assert caught.value.code == "COGNITION_RESPONSE_MALFORMED"
+    assert caught.value.diagnostic is not None
+    assert caught.value.diagnostic.finish_reason == "stop"
 
 
 def test_nested_provider_metadata_is_sanitized_and_bounded():

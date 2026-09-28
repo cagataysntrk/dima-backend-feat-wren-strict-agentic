@@ -41,6 +41,13 @@ class StructuredCallTrace(StructuredRequestIdentity):
     http_status: int | None = None
     provider_error_code: str | None = Field(default=None, max_length=512)
     provider_error_message: str | None = Field(default=None, max_length=2048)
+    finish_reason: str | None = Field(default=None, max_length=160)
+    native_finish_reason: str | None = Field(default=None, max_length=160)
+    prompt_tokens: int | None = Field(default=None, ge=0)
+    completion_tokens: int | None = Field(default=None, ge=0)
+    reasoning_tokens: int | None = Field(default=None, ge=0)
+    non_reasoning_completion_tokens: int | None = Field(default=None, ge=0)
+    latency_ms: int | None = Field(default=None, ge=0)
 
 
 def _canonical_json(value: Any) -> str:

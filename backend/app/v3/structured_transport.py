@@ -29,7 +29,6 @@ _SECRET_KEY_FRAGMENTS = (
     "authorization",
     "api_key",
     "apikey",
-    "token",
     "cookie",
     "password",
     "credential",
@@ -69,10 +68,22 @@ class StructuredProviderDiagnostic(_Frozen):
     user_prompt_hash: str
     request_envelope_fingerprint: str
     response_format_family: str = "json_schema"
-    max_tokens: int
+    max_completion_tokens: int
     provider_routing_policy_fingerprint: str
     call_ordinal_by_role: int
+    finish_reason: str | None = None
+    native_finish_reason: str | None = None
+    prompt_tokens: int | None = None
+    completion_tokens: int | None = None
+    reasoning_tokens: int | None = None
+    non_reasoning_completion_tokens: int | None = None
+    latency_ms: int | None = None
     bounded_response_excerpt: str | None = None
+
+    @property
+    def max_tokens(self) -> int:
+        """Backward-compatible diagnostic alias."""
+        return self.max_completion_tokens
 
 
 class StructuredProviderError(RuntimeError):
@@ -114,7 +125,13 @@ def _sanitize_text(value: str, *, sensitive_values: tuple[str, ...]) -> str:
 
 def _is_secret_key(key: str) -> bool:
     normalized = key.casefold().replace("-", "_")
-    return any(fragment in normalized for fragment in _SECRET_KEY_FRAGMENTS)
+    if any(fragment in normalized for fragment in _SECRET_KEY_FRAGMENTS):
+        return True
+    return (
+        normalized == "token"
+        or normalized.endswith("_token")
+        or normalized.startswith("token_")
+    )
 
 
 def _sanitize_value(
@@ -190,6 +207,68 @@ def _safe_json(response: httpx.Response) -> Any | None:
         return None
 
 
+def _non_negative_int(value: Any) -> int | None:
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int) and value >= 0:
+        return value
+    return None
+
+
+def _response_telemetry(body: Any | None) -> dict[str, Any]:
+    finish_reason = None
+    native_finish_reason = None
+    prompt_tokens = None
+    completion_tokens = None
+    reasoning_tokens = None
+
+    if isinstance(body, dict):
+        choices = body.get("choices")
+        if isinstance(choices, list) and choices and isinstance(choices[0], dict):
+            choice = choices[0]
+            raw_finish = choice.get("finish_reason")
+            if raw_finish is not None:
+                finish_reason = str(raw_finish)[:160]
+            raw_native_finish = choice.get("native_finish_reason")
+            if raw_native_finish is not None:
+                native_finish_reason = str(raw_native_finish)[:160]
+
+        usage = body.get("usage")
+        if isinstance(usage, dict):
+            prompt_tokens = _non_negative_int(usage.get("prompt_tokens"))
+            completion_tokens = _non_negative_int(
+                usage.get("completion_tokens")
+            )
+            details = usage.get("completion_tokens_details")
+            if not isinstance(details, dict):
+                details = usage.get("completionTokensDetails")
+            if isinstance(details, dict):
+                reasoning_tokens = _non_negative_int(
+                    details.get("reasoning_tokens")
+                )
+                if reasoning_tokens is None:
+                    reasoning_tokens = _non_negative_int(
+                        details.get("reasoningTokens")
+                    )
+            if reasoning_tokens is None:
+                reasoning_tokens = _non_negative_int(
+                    usage.get("reasoning_tokens")
+                )
+
+    non_reasoning = None
+    if completion_tokens is not None and reasoning_tokens is not None:
+        non_reasoning = max(0, completion_tokens - reasoning_tokens)
+
+    return {
+        "finish_reason": finish_reason,
+        "native_finish_reason": native_finish_reason,
+        "prompt_tokens": prompt_tokens,
+        "completion_tokens": completion_tokens,
+        "reasoning_tokens": reasoning_tokens,
+        "non_reasoning_completion_tokens": non_reasoning,
+    }
+
+
 def _trace_from_response(
     identity: StructuredRequestIdentity,
     response: httpx.Response | None,
@@ -197,9 +276,13 @@ def _trace_from_response(
     provider_error_code: str | None = None,
     provider_error_message: str | None = None,
     parsed_body: Any | None = None,
+    latency_ms: int | None = None,
 ) -> StructuredCallTrace:
     if response is None:
-        return StructuredCallTrace(**identity.model_dump())
+        return StructuredCallTrace(
+            **identity.model_dump(),
+            latency_ms=latency_ms,
+        )
     body = parsed_body if parsed_body is not None else _safe_json(response)
     return StructuredCallTrace(
         **identity.model_dump(),
@@ -211,6 +294,8 @@ def _trace_from_response(
         http_status=response.status_code,
         provider_error_code=provider_error_code,
         provider_error_message=provider_error_message,
+        latency_ms=latency_ms,
+        **_response_telemetry(body),
     )
 
 
@@ -221,6 +306,7 @@ def _provider_diagnostic(
     api_key: str,
     system: str,
     user: str,
+    latency_ms: int | None = None,
 ) -> StructuredProviderDiagnostic:
     sensitive_values = (api_key, system, user)
     provider_error_code: str | None = None
@@ -268,6 +354,8 @@ def _provider_diagnostic(
             body=body,
         ),
         **identity.model_dump(),
+        latency_ms=latency_ms,
+        **_response_telemetry(body),
         bounded_response_excerpt=bounded_response_excerpt,
     )
 
@@ -454,6 +542,16 @@ class OpenRouterStructuredJSONTransport:
 
     @staticmethod
     def _content(body: Any) -> str:
+        telemetry = _response_telemetry(body)
+        budget_exhausted = (
+            telemetry["finish_reason"] == "length"
+            or telemetry["native_finish_reason"]
+            in {
+                "length",
+                "max_output_tokens",
+                "max_completion_tokens",
+            }
+        )
         try:
             value = body["choices"][0]["message"]["content"]
         except (KeyError, IndexError, TypeError) as exc:
@@ -462,10 +560,27 @@ class OpenRouterStructuredJSONTransport:
                 "provider response has no message content",
             ) from exc
         if not isinstance(value, str) or not value.strip():
+            if budget_exhausted:
+                raise StructuredProviderError(
+                    "COGNITION_OUTPUT_BUDGET_EXHAUSTED",
+                    "provider exhausted the structured completion budget before content",
+                )
             raise StructuredProviderError(
                 "COGNITION_RESPONSE_EMPTY",
                 "provider returned empty structured content",
             )
+        try:
+            json.loads(value)
+        except json.JSONDecodeError as exc:
+            if budget_exhausted:
+                raise StructuredProviderError(
+                    "COGNITION_OUTPUT_BUDGET_EXHAUSTED",
+                    "provider exhausted the structured completion budget before valid JSON",
+                ) from exc
+            raise StructuredProviderError(
+                "COGNITION_RESPONSE_MALFORMED",
+                "provider returned malformed structured JSON",
+            ) from exc
         return value
 
     def structured_json(
@@ -518,22 +633,45 @@ class OpenRouterStructuredJSONTransport:
                 json=payload,
             )
         except httpx.TimeoutException as exc:
-            self._trace_log.append(_trace_from_response(identity, None))
+            latency_ms = max(
+                0,
+                int((time.monotonic() - started) * 1000),
+            )
+            self.total_latency_ms += latency_ms
+            self._trace_log.append(
+                _trace_from_response(
+                    identity,
+                    None,
+                    latency_ms=latency_ms,
+                )
+            )
             raise StructuredProviderError(
                 "COGNITION_TIMEOUT",
                 "structured cognition request timed out",
             ) from exc
         except httpx.RequestError as exc:
-            self._trace_log.append(_trace_from_response(identity, None))
+            latency_ms = max(
+                0,
+                int((time.monotonic() - started) * 1000),
+            )
+            self.total_latency_ms += latency_ms
+            self._trace_log.append(
+                _trace_from_response(
+                    identity,
+                    None,
+                    latency_ms=latency_ms,
+                )
+            )
             raise StructuredProviderError(
                 "COGNITION_TRANSPORT_FAILED",
                 "structured cognition transport failed",
             ) from exc
-        finally:
-            self.total_latency_ms += max(
-                0,
-                int((time.monotonic() - started) * 1000),
-            )
+
+        latency_ms = max(
+            0,
+            int((time.monotonic() - started) * 1000),
+        )
+        self.total_latency_ms += latency_ms
 
         if response.status_code < 200 or response.status_code >= 300:
             diagnostic = _provider_diagnostic(
@@ -542,6 +680,7 @@ class OpenRouterStructuredJSONTransport:
                 api_key=self._key,
                 system=system,
                 user=user,
+                latency_ms=latency_ms,
             )
             self._trace_log.append(
                 _trace_from_response(
@@ -549,6 +688,7 @@ class OpenRouterStructuredJSONTransport:
                     response,
                     provider_error_code=diagnostic.provider_error_code,
                     provider_error_message=diagnostic.provider_error_message,
+                    latency_ms=latency_ms,
                 )
             )
             raise StructuredProviderError(
@@ -560,7 +700,13 @@ class OpenRouterStructuredJSONTransport:
         try:
             body = response.json()
         except json.JSONDecodeError as exc:
-            self._trace_log.append(_trace_from_response(identity, response))
+            self._trace_log.append(
+                _trace_from_response(
+                    identity,
+                    response,
+                    latency_ms=latency_ms,
+                )
+            )
             raise StructuredProviderError(
                 "COGNITION_RESPONSE_INVALID",
                 "provider response is not JSON",
@@ -571,14 +717,17 @@ class OpenRouterStructuredJSONTransport:
                 identity,
                 response,
                 parsed_body=body,
+                latency_ms=latency_ms,
             )
         )
         try:
             return self._content(body)
         except StructuredProviderError as exc:
             if exc.code not in {
+                "COGNITION_OUTPUT_BUDGET_EXHAUSTED",
                 "COGNITION_RESPONSE_EMPTY",
                 "COGNITION_RESPONSE_INVALID",
+                "COGNITION_RESPONSE_MALFORMED",
             }:
                 raise
             diagnostic = _provider_diagnostic(
