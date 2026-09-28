@@ -7,6 +7,7 @@ to materialize native Exploration for that exact verified occurrence.
 from __future__ import annotations
 
 from app.v3.research import ObligationState, ResearchManager, ResearchSession
+from app.v3.research_analytical_scope import analytical_scope_contract
 from app.v3.research_exploration import NativeResearchExploration
 from app.v3.research_manager import (
     FollowupResult,

@@ -16,6 +16,7 @@ from app.v3.research_contracts import (
     ResearchBriefStatus,
     ResearchGoalKind,
     ResearchGoalStatus,
+    ResearchNativeVerificationBinding,
     ResearchQuestion,
     ResearchScope,
     ResearchSemanticRef,
@@ -125,7 +126,7 @@ def brief() -> ResearchBrief:
     q = ResearchQuestion(
         goal_id="g1",
         kind=ResearchGoalKind.BREAKDOWN,
-        source_text="Haziran 2026 satış performansını kanala göre incele.",
+        source_text="Satış siparişlerini kanala göre incele.",
         subject_refs=(metric,),
         related_refs=(channel,),
         status=ResearchGoalStatus.RESOLVED,
@@ -135,7 +136,19 @@ def brief() -> ResearchBrief:
         objective=q.source_text,
         scope=ResearchScope(
             semantic_refs=(metric, channel),
-            time_surfaces=("Haziran 2026",),
+            native_verification_bindings=(
+                ResearchNativeVerificationBinding(
+                    candidate_id=metric.candidate_id,
+                    table_name="sales_orders",
+                    aggregation="count",
+                    argument_kind="all_rows",
+                ),
+                ResearchNativeVerificationBinding(
+                    candidate_id=channel.candidate_id,
+                    table_name="sales_orders",
+                    column_name="channel",
+                ),
+            ),
         ),
         questions=(q,),
         must_requirement_ids=("g1",),
@@ -221,6 +234,71 @@ def session_and_link(engine):
     return store, session, link, query
 
 
+def attestation_payload(query):
+    return {
+        "exact_serialized_pmbql": query,
+        "manifest": {
+            "attestation_id": "att-p14-test",
+            "native_conversation_id": str(
+                UUID("00000000-0000-4000-8000-000000000778")
+            ),
+            "native_assistant_message_id": 1,
+            "native_tool_call_id": "tool-p14-test",
+            "native_query_id": "native-query-1",
+            "producer_tool": "construct_notebook_query",
+            "exact_pmbql_fingerprint": h(query),
+            "database_id": 1,
+            "primary_source_table_id": 10,
+            "referenced_source_table_ids": [10],
+            "aggregation_count": 1,
+            "aggregations": [
+                {
+                    "operator": "count",
+                    "argument_kind": "all_rows",
+                    "referenced_field_ids": [],
+                    "distinct": False,
+                }
+            ],
+            "native_metric_references": [],
+            "breakout_count": 1,
+            "breakouts": [
+                {
+                    "stage_number": 0,
+                    "breakout_index": 0,
+                    "field_id": 20,
+                    "field_type": "type/Text",
+                    "temporal_unit": None,
+                }
+            ],
+            "material_filter_count": 0,
+            "non_temporal_filter_count": 0,
+            "temporal_predicates": [],
+            "textual_equality_predicates": [],
+            "explicit_join_count": 0,
+            "implicit_join_count": 0,
+            "implicit_joined_table_ids": [],
+            "order_by_count": 0,
+            "order_bys": [],
+            "limit": None,
+            "stage_count": 1,
+            "material_query_count": 1,
+            "authenticated_metabase_subject": 7,
+            "validation_provenance": {
+                "producer_structured_output": "PASSED",
+                "pmbql_schema": "PASSED",
+                "producer_query_id_match": "PASSED",
+                "producer_state_match": "PASSED",
+            },
+            "permission_provenance": {
+                "current_metabase_user_id": 7,
+                "permission_check": "PASSED",
+                "checked_source_table_ids": [10],
+            },
+            "runtime_identity": identity_payload(),
+        },
+    }
+
+
 class MaterialBridge:
     def __init__(self, *, forbidden=False, fail_on_execute=False):
         self.calls = []
@@ -250,6 +328,32 @@ class MaterialBridge:
 
     def engine_identity(self):
         return identity_payload()
+
+    def attest_native_query(self, *, conversation_id, native_query_id):
+        assert native_query_id == "native-query-1"
+        payload = attestation_payload(
+            self.calls[-1]
+            if self.calls
+            else {
+                "database": 1,
+                "type": "query",
+                "query": {
+                    "source-table": 10,
+                    "aggregation": [["count"]],
+                    "breakout": [["field", 20, None]],
+                },
+            }
+        )
+        payload["manifest"]["native_conversation_id"] = str(conversation_id)
+        return payload
+
+    def field_metadata(self, field_id):
+        assert field_id == 20
+        return {"id": 20, "name": "channel", "table_id": 10}
+
+    def table_metadata(self, table_id):
+        assert table_id == 10
+        return {"id": 10, "name": "sales_orders", "schema": None}
 
 
 def test_new_p14_binding_timestamp_is_timezone_aware_and_metadata_is_not_permission_truth():
@@ -364,7 +468,10 @@ def test_direct_native_result_seals_one_research_receipt_without_resource_or_ope
     assert outcome.receipt.native_query_id == "native-query-1"
     assert outcome.receipt.canonical_query_fingerprint == h(query)
     assert outcome.receipt.resource_entity_ids == ()
+    assert outcome.attestation_id == "att-p14-test"
     assert outcome.evidence.verified
+    assert outcome.evidence.payload["attestation_id"] == "att-p14-test"
+    assert outcome.evidence.payload["scope_identity"]["version_id"] == "scope_v1"
 
     updated = ResearchManager.admit_receipted_evidence(
         session,
@@ -452,25 +559,24 @@ def test_executed_occurrence_resumes_from_durable_result_without_second_dataset_
     assert len(first_bridge.calls) == 1
 
 
-def test_gateway_has_no_p13_p10_operator_or_resource_authority():
+def test_gateway_scope_attestation_adds_no_p13_p10_planning_or_execution_authority():
     source = inspect.getsource(gateway_module)
     for forbidden in (
-        "NativeAttestationEnvelope",
-        "NativeExecutionManifest",
         "AuthorizedExecutionArtifact",
         "ExecutionAccessSnapshotIssuer",
         "VerifiedExecutionSecurityFacts",
         "NativeResourceBindingProvider",
-        "attest_native_query",
         "execute_native_query",
-        "_field_ids",
-        "_assert_locator",
         "ResolvedAnalyticsIntent",
         "TemporalBindingEngine",
         "MetabaseProjectionCompiler",
         "MetabaseCanonicalizer",
+        "sqlparse",
+        "parse_mbql",
+        "query_optimizer",
     ):
         assert forbidden not in source
+    assert "attest_native_query" in source
     assert "execute_dataset" in source
 
 
