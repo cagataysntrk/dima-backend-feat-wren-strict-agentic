@@ -8269,3 +8269,67 @@ protocol action:
 - P13 remains NOT STARTED.
 
 No broad paid workflow was run.
+
+
+---
+
+## DMP-DEC-0074C — R1 RANKING SUB-CONTRACT + REAL PROVIDER CEILING RECOVERY
+
+date: 2026-09-28
+
+status:
+`REOPENED / PROVIDER-FREE CORRECTION IN PROGRESS / NO NEW PAID RUN YET`
+
+authority:
+- fresh Phase-1 Final Recovery Directive;
+- historical Probe A run `36458656999` remains immutable RED and is not reinterpreted;
+- `DMP-DEC-0075` is reserved for successful immutable Phase-1 acceptance.
+
+localized reopen:
+```text
+R1 ranking sub-contract
+= REOPENED
+
+R1 metric/time/filter/scope trust
+= NOT REOPENED
+
+R2
+= NOT REOPENED
+
+R3
+= NOT REOPENED
+
+R4
+= NOT REOPENED
+```
+
+verified entry state:
+- branch HEAD at recovery entry = `c5010758a9dd0e245a83e1abfb376fea2ca3ae5c`;
+- engine gitlink = `cbe313af9ac2d5960f662068e433d328d896fb06`;
+- engine release = `0.63.18-dima.6`;
+- engine digest = `sha256:40e9a44be49904de3ddf12d4683c768e70955851c10a928a9c8f7d8f60780353`;
+- migration head = `fd2a7c9e4b61`;
+- Probe B = NOT RUN;
+- P13 = NOT STARTED;
+- broad paid = FORBIDDEN.
+
+root defects to close before any paid validation:
+1. accepted ranking semantics currently conflate a user/product ranking obligation with a native single-metric ORDER BY invariant and incorrectly require an explicit top-N limit;
+2. the historical Dima boundary counter is orchestration telemetry, not a hard count of actual provider requests.
+
+next legal order:
+```text
+R1 typed ranking correction
+-> real fail-closed provider request accounting
+-> zero unrelated Suggested Prompts spend
+-> affected provider-free GREEN
+-> integrated provider-free GREEN
+-> freeze new Product candidate
+-> one new SCOPE_CURRENTNESS_HARD_V2 run
+-> only if GREEN: one RCA_P19_HARD run on the same candidate
+-> only if both GREEN: DMP-DEC-0075 / P13 immutable seal
+```
+
+No engine change, Wren runtime change, UI/frontend change, external execution, retry-until-green,
+benchmark-case branch, regex/fuzzy/morphology semantic authority, invented top-N, or first-metric
+ranking shortcut is authorized.
