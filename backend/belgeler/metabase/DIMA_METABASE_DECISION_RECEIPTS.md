@@ -8637,3 +8637,29 @@ if GREEN -> authorize one RCA_P19_HARD_V2 on same Product behavior SHA
 ```
 
 P13 remains NOT STARTED.
+
+
+### DMP-DEC-0074D — ZERO-PROVIDER V3 PREFLIGHT DEFECT
+
+run:
+`36479707453`
+
+classification:
+`AUTHORIZATION/PREFLIGHT TEST DEFECT / NO PRODUCT EXECUTION / ZERO PROVIDER REQUESTS`
+
+first wrong transition:
+```text
+exact V3 authorization = GREEN
+-> install live environment = GREEN
+-> provider-free pinpoint preflight
+-> test_pinpoint_paid_workflow_is_sequential_closed_budget
+-> expected authorization path occurrence count 1
+-> observed count 2 (trigger path + parser path)
+-> STOP before provider setup
+```
+
+The provider proxy was never started, the provider request window was never armed, and
+the Product probe step was skipped. Therefore this run is not evidence about V3 Product
+behavior and does not consume a paid/model execution. A corrected V3 authorization is
+permitted only with an explicit receipt reference to this exact zero-provider preflight
+run. Automatic retry remains 0.

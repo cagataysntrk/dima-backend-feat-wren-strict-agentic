@@ -701,3 +701,20 @@ Next legal transition:
 `RCA_P19_HARD_V2` on the same Product behavior candidate.
 
 `PHASE 1 = IN_PROGRESS` and `P13 = NOT STARTED`.
+
+
+### V3 zero-provider preflight correction
+
+Authorization run `36479707453` did **not** execute the V3 Product probe:
+- authorization resolution = GREEN;
+- live environment install = GREEN;
+- provider-free pinpoint preflight = RED;
+- provider proxy setup = NOT STARTED;
+- provider request window = NOT ARMED;
+- Product pinpoint step = SKIPPED;
+- actual provider requests = 0 by construction;
+- failure = test-only authorization-path occurrence assertion (`2 != 1`).
+
+This is recorded as a zero-provider preflight defect, not as
+`SCOPE_CURRENTNESS_HARD_V3` Product evidence. The next authorization may execute the
+single actual V3 probe only after provider-free recertification of the corrected test.

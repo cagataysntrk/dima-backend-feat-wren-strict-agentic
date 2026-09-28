@@ -114,8 +114,23 @@ jobs:
               ["git","log","--format=%H","--",str(path)],text=True
           ).split()
           if item["probe_id"]=="SCOPE_CURRENTNESS_HARD_V3":
-              assert len(commits)==1,commits
               assert item.get("probe_a_v3_run_id") is None
+              if len(commits)==1:
+                  assert item.get("preflight_failure_run_id") is None
+              else:
+                  assert len(commits)==2,commits
+                  previous=json.loads(
+                      subprocess.check_output(
+                          ["git","show",f"HEAD^:{path}"],text=True
+                      )
+                  )
+                  assert previous["probe_id"]=="SCOPE_CURRENTNESS_HARD_V3"
+                  assert previous["candidate_product_sha"]==candidate
+                  assert previous.get("probe_a_v3_run_id") is None
+                  assert item.get("preflight_failure_run_id")==36479707453
+                  assert item.get("preflight_failure_stage")=="provider-free pinpoint preflight"
+                  assert item.get("preflight_actual_provider_requests")==0
+                  assert item.get("preflight_product_step_executed") is False
           else:
               assert len(commits)==2,commits
               previous=json.loads(

@@ -99,7 +99,7 @@ def test_pinpoint_paid_workflow_is_sequential_closed_budget():
     source = PINPOINT_PAID_WORKFLOW.read_text(encoding="utf-8")
     assert "workflow_dispatch:" in source
     assert "\n  push:\n" in source
-    assert source.count("backend/eval/v1/authorizations/phase1-final-pinpoint-live-v3.json") == 1
+    assert source.count("backend/eval/v1/authorizations/phase1-final-pinpoint-live-v3.json") == 2
     assert "repository_dispatch" not in source
     assert "SCOPE_CURRENTNESS_HARD_V3" in source
     assert "RCA_P19_HARD_V2" in source
