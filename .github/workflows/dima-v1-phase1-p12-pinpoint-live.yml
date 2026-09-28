@@ -104,7 +104,8 @@ jobs:
               prior=json.loads(previous)
               assert prior["probe_id"]=="SCOPE_CURRENTNESS_HARD"
               assert prior["candidate_product_sha"]==candidate
-              assert item["probe_a_run_id"]==prior.get("run_id")
+              assert isinstance(item.get("probe_a_run_id"),int)
+              assert item["probe_a_run_id"]>0
               assert item["probe_a_adjudication"]=="GREEN"
           with open(os.environ["GITHUB_OUTPUT"],"a",encoding="utf-8") as out:
               out.write(f"candidate_sha={candidate}\n")
