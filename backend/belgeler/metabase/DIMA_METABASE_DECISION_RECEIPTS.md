@@ -7424,3 +7424,86 @@ Until then:
 P12 = IN_PROGRESS.
 P13 = NOT AUTHORIZED TO SEAL.
 
+
+
+---
+
+## DMP-DEC-0069 — POST-P12 R2 ARTIFACT VISIBILITY / CURRENTNESS RE-OPEN + RE-SEAL
+
+date: 2026-09-28
+
+status:
+SEALED / PROVIDER-FREE GREEN
+
+external authority:
+The POST-P12 root-recovery directive authorizes the bounded R1 -> R2 -> R3 -> R4 recovery.
+This receipt covers R2 only.
+
+re-open scope:
+- Product artifact visibility/currentness projection;
+- Product owner-error engineering diagnostics;
+- provider-free tests for historical/current/foreign/missing artifact behavior.
+
+not re-opened:
+- P14 analytical truth/admission semantics;
+- P17 investigation semantics;
+- P18 policy legality;
+- P19 epistemic legality;
+- P20 publication legality;
+- engine;
+- UI;
+- external execution.
+
+exact root:
+```text
+EXISTS / AUTHORIZED / CURRENT
+were distinct in the underlying P14 owner,
+but Product projections treated authorized historical
+Research/Investigation/Evidence as CURRENT.
+
+At the same time Product public error normalization
+correctly preserved non-oracle behavior,
+but erased the exact internal owner error code.
+```
+
+historical diagnostic limitation:
+The prior P12 JSON stored only the normalized outer `ProductError`.
+The exact old subcode for F08_H/F10_M/F10_H was not persisted and cannot be honestly reconstructed
+from that historical artifact. No case-specific guess is promoted to authority.
+The repaired generic telemetry retains the exact owner code on future reproductions while keeping
+the public message non-oracular.
+
+behavior:
+- R2 behavior commit `9d27df83cd2c1afd80e6587c9f7befb4d2f9c222`;
+- R2 cross-owner proof commit `f064f219c4ac9dff4b28a24ff200cc5082d5e14e`.
+
+provider-free evidence:
+- Core-B focused `36415877191 = SUCCESS`;
+- Phase-1 focused `36415877321 = SUCCESS`;
+- Core-A final closure `36415877190 = SUCCESS`;
+- Core-B provider-free seal `36415877198 = SUCCESS`;
+- governance `36415877180 = SUCCESS`.
+
+proved invariants:
+- authorized historical Research -> readable / SUPERSEDED;
+- authorized historical Evidence -> readable / HISTORICAL;
+- historical Evidence -> cannot satisfy current requirement through existing authority checks;
+- current Research/Evidence -> CURRENT;
+- foreign tenant and missing artifact -> same public UNAVAILABLE family;
+- exact owner code retained internally, not exposed in the public error string;
+- no second currentness store;
+- no security weakening;
+- no P18/P19/P20 semantic change;
+- no broad paid run.
+
+CI hygiene:
+The R1 child-scope migration advanced Alembic head to `fd2a7c9e4b61`.
+The cleanup-focused workflow still pinned historical `fc8a1d0e3b42`; after R2 proof this stale
+CI-only pin is updated to the already-proven migration head. This is not an R2 semantic fix.
+
+engine:
+`cbe313af9ac2d5960f662068e433d328d896fb06` / `0.63.18-dima.6`.
+
+decision:
+R2 = PROVIDER-FREE GREEN / RE-SEALED.
+Proceed to R3. No broad live benchmark is authorized.

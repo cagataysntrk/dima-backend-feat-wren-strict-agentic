@@ -143,3 +143,70 @@ The Phase-1 directive also authorizes one bounded current 30-case benchmark afte
 GREEN. P13 cannot seal until P12 full close.
 
 No Phase-2 work, DEV80, Validation50 or Hidden50 is authorized here.
+
+
+## POST-P12 ROOT RECOVERY
+
+Status at `f064f219c4ac9dff4b28a24ff200cc5082d5e14e`:
+
+```text
+PHASE 1 = IN_PROGRESS / REGRESSION-EXPOSED
+
+R1 accepted analytical scope propagation
+= PROVIDER-FREE GREEN
+
+R2 artifact visibility/currentness lineage
+= PROVIDER-FREE GREEN / RE-SEALED
+
+R3 P17 -> P19 typed candidate contract
+= NOT STARTED
+
+R4 relationship result / P18 authority composition
+= NOT STARTED
+
+P12 LIVE
+= historical diagnostic artifact
+= NOT ACCEPTED
+= NOT SEALED
+= NO BROAD RERUN AUTHORIZED
+
+P13
+= BLOCKED
+```
+
+R1 evidence:
+- current R1 lineage/migration head: `fd2a7c9e4b61`;
+- Phase-1 focused `36413712698 = SUCCESS`;
+- governance `36413712666 = SUCCESS`;
+- engine unchanged: `cbe313af9ac2d5960f662068e433d328d896fb06` / `0.63.18-dima.6`.
+
+R2 exact root:
+- Product artifact projection conflated authorized historical visibility with current truth for Research/Investigation/Evidence;
+- Product owner normalization preserved public non-oracle behavior but discarded the internal owner code needed for engineering diagnosis;
+- historical P12 case JSON therefore preserves only the normalized `UNAVAILABLE` public family and cannot retroactively recover the destroyed exact subcode.
+
+R2 generic correction:
+- authorized historical Research remains readable and is projected `SUPERSEDED`;
+- authorized Evidence from a superseded Research scope remains readable and is projected `HISTORICAL`;
+- current Research/Evidence remain `CURRENT`;
+- historical Evidence still cannot satisfy current-scope truth through existing P14/P20 authority checks;
+- foreign/missing artifacts remain public non-oracle `UNAVAILABLE`;
+- internal Product diagnostics now retain owner + exact internal owner code without changing the public error message;
+- no new durable currentness authority/table was added.
+
+R2 behavior SHA:
+- `9d27df83cd2c1afd80e6587c9f7befb4d2f9c222`.
+
+R2 cross-owner proof SHA:
+- `f064f219c4ac9dff4b28a24ff200cc5082d5e14e`.
+
+R2 proof:
+- Core-B focused `36415877191 = SUCCESS`;
+- Phase-1 focused `36415877321 = SUCCESS`;
+- Core-A final closure `36415877190 = SUCCESS`;
+- Core-B provider-free seal `36415877198 = SUCCESS`;
+- governance `36415877180 = SUCCESS`;
+- automatic adaptive live workflow was `SKIPPED`; paid/model calls consumed by R2 recovery = 0.
+
+Wave A and Wave B historical provider-free GREEN receipts remain valid.
+The post-P12 live artifact exposed cross-owner integration defects; it is diagnostic evidence only.
