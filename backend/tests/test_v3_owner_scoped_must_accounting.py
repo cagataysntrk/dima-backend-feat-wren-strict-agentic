@@ -33,6 +33,8 @@ from app.v3.research_contracts import (
     ResearchGoalStatus,
     ResearchQuestion,
     ResearchScope,
+    ResearchSemanticRef,
+    SemanticTargetKind,
 )
 from app.v3.research_product import (
     ResearchAskOrchestrator,
@@ -64,11 +66,19 @@ def principal():
 
 
 def brief(*, report: bool, count: int = 1) -> ResearchBrief:
+    metric = ResearchSemanticRef(
+        source_mention="governed metric",
+        candidate_id="metric.owner_scope_value",
+        target_kind=SemanticTargetKind.METRIC,
+        canonical_name="Owner Scope Value",
+        cube_names=("owner_scope",),
+    )
     questions = tuple(
         ResearchQuestion(
             goal_id=f"g_{index}",
             kind=ResearchGoalKind.BREAKDOWN,
             source_text=f"Governed analytical question {index}.",
+            subject_refs=(metric,),
             status=ResearchGoalStatus.RESOLVED,
         )
         for index in range(1, count + 1)
@@ -87,7 +97,7 @@ def brief(*, report: bool, count: int = 1) -> ResearchBrief:
     return ResearchBrief(
         brief_id=f"rb-owner-scope-{count}-{'report' if report else 'plain'}",
         objective="Preserve owner-scoped USER_MUST accounting.",
-        scope=ResearchScope(),
+        scope=ResearchScope(semantic_refs=(metric,)),
         questions=questions,
         deliverables=deliverables,
         must_requirement_ids=tuple(
