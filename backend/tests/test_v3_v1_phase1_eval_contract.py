@@ -95,24 +95,26 @@ def test_paid_governance_forbids_broad_execution_and_push_paid_triggers():
     assert "broad 30-case paid benchmark is forbidden" in source
 
 
-def test_pinpoint_paid_workflow_is_exact_two_case_closed_budget():
+def test_pinpoint_paid_workflow_is_sequential_closed_budget():
     source = PINPOINT_PAID_WORKFLOW.read_text(encoding="utf-8")
     assert "workflow_dispatch:" in source
     assert "\n  push:\n" in source
     assert source.count(
-        'backend/eval/v1/authorizations/phase1-p12-pinpoint-live-001.json'
+        'backend/eval/v1/authorizations/phase1-final-pinpoint-live-001.json'
     ) == 2
     assert "repository_dispatch" not in source
-    assert source.count('--case-id "F02_M"') == 1
-    assert source.count('--case-id "F07_M"') == 1
-    assert '--max-total-model-units "20"' in source
-    assert 'echo "max_units=20"' in source
-    assert 'item["case_ids"]==["F02_M","F07_M"]' in source
-    assert 'item["max_total_model_units"]==20' in source
-    assert 'item["candidate_product_sha"]==parent' in source
+    assert "SCOPE_CURRENTNESS_HARD" in source
+    assert "RCA_P19_HARD" in source
+    assert '--max-model-units "12"' in source
+    assert 'echo "max_units=12"' in source
+    assert 'item["max_model_units"]==12' in source
+    assert "F02_M" not in source
+    assert "F07_M" not in source
+    assert "round2_feature_benchmark.py" not in source
     assert "validate_phase1_round2.py" not in source
-    assert "180" not in source
     assert "PINPOINT_ARTIFACT_READY_FOR_HUMAN_INSPECTION" in source
+    assert "quality_score" in source
+    assert "manual_adjudication_required" in source
 
 
 def test_phase1_metamorphic_manifest_is_structural_not_prose_scoring():

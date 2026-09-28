@@ -12,8 +12,11 @@ on:
       - "backend/eval/round2_neutral_machine_fixture.json"
       - "backend/eval/v1/**"
       - "backend/lab/metabase/core_b/round2_feature_benchmark.py"
+      - "backend/lab/metabase/core_b/phase1_pinpoint_live.py"
+      - "backend/lab/metabase/core_b/runtime/seed_phase1_pinpoint_metrics.py"
       - "backend/lab/metabase/core_b/runtime/seed_round2_fixture.py"
       - "backend/tests/test_v3_v1_phase1_eval_contract.py"
+      - "backend/tests/test_v3_phase1_pinpoint_live_contract.py"
       - "backend/tests/test_v3_v1_phase1_metamorphic.py"
       - "backend/belgeler/metabase/DIMA_V1_PHASE1_EXECUTION_STATUS.md"
       - "backend/belgeler/metabase/DIMA_METABASE_DECISION_RECEIPTS.md"
@@ -61,6 +64,10 @@ jobs:
       - name: Phase-1 structural metamorphic contract
         working-directory: backend
         run: pytest -q tests/test_v3_v1_phase1_metamorphic.py
+
+      - name: Final pinpoint provider-free contract
+        working-directory: backend
+        run: pytest -q tests/test_v3_phase1_pinpoint_live_contract.py
 
       - name: Provider contract exception boundary
         working-directory: backend

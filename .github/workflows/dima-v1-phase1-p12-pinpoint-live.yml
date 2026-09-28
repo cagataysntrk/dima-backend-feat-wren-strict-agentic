@@ -1,17 +1,26 @@
-name: dima-v1-phase1-p12-pinpoint-live
+name: dima-v1-phase1-pinpoint-live
 
-# DMP-DEC-0073D TEMPORARY: exactly two user-authorized paid probes.
-# Push is temporarily allowed ONLY through one exact authorization file.
+# DMP-DEC-0074A TEMPORARY EXECUTION BRIDGE.
+# Fresh supervisor/user authority permits a push ONLY on the exact authorization
+# file below so ChatGPT can run Probe A/B autonomously. Remove this push trigger
+# immediately after the two-probe sequence stops or completes.
 on:
   push:
     branches:
       - feat/dima-metabase-platform
     paths:
-      - "backend/eval/v1/authorizations/phase1-p12-pinpoint-live-001.json"
+      - "backend/eval/v1/authorizations/phase1-final-pinpoint-live-001.json"
   workflow_dispatch:
     inputs:
-      confirm_exact_two_pinpoint_probes:
-        description: "Type YES to run exactly F02_M + F07_M under the fixed 20-unit ceiling"
+      probe_id:
+        description: "Run exactly one final Phase-1 live probe"
+        required: true
+        type: choice
+        options:
+          - SCOPE_CURRENTNESS_HARD
+          - RCA_P19_HARD
+      confirm_pinpoint_paid:
+        description: "Type YES; no automatic retry is permitted"
         required: true
         type: choice
         options:
@@ -26,12 +35,12 @@ env:
   DIMA_OPENROUTER_API_KEY: ${{ secrets.DIMA_OPENROUTER_API_KEY || secrets.OPENROUTER_API_KEY }}
   METABOT_MODEL_IDENTIFIER: openrouter/openai/gpt-5.6-luna
   DIMA_COGNITION_MODEL: openai/gpt-5.6-luna
-  MB_ADMIN_EMAIL: admin@round2.local
-  MB_RESTRICTED_EMAIL: restricted@round2.local
-  MB_RESTRICTED_GROUP: Dima Round2 Restricted
+  MB_ADMIN_EMAIL: admin@phase1-pinpoint.local
+  MB_RESTRICTED_EMAIL: restricted@phase1-pinpoint.local
+  MB_RESTRICTED_GROUP: Dima Phase1 Pinpoint Restricted
 
 concurrency:
-  group: dima-v1-phase1-p12-pinpoint-live
+  group: dima-v1-phase1-pinpoint-live
   cancel-in-progress: false
 
 jobs:
@@ -42,10 +51,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 64
           submodules: false
 
-      - name: Resolve exact pinpoint authorization
+      - name: Resolve exact sequential authorization
         id: auth
         shell: bash
         run: |
@@ -54,30 +63,60 @@ jobs:
             python - <<'PY'
           import json, os, subprocess
           from pathlib import Path
-          path=Path("backend/eval/v1/authorizations/phase1-p12-pinpoint-live-001.json")
+
+          path=Path("backend/eval/v1/authorizations/phase1-final-pinpoint-live-001.json")
           item=json.loads(path.read_text(encoding="utf-8"))
-          assert item["schema_version"]=="dima_v1_phase1_pinpoint_live_authorization_v1"
-          assert item["mode"]=="PINPOINT_EXACT_TWO"
-          assert item["case_ids"]==["F02_M","F07_M"]
-          assert item["max_total_model_units"]==20
+          assert item["schema_version"]=="dima_v1_phase1_final_pinpoint_authorization_v1"
+          assert item["decision"]=="PINPOINT_PAID_ONLY"
+          assert item["confirm"]=="YES"
+          assert item["probe_id"] in {"SCOPE_CURRENTNESS_HARD","RCA_P19_HARD"}
+          assert item["max_model_units"]==12
           assert item["engine_sha"]=="cbe313af9ac2d5960f662068e433d328d896fb06"
-          assert item["round2_manifest_blob"]=="b08fbf6601b8c47a6f336c4efcc0cdab95a6c2da"
-          assert item["round2_fixture_blob"]=="44c02edee3333ddd048e8f7d9aeb94dcd399ad7c"
-          parent=subprocess.check_output(["git","rev-parse","HEAD^"],text=True).strip()
-          assert item["candidate_product_sha"]==parent,(item["candidate_product_sha"],parent)
+          assert item["engine_digest"]=="sha256:40e9a44be49904de3ddf12d4683c768e70955851c10a928a9c8f7d8f60780353"
+          assert item["migration_head"]=="fd2a7c9e4b61"
+          candidate=item["candidate_product_sha"]
+          subprocess.run(
+              ["git","merge-base","--is-ancestor",candidate,"HEAD"],
+              check=True,
+          )
+          # Freeze is semantic: authorization/docs/workflow commits may follow,
+          # but Product, migrations and engine must remain byte-identical.
+          subprocess.run(
+              [
+                  "git","diff","--exit-code",candidate,"HEAD","--",
+                  "backend/app","backend/migrations","engine/metabase",
+              ],
+              check=True,
+          )
+          commits=subprocess.check_output(
+              ["git","log","--format=%H","--",str(path)],
+              text=True,
+          ).split()
+          if item["probe_id"]=="SCOPE_CURRENTNESS_HARD":
+              assert len(commits)==1,commits
+              assert item.get("probe_a_run_id") is None
+          else:
+              assert len(commits)==2,commits
+              previous=subprocess.check_output(
+                  ["git","show",f"HEAD^:{path}"],
+                  text=True,
+              )
+              prior=json.loads(previous)
+              assert prior["probe_id"]=="SCOPE_CURRENTNESS_HARD"
+              assert prior["candidate_product_sha"]==candidate
+              assert item["probe_a_run_id"]==prior.get("run_id")
+              assert item["probe_a_adjudication"]=="GREEN"
           with open(os.environ["GITHUB_OUTPUT"],"a",encoding="utf-8") as out:
-              out.write(f"candidate_sha={parent}\n")
-              out.write("max_units=20\n")
-              out.write("r1_case=F02_M\n")
-              out.write("r3_case=F07_M\n")
+              out.write(f"candidate_sha={candidate}\n")
+              out.write(f"probe_id={item['probe_id']}\n")
+              out.write("max_units=12\n")
           PY
           else
             test "${{ github.event_name }}" = "workflow_dispatch"
-            test "${{ inputs.confirm_exact_two_pinpoint_probes }}" = "YES"
+            test "${{ inputs.confirm_pinpoint_paid }}" = "YES"
             echo "candidate_sha=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
-            echo "max_units=20" >> "$GITHUB_OUTPUT"
-            echo "r1_case=F02_M" >> "$GITHUB_OUTPUT"
-            echo "r3_case=F07_M" >> "$GITHUB_OUTPUT"
+            echo "probe_id=${{ inputs.probe_id }}" >> "$GITHUB_OUTPUT"
+            echo "max_units=12" >> "$GITHUB_OUTPUT"
           fi
 
       - uses: actions/setup-python@v5
@@ -87,22 +126,10 @@ jobs:
       - name: Provider-free pinpoint preflight
         working-directory: backend
         run: |
-          python -m py_compile lab/metabase/core_b/round2_feature_benchmark.py
-          python -m py_compile lab/metabase/core_b/runtime/seed_round2_fixture.py
-          python - <<'PY'
-          import json
-          from pathlib import Path
-          m=json.loads(Path("eval/dima_neutral_feature_benchmark_round2.json").read_text())
-          f=json.loads(Path("eval/round2_neutral_machine_fixture.json").read_text())
-          assert m["case_count"] == 30
-          assert len(m["cases"]) == 30
-          by_id={x["id"]:x for x in m["cases"]}
-          assert by_id["F02_M"]["max_model_calls"] == 8
-          assert by_id["F07_M"]["max_model_calls"] == 12
-          assert set(("F02_M","F07_M")).issubset(by_id)
-          assert f["schema_version"] == "round2_neutral_machine_fixture_v1"
-          assert len(f["rows"]) == 40
-          PY
+          set -euo pipefail
+          python -m py_compile             lab/metabase/core_b/phase1_pinpoint_live.py             lab/metabase/core_b/runtime/seed_phase1_pinpoint_metrics.py             lab/metabase/core_b/runtime/seed_round2_fixture.py
+          pip install -e ".[dev]"
+          pytest -q             tests/test_v3_phase1_pinpoint_live_contract.py             tests/test_v3_v1_phase1_eval_contract.py
 
       - name: Derive ephemeral credentials
         shell: bash
@@ -122,10 +149,7 @@ jobs:
         run: |
           set -euo pipefail
           GITLINK_SHA="$(git ls-tree HEAD engine/metabase | awk '{print $3}')"
-          python backend/lab/metabase/core_b/runtime/engine_runtime_lock.py \
-            --lock backend/lab/metabase/core_b/runtime/engine_runtime_lock.json \
-            --gitlink-sha "$GITLINK_SHA" \
-            --github-env "$GITHUB_ENV"
+          python backend/lab/metabase/core_b/runtime/engine_runtime_lock.py             --lock backend/lab/metabase/core_b/runtime/engine_runtime_lock.json             --gitlink-sha "$GITLINK_SHA"             --github-env "$GITHUB_ENV"
 
       - name: Pull exact certified dima.6 digest
         shell: bash
@@ -137,18 +161,12 @@ jobs:
           docker pull "$IMMUTABLE_IMAGE_REF"
           docker image inspect -f '{{range .RepoDigests}}{{println .}}{{end}}' "$IMMUTABLE_IMAGE_REF" | grep -Fx "$IMMUTABLE_IMAGE_REF"
 
-      - name: Install benchmark environment
+      - name: Install live environment
         working-directory: backend
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
           pip install "psycopg[binary]==3.3.3"
-
-      - name: Import-check benchmark harness
-        working-directory: backend
-        env:
-          PYTHONPATH: .
-        run: python -c "import lab.metabase.core_b.round2_feature_benchmark"
 
       - name: Guard cognition provider secret
         shell: bash
@@ -160,12 +178,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          docker network create dima-round2
+          docker network create dima-phase1-pinpoint
           PG="postgres@sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675"
-          docker run -d --name analytics-db --network dima-round2 --network-alias analytics-db -p 127.0.0.1:55461:5432 \
-            -e POSTGRES_DB=round2_neutral -e POSTGRES_USER=round2_owner -e POSTGRES_PASSWORD="$PG_OWNER_PASSWORD" "$PG"
-          docker run -d --name app-db --network dima-round2 --network-alias app-db \
-            -e POSTGRES_DB=metabase_round2 -e POSTGRES_USER=metabase_app -e POSTGRES_PASSWORD="$MB_APP_PASSWORD" "$PG"
+          docker run -d --name analytics-db --network dima-phase1-pinpoint --network-alias analytics-db -p 127.0.0.1:55461:5432             -e POSTGRES_DB=phase1_pinpoint -e POSTGRES_USER=phase1_owner -e POSTGRES_PASSWORD="$PG_OWNER_PASSWORD" "$PG"
+          docker run -d --name app-db --network dima-phase1-pinpoint --network-alias app-db             -e POSTGRES_DB=metabase_phase1 -e POSTGRES_USER=metabase_app -e POSTGRES_PASSWORD="$MB_APP_PASSWORD" "$PG"
           for n in analytics-db app-db; do
             for i in $(seq 1 90); do
               docker exec "$n" pg_isready >/dev/null 2>&1 && break
@@ -174,45 +190,32 @@ jobs:
             done
           done
 
-      - name: Seed exact round2 neutral fixture
+      - name: Seed frozen neutral fixture
         working-directory: backend
         env:
           PGHOST: 127.0.0.1
           PGPORT: "55461"
-          PGDATABASE: round2_neutral
-          PGUSER: round2_owner
+          PGDATABASE: phase1_pinpoint
+          PGUSER: phase1_owner
           PGPASSWORD: ${{ env.PG_OWNER_PASSWORD }}
-          CORE_B_READONLY_USER: round2_readonly
+          CORE_B_READONLY_USER: phase1_readonly
           CORE_B_READONLY_PASSWORD: ${{ env.CORE_B_READONLY_PASSWORD }}
         run: |
-          python lab/metabase/core_b/runtime/seed_round2_fixture.py --fixture eval/round2_neutral_machine_fixture.json
+          python lab/metabase/core_b/runtime/seed_round2_fixture.py             --fixture eval/round2_neutral_machine_fixture.json
 
       - name: Start exact sealed dima.6 engine
         shell: bash
         run: |
           set -euo pipefail
-          docker run -d --name mb-round2 --network dima-round2 -p 127.0.0.1:3361:3000 \
-            -e MB_DB_TYPE=postgres -e MB_DB_HOST=app-db -e MB_DB_PORT=5432 \
-            -e MB_DB_DBNAME=metabase_round2 -e MB_DB_USER=metabase_app -e MB_DB_PASS="$MB_APP_PASSWORD" \
-            -e MB_AI_FEATURES_ENABLED=true -e MB_METABOT_ENABLED=true -e MB_AGENT_API_ENABLED=true \
-            -e MB_LOAD_SAMPLE_CONTENT=false -e MB_MCP_EXECUTE_SQL_ENABLED=false \
-            -e MB_LLM_OPENROUTER_API_KEY="$DIMA_OPENROUTER_API_KEY" \
-            -e MB_LLM_METABOT_PROVIDER="$METABOT_MODEL_IDENTIFIER" \
-            -e DIMA_ENGINE_REPOSITORY=UpcyTech/dima-metabase-engine \
-            -e DIMA_ENGINE_REVISION_SHA="$ENGINE_SHA" \
-            -e DIMA_ENGINE_UPSTREAM_BASE_SHA="$UPSTREAM_BASE_SHA" \
-            -e DIMA_ENGINE_RUNTIME_TAG="$RUNTIME_TAG" \
-            -e DIMA_ENGINE_BUILD_IDENTITY="$BUILD_IDENTITY" \
-            -e DIMA_ENGINE_IMAGE_IDENTITY="$REGISTRY_DIGEST" \
-            "$IMMUTABLE_IMAGE_REF"
+          docker run -d --name mb-phase1 --network dima-phase1-pinpoint -p 127.0.0.1:3361:3000             -e MB_DB_TYPE=postgres -e MB_DB_HOST=app-db -e MB_DB_PORT=5432             -e MB_DB_DBNAME=metabase_phase1 -e MB_DB_USER=metabase_app -e MB_DB_PASS="$MB_APP_PASSWORD"             -e MB_AI_FEATURES_ENABLED=true -e MB_METABOT_ENABLED=true -e MB_AGENT_API_ENABLED=true             -e MB_LOAD_SAMPLE_CONTENT=false -e MB_MCP_EXECUTE_SQL_ENABLED=false             -e MB_LLM_OPENROUTER_API_KEY="$DIMA_OPENROUTER_API_KEY"             -e MB_LLM_METABOT_PROVIDER="$METABOT_MODEL_IDENTIFIER"             -e DIMA_ENGINE_REPOSITORY=UpcyTech/dima-metabase-engine             -e DIMA_ENGINE_REVISION_SHA="$ENGINE_SHA"             -e DIMA_ENGINE_UPSTREAM_BASE_SHA="$UPSTREAM_BASE_SHA"             -e DIMA_ENGINE_RUNTIME_TAG="$RUNTIME_TAG"             -e DIMA_ENGINE_BUILD_IDENTITY="$BUILD_IDENTITY"             -e DIMA_ENGINE_IMAGE_IDENTITY="$REGISTRY_DIGEST"             "$IMMUTABLE_IMAGE_REF"
 
       - name: Bootstrap restricted analytical principal
         working-directory: backend
         env:
           METABASE_URL: http://127.0.0.1:3361
-          MB_SITE_NAME: Dima Round2 Neutral
-          ANALYTICS_DB_NAME: round2_neutral
-          ANALYTICS_DB_USER: round2_readonly
+          MB_SITE_NAME: Dima Phase1 Pinpoint
+          ANALYTICS_DB_NAME: phase1_pinpoint
+          ANALYTICS_DB_USER: phase1_readonly
           ANALYTICS_DB_PASSWORD: ${{ env.CORE_B_READONLY_PASSWORD }}
           MB_ADMIN_EMAIL: ${{ env.MB_ADMIN_EMAIL }}
           MB_ADMIN_PASSWORD: ${{ env.MB_ADMIN_PASSWORD }}
@@ -221,67 +224,84 @@ jobs:
           MB_RESTRICTED_GROUP: ${{ env.MB_RESTRICTED_GROUP }}
         run: python lab/metabase/core_b/runtime/bootstrap.py
 
-      - name: Run exact two pinpoint probes
+      - name: Create governed native metric resources
+        working-directory: backend
+        env:
+          MB_ADMIN_EMAIL: ${{ env.MB_ADMIN_EMAIL }}
+          MB_ADMIN_PASSWORD: ${{ env.MB_ADMIN_PASSWORD }}
+          MB_RESTRICTED_EMAIL: ${{ env.MB_RESTRICTED_EMAIL }}
+          MB_RESTRICTED_PASSWORD: ${{ env.MB_RESTRICTED_PASSWORD }}
+        run: |
+          mkdir -p eval/phase1_pinpoint
+          python lab/metabase/core_b/runtime/seed_phase1_pinpoint_metrics.py             --base-url http://127.0.0.1:3361             --output eval/phase1_pinpoint/native_bindings.json
+
+      - name: Run exactly one final Phase-1 pinpoint probe
         working-directory: backend
         env:
           PYTHONPATH: .
+          PROBE_ID: ${{ steps.auth.outputs.probe_id }}
         run: |
-          mkdir -p eval/round2
-          python lab/metabase/core_b/round2_feature_benchmark.py \
-            --base-url http://127.0.0.1:3361 \
-            --email "$MB_RESTRICTED_EMAIL" \
-            --password "$MB_RESTRICTED_PASSWORD" \
-            --manifest eval/dima_neutral_feature_benchmark_round2.json \
-            --output eval/round2/metabase_pinpoint.json \
-            --control-db eval/round2/metabase_pinpoint.db \
-            --engine-sha "$ENGINE_SHA" \
-            --upstream-sha "$UPSTREAM_BASE_SHA" \
-            --runtime-tag "$RUNTIME_TAG" \
-            --runtime-image-digest "$REGISTRY_DIGEST" \
-            --build-identity "$BUILD_IDENTITY" \
-            --image-identity "$REGISTRY_DIGEST" \
-            --platform-sha "${{ steps.auth.outputs.candidate_sha }}" \
-            --max-total-model-units "20" \
-            --case-id "F02_M" \
-            --case-id "F07_M"
+          set -euo pipefail
+          mkdir -p eval/phase1_pinpoint
+          python lab/metabase/core_b/phase1_pinpoint_live.py             --probe-id "$PROBE_ID"             --base-url http://127.0.0.1:3361             --email "$MB_RESTRICTED_EMAIL"             --password "$MB_RESTRICTED_PASSWORD"             --binding-manifest eval/phase1_pinpoint/native_bindings.json             --output "eval/phase1_pinpoint/${PROBE_ID}.json"             --control-db "eval/phase1_pinpoint/${PROBE_ID}.db"             --engine-sha "$ENGINE_SHA"             --upstream-sha "$UPSTREAM_BASE_SHA"             --runtime-tag "$RUNTIME_TAG"             --runtime-image-digest "$REGISTRY_DIGEST"             --build-identity "$BUILD_IDENTITY"             --image-identity "$REGISTRY_DIGEST"             --candidate-product-sha "${{ steps.auth.outputs.candidate_sha }}"             --max-model-units "12"
 
-      - name: Validate pinpoint mechanical envelope
+      - name: Validate hard mechanical envelope only
         working-directory: backend
-        shell: bash
+        env:
+          PROBE_ID: ${{ steps.auth.outputs.probe_id }}
         run: |
           python - <<'PY'
-          import json
+          import json, os
           from pathlib import Path
-          report=json.loads(Path("eval/round2/metabase_pinpoint.json").read_text())
-          assert report["source_case_count"] == 30
-          assert report["selected_case_ids"] == ["F02_M","F07_M"]
-          assert report["case_count"] == 2
-          assert report["observable_model_boundary_units"] <= 20
-          cases=report["cases"]
-          assert [x["id"] for x in cases] == ["F02_M","F07_M"]
-          for item in cases:
-              assert item["budget_ok"] is True
-              assert item["lineage_valid"] is True
-              assert item["all_turns_executed"] is True
-              assert item["terminal_state"] not in {"EXCEPTION","BUDGET_EXHAUSTED"}
+
+          probe=os.environ["PROBE_ID"]
+          report=json.loads(
+              Path(f"eval/phase1_pinpoint/{probe}.json").read_text(encoding="utf-8")
+          )
+          assert report["probe_id"]==probe
+          assert report["max_observable_model_boundary_units"]==12
+          assert report["observable_model_boundary_units"]<=12
+          assert report["within_budget"] is True
+          assert report.get("exception") is None
+          assert report["turn_count_executed"]==report["turn_count_expected"]
+          assert all(item.get("ready") is True for item in report["turns"])
+          if probe=="SCOPE_CURRENTNESS_HARD":
+              observed=report["mechanical_observations"]
+              for key in (
+                  "two_turns_executed",
+                  "both_turns_ready",
+                  "scope_lineage_continuity",
+                  "scope_version_advanced",
+                  "old_research_superseded",
+                  "new_research_current",
+                  "old_primary_evidence_historical",
+                  "new_primary_evidence_current",
+              ):
+                  assert observed[key] is True,(key,observed)
+          else:
+              observed=report["mechanical_observations"]
+              assert observed["max_reasoning_depth"]<=3,observed
+              assert observed["p19_called_when_required"] is True,observed
+          assert report["quality_score"] is None
+          assert report["manual_adjudication_required"] is True
           print("PINPOINT_ARTIFACT_READY_FOR_HUMAN_INSPECTION")
           PY
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: dima-v1-phase1-p12-pinpoint-live-${{ github.run_id }}
+          name: dima-v1-phase1-pinpoint-${{ steps.auth.outputs.probe_id }}-${{ github.run_id }}
           path: |
-            backend/eval/round2/metabase_pinpoint.json
+            backend/eval/phase1_pinpoint/*.json
           if-no-files-found: warn
           retention-days: 90
 
       - name: Runtime logs
         if: failure()
-        run: docker logs --tail=1500 mb-round2 || true
+        run: docker logs --tail=1500 mb-phase1 || true
 
       - name: Teardown
         if: always()
         run: |
-          docker rm -f mb-round2 analytics-db app-db 2>/dev/null || true
-          docker network rm dima-round2 2>/dev/null || true
+          docker rm -f mb-phase1 analytics-db app-db 2>/dev/null || true
+          docker network rm dima-phase1-pinpoint 2>/dev/null || true
