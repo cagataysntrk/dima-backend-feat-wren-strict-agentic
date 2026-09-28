@@ -7,6 +7,7 @@ query optimality are outside this module's authority.
 """
 from __future__ import annotations
 
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -50,9 +51,20 @@ class AnalyticalComparisonInvariant(FrozenModel):
 
 
 class AnalyticalRankingInvariant(FrozenModel):
+    """Native material ranking only when one governed metric basis is authorized."""
+
+    kind: Literal["native_metric"] = "native_metric"
     measure: str = Field(min_length=1)
-    direction: str = Field(pattern=r"^(asc|desc)$")
-    limit: int = Field(ge=1, le=1000)
+    direction: Literal["asc", "desc"]
+    limit: int | None = Field(default=None, ge=1, le=1000)
+
+
+class AnalyticalEvidenceSynthesisRankingInvariant(FrozenModel):
+    """Ranking obligation satisfied from governed evidence, not native ORDER BY."""
+
+    kind: Literal["evidence_synthesis"] = "evidence_synthesis"
+    direction: Literal["asc", "desc", "unspecified"] = "unspecified"
+    limit: int | None = Field(default=None, ge=1, le=1000)
 
 
 class AnalyticalRequestContract(FrozenModel):
@@ -65,7 +77,11 @@ class AnalyticalRequestContract(FrozenModel):
     filters: tuple[AnalyticalFilterInvariant, ...] = ()
     period: AnalyticalPeriodInvariant | None = None
     comparison: AnalyticalComparisonInvariant | None = None
-    ranking: AnalyticalRankingInvariant | None = None
+    ranking: (
+        AnalyticalRankingInvariant
+        | AnalyticalEvidenceSynthesisRankingInvariant
+        | None
+    ) = None
     grain_constraints: tuple[str, ...] = ()
     requested_output_surfaces: tuple[str, ...] = ()
 
@@ -79,7 +95,11 @@ class AnalyticalRequestObservation(FrozenModel):
     filters: tuple[AnalyticalFilterInvariant, ...] = ()
     period: AnalyticalPeriodInvariant | None = None
     comparison: AnalyticalComparisonInvariant | None = None
-    ranking: AnalyticalRankingInvariant | None = None
+    ranking: (
+        AnalyticalRankingInvariant
+        | AnalyticalEvidenceSynthesisRankingInvariant
+        | None
+    ) = None
     grain_constraints: tuple[str, ...] = ()
     requested_output_surfaces: tuple[str, ...] = ()
 
