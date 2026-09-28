@@ -414,6 +414,7 @@ def test_turn2_material_state_reproduces_form_claim_capable_profile_provider_fre
     _assert_provider_strict_objects(schema)
     claim_variant = _variant_by_intent(schema, InvestigationIntent.FORM_CLAIM)
     assert "claim" in claim_variant["properties"]
+    assert "mechanism_semantic_ref" in claim_variant["properties"]
     assert '"additionalProperties": true' not in json.dumps(
         claim_variant,
         sort_keys=True,
@@ -636,6 +637,56 @@ def test_obligation_scoped_provider_view_exposes_no_cross_obligation_refs():
         assert props["inspected_material_refs"]["items"]["enum"] == [
             "lead_source"
         ]
+
+
+def test_root_candidate_provider_exposes_closed_governed_mechanism_refs_only():
+    transport = _CaptureTransport()
+    manager = StructuredResearchProposalManager(transport=transport)
+    snapshot = _scoped_snapshot()
+
+    with pytest.raises(RuntimeError, match="captured-before-provider-call"):
+        manager.propose_root_candidate_for_obligation(
+            snapshot,
+            target_parent_obligation="g_source",
+            allowed_evidence_refs=("evi_source",),
+            allowed_mechanism_refs=(
+                "metric.maintenance_delay_hours",
+                "metric.spare_part_delay_hours",
+            ),
+        )
+
+    claim_variant = _variant_by_intent(
+        transport.schema,
+        InvestigationIntent.FORM_CLAIM,
+    )
+    assert claim_variant["properties"]["mechanism_semantic_ref"] == {
+        "type": "string",
+        "enum": [
+            "metric.maintenance_delay_hours",
+            "metric.spare_part_delay_hours",
+        ],
+    }
+
+
+def test_root_candidate_without_governed_mechanism_cannot_expose_form_claim():
+    transport = _CaptureTransport()
+    manager = StructuredResearchProposalManager(transport=transport)
+    snapshot = _scoped_snapshot()
+
+    with pytest.raises(RuntimeError, match="captured-before-provider-call"):
+        manager.propose_root_candidate_for_obligation(
+            snapshot,
+            target_parent_obligation="g_source",
+            allowed_evidence_refs=("evi_source",),
+            allowed_mechanism_refs=(),
+        )
+
+    intents = {
+        value
+        for variant in _variants(transport.schema)
+        for value in variant["properties"]["intent"]["enum"]
+    }
+    assert InvestigationIntent.FORM_CLAIM.value not in intents
 
 
 class _SequenceTransport:
