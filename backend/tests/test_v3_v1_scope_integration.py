@@ -18,6 +18,11 @@ from app.v3.hypothesis_root_cause import (
     HypothesisRootCauseStore,
     P19EpistemicError,
 )
+from app.v3.product.contracts import (
+    ArtifactKind,
+    ArtifactRef,
+    ProductCurrentness,
+)
 from app.v3.product.service import HeadlessProductService, ProductSources
 from app.v3.research import (
     EvidenceRef,
@@ -266,6 +271,85 @@ def test_real_follow_up_path_mints_new_scope_authority_and_preserves_lineage():
     assert old.accepted_brief.scope.scope_version.version_id == "scope_v1"
     assert current.accepted_brief.scope.scope_version.version_id == "scope_v2"
     assert current.lineage_id == old.lineage_id
+
+
+def test_product_reads_historical_scope_without_treating_it_as_current_truth():
+    db = db_engine()
+    store, research, _, session_v1 = start_v1(db)
+    old_ref = EvidenceRef(
+        evidence_id="evi_" + "6" * 24,
+        receipt_id="dqr_" + "7" * 24,
+        authority_id=session_v1.authority_id,
+        obligation_id=session_v1.obligations[0].obligation_id,
+    )
+    old_obligation = session_v1.obligations[0].model_copy(
+        update={
+            "state": ObligationState.VERIFIED,
+            "evidence_refs": (old_ref.evidence_id,),
+        }
+    )
+    session_v1 = ResearchManager.advance(
+        session_v1,
+        obligations=(old_obligation,),
+        evidence_refs=(old_ref,),
+        now=NOW,
+    )
+    session_v1 = store.save(
+        session_v1,
+        expected_revision=session_v1.revision - 1,
+    )
+
+    brief_v2 = ResearchIntakeCompiler(
+        transport=FakeTransport(narrowed_payload())
+    ).compile(
+        question="Assembly only.",
+        catalog=catalog(),
+        prior_brief=session_v1.accepted_brief,
+    ).brief
+    assert brief_v2 is not None
+    session_v2 = research.start_from_brief(
+        brief=brief_v2,
+        request_ref="scope-turn-2-product-history",
+        source_message_hash="6" * 64,
+        principal=principal(),
+        prior_session_id=session_v1.session_id,
+    )
+
+    service = HeadlessProductService(
+        sources=ProductSources(research=research)
+    )
+    historical_research = service.resume(
+        ref=ArtifactRef(
+            kind=ArtifactKind.RESEARCH,
+            artifact_id=session_v1.session_id,
+        ),
+        principal=principal(),
+    )
+    historical_evidence = service.resume(
+        ref=ArtifactRef(
+            kind=ArtifactKind.EVIDENCE,
+            artifact_id=old_ref.evidence_id,
+            scope_id=session_v1.session_id,
+        ),
+        principal=principal(),
+    )
+    current_research = service.resume(
+        ref=ArtifactRef(
+            kind=ArtifactKind.RESEARCH,
+            artifact_id=session_v2.session_id,
+        ),
+        principal=principal(),
+    )
+
+    assert (
+        historical_research.header.currentness
+        == ProductCurrentness.SUPERSEDED
+    )
+    assert (
+        historical_evidence.header.currentness
+        == ProductCurrentness.HISTORICAL
+    )
+    assert current_research.header.currentness == ProductCurrentness.CURRENT
 
 
 def test_scope_v1_evidence_cannot_satisfy_scope_v2_obligation():
