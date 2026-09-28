@@ -119,7 +119,8 @@ def test_pinpoint_workflow_is_one_probe_per_run_and_no_broad_scorer():
     assert "\n  push:\n" not in workflow
     assert "openrouter_counting_proxy.py" in workflow
     assert "--ceiling 0" in workflow
-    assert "--ceiling 24" in workflow
+    assert 'HARD_PROVIDER_REQUEST_CEILING: "24"' in workflow
+    assert '--ceiling "$HARD_PROVIDER_REQUEST_CEILING"' in workflow
     assert "MB_LLM_OPENROUTER_API_BASE_URL" in workflow
     assert "actual_provider_request_count" in workflow
     assert "orchestration_boundary_units" in workflow
