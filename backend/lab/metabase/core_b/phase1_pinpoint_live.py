@@ -37,10 +37,10 @@ from lab.metabase.core_b import live_sentinel as sealed
 
 MODEL = "openai/gpt-5.6-luna"
 CONTEXT = "phase1-final-pinpoint-v1"
-MAX_MODEL_UNITS = 12
+MAX_ORCHESTRATION_BOUNDARY_UNITS = 12
 
 PROBES = {
-    "SCOPE_CURRENTNESS_HARD": {
+    "SCOPE_CURRENTNESS_HARD_V2": {
         "turns": (
             "Mayıs ve Haziran 2026’da bölüm bazında machine downtime ve fault count değişimini karşılaştır. Kötüleşmeyi sıralayıp hangi bölümlerin dikkat istediğini göster.",
             "Şimdi yalnız Haziran 2026’ya daralt. En yüksek downtime olan iki bölümü fault count ile birlikte incele. Önceki analizi tarihsel bağlam olarak koru ama yeni kapsam için eski Evidence’ı current truth sayma; yeni veriye dayan.",
@@ -55,7 +55,7 @@ PROBES = {
 
 
 class PinpointBudgetExceeded(RuntimeError):
-    code = "PINPOINT_MODEL_BOUNDARY_BUDGET_EXHAUSTED"
+    code = "PINPOINT_ORCHESTRATION_BOUNDARY_BUDGET_EXHAUSTED"
 
     def __init__(self, owner: str, limit: int) -> None:
         super().__init__(
@@ -65,9 +65,9 @@ class PinpointBudgetExceeded(RuntimeError):
         self.limit = limit
 
 
-class ProbeBudget:
+class OrchestrationBudget:
     def __init__(self, limit: int) -> None:
-        if limit < 1 or limit > MAX_MODEL_UNITS:
+        if limit < 1 or limit > MAX_ORCHESTRATION_BOUNDARY_UNITS:
             raise ValueError("pinpoint model budget must be between 1 and 12")
         self.limit = limit
         self.used = 0
@@ -81,7 +81,7 @@ class ProbeBudget:
 
 
 class BoundedStructuredTransport:
-    def __init__(self, inner, *, budget: ProbeBudget, owner: str) -> None:
+    def __init__(self, inner, *, budget: OrchestrationBudget, owner: str) -> None:
         self._inner = inner
         self._budget = budget
         self._owner = owner
@@ -108,7 +108,7 @@ class BoundedStructuredTransport:
 
 
 class BoundedMaterialExecutor:
-    def __init__(self, inner, *, budget: ProbeBudget) -> None:
+    def __init__(self, inner, *, budget: OrchestrationBudget) -> None:
         self._inner = inner
         self._budget = budget
 
@@ -634,11 +634,22 @@ def main() -> int:
     ap.add_argument("--build-identity", required=True)
     ap.add_argument("--image-identity", required=True)
     ap.add_argument("--candidate-product-sha", required=True)
-    ap.add_argument("--max-model-units", type=int, default=MAX_MODEL_UNITS)
+    ap.add_argument("--provider-proxy-base-url", required=True)
+    ap.add_argument("--provider-receipt", type=Path, required=True)
+    ap.add_argument(
+        "--max-orchestration-boundary-units",
+        type=int,
+        default=MAX_ORCHESTRATION_BOUNDARY_UNITS,
+    )
     args = ap.parse_args()
 
-    if args.max_model_units != MAX_MODEL_UNITS:
-        raise RuntimeError("Phase-1 pinpoint live ceiling is exactly 12 units")
+    if (
+        args.max_orchestration_boundary_units
+        != MAX_ORCHESTRATION_BOUNDARY_UNITS
+    ):
+        raise RuntimeError(
+            "Phase-1 orchestration boundary ceiling is exactly 12 units"
+        )
     api_key = os.environ.get("DIMA_OPENROUTER_API_KEY", "").strip()
     if not api_key:
         raise RuntimeError("DIMA_OPENROUTER_API_KEY required")
@@ -669,7 +680,7 @@ def main() -> int:
         store=session_store,
         expected_identity=expected,
     )
-    budget = ProbeBudget(args.max_model_units)
+    budget = OrchestrationBudget(args.max_orchestration_boundary_units)
     material_executor = BoundedMaterialExecutor(raw_material, budget=budget)
     orchestrator = sealed.ResearchAskOrchestrator(
         store=session_store,
@@ -677,17 +688,24 @@ def main() -> int:
         material_executor=material_executor,
     )
 
+    proxy_base = args.provider_proxy_base_url.rstrip("/")
     raw_intake = sealed.OpenRouterStructuredJSONTransport(
         api_key=api_key,
         model=MODEL,
+        base_url=proxy_base + "/source/research_intake/v1",
+        owner="research_intake",
     )
     raw_p17 = sealed.OpenRouterStructuredJSONTransport(
         api_key=api_key,
         model=MODEL,
+        base_url=proxy_base + "/source/p17_manager/v1",
+        owner="p17_manager",
     )
     raw_p19 = sealed.OpenRouterStructuredJSONTransport(
         api_key=api_key,
         model=MODEL,
+        base_url=proxy_base + "/source/p19_manager/v1",
+        owner="p19_manager",
     )
     intake_transport = BoundedStructuredTransport(
         raw_intake,
@@ -788,7 +806,7 @@ def main() -> int:
         "candidate_product_sha": args.candidate_product_sha,
         "engine_sha": args.engine_sha,
         "engine_runtime_tag": args.runtime_tag,
-        "max_observable_model_boundary_units": MAX_MODEL_UNITS,
+        "max_orchestration_boundary_units": MAX_ORCHESTRATION_BOUNDARY_UNITS,
         "binding_manifest": binding_manifest,
         "turn_count_expected": len(PROBES[args.probe_id]["turns"]),
         "turns": [],
@@ -827,7 +845,7 @@ def main() -> int:
                 break
 
         if (
-            args.probe_id == "SCOPE_CURRENTNESS_HARD"
+            args.probe_id == "SCOPE_CURRENTNESS_HARD_V2"
             and len(report["turns"]) == 2
             and all(item.get("ready") for item in report["turns"])
         ):
@@ -856,11 +874,13 @@ def main() -> int:
     except Exception as exc:
         report["exception"] = _exception_payload(exc)
     finally:
-        report["observable_model_boundary_units"] = budget.used
-        report["model_boundary_units_by_owner"] = dict(
+        report["orchestration_boundary_units"] = budget.used
+        report["orchestration_boundary_units_by_owner"] = dict(
             sorted(budget.by_owner.items())
         )
-        report["within_budget"] = budget.used <= MAX_MODEL_UNITS
+        report["within_orchestration_boundary_budget"] = (
+            budget.used <= MAX_ORCHESTRATION_BOUNDARY_UNITS
+        )
         report["turn_count_executed"] = len(report["turns"])
         report["total_latency_ms"] = int((time.monotonic() - started) * 1000)
         report["transport_traces"] = {
@@ -873,6 +893,33 @@ def main() -> int:
         raw_intake.close()
         raw_p17.close()
         raw_p19.close()
+        try:
+            provider = json.loads(
+                args.provider_receipt.read_text(encoding="utf-8")
+            )
+            if provider.get("schema_version") != "dima_openrouter_counting_proxy_v1":
+                raise RuntimeError("unexpected provider counting receipt schema")
+            report["provider_receipt"] = provider
+            report["actual_provider_request_count"] = int(
+                provider["actual_provider_request_count"]
+            )
+            report["provider_requests_by_source"] = dict(
+                provider["provider_requests_by_source"]
+            )
+            report["hard_provider_request_ceiling"] = int(
+                provider["hard_provider_request_ceiling"]
+            )
+            report["prompt_tokens"] = provider.get("prompt_tokens")
+            report["completion_tokens"] = provider.get("completion_tokens")
+            report["reasoning_tokens"] = provider.get("reasoning_tokens")
+            report["provider_reported_cost"] = provider.get(
+                "provider_reported_cost"
+            )
+        except Exception as exc:
+            report["provider_receipt_error"] = {
+                "error_type": type(exc).__name__,
+                "error": str(exc),
+            }
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(
@@ -884,8 +931,13 @@ def main() -> int:
             {
                 "probe_id": args.probe_id,
                 "turns": report["turn_count_executed"],
-                "units": report["observable_model_boundary_units"],
-                "within_budget": report["within_budget"],
+                "orchestration_units": report["orchestration_boundary_units"],
+                "within_orchestration_budget": report[
+                    "within_orchestration_boundary_budget"
+                ],
+                "actual_provider_requests": report.get(
+                    "actual_provider_request_count"
+                ),
                 "exception": (report.get("exception") or {}).get("error_code"),
             },
             ensure_ascii=False,
