@@ -4,9 +4,9 @@ import json
 from pathlib import Path
 
 from lab.metabase.core_b.phase1_pinpoint_live import (
-    MAX_MODEL_UNITS,
+    MAX_ORCHESTRATION_BOUNDARY_UNITS,
     PROBES,
-    ProbeBudget,
+    OrchestrationBudget,
     PinpointBudgetExceeded,
     build_catalog,
 )
@@ -34,10 +34,10 @@ def _bindings():
 
 def test_final_pinpoint_probes_are_closed_and_not_benchmark_cases():
     assert tuple(PROBES) == (
-        "SCOPE_CURRENTNESS_HARD",
+        "SCOPE_CURRENTNESS_HARD_V2",
         "RCA_P19_HARD",
     )
-    assert MAX_MODEL_UNITS == 12
+    assert MAX_ORCHESTRATION_BOUNDARY_UNITS == 12
     serialized = json.dumps(PROBES, ensure_ascii=False)
     assert "F02_M" not in serialized
     assert "F07_M" not in serialized
@@ -47,14 +47,14 @@ def test_final_pinpoint_probes_are_closed_and_not_benchmark_cases():
 
 
 def test_pinpoint_budget_blocks_thirteenth_boundary_before_network():
-    budget = ProbeBudget(12)
+    budget = OrchestrationBudget(12)
     for _ in range(12):
         budget.consume("test")
     assert budget.used == 12
     try:
         budget.consume("test")
     except PinpointBudgetExceeded as exc:
-        assert exc.code == "PINPOINT_MODEL_BOUNDARY_BUDGET_EXHAUSTED"
+        assert exc.code == "PINPOINT_ORCHESTRATION_BOUNDARY_BUDGET_EXHAUSTED"
     else:
         raise AssertionError("thirteenth boundary was not blocked")
     assert budget.used == 12
@@ -107,14 +107,20 @@ def test_pinpoint_workflow_is_one_probe_per_run_and_no_broad_scorer():
         / "workflows"
         / "dima-v1-phase1-p12-pinpoint-live.yml"
     ).read_text(encoding="utf-8")
-    assert "SCOPE_CURRENTNESS_HARD" in workflow
+    assert "SCOPE_CURRENTNESS_HARD_V2" in workflow
     assert "RCA_P19_HARD" in workflow
     assert "probe_id" in workflow
-    assert "max-model-units \"12\"" in workflow
+    assert "max-orchestration-boundary-units \"12\"" in workflow
     assert "F02_M" not in workflow
     assert "F07_M" not in workflow
     assert "validate_phase1_round2.py" not in workflow
     assert "--manifest eval/dima_neutral_feature_benchmark_round2.json" not in workflow
     assert "phase1-final-pinpoint-live-001.json" not in workflow
     assert "\n  push:\n" not in workflow
+    assert "openrouter_counting_proxy.py" in workflow
+    assert "--ceiling 0" in workflow
+    assert "--ceiling 24" in workflow
+    assert "MB_LLM_OPENROUTER_API_BASE_URL" in workflow
+    assert "actual_provider_request_count" in workflow
+    assert "orchestration_boundary_units" in workflow
     assert "PINPOINT_ARTIFACT_READY_FOR_HUMAN_INSPECTION" in workflow
