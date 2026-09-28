@@ -129,7 +129,8 @@ def test_empty_success_response_retains_sanitized_provider_diagnostic():
         sort_keys=True,
     )
     assert '"finish_reason": "length"' in serialized
-    assert '"completion_tokens": 4096' in serialized
+    assert '"completion_tokens": "[REDACTED]"' in serialized
+    assert '"prompt_tokens": "[REDACTED]"' in serialized
     assert "PRIVATE PROVIDER REASONING" not in serialized
     assert "[REDACTED]" in serialized
 
