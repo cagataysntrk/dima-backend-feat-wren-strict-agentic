@@ -42,5 +42,9 @@
   "probe_a_v3_adjudication": null,
   "broad_paid_allowed": false,
   "automatic_retry": false,
-  "sol_reference_authorized": false
+  "sol_reference_authorized": false,
+  "preflight_failure_run_id": 36479707453,
+  "preflight_failure_stage": "provider-free pinpoint preflight",
+  "preflight_actual_provider_requests": 0,
+  "preflight_product_step_executed": false
 }
