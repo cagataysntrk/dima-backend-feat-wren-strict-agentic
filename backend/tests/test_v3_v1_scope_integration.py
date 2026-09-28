@@ -192,8 +192,6 @@ def narrowed_payload():
         ],
         "required_domains": ["operations"],
         "scope_mutation_kind": "NARROW_ENTITY",
-        "clarification_question": None,
-        "unsupported_reason": None,
     }
 
 

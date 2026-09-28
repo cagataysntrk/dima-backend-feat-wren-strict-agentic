@@ -141,10 +141,7 @@ def ready_payload(
         ],
         "deliverables": [],
         "investigation_directives": [],
-        "time_surfaces": [],
         "required_domains": ["machine_operations"],
-        "clarification_question": None,
-        "unsupported_reason": None,
     }
 
 
@@ -301,14 +298,7 @@ def test_unknown_semantic_ref_fails_closed():
         (
             {
                 "terminal": "CLARIFY",
-                "objective": None,
-                "goals": [],
-                "deliverables": [],
-                "investigation_directives": [],
-                "time_surfaces": [],
-                "required_domains": [],
                 "clarification_question": "Which metric do you mean?",
-                "unsupported_reason": None,
             },
             ResearchIntakeTerminal.CLARIFY,
             "clarification_question",
@@ -316,13 +306,6 @@ def test_unknown_semantic_ref_fails_closed():
         (
             {
                 "terminal": "UNSUPPORTED",
-                "objective": None,
-                "goals": [],
-                "deliverables": [],
-                "investigation_directives": [],
-                "time_surfaces": [],
-                "required_domains": [],
-                "clarification_question": None,
                 "unsupported_reason": "Requested fact is absent from governed data.",
             },
             ResearchIntakeTerminal.UNSUPPORTED,
