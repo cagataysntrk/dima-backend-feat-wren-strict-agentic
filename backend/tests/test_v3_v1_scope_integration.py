@@ -182,6 +182,7 @@ def narrowed_payload():
         ],
         "deliverables": [],
         "investigation_directives": [],
+        "time_surfaces": ["2026-H1"],
         "time_periods": [
             {
                 "source_text": "2026-H1",

@@ -640,6 +640,7 @@ def test_provider_intake_schema_exposes_time_and_mutation_only_when_governed():
         has_prior_brief=True,
     )
     ready = schema["$defs"]["ModelReadyResearchIntake"]
+    assert "time_surfaces" in ready["properties"]
     assert "time_periods" in ready["properties"]
     assert "scope_mutation_kind" in ready["properties"]
 

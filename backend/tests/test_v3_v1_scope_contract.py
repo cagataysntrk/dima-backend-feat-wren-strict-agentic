@@ -776,7 +776,7 @@ class FakeTransport:
     def structured_json(self,system,user,*,schema,schema_name):
         self.call_count+=1
         self.last={"system":system,"user":json.loads(user),"schema":schema}
-        return json.dumps(self.payload)
+        return json.dumps({"result": self.payload})
 
 
 def test_r1_intake_freezes_typed_period_and_hides_native_binding_from_cognition():
@@ -803,9 +803,6 @@ def test_r1_intake_freezes_typed_period_and_hides_native_binding_from_cognition(
             "end":"2026-07-01",
         }],
         "required_domains":["machine_operations"],
-        "scope_mutation_kind":None,
-        "clarification_question":None,
-        "unsupported_reason":None,
     }
     transport=FakeTransport(payload)
     catalog=ResearchIntakeCatalog(
