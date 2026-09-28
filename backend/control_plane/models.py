@@ -1217,6 +1217,10 @@ class ResearchInvestigationTaskRecord(SQLModel, table=True):
     )
     parent_obligation_id: str = Field(index=True)
     bounded_objective: str = Field(sa_column=Column(Text, nullable=False))
+    analytical_scope_json: str | None = Field(
+        default=None,
+        sa_column=Column(Text, nullable=True),
+    )
     counter_to_claim_id: str | None = Field(default=None, index=True)
     status: str = Field(index=True)
     native_execution_refs_json: str = Field(sa_column=Column(Text, nullable=False))

@@ -6,6 +6,10 @@ to materialize native Exploration for that exact verified occurrence.
 """
 from __future__ import annotations
 
+from app.v3.analytical_request_contract import (
+    AnalyticalRequestMismatch,
+    assert_child_request_scope,
+)
 from app.v3.research import ObligationState, ResearchManager, ResearchSession
 from app.v3.research_analytical_scope import analytical_scope_contract
 from app.v3.research_exploration import NativeResearchExploration
@@ -50,10 +54,23 @@ class NativeResearchFollowupExecutor:
                 "P17 follow-up requires the sealed Research native conversation",
             )
         request_id = f"p17-{step.step_id}-{task.task_id}"
-        analytical_scope = analytical_scope_contract(
+        parent_scope = analytical_scope_contract(
             session=session,
             obligation_id=task.parent_obligation_id,
         )
+        analytical_scope = task.analytical_scope
+        if analytical_scope is None:
+            raise ResearchManagerMaturationError(
+                "P17_TASK_ANALYTICAL_SCOPE_REQUIRED",
+                "native child task has no durable analytical scope state",
+            )
+        try:
+            assert_child_request_scope(parent_scope, analytical_scope)
+        except AnalyticalRequestMismatch as exc:
+            raise ResearchManagerMaturationError(
+                exc.code,
+                exc.detail,
+            ) from exc
         return NativeEngineRequest(
             profile_id=conversation.profile_id,
             metabot_id=conversation.metabot_id,

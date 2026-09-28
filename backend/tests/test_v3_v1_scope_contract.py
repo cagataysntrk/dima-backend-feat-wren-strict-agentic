@@ -8,7 +8,9 @@ from uuid import UUID
 import pytest
 
 from app.v3.analytical_request_contract import (
+    AnalyticalFilterInvariant,
     AnalyticalRequestMismatch,
+    assert_child_request_scope,
     observation_from_contract,
     assert_request_invariants,
 )
@@ -434,6 +436,12 @@ def test_r1_p14_and_p17_use_same_accepted_scope_envelope():
         task_id="rit_"+"2"*24,
         parent_obligation_id="g_scope",
         bounded_objective="Investigate the accepted material direction.",
+        analytical_scope=analytical_scope_contract(
+            session=delegation.session,
+            obligation_id="g_scope",
+        ).model_copy(
+            update={"request_ref": "p17-child-scope"}
+        ),
     )
     p17=NativeResearchFollowupExecutor._request(
         session=delegation.session,
@@ -441,6 +449,57 @@ def test_r1_p14_and_p17_use_same_accepted_scope_envelope():
         task=task,
     ).context["dima_analytical_scope"]
     assert p17 == p14
+
+
+def test_r1_p17_child_contract_accepts_one_typed_entity_narrowing_and_keeps_june():
+    parent=analytical_scope_contract(
+        session=session(),
+        obligation_id="g_scope",
+    )
+    child=parent.model_copy(
+        update={
+            "request_ref":"p17-child-assembly",
+            "filters":(
+                AnalyticalFilterInvariant(
+                    semantic_ref=DEPARTMENT.candidate_id,
+                    source_candidate_id=DEPARTMENT.candidate_id,
+                    dimension_name="department",
+                    value="Assembly",
+                ),
+            ),
+        }
+    )
+    assert_child_request_scope(parent,child)
+    assert child.period == parent.period
+    assert child.period is not None
+    assert child.period.start == "2026-06-01"
+    assert child.period.end == "2026-07-01"
+
+
+def test_r1_p17_child_contract_rejects_filter_narrowing_plus_time_broadening():
+    parent=analytical_scope_contract(
+        session=session(),
+        obligation_id="g_scope",
+    )
+    child=parent.model_copy(
+        update={
+            "request_ref":"p17-child-illegal",
+            "filters":(
+                AnalyticalFilterInvariant(
+                    semantic_ref=DEPARTMENT.candidate_id,
+                    source_candidate_id=DEPARTMENT.candidate_id,
+                    dimension_name="department",
+                    value="Assembly",
+                ),
+            ),
+            "period":None,
+        }
+    )
+    with pytest.raises(
+        AnalyticalRequestMismatch,
+        match="TIME_MUTATION_FORBIDDEN",
+    ):
+        assert_child_request_scope(parent,child)
 
 
 def test_r1_legal_entity_narrowing_preserves_period_contract():

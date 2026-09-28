@@ -211,6 +211,129 @@ def native_observation_from_contract(
     )
 
 
+
+def _filter_identity(
+    value: AnalyticalFilterInvariant,
+) -> tuple[str, str, str, str]:
+    return (
+        value.semantic_ref,
+        value.source_candidate_id,
+        value.dimension_name,
+        value.value,
+    )
+
+
+def _set_is_narrowing_or_extension(
+    parent_values,
+    child_values,
+) -> bool:
+    parent_set = set(parent_values)
+    child_set = set(child_values)
+    return (
+        parent_set.issubset(child_set)
+        or child_set.issubset(parent_set)
+    )
+
+
+def assert_child_request_scope(
+    parent: AnalyticalRequestContract,
+    child: AnalyticalRequestContract,
+) -> None:
+    """Validate one typed P17 child scope without creating a second planner.
+
+    Child execution stays inside the same accepted authority/context/version.
+    It may retain the parent material scope or explicitly narrow/extend exactly
+    one set-like analytical family. Time, comparison, ranking and output intent
+    require a versioned ResearchScope change rather than a P17 child mutation.
+    """
+
+    immutable_checks = (
+        ("AUTHORITY", parent.authority_id, child.authority_id),
+        (
+            "SEMANTIC_CONTEXT",
+            parent.semantic_context_version,
+            child.semantic_context_version,
+        ),
+        ("SCOPE", parent.scope_identity, child.scope_identity),
+    )
+    for label, expected, actual in immutable_checks:
+        if expected != actual:
+            raise AnalyticalRequestMismatch(
+                f"ANALYTICAL_CHILD_{label}_MISMATCH",
+                f"P17 child changed accepted {label.lower()} identity",
+            )
+
+    if parent.period != child.period:
+        raise AnalyticalRequestMismatch(
+            "ANALYTICAL_CHILD_TIME_MUTATION_FORBIDDEN",
+            "P17 child cannot change accepted time without a scope version change",
+        )
+    if parent.comparison != child.comparison:
+        raise AnalyticalRequestMismatch(
+            "ANALYTICAL_CHILD_COMPARISON_MUTATION_FORBIDDEN",
+            "P17 child cannot change accepted comparison intent",
+        )
+    if parent.ranking != child.ranking:
+        raise AnalyticalRequestMismatch(
+            "ANALYTICAL_CHILD_RANKING_MUTATION_FORBIDDEN",
+            "P17 child cannot change accepted ranking basis",
+        )
+    if parent.requested_output_surfaces != child.requested_output_surfaces:
+        raise AnalyticalRequestMismatch(
+            "ANALYTICAL_CHILD_OUTPUT_MUTATION_FORBIDDEN",
+            "P17 child cannot change accepted output surfaces",
+        )
+
+    changed: list[tuple[str, tuple, tuple]] = []
+    if parent.metric_refs != child.metric_refs:
+        changed.append(("METRIC", parent.metric_refs, child.metric_refs))
+
+    dimension_changed = (
+        parent.dimension_refs != child.dimension_refs
+        or parent.grain_constraints != child.grain_constraints
+    )
+    if dimension_changed:
+        if (
+            parent.grain_constraints != parent.dimension_refs
+            or child.grain_constraints != child.dimension_refs
+        ):
+            raise AnalyticalRequestMismatch(
+                "ANALYTICAL_CHILD_DIMENSION_GRAIN_MISMATCH",
+                "P17 child dimension mutation must preserve dimension/grain identity",
+            )
+        changed.append(
+            ("DIMENSION", parent.dimension_refs, child.dimension_refs)
+        )
+
+    parent_filters = tuple(_filter_identity(x) for x in parent.filters)
+    child_filters = tuple(_filter_identity(x) for x in child.filters)
+    if parent_filters != child_filters:
+        changed.append(("FILTER", parent_filters, child_filters))
+
+    if len(changed) > 1:
+        raise AnalyticalRequestMismatch(
+            "ANALYTICAL_CHILD_MULTI_DIMENSION_MUTATION",
+            "P17 child may narrow or extend only one analytical family",
+        )
+    if not changed:
+        return
+
+    label, expected, actual = changed[0]
+    if label == "METRIC" and not actual:
+        raise AnalyticalRequestMismatch(
+            "ANALYTICAL_CHILD_METRIC_SCOPE_EMPTY",
+            "P17 child must retain at least one accepted metric",
+        )
+    if not _set_is_narrowing_or_extension(expected, actual):
+        raise AnalyticalRequestMismatch(
+            f"ANALYTICAL_CHILD_{label}_REPLACEMENT_FORBIDDEN",
+            (
+                "P17 child scope must be a typed narrowing/extension, "
+                "not an unrelated replacement"
+            ),
+        )
+
+
 def assert_request_invariants(
     contract: AnalyticalRequestContract,
     observation: AnalyticalRequestObservation,

@@ -16,8 +16,14 @@ from uuid import uuid4
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from sqlmodel import Session, select
 
+from app.v3.analytical_request_contract import (
+    AnalyticalRequestContract,
+    AnalyticalRequestMismatch,
+    assert_child_request_scope,
+)
 from app.v3.claim_lineage import ClaimFreshness, ClaimLineageStore
 from app.v3.research import ResearchManager, ResearchSession
+from app.v3.research_analytical_scope import analytical_scope_contract
 from app.v3.research_store import ResearchSessionStore
 from control_plane.authorize import Principal
 from control_plane.db import engine as control_plane_engine
@@ -160,6 +166,7 @@ class ManagerProposal(Frozen):
     stop_reason: ManagerStopReason | None = None
     counter_to_claim_id: str | None = None
     claim: ProposedClaimDraft | None = None
+    child_analytical_scope: AnalyticalRequestContract | None = None
 
     @property
     def effective_intent(self) -> InvestigationIntent:
@@ -456,6 +463,7 @@ class ResearchInvestigationTask(Frozen):
     reasoning_step_id: str
     parent_obligation_id: str
     bounded_objective: str
+    analytical_scope: AnalyticalRequestContract | None = None
     counter_to_claim_id: str | None = None
     status: InvestigationTaskStatus
     native_execution_refs: tuple[str, ...] = ()
@@ -528,6 +536,69 @@ def _load_list(raw: str, *, code: str) -> tuple[str, ...]:
             "persisted list has invalid shape",
         )
     return tuple(value)
+
+
+def _load_analytical_scope(
+    raw: str | None,
+) -> AnalyticalRequestContract | None:
+    if raw is None:
+        return None
+    try:
+        return AnalyticalRequestContract.model_validate_json(raw)
+    except ValueError as exc:
+        raise ResearchManagerMaturationError(
+            "P17_TASK_ANALYTICAL_SCOPE_INVALID",
+            "persisted child analytical scope is invalid",
+        ) from exc
+
+
+def _resolved_child_scope(
+    *,
+    session: ResearchSession,
+    obligation_id: str,
+    child: AnalyticalRequestContract | None,
+) -> AnalyticalRequestContract:
+    parent = analytical_scope_contract(
+        session=session,
+        obligation_id=obligation_id,
+    )
+    if child is None:
+        return parent
+    try:
+        assert_child_request_scope(parent, child)
+    except AnalyticalRequestMismatch as exc:
+        raise ResearchManagerMaturationError(
+            exc.code,
+            exc.detail,
+        ) from exc
+
+    brief = session.accepted_brief
+    if brief is None:
+        raise ResearchManagerMaturationError(
+            "P17_ACCEPTED_BRIEF_REQUIRED",
+            "child analytical scope requires accepted Research authority",
+        )
+    known = {item.candidate_id for item in brief.scope.semantic_refs}
+    used = set(child.metric_refs)
+    used.update(child.dimension_refs)
+    used.update(child.grain_constraints)
+    for item in child.filters:
+        used.add(item.semantic_ref)
+        used.add(item.source_candidate_id)
+    if child.period is not None:
+        used.add(child.period.time_dimension)
+    if child.comparison is not None:
+        used.add(child.comparison.base_period.time_dimension)
+        used.add(child.comparison.reference_period.time_dimension)
+    if child.ranking is not None:
+        used.add(child.ranking.measure)
+    unknown = sorted(used - known)
+    if unknown:
+        raise ResearchManagerMaturationError(
+            "P17_CHILD_SCOPE_SEMANTIC_REF_OUT_OF_SCOPE",
+            ",".join(unknown),
+        )
+    return child
 
 
 def _id(prefix: str) -> str:
@@ -612,6 +683,9 @@ class ResearchReasoningStore:
             reasoning_step_id=record.reasoning_step_id,
             parent_obligation_id=record.parent_obligation_id,
             bounded_objective=record.bounded_objective,
+            analytical_scope=_load_analytical_scope(
+                record.analytical_scope_json
+            ),
             counter_to_claim_id=record.counter_to_claim_id,
             status=InvestigationTaskStatus(record.status),
             native_execution_refs=_load_list(
@@ -790,12 +864,26 @@ class ResearchReasoningStore:
                 "follow-up task requires bounded objective",
             )
         empty, _ = _json([], code="P17_TASK_REFS_NOT_CANONICAL")
+        task_id = _id("rit_")
+        analytical_scope = _resolved_child_scope(
+            session=session,
+            obligation_id=proposal.target_parent_obligation,
+            child=proposal.child_analytical_scope,
+        ).model_copy(
+            update={
+                "request_ref": (
+                    f"{session.session_id}:"
+                    f"{proposal.target_parent_obligation}:{task_id}"
+                )
+            }
+        )
         record = ResearchInvestigationTaskRecord(
-            task_id=_id("rit_"),
+            task_id=task_id,
             session_id=session.session_id,
             reasoning_step_id=step.step_id,
             parent_obligation_id=proposal.target_parent_obligation,
             bounded_objective=proposal.bounded_objective,
+            analytical_scope_json=analytical_scope.model_dump_json(),
             counter_to_claim_id=proposal.counter_to_claim_id,
             status=InvestigationTaskStatus.PENDING.value,
             native_execution_refs_json=empty,
@@ -1636,6 +1724,12 @@ class ResearchInvestigationManager:
                 ),
                 "limitations": sorted(proposal.claim.limitations),
             }
+        child_scope_identity = None
+        if proposal.child_analytical_scope is not None:
+            child_scope_identity = proposal.child_analytical_scope.model_dump(
+                mode="json"
+            )
+            child_scope_identity.pop("request_ref", None)
         identity = {
             "research_authority_id": session.authority_id,
             "research_session_id": session.session_id,
@@ -1658,6 +1752,7 @@ class ResearchInvestigationManager:
                 proposal.inspected_material_refs
             ),
             "claim_identity": claim_identity,
+            "child_analytical_scope": child_scope_identity,
             "stop_reason": (
                 proposal.stop_reason.value
                 if proposal.stop_reason is not None
@@ -1695,6 +1790,13 @@ class ResearchInvestigationManager:
             raise ResearchManagerMaturationError(
                 "P17_PARENT_OBLIGATION_OUT_OF_SCOPE",
                 proposal.target_parent_obligation,
+            )
+
+        if proposal.child_analytical_scope is not None:
+            _resolved_child_scope(
+                session=session,
+                obligation_id=proposal.target_parent_obligation,
+                child=proposal.child_analytical_scope,
             )
 
         if topology.depth + 1 > self._budget.max_depth:
@@ -1989,6 +2091,7 @@ class ResearchInvestigationManager:
         manager: ResearchProposalManager,
         native_session_token: str | None = None,
         downstream_reentry_intent: InvestigationIntent | None = None,
+        child_analytical_scope: AnalyticalRequestContract | None = None,
     ) -> tuple[ResearchReasoningStep, ResearchInvestigationTask | None]:
         session = self._session(session_id, principal)
         snapshot = self.snapshot(
@@ -2025,6 +2128,16 @@ class ResearchInvestigationManager:
                 for x in self._ledger.steps(session.session_id)
                 if x.step_id == snapshot.pending_reasoning_steps[0]
             )
+            if child_analytical_scope is not None:
+                persisted = self._ledger.proposal(pending.step_id)
+                if (
+                    persisted.child_analytical_scope
+                    != child_analytical_scope
+                ):
+                    raise ResearchManagerMaturationError(
+                        "P17_PENDING_CHILD_SCOPE_MISMATCH",
+                        "restart cannot replace persisted child analytical scope",
+                    )
             return self._resume_pending(
                 session=session,
                 snapshot=snapshot,
@@ -2045,6 +2158,20 @@ class ResearchInvestigationManager:
             )
 
         proposal = manager.propose(snapshot)
+        if proposal.child_analytical_scope is not None:
+            raise ResearchManagerMaturationError(
+                "P17_MANAGER_CHILD_SCOPE_AUTHORITY_FORBIDDEN",
+                (
+                    "manager/provider proposal cannot author analytical scope; "
+                    "Dima must bind typed child scope state"
+                ),
+            )
+        if child_analytical_scope is not None:
+            proposal = proposal.model_copy(
+                update={
+                    "child_analytical_scope": child_analytical_scope,
+                }
+            )
         if (
             downstream_reentry_intent is not None
             and proposal.effective_intent != downstream_reentry_intent

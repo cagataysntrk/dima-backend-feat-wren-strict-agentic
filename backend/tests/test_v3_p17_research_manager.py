@@ -11,6 +11,7 @@ from sqlalchemy.pool import StaticPool
 from sqlmodel import SQLModel, Session, create_engine, select
 
 import app.v3.research_manager as manager_module
+from app.v3.research_analytical_scope import analytical_scope_contract
 from app.v3.research_contracts import (
     ResearchBrief,
     ResearchBriefStatus,
@@ -330,6 +331,7 @@ class PersistedFirstFollowup:
             assert step_row.status == "PENDING"
             assert task_row is not None
             assert task_row.status == "PENDING"
+            assert task_row.analytical_scope_json is not None
         return FollowupResult(
             native_execution_refs=(f"native:{task.task_id}",),
             material_refs=(f"material:{task.task_id}",),
@@ -511,6 +513,16 @@ def test_snapshot_is_governed_and_step_task_persist_before_followup_without_muta
     assert step.status == ReasoningStepStatus.COMPLETED
     assert task is not None
     assert task.status.value == "COMPLETED"
+    assert task.analytical_scope is not None
+    parent_scope = analytical_scope_contract(
+        session=session,
+        obligation_id="g1",
+    )
+    assert task.analytical_scope.metric_refs == parent_scope.metric_refs
+    assert (
+        task.analytical_scope.scope_identity
+        == parent_scope.scope_identity
+    )
     assert followup.calls == 1
 
     restored = store.load(
