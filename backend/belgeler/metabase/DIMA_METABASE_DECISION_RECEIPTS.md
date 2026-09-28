@@ -7921,3 +7921,67 @@ paid-governance hardening
 ```
 
 Broad 30-case paid execution remains forbidden.
+
+
+---
+
+## DMP-DEC-0073C — PAID GOVERNANCE HARDENED / EXACT TWO PINPOINT PROBES READY
+
+date: 2026-09-28
+
+status:
+`PROVIDER-FREE GREEN / MANUAL PINPOINT DISPATCH REQUIRED`
+
+paid-governance commits:
+- eval-only exact case selector: `359416328ee595110a518f3498d51ba373f23ffe`;
+- broad-paid tombstone + manual pinpoint workflow: `aee1c06164ee03128b7bf656ec6750eb23594234`;
+- provider-free paid-governance guards: `5cd5fcd7f76838bbddb44b202455a1cf281291d1`.
+
+provider-free evidence:
+- selector candidate P12 `36433648369 = SUCCESS`;
+- selector candidate Phase-1 focused `36433648394 = SUCCESS`;
+- selector candidate Core-B seal `36433648375 = SUCCESS`;
+- selector candidate governance `36433648371 = SUCCESS`;
+- paid-workflow hardening P12 `36433873863 = SUCCESS`;
+- paid-workflow hardening governance `36433873650 = SUCCESS`;
+- final paid-governance P12 `36433995188 = SUCCESS`;
+- final paid-governance Phase-1 focused `36433995130 = SUCCESS`;
+- final paid-governance governance `36433995144 = SUCCESS`.
+
+enforced paid boundary:
+```text
+historical broad paid workflow
+= MANUAL FAIL-CLOSED TOMBSTONE
+= no push trigger
+= no provider secret
+= no benchmark execution
+
+authorized pinpoint workflow
+= workflow_dispatch ONLY
+= F02_M ONLY
++ F07_M ONLY
+= fixed total observable model-boundary ceiling 20
+= no broad 90-percent scorer
+= artifact requires human inspection
+```
+
+probe intent:
+- `F02_M`: R1/P3 live ranking/material-semantics boundary;
+- `F07_M`: R3 live governed multi-mechanism root-cause boundary.
+
+mechanical live gate:
+- exact selected IDs;
+- source corpus remains frozen 30-case corpus;
+- total observable model-boundary units <= 20;
+- no EXCEPTION;
+- no BUDGET_EXHAUSTED;
+- lineage valid;
+- all requested turns executed.
+
+Semantic/product acceptance is not delegated to an automated score. Both case artifacts must be
+inspected individually before P13. P13 remains NOT STARTED.
+
+Current tool boundary:
+The repository-side workflow is ready, but the active GitHub connector exposes workflow reads,
+artifacts and re-runs only; it does not expose creation of a new `workflow_dispatch` event.
+Therefore no paid call has been silently substituted with a push trigger.

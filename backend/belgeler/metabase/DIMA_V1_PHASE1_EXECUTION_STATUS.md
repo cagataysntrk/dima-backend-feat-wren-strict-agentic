@@ -453,3 +453,35 @@ Integrated evidence:
 36432692531, 36432692517, 36432692579, 36432692601, 36432692628,
 36432698686, 36432698606, 36432698594, 36432698949, 36432699006`
 all SUCCESS.
+
+
+## PAID PINPOINT GATE READY — DMP-DEC-0073C
+
+```text
+DMP-DEC-0073 provider-free = SEALED / GREEN
+
+Paid governance = GREEN
+
+Broad paid
+= PHYSICALLY DISABLED / FAIL-CLOSED
+
+Exact paid probes
+= F02_M + F07_M
+= workflow_dispatch ONLY
+= hard ceiling 20 model-boundary units
+= READY FOR MANUAL DISPATCH
+
+Paid probes executed = NO
+Paid units consumed = 0
+
+P13 = NOT STARTED
+```
+
+Final paid-governance provider-free evidence:
+- P12 `36433995188 = SUCCESS`;
+- Phase-1 focused `36433995130 = SUCCESS`;
+- governance `36433995144 = SUCCESS`.
+
+After the manual run, inspect both case artifacts individually. Do not accept/reject Phase 1 from
+the benchmark scorer alone. If either case exposes a real architecture/owner defect, reopen only
+that seam. If both are acceptable, record the exact run/artifact receipts and proceed to P13.
