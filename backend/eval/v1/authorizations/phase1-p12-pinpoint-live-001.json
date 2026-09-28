@@ -1,0 +1,20 @@
+{
+  "schema_version": "dima_v1_phase1_pinpoint_live_authorization_v1",
+  "authority": "USER_EXPLICIT_PAID_PINPOINT_AUTHORIZATION",
+  "date": "2026-09-28",
+  "mode": "PINPOINT_EXACT_TWO",
+  "candidate_product_sha": "286dc0ad5887eb4b6fdd6966de88d83c16150182",
+  "engine_sha": "cbe313af9ac2d5960f662068e433d328d896fb06",
+  "engine_release": "0.63.18-dima.6",
+  "round2_manifest_blob": "b08fbf6601b8c47a6f336c4efcc0cdab95a6c2da",
+  "round2_fixture_blob": "44c02edee3333ddd048e8f7d9aeb94dcd399ad7c",
+  "case_ids": [
+    "F02_M",
+    "F07_M"
+  ],
+  "max_total_model_units": 20,
+  "broad_paid_allowed": false,
+  "human_artifact_review_required": true,
+  "one_shot": true,
+  "note": "Temporary push authorization explicitly granted by user for the exact two live probes; broad paid execution remains forbidden."
+}
