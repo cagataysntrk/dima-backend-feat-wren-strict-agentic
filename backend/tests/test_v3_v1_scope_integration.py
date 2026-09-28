@@ -33,6 +33,7 @@ from app.v3.research_contracts import (
     ResearchQuestion,
     ResearchScope,
     ResearchSemanticRef,
+    ResearchTimePeriod,
     ScopeMutation,
     ScopeMutationKind,
     SemanticTargetKind,
@@ -80,8 +81,19 @@ METRIC = sem("metric.downtime", SemanticTargetKind.METRIC, "Downtime")
 METRIC_2 = sem("metric.faults", SemanticTargetKind.METRIC, "Faults")
 DIM = sem("dimension.machine", SemanticTargetKind.DIMENSION, "Machine")
 DIM_2 = sem("dimension.shift", SemanticTargetKind.DIMENSION, "Shift")
+EVENT_DATE = sem(
+    "dimension.event_date",
+    SemanticTargetKind.DIMENSION,
+    "Event Date",
+)
 ASSEMBLY = sem("entity.assembly", SemanticTargetKind.ENTITY_VALUE, "Assembly")
 PAINT = sem("entity.paint", SemanticTargetKind.ENTITY_VALUE, "Paint")
+H1 = ResearchTimePeriod(
+    source_text="2026-H1",
+    time_dimension_candidate_id=EVENT_DATE.candidate_id,
+    start="2026-01-01",
+    end="2026-07-01",
+)
 
 
 def db_engine():
@@ -97,8 +109,17 @@ def db_engine():
 def catalog():
     return ResearchIntakeCatalog(
         context_version="ctx-scope-production-v1",
-        semantic_refs=(METRIC, METRIC_2, DIM, DIM_2, ASSEMBLY, PAINT),
+        semantic_refs=(
+            METRIC,
+            METRIC_2,
+            DIM,
+            DIM_2,
+            EVENT_DATE,
+            ASSEMBLY,
+            PAINT,
+        ),
         supported_domains=("operations",),
+        temporal_dimension_ids=(EVENT_DATE.candidate_id,),
     )
 
 
@@ -115,8 +136,10 @@ def initial_brief():
         brief_id="rb_scope_initial",
         objective="Inspect scoped downtime.",
         scope=ResearchScope(
-            semantic_refs=(METRIC, ASSEMBLY, PAINT, DIM),
+            semantic_refs=(METRIC, ASSEMBLY, PAINT, DIM, EVENT_DATE),
             time_surfaces=("2026-H1",),
+            periods=(H1,),
+            temporal_dimension_ids=(EVENT_DATE.candidate_id,),
         ),
         questions=(q,),
         must_requirement_ids=(q.goal_id,),
@@ -155,6 +178,14 @@ def narrowed_payload():
         "deliverables": [],
         "investigation_directives": [],
         "time_surfaces": ["2026-H1"],
+        "time_periods": [
+            {
+                "source_text": "2026-H1",
+                "time_dimension_semantic_id": EVENT_DATE.candidate_id,
+                "start": "2026-01-01",
+                "end": "2026-07-01",
+            }
+        ],
         "required_domains": ["operations"],
         "scope_mutation_kind": "NARROW_ENTITY",
         "clarification_question": None,
