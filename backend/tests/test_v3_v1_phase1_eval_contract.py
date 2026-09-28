@@ -46,7 +46,7 @@ def test_round2_neutral_fixture_is_frozen_substrate_neutral_40_rows():
     assert "wren_mdl" not in serialized
     assert "expected_sql" not in serialized
     assert "mbql" not in serialized
-    assert {row["department"] for row in fixture["rows"]} == {
+    assert {row[1] for row in fixture["rows"]} == {
         "Assembly",
         "Packaging",
         "Utilities",
