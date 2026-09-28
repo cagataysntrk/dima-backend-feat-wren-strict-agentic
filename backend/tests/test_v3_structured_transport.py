@@ -85,6 +85,55 @@ def test_400_structured_json_error_retains_bounded_typed_diagnostic():
     assert diagnostic.bounded_response_excerpt is None
 
 
+def test_empty_success_response_retains_sanitized_provider_diagnostic():
+    def handler(request: httpx.Request):
+        return httpx.Response(
+            200,
+            headers={
+                "x-request-id": "req_empty",
+                "x-openrouter-provider": "provider-empty",
+            },
+            json={
+                "id": "gen_empty",
+                "provider": "provider-empty",
+                "choices": [
+                    {
+                        "finish_reason": "length",
+                        "message": {
+                            "content": "",
+                            "reasoning": "PRIVATE PROVIDER REASONING",
+                        },
+                    }
+                ],
+                "usage": {
+                    "prompt_tokens": 100,
+                    "completion_tokens": 4096,
+                },
+            },
+        )
+
+    with _transport(handler) as client:
+        with pytest.raises(StructuredProviderError) as caught:
+            _call(client)
+
+    error = caught.value
+    assert error.code == "COGNITION_RESPONSE_EMPTY"
+    assert error.diagnostic is not None
+    diagnostic = error.diagnostic
+    assert diagnostic.status_code == 200
+    assert diagnostic.provider_request_id == "req_empty"
+    assert diagnostic.provider_backend_identity == "provider-empty"
+    serialized = json.dumps(
+        diagnostic.provider_error_metadata,
+        ensure_ascii=False,
+        sort_keys=True,
+    )
+    assert '"finish_reason": "length"' in serialized
+    assert '"completion_tokens": 4096' in serialized
+    assert "PRIVATE PROVIDER REASONING" not in serialized
+    assert "[REDACTED]" in serialized
+
+
 def test_nested_provider_metadata_is_sanitized_and_bounded():
     huge = "x" * 12000
 

@@ -41,6 +41,8 @@ _SECRET_KEY_FRAGMENTS = (
     "snapshot",
     "governed",
     "database",
+    "reasoning",
+    "analysis",
 )
 _BEARER_RE = re.compile(r"(?i)bearer\s+[A-Za-z0-9._~+\-/=]+")
 _KEYLIKE_RE = re.compile(
@@ -571,4 +573,23 @@ class OpenRouterStructuredJSONTransport:
                 parsed_body=body,
             )
         )
-        return self._content(body)
+        try:
+            return self._content(body)
+        except StructuredProviderError as exc:
+            if exc.code not in {
+                "COGNITION_RESPONSE_EMPTY",
+                "COGNITION_RESPONSE_INVALID",
+            }:
+                raise
+            diagnostic = _provider_diagnostic(
+                response,
+                identity=identity,
+                api_key=self._key,
+                system=system,
+                user=user,
+            )
+            raise StructuredProviderError(
+                exc.code,
+                exc.detail,
+                diagnostic=diagnostic,
+            ) from exc
