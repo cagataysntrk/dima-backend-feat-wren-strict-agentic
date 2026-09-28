@@ -34,6 +34,7 @@ from app.v3.research_contracts import (
     ResearchTimePeriod,
     ScopeMutation,
     ScopeMutationKind,
+    SemanticTargetKind,
     TurnScopeContract,
     apply_scope_mutation,
 )
