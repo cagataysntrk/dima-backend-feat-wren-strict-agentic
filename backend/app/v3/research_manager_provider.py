@@ -211,6 +211,7 @@ class ResearchManagerProposalDraft(_Frozen):
     stop_reason: ManagerStopReason | None = None
     counter_to_claim_id: str | None = None
     claim: ProviderClaimDraft | None = None
+    mechanism_semantic_ref: str | None = Field(default=None, max_length=512)
 
     @model_validator(mode="after")
     def coherent_live_semantics(self):
@@ -256,6 +257,13 @@ class ResearchManagerProposalDraft(_Frozen):
             and self.claim is None
         ):
             raise ValueError("live FORM_CLAIM requires claim")
+        if (
+            self.intent != InvestigationIntent.FORM_CLAIM
+            and self.mechanism_semantic_ref is not None
+        ):
+            raise ValueError(
+                "mechanism semantic ref is only valid for FORM_CLAIM"
+            )
         return self
 
 
@@ -279,6 +287,7 @@ class ResearchManagerSemanticDraft(_Frozen):
     stop_reason: ManagerStopReason | None = None
     counter_to_claim_id: str | None = None
     claim: ProviderClaimDraft | None = None
+    mechanism_semantic_ref: str | None = Field(default=None, max_length=512)
 
     @model_validator(mode="after")
     def coherent_live_semantics(self):
@@ -338,6 +347,13 @@ class ResearchManagerSemanticDraft(_Frozen):
             raise ValueError("live FORM_CLAIM requires claim")
         if self.intent != InvestigationIntent.FORM_CLAIM and self.claim is not None:
             raise ValueError("claim is only valid for FORM_CLAIM")
+        if (
+            self.intent != InvestigationIntent.FORM_CLAIM
+            and self.mechanism_semantic_ref is not None
+        ):
+            raise ValueError(
+                "mechanism semantic ref is only valid for FORM_CLAIM"
+            )
         return self
 
 
@@ -381,7 +397,7 @@ Architecture:
 - Counter-evidence and inconclusive/branch-stop outcomes are first-class.
 - Do not invent numerical confidence or information-gain scores.
 - P19 causal/contribution truth is outside your authority.
-- Return exactly one typed next proposal. Keep rationale concise and factual.\n- Never create or echo proposal/step/branch/task/scope/hypothesis IDs; Dima binds machine identities.\n- Existing governed Evidence/claim/material refs may be selected only from closed legal choices exposed by the schema.\n"""
+- Return exactly one typed next proposal. Keep rationale concise and factual.\n- Never create or echo proposal/step/branch/task/scope/hypothesis IDs; Dima binds machine identities.\n- Existing governed Evidence/claim/material refs may be selected only from closed legal choices exposed by the schema.\n- Root-cause mechanism identity must be selected only from Dima's closed governed semantic refs; never mint it from prose.\n"""
 
 
 def _strict_json_schema(schema: dict[str, Any]) -> dict[str, Any]:
@@ -536,6 +552,9 @@ def _variant_schema(
             selected["counter_to_claim_id"] = {"type": "string"}
         elif family_name == "claim":
             selected["claim"] = _non_null_schema(props["claim"])
+            selected["mechanism_semantic_ref"] = copy.deepcopy(
+                props["mechanism_semantic_ref"]
+            )
 
     return {
         "type": "object",
@@ -913,6 +932,7 @@ class StructuredResearchProposalManager:
             "bounded_objective": draft.bounded_objective,
             "branch_concept": draft.branch_concept,
             "counter_to_claim_id": draft.counter_to_claim_id,
+            "mechanism_semantic_ref": draft.mechanism_semantic_ref,
             "claim": (
                 draft.claim.model_dump(mode="json")
                 if draft.claim is not None
@@ -942,6 +962,7 @@ class StructuredResearchProposalManager:
             stop_reason=draft.stop_reason,
             counter_to_claim_id=draft.counter_to_claim_id,
             claim=draft.claim,
+            mechanism_semantic_ref=draft.mechanism_semantic_ref,
         )
         return cls._proposal(legacy)
 
@@ -955,6 +976,7 @@ class StructuredResearchProposalManager:
         closed_evidence_ids: tuple[str, ...],
         closed_claim_ids: tuple[str, ...],
         closed_material_ids: tuple[str, ...],
+        closed_mechanism_ids: tuple[str, ...] | None,
     ) -> ResearchManagerSemanticDraft:
         try:
             payload = _draft_payload_from_transport(raw, schema)
@@ -1005,6 +1027,24 @@ class StructuredResearchProposalManager:
         ).issubset(set(closed_material_ids)):
             raise ProviderProposalInvalid(
                 "provider selected claim origin outside the closed legal representation"
+            )
+        if closed_mechanism_ids is None:
+            if draft.mechanism_semantic_ref is not None:
+                raise ProviderProposalInvalid(
+                    "provider selected mechanism outside root-cause governed representation"
+                )
+        elif draft.intent == InvestigationIntent.FORM_CLAIM:
+            if draft.mechanism_semantic_ref is None:
+                raise ProviderProposalInvalid(
+                    "root-cause FORM_CLAIM requires governed mechanism semantic ref"
+                )
+            if draft.mechanism_semantic_ref not in set(closed_mechanism_ids):
+                raise ProviderProposalInvalid(
+                    "provider selected mechanism outside closed governed representation"
+                )
+        elif draft.mechanism_semantic_ref is not None:
+            raise ProviderProposalInvalid(
+                "non-claim proposal cannot carry mechanism semantic identity"
             )
         return draft
 
@@ -1061,6 +1101,7 @@ class StructuredResearchProposalManager:
         branch_key_mode: str | None = None,
         target_parent_obligation: str | None = None,
         allowed_evidence_refs: tuple[str, ...] | None = None,
+        allowed_mechanism_refs: tuple[str, ...] | None = None,
     ) -> ManagerProposal:
         user = (
             "Choose exactly one next bounded investigation step from this "
@@ -1131,6 +1172,11 @@ class StructuredResearchProposalManager:
             if scoped_material_ids is not None
             else tuple(sorted(item.lead_id for item in snapshot.materials))
         )
+        closed_mechanism_ids = (
+            tuple(sorted(set(allowed_mechanism_refs)))
+            if allowed_mechanism_refs is not None
+            else None
+        )
 
         user += (
             "\n\nGOVERNED SNAPSHOT JSON:\n"
@@ -1149,6 +1195,12 @@ class StructuredResearchProposalManager:
             if allowed_intents is not None
             else state_legal
         )
+        if allowed_mechanism_refs is not None and not closed_mechanism_ids:
+            effective_intents = tuple(
+                intent
+                for intent in effective_intents
+                if intent != InvestigationIntent.FORM_CLAIM
+            )
         if target_parent_obligation is not None:
             narrowed_intents: list[InvestigationIntent] = []
             for intent in effective_intents:
@@ -1239,6 +1291,18 @@ class StructuredResearchProposalManager:
                 == InvestigationBranchKeyPolicy.REQUIRED
                 else {"type": "null"}
             )
+            if "mechanism_semantic_ref" in props:
+                props["mechanism_semantic_ref"] = (
+                    {
+                        "type": "string",
+                        "enum": list(closed_mechanism_ids),
+                    }
+                    if (
+                        intent == InvestigationIntent.FORM_CLAIM
+                        and closed_mechanism_ids is not None
+                    )
+                    else {"type": "null"}
+                )
 
         if allowed_parent_step_ids is not None:
             requested = set(allowed_parent_step_ids)
@@ -1338,6 +1402,7 @@ class StructuredResearchProposalManager:
                     closed_evidence_ids=closed_evidence_ids,
                     closed_claim_ids=closed_claim_ids,
                     closed_material_ids=closed_material_ids,
+                    closed_mechanism_ids=closed_mechanism_ids,
                 )
             except ProviderProposalInvalid:
                 if attempt == 1:
@@ -1396,6 +1461,22 @@ class StructuredResearchProposalManager:
             snapshot,
             target_parent_obligation=target_parent_obligation,
             allowed_evidence_refs=allowed_evidence_refs,
+        )
+
+    def propose_root_candidate_for_obligation(
+        self,
+        snapshot: ResearchManagerSnapshot,
+        *,
+        target_parent_obligation: str,
+        allowed_evidence_refs: tuple[str, ...],
+        allowed_mechanism_refs: tuple[str, ...],
+    ) -> ManagerProposal:
+        """Expose only Dima-owned governed mechanism identities for root claims."""
+        return self._propose(
+            snapshot,
+            target_parent_obligation=target_parent_obligation,
+            allowed_evidence_refs=allowed_evidence_refs,
+            allowed_mechanism_refs=allowed_mechanism_refs,
         )
 
     def propose_with_guidance(
