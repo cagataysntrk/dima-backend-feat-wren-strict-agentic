@@ -4,6 +4,10 @@ from types import SimpleNamespace
 
 import pytest
 
+from app.v3.root_cause_candidate_contract import (
+    RootCauseCandidateRelation,
+    RootCauseCandidateSemantics,
+)
 from app.v3.product.process_manager import (
     ProductProcessObservation,
     ProductProcessPurpose,
@@ -20,8 +24,15 @@ def state(*, claims=(), steps=(), terminal=None, remaining=8, progress=True):
     root_candidates = tuple(
         RootCauseCandidate(
             claim_id=claim_id,
-            relation_ref="explains",
-            mechanism_ref=f"mechanism:{claim_id}",
+            semantics=RootCauseCandidateSemantics(
+                explanatory_subject_ref="g_root",
+                relation_kind=(
+                    RootCauseCandidateRelation.EXPLANATORY_CANDIDATE
+                ),
+                mechanism_ref=f"mechanism:{claim_id}",
+                scope_lineage_id="atl_closure_v2",
+                scope_version_id="scope_v1",
+            ),
             evidence_refs=(f"evidence:{claim_id}",),
         )
         for claim_id in claims
