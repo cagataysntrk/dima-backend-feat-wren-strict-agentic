@@ -177,6 +177,7 @@ class ResearchIntakeCatalog(Frozen):
 class DraftRanking(Frozen):
     direction: str = Field(pattern=r"^(asc|desc|unspecified)$")
     limit: int | None = Field(default=None, ge=1, le=1000)
+    measure_semantic_id: str | None = Field(default=None, min_length=1)
     source_text: str = Field(min_length=1)
 
 
@@ -342,6 +343,12 @@ Authority rules:
 - An investigation directive never asserts that evidence is material; it only preserves the user's
   conditional instruction for later governed P17 evaluation.
 - Do not convert association into causality. ROOT_CAUSE means bounded investigation, not a cause.
+- ranking.limit is null unless the user explicitly requested a bounded top-N/result count. Never invent top-N.
+- ranking.measure_semantic_id is set only when the user explicitly identifies one governed metric/KPI
+  as the ranking basis. With multiple metrics and no explicit single basis, keep it null; do not pick
+  the first metric or manufacture a composite score.
+- If a native single-metric ranking needs direction and the user's direction is genuinely ambiguous,
+  return CLARIFY rather than guessing direction from words, morphology, regex, or a default.
 - Do not emit implementation-specific Wren/SQL/lane/token concepts.
 """
 
@@ -422,6 +429,27 @@ def _intake_provider_schema(
     semantic_ids = tuple(
         sorted(item.candidate_id for item in catalog.semantic_refs)
     )
+    ranking_metric_ids = tuple(
+        sorted(
+            item.candidate_id
+            for item in catalog.semantic_refs
+            if item.target_kind
+            in {SemanticTargetKind.METRIC, SemanticTargetKind.KPI}
+        )
+    )
+    ranking_definition = definitions.get("DraftRanking")
+    if isinstance(ranking_definition, dict):
+        ranking_properties = ranking_definition.get("properties")
+        if isinstance(ranking_properties, dict):
+            ranking_properties["measure_semantic_id"] = {
+                "anyOf": [
+                    {
+                        "type": "string",
+                        "enum": list(ranking_metric_ids),
+                    },
+                    {"type": "null"},
+                ],
+            }
     relationship_ids = tuple(
         sorted(
             item.relationship_id
@@ -769,15 +797,29 @@ class ResearchIntakeCompiler:
             related = tuple(by_id[item] for item in related_ids)
             for item in (*subject, *related):
                 scope_refs.setdefault(item.candidate_id, item)
-            ranking = (
-                RankingSurface(
+            ranking = None
+            if goal.ranking is not None:
+                goal_metric_ids = {
+                    item.candidate_id
+                    for item in (*subject, *related)
+                    if item.target_kind
+                    in {SemanticTargetKind.METRIC, SemanticTargetKind.KPI}
+                }
+                ranking_measure = goal.ranking.measure_semantic_id
+                if (
+                    ranking_measure is not None
+                    and ranking_measure not in goal_metric_ids
+                ):
+                    raise ResearchIntakeError(
+                        "INTAKE_RANKING_MEASURE_OUTSIDE_GOAL_SCOPE",
+                        ranking_measure,
+                    )
+                ranking = RankingSurface(
                     text=goal.ranking.source_text,
                     direction=goal.ranking.direction,
                     limit=goal.ranking.limit,
+                    measure_semantic_id=ranking_measure,
                 )
-                if goal.ranking is not None
-                else None
-            )
             comparisons = tuple(
                 ComparisonSurface(text=text)
                 for text in goal.comparison_texts
