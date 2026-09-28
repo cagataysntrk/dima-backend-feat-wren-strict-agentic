@@ -177,6 +177,30 @@ def run_case(*,case,intake,product,composer,p17_manager,p19_manager,reasoning,or
       "expected":case.get("expected",{}),
     }
 
+def _select_cases(
+    manifest: dict[str, Any],
+    requested_ids: tuple[str, ...] = (),
+) -> list[dict[str, Any]]:
+    """Select an explicit eval-only subset without changing the frozen corpus."""
+
+    all_cases = list(manifest["cases"])
+    if len(all_cases) != 30:
+        raise RuntimeError("round2 benchmark requires exactly 30 source cases")
+    by_id = {str(item["id"]): item for item in all_cases}
+    if len(by_id) != len(all_cases):
+        raise RuntimeError("round2 benchmark case ids must be unique")
+    if not requested_ids:
+        return all_cases
+    if len(requested_ids) != len(set(requested_ids)):
+        raise RuntimeError("pinpoint case ids must be unique")
+    missing = [case_id for case_id in requested_ids if case_id not in by_id]
+    if missing:
+        raise RuntimeError(
+            "unknown pinpoint case ids: " + ",".join(missing)
+        )
+    return [by_id[case_id] for case_id in requested_ids]
+
+
 def main() -> int:
     ap=argparse.ArgumentParser()
     ap.add_argument("--base-url",required=True); ap.add_argument("--email",required=True); ap.add_argument("--password",required=True)
@@ -184,10 +208,15 @@ def main() -> int:
     ap.add_argument("--engine-sha",required=True); ap.add_argument("--upstream-sha",required=True); ap.add_argument("--runtime-tag",required=True)
     ap.add_argument("--runtime-image-digest",required=True); ap.add_argument("--build-identity",required=True); ap.add_argument("--image-identity",required=True); ap.add_argument("--platform-sha",required=True)
     ap.add_argument("--max-total-model-units",type=int,default=180)
+    ap.add_argument(
+      "--case-id",
+      action="append",
+      default=[],
+      help="Explicit eval-only case allowlist; repeat for each selected case.",
+    )
     args=ap.parse_args()
     manifest=json.loads(args.manifest.read_text(encoding="utf-8"))
-    cases=list(manifest["cases"])
-    if len(cases)!=30: raise RuntimeError("round2 benchmark requires exactly 30 cases")
+    cases=_select_cases(manifest,tuple(args.case_id))
     api_key=os.environ.get("DIMA_OPENROUTER_API_KEY","").strip()
     if not api_key: raise RuntimeError("DIMA_OPENROUTER_API_KEY required")
     token,current=sealed._login(args.base_url,args.email,args.password)
@@ -282,6 +311,8 @@ def main() -> int:
       "schema_version":"dima_neutral_feature_benchmark_round2_v2",
       "system":"metabase-platform","platform_sha":args.platform_sha,"engine_sha":args.engine_sha,
       "engine_runtime_tag":args.runtime_tag,"fixture":manifest["fixture"],"manifest_version":manifest["version"],
+      "source_case_count":len(manifest["cases"]),
+      "selected_case_ids":[str(item["id"]) for item in cases],
       "model_topology":{"research_intake":MODEL,"p17_manager":MODEL,"p19_manager":MODEL,"metabot":"openrouter/openai/gpt-5.6-luna"},
       "case_count":len(observations),"passed":sum(bool(x["passed"]) for x in observations),
       "failed":sum(not bool(x["passed"]) for x in observations),

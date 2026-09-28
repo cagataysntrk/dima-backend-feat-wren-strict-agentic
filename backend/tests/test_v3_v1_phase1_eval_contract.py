@@ -3,6 +3,10 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
+from lab.metabase.core_b.round2_feature_benchmark import _select_cases
+
 
 ROUND2 = Path("eval/dima_neutral_feature_benchmark_round2.json")
 FIXTURE = Path("eval/round2_neutral_machine_fixture.json")
@@ -36,6 +40,32 @@ def test_round2_frozen_manifest_is_exact_shape_and_eval_only_data():
         '"query_plan"',
     ):
         assert forbidden_key not in serialized
+
+
+def test_round2_pinpoint_selector_is_exact_closed_allowlist():
+    manifest = json.loads(ROUND2.read_text(encoding="utf-8"))
+    selected = _select_cases(manifest, ("F02_M", "F07_M"))
+    assert [item["id"] for item in selected] == ["F02_M", "F07_M"]
+    assert [item["max_model_calls"] for item in selected] == [8, 12]
+
+
+def test_round2_pinpoint_selector_defaults_to_frozen_full_corpus():
+    manifest = json.loads(ROUND2.read_text(encoding="utf-8"))
+    selected = _select_cases(manifest)
+    assert len(selected) == 30
+
+
+@pytest.mark.parametrize(
+    "case_ids",
+    [
+        ("F02_M", "F02_M"),
+        ("F02_M", "NOT_A_CASE"),
+    ],
+)
+def test_round2_pinpoint_selector_fails_closed(case_ids):
+    manifest = json.loads(ROUND2.read_text(encoding="utf-8"))
+    with pytest.raises(RuntimeError):
+        _select_cases(manifest, case_ids)
 
 
 def test_round2_neutral_fixture_is_frozen_substrate_neutral_40_rows():
