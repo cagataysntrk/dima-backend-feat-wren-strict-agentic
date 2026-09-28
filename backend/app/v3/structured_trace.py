@@ -25,7 +25,12 @@ class StructuredRequestIdentity(_Frozen):
     user_prompt_hash: str = Field(pattern=r"^[a-f0-9]{64}$")
     request_envelope_fingerprint: str = Field(pattern=r"^[a-f0-9]{64}$")
     response_format_family: str = Field(min_length=1, max_length=80)
-    max_tokens: int = Field(ge=1)
+    max_completion_tokens: int = Field(ge=1)
+
+    @property
+    def max_tokens(self) -> int:
+        """Backward-compatible diagnostic alias; wire requests use max_completion_tokens."""
+        return self.max_completion_tokens
     provider_routing_policy_fingerprint: str = Field(pattern=r"^[a-f0-9]{64}$")
     call_ordinal_by_role: int = Field(ge=1)
 
@@ -88,8 +93,8 @@ def build_provider_bound_payload(
             },
         },
         "provider": provider,
-        "reasoning": {"effort": "none"},
-        "max_tokens": int(max_tokens),
+        "reasoning_effort": "none",
+        "max_completion_tokens": int(max_tokens),
     }
 
 
@@ -120,7 +125,7 @@ def request_identity(
         user_prompt_hash=text_fingerprint(user),
         request_envelope_fingerprint=json_fingerprint(payload),
         response_format_family=family,
-        max_tokens=int(payload.get("max_tokens") or 0),
+        max_completion_tokens=int(payload.get("max_completion_tokens") or 0),
         provider_routing_policy_fingerprint=json_fingerprint(provider_policy),
         call_ordinal_by_role=call_ordinal_by_role,
     )
