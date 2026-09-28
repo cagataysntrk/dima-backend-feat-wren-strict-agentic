@@ -165,6 +165,73 @@ def test_ready_breakdown_compiles_to_typed_research_brief():
     assert brief.must_requirement_ids == (question.goal_id,)
 
 
+def test_ranking_provider_schema_closes_basis_to_governed_metrics_or_null():
+    schema=_intake_provider_schema(catalog())
+    draft=schema["$defs"]["DraftRanking"]
+    basis=draft["properties"]["measure_semantic_id"]["anyOf"]
+    assert basis == [
+        {
+            "type":"string",
+            "enum":[
+                "metric.downtime",
+                "metric.fault_count",
+                "metric.performance",
+            ],
+        },
+        {"type":"null"},
+    ]
+
+
+def test_multi_metric_ranking_without_explicit_basis_preserves_synthesis_intent():
+    payload=ready_payload(
+        kind="ranking",
+        subject=("metric.downtime","metric.fault_count"),
+        related=("dimension.department",),
+    )
+    payload["goals"][0]["ranking"]={
+        "direction":"desc",
+        "limit":None,
+        "measure_semantic_id":None,
+        "source_text":"Rank deterioration by department.",
+    }
+    result=ResearchIntakeCompiler(
+        transport=FakeTransport(payload)
+    ).compile(
+        question="Compare downtime and fault count and rank deterioration.",
+        catalog=catalog(),
+    )
+    assert result.brief is not None
+    ranking=result.brief.questions[0].ranking
+    assert ranking is not None
+    assert ranking.direction == "desc"
+    assert ranking.limit is None
+    assert ranking.measure_semantic_id is None
+
+
+def test_ranking_basis_must_belong_to_the_current_goal_metric_scope():
+    payload=ready_payload(
+        kind="ranking",
+        subject=("metric.downtime","metric.fault_count"),
+        related=("dimension.department",),
+    )
+    payload["goals"][0]["ranking"]={
+        "direction":"desc",
+        "limit":3,
+        "measure_semantic_id":"metric.performance",
+        "source_text":"Rank by governed metric.",
+    }
+    with pytest.raises(
+        ResearchIntakeError,
+        match="INTAKE_RANKING_MEASURE_OUTSIDE_GOAL_SCOPE",
+    ):
+        ResearchIntakeCompiler(
+            transport=FakeTransport(payload)
+        ).compile(
+            question="Rank downtime and faults by one governed basis.",
+            catalog=catalog(),
+        )
+
+
 def test_adaptive_intent_compiles_to_core_b_requirement_not_second_p14_goal():
     payload = ready_payload()
     payload["deliverables"] = [
