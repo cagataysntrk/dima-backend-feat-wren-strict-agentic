@@ -9,7 +9,7 @@ No SQL/MBQL parser, query planner, fuzzy matcher or prompt classifier lives here
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -25,7 +25,6 @@ from app.v3.analytical_request_contract import (
     assert_request_invariants,
 )
 from app.v3.native_standard.contracts import NativeAttestationEnvelope
-from app.v3.research import ResearchSession
 from app.v3.research_contracts import (
     PresentationKind,
     ResearchNativeVerificationBinding,
@@ -34,6 +33,9 @@ from app.v3.research_contracts import (
     SemanticTargetKind,
 )
 from app.v3.substrate.metabase.native_models import NativeEngineIdentity
+
+if TYPE_CHECKING:
+    from app.v3.research import ResearchSession
 
 
 class Frozen(BaseModel):
