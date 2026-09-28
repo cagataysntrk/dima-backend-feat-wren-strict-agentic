@@ -212,9 +212,10 @@ def analytical_scope_contract(
 
         native_measure = explicit_measure
         if native_measure is None and len(metrics) == 1:
-            # Exactly-one metric scope is structurally unambiguous. This is not
-            # a first-metric shortcut and never applies to multi-metric scope.
-            native_measure = metrics[0].candidate_id
+            # Exactly-one metric scope is structurally unambiguous. Destructure
+            # the singleton so no ordered-tuple "first metric" authority exists.
+            (sole_metric,) = metrics
+            native_measure = sole_metric.candidate_id
 
         if native_measure is not None:
             if value.direction == "unspecified":
