@@ -969,6 +969,18 @@ def test_root_candidate_rejects_mechanism_outside_accepted_governed_scope():
         followup_executor=PersistedFirstFollowup(db),
         db_engine=db,
     )
+    root, _ = service.run_one(
+        session_id=session.session_id,
+        principal=principal(),
+        manager=ScriptedManager(
+            lambda snap: recursive_proposal(
+                snap,
+                proposal_id="outside-root",
+                objective_key="outside.root",
+                intent=InvestigationIntent.INVESTIGATE_GAP,
+            )
+        ),
+    )
 
     with pytest.raises(ResearchManagerMaturationError) as exc:
         service.run_one(
@@ -981,6 +993,7 @@ def test_root_candidate_rejects_mechanism_outside_accepted_governed_scope():
                     target_parent_obligation="g1",
                     action=ManagerAction.FORM_CLAIM,
                     intent=InvestigationIntent.FORM_CLAIM,
+                    parent_step_id=root.step_id,
                     objective_key="typed.root.outside",
                     bounded_objective="Attempt one out-of-scope mechanism.",
                     rationale="Exercise governed semantic boundary.",
