@@ -591,3 +591,41 @@ PINPOINT B = BLOCKED ON A
 BROAD PAID = FORBIDDEN / 0 NEW RUNS
 P13 = NOT STARTED
 ```
+
+
+## FINAL PINPOINT LIVE STOP — PROBE A RED
+
+```text
+canonical frozen Product candidate
+= e959efaf4f683482908c70ce158e1fca45ed8b96
+
+PROBE A
+= SCOPE_CURRENTNESS_HARD
+= run 36458656999
+= RED
+= 2 observable model-boundary units consumed
+= R1_RANKING_BASIS_INCOMPLETE
+
+PROBE A RETRY
+= FORBIDDEN UNDER CURRENT AUTHORITY
+
+PROBE B
+= NOT RUN
+= BLOCKED
+
+temporary push bridge
+= REMOVED
+
+broad paid
+= NOT RUN / FORBIDDEN
+
+P13
+= NOT STARTED / BLOCKED ON SUPERVISOR DECISION
+
+PHASE 1
+= IN_PROGRESS
+```
+
+First wrong transition is inside the R1 analytical material contract projection: accepted ranking
+surfaces may carry no explicit limit, while the downstream analytical invariant currently requires
+an exact limit. No Product semantic change was made after the paid RED.

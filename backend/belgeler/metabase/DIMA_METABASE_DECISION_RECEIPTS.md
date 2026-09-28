@@ -8160,3 +8160,112 @@ Probe B = BLOCKED ON A
 ```
 
 Broad paid runs after the final-validation directive remain 0.
+
+
+---
+
+## DMP-DEC-0074B — FINAL PROBE A LIVE RED / STOP-THE-LINE
+
+date: 2026-09-28
+
+status:
+`PROBE A = RED / PAID BOUNDARY CONSUMED / NO RETRY / PROBE B BLOCKED`
+
+frozen Product candidate:
+`e959efaf4f683482908c70ce158e1fca45ed8b96`
+
+execution:
+- run: `36458656999`;
+- artifact: `10985618988`;
+- artifact digest:
+  `sha256:c52a89dc9d76f07936df2ba46417b4de37d99ddbf9be04dbbcd35d9f0c6edade`;
+- probe: `SCOPE_CURRENTNESS_HARD`;
+- exact dima.6 engine and restricted principal bootstrap = SUCCESS;
+- governed native metric resource creation = SUCCESS;
+- live runner executed and produced the diagnostic artifact;
+- hard mechanical acceptance = RED.
+
+paid/model-boundary accounting:
+```text
+observable model-boundary units = 2
+research_intake = 1
+metabot = 1
+P17 = 0
+P19 = 0
+total final-probe units so far = 2 / 24
+automatic retry = 0
+broad paid runs = 0
+```
+
+first wrong transition:
+```text
+accepted first-turn ranking intent
+-> R1 analytical material contract projection
+-> R1_RANKING_BASIS_INCOMPLETE
+```
+
+exact internal error:
+`R1_RANKING_BASIS_INCOMPLETE: material ranking requires exact direction and limit`
+
+owner diagnosis:
+- actual throwing owner:
+  `backend/app/v3/research_analytical_scope.py::analytical_scope_contract`;
+- accepted intake contract permits ranking with optional limit:
+  `DraftRanking.limit: int | None` and `RankingSurface.limit: int | None`;
+- downstream analytical request contract requires an integer limit and the R1 projection fails closed
+  whenever direction is unspecified OR limit is absent;
+- Probe A turn 1 requests ordering of worsening departments but does not request any top-N limit;
+- therefore, at minimum, requiring an exact limit for every accepted ranking forces either invented
+  user intent or a false-negative block. The retained safe transport trace does not persist provider
+  content, so this receipt does not claim whether direction was also unspecified.
+
+native transition evidence:
+- Research Intake structured response completed normally:
+  `finish_reason=stop`, `native_finish_reason=completed`;
+- Metabot completed real live cognition and produced native query candidate
+  `q-SbL8W9BcVdtWdNlpc98`;
+- the native attestation request did not become governed Evidence; engine log recorded HTTP 422;
+- no dataset result was admitted as current Evidence;
+- turn 2 was never executed.
+
+exact material identities present in the live fixture:
+- `metric.machine_downtime_minutes`
+  -> governed native metric entity `iSiCOzv2TT3ap6U_o4muk`;
+- `metric.fault_count`
+  -> governed native metric entity `AtSL2vm9kRf_MDBoHH_Vx`;
+- requested dimension = `dimension.department`;
+- requested temporal scope = May + June 2026 in turn 1;
+- Probe A artifact contains no accepted Evidence refs because admission was never reached.
+
+downstream state:
+- Evidence refs = none;
+- currentness adjudication = not reached;
+- P17 state = not entered;
+- P19 eligibility = not evaluated;
+- P19 assessments = 0;
+- P18 = not reached;
+- P20 = not reached.
+
+manual adjudication:
+```text
+execution integrity = RED
+owner path = R1 analytical material contract projection
+material correctness = NOT REACHED
+scope/currentness = NOT REACHED
+Evidence lineage = NOT REACHED
+epistemic legality = NOT REACHED
+security/bootstrap = GREEN THROUGH FAILURE POINT
+terminal utility = RED
+```
+
+protocol action:
+- Probe A consumed a paid/model boundary, therefore it MUST NOT be retried;
+- Probe B MUST NOT run;
+- no Product-semantic fix is authorized in this sequence after this RED;
+- temporary exact-file push bridge was removed by
+  `2efaeb1b47e211d4e79a1cd8bfed8b23a05f9bc3`;
+- the workflow is back to steady-state `workflow_dispatch` only;
+- supervisor decision is required before any semantic correction/new live authorization;
+- P13 remains NOT STARTED.
+
+No broad paid workflow was run.
