@@ -186,6 +186,9 @@ def session(
     periods=(JUNE,),
     comparison=False,
     ranking=False,
+    ranking_direction="desc",
+    ranking_limit=3,
+    ranking_measure=None,
     version=1,
 ):
     related=(DEPARTMENT, EVENT_DATE)
@@ -203,9 +206,10 @@ def session(
         related_refs=related,
         ranking=(
             RankingSurface(
-                text="top downtime",
-                direction="desc",
-                limit=3,
+                text="rank accepted material",
+                direction=ranking_direction,
+                limit=ranking_limit,
+                measure_semantic_id=ranking_measure,
             )
             if ranking
             else None
@@ -309,6 +313,9 @@ def attestation(
     time=True,
     temporal_shape="bounds",
     ranking=False,
+    ranking_direction="desc",
+    ranking_limit=3,
+    ranking_aggregation_index=0,
 ):
     aggregations=tuple(
         NativeAggregationFact(
@@ -380,9 +387,9 @@ def attestation(
             NativeOrderByFact(
                 stage_number=0,
                 order_index=0,
-                direction="desc",
+                direction=ranking_direction,
                 target_kind="aggregation",
-                aggregation_index=0,
+                aggregation_index=ranking_aggregation_index,
             ),
         )
         if ranking
@@ -425,7 +432,7 @@ def attestation(
         implicit_joined_table_ids=(),
         order_by_count=len(orders),
         order_bys=orders,
-        limit=(3 if ranking else None),
+        limit=(ranking_limit if ranking else None),
         stage_count=1,
         material_query_count=1,
         authenticated_metabase_subject=77,
@@ -660,6 +667,216 @@ def test_r1_ranking_comparison_and_multi_metric_survive_projection():
     assert compared.comparison is not None
     assert compared.comparison.reference_period.start == "2026-05-01"
     assert compared.comparison.base_period.end == "2026-07-01"
+
+
+def test_r1_native_ranking_allows_no_user_top_n_without_inventing_limit():
+    current=session(
+        ranking=True,
+        ranking_direction="desc",
+        ranking_limit=None,
+    )
+    contract=analytical_scope_contract(
+        session=current,
+        obligation_id="g_scope",
+    )
+    assert contract.ranking is not None
+    assert contract.ranking.kind == "native_metric"
+    assert contract.ranking.measure == DOWNTIME.candidate_id
+    assert contract.ranking.direction == "desc"
+    assert contract.ranking.limit is None
+
+    observed=assert_attested_native_scope(
+        session=current,
+        obligation_id="g_scope",
+        contract=contract,
+        attestation=attestation(
+            ranking=True,
+            ranking_direction="desc",
+            ranking_limit=None,
+        ),
+        field_locators=LOCATORS,
+        table_locators=TABLE_LOCATORS,
+        expected_engine=ENGINE,
+        expected_metabase_subject=77,
+    )
+    assert observed.request.ranking == contract.ranking
+
+
+def test_r1_multi_metric_explicit_governed_basis_allows_native_ranking():
+    current=session(
+        metrics=(DOWNTIME, FAULTS),
+        ranking=True,
+        ranking_direction="desc",
+        ranking_limit=3,
+        ranking_measure=FAULTS.candidate_id,
+    )
+    contract=analytical_scope_contract(
+        session=current,
+        obligation_id="g_scope",
+    )
+    assert contract.ranking is not None
+    assert contract.ranking.kind == "native_metric"
+    assert contract.ranking.measure == FAULTS.candidate_id
+
+    observed=assert_attested_native_scope(
+        session=current,
+        obligation_id="g_scope",
+        contract=contract,
+        attestation=attestation(
+            metric_field_ids=(101, 102),
+            ranking=True,
+            ranking_direction="desc",
+            ranking_limit=3,
+            ranking_aggregation_index=1,
+        ),
+        field_locators=LOCATORS,
+        table_locators=TABLE_LOCATORS,
+        expected_engine=ENGINE,
+        expected_metabase_subject=77,
+    )
+    assert observed.request.ranking == contract.ranking
+
+
+def test_r1_probe_a_generic_shape_routes_multi_metric_ranking_to_synthesis():
+    current=session(
+        metrics=(DOWNTIME, FAULTS),
+        periods=(MAY, JUNE),
+        comparison=True,
+        ranking=True,
+        ranking_direction="desc",
+        ranking_limit=None,
+        ranking_measure=None,
+    )
+    contract=analytical_scope_contract(
+        session=current,
+        obligation_id="g_scope",
+    )
+    assert contract.metric_refs == (
+        DOWNTIME.candidate_id,
+        FAULTS.candidate_id,
+    )
+    assert contract.dimension_refs == (DEPARTMENT.candidate_id,)
+    assert contract.comparison is not None
+    assert contract.ranking is not None
+    assert contract.ranking.kind == "evidence_synthesis"
+    assert not hasattr(contract.ranking, "measure")
+    assert contract.ranking.limit is None
+
+    observed=assert_attested_native_scope(
+        session=current,
+        obligation_id="g_scope",
+        contract=contract,
+        attestation=attestation(
+            metric_field_ids=(101, 102),
+            breakout_field_ids=(201, 301),
+            start="2026-05-01",
+            end="2026-07-01",
+            ranking=False,
+        ),
+        field_locators=LOCATORS,
+        table_locators=TABLE_LOCATORS,
+        expected_engine=ENGINE,
+        expected_metabase_subject=77,
+    )
+    assert observed.request.ranking.kind == "evidence_synthesis"
+
+
+def test_r1_synthesis_ranking_blocks_unauthorized_native_truncation():
+    current=session(
+        metrics=(DOWNTIME, FAULTS),
+        ranking=True,
+        ranking_direction="desc",
+        ranking_limit=None,
+    )
+    contract=analytical_scope_contract(
+        session=current,
+        obligation_id="g_scope",
+    )
+    assert contract.ranking is not None
+    assert contract.ranking.kind == "evidence_synthesis"
+    with pytest.raises(
+        ResearchAnalyticalScopeError,
+        match="R1_NATIVE_RANKING_SCOPE_MISMATCH",
+    ):
+        assert_attested_native_scope(
+            session=current,
+            obligation_id="g_scope",
+            contract=contract,
+            attestation=attestation(
+                metric_field_ids=(101, 102),
+                ranking=True,
+                ranking_direction="desc",
+                ranking_limit=3,
+            ),
+            field_locators=LOCATORS,
+            table_locators=TABLE_LOCATORS,
+            expected_engine=ENGINE,
+            expected_metabase_subject=77,
+        )
+
+
+def test_r1_native_ranking_blocks_target_drift():
+    current=session(
+        metrics=(DOWNTIME, FAULTS),
+        ranking=True,
+        ranking_direction="desc",
+        ranking_limit=3,
+        ranking_measure=FAULTS.candidate_id,
+    )
+    contract=analytical_scope_contract(
+        session=current,
+        obligation_id="g_scope",
+    )
+    with pytest.raises(
+        ResearchAnalyticalScopeError,
+        match="R1_NATIVE_RANKING_SCOPE_MISMATCH",
+    ):
+        assert_attested_native_scope(
+            session=current,
+            obligation_id="g_scope",
+            contract=contract,
+            attestation=attestation(
+                metric_field_ids=(101, 102),
+                ranking=True,
+                ranking_direction="desc",
+                ranking_limit=3,
+                ranking_aggregation_index=0,
+            ),
+            field_locators=LOCATORS,
+            table_locators=TABLE_LOCATORS,
+            expected_engine=ENGINE,
+            expected_metabase_subject=77,
+        )
+
+
+def test_r1_native_ranking_blocks_direction_drift():
+    current=session(
+        ranking=True,
+        ranking_direction="desc",
+        ranking_limit=None,
+    )
+    contract=analytical_scope_contract(
+        session=current,
+        obligation_id="g_scope",
+    )
+    with pytest.raises(
+        ResearchAnalyticalScopeError,
+        match="R1_NATIVE_RANKING_SCOPE_MISMATCH",
+    ):
+        assert_attested_native_scope(
+            session=current,
+            obligation_id="g_scope",
+            contract=contract,
+            attestation=attestation(
+                ranking=True,
+                ranking_direction="asc",
+                ranking_limit=None,
+            ),
+            field_locators=LOCATORS,
+            table_locators=TABLE_LOCATORS,
+            expected_engine=ENGINE,
+            expected_metabase_subject=77,
+        )
 
 
 def test_r1_scope_v1_material_cannot_satisfy_scope_v2_contract():
