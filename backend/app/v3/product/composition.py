@@ -71,6 +71,7 @@ from app.v3.research_contracts import (
     SemanticTargetKind,
 )
 from app.v3.research_manager import (
+    ClaimSemanticContract,
     InvestigationIntent,
     InvestigationTargetKind,
     ManagerAction,
@@ -80,6 +81,9 @@ from app.v3.research_manager import (
     ResearchReasoningStore,
 )
 from app.v3.research_product import ResearchAskOrchestrator
+from app.v3.root_cause_candidate_contract import (
+    decode_root_cause_candidate_semantics,
+)
 
 
 class Frozen(BaseModel):
@@ -213,10 +217,12 @@ class _ObligationScopedProposalManager:
         inner: ProposalManager,
         target_parent_obligation: str,
         allowed_evidence_refs: tuple[str, ...],
+        claim_semantic_contract: ClaimSemanticContract | None = None,
     ) -> None:
         self._inner = inner
         self.target_parent_obligation = target_parent_obligation
         self._allowed_evidence_refs = allowed_evidence_refs
+        self._claim_semantic_contract = claim_semantic_contract
 
     @property
     def call_count(self) -> int:
@@ -225,16 +231,26 @@ class _ObligationScopedProposalManager:
     def propose(self, snapshot):
         scoped = getattr(self._inner, "propose_for_obligation", None)
         if callable(scoped):
-            return scoped(
+            proposal = scoped(
                 snapshot,
                 target_parent_obligation=self.target_parent_obligation,
                 allowed_evidence_refs=self._allowed_evidence_refs,
             )
-        proposal = self._inner.propose(snapshot)
+        else:
+            proposal = self._inner.propose(snapshot)
         target = getattr(proposal, "target_parent_obligation", None)
         if target is not None and target != self.target_parent_obligation:
             raise ValueError(
                 "provider proposal escaped Core-B source-obligation scope"
+            )
+        if (
+            self._claim_semantic_contract is not None
+            and proposal.action == ManagerAction.FORM_CLAIM
+        ):
+            proposal = proposal.model_copy(
+                update={
+                    "claim_semantic_contract": self._claim_semantic_contract,
+                }
             )
         return proposal
 
@@ -513,13 +529,29 @@ class HeadlessProductComposer:
         return final.session_id, child_goal
 
     @staticmethod
-    def _root_cause_candidate(claim) -> RootCauseCandidate | None:
+    def _root_cause_candidate(
+        claim,
+        *,
+        expected_subject_ref: str,
+        expected_scope_lineage_id: str,
+        expected_scope_version_id: str,
+    ) -> RootCauseCandidate | None:
         proposition = getattr(claim, "proposition", {}) or {}
-        relation = proposition.get("predicate")
-        mechanism = proposition.get("object")
-        if not isinstance(relation, str) or not relation.strip():
+        try:
+            semantics = decode_root_cause_candidate_semantics(proposition)
+        except ValueError as exc:
+            raise ProductProcessError(
+                "PRODUCT_ROOT_CANDIDATE_CONTRACT_INVALID",
+                str(exc),
+            ) from exc
+        if semantics is None:
             return None
-        if not isinstance(mechanism, str) or not mechanism.strip():
+        if (
+            semantics.explanatory_subject_ref != expected_subject_ref
+            or semantics.scope_lineage_id != expected_scope_lineage_id
+            or semantics.scope_version_id != expected_scope_version_id
+        ):
+            # Historical claims remain readable but cannot satisfy current scope.
             return None
         evidence_refs = tuple(
             dict.fromkeys(
@@ -531,8 +563,7 @@ class HeadlessProductComposer:
             return None
         return RootCauseCandidate(
             claim_id=claim.claim_id,
-            relation_ref=relation,
-            mechanism_ref=mechanism,
+            semantics=semantics,
             evidence_refs=evidence_refs,
         )
 
@@ -542,6 +573,7 @@ class HeadlessProductComposer:
         snapshot,
         session_id: str,
         target_obligation_id: str,
+        principal: Principal,
         downstream_ref_present: bool = False,
     ) -> tuple[ProductProcessObservation, tuple[Any, ...], tuple[Any, ...]]:
         steps = tuple(
@@ -584,11 +616,28 @@ class HeadlessProductComposer:
                 break
 
         stop = getattr(snapshot, "terminal_stop_reason", None)
-        root_candidates = tuple(
-            candidate
-            for claim in claims
-            if (candidate := self._root_cause_candidate(claim)) is not None
+        current_session = self._research.resume_state(
+            session_id=session_id,
+            principal=principal,
         )
+        accepted_brief = getattr(current_session, "accepted_brief", None)
+        root_candidates = ()
+        if accepted_brief is not None:
+            root_candidates = tuple(
+                candidate
+                for claim in claims
+                if (
+                    candidate := self._root_cause_candidate(
+                        claim,
+                        expected_subject_ref=target_obligation_id,
+                        expected_scope_lineage_id=current_session.lineage_id,
+                        expected_scope_version_id=(
+                            accepted_brief.scope.scope_version.version_id
+                        ),
+                    )
+                )
+                is not None
+            )
         observation = ProductProcessObservation(
             claim_ids=tuple(claims_by_id),
             completed_step_ids=completed,
@@ -661,6 +710,7 @@ class HeadlessProductComposer:
                 snapshot=snapshot,
                 session_id=session_id,
                 target_obligation_id=target_obligation_id,
+                principal=principal,
                 downstream_ref_present=downstream_ref_present,
             )
             next_owner = decide_next_owner(purpose, observation)
@@ -695,6 +745,7 @@ class HeadlessProductComposer:
                 snapshot=after,
                 session_id=session_id,
                 target_obligation_id=target_obligation_id,
+                principal=principal,
                 downstream_ref_present=downstream_ref_present,
             )
             after_signature = self._p17_progress_signature(
@@ -762,6 +813,7 @@ class HeadlessProductComposer:
             snapshot=snapshot,
             session_id=material_session_id,
             target_obligation_id=material_goal.goal_id,
+            principal=principal,
         )
         completed = set(observation.completed_step_ids)
         steps = tuple(step for step in all_steps if step.step_id in completed)
@@ -853,6 +905,9 @@ class HeadlessProductComposer:
             inner=self._investigation_manager,
             target_parent_obligation=goal.goal_id,
             allowed_evidence_refs=allowed_evidence_refs,
+            claim_semantic_contract=(
+                ClaimSemanticContract.ROOT_CAUSE_CANDIDATE
+            ),
         )
         snapshot, next_owner, _, last_error = self._run_p17(
             session_id=session_id,
@@ -867,6 +922,7 @@ class HeadlessProductComposer:
             snapshot=snapshot,
             session_id=session_id,
             target_obligation_id=goal.goal_id,
+            principal=principal,
         )
         if next_owner != ProductProcessNext.P19:
             return None, snapshot, self._p17_terminal_code(

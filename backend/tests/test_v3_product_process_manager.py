@@ -1,15 +1,31 @@
 from __future__ import annotations
 import pytest
+from app.v3.root_cause_candidate_contract import (
+    RootCauseCandidateRelation,
+    RootCauseCandidateSemantics,
+)
 from app.v3.product.process_manager import (
     P19EligibilityDecision, ProductProcessNext, ProductProcessObservation,
     ProductProcessPurpose, RootCauseCandidate, decide_next_owner, p19_eligibility,
 )
 
-def candidate(cid, mechanism, *, relation="explains", evidence=("e1",)):
+def candidate(
+    cid,
+    mechanism,
+    *,
+    relation=RootCauseCandidateRelation.EXPLANATORY_CANDIDATE,
+    evidence=("e1",),
+    scope_version="scope_v1",
+):
     return RootCauseCandidate(
         claim_id=cid,
-        relation_ref=relation,
-        mechanism_ref=mechanism,
+        semantics=RootCauseCandidateSemantics(
+            explanatory_subject_ref="g_root",
+            relation_kind=relation,
+            mechanism_ref=mechanism,
+            scope_lineage_id="atl_root",
+            scope_version_id=scope_version,
+        ),
         evidence_refs=tuple(evidence),
     )
 
@@ -99,3 +115,15 @@ def test_p6_without_available_discriminating_path_is_inconclusive():
         ProductProcessPurpose.ROOT_CAUSE,
         state,
     ) == ProductProcessNext.TERMINAL
+
+
+def test_r3_candidate_semantics_carry_scope_identity_without_wording_authority():
+    current = candidate("c1", "ibr_branch_a", scope_version="scope_v2")
+    same_wording_other_branch = candidate(
+        "c2",
+        "ibr_branch_b",
+        scope_version="scope_v2",
+    )
+    assert current.semantics.scope_lineage_id == "atl_root"
+    assert current.semantics.scope_version_id == "scope_v2"
+    assert current.mechanism_identity != same_wording_other_branch.mechanism_identity

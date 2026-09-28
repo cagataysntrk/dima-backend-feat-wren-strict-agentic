@@ -7,6 +7,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum
 
+from app.v3.root_cause_candidate_contract import RootCauseCandidateSemantics
+
+
 class ProductProcessPurpose(StrEnum):
     RELATIONSHIP = "RELATIONSHIP"
     ROOT_CAUSE = "ROOT_CAUSE"
@@ -29,13 +32,12 @@ class P19EligibilityDecision(StrEnum):
 @dataclass(frozen=True)
 class RootCauseCandidate:
     claim_id: str
-    relation_ref: str
-    mechanism_ref: str
+    semantics: RootCauseCandidateSemantics
     evidence_refs: tuple[str, ...]
 
     def __post_init__(self) -> None:
-        if not self.claim_id or not self.relation_ref or not self.mechanism_ref:
-            raise ValueError("root-cause candidate identity must be typed and non-empty")
+        if not self.claim_id:
+            raise ValueError("root-cause candidate claim identity must be non-empty")
         if not self.evidence_refs:
             raise ValueError("root-cause candidate requires governed Evidence refs")
         if len(self.evidence_refs) != len(set(self.evidence_refs)):
@@ -43,7 +45,7 @@ class RootCauseCandidate:
 
     @property
     def mechanism_identity(self) -> tuple[str, str]:
-        return (self.relation_ref, self.mechanism_ref)
+        return self.semantics.mechanism_identity
 
 @dataclass(frozen=True)
 class ProductProcessObservation:

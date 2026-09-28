@@ -32,6 +32,7 @@ from app.v3.research import EvidenceRef, ObligationState, ResearchManager
 from app.v3.research_exploration import ResearchExplorationStore
 from app.v3.research_manager import (
     FollowupResult,
+    ClaimSemanticContract,
     InvestigationBranchBehavior,
     InvestigationIntent,
     InvestigationTargetKind,
@@ -50,6 +51,11 @@ from app.v3.research_product import ResearchAskOrchestrator
 from app.v3.research_followup import NativeResearchFollowupExecutor
 from app.v3.substrate.metabase.native_engine import NativeEngineBridgeError
 from app.v3.research_store import ResearchSessionStore
+from app.v3.root_cause_candidate_contract import (
+    ROOT_CAUSE_CANDIDATE_SEMANTICS_KEY,
+    RootCauseCandidateRelation,
+    decode_root_cause_candidate_semantics,
+)
 from control_plane.authorize import Principal
 from control_plane.models import (
     ResearchExecutionLink,
@@ -836,6 +842,120 @@ def test_form_claim_creates_only_p16_proposed_claim():
     )
     assert created.epistemic_state == ClaimEpistemicState.PROPOSED
     assert created.evidence_links == ()
+
+def test_root_candidate_semantics_are_dima_bound_from_branch_and_scope():
+    db = db_engine()
+    store, session, _, lead, claims, _ = setup_state(db)
+    service = ResearchInvestigationManager(
+        research_store=store,
+        claim_store=claims,
+        followup_executor=PersistedFirstFollowup(db),
+        db_engine=db,
+    )
+    root, _ = service.run_one(
+        session_id=session.session_id,
+        principal=principal(),
+        manager=ScriptedManager(
+            lambda snap: recursive_proposal(
+                snap,
+                proposal_id="typed-root",
+                objective_key="typed.root",
+                intent=InvestigationIntent.INVESTIGATE_GAP,
+            )
+        ),
+    )
+
+    def form(snapshot):
+        return ManagerProposal(
+            proposal_id="typed-form",
+            source_revision=snapshot.source_revision,
+            target_parent_obligation="g1",
+            action=ManagerAction.FORM_CLAIM,
+            intent=InvestigationIntent.FORM_CLAIM,
+            parent_step_id=root.step_id,
+            objective_key="typed.root.candidate",
+            bounded_objective="Form one typed explanatory candidate.",
+            rationale="Existing governed material supports candidate formation.",
+            inspected_evidence_refs=snapshot.evidence_refs,
+            inspected_claim_refs=tuple(x.claim_id for x in snapshot.claims),
+            inspected_material_refs=(lead.lead_id,),
+            expected_information_gain="Expose one governed candidate for P19.",
+            claim_semantic_contract=(
+                ClaimSemanticContract.ROOT_CAUSE_CANDIDATE
+            ),
+            claim=ProposedClaimDraft(
+                claim_text="One bounded explanation remains plausible.",
+                proposition={"provider_note": "semantic cognition only"},
+                scope={"population": "sales_orders"},
+                freshness=freshness(),
+                origin_material_refs=(lead.lead_id,),
+            ),
+        )
+
+    step, task = service.run_one(
+        session_id=session.session_id,
+        principal=principal(),
+        manager=ScriptedManager(form),
+    )
+    assert task is None
+    created = claims.load_claim(
+        session_id=session.session_id,
+        claim_id=step.result_refs[0],
+        principal=principal(),
+    )
+    semantics = decode_root_cause_candidate_semantics(created.proposition)
+    assert semantics is not None
+    assert semantics.explanatory_subject_ref == "g1"
+    assert (
+        semantics.relation_kind
+        == RootCauseCandidateRelation.EXPLANATORY_CANDIDATE
+    )
+    assert semantics.mechanism_ref == step.branch_id
+    assert semantics.scope_lineage_id == session.lineage_id
+    assert (
+        semantics.scope_version_id
+        == session.accepted_brief.scope.scope_version.version_id
+    )
+    assert created.proposition["provider_note"] == "semantic cognition only"
+
+    with pytest.raises(ResearchManagerMaturationError) as exc:
+        service.run_one(
+            session_id=session.session_id,
+            principal=principal(),
+            manager=ScriptedManager(
+                lambda snap: ManagerProposal(
+                    proposal_id="typed-collision",
+                    source_revision=snap.source_revision,
+                    target_parent_obligation="g1",
+                    action=ManagerAction.FORM_CLAIM,
+                    intent=InvestigationIntent.FORM_CLAIM,
+                    parent_step_id=root.step_id,
+                    objective_key="typed.root.collision",
+                    bounded_objective="Attempt reserved-slot collision.",
+                    rationale="Exercise fail-closed Dima ownership.",
+                    inspected_evidence_refs=snap.evidence_refs,
+                    inspected_claim_refs=tuple(x.claim_id for x in snap.claims),
+                    inspected_material_refs=(lead.lead_id,),
+                    expected_information_gain="No semantic gain expected.",
+                    claim_semantic_contract=(
+                        ClaimSemanticContract.ROOT_CAUSE_CANDIDATE
+                    ),
+                    claim=ProposedClaimDraft(
+                        claim_text="Invalid reserved-slot attempt.",
+                        proposition={
+                            ROOT_CAUSE_CANDIDATE_SEMANTICS_KEY: {
+                                "provider_owned": True,
+                            }
+                        },
+                        scope={"population": "sales_orders"},
+                        freshness=freshness(),
+                        origin_material_refs=(lead.lead_id,),
+                    ),
+                )
+            ),
+        )
+    assert exc.value.code == "P17_ROOT_CANDIDATE_CONTRACT_INVALID"
+
 
 def test_stop_is_durable_and_does_not_force_a_result():
     db = db_engine()

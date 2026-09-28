@@ -24,6 +24,11 @@ from app.v3.analytical_request_contract import (
 from app.v3.claim_lineage import ClaimFreshness, ClaimLineageStore
 from app.v3.research import ResearchManager, ResearchSession
 from app.v3.research_analytical_scope import analytical_scope_contract
+from app.v3.root_cause_candidate_contract import (
+    RootCauseCandidateRelation,
+    RootCauseCandidateSemantics,
+    embed_root_cause_candidate_semantics,
+)
 from app.v3.research_store import ResearchSessionStore
 from control_plane.authorize import Principal
 from control_plane.db import engine as control_plane_engine
@@ -100,6 +105,10 @@ class ManagerStopReason(StrEnum):
     CAUSAL_IDENTIFICATION_LIMIT = "CAUSAL_IDENTIFICATION_LIMIT"
 
 
+class ClaimSemanticContract(StrEnum):
+    ROOT_CAUSE_CANDIDATE = "ROOT_CAUSE_CANDIDATE"
+
+
 class ReasoningStepStatus(StrEnum):
     PENDING = "PENDING"
     COMPLETED = "COMPLETED"
@@ -166,6 +175,7 @@ class ManagerProposal(Frozen):
     stop_reason: ManagerStopReason | None = None
     counter_to_claim_id: str | None = None
     claim: ProposedClaimDraft | None = None
+    claim_semantic_contract: ClaimSemanticContract | None = None
     child_analytical_scope: AnalyticalRequestContract | None = None
 
     @property
@@ -215,6 +225,14 @@ class ManagerProposal(Frozen):
         ):
             if len(refs) != len(set(refs)):
                 raise ValueError(f"{name} refs must be unique")
+
+        if (
+            self.claim_semantic_contract is not None
+            and self.action != ManagerAction.FORM_CLAIM
+        ):
+            raise ValueError(
+                "claim semantic contract is only valid for FORM_CLAIM"
+            )
 
         if self.action == ManagerAction.STOP:
             if self.stop_reason is None:
@@ -1752,6 +1770,11 @@ class ResearchInvestigationManager:
                 proposal.inspected_material_refs
             ),
             "claim_identity": claim_identity,
+            "claim_semantic_contract": (
+                proposal.claim_semantic_contract.value
+                if proposal.claim_semantic_contract is not None
+                else None
+            ),
             "child_analytical_scope": child_scope_identity,
             "stop_reason": (
                 proposal.stop_reason.value
@@ -2012,12 +2035,43 @@ class ResearchInvestigationManager:
 
         if proposal.action == ManagerAction.FORM_CLAIM:
             assert proposal.claim is not None
+            proposition = proposal.claim.proposition
+            if (
+                proposal.claim_semantic_contract
+                == ClaimSemanticContract.ROOT_CAUSE_CANDIDATE
+            ):
+                if session.accepted_brief is None:
+                    raise ResearchManagerMaturationError(
+                        "P17_ROOT_CANDIDATE_SCOPE_REQUIRED",
+                        "typed root candidate requires accepted Research scope",
+                    )
+                semantics = RootCauseCandidateSemantics(
+                    explanatory_subject_ref=proposal.target_parent_obligation,
+                    relation_kind=(
+                        RootCauseCandidateRelation.EXPLANATORY_CANDIDATE
+                    ),
+                    mechanism_ref=step.branch_id,
+                    scope_lineage_id=session.lineage_id,
+                    scope_version_id=(
+                        session.accepted_brief.scope.scope_version.version_id
+                    ),
+                )
+                try:
+                    proposition = embed_root_cause_candidate_semantics(
+                        proposition,
+                        semantics,
+                    )
+                except ValueError as exc:
+                    raise ResearchManagerMaturationError(
+                        "P17_ROOT_CANDIDATE_CONTRACT_INVALID",
+                        str(exc),
+                    ) from exc
             claim = self._claims.create_claim(
                 session_id=session.session_id,
                 obligation_id=proposal.target_parent_obligation,
                 principal=principal,
                 claim_text=proposal.claim.claim_text,
-                proposition=proposal.claim.proposition,
+                proposition=proposition,
                 scope=proposal.claim.scope,
                 freshness=proposal.claim.freshness,
                 origin_material_refs=proposal.claim.origin_material_refs,

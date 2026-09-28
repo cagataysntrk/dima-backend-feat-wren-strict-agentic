@@ -18,6 +18,11 @@ from app.v3.product.contracts import (
     ProductInvestigationRequirementKind,
 )
 from app.v3.research import ObligationState
+from app.v3.root_cause_candidate_contract import (
+    RootCauseCandidateRelation,
+    RootCauseCandidateSemantics,
+    embed_root_cause_candidate_semantics,
+)
 from app.v3.research_contracts import (
     PresentationKind,
     ResearchBrief,
@@ -295,11 +300,20 @@ class FakeInvestigation:
                     research_session_id=session_id,
                     obligation_id=self._obligation(session_id),
                     claim_text=f"Sealed P17 claim {n}",
-                    proposition={
-                        "subject": "observed-scope",
-                        "predicate": "explained_by",
-                        "object": f"mechanism:{n}",
-                    },
+                    proposition=embed_root_cause_candidate_semantics(
+                        {"subject": "observed-scope"},
+                        RootCauseCandidateSemantics(
+                            explanatory_subject_ref=self._obligation(session_id),
+                            relation_kind=(
+                                RootCauseCandidateRelation.EXPLANATORY_CANDIDATE
+                            ),
+                            mechanism_ref=f"ibr_fake_{n}",
+                            scope_lineage_id=session.lineage_id,
+                            scope_version_id=(
+                                session.accepted_brief.scope.scope_version.version_id
+                            ),
+                        ),
+                    ),
                     epistemic_state=SimpleNamespace(value="SUPPORTED"),
                     limitations=(),
                     evidence_links=tuple(
@@ -840,6 +854,12 @@ def test_root_waits_for_p17_owned_seventh_turn_for_second_candidate():
                        source_message_hash="6"*64, native_session_token=None)
     assert investigation._state(result.research_session_id)["calls"] == 7
     assert result.p19_assessment_refs
+    p19_snapshot = c._epistemics.snapshot(
+        research_session_id=result.research_session_id,
+        obligation_id="g_root",
+        principal=principal(),
+    )
+    assert len(p19_snapshot.hypotheses) == 2
 
 def test_product_composition_has_no_independent_p17_budget_or_output_quota():
     source = inspect.getsource(__import__(
@@ -928,3 +948,73 @@ def test_root_does_not_enter_p17_when_p14_parent_is_limited():
         and item.obligation_id == "g_root"
         for item in result.limitations
     )
+
+
+def test_r3_product_root_candidate_projection_has_no_hidden_predicate_object_contract():
+    source = inspect.getsource(
+        __import__(
+            "app.v3.product.composition",
+            fromlist=["HeadlessProductComposer"],
+        )
+    )
+    assert 'proposition.get("predicate")' not in source
+    assert 'proposition.get("object")' not in source
+    assert "decode_root_cause_candidate_semantics" in source
+
+
+def test_r3_stale_scope_candidate_is_not_current_p19_input():
+    claim = SimpleNamespace(
+        claim_id="clm_" + "a" * 24,
+        proposition=embed_root_cause_candidate_semantics(
+            {"provider_note": "historical"},
+            RootCauseCandidateSemantics(
+                explanatory_subject_ref="g_root",
+                relation_kind=(
+                    RootCauseCandidateRelation.EXPLANATORY_CANDIDATE
+                ),
+                mechanism_ref="ibr_historical",
+                scope_lineage_id="atl_historical",
+                scope_version_id="scope_v1",
+            ),
+        ),
+        evidence_links=(
+            SimpleNamespace(
+                evidence_id="evi_" + "b" * 24,
+                receipt_id="dqr_" + "c" * 24,
+                relation="SUPPORTS",
+            ),
+        ),
+    )
+    candidate = HeadlessProductComposer._root_cause_candidate(
+        claim,
+        expected_subject_ref="g_root",
+        expected_scope_lineage_id="atl_current",
+        expected_scope_version_id="scope_v2",
+    )
+    assert candidate is None
+
+
+def test_r3_missing_evidence_does_not_create_p19_candidate():
+    claim = SimpleNamespace(
+        claim_id="clm_" + "d" * 24,
+        proposition=embed_root_cause_candidate_semantics(
+            {"provider_note": "current"},
+            RootCauseCandidateSemantics(
+                explanatory_subject_ref="g_root",
+                relation_kind=(
+                    RootCauseCandidateRelation.EXPLANATORY_CANDIDATE
+                ),
+                mechanism_ref="ibr_current",
+                scope_lineage_id="atl_current",
+                scope_version_id="scope_v1",
+            ),
+        ),
+        evidence_links=(),
+    )
+    candidate = HeadlessProductComposer._root_cause_candidate(
+        claim,
+        expected_subject_ref="g_root",
+        expected_scope_lineage_id="atl_current",
+        expected_scope_version_id="scope_v1",
+    )
+    assert candidate is None
