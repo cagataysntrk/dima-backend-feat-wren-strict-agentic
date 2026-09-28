@@ -1,0 +1,46 @@
+{
+  "schema_version": "dima_v1_phase1_final_pinpoint_authorization_v2",
+  "decision": "PINPOINT_PAID_ONLY",
+  "confirm": "YES",
+  "probe_id": "SCOPE_CURRENTNESS_HARD_V3",
+  "max_orchestration_boundary_units": 12,
+  "candidate_product_sha": "6308b705e3c61aaa36825493421cde8288744561",
+  "engine_sha": "cbe313af9ac2d5960f662068e433d328d896fb06",
+  "engine_digest": "sha256:40e9a44be49904de3ddf12d4683c768e70955851c10a928a9c8f7d8f60780353",
+  "migration_head": "fd2a7c9e4b61",
+  "model_topology": {
+    "dima_cognition": "openai/gpt-5.6-terra",
+    "metabot": "openrouter/openai/gpt-5.6-terra",
+    "policy": "phase1-terra-default-no-cascade"
+  },
+  "hard_provider_request_ceiling": 24,
+  "source_request_ceilings": {
+    "research_intake": 2,
+    "metabase": 16,
+    "p17_manager": 4,
+    "p19_manager": 2
+  },
+  "prompt_token_ceiling": 350000,
+  "completion_token_ceiling": 16000,
+  "reasoning_token_ceiling": 12000,
+  "provider_cost_ceiling_usd": 1,
+  "provider_free_receipts": {
+    "bridge_reproducer_red": 36478113085,
+    "phase1_focused": 36478398877,
+    "p12": 36478398956,
+    "core_b_focused": 36478398841,
+    "core_b_seal": 36478398815,
+    "core_a_final": 36478687611,
+    "p19": 36478687656,
+    "governance": 36478687560,
+    "cleanup": 36478398840,
+    "provider_policy_p12": 36479346660,
+    "provider_policy_phase1": 36479346412,
+    "provider_policy_governance": 36479346348
+  },
+  "probe_a_v3_run_id": null,
+  "probe_a_v3_adjudication": null,
+  "broad_paid_allowed": false,
+  "automatic_retry": false,
+  "sol_reference_authorized": false
+}

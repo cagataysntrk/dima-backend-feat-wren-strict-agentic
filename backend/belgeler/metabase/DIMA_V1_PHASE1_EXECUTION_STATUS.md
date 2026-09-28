@@ -40,8 +40,15 @@ Probe A V2
 = run 36472033257
 = artifact 10991822610
 
+Probe A V3
+= AUTHORIZED / ONE RUN ONLY
+= NOT RUN
+
+RCA Probe V2
+= NOT RUN / BLOCKED ON PROBE A V3
+
 Probe B
-= NOT RUN / BLOCKED
+= HISTORICAL NAME / NOT RUN
 
 BROAD PAID
 = FORBIDDEN
@@ -648,3 +655,49 @@ PHASE 1
 First wrong transition is inside the R1 analytical material contract projection: accepted ranking
 surfaces may carry no explicit limit, while the downstream analytical invariant currently requires
 an exact limit. No Product semantic change was made after the paid RED.
+
+
+## FINAL PHASE-1 V3 RECOVERY AUTHORIZATION — 2026-09-28
+
+Behavior owner:
+- bridge/locator behavior SHA: `6308b705e3c61aaa36825493421cde8288744561`;
+- exact solution: compose `NativeResourceBinding` IDs with immutable accepted Research native-verification names and the current native attestation;
+- new `NativeEngineBridge.table_metadata` / `field_metadata` methods: **not added**;
+- engine change: **0**.
+
+Provider-free bridge closure:
+- deterministic same-failure RED: `36478113085` (`table_metadata` AttributeError);
+- Phase-1 focused: `36478398877 = SUCCESS`;
+- P12 provider-free: `36478398956 = SUCCESS`;
+- Core-B focused: `36478398841 = SUCCESS`;
+- Core-B seal: `36478398815 = SUCCESS`;
+- Core-A final re-certification: `36478687611 = SUCCESS`;
+- P19 provider-free: `36478687656 = SUCCESS`;
+- governance: `36478687560 = SUCCESS`;
+- cleanup: `36478398840 = SUCCESS`.
+
+V3 live-validation safety policy:
+- Dima cognition = `openai/gpt-5.6-terra`;
+- Metabot = `openrouter/openai/gpt-5.6-terra`;
+- no model cascade;
+- requests <= 24 total;
+- source ceilings = Research Intake 2 / Metabot 16 / P17 4 / P19 2 / unknown 0;
+- prompt <= 350000; completion <= 16000; reasoning <= 12000;
+- provider-reported cost <= USD 1.00;
+- automatic retry = 0;
+- Sol reference = not authorized;
+- broad paid = forbidden.
+
+Provider policy provider-free:
+- policy SHA: `2d9d0581272ec1b6f16809804b1d32256d50bcd9`;
+- stale-name test-only correction: `f2cbaf25bbdeaf115ebd80f4cf12efadc1ce4bc2`;
+- P12 provider-free: `36479346660 = SUCCESS`;
+- Phase-1 focused: `36479346412 = SUCCESS`;
+- governance: `36479346348 = SUCCESS`;
+- Core-B seal: `36479184521 = SUCCESS`.
+
+Next legal transition:
+`SCOPE_CURRENTNESS_HARD_V3` exactly once. If RED: STOP. If GREEN: one
+`RCA_P19_HARD_V2` on the same Product behavior candidate.
+
+`PHASE 1 = IN_PROGRESS` and `P13 = NOT STARTED`.

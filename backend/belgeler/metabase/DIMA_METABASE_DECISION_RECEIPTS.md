@@ -8525,3 +8525,115 @@ Final-recovery live ledger addition:
 | `36472033257` | Probe A V2 scope/currentness | `46b3d9b6b19c9d837ed5a32664d10a3d3442392a` | 3 | 14 | 207408 / 2795 / 851 | 0.01844001 | RED / IMMUTABLE |
 
 P13 final condition remains unmet because Probe A V2 is RED and Probe B is blocked.
+
+
+---
+
+## DMP-DEC-0074D — BRIDGE / LOCATOR RECOVERY + TERRA V3 LIVE AUTHORIZATION
+
+date: 2026-09-28
+
+status:
+`BRIDGE CONTRACT PROVIDER-FREE GREEN / TERRA V3 AUTHORIZED ONCE / PHASE 1 IN_PROGRESS`
+
+authority:
+- fresh Final Phase-1 Recovery + Model Topology Validation directive;
+- historical Probe A V2 `36472033257` remains immutable RED;
+- DMP-DEC-0074C is historical and is not mutated;
+- DMP-DEC-0075 remains reserved for successful immutable Phase-1 acceptance.
+
+V2 root cause:
+```text
+accepted Research scope
+-> real Metabot native cognition
+-> R1 native attestation
+-> locator hydration
+-> bridge.table_metadata(...)
+-> AttributeError
+```
+
+provider-free exact reproducer:
+- commit `dc6923b2f5e01c4f4d5ae65f6ee5ce722931bd2a`;
+- run `36478113085 = RED`;
+- first wrong transition exactly reproduced at the missing private bridge metadata surface.
+
+generic correction:
+- Product behavior SHA `6308b705e3c61aaa36825493421cde8288744561`;
+- locator physical IDs come from the existing `NativeResourceBinding` authority;
+- table/schema/column names come from the immutable accepted
+  `ResearchNativeVerificationBinding`;
+- occurrence identity comes from the exact `NativeAttestationEnvelope`;
+- required attested table/field IDs must be covered by one exact enabled binding;
+- native metric ID/entity identity is correlated against the exact current attestation;
+- no metadata endpoint call, no semantic guessing, no SQL/MBQL inspection;
+- no second resource registry;
+- no new engine endpoint;
+- no `dima.7`;
+- `NativeEngineBridge` surface remains unchanged.
+
+affected provider-free evidence:
+- Phase-1 focused `36478398877 = SUCCESS`;
+- P12 `36478398956 = SUCCESS`;
+- Core-B focused `36478398841 = SUCCESS`;
+- Core-B seal `36478398815 = SUCCESS`;
+- Core-A final `36478687611 = SUCCESS`;
+- P19 `36478687656 = SUCCESS`;
+- governance `36478687560 = SUCCESS`;
+- cleanup `36478398840 = SUCCESS`.
+
+engine / migration invariant:
+```text
+engine_sha = cbe313af9ac2d5960f662068e433d328d896fb06
+release = 0.63.18-dima.6
+digest = sha256:40e9a44be49904de3ddf12d4683c768e70955851c10a928a9c8f7d8f60780353
+migration_head = fd2a7c9e4b61
+```
+
+model policy:
+```text
+default Phase-1 complex cognition = GPT-5.6 Terra
+Dima cognition = openai/gpt-5.6-terra
+Metabot = openrouter/openai/gpt-5.6-terra
+Luna V2 RED = not a model-quality finding
+dynamic Luna router = not built
+model cascade = forbidden
+Sol = not authorized in this sequence
+```
+
+real-provider policy:
+```text
+actual provider requests <= 24
+Research Intake <= 2
+Metabot <= 16
+P17 <= 4
+P19 <= 2
+unknown source = 0
+prompt tokens <= 350000
+completion tokens <= 16000
+reasoning tokens <= 12000
+provider-reported cost <= USD 1.00
+automatic retry = 0
+```
+
+provider policy proof:
+- `2d9d0581272ec1b6f16809804b1d32256d50bcd9` adds fail-closed per-source and cumulative telemetry gates;
+- `f2cbaf25bbdeaf115ebd80f4cf12efadc1ce4bc2` aligns the historical workflow-contract test names only;
+- P12 `36479346660 = SUCCESS`;
+- Phase-1 focused `36479346412 = SUCCESS`;
+- governance `36479346348 = SUCCESS`;
+- Core-B seal `36479184521 = SUCCESS`.
+
+next live authorization:
+```text
+probe = SCOPE_CURRENTNESS_HARD_V3
+runs authorized = 1
+Product behavior SHA = 6308b705e3c61aaa36825493421cde8288744561
+engine = dima.6
+model = Terra
+broad paid = forbidden
+retry = 0
+if RED -> STOP
+if GREEN -> authorize one RCA_P19_HARD_V2 on same Product behavior SHA
+```
+
+P13 remains NOT STARTED.
