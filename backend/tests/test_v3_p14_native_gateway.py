@@ -37,7 +37,7 @@ from app.v3.substrate.metabase.native_models import (
     NativeEngineIdentity,
 )
 from control_plane.authorize import Principal
-from control_plane.models import NativeSubjectBinding, Tenant, User
+from control_plane.models import NativeResourceBinding, NativeSubjectBinding, Tenant, User
 from lab.metabase.p14.native_direct_research_canary import (
     FROZEN_BOYAHANE_CHANNEL_COUNTS,
     channel_counts,
@@ -189,6 +189,42 @@ def seed(engine):
                 security_profile="legacy-metadata",
                 policy_version="legacy-metadata",
                 approved_by_user_id=USER,
+            )
+        )
+        db.commit()
+        db.add(
+            NativeResourceBinding(
+                tenant_id=TENANT,
+                semantic_context_version=CONTEXT,
+                candidate_id="cand_sales_order_count",
+                candidate_kind="metric",
+                semantic_id="metric.sales_order_count",
+                canonical_name="Sales Order Count",
+                locator_kind="metric",
+                metabase_database_id=1,
+                metabase_table_id=10,
+                metabase_metric_id=501,
+                metabase_entity_id="metric-sales-order-count-v1",
+                resource_entity_id="metabase:metric:metric-sales-order-count-v1",
+                resource_fingerprint="1" * 64,
+                resource_version="native-direct-test-v1",
+            )
+        )
+        db.add(
+            NativeResourceBinding(
+                tenant_id=TENANT,
+                semantic_context_version=CONTEXT,
+                candidate_id="cand_sales_order_channel",
+                candidate_kind="dimension",
+                semantic_id="dimension.sales_order_channel",
+                canonical_name="Sales Order Channel",
+                locator_kind="field",
+                metabase_database_id=1,
+                metabase_table_id=10,
+                metabase_field_id=20,
+                resource_entity_id="metabase:field:20",
+                resource_fingerprint="2" * 64,
+                resource_version="native-direct-test-v1",
             )
         )
         db.commit()
@@ -439,6 +475,80 @@ class MaterialBridge:
         assert table_id == 10
         return {"id": 10, "name": "sales_orders", "schema": None}
 
+
+
+class NativeContractBridge:
+    """Provider-free double exposing only the real NativeEngineBridge material surface."""
+
+    def __init__(self):
+        self.calls = []
+
+    def attest_native_query(self, *, conversation_id, native_query_id):
+        assert native_query_id == "native-query-1"
+        query = {
+            "database": 1,
+            "type": "query",
+            "query": {
+                "source-table": 10,
+                "aggregation": [["count"]],
+                "breakout": [["field", 20, None]],
+            },
+        }
+        payload = attestation_payload(query)
+        payload["manifest"]["native_conversation_id"] = str(conversation_id)
+        return payload
+
+    def execute_dataset(self, query):
+        self.calls.append(query)
+        return NativeDatasetExecutionObservation(
+            status_code=202,
+            latency_ms=3,
+            query_fingerprint=h(query),
+            payload={
+                "status": "completed",
+                "database_id": 1,
+                "row_count": 1,
+                "data": {"rows": [["Web", 4]], "cols": []},
+            },
+        )
+
+    def engine_identity(self):
+        return identity_payload()
+
+
+def test_native_locator_hydration_uses_governed_bindings_not_private_bridge_metadata():
+    engine = db_engine()
+    seed(engine)
+    store, session, link, query = session_and_link(engine)
+    subjects = NativeSubjectSessionProvider(
+        base_url="http://native.test",
+        expected_identity=expected_identity(),
+        db_engine=engine,
+    )
+    executor = NativeResearchMaterialExecutor(
+        subject_provider=subjects,
+        store=store,
+        expected_identity=expected_identity(),
+    )
+    bridge = NativeContractBridge()
+
+    outcome = executor.execute(
+        principal=principal(),
+        session=session,
+        obligation_id="g1",
+        bridge=bridge,
+        native_conversation_id=link.native_conversation_id,
+        native_query_id=link.native_query_id,
+        native_query=query,
+        query_fingerprint=link.native_query_fingerprint,
+        execution_link_id=link.id,
+    )
+
+    assert outcome.attestation_id == "att-p14-test"
+    assert outcome.evidence.verified
+    assert bridge.calls == [query]
+    assert not hasattr(bridge, "table_metadata")
+    assert not hasattr(bridge, "field_metadata")
 
 def test_new_p14_binding_timestamp_is_timezone_aware_and_metadata_is_not_permission_truth():
     engine = db_engine()

@@ -17,6 +17,7 @@ on:
       - "backend/app/v3/research_analytical_scope.py"
       - "backend/app/v3/research_followup.py"
       - "backend/app/v3/research_native_gateway.py"
+      - "backend/tests/test_v3_p14_native_gateway.py"
       - "backend/app/v3/analytics_contract.py"
       - "backend/app/v3/native_standard/**"
       - "backend/app/v3/product/**"
@@ -110,7 +111,8 @@ jobs:
         run: |
           pytest -q \
             tests/test_v3_v1_analytical_request_contract.py \
-            tests/test_v3_p13d_native_standard.py
+            tests/test_v3_p13d_native_standard.py \
+            tests/test_v3_p14_native_gateway.py
 
       - name: P4 USER_MUST Completion Ledger
         working-directory: backend
