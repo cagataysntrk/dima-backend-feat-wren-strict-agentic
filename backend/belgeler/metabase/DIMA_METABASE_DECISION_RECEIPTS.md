@@ -8429,3 +8429,99 @@ P13 = NOT STARTED
 ```
 
 No Product semantic change is permitted between Probe A V2 and Probe B.
+
+
+### DMP-DEC-0074C — PROBE A V2 LIVE RED / FINAL STOP
+
+date: 2026-09-28
+
+status:
+`SCOPE_CURRENTNESS_HARD_V2 = RED / IMMUTABLE / NO RETRY / PROBE B BLOCKED / P13 NOT STARTED`
+
+frozen Product candidate:
+`46b3d9b6b19c9d837ed5a32664d10a3d3442392a`
+
+execution:
+- run = `36472033257`;
+- run attempt = `1`;
+- artifact = `10991822610`;
+- artifact digest = `sha256:9abd43c4774da194d70c6d5b220b0c52b1f84456f130eef9c75ac3624e1a5721`;
+- probe = `SCOPE_CURRENTNESS_HARD_V2`;
+- exact engine = `cbe313af9ac2d5960f662068e433d328d896fb06` / `0.63.18-dima.6`;
+- migration head = `fd2a7c9e4b61`;
+- provider-free preflight = GREEN;
+- zero-spend setup guard = GREEN;
+- governed native metric resource creation = GREEN;
+- real probe runner = completed and emitted artifact;
+- hard mechanical acceptance = RED.
+
+provider accounting:
+```text
+orchestration_boundary_units = 3
+research_intake orchestration = 1
+metabot orchestration = 2
+P17 orchestration = 0
+P19 orchestration = 0
+
+actual_provider_request_count = 14
+provider_requests_by_source:
+  research_intake = 1
+  metabase = 13
+
+hard_provider_request_ceiling = 24
+blocked_provider_requests = 0
+
+prompt_tokens = 207408
+completion_tokens = 2795
+reasoning_tokens = 851
+provider_reported_cost = 0.01844001
+
+Suggested Prompts paid calls before probe = 0
+broad paid runs = 0
+automatic retry = 0
+```
+
+privacy/accounting proof:
+- API keys persisted = false;
+- prompt text persisted = false;
+- reasoning text persisted = false;
+- request body persisted = false;
+- response body persisted = false;
+- actual provider requests and orchestration boundary units are recorded separately.
+
+first wrong transition:
+```text
+Research Intake READY
+-> real Metabot native cognition
+-> R1 native attestation
+-> native locator hydration
+-> NativeResearchMaterialExecutor._native_locators
+-> bridge.table_metadata(...)
+-> AttributeError: NativeEngineBridge has no attribute table_metadata
+```
+
+owner diagnosis:
+- current throwing owner is the R1 native locator/bridge integration seam in
+  `backend/app/v3/research_native_gateway.py`;
+- `NativeResearchMaterialExecutor._native_locators` calls
+  `NativeEngineBridge.table_metadata` and `field_metadata`;
+- the frozen `NativeEngineBridge` surface does not expose those methods;
+- therefore the live request fails before governed Evidence admission/currentness adjudication;
+- this RED is not a reappearance of `R1_RANKING_BASIS_INCOMPLETE`: the ranking recovery passed provider-free and the live execution progressed beyond that prior transition;
+- no claim is made that downstream R2/R3/R4 semantics failed, because they were not reached.
+
+protocol disposition:
+- at least one real provider request was forwarded, therefore A V2 MUST NOT be patched and rerun under this directive;
+- Probe B MUST NOT run;
+- temporary exact-file push bridge was removed immediately after RED;
+- no Product semantic change was made after the RED;
+- `DMP-DEC-0075` remains reserved and MUST NOT be created;
+- P13 remains `NOT STARTED`;
+- Phase 1 remains `IN_PROGRESS`.
+
+Final-recovery live ledger addition:
+| run | purpose | Product candidate | orchestration units | actual provider requests | prompt / completion / reasoning tokens | provider cost | result |
+| --- | --- | --- | ---: | ---: | --- | ---: | --- |
+| `36472033257` | Probe A V2 scope/currentness | `46b3d9b6b19c9d837ed5a32664d10a3d3442392a` | 3 | 14 | 207408 / 2795 / 851 | 0.01844001 | RED / IMMUTABLE |
+
+P13 final condition remains unmet because Probe A V2 is RED and Probe B is blocked.
