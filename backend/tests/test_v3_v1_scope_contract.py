@@ -857,9 +857,6 @@ def test_r1_intake_rejects_text_time_without_typed_period():
         "time_surfaces":["June 2026"],
         "time_periods":[],
         "required_domains":["machine_operations"],
-        "scope_mutation_kind":None,
-        "clarification_question":None,
-        "unsupported_reason":None,
     }
     catalog=ResearchIntakeCatalog(
         context_version="ctx-r1",
