@@ -398,8 +398,35 @@ def test_explicit_repair_does_not_restore_removed_prior_obligation():
     assert result.brief.scope.scope_version.version_id == "scope_v2"
     assert result.brief.scope.scope_version.parent_version_id == "scope_v1"
     sent = transport.calls[0]["user"]
-    assert sent["prior_brief"]["brief_id"] == "rb_prior"
+    prior = sent["prior_brief"]
+    assert prior["context_version"] == "ctx-core-b-neutral-v1"
+    assert prior["scope"]["semantic_ids"] == [
+        "dimension.department",
+        "metric.downtime",
+        "metric.fault_count",
+    ]
+    serialized_prior = json.dumps(prior, sort_keys=True)
+    for machine_owned in (
+        "brief_id",
+        "goal_id",
+        "requirement_id",
+        "scope_version",
+        "native_verification_bindings",
+        "must_requirement_ids",
+        "budget",
+    ):
+        assert machine_owned not in serialized_prior
     assert "CURRENT intent only" in sent["instruction"]
+
+
+def test_provider_catalog_contains_semantic_choices_not_runtime_binding_state():
+    payload = ResearchIntakeCompiler._catalog_payload(catalog())
+    serialized = json.dumps(payload, sort_keys=True)
+    assert "candidate_id" in serialized
+    assert "canonical_name" in serialized
+    assert "cube_names" not in serialized
+    assert "sensitive" not in serialized
+    assert "native_verification_bindings" not in serialized
 
 
 def test_intake_schema_is_strict_for_every_object():

@@ -518,8 +518,6 @@ class ResearchIntakeCompiler:
                     "source_mention": item.source_mention,
                     "dimension_name": item.dimension_name,
                     "value": item.value,
-                    "cube_names": list(item.cube_names),
-                    "sensitive": item.sensitive,
                     "temporal": (
                         item.candidate_id
                         in set(catalog.temporal_dimension_ids)
@@ -546,21 +544,59 @@ class ResearchIntakeCompiler:
     def _provider_prior_brief_payload(
         brief: ResearchBrief | None,
     ) -> dict[str, Any] | None:
+        """Project prior semantic intent without exposing machine authority.
+
+        The provider may interpret the user's follow-up against prior meaning.
+        Durable IDs, scope/version lineage, verification bindings, budgets and
+        owner state remain Dima-owned and are never provider-selected.
+        """
         if brief is None:
             return None
-        payload = brief.model_dump(mode="json")
-
-        def strip(value: Any) -> None:
-            if isinstance(value, dict):
-                value.pop("native_verification_bindings", None)
-                for item in value.values():
-                    strip(item)
-            elif isinstance(value, list):
-                for item in value:
-                    strip(item)
-
-        strip(payload)
-        return payload
+        return {
+            "context_version": brief.context_version,
+            "objective": brief.objective,
+            "scope": {
+                "semantic_ids": sorted(
+                    item.candidate_id
+                    for item in brief.scope.semantic_refs
+                ),
+                "time_periods": [
+                    item.model_dump(mode="json")
+                    for item in brief.scope.periods
+                ],
+            },
+            "questions": [
+                {
+                    "kind": question.kind.value,
+                    "source_text": question.source_text,
+                    "subject_semantic_ids": [
+                        item.candidate_id
+                        for item in question.subject_refs
+                    ],
+                    "related_semantic_ids": [
+                        item.candidate_id
+                        for item in question.related_refs
+                    ],
+                    "ranking": (
+                        question.ranking.model_dump(mode="json")
+                        if question.ranking is not None
+                        else None
+                    ),
+                    "comparison_texts": [
+                        item.text for item in question.comparisons
+                    ],
+                }
+                for question in brief.questions
+            ],
+            "deliverables": [
+                {
+                    "kind": item.kind.value,
+                    "source_text": item.source_text,
+                }
+                for item in brief.deliverables
+            ],
+            "required_domains": list(brief.required_domains),
+        }
 
     @staticmethod
     def _relationship_for_goal(
