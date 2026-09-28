@@ -15,6 +15,8 @@ import time
 from pathlib import Path
 from typing import Any
 
+from sqlmodel import Session
+
 from app.v3.product.contracts import ArtifactKind, ArtifactRef
 from app.v3.product.composition import HeadlessProductComposer
 from app.v3.product.service import HeadlessProductService, ProductSources
@@ -33,6 +35,7 @@ from app.v3.research_intake import (
 from app.v3.root_cause_candidate_contract import (
     decode_root_cause_candidate_semantics,
 )
+from control_plane.models import NativeResourceBinding
 from lab.metabase.core_b import live_sentinel as sealed
 
 MODEL = "openai/gpt-5.6-luna"
@@ -150,6 +153,92 @@ def load_binding_manifest(path: Path) -> dict[str, Any]:
     if not isinstance(metrics, list):
         raise RuntimeError("pinpoint metric bindings missing")
     return body
+
+def _native_resource_fingerprint(payload: dict[str, Any]) -> str:
+    return hashlib.sha256(
+        json.dumps(
+            payload,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()
+
+
+def seed_native_resource_bindings(
+    db_engine,
+    binding_manifest: dict[str, Any],
+) -> None:
+    """Persist exact runtime locators; never derive business semantics here."""
+    database_id = int(binding_manifest["database_id"])
+    table_id = int(binding_manifest["table_id"])
+    rows: list[NativeResourceBinding] = []
+
+    for item in binding_manifest["metrics"]:
+        candidate_id = str(item["candidate_id"])
+        entity_id = str(item["native_metric_entity_id"])
+        field_id = int(item["fixture_definition"]["field_id"])
+        locator = {
+            "database_id": database_id,
+            "table_id": table_id,
+            "field_id": field_id,
+            "metric_id": int(item["metabase_metric_id"]),
+            "entity_id": entity_id,
+        }
+        rows.append(
+            NativeResourceBinding(
+                tenant_id=sealed.TENANT_ID,
+                semantic_context_version=CONTEXT,
+                candidate_id=candidate_id,
+                candidate_kind=SemanticTargetKind.METRIC.value,
+                semantic_id=candidate_id,
+                canonical_name=str(item["canonical_name"]),
+                locator_kind="metric",
+                metabase_database_id=database_id,
+                metabase_table_id=table_id,
+                metabase_field_id=field_id,
+                metabase_metric_id=int(item["metabase_metric_id"]),
+                metabase_entity_id=entity_id,
+                resource_entity_id=f"metabase:metric:{entity_id}",
+                resource_fingerprint=_native_resource_fingerprint(locator),
+                resource_version=str(binding_manifest["schema_version"]),
+            )
+        )
+
+    dimensions = binding_manifest.get("dimensions")
+    if not isinstance(dimensions, list):
+        raise RuntimeError("pinpoint dimension bindings missing")
+    for item in dimensions:
+        candidate_id = str(item["candidate_id"])
+        field_id = int(item["field_id"])
+        locator = {
+            "database_id": database_id,
+            "table_id": table_id,
+            "field_id": field_id,
+        }
+        rows.append(
+            NativeResourceBinding(
+                tenant_id=sealed.TENANT_ID,
+                semantic_context_version=CONTEXT,
+                candidate_id=candidate_id,
+                candidate_kind=SemanticTargetKind.DIMENSION.value,
+                semantic_id=candidate_id,
+                canonical_name=str(item["canonical_name"]),
+                locator_kind="field",
+                metabase_database_id=database_id,
+                metabase_table_id=table_id,
+                metabase_field_id=field_id,
+                resource_entity_id=f"metabase:field:{field_id}",
+                resource_fingerprint=_native_resource_fingerprint(locator),
+                resource_version=str(binding_manifest["schema_version"]),
+            )
+        )
+
+    with Session(db_engine) as db:
+        for row in rows:
+            db.add(row)
+        db.commit()
+
 
 
 def build_catalog(binding_manifest: dict[str, Any]) -> ResearchIntakeCatalog:
@@ -661,6 +750,7 @@ def main() -> int:
         args.control_db,
         int(current["id"]),
     )
+    seed_native_resource_bindings(db_engine, binding_manifest)
     session_store = sealed.ResearchSessionStore(db_engine)
     expected = sealed.NativeEngineIdentity(
         engine_sha=args.engine_sha,

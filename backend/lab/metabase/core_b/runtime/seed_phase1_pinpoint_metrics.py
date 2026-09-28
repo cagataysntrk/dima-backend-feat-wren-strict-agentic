@@ -275,15 +275,21 @@ def main() -> int:
         "dimensions": [
             {
                 "candidate_id": "dimension.department",
+                "canonical_name": "Department",
                 "column_name": "department",
+                "field_id": fields["department"],
             },
             {
                 "candidate_id": "dimension.event_date",
+                "canonical_name": "Event Date",
                 "column_name": "event_date",
+                "field_id": fields["event_date"],
             },
             {
                 "candidate_id": "dimension.machine_id",
+                "canonical_name": "Machine",
                 "column_name": "machine_id",
+                "field_id": fields["machine_id"],
             },
         ],
     }
