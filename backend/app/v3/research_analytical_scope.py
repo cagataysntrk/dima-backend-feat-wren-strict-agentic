@@ -15,6 +15,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from app.v3.analytical_request_contract import (
     AnalyticalComparisonInvariant,
+    AnalyticalEvidenceSynthesisRankingInvariant,
     AnalyticalFilterInvariant,
     AnalyticalPeriodInvariant,
     AnalyticalRankingInvariant,
@@ -201,21 +202,39 @@ def analytical_scope_contract(
     ranking = None
     if question.ranking is not None:
         value = question.ranking
-        if value.direction == "unspecified" or value.limit is None:
+        metric_ids = {item.candidate_id for item in metrics}
+        explicit_measure = value.measure_semantic_id
+        if explicit_measure is not None and explicit_measure not in metric_ids:
             raise ResearchAnalyticalScopeError(
-                "R1_RANKING_BASIS_INCOMPLETE",
-                "material ranking requires exact direction and limit",
+                "R1_RANKING_BASIS_OUTSIDE_SCOPE",
+                explicit_measure,
             )
-        if len(metrics) != 1:
-            raise ResearchAnalyticalScopeError(
-                "R1_RANKING_BASIS_AMBIGUOUS",
-                "multi-metric ranking requires a separately typed ranking basis",
+
+        native_measure = explicit_measure
+        if native_measure is None and len(metrics) == 1:
+            # Exactly-one metric scope is structurally unambiguous. This is not
+            # a first-metric shortcut and never applies to multi-metric scope.
+            native_measure = metrics[0].candidate_id
+
+        if native_measure is not None:
+            if value.direction == "unspecified":
+                raise ResearchAnalyticalScopeError(
+                    "R1_RANKING_DIRECTION_UNRESOLVED",
+                    "native metric ranking requires typed asc/desc direction",
+                )
+            ranking = AnalyticalRankingInvariant(
+                measure=native_measure,
+                direction=value.direction,
+                limit=value.limit,
             )
-        ranking = AnalyticalRankingInvariant(
-            measure=metrics[0].candidate_id,
-            direction=value.direction,
-            limit=value.limit,
-        )
+        else:
+            # A multi-metric ranking with no explicit governed basis remains a
+            # product/cognition obligation over governed evidence. Dima does
+            # not manufacture a native single-metric ORDER BY contract.
+            ranking = AnalyticalEvidenceSynthesisRankingInvariant(
+                direction=value.direction,
+                limit=value.limit,
+            )
 
     outputs = tuple(
         item.kind.value
@@ -591,7 +610,25 @@ def _assert_breakout_and_ranking(
                 "native occurrence introduced an unaccepted LIMIT",
             )
         return
-    if manifest.limit != ranking.limit:
+
+    if isinstance(ranking, AnalyticalEvidenceSynthesisRankingInvariant):
+        if manifest.limit is not None:
+            raise ResearchAnalyticalScopeError(
+                "R1_NATIVE_RANKING_SCOPE_MISMATCH",
+                (
+                    "evidence-synthesis ranking cannot authorize native "
+                    "material truncation"
+                ),
+            )
+        return
+
+    if ranking.limit is None:
+        if manifest.limit is not None:
+            raise ResearchAnalyticalScopeError(
+                "R1_NATIVE_RANKING_SCOPE_MISMATCH",
+                "native occurrence introduced unauthorized ranking truncation",
+            )
+    elif manifest.limit != ranking.limit:
         raise ResearchAnalyticalScopeError(
             "R1_NATIVE_RANKING_SCOPE_MISMATCH",
             "native ranking limit differs from accepted ranking invariant",
