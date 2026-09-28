@@ -736,6 +736,7 @@ class OpenRouterStructuredJSONTransport:
                 api_key=self._key,
                 system=system,
                 user=user,
+                latency_ms=latency_ms,
             )
             raise StructuredProviderError(
                 exc.code,
