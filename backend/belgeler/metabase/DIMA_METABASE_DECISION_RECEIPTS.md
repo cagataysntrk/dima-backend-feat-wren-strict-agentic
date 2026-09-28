@@ -8663,3 +8663,80 @@ the Product probe step was skipped. Therefore this run is not evidence about V3 
 behavior and does not consume a paid/model execution. A corrected V3 authorization is
 permitted only with an explicit receipt reference to this exact zero-provider preflight
 run. Automatic retry remains 0.
+
+
+### DMP-DEC-0074D — PROBE A V3 LIVE RED / FINAL STOP
+
+date: 2026-09-28
+
+status:
+`SCOPE_CURRENTNESS_HARD_V3 = RED / IMMUTABLE / RCA BLOCKED / P13 BLOCKED`
+
+execution:
+- run: `36481553724`;
+- artifact: `10996548690`;
+- artifact digest: `sha256:10bd556a41d4cf3ba89e80864f0eec38b2cf79e42b4329da7d27299f5689ec3d`;
+- Product behavior candidate: `6308b705e3c61aaa36825493421cde8288744561`;
+- engine: `cbe313af9ac2d5960f662068e433d328d896fb06` / `0.63.18-dima.6`;
+- migration head: `fd2a7c9e4b61`;
+- model topology: Terra / no cascade;
+- setup zero-spend guard: GREEN;
+- governed native resource bootstrap: GREEN;
+- Product probe step: EXECUTED;
+- hard mechanical acceptance: RED.
+
+provider accounting:
+```text
+orchestration_boundary_units = 4
+actual_provider_request_count = 18
+provider_requests_by_source:
+  research_intake = 2
+  metabase = 16
+blocked_request_count = 6
+blocked_requests_by_source:
+  metabase = 6
+prompt_tokens = 235144
+completion_tokens = 3168
+reasoning_tokens = 861
+provider_reported_cost = 0.2307826
+setup provider calls = 0
+Suggested Prompts paid calls = 0
+```
+
+All six blocked Metabase requests were rejected locally with
+`PROVIDER_SOURCE_CEILING_EXHAUSTED`; they did not reach OpenRouter.
+
+first wrong transition:
+```text
+Research Intake READY
+-> real Terra/Metabot native cognition
+-> R1 native attestation
+-> HTTP 422
+-> NATIVE_QUERY_RUNTIME_REPRESENTATION_UNSUPPORTED
+   clause-tag = absolute-datetime
+-> R1_NATIVE_SCOPE_ATTESTATION_FAILED
+```
+
+Additional observed failures after that transition:
+- the second analytical obligation was limited by
+  `NATIVE_METRIC_EXPANSION_UNSUPPORTED` while the engine reported that P13B-v1 certifies one
+  native metric aggregation only;
+- no Evidence was admitted for either obligation;
+- P17 calls = 0;
+- P19 calls = 0;
+- the attempted second user turn then failed closed at
+  `P14_SCOPE_LINEAGE_REQUIRED: mutated scope requires the exact prior Research session`.
+
+These later observations are not reclassified as the first wrong transition.
+
+protocol disposition:
+- V3 consumed real provider requests and is immutable RED;
+- no V3 retry;
+- `RCA_P19_HARD_V2` was not run;
+- no Sol reference run;
+- no broad paid run;
+- Product semantics remain frozen after the RED;
+- temporary exact-file push bridge is removed in the STOP-state closure commit;
+- `DMP-DEC-0075` is NOT created;
+- Phase 1 remains IN_PROGRESS;
+- P13 is BLOCKED / NOT STARTED.

@@ -38,13 +38,40 @@
     "provider_policy_phase1": 36479346412,
     "provider_policy_governance": 36479346348
   },
-  "probe_a_v3_run_id": null,
-  "probe_a_v3_adjudication": null,
+  "probe_a_v3_run_id": 36481553724,
+  "probe_a_v3_adjudication": "RED",
   "broad_paid_allowed": false,
   "automatic_retry": false,
   "sol_reference_authorized": false,
   "preflight_failure_run_id": 36479707453,
   "preflight_failure_stage": "provider-free pinpoint preflight",
   "preflight_actual_provider_requests": 0,
-  "preflight_product_step_executed": false
+  "preflight_product_step_executed": false,
+  "probe_a_v3_artifact_id": 10996548690,
+  "probe_a_v3_artifact_digest": "sha256:10bd556a41d4cf3ba89e80864f0eec38b2cf79e42b4329da7d27299f5689ec3d",
+  "probe_a_v3_accounting": {
+    "orchestration_boundary_units": 4,
+    "actual_provider_request_count": 18,
+    "provider_requests_by_source": {
+      "research_intake": 2,
+      "metabase": 16
+    },
+    "blocked_request_count": 6,
+    "blocked_requests_by_source": {
+      "metabase": 6
+    },
+    "prompt_tokens": 235144,
+    "completion_tokens": 3168,
+    "reasoning_tokens": 861,
+    "provider_reported_cost_usd": 0.2307826
+  },
+  "probe_a_v3_first_wrong_transition": {
+    "owner": "R1 native attestation",
+    "code": "NATIVE_QUERY_RUNTIME_REPRESENTATION_UNSUPPORTED",
+    "clause_tag": "absolute-datetime",
+    "product_limitation_code": "R1_NATIVE_SCOPE_ATTESTATION_FAILED"
+  },
+  "probe_a_v3_terminal_exception": "P14_SCOPE_LINEAGE_REQUIRED",
+  "rca_probe_authorized": false,
+  "next_paid_probe_authorized": null
 }

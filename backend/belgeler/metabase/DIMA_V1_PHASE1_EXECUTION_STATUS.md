@@ -41,11 +41,12 @@ Probe A V2
 = artifact 10991822610
 
 Probe A V3
-= AUTHORIZED / ONE RUN ONLY
-= NOT RUN
+= RED / IMMUTABLE
+= run 36481553724
+= artifact 10996548690
 
 RCA Probe V2
-= NOT RUN / BLOCKED ON PROBE A V3
+= NOT RUN / BLOCKED BY V3 RED
 
 Probe B
 = HISTORICAL NAME / NOT RUN
@@ -55,7 +56,7 @@ BROAD PAID
 = 0 RUNS IN FINAL RECOVERY
 
 P13
-= NOT STARTED
+= BLOCKED / NOT STARTED
 
 PHASE 1 COMPLETE?
 NO
@@ -718,3 +719,70 @@ Authorization run `36479707453` did **not** execute the V3 Product probe:
 This is recorded as a zero-provider preflight defect, not as
 `SCOPE_CURRENTNESS_HARD_V3` Product evidence. The next authorization may execute the
 single actual V3 probe only after provider-free recertification of the corrected test.
+
+
+### V3 LIVE RED / STOP-THE-LINE — 2026-09-28
+
+Immutable live receipt:
+- run `36481553724`;
+- artifact `10996548690`;
+- artifact digest `sha256:10bd556a41d4cf3ba89e80864f0eec38b2cf79e42b4329da7d27299f5689ec3d`;
+- Product behavior SHA `6308b705e3c61aaa36825493421cde8288744561`;
+- model topology = Terra for Dima cognition + Metabot;
+- engine = `cbe313af9ac2d5960f662068e433d328d896fb06` / `0.63.18-dima.6`;
+- migration head = `fd2a7c9e4b61`.
+
+Provider accounting:
+```text
+orchestration_boundary_units = 4
+research_intake orchestration = 2
+metabot orchestration = 2
+P17 orchestration = 0
+P19 orchestration = 0
+
+actual_provider_request_count = 18
+research_intake = 2
+metabase = 16
+blocked locally after source ceiling = 6 metabase requests
+
+prompt_tokens = 235144
+completion_tokens = 3168
+reasoning_tokens = 861
+provider_reported_cost = USD 0.2307826
+
+setup provider calls = 0
+Suggested Prompts paid calls = 0
+broad paid runs = 0
+```
+
+First wrong Product transition:
+```text
+Research Intake READY
+-> real Terra/Metabot native cognition
+-> R1 native attestation
+-> HTTP 422
+-> NATIVE_QUERY_RUNTIME_REPRESENTATION_UNSUPPORTED
+   clause-tag = absolute-datetime
+-> R1_NATIVE_SCOPE_ATTESTATION_FAILED
+```
+
+A later obligation also reached `NATIVE_METRIC_EXPANSION_UNSUPPORTED`. No governed Evidence
+was admitted. P17/P19 were not entered. When the second user turn attempted the mutated scope,
+P14 then failed closed with `P14_SCOPE_LINEAGE_REQUIRED`. These later observations do not
+replace the earlier R1 attestation transition as the first wrong transition.
+
+The real-provider guard also behaved fail-closed: Metabase reached its 16-request source ceiling
+and six subsequent requests were blocked locally rather than forwarded upstream.
+
+Protocol disposition:
+```text
+SCOPE_CURRENTNESS_HARD_V3 = RED / IMMUTABLE
+automatic retry = 0
+RCA_P19_HARD_V2 = NOT RUN / BLOCKED
+Sol reference = NOT RUN / NOT AUTHORIZED
+broad paid = NOT RUN / FORBIDDEN
+temporary push trigger = REMOVED
+PHASE 1 = IN_PROGRESS
+P13 = BLOCKED / NOT STARTED
+DIMA BRAIN V1 = NOT SEALED
+```

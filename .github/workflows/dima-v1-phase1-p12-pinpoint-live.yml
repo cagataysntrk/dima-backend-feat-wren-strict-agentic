@@ -1,14 +1,8 @@
 name: dima-v1-phase1-pinpoint-live
 
-# DMP-DEC-0074D TEMPORARY EXECUTION BRIDGE.
-# Push is accepted ONLY for the exact immutable authorization file below.
-# Remove this bridge immediately when V3 is RED or after the V3/RCA sequence ends.
+# Steady-state after immutable V3 RED. Paid execution is manual-only.
+# No Probe A V3 retry, RCA V2, Sol reference, or broad paid run is authorized.
 on:
-  push:
-    branches:
-      - feat/dima-metabase-platform
-    paths:
-      - "backend/eval/v1/authorizations/phase1-final-pinpoint-live-v3.json"
   workflow_dispatch:
     inputs:
       probe_id:
@@ -60,101 +54,16 @@ jobs:
           fetch-depth: 64
           submodules: false
 
-      - name: Resolve exact sequential authorization
+      - name: Resolve manual pinpoint request
         id: auth
         shell: bash
         run: |
           set -euo pipefail
-          if [ "${{ github.event_name }}" = "push" ]; then
-            python - <<'PY'
-          import json, os, subprocess
-          from pathlib import Path
-
-          path=Path("backend/eval/v1/authorizations/phase1-final-pinpoint-live-v3.json")
-          item=json.loads(path.read_text(encoding="utf-8"))
-          assert item["schema_version"]=="dima_v1_phase1_final_pinpoint_authorization_v2"
-          assert item["decision"]=="PINPOINT_PAID_ONLY"
-          assert item["confirm"]=="YES"
-          assert item["probe_id"] in {"SCOPE_CURRENTNESS_HARD_V3","RCA_P19_HARD_V2"}
-          assert item["max_orchestration_boundary_units"]==12
-          assert item["candidate_product_sha"]=="6308b705e3c61aaa36825493421cde8288744561"
-          assert item["engine_sha"]=="cbe313af9ac2d5960f662068e433d328d896fb06"
-          assert item["engine_digest"]=="sha256:40e9a44be49904de3ddf12d4683c768e70955851c10a928a9c8f7d8f60780353"
-          assert item["migration_head"]=="fd2a7c9e4b61"
-          assert item["model_topology"]=={
-              "dima_cognition":"openai/gpt-5.6-terra",
-              "metabot":"openrouter/openai/gpt-5.6-terra",
-              "policy":"phase1-terra-default-no-cascade",
-          }
-          assert item["hard_provider_request_ceiling"]==24
-          assert item["source_request_ceilings"]=={
-              "research_intake":2,
-              "metabase":16,
-              "p17_manager":4,
-              "p19_manager":2,
-          }
-          assert item["prompt_token_ceiling"]==350000
-          assert item["completion_token_ceiling"]==16000
-          assert item["reasoning_token_ceiling"]==12000
-          assert item["provider_cost_ceiling_usd"]==1.0
-          assert item["automatic_retry"] is False
-          assert item["broad_paid_allowed"] is False
-          assert item["sol_reference_authorized"] is False
-
-          candidate=item["candidate_product_sha"]
-          subprocess.run(["git","merge-base","--is-ancestor",candidate,"HEAD"],check=True)
-          subprocess.run(
-              [
-                  "git","diff","--exit-code",candidate,"HEAD","--",
-                  "backend/app","backend/control_plane","backend/migrations","engine/metabase",
-              ],
-              check=True,
-          )
-          commits=subprocess.check_output(
-              ["git","log","--format=%H","--",str(path)],text=True
-          ).split()
-          if item["probe_id"]=="SCOPE_CURRENTNESS_HARD_V3":
-              assert item.get("probe_a_v3_run_id") is None
-              if len(commits)==1:
-                  assert item.get("preflight_failure_run_id") is None
-              else:
-                  assert len(commits)==2,commits
-                  previous=json.loads(
-                      subprocess.check_output(
-                          ["git","show",f"HEAD^:{path}"],text=True
-                      )
-                  )
-                  assert previous["probe_id"]=="SCOPE_CURRENTNESS_HARD_V3"
-                  assert previous["candidate_product_sha"]==candidate
-                  assert previous.get("probe_a_v3_run_id") is None
-                  assert item.get("preflight_failure_run_id")==36479707453
-                  assert item.get("preflight_failure_stage")=="provider-free pinpoint preflight"
-                  assert item.get("preflight_actual_provider_requests")==0
-                  assert item.get("preflight_product_step_executed") is False
-          else:
-              assert len(commits)==2,commits
-              previous=json.loads(
-                  subprocess.check_output(
-                      ["git","show",f"HEAD^:{path}"],text=True
-                  )
-              )
-              assert previous["probe_id"]=="SCOPE_CURRENTNESS_HARD_V3"
-              assert previous["candidate_product_sha"]==candidate
-              assert isinstance(item.get("probe_a_v3_run_id"),int)
-              assert item["probe_a_v3_run_id"]>0
-              assert item["probe_a_v3_adjudication"]=="GREEN"
-          with open(os.environ["GITHUB_OUTPUT"],"a",encoding="utf-8") as out:
-              out.write(f"candidate_sha={candidate}\n")
-              out.write(f"probe_id={item['probe_id']}\n")
-              out.write("max_orchestration_units=12\n")
-          PY
-          else
-            test "${{ github.event_name }}" = "workflow_dispatch"
-            test "${{ inputs.confirm_pinpoint_paid }}" = "YES"
-            echo "candidate_sha=${PRODUCT_BEHAVIOR_SHA}" >> "$GITHUB_OUTPUT"
-            echo "probe_id=${{ inputs.probe_id }}" >> "$GITHUB_OUTPUT"
-            echo "max_orchestration_units=12" >> "$GITHUB_OUTPUT"
-          fi
+          test "${{ github.event_name }}" = "workflow_dispatch"
+          test "${{ inputs.confirm_pinpoint_paid }}" = "YES"
+          echo "candidate_sha=${PRODUCT_BEHAVIOR_SHA}" >> "$GITHUB_OUTPUT"
+          echo "probe_id=${{ inputs.probe_id }}" >> "$GITHUB_OUTPUT"
+          echo "max_orchestration_units=12" >> "$GITHUB_OUTPUT"
 
       - uses: actions/setup-python@v5
         with:
