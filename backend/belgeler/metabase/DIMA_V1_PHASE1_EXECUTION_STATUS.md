@@ -147,7 +147,7 @@ No Phase-2 work, DEV80, Validation50 or Hidden50 is authorized here.
 
 ## POST-P12 ROOT RECOVERY
 
-Status at `f064f219c4ac9dff4b28a24ff200cc5082d5e14e`:
+Status at `5329984c0323f9f6425a02a07ca3fe6a3f7db53b`:
 
 ```text
 PHASE 1 = IN_PROGRESS / REGRESSION-EXPOSED
@@ -159,19 +159,28 @@ R2 artifact visibility/currentness lineage
 = PROVIDER-FREE GREEN / RE-SEALED
 
 R3 P17 -> P19 typed candidate contract
-= NOT STARTED
+= PROVIDER-FREE GREEN / RE-SEALED
 
 R4 relationship result / P18 authority composition
-= NOT STARTED
+= PROVIDER-FREE GREEN / RE-SEALED
 
-P12 LIVE
+POST-P12 integrated provider-free closure
+= PENDING CURRENT-HEAD RECERTIFICATION
+
+P12 prior live
 = historical diagnostic artifact
 = NOT ACCEPTED
 = NOT SEALED
-= NO BROAD RERUN AUTHORIZED
+
+new broad live run
+= NOT AUTHORIZED
+
+pinpoint paid validation
+= USER-AUTHORIZED IF NEEDED
+= NOT RUN
 
 P13
-= BLOCKED
+= BLOCKED / NOT STARTED
 ```
 
 R1 evidence:
@@ -210,3 +219,53 @@ R2 proof:
 
 Wave A and Wave B historical provider-free GREEN receipts remain valid.
 The post-P12 live artifact exposed cross-owner integration defects; it is diagnostic evidence only.
+
+R3 exact root and correction:
+- legal P17 `FORM_CLAIM` output previously had a broader proposition shape than the Product/P19 root-candidate consumer contract;
+- one shared typed `RootCauseCandidateSemantics` now carries explanatory subject, closed relation kind, Dima-bound mechanism identity, and exact scope lineage/version;
+- provider cognition does not mint candidate, claim, branch, or hypothesis authority IDs;
+- Product no longer guesses hidden `predicate/object` keys;
+- candidate distinctness is exact typed relation/mechanism identity, never wording similarity;
+- one candidate never fabricates a second candidate; missing Evidence and stale scope remain ineligible.
+
+R3 behavior SHA:
+- `fd9e21dd27a2a6f5eb8cf3df83229717827ed37e`.
+
+R3 proof alignment SHAs:
+- `e707f764810997163dba8416d06b081d6ca00f42`;
+- `5329984c0323f9f6425a02a07ca3fe6a3f7db53b`.
+
+R3 provider-free proof:
+- Core-B focused `36419432025 = SUCCESS`;
+- governance `36419432008 = SUCCESS`;
+- current Phase-1 focused `36421168632 = SUCCESS`;
+- current P12 provider-free/metamorphic `36421168657 = SUCCESS`;
+- current governance `36421168754 = SUCCESS`.
+
+R4 exact root and correction:
+- sealed P18 `BLOCKED_MISSING` remains legitimate when no exact active business policy exists;
+- Product preserves grounded association/co-movement instead of erasing the weaker layer when P18 is blocked;
+- relationship analytical child material preserves the exact parent R1 scope authority;
+- an exact active P18 policy promotes only the business-relationship layer;
+- challenged/insufficient Evidence remains explicit;
+- contribution and causality are never inferred by R4/P18.
+
+R4 behavior SHA:
+- `ee1fd64c4b819669dd2751d99ccece474ebba75c`.
+
+R4 provider-free proof:
+- Phase-1 focused `36419758992 = SUCCESS`;
+- Core-B focused `36419759180 = SUCCESS`;
+- Core-B provider-free seal `36419758961 = SUCCESS`;
+- cleanup-focused `36419758958 = SUCCESS`;
+- governance `36419759090 = SUCCESS`.
+
+Current fixed identities:
+- engine = `cbe313af9ac2d5960f662068e433d328d896fb06` / `0.63.18-dima.6`;
+- migration head = `fd2a7c9e4b61`;
+- paid/model calls consumed by POST-P12 root recovery so far = `0`;
+- broad P12 live rerun = `NOT AUTHORIZED`;
+- P13 = `BLOCKED / NOT STARTED`.
+
+The next allowed step is one current-HEAD integrated provider-free recertification across the existing owners. No new orchestration owner is introduced.
+

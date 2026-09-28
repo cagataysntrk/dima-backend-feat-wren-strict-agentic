@@ -7507,3 +7507,152 @@ engine:
 decision:
 R2 = PROVIDER-FREE GREEN / RE-SEALED.
 Proceed to R3. No broad live benchmark is authorized.
+
+---
+
+## DMP-DEC-0070 — POST-P12 R3 P17 -> P19 TYPED CANDIDATE RE-OPEN + RE-SEAL
+
+date: 2026-09-28
+
+status:
+`SEALED / PROVIDER-FREE GREEN`
+
+external authority:
+The POST-P12 root-recovery directive authorizes R3 after R1 and R2 provider-free closure.
+This receipt re-opens only the P17 claim-producer -> Product/P19 candidate seam.
+
+re-open scope:
+- P17 typed claim-production contract for ROOT_CAUSE candidate meaning;
+- Product root-candidate projection and P19 eligibility input;
+- provider-free integration fixtures across P17 -> P16 claim/Evidence -> Product -> P19 eligibility.
+
+not re-opened:
+- P16 claim/Evidence truth authority;
+- P19 hypothesis/assessment/causal authority;
+- P18 policy legality;
+- P14 analytical authority;
+- engine;
+- UI;
+- external execution.
+
+exact root:
+
+```text
+legal generic P17 claim proposition
+did not imply
+legal Product/P19 RootCauseCandidate
+```
+
+generic correction:
+- one shared typed `RootCauseCandidateSemantics` contract carries explanatory subject, closed relation kind,
+  Dima-bound mechanism identity and exact scope lineage/version;
+- provider retains semantic cognition only;
+- Dima deterministically owns machine identity;
+- Product decodes the shared typed contract instead of scraping proposition keys;
+- distinctness uses exact typed relation/mechanism identity;
+- missing Evidence or stale scope fails eligibility closed;
+- no fake second candidate is created.
+
+behavior:
+- `fd9e21dd27a2a6f5eb8cf3df83229717827ed37e`.
+
+proof alignment:
+- `e707f764810997163dba8416d06b081d6ca00f42` aligns a stale Core-B fixture after the typed contract change;
+- `5329984c0323f9f6425a02a07ca3fe6a3f7db53b` aligns only the stale P12 metamorphic constructor.
+
+provider-free evidence:
+- Core-B focused `36419432025 = SUCCESS`;
+- governance `36419432008 = SUCCESS`;
+- Phase-1 focused `36421168632 = SUCCESS`;
+- P12 provider-free/metamorphic `36421168657 = SUCCESS`;
+- governance `36421168754 = SUCCESS`.
+
+proved invariants:
+- one candidate -> no fabricated second candidate;
+- duplicate typed mechanism -> not materially distinct;
+- distinct typed mechanisms -> `CALL_P19`;
+- missing Evidence -> not P19-eligible;
+- stale-scope candidate -> not current P19 input;
+- typed P19 eligibility is the only callability predicate;
+- no regex/fuzzy/morphology/embedding semantic classification;
+- no P19 owner weakening.
+
+decision:
+`R3 = PROVIDER-FREE GREEN / RE-SEALED`.
+Proceed to R4.
+
+---
+
+## DMP-DEC-0071 — POST-P12 R4 RELATIONSHIP LAYERS / P18 COMPOSITION RE-OPEN + RE-SEAL
+
+date: 2026-09-28
+
+status:
+`SEALED / PROVIDER-FREE GREEN`
+
+external authority:
+The POST-P12 root-recovery directive authorizes R4 after R1-R3 provider-free closure.
+This receipt re-opens Product relationship composition only; sealed P18 policy legality is not weakened.
+
+re-open scope:
+- Product relationship-result composition;
+- relationship analytical child scope propagation through the shared R1 invariant model;
+- provider-free cross-owner proofs for blocked/satisfied P18 outcomes and weaker relationship layers.
+
+not re-opened:
+- P18 business-policy authority;
+- P19 causal authority;
+- P16 claim/Evidence authority;
+- native join/query planning;
+- engine;
+- UI;
+- external execution.
+
+exact root:
+
+```text
+P18 BLOCKED_MISSING may be correct
+but a missing stronger business-policy layer
+must not erase already-grounded weaker association/co-movement material
+```
+
+generic correction:
+- relationship material derives from the exact parent `ResearchScope`, preserving time/filter/version authority;
+- grounded association remains visible when P18 is blocked;
+- `BLOCKED_MISSING` remains explicit;
+- an exact active P18 policy may satisfy only the business-relationship layer;
+- challenging/insufficient Evidence remains represented;
+- contribution and causality remain `NOT_ESTABLISHED` unless their stronger owners establish them;
+- no permissive default policy is created.
+
+behavior:
+- `ee1fd64c4b819669dd2751d99ccece474ebba75c`.
+
+provider-free evidence:
+- Phase-1 focused `36419758992 = SUCCESS`;
+- Core-B focused `36419759180 = SUCCESS`;
+- Core-B provider-free seal `36419758961 = SUCCESS`;
+- cleanup-focused `36419758958 = SUCCESS`;
+- governance `36419759090 = SUCCESS`.
+
+proved invariants:
+- grounded association + no exact P18 policy -> association preserved + business relationship BLOCKED;
+- grounded association + exact active P18 policy -> business relationship SATISFIED;
+- challenging/insufficient Evidence is not promoted;
+- scope mismatch remains blocked;
+- causality/contribution are never inferred by P18/R4;
+- relationship child scope preserves R1 time/filter/scope-version authority.
+
+unchanged:
+- P18 durable owner and policy legality;
+- engine = `cbe313af9ac2d5960f662068e433d328d896fb06` / `0.63.18-dima.6`;
+- migration head = `fd2a7c9e4b61`;
+- UI/frontend diff = 0;
+- Wren runtime/code import = 0;
+- external execution diff = 0;
+- paid/model calls for R4 = 0.
+
+decision:
+`R4 = PROVIDER-FREE GREEN / RE-SEALED`.
+Proceed to one integrated provider-free root-recovery closure on the current HEAD.
+
