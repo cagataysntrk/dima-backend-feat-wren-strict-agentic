@@ -5,9 +5,10 @@ Dima-principal/native-subject correlation, native session/runtime identity,
 direct execution of the exact captured Metabot query, result provenance,
 the single DimaQueryReceipt family, Evidence, and Research correlation.
 
-No analytical planner, MBQL parser, operator validator, P13 attestation or
-re-execution dependency, P10 access-snapshot synthesis, or mandatory
-resource-binding authorization lives here.
+No analytical planner, MBQL parser, semantic guesser, re-execution dependency,
+P10 access-snapshot synthesis, or resource-planning authority lives here.
+The engine attestation seam is used only to verify material request invariants
+before a native result may become governed Evidence.
 """
 from __future__ import annotations
 
@@ -26,7 +27,15 @@ from app.v3.execution_identity import (
     ExecutionResultSnapshot,
     RuntimeIdentity,
 )
+from app.v3.native_standard.contracts import NativeAttestationEnvelope
 from app.v3.research import ResearchSession
+from app.v3.research_analytical_scope import (
+    NativeFieldLocator,
+    NativeTableLocator,
+    ResearchAnalyticalScopeError,
+    analytical_scope_contract,
+    assert_attested_native_scope,
+)
 from app.v3.research_product import (
     ResearchMaterialLimitation,
     ResearchMaterialOutcome,
@@ -187,6 +196,127 @@ class NativeResearchMaterialExecutor:
         self._expected = expected_identity
 
     @staticmethod
+    def _native_locators(
+        *,
+        bridge: NativeEngineBridge,
+        attestation: NativeAttestationEnvelope,
+    ) -> tuple[
+        dict[int, NativeFieldLocator],
+        dict[int, NativeTableLocator],
+    ]:
+        manifest = attestation.manifest
+        field_ids: set[int] = set()
+        for item in manifest.aggregations:
+            field_ids.update(item.referenced_field_ids)
+        field_ids.update(item.field_id for item in manifest.breakouts)
+        field_ids.update(
+            item.time_field_id for item in manifest.temporal_predicates
+        )
+        field_ids.update(
+            item.field_id for item in manifest.textual_equality_predicates
+        )
+
+        raw_tables: dict[int, dict[str, Any]] = {}
+        table_locators: dict[int, NativeTableLocator] = {}
+        for table_id in sorted(set(manifest.referenced_source_table_ids)):
+            raw_table = bridge.table_metadata(table_id)
+            raw_tables[table_id] = raw_table
+            table_locators[table_id] = NativeTableLocator(
+                table_id=table_id,
+                table_name=str(raw_table["name"]),
+                schema_name=(
+                    str(raw_table["schema"])
+                    if raw_table.get("schema") is not None
+                    else None
+                ),
+            )
+
+        field_locators: dict[int, NativeFieldLocator] = {}
+        for field_id in sorted(field_ids):
+            raw_field = bridge.field_metadata(field_id)
+            table_id = int(raw_field["table_id"])
+            raw_table = raw_tables.get(table_id)
+            if raw_table is None:
+                raw_table = bridge.table_metadata(table_id)
+                raw_tables[table_id] = raw_table
+                table_locators[table_id] = NativeTableLocator(
+                    table_id=table_id,
+                    table_name=str(raw_table["name"]),
+                    schema_name=(
+                        str(raw_table["schema"])
+                        if raw_table.get("schema") is not None
+                        else None
+                    ),
+                )
+            field_locators[field_id] = NativeFieldLocator(
+                field_id=field_id,
+                table_id=table_id,
+                table_name=str(raw_table["name"]),
+                schema_name=(
+                    str(raw_table["schema"])
+                    if raw_table.get("schema") is not None
+                    else None
+                ),
+                column_name=str(raw_field["name"]),
+            )
+        return field_locators, table_locators
+
+    def _attest_scope(
+        self,
+        *,
+        bridge: NativeEngineBridge,
+        session: ResearchSession,
+        obligation_id: str,
+        native_conversation_id: uuid.UUID,
+        native_query_id: str,
+        metabase_user_id: int,
+    ):
+        try:
+            raw = bridge.attest_native_query(
+                conversation_id=native_conversation_id,
+                native_query_id=native_query_id,
+            )
+            attestation = NativeAttestationEnvelope.model_validate(raw)
+            if (
+                attestation.manifest.native_conversation_id
+                != native_conversation_id
+                or attestation.manifest.native_query_id != native_query_id
+            ):
+                raise ResearchMaterialLimitation(
+                    "R1_NATIVE_OCCURRENCE_SCOPE_MISMATCH",
+                    "scope attestation belongs to another native occurrence",
+                )
+            contract = analytical_scope_contract(
+                session=session,
+                obligation_id=obligation_id,
+            )
+            field_locators, table_locators = self._native_locators(
+                bridge=bridge,
+                attestation=attestation,
+            )
+            observation = assert_attested_native_scope(
+                session=session,
+                obligation_id=obligation_id,
+                contract=contract,
+                attestation=attestation,
+                field_locators=field_locators,
+                table_locators=table_locators,
+                expected_engine=self._expected,
+                expected_metabase_subject=metabase_user_id,
+            )
+        except NativeEngineBridgeError as exc:
+            raise ResearchMaterialLimitation(
+                "R1_NATIVE_SCOPE_ATTESTATION_FAILED",
+                str(exc),
+            ) from exc
+        except (ValueError, ResearchAnalyticalScopeError) as exc:
+            code = getattr(exc, "code", "R1_NATIVE_SCOPE_OBSERVATION_INVALID")
+            detail = getattr(exc, "detail", str(exc))
+            raise ResearchMaterialLimitation(code, detail) from exc
+
+        return observation
+
+    @staticmethod
     def _row_count(payload: dict[str, Any]) -> int:
         value = payload.get("row_count")
         if isinstance(value, int):
@@ -257,6 +387,15 @@ class NativeResearchMaterialExecutor:
                     "blind retry is forbidden"
                 ),
             )
+
+        scope_observation = self._attest_scope(
+            bridge=bridge,
+            session=session,
+            obligation_id=obligation_id,
+            native_conversation_id=native_conversation_id,
+            native_query_id=native_query_id,
+            metabase_user_id=int(binding.metabase_user_id),
+        )
 
         if link.status == "EXECUTED":
             (
@@ -368,6 +507,13 @@ class NativeResearchMaterialExecutor:
                 "native_conversation_id": str(native_conversation_id),
                 "native_query_id": native_query_id,
                 "query_fingerprint": query_fingerprint,
+                "attestation_id": scope_observation.attestation_id,
+                "attested_query_fingerprint": (
+                    scope_observation.exact_artifact_fingerprint
+                ),
+                "scope_identity": scope_observation.request.scope_identity.model_dump(
+                    mode="json"
+                ),
                 "native_subject_ref": native_subject_ref,
                 "result_hash": result.result_hash,
                 "row_count": result.row_count,
@@ -377,7 +523,7 @@ class NativeResearchMaterialExecutor:
         return ResearchMaterialOutcome(
             native_conversation_id=native_conversation_id,
             native_query_id=native_query_id,
-            attestation_id=None,
+            attestation_id=scope_observation.attestation_id,
             receipt=receipt,
             evidence=evidence,
         )
