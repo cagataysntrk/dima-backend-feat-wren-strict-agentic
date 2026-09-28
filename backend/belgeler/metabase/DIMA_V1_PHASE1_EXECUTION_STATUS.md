@@ -392,3 +392,35 @@ Explicitly preserved:
 - no broad paid run.
 
 Historical DMP-DEC-0072 evidence remains historical fact. It is not rewritten or deleted.
+
+
+## DMP-DEC-0073 INTEGRATION CANDIDATE
+
+Behavior candidate before this docs-only trigger:
+`f52b7199f8c510e1963ccdb5e34fb9308fc9737f`
+
+```text
+Correction A / R1-P3 = FOCUSED GREEN
+Correction B / R3    = FOCUSED GREEN
+
+Integrated provider-free
+= RUNNING / PENDING
+
+Broad paid benchmark
+= FORBIDDEN
+
+Pinpoint paid probes
+= USER-AUTHORIZED
+= BLOCKED UNTIL INTEGRATED PROVIDER-FREE GREEN
+
+P13
+= NOT STARTED
+```
+
+Focused receipts:
+- A: Phase-1 `36429055269`, Core-B `36429055394`, Core-B seal `36429055309`,
+  Core-A `36429055406`, governance `36429055180` = SUCCESS.
+- B: Phase-1 `36432221157`, Core-B `36432221337`, Core-B seal `36432221345`,
+  governance `36432221215` = SUCCESS.
+
+This section changes authority/status documentation only and is the integration-proof trigger.
