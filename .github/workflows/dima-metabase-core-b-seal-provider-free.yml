@@ -15,6 +15,7 @@ on:
       - "backend/app/v3/native_standard/**"
       - "backend/app/main.py"
       - "backend/migrations/versions/fc8a1d0e3b42_product_investigation_routing.py"
+      - "backend/migrations/versions/fd2a7c9e4b61_p17_child_analytical_scope.py"
       - "backend/app/v3/research.py"
       - "backend/app/v3/research_analytical_scope.py"
       - "backend/app/v3/research_followup.py"
@@ -92,7 +93,7 @@ jobs:
           set -euo pipefail
           python -m alembic heads > /tmp/core-b-heads.txt
           test "$(grep -Ec '^[0-9a-f]+' /tmp/core-b-heads.txt)" -eq 1
-          grep -q '^fc8a1d0e3b42' /tmp/core-b-heads.txt
+          grep -q '^fd2a7c9e4b61' /tmp/core-b-heads.txt
           python -m alembic history --verbose > /tmp/core-b-history.txt
           grep -q 'Rev: fb4e6d2a1074' /tmp/core-b-history.txt
 
