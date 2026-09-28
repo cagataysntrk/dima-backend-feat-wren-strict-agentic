@@ -448,7 +448,14 @@ def test_r1_p14_and_p17_use_same_accepted_scope_envelope():
         step=step,
         task=task,
     ).context["dima_analytical_scope"]
-    assert p17 == p14
+    assert p17["request_ref"] != p14["request_ref"]
+    assert {
+        key: value for key, value in p17.items()
+        if key != "request_ref"
+    } == {
+        key: value for key, value in p14.items()
+        if key != "request_ref"
+    }
 
 
 def test_r1_p17_child_contract_accepts_one_typed_entity_narrowing_and_keeps_june():
