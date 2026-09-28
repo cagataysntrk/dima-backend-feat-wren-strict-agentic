@@ -3,7 +3,7 @@
   "authority": "USER_EXPLICIT_PAID_PINPOINT_AUTHORIZATION",
   "date": "2026-09-28",
   "mode": "PINPOINT_EXACT_TWO",
-  "candidate_product_sha": "cd31e6e54edaf3171908bf93bde6336db88af2b3",
+  "candidate_product_sha": "adc91ed8339878670b5fe8c654930dc08af06ab1",
   "engine_sha": "cbe313af9ac2d5960f662068e433d328d896fb06",
   "engine_release": "0.63.18-dima.6",
   "round2_manifest_blob": "b08fbf6601b8c47a6f336c4efcc0cdab95a6c2da",
@@ -16,9 +16,9 @@
   "broad_paid_allowed": false,
   "human_artifact_review_required": true,
   "one_shot": true,
-  "note": "Third exact-two diagnostic probe captures sanitized 2xx-empty provider metadata only. Product semantics and paid case set unchanged; broad paid remains forbidden.",
-  "attempt": 3,
-  "prior_run_id": 36446735640,
-  "prior_artifact_id": 10979904593,
-  "purpose": "DIAGNOSTIC_PROVIDER_FINISH_REASON_ONLY"
+  "note": "Exact-two validation after provider-envelope fix reasoning.effort=none. Same model/schema/4096 cap. Broad paid remains forbidden.",
+  "attempt": 4,
+  "prior_run_id": 36448131392,
+  "prior_artifact_id": 10981241627,
+  "purpose": "VALIDATE_CURRENT_REASONING_CONTRACT_FIX"
 }
