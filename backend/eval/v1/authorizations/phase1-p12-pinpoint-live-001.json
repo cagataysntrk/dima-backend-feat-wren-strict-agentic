@@ -3,7 +3,7 @@
   "authority": "USER_EXPLICIT_PAID_PINPOINT_AUTHORIZATION",
   "date": "2026-09-28",
   "mode": "PINPOINT_EXACT_TWO",
-  "candidate_product_sha": "3a320f7cba3eaf7b14bd768289639e40e95044d2",
+  "candidate_product_sha": "cd31e6e54edaf3171908bf93bde6336db88af2b3",
   "engine_sha": "cbe313af9ac2d5960f662068e433d328d896fb06",
   "engine_release": "0.63.18-dima.6",
   "round2_manifest_blob": "b08fbf6601b8c47a6f336c4efcc0cdab95a6c2da",
@@ -16,9 +16,9 @@
   "broad_paid_allowed": false,
   "human_artifact_review_required": true,
   "one_shot": true,
-  "note": "Second exact-two paid probe authorized under the same user authorization; eval-only observability changed, product semantics unchanged. Broad paid remains forbidden.",
-  "attempt": 2,
-  "prior_run_id": 36445852231,
-  "prior_artifact_id": 10980222935,
-  "purpose": "DIAGNOSTIC_OWNER_CODE_ONLY"
+  "note": "Third exact-two diagnostic probe captures sanitized 2xx-empty provider metadata only. Product semantics and paid case set unchanged; broad paid remains forbidden.",
+  "attempt": 3,
+  "prior_run_id": 36446735640,
+  "prior_artifact_id": 10979904593,
+  "purpose": "DIAGNOSTIC_PROVIDER_FINISH_REASON_ONLY"
 }
