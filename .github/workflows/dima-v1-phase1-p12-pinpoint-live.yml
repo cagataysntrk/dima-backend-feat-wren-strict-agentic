@@ -1,15 +1,8 @@
 name: dima-v1-phase1-pinpoint-live
 
-# DMP-DEC-0074A TEMPORARY EXECUTION BRIDGE.
-# Fresh supervisor/user authority permits a push ONLY on the exact authorization
-# file below so ChatGPT can run Probe A/B autonomously. Remove this push trigger
-# immediately after the two-probe sequence stops or completes.
+# Steady-state after Probe A STOP: manual dispatch only.
+# No push, schedule, automatic chaining, or retry path.
 on:
-  push:
-    branches:
-      - feat/dima-metabase-platform
-    paths:
-      - "backend/eval/v1/authorizations/phase1-final-pinpoint-live-001.json"
   workflow_dispatch:
     inputs:
       probe_id:
@@ -54,71 +47,16 @@ jobs:
           fetch-depth: 64
           submodules: false
 
-      - name: Resolve exact sequential authorization
+      - name: Resolve manual pinpoint request
         id: auth
         shell: bash
         run: |
           set -euo pipefail
-          if [ "${{ github.event_name }}" = "push" ]; then
-            python - <<'PY'
-          import json, os, subprocess
-          from pathlib import Path
-
-          path=Path("backend/eval/v1/authorizations/phase1-final-pinpoint-live-001.json")
-          item=json.loads(path.read_text(encoding="utf-8"))
-          assert item["schema_version"]=="dima_v1_phase1_final_pinpoint_authorization_v1"
-          assert item["decision"]=="PINPOINT_PAID_ONLY"
-          assert item["confirm"]=="YES"
-          assert item["probe_id"] in {"SCOPE_CURRENTNESS_HARD","RCA_P19_HARD"}
-          assert item["max_model_units"]==12
-          assert item["engine_sha"]=="cbe313af9ac2d5960f662068e433d328d896fb06"
-          assert item["engine_digest"]=="sha256:40e9a44be49904de3ddf12d4683c768e70955851c10a928a9c8f7d8f60780353"
-          assert item["migration_head"]=="fd2a7c9e4b61"
-          candidate=item["candidate_product_sha"]
-          subprocess.run(
-              ["git","merge-base","--is-ancestor",candidate,"HEAD"],
-              check=True,
-          )
-          # Freeze is semantic: authorization/docs/workflow commits may follow,
-          # but Product, migrations and engine must remain byte-identical.
-          subprocess.run(
-              [
-                  "git","diff","--exit-code",candidate,"HEAD","--",
-                  "backend/app","backend/migrations","engine/metabase",
-              ],
-              check=True,
-          )
-          commits=subprocess.check_output(
-              ["git","log","--format=%H","--",str(path)],
-              text=True,
-          ).split()
-          if item["probe_id"]=="SCOPE_CURRENTNESS_HARD":
-              assert len(commits)==1,commits
-              assert item.get("probe_a_run_id") is None
-          else:
-              assert len(commits)==2,commits
-              previous=subprocess.check_output(
-                  ["git","show",f"HEAD^:{path}"],
-                  text=True,
-              )
-              prior=json.loads(previous)
-              assert prior["probe_id"]=="SCOPE_CURRENTNESS_HARD"
-              assert prior["candidate_product_sha"]==candidate
-              assert isinstance(item.get("probe_a_run_id"),int)
-              assert item["probe_a_run_id"]>0
-              assert item["probe_a_adjudication"]=="GREEN"
-          with open(os.environ["GITHUB_OUTPUT"],"a",encoding="utf-8") as out:
-              out.write(f"candidate_sha={candidate}\n")
-              out.write(f"probe_id={item['probe_id']}\n")
-              out.write("max_units=12\n")
-          PY
-          else
-            test "${{ github.event_name }}" = "workflow_dispatch"
-            test "${{ inputs.confirm_pinpoint_paid }}" = "YES"
-            echo "candidate_sha=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
-            echo "probe_id=${{ inputs.probe_id }}" >> "$GITHUB_OUTPUT"
-            echo "max_units=12" >> "$GITHUB_OUTPUT"
-          fi
+          test "${{ github.event_name }}" = "workflow_dispatch"
+          test "${{ inputs.confirm_pinpoint_paid }}" = "YES"
+          echo "candidate_sha=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+          echo "probe_id=${{ inputs.probe_id }}" >> "$GITHUB_OUTPUT"
+          echo "max_units=12" >> "$GITHUB_OUTPUT"
 
       - uses: actions/setup-python@v5
         with:

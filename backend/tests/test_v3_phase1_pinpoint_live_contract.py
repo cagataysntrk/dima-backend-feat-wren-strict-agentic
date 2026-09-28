@@ -115,5 +115,6 @@ def test_pinpoint_workflow_is_one_probe_per_run_and_no_broad_scorer():
     assert "F07_M" not in workflow
     assert "validate_phase1_round2.py" not in workflow
     assert "--manifest eval/dima_neutral_feature_benchmark_round2.json" not in workflow
-    assert "phase1-final-pinpoint-live-001.json" in workflow
+    assert "phase1-final-pinpoint-live-001.json" not in workflow
+    assert "\n  push:\n" not in workflow
     assert "PINPOINT_ARTIFACT_READY_FOR_HUMAN_INSPECTION" in workflow

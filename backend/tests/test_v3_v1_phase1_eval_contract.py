@@ -98,10 +98,8 @@ def test_paid_governance_forbids_broad_execution_and_push_paid_triggers():
 def test_pinpoint_paid_workflow_is_sequential_closed_budget():
     source = PINPOINT_PAID_WORKFLOW.read_text(encoding="utf-8")
     assert "workflow_dispatch:" in source
-    assert "\n  push:\n" in source
-    assert source.count(
-        'backend/eval/v1/authorizations/phase1-final-pinpoint-live-001.json'
-    ) == 2
+    assert "\n  push:\n" not in source
+    assert "phase1-final-pinpoint-live-001.json" not in source
     assert "repository_dispatch" not in source
     assert "SCOPE_CURRENTNESS_HARD" in source
     assert "RCA_P19_HARD" in source
