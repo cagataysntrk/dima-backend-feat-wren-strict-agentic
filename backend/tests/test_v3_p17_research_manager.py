@@ -843,7 +843,7 @@ def test_form_claim_creates_only_p16_proposed_claim():
     assert created.epistemic_state == ClaimEpistemicState.PROPOSED
     assert created.evidence_links == ()
 
-def test_root_candidate_semantics_are_dima_bound_from_branch_and_scope():
+def test_root_candidate_semantics_are_dima_bound_from_governed_scope_not_branch():
     db = db_engine()
     store, session, _, lead, claims, _ = setup_state(db)
     service = ResearchInvestigationManager(
@@ -883,6 +883,7 @@ def test_root_candidate_semantics_are_dima_bound_from_branch_and_scope():
             claim_semantic_contract=(
                 ClaimSemanticContract.ROOT_CAUSE_CANDIDATE
             ),
+            mechanism_semantic_ref="native.sales_order_count",
             claim=ProposedClaimDraft(
                 claim_text="One bounded explanation remains plausible.",
                 proposition={"provider_note": "semantic cognition only"},
@@ -910,7 +911,8 @@ def test_root_candidate_semantics_are_dima_bound_from_branch_and_scope():
         semantics.relation_kind
         == RootCauseCandidateRelation.EXPLANATORY_CANDIDATE
     )
-    assert semantics.mechanism_ref == step.branch_id
+    assert semantics.mechanism_ref == "native.sales_order_count"
+    assert semantics.mechanism_ref != step.branch_id
     assert semantics.scope_lineage_id == session.lineage_id
     assert (
         semantics.scope_version_id
@@ -940,6 +942,7 @@ def test_root_candidate_semantics_are_dima_bound_from_branch_and_scope():
                     claim_semantic_contract=(
                         ClaimSemanticContract.ROOT_CAUSE_CANDIDATE
                     ),
+                    mechanism_semantic_ref="native.sales_order_count",
                     claim=ProposedClaimDraft(
                         claim_text="Invalid reserved-slot attempt.",
                         proposition={
@@ -955,6 +958,51 @@ def test_root_candidate_semantics_are_dima_bound_from_branch_and_scope():
             ),
         )
     assert exc.value.code == "P17_ROOT_CANDIDATE_CONTRACT_INVALID"
+
+
+def test_root_candidate_rejects_mechanism_outside_accepted_governed_scope():
+    db = db_engine()
+    store, session, _, lead, claims, _ = setup_state(db)
+    service = ResearchInvestigationManager(
+        research_store=store,
+        claim_store=claims,
+        followup_executor=PersistedFirstFollowup(db),
+        db_engine=db,
+    )
+
+    with pytest.raises(ResearchManagerMaturationError) as exc:
+        service.run_one(
+            session_id=session.session_id,
+            principal=principal(),
+            manager=ScriptedManager(
+                lambda snap: ManagerProposal(
+                    proposal_id="typed-outside-mechanism",
+                    source_revision=snap.source_revision,
+                    target_parent_obligation="g1",
+                    action=ManagerAction.FORM_CLAIM,
+                    intent=InvestigationIntent.FORM_CLAIM,
+                    objective_key="typed.root.outside",
+                    bounded_objective="Attempt one out-of-scope mechanism.",
+                    rationale="Exercise governed semantic boundary.",
+                    inspected_evidence_refs=snap.evidence_refs,
+                    inspected_claim_refs=tuple(x.claim_id for x in snap.claims),
+                    inspected_material_refs=(lead.lead_id,),
+                    expected_information_gain="Boundary-only proof.",
+                    claim_semantic_contract=(
+                        ClaimSemanticContract.ROOT_CAUSE_CANDIDATE
+                    ),
+                    mechanism_semantic_ref="metric.provider_minted_mechanism",
+                    claim=ProposedClaimDraft(
+                        claim_text="Invalid mechanism candidate.",
+                        proposition={"provider_note": "must fail closed"},
+                        scope={"population": "sales_orders"},
+                        freshness=freshness(),
+                        origin_material_refs=(lead.lead_id,),
+                    ),
+                )
+            ),
+        )
+    assert exc.value.code == "P17_ROOT_CANDIDATE_MECHANISM_OUT_OF_SCOPE"
 
 
 def test_stop_is_durable_and_does_not_force_a_result():
