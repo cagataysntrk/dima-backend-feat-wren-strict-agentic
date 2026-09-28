@@ -218,26 +218,45 @@ class _ObligationScopedProposalManager:
         target_parent_obligation: str,
         allowed_evidence_refs: tuple[str, ...],
         claim_semantic_contract: ClaimSemanticContract | None = None,
+        allowed_mechanism_refs: tuple[str, ...] = (),
     ) -> None:
         self._inner = inner
         self.target_parent_obligation = target_parent_obligation
         self._allowed_evidence_refs = allowed_evidence_refs
         self._claim_semantic_contract = claim_semantic_contract
+        self._allowed_mechanism_refs = allowed_mechanism_refs
 
     @property
     def call_count(self) -> int:
         return int(getattr(self._inner, "call_count", 0))
 
     def propose(self, snapshot):
-        scoped = getattr(self._inner, "propose_for_obligation", None)
-        if callable(scoped):
+        if self._claim_semantic_contract == ClaimSemanticContract.ROOT_CAUSE_CANDIDATE:
+            scoped = getattr(
+                self._inner,
+                "propose_root_candidate_for_obligation",
+                None,
+            )
+            if not callable(scoped):
+                raise ValueError(
+                    "root-cause provider lacks governed mechanism selection boundary"
+                )
             proposal = scoped(
                 snapshot,
                 target_parent_obligation=self.target_parent_obligation,
                 allowed_evidence_refs=self._allowed_evidence_refs,
+                allowed_mechanism_refs=self._allowed_mechanism_refs,
             )
         else:
-            proposal = self._inner.propose(snapshot)
+            scoped = getattr(self._inner, "propose_for_obligation", None)
+            if callable(scoped):
+                proposal = scoped(
+                    snapshot,
+                    target_parent_obligation=self.target_parent_obligation,
+                    allowed_evidence_refs=self._allowed_evidence_refs,
+                )
+            else:
+                proposal = self._inner.propose(snapshot)
         target = getattr(proposal, "target_parent_obligation", None)
         if target is not None and target != self.target_parent_obligation:
             raise ValueError(
@@ -903,6 +922,22 @@ class HeadlessProductComposer:
             for item in source_session.evidence_refs
             if item.obligation_id == goal.goal_id
         )
+        subject_refs = {item.candidate_id for item in goal.subject_refs}
+        allowed_mechanism_refs = (
+            tuple(
+                sorted(
+                    item.candidate_id
+                    for item in source_session.accepted_brief.scope.semantic_refs
+                    if (
+                        item.target_kind
+                        in {SemanticTargetKind.METRIC, SemanticTargetKind.KPI}
+                        and item.candidate_id not in subject_refs
+                    )
+                )
+            )
+            if source_session.accepted_brief is not None
+            else ()
+        )
         scoped_manager = _ObligationScopedProposalManager(
             inner=self._investigation_manager,
             target_parent_obligation=goal.goal_id,
@@ -910,6 +945,7 @@ class HeadlessProductComposer:
             claim_semantic_contract=(
                 ClaimSemanticContract.ROOT_CAUSE_CANDIDATE
             ),
+            allowed_mechanism_refs=allowed_mechanism_refs,
         )
         snapshot, next_owner, _, last_error = self._run_p17(
             session_id=session_id,
