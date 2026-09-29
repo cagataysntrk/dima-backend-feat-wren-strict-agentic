@@ -10,6 +10,7 @@ from app.v3.business_relationship_policy import RelationshipPolicyResolutionStat
 from app.v3.product.composition import (
     HeadlessProductComposer,
     ProductCompositionTerminal,
+    _ObligationScopedProposalManager,
 )
 from app.v3.product.execution_mode import ProductExecutionMode
 from app.v3.business_relationship_v1 import RelationshipLayerState
@@ -18,6 +19,7 @@ from app.v3.product.contracts import (
     ProductInvestigationRequirementKind,
 )
 from app.v3.research import ObligationState
+from app.v3.research_manager import InvestigationIntent
 from app.v3.research_analytical_scope import analytical_scope_contract
 from app.v3.root_cause_candidate_contract import (
     RootCauseCandidateRelation,
@@ -1244,3 +1246,35 @@ def test_r8_a_coorigin_relationship_reuses_verified_sibling_material_without_sec
     )
     assert result.user_must_accounted == 2
     assert result.user_must_fulfilled == 2
+
+
+def test_relationship_scoped_provider_is_claim_only_when_shared_material_is_complete():
+    class Inner:
+        call_count = 0
+
+        def propose_for_obligation_with_constraints(
+            self,
+            snapshot,
+            *,
+            target_parent_obligation,
+            allowed_evidence_refs,
+            allowed_intents,
+        ):
+            self.call_count += 1
+            assert target_parent_obligation == "g_rank"
+            assert allowed_evidence_refs == ("evi_" + "1" * 24,)
+            assert allowed_intents == (InvestigationIntent.FORM_CLAIM,)
+            return SimpleNamespace(
+                target_parent_obligation=target_parent_obligation,
+            )
+
+    inner = Inner()
+    manager = _ObligationScopedProposalManager(
+        inner=inner,
+        target_parent_obligation="g_rank",
+        allowed_evidence_refs=("evi_" + "1" * 24,),
+        allowed_intents=(InvestigationIntent.FORM_CLAIM,),
+    )
+    result = manager.propose(SimpleNamespace())
+    assert result.target_parent_obligation == "g_rank"
+    assert manager.call_count == 1
