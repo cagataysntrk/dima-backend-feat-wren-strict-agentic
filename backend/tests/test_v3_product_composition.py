@@ -32,6 +32,7 @@ from app.v3.research_contracts import (
     ResearchGoalKind,
     ResearchGoalStatus,
     ResearchQuestion,
+    RankingSurface,
     ResearchScope,
     ResearchSemanticRef,
     ResearchTimePeriod,
@@ -1168,7 +1169,13 @@ def test_r8_a_coorigin_relationship_reuses_verified_sibling_material_without_sec
         kind=ResearchGoalKind.RANKING,
         source_text=source,
         subject_refs=(DEPT, DOWNTIME),
-        related_refs=(FAULTS,),
+        related_refs=(),
+        ranking=RankingSurface(
+            text="top 2 by downtime",
+            direction="desc",
+            limit=2,
+            measure_semantic_id=DOWNTIME.candidate_id,
+        ),
         status=ResearchGoalStatus.RESOLVED,
     )
     relationship = ResearchQuestion(
