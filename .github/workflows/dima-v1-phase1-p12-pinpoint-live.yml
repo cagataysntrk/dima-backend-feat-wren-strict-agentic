@@ -1,15 +1,8 @@
 name: dima-v1-phase1-pinpoint-live
 
-# Recovery/growth live authority. Exactly five closed pinpoint probes are authorized.
-# Dedicated trigger branches are short-lived pointers to one frozen Platform checkout.
+# Recovery/growth live authority. Paid execution is manual-only after Panel A RED.
+# No push-triggered paid probe is permitted without fresh supervisor authority.
 on:
-  push:
-    branches:
-      - phase1-v4-trigger-20260929
-      - phase1-rca-trigger-20260929
-      - phase1-f05-trigger-20260929
-      - phase1-f08-trigger-20260929
-      - phase1-f06-trigger-20260929
   workflow_dispatch:
     inputs:
       probe_id:
