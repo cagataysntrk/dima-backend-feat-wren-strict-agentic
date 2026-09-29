@@ -6,6 +6,8 @@ on:
       - feat/dima-metabase-platform
     paths:
       - ".github/workflows/dima-v1-phase1-final-provider-free.yml"
+      - "backend/app/v3/research.py"
+      - "backend/tests/test_v3_r7_native_contract_delivery.py"
       - ".github/workflows/dima-metabase-p14-provider-free.yml"
       - "backend/tests/test_v3_p14_native_gateway.py"
   workflow_dispatch:
@@ -14,7 +16,7 @@ permissions:
   contents: read
 
 env:
-  PRODUCT_BEHAVIOR_SHA: "4829bcb22fedd6f1c97d947ccc106fdc4085895c"
+  PRODUCT_BEHAVIOR_SHA: "cf17b923a151c13c508accb604d359e56c88af94"
   DIMA_VQR_EMBEDDER: "off"
   DIMA_SCHEDULER_ENABLED: "false"
   DIMA_INTERACTION_LOG: "false"
@@ -53,7 +55,7 @@ jobs:
       - name: R5 ordinary Research and P14 provider-free proof
         working-directory: backend
         run: |
-          pytest -q             tests/test_v3_p14_research.py             tests/test_v3_p14_product.py             tests/test_v3_p14_native_gateway.py
+          pytest -q             tests/test_v3_p14_research.py             tests/test_v3_p14_product.py             tests/test_v3_p14_native_gateway.py             tests/test_v3_r7_native_contract_delivery.py
       - name: R1 scope and currentness proof
         working-directory: backend
         run: |

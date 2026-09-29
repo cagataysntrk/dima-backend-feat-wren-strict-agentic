@@ -8,6 +8,7 @@ on:
       - ".github/workflows/dima-v1-phase1-focused.yml"
       - "backend/app/main.py"
       - "backend/app/v3/research_contracts.py"
+      - "backend/app/v3/research.py"
       - "backend/app/v3/research_intake.py"
       - "backend/app/v3/research_product.py"
       - "backend/app/v3/research_store.py"
@@ -18,6 +19,7 @@ on:
       - "backend/app/v3/research_followup.py"
       - "backend/app/v3/research_native_gateway.py"
       - "backend/tests/test_v3_p14_native_gateway.py"
+      - "backend/tests/test_v3_r7_native_contract_delivery.py"
       - "backend/app/v3/analytics_contract.py"
       - "backend/app/v3/native_standard/**"
       - "backend/app/v3/product/**"
@@ -71,6 +73,7 @@ jobs:
         run: |
           python -m py_compile \
             app/v3/research_contracts.py \
+            app/v3/research.py \
             app/v3/research_intake.py \
             app/v3/research_product.py \
             app/v3/research_store.py \
@@ -112,7 +115,8 @@ jobs:
           pytest -q \
             tests/test_v3_v1_analytical_request_contract.py \
             tests/test_v3_p13d_native_standard.py \
-            tests/test_v3_p14_native_gateway.py
+            tests/test_v3_p14_native_gateway.py \
+            tests/test_v3_r7_native_contract_delivery.py
 
       - name: P4 USER_MUST Completion Ledger
         working-directory: backend
