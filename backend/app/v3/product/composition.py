@@ -60,14 +60,11 @@ from app.v3.report_document import (
 )
 from app.v3.research import ObligationState
 from app.v3.research_contracts import (
-    ComparisonSurface,
     PresentationKind,
     ResearchBrief,
     ResearchBriefStatus,
     ResearchGoalKind,
-    ResearchGoalStatus,
     ResearchQuestion,
-    ResearchScope,
     SemanticTargetKind,
 )
 from app.v3.research_manager import (
@@ -430,124 +427,6 @@ class HeadlessProductComposer:
             session_id=session_id,
             principal=principal,
         )
-
-    @staticmethod
-    def _relationship_material_brief(
-        *,
-        parent_session_id: str,
-        parent: ResearchBrief,
-        goal: ResearchQuestion,
-    ) -> ResearchBrief:
-        refs = tuple(dict.fromkeys((*goal.subject_refs, *goal.related_refs)))
-        measures = tuple(
-            item for item in refs
-            if item.target_kind
-            in {
-                SemanticTargetKind.METRIC,
-                SemanticTargetKind.KPI,
-            }
-        )
-        dimensions = tuple(
-            item for item in refs
-            if item.target_kind == SemanticTargetKind.DIMENSION
-        )
-        if len(measures) < 2:
-            raise ValueError(
-                "relationship material requires at least two governed measure refs"
-            )
-
-        names = " and ".join(item.canonical_name for item in measures)
-        if dimensions:
-            dimension_names = ", ".join(item.canonical_name for item in dimensions)
-            source_text = (
-                f"Compare {names} by {dimension_names}. "
-                "Return governed analytical material only; do not claim causality."
-            )
-        else:
-            source_text = (
-                f"Compare {names}. Return governed analytical material only; "
-                "do not claim causality."
-            )
-
-        seed = {
-            "parent_session_id": parent_session_id,
-            "goal_id": goal.goal_id,
-            "refs": [item.candidate_id for item in refs],
-        }
-        child_goal_id = _stable("gpc_", seed)
-        child_goal = ResearchQuestion(
-            goal_id=child_goal_id,
-            kind=ResearchGoalKind.COMPARISON,
-            source_text=source_text,
-            subject_refs=measures,
-            related_refs=dimensions,
-            comparisons=(
-                ComparisonSurface(
-                    text="Governed comparative material for relationship policy evaluation."
-                ),
-            ),
-            status=ResearchGoalStatus.RESOLVED,
-        )
-        return ResearchBrief(
-            brief_id=_stable("rbpc_", seed, 24),
-            objective=source_text,
-            # Relationship material is a derived analytical task, not a new
-            # user-intent scope. Preserve the exact accepted R1 scope authority.
-            scope=parent.scope,
-            required_domains=parent.required_domains,
-            questions=(child_goal,),
-            deliverables=(),
-            must_requirement_ids=(child_goal_id,),
-            blocking_goal_ids=(),
-            context_version=parent.context_version,
-            status=ResearchBriefStatus.READY_FOR_RESEARCH,
-        )
-
-    def _material_session_for_relationship(
-        self,
-        *,
-        parent_session_id: str,
-        brief: ResearchBrief,
-        goal: ResearchQuestion,
-        principal: Principal,
-        native_session_token: str | None,
-        owner_calls: list[str],
-    ) -> tuple[str, ResearchQuestion]:
-        child = self._relationship_material_brief(
-            parent_session_id=parent_session_id,
-            parent=brief,
-            goal=goal,
-        )
-        source_hash = hashlib.sha256(
-            _canonical(child.model_dump(mode="json")).encode("utf-8")
-        ).hexdigest()
-        session = self._research.start_from_brief(
-            brief=child,
-            request_ref=(
-                f"product-composition:{parent_session_id}:{goal.goal_id}:relationship-material"
-            ),
-            source_message_hash=source_hash,
-            principal=principal,
-        )
-        owner_calls.append("P14")
-        final = self._run_p14(
-            research=self._research,
-            session_id=session.session_id,
-            brief=child,
-            principal=principal,
-            native_session_token=native_session_token,
-            owner_calls=owner_calls,
-        )
-        child_goal = child.questions[0]
-        match = next(
-            item for item in final.obligations
-            if item.obligation_id == child_goal.goal_id
-        )
-        if _state_value(match.state) != ObligationState.VERIFIED.value:
-            raise RuntimeError(
-                "relationship comparison material did not reach VERIFIED P14 state"
-            )
-        return final.session_id, child_goal
 
     @staticmethod
     def _root_cause_candidate(
@@ -1387,24 +1266,11 @@ class HeadlessProductComposer:
                 p17_required.append(goal.goal_id)
 
             if goal.kind == ResearchGoalKind.RELATIONSHIP:
-                material_session_id, material_goal = (
-                    self._material_session_for_relationship(
-                        parent_session_id=session.session_id,
-                        brief=brief,
-                        goal=goal,
-                        principal=principal,
-                        native_session_token=native_session_token,
-                        owner_calls=owner_calls,
-                    )
-                )
-                child_sessions.append(material_session_id)
-                material_session = self._research.resume_state(
-                    session_id=material_session_id,
-                    principal=principal,
-                )
-                correlated_evidence_refs.extend(
-                    item.evidence_id for item in material_session.evidence_refs
-                )
+                # Relationship reasoning is derived analytical work under the
+                # already accepted user Research authority. Do not mint a second
+                # P14 Research root merely to obtain comparison material.
+                material_session_id = session.session_id
+                material_goal = goal
                 decision, relationship_result, p17_snapshot, error = self._resolve_relationship(
                     original_goal=goal,
                     material_session_id=material_session_id,
