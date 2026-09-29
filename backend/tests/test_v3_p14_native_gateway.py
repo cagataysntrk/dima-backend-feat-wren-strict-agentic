@@ -619,9 +619,10 @@ def test_r5_p13_rejection_does_not_block_legal_native_execution(p13_detail):
 def test_r5_architecture_removes_p13_from_ordinary_research_permission_path():
     source = inspect.getsource(gateway_module)
     execute_source = inspect.getsource(NativeResearchMaterialExecutor.execute)
+    observe_source = inspect.getsource(NativeResearchMaterialExecutor._observe_scope)
     assert "attest_native_query" not in source
     assert "_attest_scope" not in source
-    assert "observe_native_query_material" in execute_source
+    assert "observe_native_query_material" in observe_source
     assert execute_source.index("mark_executed(") < execute_source.index(
         "_observe_scope("
     )
