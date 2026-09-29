@@ -24,6 +24,11 @@ from app.v3.research_contracts import (
     ResearchSemanticRef,
     SemanticTargetKind,
 )
+from app.v3.execution_identity import (
+    DimaQueryReceiptSealer,
+    ExecutionEventIdentity,
+    ExecutionResultSnapshot,
+)
 from app.v3.research import ObligationState, ResearchManager
 from app.v3.research_native_gateway import (
     NativeResearchMaterialExecutor,
@@ -557,6 +562,85 @@ def test_r5_reproduces_p13_hot_path_blocking_legal_native_execution(p13_detail):
 def test_r5_architecture_reproducer_proves_attestation_precedes_dataset_execution():
     source = inspect.getsource(NativeResearchMaterialExecutor.execute)
     assert source.index("self._attest_scope(") < source.index("bridge.execute_dataset(")
+
+
+def test_r5_historical_dmp_dec_0048_path_executes_and_seals_without_p13():
+    engine = db_engine()
+    seed(engine)
+    store, session, link, query = session_and_link(engine)
+    subjects = NativeSubjectSessionProvider(
+        base_url="http://native.test",
+        expected_identity=expected_identity(),
+        db_engine=engine,
+    )
+    executor = NativeResearchMaterialExecutor(
+        subject_provider=subjects,
+        store=store,
+        expected_identity=expected_identity(),
+    )
+    bridge = P13RejectingButDatasetLegalBridge(
+        p13_detail="P13 must not be touched by historical native-direct execution"
+    )
+    binding = subjects.binding_for(principal=principal(), session=session)
+    native_subject_ref = f"metabase-user:{binding.metabase_user_id}"
+
+    store.mark_execution_started(
+        link.id,
+        native_subject_ref=native_subject_ref,
+    )
+    assert store.execution_link(link.id).status == "EXECUTION_STARTED"
+
+    observed = bridge.execute_dataset(query)
+    assert observed.query_fingerprint == link.native_query_fingerprint
+    result = ExecutionResultSnapshot(
+        payload=observed.payload,
+        row_count=1,
+    )
+    runtime = executor._runtime_identity(
+        raw=bridge.engine_identity(),
+        database_id=observed.payload["database_id"],
+    )
+    executed_at = STAMP
+    store.mark_executed(
+        link.id,
+        native_subject_ref=native_subject_ref,
+        runtime_identity=runtime.model_dump(mode="json"),
+        result_payload=result.payload,
+        result_hash=result.result_hash,
+        executed_at=executed_at,
+    )
+
+    receipt = DimaQueryReceiptSealer.seal_research_execution(
+        authority_id=session.authority_id,
+        research_session_id=session.session_id,
+        obligation_ids=("g1",),
+        tenant_binding=session.tenant_binding,
+        principal_subject=session.principal_subject,
+        roles=tuple(sorted(principal().roles)),
+        native_subject_ref=native_subject_ref,
+        native_conversation_id=link.native_conversation_id,
+        native_query_id=link.native_query_id,
+        native_query_provenance_ref=f"research-execution-link:{link.id}:query",
+        native_result_provenance_ref=f"research-execution-link:{link.id}:result",
+        query_fingerprint=link.native_query_fingerprint,
+        semantic_context_version=session.context_version,
+        runtime=runtime,
+        result=result,
+        event=ExecutionEventIdentity(
+            execution_id=f"native-dataset:{link.id}",
+            executed_at=executed_at,
+        ),
+    )
+
+    persisted = store.execution_link(link.id)
+    assert persisted.status == "EXECUTED"
+    assert persisted.native_result_json is not None
+    assert persisted.native_runtime_identity_json is not None
+    assert receipt.authority_kind == "research_material"
+    assert receipt.canonical_query_fingerprint == link.native_query_fingerprint
+    assert receipt.native_subject_ref == native_subject_ref
+    assert bridge.calls == [query]
+    assert bridge.attestation_calls == []
 
 
 class NativeContractBridge:
