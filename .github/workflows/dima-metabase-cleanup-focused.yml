@@ -102,4 +102,4 @@ jobs:
           test "$(grep -Ec '^[0-9a-f]+' /tmp/heads.txt)" -eq 1
           grep -q '^fd2a7c9e4b61' /tmp/heads.txt
           cd ..
-          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "14323cdde4f258c65c63bbd88f1034f814a7ecb3"
+          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "0f16f2b5a1ec774ac7afee6214c726e82f9ceb3c"
