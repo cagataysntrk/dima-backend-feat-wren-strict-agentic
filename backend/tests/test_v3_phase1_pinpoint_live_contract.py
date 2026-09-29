@@ -157,9 +157,9 @@ def test_pinpoint_workflow_is_one_probe_per_run_and_no_broad_scorer():
     assert "phase1-f06-trigger-20260929" in workflow
     assert "feat/dima-metabase-platform" in workflow
     assert 'PRODUCT_BEHAVIOR_SHA: "af5f0477176c0b3b1ec3b7f733ad393e5fe80bb3"' in workflow
-    assert 'test "$ENGINE_SHA" = "14323cdde4f258c65c63bbd88f1034f814a7ecb3"' in workflow
-    assert 'test "$CERTIFICATION_RUN_ID" = "36532842632"' in workflow
-    assert 'test "$RUNTIME_TAG" = "v0.63.18-dima.7"' in workflow
+    assert 'test "$ENGINE_SHA" = "0f16f2b5a1ec774ac7afee6214c726e82f9ceb3c"' in workflow
+    assert 'test "$CERTIFICATION_RUN_ID" = "36610103287"' in workflow
+    assert 'test "$RUNTIME_TAG" = "v0.63.18-dima.8"' in workflow
     assert "openrouter_counting_proxy.py" in workflow
     assert "--ceiling 0" in workflow
     assert 'HARD_PROVIDER_REQUEST_CEILING: "24"' in workflow
