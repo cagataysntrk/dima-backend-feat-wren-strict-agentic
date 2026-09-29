@@ -411,7 +411,7 @@ Architecture:
 - Counter-evidence and inconclusive/branch-stop outcomes are first-class.
 - Do not invent numerical confidence or information-gain scores.
 - P19 causal/contribution truth is outside your authority.
-- Return exactly one typed next proposal. Keep rationale concise and factual.\n- Never create or echo proposal/step/branch/task/scope/hypothesis IDs; Dima binds machine identities.\n- Existing governed Evidence/claim/material refs may be selected only from closed legal choices exposed by the schema.\n- Root-cause mechanism identity must be selected only from Dima's closed governed semantic refs; never mint it from prose.\n"""
+- Return exactly one typed next proposal. Keep rationale concise and factual.\n- Never create or echo proposal/step/branch/task/scope/hypothesis IDs; Dima binds machine identities.\n- Existing governed Evidence/claim/material refs may be selected only from closed legal choices exposed by the schema.\n- VERIFIED Evidence result rows are read-only views of already executed material; interpret them without requesting duplicate analytics.\n- When FORM_CLAIM relies on governed Evidence, classify each used Evidence explicitly in claim.evidence_links as SUPPORTS, CHALLENGES, CONTEXTUALIZES, or INSUFFICIENT. Do not invent Evidence IDs or infer causality from association.\n- Root-cause mechanism identity must be selected only from Dima's closed governed semantic refs; never mint it from prose.\n"""
 
 
 def _strict_json_schema(schema: dict[str, Any]) -> dict[str, Any]:
