@@ -67,7 +67,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "cbe313af9ac2d5960f662068e433d328d896fb06"
+          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "14323cdde4f258c65c63bbd88f1034f814a7ecb3"
           grep -q '^DEFAULT_ACTION_CAPABILITY_REGISTRY = ActionCapabilityRegistry()$' backend/app/v3/action_authorization.py
           ! grep -q '"action:execute"' backend/control_plane/authorize.py
           test ! -f backend/app/v3/action_execution.py
@@ -127,7 +127,7 @@ jobs:
           grep -q 'analytical_ids = tuple(item.goal_id for item in brief.questions)' backend/app/v3/research.py
           grep -q '_analytical_requirement_ids(session.accepted_brief)' backend/app/v3/report_document.py
           grep -q 'ProductRequirementState.FULFILLED' backend/app/v3/product/composition.py
-          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "cbe313af9ac2d5960f662068e433d328d896fb06"
+          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "14323cdde4f258c65c63bbd88f1034f814a7ecb3"
 
 
       - name: Guard Core B adaptive dependency ownership

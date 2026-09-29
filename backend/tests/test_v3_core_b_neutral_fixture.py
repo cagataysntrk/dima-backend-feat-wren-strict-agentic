@@ -31,17 +31,17 @@ def test_neutral_fixture_is_deterministic_and_contains_no_wren_semantics():
     lower=raw.lower()
     # The provenance schema intentionally contains the boolean key `wren_mdl=false`;\n    # guard semantic payload tokens rather than rejecting its own metadata key.\n    for token in (b"wren sql",b"query_contract",b"expected sql"):\n        assert token not in lower\n
 
-def test_engine_lock_is_exact_certified_dima6():
+def test_engine_lock_is_exact_certified_dima7():
     body=json.loads(LOCK.read_text(encoding="utf-8"))
     assert body=={
       "schema_version":"dima_engine_runtime_lock_v1",
-      "engine_sha":"cbe313af9ac2d5960f662068e433d328d896fb06",
+      "engine_sha":"14323cdde4f258c65c63bbd88f1034f814a7ecb3",
       "upstream_sha":"2ba2485c78d7e00a9a25f82c00fc201da71590c4",
-      "runtime_tag":"v0.63.18-dima.6",
-      "certification_run_id":"36042062775",
-      "immutable_image_ref":"ghcr.io/upcytech/dima-metabase-engine@sha256:40e9a44be49904de3ddf12d4683c768e70955851c10a928a9c8f7d8f60780353",
-      "registry_digest":"sha256:40e9a44be49904de3ddf12d4683c768e70955851c10a928a9c8f7d8f60780353",
-      "build_identity":"github-actions:36042062775:cbe313af9ac2d5960f662068e433d328d896fb06",
+      "runtime_tag":"v0.63.18-dima.7",
+      "certification_run_id":"36532842632",
+      "immutable_image_ref":"ghcr.io/upcytech/dima-metabase-engine@sha256:75a96218bb6a881d792ec13895e438aa5fa897d06a7743c0c3416fa244d13b30",
+      "registry_digest":"sha256:75a96218bb6a881d792ec13895e438aa5fa897d06a7743c0c3416fa244d13b30",
+      "build_identity":"github-actions:36532842632:14323cdde4f258c65c63bbd88f1034f814a7ecb3",
     }
 
 

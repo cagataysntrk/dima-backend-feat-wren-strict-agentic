@@ -216,7 +216,7 @@ jobs:
           ! grep -n 'for obligation_id in brief.must_requirement_ids' app/v3/product/composition.py
           ! grep -n 'verified_exists' app/v3/product/composition.py
           ! grep -R -nE 'source_obligation|acceptance_contract' app/v3/product app/v3/research_intake.py
-          test "$(git -C .. ls-tree HEAD engine/metabase | awk '{print $3}')" = "cbe313af9ac2d5960f662068e433d328d896fb06"
+          test "$(git -C .. ls-tree HEAD engine/metabase | awk '{print $3}')" = "14323cdde4f258c65c63bbd88f1034f814a7ecb3"
 
       - uses: actions/upload-artifact@v4
         if: always()
