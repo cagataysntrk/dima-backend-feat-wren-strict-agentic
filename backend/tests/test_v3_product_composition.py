@@ -1163,11 +1163,12 @@ def test_r3_missing_evidence_does_not_create_p19_candidate():
 
 
 def test_r8_a_coorigin_relationship_reuses_verified_sibling_material_without_second_p14_turn():
-    source = "Inspect the two highest downtime departments together with fault count."
+    fragment_identity = "fragment-sha256:" + "a" * 64
     ranking = ResearchQuestion(
         goal_id="g_r8_rank",
         kind=ResearchGoalKind.RANKING,
-        source_text=source,
+        source_text="Inspect the two highest downtime departments.",
+        source_fragment_identity=fragment_identity,
         subject_refs=(DEPT, DOWNTIME),
         related_refs=(),
         ranking=RankingSurface(
@@ -1181,7 +1182,10 @@ def test_r8_a_coorigin_relationship_reuses_verified_sibling_material_without_sec
     relationship = ResearchQuestion(
         goal_id="g_r8_relationship",
         kind=ResearchGoalKind.RELATIONSHIP,
-        source_text=source,
+        source_text=(
+            "Inspect the two highest downtime departments together with fault count."
+        ),
+        source_fragment_identity=fragment_identity,
         subject_refs=(DOWNTIME, FAULTS),
         related_refs=(DEPT,),
         status=ResearchGoalStatus.RESOLVED,
