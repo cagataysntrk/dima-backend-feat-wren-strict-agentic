@@ -14,6 +14,7 @@ permissions:
   contents: read
 
 env:
+  PRODUCT_BEHAVIOR_SHA: "e6b706433e808ff24dc19638328dd1b0df01f0c3"
   DIMA_VQR_EMBEDDER: "off"
   DIMA_SCHEDULER_ENABLED: "false"
   DIMA_INTERACTION_LOG: "false"
