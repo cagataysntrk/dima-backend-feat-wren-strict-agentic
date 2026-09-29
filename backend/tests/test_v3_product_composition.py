@@ -276,8 +276,14 @@ class FakeInvestigation:
         manager,
         native_session_token,
         downstream_reentry_intent=None,
+        downstream_reentry_obligation_id=None,
     ):
-        del principal, native_session_token, downstream_reentry_intent
+        del (
+            principal,
+            native_session_token,
+            downstream_reentry_intent,
+            downstream_reentry_obligation_id,
+        )
         state = self._state(session_id)
         state["obligation"] = getattr(
             manager,
