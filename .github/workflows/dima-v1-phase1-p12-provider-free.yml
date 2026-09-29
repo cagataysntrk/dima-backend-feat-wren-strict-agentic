@@ -33,6 +33,9 @@ on:
 permissions:
   contents: read
 
+env:
+  PRODUCT_BEHAVIOR_SHA: "af5f0477176c0b3b1ec3b7f733ad393e5fe80bb3"
+
 jobs:
   p12-provider-free:
     runs-on: ubuntu-latest
