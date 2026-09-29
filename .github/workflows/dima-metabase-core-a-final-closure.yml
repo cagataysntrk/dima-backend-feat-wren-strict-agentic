@@ -205,7 +205,7 @@ jobs:
           assert_blob backend/app/v3/hypothesis_root_cause.py fb6c4bfe17cd4193b9584b79fa32b63dc6c85563
           assert_blob backend/app/v3/business_relationship_policy.py 1c533667bd080331f4f2231b9d37ee0c5e532fa8
           assert_blob backend/app/v3/claim_lineage.py 76589172d19d4d9ffa1db9f94f4ee9ee9f277e5a
-          assert_blob backend/app/v3/research.py a92ad0d4fcc82ef1962029ef406a540c82da8659
+          assert_blob backend/app/v3/research.py fff345ee965ccbe3676f49e02d44dbcd8217379e
           assert_blob backend/app/v3/research_store.py 659664fa6c8c98e724adb45025ec5e69b9fd7cea
           assert_blob backend/app/v3/research_product.py 0370635ec046c88532c8ae70e49efc5126404489
           assert_blob backend/app/v3/research_native_gateway.py 7bb106517f9bdea49cca7e51e50b06a8fbb73ca4

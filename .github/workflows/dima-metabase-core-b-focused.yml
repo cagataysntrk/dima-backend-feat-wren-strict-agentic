@@ -168,5 +168,5 @@ jobs:
           test "$(git rev-parse HEAD:backend/app/v3/report_document.py)" = "c2d1e266c4a7335bf7c62349b3229d7a55a38bee"
           test "$(git rev-parse HEAD:backend/app/v3/decision_intelligence.py)" = "1a40508048d668829344ca30aa7aadf881cebb82"
           test "$(git rev-parse HEAD:backend/app/v3/claim_lineage.py)" = "76589172d19d4d9ffa1db9f94f4ee9ee9f277e5a"
-          test "$(git rev-parse HEAD:backend/app/v3/research.py)" = "a92ad0d4fcc82ef1962029ef406a540c82da8659"
+          test "$(git rev-parse HEAD:backend/app/v3/research.py)" = "fff345ee965ccbe3676f49e02d44dbcd8217379e"
           test "$(git rev-parse HEAD:backend/app/v3/research_store.py)" = "659664fa6c8c98e724adb45025ec5e69b9fd7cea"
