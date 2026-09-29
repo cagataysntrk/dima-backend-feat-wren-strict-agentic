@@ -41,6 +41,7 @@ from app.v3.research_manager import (
     ManagerProposal,
     ManagerStopReason,
     ProposedClaimDraft,
+    ProposedClaimEvidenceLink,
     ReasoningStepStatus,
     ResearchInvestigationManager,
     ResearchManagerMaturationError,
@@ -3559,6 +3560,39 @@ def test_v1_p8_non_objective_terminal_remains_fail_closed_for_reentry():
     assert exc.value.code == "P17_INVESTIGATION_TERMINAL"
 
 
+def test_snapshot_projects_verified_p14_result_as_bounded_evidence_cognition():
+    db = db_engine()
+    store, session, _, _, claims, _ = setup_state(db)
+    service = ResearchInvestigationManager(
+        research_store=store,
+        claim_store=claims,
+        db_engine=db,
+    )
+
+    snapshot = service.snapshot(
+        session_id=session.session_id,
+        principal=principal(),
+    )
+    assert len(snapshot.evidence_results) == 1
+    view = snapshot.evidence_results[0]
+    assert view.evidence_id == "evi_" + "1" * 24
+    assert view.receipt_id == "dqr_" + "1" * 24
+    assert view.obligation_id == "g1"
+    assert view.row_count == 2
+    assert view.rows == (("Web", 34), ("Partner", 12))
+    assert view.result_hash == h(
+        {
+            "database_id": 1,
+            "row_count": 2,
+            "data": {"rows": [["Web", 34], ["Partner", 12]]},
+        }
+    )
+    payload = view.model_dump(mode="json")
+    assert "native_query" not in payload
+    assert "sql" not in payload
+    assert "mbql" not in payload
+
+
 def test_relationship_downstream_reentry_can_form_root_claim_from_verified_p14_evidence_without_followup():
     db = db_engine()
     store, session, _, lead, claims, _ = setup_state(db)
@@ -3600,6 +3634,12 @@ def test_relationship_downstream_reentry_can_form_root_claim_from_verified_p14_e
                 scope={"population": "sales_orders"},
                 freshness=freshness(),
                 origin_material_refs=(),
+                evidence_links=(
+                    ProposedClaimEvidenceLink(
+                        evidence_id="evi_" + "1" * 24,
+                        relation=ClaimEvidenceRelation.SUPPORTS,
+                    ),
+                ),
             ),
         )
 
@@ -3622,3 +3662,60 @@ def test_relationship_downstream_reentry_can_form_root_claim_from_verified_p14_e
     )
     assert created.obligation_id == "g1"
     assert created.proposition["relationship_kind"] == "ASSOCIATION"
+    assert created.epistemic_state == ClaimEpistemicState.SUPPORTED
+    assert [(item.evidence_id, item.relation) for item in created.evidence_links] == [
+        ("evi_" + "1" * 24, ClaimEvidenceRelation.SUPPORTS)
+    ]
+
+
+def test_form_claim_cannot_link_evidence_it_did_not_explicitly_inspect():
+    db = db_engine()
+    store, session, _, _, claims, _ = setup_state(db)
+
+    class NoFollowup:
+        def execute(self, **_kwargs):
+            raise AssertionError("invalid claim evidence must fail before native work")
+
+    service = ResearchInvestigationManager(
+        research_store=store,
+        claim_store=claims,
+        followup_executor=NoFollowup(),
+        db_engine=db,
+    )
+
+    def invalid(snapshot):
+        return ManagerProposal(
+            proposal_id="uninspected-evidence-claim",
+            source_revision=snapshot.source_revision,
+            target_parent_obligation="g1",
+            action=ManagerAction.FORM_CLAIM,
+            intent=InvestigationIntent.FORM_CLAIM,
+            parent_step_id=None,
+            objective_key="claim.uninspected-evidence",
+            bounded_objective="Attempt an invalid claim edge.",
+            rationale="Negative contract proof.",
+            inspected_evidence_refs=(),
+            expected_information_gain="Must fail closed.",
+            claim=ProposedClaimDraft(
+                claim_text="Invalid claim.",
+                proposition={"relationship_kind": "ASSOCIATION"},
+                scope={"population": "sales_orders"},
+                freshness=freshness(),
+                evidence_links=(
+                    ProposedClaimEvidenceLink(
+                        evidence_id="evi_" + "1" * 24,
+                        relation=ClaimEvidenceRelation.SUPPORTS,
+                    ),
+                ),
+            ),
+        )
+
+    with pytest.raises(ResearchManagerMaturationError) as exc:
+        service.run_one(
+            session_id=session.session_id,
+            principal=principal(),
+            manager=ScriptedManager(invalid),
+            downstream_reentry_intent=InvestigationIntent.FORM_CLAIM,
+            downstream_reentry_obligation_id="g1",
+        )
+    assert exc.value.code == "P17_CLAIM_EVIDENCE_NOT_INSPECTED"
