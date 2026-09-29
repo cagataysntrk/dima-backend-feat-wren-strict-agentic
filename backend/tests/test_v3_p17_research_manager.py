@@ -59,6 +59,7 @@ from app.v3.root_cause_candidate_contract import (
 from control_plane.authorize import Principal
 from control_plane.models import (
     ResearchExecutionLink,
+    ResearchExplorationMaterial,
     ResearchInvestigationTaskRecord,
     ResearchReasoningStepRecord,
     Tenant,
@@ -3556,3 +3557,68 @@ def test_v1_p8_non_objective_terminal_remains_fail_closed_for_reentry():
             ),
         )
     assert exc.value.code == "P17_INVESTIGATION_TERMINAL"
+
+
+def test_relationship_downstream_reentry_can_form_root_claim_from_verified_p14_evidence_without_followup():
+    db = db_engine()
+    store, session, _, lead, claims, _ = setup_state(db)
+    with Session(db) as sql:
+        row = sql.get(ResearchExplorationMaterial, lead.lead_id)
+        assert row is not None
+        sql.delete(row)
+        sql.commit()
+
+    class NoFollowup:
+        def execute(self, **_kwargs):
+            raise AssertionError("verified P14 Evidence must not reopen native exploration")
+
+    service = ResearchInvestigationManager(
+        research_store=store,
+        claim_store=claims,
+        followup_executor=NoFollowup(),
+        db_engine=db,
+    )
+
+    def form(snapshot):
+        assert snapshot.material_refs == ()
+        assert "evi_" + "1" * 24 in snapshot.evidence_refs
+        return ManagerProposal(
+            proposal_id="relationship-evidence-claim",
+            source_revision=snapshot.source_revision,
+            target_parent_obligation="g1",
+            action=ManagerAction.FORM_CLAIM,
+            intent=InvestigationIntent.FORM_CLAIM,
+            parent_step_id=None,
+            objective_key="relationship.form.from-verified-evidence",
+            bounded_objective="Interpret the governed relationship from existing verified Evidence.",
+            rationale="The exact same-scope P14 Evidence already covers the downstream material need.",
+            inspected_evidence_refs=("evi_" + "1" * 24,),
+            expected_information_gain="Produce the bounded relationship claim without new analytics.",
+            claim=ProposedClaimDraft(
+                claim_text="The observed governed metrics are associated in the accepted scope.",
+                proposition={"relationship_kind": "ASSOCIATION"},
+                scope={"population": "sales_orders"},
+                freshness=freshness(),
+                origin_material_refs=(),
+            ),
+        )
+
+    step, task = service.run_one(
+        session_id=session.session_id,
+        principal=principal(),
+        manager=ScriptedManager(form),
+        downstream_reentry_intent=InvestigationIntent.FORM_CLAIM,
+        downstream_reentry_obligation_id="g1",
+    )
+    assert task is None
+    assert step.action == ManagerAction.FORM_CLAIM
+    assert step.parent_obligation_id == "g1"
+    assert step.parent_step_id is None
+    assert step.status == ReasoningStepStatus.COMPLETED
+    created = claims.load_claim(
+        session_id=session.session_id,
+        claim_id=step.result_refs[0],
+        principal=principal(),
+    )
+    assert created.obligation_id == "g1"
+    assert created.proposition["relationship_kind"] == "ASSOCIATION"
