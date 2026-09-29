@@ -1158,3 +1158,78 @@ def test_r3_missing_evidence_does_not_create_p19_candidate():
         expected_scope_version_id="scope_v1",
     )
     assert candidate is None
+
+
+
+def test_r8_a_coorigin_relationship_reuses_verified_sibling_material_without_second_p14_turn():
+    source = "Inspect the two highest downtime departments together with fault count."
+    ranking = ResearchQuestion(
+        goal_id="g_r8_rank",
+        kind=ResearchGoalKind.RANKING,
+        source_text=source,
+        subject_refs=(DEPT, DOWNTIME),
+        related_refs=(FAULTS,),
+        status=ResearchGoalStatus.RESOLVED,
+    )
+    relationship = ResearchQuestion(
+        goal_id="g_r8_relationship",
+        kind=ResearchGoalKind.RELATIONSHIP,
+        source_text=source,
+        subject_refs=(DOWNTIME, FAULTS),
+        related_refs=(DEPT,),
+        status=ResearchGoalStatus.RESOLVED,
+    )
+    b = brief(ranking, relationship)
+    c, research, _, reasoning = composer(relationship_blocked=False)
+
+    original = c._resolve_relationship
+
+    def wrapped(**kwargs):
+        reasoning.current_obligation_by_session[kwargs["material_session_id"]] = (
+            kwargs["material_goal"].goal_id
+        )
+        return original(**kwargs)
+
+    c._resolve_relationship = wrapped
+
+    result = c.compose(
+        brief=b,
+        principal=principal(),
+        request_ref="r8-a-coorigin-material",
+        source_message_hash="a" * 64,
+        native_session_token=None,
+    )
+
+    # One VERIFIED sibling material occurrence is enough for the downstream
+    # relationship authority; Product must not open a duplicate P14 material turn.
+    assert research.run_calls == [(result.research_session_id, ranking.goal_id)]
+    assert result.child_research_session_ids == ()
+    assert result.p18_policy_use_refs == ("bru_" + "1" * 24,)
+    assert len(result.relationship_results) == 1
+    projected = result.relationship_results[0]
+    assert projected.obligation_id == ranking.goal_id
+    assert (
+        projected.applicability_scope["accepted_relationship_goal_id"]
+        == relationship.goal_id
+    )
+
+    # The Research relationship obligation is deliberately not forged VERIFIED;
+    # its USER_MUST is fulfilled by the governed P18 result at Product level.
+    session = research.sessions[result.research_session_id]
+    relationship_obligation = next(
+        item
+        for item in session.obligations
+        if item.obligation_id == relationship.goal_id
+    )
+    assert relationship_obligation.state == ObligationState.READY
+    fulfillment = {
+        item.requirement_id: item
+        for item in result.user_must_fulfillment
+    }
+    assert fulfillment[relationship.goal_id].state.value == "FULFILLED"
+    assert (
+        fulfillment[relationship.goal_id].fulfilled_by_ref
+        == result.p18_policy_use_refs[0]
+    )
+    assert result.user_must_accounted == 2
+    assert result.user_must_fulfilled == 2
