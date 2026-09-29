@@ -152,7 +152,7 @@ jobs:
           test -z "$(git diff --name-only HEAD^ HEAD -- backend/app/v3/decision_intelligence.py)"
           test -z "$(git diff --name-only HEAD^ HEAD -- backend/app/v3/report_document.py)"
           test -z "$(git diff --name-only HEAD^ HEAD -- backend/app/decision.py backend/app/routers/decisions.py)"
-          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "14323cdde4f258c65c63bbd88f1034f814a7ecb3"
+          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "0f16f2b5a1ec774ac7afee6214c726e82f9ceb3c"
 
       - name: ActionAuthorization focused provider-free proof
         working-directory: backend
@@ -201,4 +201,4 @@ jobs:
           ! grep -nE 'requests\.post|httpx\.|send_email|Slack|erp_client|ticket|notification|execute_action' backend/app/v3/action_authorization.py
           ! grep -nE 'openrouter|openai/gpt|Luna|Sol|C1' backend/app/v3/action_authorization.py
           ! grep -q '"action:execute"' backend/control_plane/authorize.py
-          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "14323cdde4f258c65c63bbd88f1034f814a7ecb3"
+          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "0f16f2b5a1ec774ac7afee6214c726e82f9ceb3c"
