@@ -147,7 +147,7 @@ jobs:
           test ! -d frontend
           test ! -d ui
           test ! -d web
-          test "$(git -C .. ls-tree HEAD engine/metabase | awk '{print $3}')" = "14323cdde4f258c65c63bbd88f1034f814a7ecb3"
+          test "$(git -C .. ls-tree HEAD engine/metabase | awk '{print $3}')" = "0f16f2b5a1ec774ac7afee6214c726e82f9ceb3c"
 
 
       # Wave-A P2 scope authority was formally reopened and re-sealed by
