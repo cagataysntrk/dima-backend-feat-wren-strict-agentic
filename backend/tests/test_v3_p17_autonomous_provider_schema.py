@@ -754,7 +754,32 @@ def _semantic_response(*, objective="Source objective."):
 def test_scoped_constraint_seam_can_expose_only_form_claim_for_verified_relationship_handoff():
     transport = _CaptureTransport()
     manager = StructuredResearchProposalManager(transport=transport)
-    snapshot = _scoped_snapshot()
+    snapshot = _scoped_snapshot().model_copy(
+        update={
+            "evidence_results": (
+                EvidenceResultCognitionView(
+                    evidence_id="evi_source",
+                    receipt_id="dqr_source",
+                    obligation_id="g_source",
+                    execution_link_id="rex_source",
+                    result_hash="5" * 64,
+                    row_count=2,
+                    columns=("Department", "Metric A", "Metric B"),
+                    rows=(("Assembly", 12, 3), ("Packaging", 9, 5)),
+                ),
+                EvidenceResultCognitionView(
+                    evidence_id="evi_other",
+                    receipt_id="dqr_other",
+                    obligation_id="g_other",
+                    execution_link_id="rex_other",
+                    result_hash="6" * 64,
+                    row_count=1,
+                    columns=("Other",),
+                    rows=(("hidden",),),
+                ),
+            )
+        }
+    )
 
     with pytest.raises(RuntimeError, match="captured-before-provider-call"):
         manager.propose_for_obligation_with_constraints(
