@@ -147,7 +147,7 @@ jobs:
           set -euo pipefail
           test -z "$(git diff --name-only HEAD^ HEAD -- backend/app/decision.py backend/app/routers/decisions.py)"
           test -z "$(git diff --name-only HEAD^ HEAD -- backend/app/v3/report_document.py backend/migrations/versions/f7c4a2d8b930_p20_report_document.py)"
-          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "14323cdde4f258c65c63bbd88f1034f814a7ecb3"
+          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "0f16f2b5a1ec774ac7afee6214c726e82f9ceb3c"
 
       - name: P21 focused provider-free proof
         working-directory: backend
