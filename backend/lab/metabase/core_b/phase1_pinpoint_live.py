@@ -126,6 +126,50 @@ PROBES = {
             "exception=0 and silent wrong=0",
         ),
     },
+    "CONVERSATION_F10_H_UPLIFT": {
+        "historical_round2_case_id": "F10_H",
+        "turns": (
+            "Mayıs-Haziran duruş artışını çok faktörlü araştır; alternatif nedenleri ve karşı kanıtı da değerlendir.",
+            "Düzeltme: yalnız Assembly bölümüne odaklan; Packaging ve diğer bölümleri yeni kapsamdan çıkar.",
+            "Şimdi yalnız düzeltilmiş Assembly kapsamı içinde en güçlü iki açıklamayı derinleştir; eski geniş kapsamın bulgularını yeni kanıt gibi kullanma.",
+        ),
+        "manual_contract": (
+            "all three turns are READY under one advancing scope lineage",
+            "scope repair narrows current truth to Assembly and excludes stale wider-scope Evidence",
+            "historical/current Research and Evidence remain explicitly separated",
+            "corrected scope is retained by downstream P17/P19 work",
+            "post-repair analysis materially deepens the strongest two explanations",
+            "exception=0, silent wrong=0, stale Evidence reuse=0",
+        ),
+    },
+    "RCA_F07_H_UPLIFT": {
+        "historical_round2_case_id": "F07_H",
+        "turns": (
+            "Mayıs-Haziran duruş artışının kök nedenlerini çok faktörlü araştır. Birden fazla maddi katkı olabilir. Aday nedenleri yarışmaya sok, destek ve karşı kanıt ara, önemli nedenlerin nedenlerine üç seviyeye kadar in; dominant/material/secondary olarak ayır, emin olmadığın yerde inconclusive de ve adım adım investigation trace üret.",
+        ),
+        "manual_contract": (
+            "multiple evidence-grounded hypotheses are retained and compared",
+            "supporting and challenging Evidence are both represented",
+            "recursive discriminating analysis is bounded to at most three levels",
+            "P17 -> P19 bridge is exercised when typed candidate eligibility is met",
+            "dominant/material/secondary language is evidence-governed rather than forced",
+            "no fabricated cause, fake winner, causal overclaim, exception, or silent wrong",
+        ),
+    },
+    "SYNTHESIS_F04_H_UPLIFT": {
+        "historical_round2_case_id": "F04_H",
+        "turns": (
+            "Mayıs-Haziran 2026 üretim görünümünü duruş, arıza, performans, bakım gecikmesi, yedek parça gecikmesi, önleyici bakım uyumu ve changeover üzerinden birlikte araştır; çelişkili sinyalleri saklama, kanıta bağlı kısa yönetim raporu üret.",
+        ),
+        "manual_contract": (
+            "all material requested signals are retained without silent metric loss",
+            "conflicting signals remain visible rather than being flattened",
+            "management synthesis is Evidence-backed and traceable",
+            "governed ReportDocument preserves numeric provenance and limitations",
+            "no invented prioritization score or unsupported causal promotion",
+            "exception=0 and silent wrong=0",
+        ),
+    },
 }
 
 
