@@ -707,9 +707,229 @@ def test_provider_intake_schema_exposes_time_and_mutation_only_when_governed():
         has_prior_brief=True,
     )
     ready = schema["$defs"]["ModelReadyResearchIntake"]
-    assert "time_surfaces" in ready["properties"]
+    assert "time_surfaces" not in ready["properties"]
     assert "time_periods" in ready["properties"]
     assert "scope_mutation_kind" in ready["properties"]
+
+
+def _r6_temporal_catalog() -> ResearchIntakeCatalog:
+    base = catalog()
+    return ResearchIntakeCatalog(
+        context_version=base.context_version,
+        semantic_refs=base.semantic_refs,
+        allowed_relationships=base.allowed_relationships,
+        supported_domains=base.supported_domains,
+        temporal_dimension_ids=("dimension.event_date",),
+    )
+
+
+def _r6_period(
+    source_text: str,
+    start: str,
+    end: str,
+    *,
+    dimension_id: str = "dimension.event_date",
+) -> dict:
+    return {
+        "source_text": source_text,
+        "time_dimension_semantic_id": dimension_id,
+        "start": start,
+        "end": end,
+    }
+
+
+def test_r6_single_bounded_period_derives_scope_surface_from_typed_period():
+    payload = ready_payload()
+    payload["time_periods"] = [
+        _r6_period("June 2026", "2026-06-01", "2026-07-01")
+    ]
+    result = ResearchIntakeCompiler(
+        transport=FakeTransport(payload)
+    ).compile(
+        question="Inspect June downtime by department.",
+        catalog=_r6_temporal_catalog(),
+    )
+    assert result.brief is not None
+    assert result.brief.scope.time_surfaces == ("June 2026",)
+    assert [
+        (
+            item.time_dimension_candidate_id,
+            item.start,
+            item.end,
+        )
+        for item in result.brief.scope.periods
+    ] == [
+        ("dimension.event_date", "2026-06-01", "2026-07-01")
+    ]
+
+
+def test_r6_multi_period_comparison_preserves_two_typed_half_open_periods():
+    payload = ready_payload(
+        kind="comparison",
+        subject=("metric.downtime", "metric.fault_count"),
+    )
+    payload["goals"][0]["comparison_texts"] = ["May versus June"]
+    payload["time_periods"] = [
+        _r6_period("May 2026", "2026-05-01", "2026-06-01"),
+        _r6_period("June 2026", "2026-06-01", "2026-07-01"),
+    ]
+    result = ResearchIntakeCompiler(
+        transport=FakeTransport(payload)
+    ).compile(
+        question="Compare May and June 2026 downtime and faults.",
+        catalog=_r6_temporal_catalog(),
+    )
+    assert result.brief is not None
+    assert result.brief.scope.time_surfaces == (
+        "May 2026",
+        "June 2026",
+    )
+    assert [(x.start, x.end) for x in result.brief.scope.periods] == [
+        ("2026-05-01", "2026-06-01"),
+        ("2026-06-01", "2026-07-01"),
+    ]
+
+
+def test_r6_follow_up_narrowing_advances_scope_from_two_periods_to_one():
+    initial_payload = ready_payload(
+        kind="comparison",
+        subject=("metric.downtime", "metric.fault_count"),
+    )
+    initial_payload["time_periods"] = [
+        _r6_period("May 2026", "2026-05-01", "2026-06-01"),
+        _r6_period("June 2026", "2026-06-01", "2026-07-01"),
+    ]
+    initial = ResearchIntakeCompiler(
+        transport=FakeTransport(initial_payload)
+    ).compile(
+        question="Compare May and June.",
+        catalog=_r6_temporal_catalog(),
+    )
+    assert initial.brief is not None
+
+    narrowed_payload = ready_payload(
+        kind="comparison",
+        subject=("metric.downtime", "metric.fault_count"),
+    )
+    narrowed_payload["time_periods"] = [
+        _r6_period("June only", "2026-06-01", "2026-07-01")
+    ]
+    narrowed_payload["scope_mutation_kind"] = "CHANGE_PERIOD"
+    narrowed = ResearchIntakeCompiler(
+        transport=FakeTransport(narrowed_payload)
+    ).compile(
+        question="Now narrow to June only.",
+        catalog=_r6_temporal_catalog(),
+        prior_brief=initial.brief,
+    )
+    assert narrowed.brief is not None
+    assert narrowed.scope_contract is not None
+    assert narrowed.brief.scope.scope_version.version_id == "scope_v2"
+    assert narrowed.brief.scope.scope_version.parent_version_id == "scope_v1"
+    assert [(x.start, x.end) for x in narrowed.brief.scope.periods] == [
+        ("2026-06-01", "2026-07-01")
+    ]
+
+
+def test_r6_different_legal_surface_wording_keeps_same_durable_period_identity():
+    identities = []
+    surfaces = []
+    for wording in ("June 2026", "the June 2026 window"):
+        payload = ready_payload()
+        payload["time_periods"] = [
+            _r6_period(wording, "2026-06-01", "2026-07-01")
+        ]
+        result = ResearchIntakeCompiler(
+            transport=FakeTransport(payload)
+        ).compile(
+            question=wording,
+            catalog=_r6_temporal_catalog(),
+        )
+        assert result.brief is not None
+        period = result.brief.scope.periods[0]
+        identities.append(
+            (
+                period.time_dimension_candidate_id,
+                period.start,
+                period.end,
+            )
+        )
+        surfaces.append(result.brief.scope.time_surfaces)
+    assert identities[0] == identities[1]
+    assert surfaces == [
+        ("June 2026",),
+        ("the June 2026 window",),
+    ]
+
+
+def test_r6_duplicate_typed_period_identity_is_rejected_even_with_new_wording():
+    payload = ready_payload()
+    payload["time_periods"] = [
+        _r6_period("June 2026", "2026-06-01", "2026-07-01"),
+        _r6_period("June window", "2026-06-01", "2026-07-01"),
+    ]
+    with pytest.raises(ResearchIntakeError) as exc:
+        ResearchIntakeCompiler(
+            transport=FakeTransport(payload)
+        ).compile(
+            question="Inspect June.",
+            catalog=_r6_temporal_catalog(),
+        )
+    assert exc.value.code == "INTAKE_TIME_PERIOD_DUPLICATE"
+
+
+def test_r6_unauthorized_temporal_dimension_is_rejected():
+    payload = ready_payload()
+    payload["time_periods"] = [
+        _r6_period(
+            "June 2026",
+            "2026-06-01",
+            "2026-07-01",
+            dimension_id="dimension.department",
+        )
+    ]
+    with pytest.raises(ResearchIntakeError) as exc:
+        ResearchIntakeCompiler(
+            transport=FakeTransport(payload)
+        ).compile(
+            question="Inspect June.",
+            catalog=_r6_temporal_catalog(),
+        )
+    assert exc.value.code == "INTAKE_TIME_DIMENSION_UNAUTHORIZED"
+
+
+def test_r6_invalid_interval_is_rejected():
+    payload = ready_payload()
+    payload["time_periods"] = [
+        _r6_period("June 2026", "2026-07-01", "2026-06-01")
+    ]
+    with pytest.raises(ResearchIntakeError) as exc:
+        ResearchIntakeCompiler(
+            transport=FakeTransport(payload)
+        ).compile(
+            question="Inspect June.",
+            catalog=_r6_temporal_catalog(),
+        )
+    assert exc.value.code == "INTAKE_TIME_PERIOD_INVALID"
+
+
+def test_r6_missing_typed_period_field_fails_closed():
+    payload = ready_payload()
+    payload["time_periods"] = [
+        {
+            "source_text": "June 2026",
+            "time_dimension_semantic_id": "dimension.event_date",
+            "start": "2026-06-01",
+        }
+    ]
+    with pytest.raises(ResearchIntakeError) as exc:
+        ResearchIntakeCompiler(
+            transport=FakeTransport(payload)
+        ).compile(
+            question="Inspect June.",
+            catalog=_r6_temporal_catalog(),
+        )
+    assert exc.value.code == "INTAKE_MODEL_OUTPUT_INVALID"
 
 
 def test_relationship_provider_cannot_reconstruct_left_right_dimension_tuple():

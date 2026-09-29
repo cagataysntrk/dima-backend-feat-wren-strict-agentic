@@ -1012,7 +1012,6 @@ def test_r1_intake_freezes_typed_period_and_hides_native_binding_from_cognition(
         }],
         "deliverables":[],
         "investigation_directives":[],
-        "time_surfaces":["June 2026"],
         "time_periods":[{
             "source_text":"June 2026",
             "time_dimension_semantic_id":"dimension.event_date",
@@ -1055,7 +1054,7 @@ def test_r1_intake_freezes_typed_period_and_hides_native_binding_from_cognition(
     ) == {"dimension.event_date"}
 
 
-def test_r1_intake_rejects_text_time_without_typed_period():
+def test_r1_intake_rejects_incomplete_typed_period():
     payload={
         "terminal":"READY",
         "objective":"June downtime.",
@@ -1071,8 +1070,11 @@ def test_r1_intake_rejects_text_time_without_typed_period():
         }],
         "deliverables":[],
         "investigation_directives":[],
-        "time_surfaces":["June 2026"],
-        "time_periods":[],
+        "time_periods":[{
+            "source_text":"June 2026",
+            "time_dimension_semantic_id":"dimension.event_date",
+            "start":"2026-06-01",
+        }],
         "required_domains":["machine_operations"],
     }
     catalog=ResearchIntakeCatalog(
@@ -1094,7 +1096,7 @@ def test_r1_intake_rejects_text_time_without_typed_period():
     )
     with pytest.raises(
         ResearchIntakeError,
-        match="INTAKE_TIME_SCOPE_BINDING_REQUIRED",
+        match="INTAKE_MODEL_OUTPUT_INVALID",
     ):
         ResearchIntakeCompiler(transport=FakeTransport(payload)).compile(
             question="June downtime.",
