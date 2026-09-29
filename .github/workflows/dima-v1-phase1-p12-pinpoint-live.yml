@@ -1,8 +1,12 @@
 name: dima-v1-phase1-pinpoint-live
 
-# Steady-state after immutable V3 RED. Paid execution is manual-only.
-# No Probe A V3 retry, RCA V2, Sol reference, or broad paid run is authorized.
+# Final Phase-1 live authority. Only the two closed pinpoint probes below are authorized.
+# Dedicated trigger branches are short-lived pointers to one frozen Platform commit.
 on:
+  push:
+    branches:
+      - phase1-v4-trigger-20260929
+      - phase1-rca-trigger-20260929
   workflow_dispatch:
     inputs:
       probe_id:
@@ -10,7 +14,7 @@ on:
         required: true
         type: choice
         options:
-          - SCOPE_CURRENTNESS_HARD_V3
+          - SCOPE_CURRENTNESS_HARD_V4
           - RCA_P19_HARD_V2
       confirm_pinpoint_paid:
         description: "Type YES; no automatic retry is permitted"
@@ -37,7 +41,7 @@ env:
   COMPLETION_TOKEN_CEILING: "16000"
   REASONING_TOKEN_CEILING: "12000"
   PROVIDER_COST_CEILING: "1.00"
-  PRODUCT_BEHAVIOR_SHA: "6308b705e3c61aaa36825493421cde8288744561"
+  PRODUCT_BEHAVIOR_SHA: "2b897204f5dff341cba53a8b62a7607461d688e7"
 
 concurrency:
   group: dima-v1-phase1-pinpoint-live
@@ -54,15 +58,36 @@ jobs:
           fetch-depth: 64
           submodules: false
 
-      - name: Resolve manual pinpoint request
+      - name: Resolve frozen pinpoint request
         id: auth
         shell: bash
         run: |
           set -euo pipefail
-          test "${{ github.event_name }}" = "workflow_dispatch"
-          test "${{ inputs.confirm_pinpoint_paid }}" = "YES"
+          EVENT="${{ github.event_name }}"
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            test "${{ inputs.confirm_pinpoint_paid }}" = "YES"
+            PROBE_ID="${{ inputs.probe_id }}"
+          elif [ "$EVENT" = "push" ]; then
+            case "${{ github.ref_name }}" in
+              phase1-v4-trigger-20260929)
+                PROBE_ID="SCOPE_CURRENTNESS_HARD_V4"
+                ;;
+              phase1-rca-trigger-20260929)
+                PROBE_ID="RCA_P19_HARD_V2"
+                ;;
+              *)
+                echo "unauthorized pinpoint trigger branch" >&2
+                exit 1
+                ;;
+            esac
+            git fetch --no-tags --depth=1 origin feat/dima-metabase-platform
+            test "$(git rev-parse HEAD)" = "$(git rev-parse FETCH_HEAD)"
+          else
+            echo "unsupported pinpoint event" >&2
+            exit 1
+          fi
           echo "candidate_sha=${PRODUCT_BEHAVIOR_SHA}" >> "$GITHUB_OUTPUT"
-          echo "probe_id=${{ inputs.probe_id }}" >> "$GITHUB_OUTPUT"
+          echo "probe_id=$PROBE_ID" >> "$GITHUB_OUTPUT"
           echo "max_orchestration_units=12" >> "$GITHUB_OUTPUT"
 
       - uses: actions/setup-python@v5
@@ -103,13 +128,13 @@ jobs:
           GITLINK_SHA="$(git ls-tree HEAD engine/metabase | awk '{print $3}')"
           python backend/lab/metabase/core_b/runtime/engine_runtime_lock.py             --lock backend/lab/metabase/core_b/runtime/engine_runtime_lock.json             --gitlink-sha "$GITLINK_SHA"             --github-env "$GITHUB_ENV"
 
-      - name: Pull exact certified dima.6 digest
+      - name: Pull exact certified dima.7 digest
         shell: bash
         run: |
           set -euo pipefail
-          test "$ENGINE_SHA" = "cbe313af9ac2d5960f662068e433d328d896fb06"
-          test "$CERTIFICATION_RUN_ID" = "36042062775"
-          test "$RUNTIME_TAG" = "v0.63.18-dima.6"
+          test "$ENGINE_SHA" = "14323cdde4f258c65c63bbd88f1034f814a7ecb3"
+          test "$CERTIFICATION_RUN_ID" = "36532842632"
+          test "$RUNTIME_TAG" = "v0.63.18-dima.7"
           docker pull "$IMMUTABLE_IMAGE_REF"
           docker image inspect -f '{{range .RepoDigests}}{{println .}}{{end}}'             "$IMMUTABLE_IMAGE_REF" | grep -Fx "$IMMUTABLE_IMAGE_REF"
 
@@ -161,7 +186,7 @@ jobs:
         run: |
           python lab/metabase/core_b/runtime/seed_round2_fixture.py             --fixture eval/round2_neutral_machine_fixture.json
 
-      - name: Start exact sealed dima.6 engine
+      - name: Start exact certified dima.7 engine
         shell: bash
         run: |
           set -euo pipefail
@@ -302,13 +327,13 @@ jobs:
           assert provider["blocked_request_count"] == 0, provider
           assert provider["privacy_contract"]["api_keys_persisted"] is False
           assert provider["privacy_contract"]["reasoning_text_persisted"] is False
-          assert report["candidate_product_sha"] == "6308b705e3c61aaa36825493421cde8288744561"
+          assert report["candidate_product_sha"] == "2b897204f5dff341cba53a8b62a7607461d688e7"
           assert report["model_topology"]["dima_cognition"] == "openai/gpt-5.6-terra"
           assert report["model_topology"]["metabot"] == "openrouter/openai/gpt-5.6-terra"
           assert report["turn_count_executed"] == report["turn_count_expected"]
           assert all(item.get("ready") is True for item in report["turns"])
 
-          if probe == "SCOPE_CURRENTNESS_HARD_V3":
+          if probe == "SCOPE_CURRENTNESS_HARD_V4":
               turn1=report["turns"][0]
               ranking=turn1["brief_payload"]["questions"][0]["ranking"]
               assert ranking["limit"] is None
@@ -338,6 +363,48 @@ jobs:
           assert report["quality_score"] is None
           assert report["manual_adjudication_required"] is True
           print("PINPOINT_ARTIFACT_READY_FOR_HUMAN_INSPECTION")
+          PY
+
+      - name: Emit sanitized manual-adjudication projection
+        if: always()
+        working-directory: backend
+        env:
+          PROBE_ID: ${{ steps.auth.outputs.probe_id }}
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          probe=os.environ.get("PROBE_ID","").strip()
+          path=Path(f"eval/phase1_pinpoint/{probe}.json")
+          if not probe or not path.exists():
+              print("DIMA_MANUAL_ADJUDICATION_JSON={\"artifact_missing\":true}")
+              raise SystemExit(0)
+          report=json.loads(path.read_text(encoding="utf-8"))
+          provider=report.get("provider_receipt") or {}
+          projection={
+              "probe_id": report.get("probe_id"),
+              "candidate_product_sha": report.get("candidate_product_sha"),
+              "engine_sha": report.get("engine_sha"),
+              "engine_runtime_tag": report.get("engine_runtime_tag"),
+              "model_topology": report.get("model_topology"),
+              "turn_count_expected": report.get("turn_count_expected"),
+              "turn_count_executed": report.get("turn_count_executed"),
+              "turns": report.get("turns"),
+              "currentness": report.get("currentness"),
+              "mechanical_observations": report.get("mechanical_observations"),
+              "exception": report.get("exception"),
+              "orchestration_boundary_units": report.get("orchestration_boundary_units"),
+              "orchestration_boundary_units_by_owner": report.get("orchestration_boundary_units_by_owner"),
+              "actual_provider_request_count": report.get("actual_provider_request_count"),
+              "provider_requests_by_source": report.get("provider_requests_by_source"),
+              "prompt_tokens": report.get("prompt_tokens"),
+              "completion_tokens": report.get("completion_tokens"),
+              "reasoning_tokens": report.get("reasoning_tokens"),
+              "provider_reported_cost": report.get("provider_reported_cost"),
+              "blocked_request_count": provider.get("blocked_request_count"),
+              "privacy_contract": provider.get("privacy_contract"),
+          }
+          print("DIMA_MANUAL_ADJUDICATION_JSON="+json.dumps(projection, ensure_ascii=False, sort_keys=True))
           PY
 
       - uses: actions/upload-artifact@v4

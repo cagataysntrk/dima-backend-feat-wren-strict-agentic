@@ -43,7 +43,7 @@ CONTEXT = "phase1-final-pinpoint-v1"
 MAX_ORCHESTRATION_BOUNDARY_UNITS = 12
 
 PROBES = {
-    "SCOPE_CURRENTNESS_HARD_V3": {
+    "SCOPE_CURRENTNESS_HARD_V4": {
         "turns": (
             "Mayıs ve Haziran 2026’da bölüm bazında machine downtime ve fault count değişimini karşılaştır. Kötüleşmeyi sıralayıp hangi bölümlerin dikkat istediğini göster.",
             "Şimdi yalnız Haziran 2026’ya daralt. En yüksek downtime olan iki bölümü fault count ile birlikte incele. Önceki analizi tarihsel bağlam olarak koru ama yeni kapsam için eski Evidence’ı current truth sayma; yeni veriye dayan.",
@@ -940,7 +940,7 @@ def main() -> int:
                 break
 
         if (
-            args.probe_id == "SCOPE_CURRENTNESS_HARD_V3"
+            args.probe_id == "SCOPE_CURRENTNESS_HARD_V4"
             and len(report["turns"]) == 2
             and all(item.get("ready") for item in report["turns"])
         ):

@@ -34,7 +34,7 @@ def _bindings():
 
 def test_final_pinpoint_probes_are_closed_and_not_benchmark_cases():
     assert tuple(PROBES) == (
-        "SCOPE_CURRENTNESS_HARD_V3",
+        "SCOPE_CURRENTNESS_HARD_V4",
         "RCA_P19_HARD_V2",
     )
     assert MAX_ORCHESTRATION_BOUNDARY_UNITS == 12
@@ -109,7 +109,7 @@ def test_pinpoint_workflow_is_one_probe_per_run_and_no_broad_scorer():
         / "workflows"
         / "dima-v1-phase1-p12-pinpoint-live.yml"
     ).read_text(encoding="utf-8")
-    assert "SCOPE_CURRENTNESS_HARD_V3" in workflow
+    assert "SCOPE_CURRENTNESS_HARD_V4" in workflow
     assert "RCA_P19_HARD_V2" in workflow
     assert "probe_id" in workflow
     assert "max-orchestration-boundary-units \"12\"" in workflow
@@ -118,7 +118,13 @@ def test_pinpoint_workflow_is_one_probe_per_run_and_no_broad_scorer():
     assert "validate_phase1_round2.py" not in workflow
     assert "--manifest eval/dima_neutral_feature_benchmark_round2.json" not in workflow
     assert "backend/eval/v1/authorizations/phase1-final-pinpoint-live-v3.json" not in workflow
-    assert "\n  push:\n" not in workflow
+    assert "phase1-v4-trigger-20260929" in workflow
+    assert "phase1-rca-trigger-20260929" in workflow
+    assert "feat/dima-metabase-platform" in workflow
+    assert 'PRODUCT_BEHAVIOR_SHA: "2b897204f5dff341cba53a8b62a7607461d688e7"' in workflow
+    assert 'test "$ENGINE_SHA" = "14323cdde4f258c65c63bbd88f1034f814a7ecb3"' in workflow
+    assert 'test "$CERTIFICATION_RUN_ID" = "36532842632"' in workflow
+    assert 'test "$RUNTIME_TAG" = "v0.63.18-dima.7"' in workflow
     assert "openrouter_counting_proxy.py" in workflow
     assert "--ceiling 0" in workflow
     assert 'HARD_PROVIDER_REQUEST_CEILING: "24"' in workflow

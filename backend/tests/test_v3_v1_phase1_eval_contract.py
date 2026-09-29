@@ -98,10 +98,16 @@ def test_paid_governance_forbids_broad_execution_and_push_paid_triggers():
 def test_pinpoint_paid_workflow_is_sequential_closed_budget():
     source = PINPOINT_PAID_WORKFLOW.read_text(encoding="utf-8")
     assert "workflow_dispatch:" in source
-    assert "\n  push:\n" not in source
+    assert "phase1-v4-trigger-20260929" in source
+    assert "phase1-rca-trigger-20260929" in source
+    assert "git fetch --no-tags --depth=1 origin feat/dima-metabase-platform" in source
+    assert 'PRODUCT_BEHAVIOR_SHA: "2b897204f5dff341cba53a8b62a7607461d688e7"' in source
+    assert 'test "$ENGINE_SHA" = "14323cdde4f258c65c63bbd88f1034f814a7ecb3"' in source
+    assert 'test "$CERTIFICATION_RUN_ID" = "36532842632"' in source
+    assert 'test "$RUNTIME_TAG" = "v0.63.18-dima.7"' in source
     assert "backend/eval/v1/authorizations/phase1-final-pinpoint-live-v3.json" not in source
     assert "repository_dispatch" not in source
-    assert "SCOPE_CURRENTNESS_HARD_V3" in source
+    assert "SCOPE_CURRENTNESS_HARD_V4" in source
     assert "RCA_P19_HARD_V2" in source
     assert 'HARD_PROVIDER_REQUEST_CEILING: "24"' in source
     assert 'PROMPT_TOKEN_CEILING: "350000"' in source
