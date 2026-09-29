@@ -401,8 +401,11 @@ class HeadlessProductComposer:
         principal: Principal,
         native_session_token: str | None,
         owner_calls: list[str],
+        skip_obligation_ids: frozenset[str] = frozenset(),
     ):
         for question in brief.questions:
+            if question.goal_id in skip_obligation_ids:
+                continue
             session = research.resume_state(
                 session_id=session_id,
                 principal=principal,
@@ -426,6 +429,113 @@ class HeadlessProductComposer:
         return research.resume_state(
             session_id=session_id,
             principal=principal,
+        )
+
+    @staticmethod
+    def _relationship_material_candidates(
+        *,
+        brief: ResearchBrief,
+        goal: ResearchQuestion,
+    ) -> tuple[ResearchQuestion, ...]:
+        """Find sibling analytical goals emitted from the same accepted user fragment.
+
+        A relationship interpretation may consume already-verified analytical material
+        only when that sibling preserves the exact co-origin text and covers every
+        governed metric/dimension ref required by the relationship goal. This is a
+        provenance/coverage rule, not text-case routing.
+        """
+
+        required = {
+            item.candidate_id
+            for item in (*goal.subject_refs, *goal.related_refs)
+            if item.target_kind
+            in {
+                SemanticTargetKind.METRIC,
+                SemanticTargetKind.KPI,
+                SemanticTargetKind.DIMENSION,
+            }
+        }
+        source = goal.source_text.strip()
+        candidates: list[ResearchQuestion] = []
+        for candidate in brief.questions:
+            if candidate.goal_id == goal.goal_id:
+                continue
+            if candidate.kind in {
+                ResearchGoalKind.RELATIONSHIP,
+                ResearchGoalKind.ROOT_CAUSE,
+            }:
+                continue
+            if candidate.source_text.strip() != source:
+                continue
+            candidate_refs = {
+                item.candidate_id
+                for item in (*candidate.subject_refs, *candidate.related_refs)
+                if item.target_kind
+                in {
+                    SemanticTargetKind.METRIC,
+                    SemanticTargetKind.KPI,
+                    SemanticTargetKind.DIMENSION,
+                }
+            }
+            if required.issubset(candidate_refs):
+                candidates.append(candidate)
+        return tuple(candidates)
+
+    @classmethod
+    def _verified_relationship_material_source(
+        cls,
+        *,
+        brief: ResearchBrief,
+        session,
+        goal: ResearchQuestion,
+    ) -> ResearchQuestion | None:
+        states = {
+            item.obligation_id: _state_value(item.state)
+            for item in session.obligations
+        }
+        candidates = tuple(
+            candidate
+            for candidate in cls._relationship_material_candidates(
+                brief=brief,
+                goal=goal,
+            )
+            if states.get(candidate.goal_id) == ObligationState.VERIFIED.value
+        )
+        if not candidates:
+            return None
+        # Prefer the smallest semantic superset, then preserve accepted brief order.
+        order = {
+            question.goal_id: index
+            for index, question in enumerate(brief.questions)
+        }
+        required = {
+            item.candidate_id
+            for item in (*goal.subject_refs, *goal.related_refs)
+            if item.target_kind
+            in {
+                SemanticTargetKind.METRIC,
+                SemanticTargetKind.KPI,
+                SemanticTargetKind.DIMENSION,
+            }
+        }
+        return min(
+            candidates,
+            key=lambda candidate: (
+                len(
+                    {
+                        item.candidate_id
+                        for item in (*candidate.subject_refs, *candidate.related_refs)
+                        if item.target_kind
+                        in {
+                            SemanticTargetKind.METRIC,
+                            SemanticTargetKind.KPI,
+                            SemanticTargetKind.DIMENSION,
+                        }
+                    }
+                    - required
+                ),
+                order[candidate.goal_id],
+            ),
         )
 
     @staticmethod
@@ -1064,8 +1174,21 @@ class HeadlessProductComposer:
         brief: ResearchBrief,
         session,
         report,
+        relationship_results: tuple[RelationshipResultProjection, ...] = (),
     ) -> tuple[tuple[ProductRequirementFulfillment, ...], int, int, int]:
         obligation_map = {item.obligation_id: item for item in session.obligations}
+        relationship_by_goal: dict[str, RelationshipResultProjection] = {}
+        for result in relationship_results:
+            goal_id = str(
+                result.applicability_scope.get("accepted_relationship_goal_id") or ""
+            ).strip()
+            if not goal_id:
+                continue
+            if goal_id in relationship_by_goal:
+                raise ValueError(
+                    "multiple governed relationship results target one USER_MUST goal"
+                )
+            relationship_by_goal[goal_id] = result
         projected: list[ProductRequirementFulfillment] = []
 
         for question in brief.questions:
@@ -1075,8 +1198,23 @@ class HeadlessProductComposer:
                 if obligation is not None
                 else ProductRequirementState.PENDING.value
             )
+            fulfilled_by_ref = None
             if raw_state == ObligationState.VERIFIED.value:
                 state = ProductRequirementState.VERIFIED
+            elif (
+                question.kind == ResearchGoalKind.RELATIONSHIP
+                and question.goal_id in relationship_by_goal
+            ):
+                relationship = relationship_by_goal[question.goal_id]
+                fulfilled_by_ref = relationship.policy_use_id
+                if (
+                    _state_value(relationship.business_relationship_state)
+                    == "SATISFIED"
+                    and not relationship.limitation_codes
+                ):
+                    state = ProductRequirementState.FULFILLED
+                else:
+                    state = ProductRequirementState.LIMITED
             elif raw_state == ObligationState.LIMITED.value:
                 state = ProductRequirementState.LIMITED
             else:
@@ -1086,6 +1224,7 @@ class HeadlessProductComposer:
                     requirement_id=question.goal_id,
                     requirement_kind=ProductRequirementKind.ANALYTICAL,
                     state=state,
+                    fulfilled_by_ref=fulfilled_by_ref,
                 )
             )
 
@@ -1237,6 +1376,17 @@ class HeadlessProductComposer:
             investigation_requirements=accepted_investigation_requirements,
         ).mode
 
+        deferred_relationship_ids = frozenset(
+            goal.goal_id
+            for goal in brief.questions
+            if (
+                goal.kind == ResearchGoalKind.RELATIONSHIP
+                and self._relationship_material_candidates(
+                    brief=brief,
+                    goal=goal,
+                )
+            )
+        )
         owner_calls.append("P14")
         session = self._run_p14(
             research=self._research,
@@ -1245,6 +1395,7 @@ class HeadlessProductComposer:
             principal=principal,
             native_session_token=native_session_token,
             owner_calls=owner_calls,
+            skip_obligation_ids=deferred_relationship_ids,
         )
 
         goal_by_id = _question_map(brief)
@@ -1266,11 +1417,46 @@ class HeadlessProductComposer:
                 p17_required.append(goal.goal_id)
 
             if goal.kind == ResearchGoalKind.RELATIONSHIP:
-                # Relationship reasoning is derived analytical work under the
-                # already accepted user Research authority. Do not mint a second
-                # P14 Research root merely to obtain comparison material.
+                # Relationship interpretation is downstream authority. Reuse exact
+                # VERIFIED co-origin analytical material when available instead of
+                # opening a duplicate native cognition/execution turn. If no safe
+                # sibling exists (or it failed closed), retain the direct P14 path.
                 material_session_id = session.session_id
-                material_goal = goal
+                material_goal = self._verified_relationship_material_source(
+                    brief=brief,
+                    session=session,
+                    goal=goal,
+                )
+                if material_goal is None:
+                    current = self._research.resume_state(
+                        session_id=session.session_id,
+                        principal=principal,
+                    )
+                    match = next(
+                        (
+                            item
+                            for item in current.obligations
+                            if item.obligation_id == goal.goal_id
+                        ),
+                        None,
+                    )
+                    if (
+                        match is not None
+                        and _state_value(match.state)
+                        not in {"VERIFIED", "LIMITED", "FAILED"}
+                    ):
+                        self._research.run_next(
+                            session_id=session.session_id,
+                            principal=principal,
+                            obligation_id=goal.goal_id,
+                            native_session_token=native_session_token,
+                        )
+                        owner_calls.append("P14")
+                    session = self._research.resume_state(
+                        session_id=session.session_id,
+                        principal=principal,
+                    )
+                    material_goal = goal
                 decision, relationship_result, p17_snapshot, error = self._resolve_relationship(
                     original_goal=goal,
                     material_session_id=material_session_id,
@@ -1503,6 +1689,7 @@ class HeadlessProductComposer:
                 brief=brief,
                 session=current,
                 report=report,
+                relationship_results=tuple(relationship_results),
             )
         )
 
