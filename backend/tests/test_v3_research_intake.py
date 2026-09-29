@@ -862,6 +862,55 @@ def test_r6_different_legal_surface_wording_keeps_same_durable_period_identity()
     ]
 
 
+def test_r6_follow_up_surface_rewording_does_not_mint_new_scope_version():
+    first_payload = ready_payload()
+    first_payload["time_periods"] = [
+        _r6_period("June 2026", "2026-06-01", "2026-07-01")
+    ]
+    first = ResearchIntakeCompiler(
+        transport=FakeTransport(first_payload)
+    ).compile(
+        question="Inspect June 2026.",
+        catalog=_r6_temporal_catalog(),
+    )
+    assert first.brief is not None
+
+    reworded_payload = ready_payload()
+    reworded_payload["time_periods"] = [
+        _r6_period(
+            "the June 2026 window",
+            "2026-06-01",
+            "2026-07-01",
+        )
+    ]
+    reworded = ResearchIntakeCompiler(
+        transport=FakeTransport(reworded_payload)
+    ).compile(
+        question="Use the June 2026 window.",
+        catalog=_r6_temporal_catalog(),
+        prior_brief=first.brief,
+    )
+    assert reworded.brief is not None
+    assert reworded.scope_contract is None
+    assert (
+        reworded.brief.scope.scope_version.version_id
+        == first.brief.scope.scope_version.version_id
+    )
+    assert reworded.brief.scope.time_surfaces == (
+        "the June 2026 window",
+    )
+    assert [
+        (
+            item.time_dimension_candidate_id,
+            item.start,
+            item.end,
+        )
+        for item in reworded.brief.scope.periods
+    ] == [
+        ("dimension.event_date", "2026-06-01", "2026-07-01")
+    ]
+
+
 def test_r6_duplicate_typed_period_identity_is_rejected_even_with_new_wording():
     payload = ready_payload()
     payload["time_periods"] = [
