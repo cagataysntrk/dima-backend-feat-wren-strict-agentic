@@ -1,0 +1,44 @@
+{
+  "schema_version": "dima_v1_phase1_live_control_v1",
+  "decision": "PINPOINT_PAID_ONLY",
+  "confirm": "YES",
+  "probe_id": "SCOPE_CURRENTNESS_HARD_V4",
+  "candidate_platform_sha": "e7fab9e84e5cb179e7effa2ea90692a4dbc17224",
+  "candidate_product_sha": "2b897204f5dff341cba53a8b62a7607461d688e7",
+  "engine_sha": "14323cdde4f258c65c63bbd88f1034f814a7ecb3",
+  "engine_digest": "sha256:75a96218bb6a881d792ec13895e438aa5fa897d06a7743c0c3416fa244d13b30",
+  "engine_release": "0.63.18-dima.7",
+  "engine_certification_run_id": 36532842632,
+  "migration_head": "fd2a7c9e4b61",
+  "model_topology": {
+    "dima_cognition": "openai/gpt-5.6-terra",
+    "metabot": "openrouter/openai/gpt-5.6-terra",
+    "cascade": "NONE"
+  },
+  "hard_provider_request_ceiling": 24,
+  "source_request_ceilings": {
+    "research_intake": 2,
+    "metabase": 16,
+    "p17_manager": 4,
+    "p19_manager": 2
+  },
+  "prompt_token_ceiling": 350000,
+  "completion_token_ceiling": 16000,
+  "reasoning_token_ceiling": 12000,
+  "provider_cost_ceiling_usd": 1,
+  "provider_free_receipts": {
+    "final_closure": 36545689061,
+    "p14": 36545689110,
+    "governance": 36545689060,
+    "core_b_seal": 36545013071,
+    "phase1_focused": 36545013168,
+    "core_a_final": 36545013112,
+    "core_b_focused": 36545013138
+  },
+  "automatic_retry": false,
+  "broad_paid_allowed": false,
+  "sol_reference_authorized": false,
+  "v4_manual_verdict": null,
+  "v4_run_id": null,
+  "v4_artifact_id": null
+}

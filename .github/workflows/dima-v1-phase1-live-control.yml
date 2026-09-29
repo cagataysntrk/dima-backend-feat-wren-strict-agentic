@@ -1,0 +1,397 @@
+name: dima-v1-phase1-live-control
+
+# Ephemeral Phase-1 live control. Product behavior is frozen at e7fab9e84e5cb179e7effa2ea90692a4dbc17224.
+# Push is restricted to the short-lived control branch and one authorization file.
+on:
+  push:
+    branches:
+      - live/phase1-final-control
+    paths:
+      - "backend/eval/v1/authorizations/phase1-live-control.json"
+
+permissions:
+  contents: read
+  packages: read
+
+env:
+  DIMA_OPENROUTER_API_KEY: ${{ secrets.DIMA_OPENROUTER_API_KEY || secrets.OPENROUTER_API_KEY }}
+  METABOT_MODEL_IDENTIFIER: openrouter/openai/gpt-5.6-terra
+  DIMA_COGNITION_MODEL: openai/gpt-5.6-terra
+  MB_ADMIN_EMAIL: admin@phase1-pinpoint.local
+  MB_RESTRICTED_EMAIL: restricted@phase1-pinpoint.local
+  MB_RESTRICTED_GROUP: Dima Phase1 Pinpoint Restricted
+  PROVIDER_PROXY_PORT: "8799"
+  HARD_PROVIDER_REQUEST_CEILING: "24"
+  PROMPT_TOKEN_CEILING: "350000"
+  COMPLETION_TOKEN_CEILING: "16000"
+  REASONING_TOKEN_CEILING: "12000"
+  PROVIDER_COST_CEILING: "1.00"
+  PRODUCT_BEHAVIOR_SHA: "2b897204f5dff341cba53a8b62a7607461d688e7"
+  FROZEN_PLATFORM_SHA: "e7fab9e84e5cb179e7effa2ea90692a4dbc17224"
+
+concurrency:
+  group: dima-v1-phase1-pinpoint-live
+  cancel-in-progress: false
+
+jobs:
+  pinpoint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    environment: DIMA_OPENROUTER_API_KEY
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 64
+          submodules: false
+
+      - name: Resolve exact live authorization
+        id: auth
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          from pathlib import Path
+          p=Path("backend/eval/v1/authorizations/phase1-live-control.json")
+          a=json.loads(p.read_text(encoding="utf-8"))
+          assert a["schema_version"] == "dima_v1_phase1_live_control_v1"
+          assert a["confirm"] == "YES"
+          assert a["candidate_platform_sha"] == "e7fab9e84e5cb179e7effa2ea90692a4dbc17224"
+          assert a["candidate_product_sha"] == "2b897204f5dff341cba53a8b62a7607461d688e7"
+          assert a["engine_sha"] == "14323cdde4f258c65c63bbd88f1034f814a7ecb3"
+          assert a["engine_digest"] == "sha256:75a96218bb6a881d792ec13895e438aa5fa897d06a7743c0c3416fa244d13b30"
+          assert a["migration_head"] == "fd2a7c9e4b61"
+          assert a["probe_id"] in {"SCOPE_CURRENTNESS_HARD_V4","RCA_P19_HARD_V2"}
+          assert a["automatic_retry"] is False
+          assert a["broad_paid_allowed"] is False
+          assert a["sol_reference_authorized"] is False
+          if a["probe_id"] == "RCA_P19_HARD_V2":
+              assert a.get("v4_manual_verdict") == "GREEN"
+              assert int(a.get("v4_run_id") or 0) > 0
+              assert int(a.get("v4_artifact_id") or 0) > 0
+          print(f"probe_id={a['probe_id']}")
+          print("candidate_sha=2b897204f5dff341cba53a8b62a7607461d688e7")
+          print("candidate_platform_sha=e7fab9e84e5cb179e7effa2ea90692a4dbc17224")
+          print("max_orchestration_units=12")
+          PY
+
+      - name: Prove frozen Product tree is unchanged
+        shell: bash
+        run: |
+          set -euo pipefail
+          git cat-file -e "$FROZEN_PLATFORM_SHA^{commit}"
+          git diff --exit-code "$FROZEN_PLATFORM_SHA"..HEAD --             backend/app backend/control_plane backend/migrations engine/metabase
+          test "$(git ls-tree "$FROZEN_PLATFORM_SHA" engine/metabase | awk '{print $3}')" =             "14323cdde4f258c65c63bbd88f1034f814a7ecb3"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install live environment
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+          pip install "psycopg[binary]==3.3.3"
+
+      - name: Provider-free live-control preflight
+        working-directory: backend
+        run: |
+          set -euo pipefail
+          python -m py_compile             lab/metabase/core_b/phase1_pinpoint_live_v4.py             lab/metabase/core_b/runtime/openrouter_counting_proxy.py             lab/metabase/core_b/runtime/seed_phase1_pinpoint_metrics.py             lab/metabase/core_b/runtime/seed_round2_fixture.py
+          pytest -q             tests/test_v3_openrouter_counting_proxy.py             tests/test_v3_p14_native_gateway.py::test_r5_architecture_removes_p13_from_ordinary_research_permission_path             tests/test_v3_p14_native_gateway.py::test_observation_unavailable_preserves_executed_result_and_retry_does_not_reexecute
+          python - <<'PY'
+          from lab.metabase.core_b.phase1_pinpoint_live_v4 import PROBES, MODEL
+          assert tuple(PROBES) == ("SCOPE_CURRENTNESS_HARD_V4","RCA_P19_HARD_V2")
+          assert MODEL == "openai/gpt-5.6-terra"
+          PY
+
+      - name: Derive ephemeral credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          S="${GITHUB_SHA:0:12}"
+          {
+            echo "MB_ADMIN_PASSWORD=Adm-${S}-Aa1!"
+            echo "MB_RESTRICTED_PASSWORD=Res-${S}-Aa1!"
+            echo "PG_OWNER_PASSWORD=PgO-${S}-Aa1!"
+            echo "CORE_B_READONLY_PASSWORD=PgR-${S}-Aa1!"
+            echo "MB_APP_PASSWORD=MbA-${S}-Aa1!"
+          } >> "$GITHUB_ENV"
+
+      - name: Load exact certified engine runtime lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          GITLINK_SHA="$(git ls-tree HEAD engine/metabase | awk '{print $3}')"
+          python backend/lab/metabase/core_b/runtime/engine_runtime_lock.py             --lock backend/lab/metabase/core_b/runtime/engine_runtime_lock.json             --gitlink-sha "$GITLINK_SHA"             --github-env "$GITHUB_ENV"
+
+      - name: Pull exact certified dima.7 digest
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$ENGINE_SHA" = "14323cdde4f258c65c63bbd88f1034f814a7ecb3"
+          test "$CERTIFICATION_RUN_ID" = "36532842632"
+          test "$RUNTIME_TAG" = "v0.63.18-dima.7"
+          docker pull "$IMMUTABLE_IMAGE_REF"
+          docker image inspect -f '{{range .RepoDigests}}{{println .}}{{end}}'             "$IMMUTABLE_IMAGE_REF" | grep -Fx "$IMMUTABLE_IMAGE_REF"
+
+      - name: Guard cognition provider secret
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$DIMA_OPENROUTER_API_KEY"
+
+      - name: Start fail-closed zero-spend setup proxy
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p backend/eval/phase1_pinpoint
+          nohup python backend/lab/metabase/core_b/runtime/openrouter_counting_proxy.py             --listen-host 0.0.0.0             --listen-port "$PROVIDER_PROXY_PORT"             --ceiling 0             --receipt backend/eval/phase1_pinpoint/provider_setup.json             >backend/eval/phase1_pinpoint/provider_setup_proxy.log 2>&1 &
+          echo "PROVIDER_PROXY_PID=$!" >> "$GITHUB_ENV"
+          for i in $(seq 1 30); do
+            curl -fsS "http://127.0.0.1:${PROVIDER_PROXY_PORT}/__dima__/health" >/dev/null && break
+            sleep 1
+            test "$i" -lt 30
+          done
+
+      - name: Start neutral databases
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker network create dima-phase1-pinpoint
+          PG="postgres@sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675"
+          docker run -d --name analytics-db             --network dima-phase1-pinpoint --network-alias analytics-db             -p 127.0.0.1:55461:5432             -e POSTGRES_DB=phase1_pinpoint             -e POSTGRES_USER=phase1_owner             -e POSTGRES_PASSWORD="$PG_OWNER_PASSWORD" "$PG"
+          docker run -d --name app-db             --network dima-phase1-pinpoint --network-alias app-db             -e POSTGRES_DB=metabase_phase1             -e POSTGRES_USER=metabase_app             -e POSTGRES_PASSWORD="$MB_APP_PASSWORD" "$PG"
+          for n in analytics-db app-db; do
+            for i in $(seq 1 90); do
+              docker exec "$n" pg_isready >/dev/null 2>&1 && break
+              sleep 2
+              test "$i" -lt 90
+            done
+          done
+
+      - name: Seed frozen neutral fixture
+        working-directory: backend
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: "55461"
+          PGDATABASE: phase1_pinpoint
+          PGUSER: phase1_owner
+          PGPASSWORD: ${{ env.PG_OWNER_PASSWORD }}
+          CORE_B_READONLY_USER: phase1_readonly
+          CORE_B_READONLY_PASSWORD: ${{ env.CORE_B_READONLY_PASSWORD }}
+        run: |
+          python lab/metabase/core_b/runtime/seed_round2_fixture.py             --fixture eval/round2_neutral_machine_fixture.json
+
+      - name: Start exact sealed dima.7 engine
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run -d --name mb-phase1             --network dima-phase1-pinpoint             --add-host=host.docker.internal:host-gateway             -p 127.0.0.1:3361:3000             -e MB_DB_TYPE=postgres             -e MB_DB_HOST=app-db             -e MB_DB_PORT=5432             -e MB_DB_DBNAME=metabase_phase1             -e MB_DB_USER=metabase_app             -e MB_DB_PASS="$MB_APP_PASSWORD"             -e MB_AI_FEATURES_ENABLED=true             -e MB_METABOT_ENABLED=true             -e MB_AGENT_API_ENABLED=true             -e MB_LOAD_SAMPLE_CONTENT=false             -e MB_MCP_EXECUTE_SQL_ENABLED=false             -e MB_LLM_OPENROUTER_API_KEY="$DIMA_OPENROUTER_API_KEY"             -e MB_LLM_OPENROUTER_API_BASE_URL="http://host.docker.internal:${PROVIDER_PROXY_PORT}"             -e MB_LLM_METABOT_PROVIDER="$METABOT_MODEL_IDENTIFIER"             -e DIMA_ENGINE_REPOSITORY=UpcyTech/dima-metabase-engine             -e DIMA_ENGINE_REVISION_SHA="$ENGINE_SHA"             -e DIMA_ENGINE_UPSTREAM_BASE_SHA="$UPSTREAM_BASE_SHA"             -e DIMA_ENGINE_RUNTIME_TAG="$RUNTIME_TAG"             -e DIMA_ENGINE_BUILD_IDENTITY="$BUILD_IDENTITY"             -e DIMA_ENGINE_IMAGE_IDENTITY="$REGISTRY_DIGEST"             "$IMMUTABLE_IMAGE_REF"
+
+      - name: Bootstrap restricted analytical principal before metric content
+        working-directory: backend
+        env:
+          METABASE_URL: http://127.0.0.1:3361
+          MB_SITE_NAME: Dima Phase1 Pinpoint
+          ANALYTICS_DB_NAME: phase1_pinpoint
+          ANALYTICS_DB_USER: phase1_readonly
+          ANALYTICS_DB_PASSWORD: ${{ env.CORE_B_READONLY_PASSWORD }}
+          MB_ADMIN_EMAIL: ${{ env.MB_ADMIN_EMAIL }}
+          MB_ADMIN_PASSWORD: ${{ env.MB_ADMIN_PASSWORD }}
+          MB_RESTRICTED_EMAIL: ${{ env.MB_RESTRICTED_EMAIL }}
+          MB_RESTRICTED_PASSWORD: ${{ env.MB_RESTRICTED_PASSWORD }}
+          MB_RESTRICTED_GROUP: ${{ env.MB_RESTRICTED_GROUP }}
+        run: python lab/metabase/core_b/runtime/bootstrap.py
+
+      - name: Exhaust startup suggested-prompt window with zero provider spend
+        shell: bash
+        run: |
+          set -euo pipefail
+          sleep 16
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          receipt=json.loads(
+              Path("backend/eval/phase1_pinpoint/provider_setup.json").read_text()
+          )
+          assert receipt["hard_provider_request_ceiling"] == 0
+          assert receipt["actual_provider_request_count"] == 0
+          assert receipt["blocked_request_count"] == 0, receipt
+          PY
+
+      - name: Create governed native metric resources after startup window
+        working-directory: backend
+        env:
+          MB_ADMIN_EMAIL: ${{ env.MB_ADMIN_EMAIL }}
+          MB_ADMIN_PASSWORD: ${{ env.MB_ADMIN_PASSWORD }}
+          MB_RESTRICTED_EMAIL: ${{ env.MB_RESTRICTED_EMAIL }}
+          MB_RESTRICTED_PASSWORD: ${{ env.MB_RESTRICTED_PASSWORD }}
+        run: |
+          python lab/metabase/core_b/runtime/seed_phase1_pinpoint_metrics.py             --base-url http://127.0.0.1:3361             --output eval/phase1_pinpoint/native_bindings.json
+
+      - name: Prove no background chat completion became eligible
+        shell: bash
+        run: |
+          set -euo pipefail
+          sleep 8
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          receipt=json.loads(
+              Path("backend/eval/phase1_pinpoint/provider_setup.json").read_text()
+          )
+          assert receipt["actual_provider_request_count"] == 0
+          assert receipt["blocked_request_count"] == 0, receipt
+          Path("backend/eval/phase1_pinpoint/suggested_prompt_guard.json").write_text(
+              json.dumps(
+                  {
+                      "schema_version":"phase1_suggested_prompt_guard_v1",
+                      "provider_chat_requests_before_probe":0,
+                      "blocked_background_chat_requests_before_probe":0,
+                      "suggested_prompt_paid_calls":0,
+                  },
+                  indent=2,
+                  sort_keys=True,
+              ) + "\n",
+              encoding="utf-8",
+          )
+          PY
+
+      - name: Arm exact provider-request ceiling for the probe window
+        shell: bash
+        run: |
+          set -euo pipefail
+          kill "$PROVIDER_PROXY_PID"
+          wait "$PROVIDER_PROXY_PID" 2>/dev/null || true
+          nohup python backend/lab/metabase/core_b/runtime/openrouter_counting_proxy.py             --listen-host 0.0.0.0             --listen-port "$PROVIDER_PROXY_PORT"             --ceiling "$HARD_PROVIDER_REQUEST_CEILING"             --source-ceiling research_intake=2             --source-ceiling metabase=16             --source-ceiling p17_manager=4             --source-ceiling p19_manager=2             --prompt-token-ceiling "$PROMPT_TOKEN_CEILING"             --completion-token-ceiling "$COMPLETION_TOKEN_CEILING"             --reasoning-token-ceiling "$REASONING_TOKEN_CEILING"             --provider-cost-ceiling "$PROVIDER_COST_CEILING"             --receipt backend/eval/phase1_pinpoint/provider_probe.json             >backend/eval/phase1_pinpoint/provider_probe_proxy.log 2>&1 &
+          echo "PROVIDER_PROXY_PID=$!" >> "$GITHUB_ENV"
+          for i in $(seq 1 30); do
+            curl -fsS "http://127.0.0.1:${PROVIDER_PROXY_PORT}/__dima__/health" >/dev/null && break
+            sleep 1
+            test "$i" -lt 30
+          done
+
+      - name: Run exactly one final Phase-1 pinpoint probe
+        working-directory: backend
+        env:
+          PYTHONPATH: .
+          PROBE_ID: ${{ steps.auth.outputs.probe_id }}
+        run: |
+          set -euo pipefail
+          python lab/metabase/core_b/phase1_pinpoint_live_v4.py             --probe-id "$PROBE_ID"             --base-url http://127.0.0.1:3361             --email "$MB_RESTRICTED_EMAIL"             --password "$MB_RESTRICTED_PASSWORD"             --binding-manifest eval/phase1_pinpoint/native_bindings.json             --output "eval/phase1_pinpoint/${PROBE_ID}.json"             --control-db "eval/phase1_pinpoint/${PROBE_ID}.db"             --engine-sha "$ENGINE_SHA"             --upstream-sha "$UPSTREAM_BASE_SHA"             --runtime-tag "$RUNTIME_TAG"             --runtime-image-digest "$REGISTRY_DIGEST"             --build-identity "$BUILD_IDENTITY"             --image-identity "$REGISTRY_DIGEST"             --candidate-platform-sha "${{ steps.auth.outputs.candidate_platform_sha }}"             --candidate-product-sha "${{ steps.auth.outputs.candidate_sha }}"             --provider-proxy-base-url "http://127.0.0.1:${PROVIDER_PROXY_PORT}"             --provider-receipt eval/phase1_pinpoint/provider_probe.json             --max-orchestration-boundary-units "12"
+
+      - name: Validate hard mechanical envelope only
+        working-directory: backend
+        env:
+          PROBE_ID: ${{ steps.auth.outputs.probe_id }}
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+
+          probe=os.environ["PROBE_ID"]
+          report=json.loads(
+              Path(f"eval/phase1_pinpoint/{probe}.json").read_text(encoding="utf-8")
+          )
+          assert report["probe_id"] == probe
+          assert report["max_orchestration_boundary_units"] == 12
+          assert report["orchestration_boundary_units"] <= 12
+          assert report["within_orchestration_boundary_budget"] is True
+          assert report.get("exception") is None
+          assert report.get("provider_receipt_error") is None
+          assert report["hard_provider_request_ceiling"] == 24
+          assert report["actual_provider_request_count"] <= 24
+          provider=report["provider_receipt"]
+          assert provider["source_request_ceilings"] == {
+              "metabase":16,
+              "p17_manager":4,
+              "p19_manager":2,
+              "research_intake":2,
+          }, provider
+          assert provider["provider_requests_by_source"].get("research_intake",0) <= 2
+          assert provider["provider_requests_by_source"].get("metabase",0) <= 16
+          assert provider["provider_requests_by_source"].get("p17_manager",0) <= 4
+          assert provider["provider_requests_by_source"].get("p19_manager",0) <= 2
+          assert set(provider["provider_requests_by_source"]) <= {
+              "research_intake","metabase","p17_manager","p19_manager"
+          }, provider
+          assert provider["prompt_tokens"] <= 350000, provider
+          assert provider["completion_tokens"] <= 16000, provider
+          assert provider["reasoning_tokens"] <= 12000, provider
+          assert provider["provider_reported_cost"] is not None, provider
+          assert provider["provider_reported_cost"] <= 1.0, provider
+          assert provider["blocked_request_count"] == 0, provider
+          assert provider["privacy_contract"]["api_keys_persisted"] is False
+          assert provider["privacy_contract"]["reasoning_text_persisted"] is False
+          assert report["candidate_platform_sha"] == "e7fab9e84e5cb179e7effa2ea90692a4dbc17224"
+          assert report["candidate_product_sha"] == "2b897204f5dff341cba53a8b62a7607461d688e7"
+          calls=report["native_call_counts"]
+          assert calls["p13_attestation"] == 0, calls
+          assert calls["forensic_execute_native_query"] == 0, calls
+          executed_links=sum(
+              1 for turn in report["turns"]
+              for link in turn.get("execution_links",[])
+              if link.get("status") == "EXECUTED"
+          )
+          assert calls["dataset_execution"] == executed_links,(calls,executed_links)
+          assert calls["material_observation"] == executed_links,(calls,executed_links)
+          assert report["model_topology"]["dima_cognition"] == "openai/gpt-5.6-terra"
+          assert report["model_topology"]["metabot"] == "openrouter/openai/gpt-5.6-terra"
+          assert report["turn_count_executed"] == report["turn_count_expected"]
+          assert all(item.get("ready") is True for item in report["turns"])
+
+          if probe == "SCOPE_CURRENTNESS_HARD_V4":
+              turn1=report["turns"][0]
+              ranking=turn1["brief_payload"]["questions"][0]["ranking"]
+              assert ranking["limit"] is None
+              assert ranking["measure_semantic_id"] is None
+              periods=turn1["brief_payload"]["scope"]["periods"]
+              assert {(x["start"],x["end"]) for x in periods} == {
+                  ("2026-05-01","2026-06-01"),
+                  ("2026-06-01","2026-07-01"),
+              }
+              observed=report["mechanical_observations"]
+              for key in (
+                  "two_turns_executed",
+                  "both_turns_ready",
+                  "scope_lineage_continuity",
+                  "scope_version_advanced",
+                  "old_research_superseded",
+                  "new_research_current",
+                  "old_primary_evidence_historical",
+                  "new_primary_evidence_current",
+              ):
+                  assert observed[key] is True,(key,observed)
+          else:
+              observed=report["mechanical_observations"]
+              assert observed["max_reasoning_depth"] <= 3, observed
+              assert observed["p19_called_when_required"] is True, observed
+
+          assert report["quality_score"] is None
+          assert report["manual_adjudication_required"] is True
+          print("PINPOINT_ARTIFACT_READY_FOR_HUMAN_INSPECTION")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dima-v1-phase1-pinpoint-${{ steps.auth.outputs.probe_id }}-${{ github.run_id }}
+          path: |
+            backend/eval/phase1_pinpoint/*.json
+          if-no-files-found: warn
+          retention-days: 90
+
+      - name: Runtime logs
+        if: failure()
+        run: docker logs --tail=1500 mb-phase1 || true
+
+      - name: Teardown
+        if: always()
+        run: |
+          if [ -n "${PROVIDER_PROXY_PID:-}" ]; then
+            kill "$PROVIDER_PROXY_PID" 2>/dev/null || true
+          fi
+          docker rm -f mb-phase1 analytics-db app-db 2>/dev/null || true
+          docker network rm dima-phase1-pinpoint 2>/dev/null || true
