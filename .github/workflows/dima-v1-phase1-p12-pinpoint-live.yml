@@ -1,11 +1,8 @@
 name: dima-v1-phase1-pinpoint-live
 
-# Recovery/growth live authority. R8 authorizes one fresh-candidate Panel A
-# execution after provider-free closure. The temporary push trigger is exact.
+# Recovery/growth live authority. R8 candidate remains pinned, but the temporary
+# paid push trigger is disarmed until provider-free preflight is GREEN again.
 on:
-  push:
-    branches:
-      - phase1-v4-trigger-20260929
   workflow_dispatch:
     inputs:
       probe_id:
