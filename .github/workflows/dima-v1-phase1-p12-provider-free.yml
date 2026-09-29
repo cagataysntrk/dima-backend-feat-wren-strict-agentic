@@ -107,7 +107,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git -C .. ls-tree HEAD engine/metabase | awk '{print $3}')" = "cbe313af9ac2d5960f662068e433d328d896fb06"
+          test "$(git -C .. ls-tree HEAD engine/metabase | awk '{print $3}')" = "14323cdde4f258c65c63bbd88f1034f814a7ecb3"
           test ! -d ../frontend
           test ! -d ../ui
           test ! -d ../web
@@ -140,7 +140,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p eval/v1/artifacts
-          python eval/v1/write_phase1_p0_receipt.py             --output eval/v1/artifacts/phase1_p0_provider_free.json             --candidate-sha "$GITHUB_SHA"             --engine-sha "cbe313af9ac2d5960f662068e433d328d896fb06"             --migration-head "fd2a7c9e4b61"             --round2-manifest-blob "$(git -C .. rev-parse HEAD:backend/eval/dima_neutral_feature_benchmark_round2.json)"             --round2-fixture-blob "$(git -C .. rev-parse HEAD:backend/eval/round2_neutral_machine_fixture.json)"             --metamorphic-blob "$(git -C .. rev-parse HEAD:backend/eval/v1/phase1_metamorphic_manifest.json)"
+          python eval/v1/write_phase1_p0_receipt.py             --output eval/v1/artifacts/phase1_p0_provider_free.json             --candidate-sha "$GITHUB_SHA"             --engine-sha "14323cdde4f258c65c63bbd88f1034f814a7ecb3"             --migration-head "fd2a7c9e4b61"             --round2-manifest-blob "$(git -C .. rev-parse HEAD:backend/eval/dima_neutral_feature_benchmark_round2.json)"             --round2-fixture-blob "$(git -C .. rev-parse HEAD:backend/eval/round2_neutral_machine_fixture.json)"             --metamorphic-blob "$(git -C .. rev-parse HEAD:backend/eval/v1/phase1_metamorphic_manifest.json)"
 
       - uses: actions/upload-artifact@v4
         if: always()
