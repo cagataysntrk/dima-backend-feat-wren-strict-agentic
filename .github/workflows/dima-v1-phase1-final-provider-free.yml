@@ -6,6 +6,7 @@ on:
       - feat/dima-metabase-platform
     paths:
       - ".github/workflows/dima-v1-phase1-final-provider-free.yml"
+      - ".github/workflows/dima-metabase-p14-provider-free.yml"
       - "backend/tests/test_v3_p14_native_gateway.py"
   workflow_dispatch:
 
