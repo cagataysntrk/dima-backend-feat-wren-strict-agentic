@@ -147,7 +147,7 @@ jobs:
           test ! -d frontend
           test ! -d ui
           test ! -d web
-          test "$(git -C .. ls-tree HEAD engine/metabase | awk '{print $3}')" = "cbe313af9ac2d5960f662068e433d328d896fb06"
+          test "$(git -C .. ls-tree HEAD engine/metabase | awk '{print $3}')" = "14323cdde4f258c65c63bbd88f1034f814a7ecb3"
 
 
       # Wave-A P2 scope authority was formally reopened and re-sealed by
@@ -157,7 +157,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD:backend/app/v3/research_product.py)" = "443a2e699ffc92aeb700051e57b24a709cf97b2c"
+          test "$(git rev-parse HEAD:backend/app/v3/research_product.py)" = "0370635ec046c88532c8ae70e49efc5126404489"
           # P17 root-recovery semantics remain sealed by DMP-DEC-0061.
           # Wave-B B1 typed downstream re-entry and the P19 identity extension
           # were re-proved under DMP-DEC-0066 before this exact P19 re-pin.
@@ -168,5 +168,5 @@ jobs:
           test "$(git rev-parse HEAD:backend/app/v3/report_document.py)" = "c2d1e266c4a7335bf7c62349b3229d7a55a38bee"
           test "$(git rev-parse HEAD:backend/app/v3/decision_intelligence.py)" = "1a40508048d668829344ca30aa7aadf881cebb82"
           test "$(git rev-parse HEAD:backend/app/v3/claim_lineage.py)" = "76589172d19d4d9ffa1db9f94f4ee9ee9f277e5a"
-          test "$(git rev-parse HEAD:backend/app/v3/research.py)" = "95f08cf20ab409cec384e1041736537b528c836a"
+          test "$(git rev-parse HEAD:backend/app/v3/research.py)" = "baa705e094b1809bf848980beb4ea87c025f453c"
           test "$(git rev-parse HEAD:backend/app/v3/research_store.py)" = "659664fa6c8c98e724adb45025ec5e69b9fd7cea"

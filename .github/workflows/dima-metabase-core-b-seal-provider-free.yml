@@ -191,8 +191,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD:backend/app/v3/research_product.py)" = "443a2e699ffc92aeb700051e57b24a709cf97b2c"
-          test "$(git rev-parse HEAD:backend/app/v3/research.py)" = "95f08cf20ab409cec384e1041736537b528c836a"
+          test "$(git rev-parse HEAD:backend/app/v3/research_product.py)" = "0370635ec046c88532c8ae70e49efc5126404489"
+          test "$(git rev-parse HEAD:backend/app/v3/research.py)" = "baa705e094b1809bf848980beb4ea87c025f453c"
           # P17 is intentionally mutable under the certified active root-recovery fix.
           # Its current semantics are certified by the Sealed P17 regression above;
           # keep exact blob pins only for owners that remained sealed/unchanged.
