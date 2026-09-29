@@ -1004,13 +1004,25 @@ class ResearchIntakeCompiler:
             current_ids = {
                 item.candidate_id for item in draft_scope.semantic_refs
             }
-            prior_times = set(prior_brief.scope.time_surfaces)
-            current_times = set(draft_scope.time_surfaces)
+            prior_period_identity = tuple(
+                (
+                    item.time_dimension_candidate_id,
+                    item.start,
+                    item.end,
+                )
+                for item in prior_brief.scope.periods
+            )
+            current_period_identity = tuple(
+                (
+                    item.time_dimension_candidate_id,
+                    item.start,
+                    item.end,
+                )
+                for item in draft_scope.periods
+            )
             changed = (
                 prior_ids != current_ids
-                or prior_times != current_times
-                or tuple(prior_brief.scope.periods)
-                != tuple(draft_scope.periods)
+                or prior_period_identity != current_period_identity
             )
             if not changed and (
                 tuple(prior_brief.scope.temporal_dimension_ids)
