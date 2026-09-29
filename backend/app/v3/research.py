@@ -257,19 +257,115 @@ class ResearchManager:
 
     @staticmethod
     def _native_material_message(item, analytical_scope):
+        """Deliver the accepted material contract on Metabot's visible message surface.
+
+        The block is a deterministic projection of AnalyticalRequestContract only.
+        It declares WHAT must remain true and never emits SQL, MBQL, query plans,
+        benchmark knowledge, or inferred semantics.
+        """
+
+        def section(name, values):
+            lines = [f"{name}:"]
+            values = tuple(values)
+            lines.extend(f"- {value}" for value in values)
+            if not values:
+                lines.append("- none")
+            return lines
+
+        def period_line(label, value):
+            end = value.end if value.end is not None else "open"
+            return (
+                f"- {label}: {value.time_dimension} "
+                f"[{value.start}, {end})"
+            )
+
+        lines = [
+            "[DIMA ACCEPTED ANALYTICAL CONTRACT]",
+            f"scope_version: {analytical_scope.scope_identity.version_id}",
+            *section("metrics", analytical_scope.metric_refs),
+            *section("dimensions", analytical_scope.dimension_refs),
+            "filters:",
+        ]
+        if analytical_scope.filters:
+            lines.extend(
+                (
+                    f"- {value.source_candidate_id}: "
+                    f"{value.dimension_name} = "
+                    f"{json.dumps(value.value, ensure_ascii=False)}"
+                )
+                for value in analytical_scope.filters
+            )
+        else:
+            lines.append("- none")
+
+        lines.append("periods:")
+        if analytical_scope.comparison is not None:
+            lines.append(
+                period_line(
+                    "reference",
+                    analytical_scope.comparison.reference_period,
+                )
+            )
+            lines.append(
+                period_line(
+                    "base",
+                    analytical_scope.comparison.base_period,
+                )
+            )
+        elif analytical_scope.period is not None:
+            lines.append(period_line("accepted", analytical_scope.period))
+        else:
+            lines.append("- none")
+
         ranking = analytical_scope.ranking
-        if getattr(ranking, "kind", None) != "evidence_synthesis":
-            return item.objective
-        return (
-            "Collect governed analytical material for this accepted obligation. "
-            "The accepted ranking is an evidence-synthesis obligation and has no "
-            "governed single native metric basis. Use the exact scoped metrics, "
-            "dimensions, filters, and time surfaces supplied in dima_analytical_scope. "
-            "Do not choose or invent a single ranking metric, composite score, native "
-            "ranking, or result limit. Return unranked analytical material for downstream "
-            "governed evidence synthesis. Accepted obligation: "
-            + item.objective
+        lines.append("ranking:")
+        if ranking is None:
+            lines.append("- kind: none")
+        elif ranking.kind == "evidence_synthesis":
+            lines.extend(
+                (
+                    "- kind: evidence_synthesis",
+                    "- native_measure: none",
+                    "- native_limit: none",
+                )
+            )
+        else:
+            lines.extend(
+                (
+                    "- kind: native_metric",
+                    f"- measure: {ranking.measure}",
+                    f"- direction: {ranking.direction}",
+                    f"- limit: {ranking.limit if ranking.limit is not None else 'none'}",
+                )
+            )
+
+        lines.extend(section("grain_constraints", analytical_scope.grain_constraints))
+        lines.extend(
+            section(
+                "output_surfaces",
+                analytical_scope.requested_output_surfaces,
+            )
         )
+        lines.extend(
+            (
+                "rules:",
+                "- preserve the accepted metric identities exactly",
+                "- preserve the accepted filters and temporal bounds exactly",
+                "- do not broaden the accepted scope",
+            )
+        )
+        if ranking is not None and ranking.kind == "evidence_synthesis":
+            lines.extend(
+                (
+                    "- do not choose or invent a native ranking metric, composite score, or result limit",
+                    "- return unranked analytical material for downstream governed evidence synthesis",
+                )
+            )
+        elif ranking is not None:
+            lines.append("- preserve the governed native ranking basis exactly")
+
+        lines.extend(("[USER OBLIGATION]", item.objective))
+        return "\n".join(lines)
 
     @classmethod
     def prepare_native_delegation(cls,session,*,obligation_id,profile_id="nlq",metabot_id=None,now=None):
