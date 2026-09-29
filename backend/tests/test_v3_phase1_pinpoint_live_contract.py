@@ -36,6 +36,9 @@ def test_final_pinpoint_probes_are_closed_and_not_benchmark_cases():
     assert tuple(PROBES) == (
         "SCOPE_CURRENTNESS_HARD_V4",
         "RCA_P19_HARD_V2",
+        "RELATIONSHIP_F05_H_RECOVERY",
+        "REPORT_F08_H_RECOVERY",
+        "ADAPTIVE_F06_H_RETENTION",
     )
     assert MAX_ORCHESTRATION_BOUNDARY_UNITS == 12
     from lab.metabase.core_b.phase1_pinpoint_live import MODEL
@@ -46,6 +49,32 @@ def test_final_pinpoint_probes_are_closed_and_not_benchmark_cases():
     assert "Mayıs ve Haziran 2026" in serialized
     assert "maintenance delay" in serialized
     assert "spare-part delay" in serialized
+    assert "supporting ve challenging evidence" in serialized
+    assert "gözlem, bulgu, hipotez, karşı kanıt" in serialized
+    assert "en az iki farklı analitik derinleşme" in serialized
+
+
+def test_recovery_growth_probes_bind_exact_frozen_round2_historical_requests():
+    manifest = json.loads(
+        (Path(__file__).parents[1] / "eval" / "dima_neutral_feature_benchmark_round2.json")
+        .read_text(encoding="utf-8")
+    )
+    cases = {item["id"]: item for item in manifest["cases"]}
+    bindings = {
+        "RELATIONSHIP_F05_H_RECOVERY": "F05_H",
+        "REPORT_F08_H_RECOVERY": "F08_H",
+        "ADAPTIVE_F06_H_RETENTION": "F06_H",
+    }
+    for probe_id, case_id in bindings.items():
+        probe = PROBES[probe_id]
+        assert probe["historical_round2_case_id"] == case_id
+        assert probe["turns"] == (cases[case_id]["question"],)
+        assert probe["manual_contract"]
+    assert all(
+        probe["historical_round2_case_id"] is None
+        for probe_id, probe in PROBES.items()
+        if probe_id in {"SCOPE_CURRENTNESS_HARD_V4", "RCA_P19_HARD_V2"}
+    )
 
 
 def test_pinpoint_budget_blocks_thirteenth_boundary_before_network():
@@ -111,6 +140,9 @@ def test_pinpoint_workflow_is_one_probe_per_run_and_no_broad_scorer():
     ).read_text(encoding="utf-8")
     assert "SCOPE_CURRENTNESS_HARD_V4" in workflow
     assert "RCA_P19_HARD_V2" in workflow
+    assert "RELATIONSHIP_F05_H_RECOVERY" in workflow
+    assert "REPORT_F08_H_RECOVERY" in workflow
+    assert "ADAPTIVE_F06_H_RETENTION" in workflow
     assert "probe_id" in workflow
     assert "max-orchestration-boundary-units \"12\"" in workflow
     assert "F02_M" not in workflow
@@ -120,6 +152,9 @@ def test_pinpoint_workflow_is_one_probe_per_run_and_no_broad_scorer():
     assert "backend/eval/v1/authorizations/phase1-final-pinpoint-live-v3.json" not in workflow
     assert "phase1-v4-trigger-20260929" in workflow
     assert "phase1-rca-trigger-20260929" in workflow
+    assert "phase1-f05-trigger-20260929" in workflow
+    assert "phase1-f08-trigger-20260929" in workflow
+    assert "phase1-f06-trigger-20260929" in workflow
     assert "feat/dima-metabase-platform" in workflow
     assert 'PRODUCT_BEHAVIOR_SHA: "2b897204f5dff341cba53a8b62a7607461d688e7"' in workflow
     assert 'test "$ENGINE_SHA" = "14323cdde4f258c65c63bbd88f1034f814a7ecb3"' in workflow
@@ -144,3 +179,6 @@ def test_pinpoint_workflow_is_one_probe_per_run_and_no_broad_scorer():
     assert "actual_provider_request_count" in workflow
     assert "orchestration_boundary_units" in workflow
     assert "PINPOINT_ARTIFACT_READY_FOR_HUMAN_INSPECTION" in workflow
+    assert "MANUAL_ARTIFACT_ADJUDICATION_ONLY" in workflow
+    assert '--checkout-sha "${GITHUB_SHA}"' in workflow
+    assert "round2_feature_benchmark.py" not in workflow

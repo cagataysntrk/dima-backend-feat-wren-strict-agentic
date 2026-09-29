@@ -100,6 +100,9 @@ def test_pinpoint_paid_workflow_is_sequential_closed_budget():
     assert "workflow_dispatch:" in source
     assert "phase1-v4-trigger-20260929" in source
     assert "phase1-rca-trigger-20260929" in source
+    assert "phase1-f05-trigger-20260929" in source
+    assert "phase1-f08-trigger-20260929" in source
+    assert "phase1-f06-trigger-20260929" in source
     assert "git fetch --no-tags --depth=1 origin feat/dima-metabase-platform" in source
     assert 'PRODUCT_BEHAVIOR_SHA: "2b897204f5dff341cba53a8b62a7607461d688e7"' in source
     assert 'test "$ENGINE_SHA" = "14323cdde4f258c65c63bbd88f1034f814a7ecb3"' in source
@@ -109,6 +112,9 @@ def test_pinpoint_paid_workflow_is_sequential_closed_budget():
     assert "repository_dispatch" not in source
     assert "SCOPE_CURRENTNESS_HARD_V4" in source
     assert "RCA_P19_HARD_V2" in source
+    assert "RELATIONSHIP_F05_H_RECOVERY" in source
+    assert "REPORT_F08_H_RECOVERY" in source
+    assert "ADAPTIVE_F06_H_RETENTION" in source
     assert 'HARD_PROVIDER_REQUEST_CEILING: "24"' in source
     assert 'PROMPT_TOKEN_CEILING: "350000"' in source
     assert 'COMPLETION_TOKEN_CEILING: "16000"' in source
@@ -130,6 +136,8 @@ def test_pinpoint_paid_workflow_is_sequential_closed_budget():
     assert "PINPOINT_ARTIFACT_READY_FOR_HUMAN_INSPECTION" in source
     assert "quality_score" in source
     assert "manual_adjudication_required" in source
+    assert "MANUAL_ARTIFACT_ADJUDICATION_ONLY" in source
+    assert '--checkout-sha "${GITHUB_SHA}"' in source
 
 
 def test_phase1_metamorphic_manifest_is_structural_not_prose_scoring():
