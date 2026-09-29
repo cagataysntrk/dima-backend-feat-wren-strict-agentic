@@ -59,6 +59,10 @@ from app.v3.report_document import (
     stable_limitation_id,
 )
 from app.v3.research import ObligationState
+from app.v3.research_analytical_scope import (
+    CoOriginMaterialRequirement,
+    coorigin_material_requirements,
+)
 from app.v3.research_contracts import (
     PresentationKind,
     ResearchBrief,
@@ -432,82 +436,26 @@ class HeadlessProductComposer:
         )
 
     @staticmethod
-    def _relationship_material_candidates(
+    def _relationship_material_requirement(
         *,
-        brief: ResearchBrief,
+        requirements: tuple[CoOriginMaterialRequirement, ...],
         goal: ResearchQuestion,
-    ) -> tuple[ResearchQuestion, ...]:
-        """Find sibling analytical goals emitted from the same accepted user fragment.
-
-        A relationship interpretation may consume already-verified analytical material
-        only when that sibling preserves the exact co-origin text and covers every
-        governed metric/dimension ref required by the relationship goal. This is a
-        provenance/coverage rule, not text-case routing.
-        """
-
-        required = {
-            item.candidate_id
-            for item in (*goal.subject_refs, *goal.related_refs)
-            if item.target_kind
-            in {
-                SemanticTargetKind.METRIC,
-                SemanticTargetKind.KPI,
-                SemanticTargetKind.DIMENSION,
-            }
-        }
-        source = goal.source_text.strip()
-        candidates: list[ResearchQuestion] = []
-        for candidate in brief.questions:
-            if candidate.goal_id == goal.goal_id:
-                continue
-            if candidate.kind in {
-                ResearchGoalKind.RELATIONSHIP,
-                ResearchGoalKind.ROOT_CAUSE,
-            }:
-                continue
-            if candidate.source_text.strip() != source:
-                continue
-            candidate_refs = {
-                item.candidate_id
-                for item in (*candidate.subject_refs, *candidate.related_refs)
-                if item.target_kind
-                in {
-                    SemanticTargetKind.METRIC,
-                    SemanticTargetKind.KPI,
-                    SemanticTargetKind.DIMENSION,
-                }
-            }
-            if required.issubset(candidate_refs):
-                candidates.append(candidate)
-        return tuple(candidates)
-
-    @classmethod
-    def _verified_relationship_material_source(
-        cls,
-        *,
-        brief: ResearchBrief,
-        session,
-        goal: ResearchQuestion,
-    ) -> ResearchQuestion | None:
-        states = {
-            item.obligation_id: _state_value(item.state)
-            for item in session.obligations
-        }
-        candidates = tuple(
-            candidate
-            for candidate in cls._relationship_material_candidates(
-                brief=brief,
-                goal=goal,
+    ) -> CoOriginMaterialRequirement | None:
+        matches = tuple(
+            item
+            for item in requirements
+            if (
+                goal.goal_id in item.source_goal_ids
+                and goal.goal_id != item.anchor_goal_id
             )
-            if states.get(candidate.goal_id) == ObligationState.VERIFIED.value
         )
-        if not candidates:
+        if len(matches) > 1:
+            raise ValueError(
+                "relationship goal belongs to multiple co-origin material requirements"
+            )
+        if not matches:
             return None
-        # Prefer the smallest semantic superset, then preserve accepted brief order.
-        order = {
-            question.goal_id: index
-            for index, question in enumerate(brief.questions)
-        }
+        requirement = matches[0]
         required = {
             item.candidate_id
             for item in (*goal.subject_refs, *goal.related_refs)
@@ -518,25 +466,14 @@ class HeadlessProductComposer:
                 SemanticTargetKind.DIMENSION,
             }
         }
-        return min(
-            candidates,
-            key=lambda candidate: (
-                len(
-                    {
-                        item.candidate_id
-                        for item in (*candidate.subject_refs, *candidate.related_refs)
-                        if item.target_kind
-                        in {
-                            SemanticTargetKind.METRIC,
-                            SemanticTargetKind.KPI,
-                            SemanticTargetKind.DIMENSION,
-                        }
-                    }
-                    - required
-                ),
-                order[candidate.goal_id],
-            ),
+        coverage = set(requirement.required_metric_refs) | set(
+            requirement.required_dimension_refs
         )
+        if not required.issubset(coverage):
+            raise ValueError(
+                "canonical co-origin material coverage cannot satisfy relationship refs"
+            )
+        return requirement
 
     @staticmethod
     def _root_cause_candidate(
@@ -1376,15 +1313,15 @@ class HeadlessProductComposer:
             investigation_requirements=accepted_investigation_requirements,
         ).mode
 
+        goal_by_id = _question_map(brief)
+        material_requirements = coorigin_material_requirements(session)
         deferred_relationship_ids = frozenset(
-            goal.goal_id
-            for goal in brief.questions
+            goal_id
+            for requirement in material_requirements
+            for goal_id in requirement.source_goal_ids
             if (
-                goal.kind == ResearchGoalKind.RELATIONSHIP
-                and self._relationship_material_candidates(
-                    brief=brief,
-                    goal=goal,
-                )
+                goal_id != requirement.anchor_goal_id
+                and goal_by_id[goal_id].kind == ResearchGoalKind.RELATIONSHIP
             )
         )
         owner_calls.append("P14")
@@ -1397,8 +1334,6 @@ class HeadlessProductComposer:
             owner_calls=owner_calls,
             skip_obligation_ids=deferred_relationship_ids,
         )
-
-        goal_by_id = _question_map(brief)
 
         for goal in brief.questions:
             state = next(
@@ -1417,17 +1352,45 @@ class HeadlessProductComposer:
                 p17_required.append(goal.goal_id)
 
             if goal.kind == ResearchGoalKind.RELATIONSHIP:
-                # Relationship interpretation is downstream authority. Reuse exact
-                # VERIFIED co-origin analytical material when available instead of
-                # opening a duplicate native cognition/execution turn. If no safe
-                # sibling exists (or it failed closed), retain the direct P14 path.
+                # Relationship authority consumes either the one canonical co-origin
+                # material anchor or its existing direct P14 material path. Accepted
+                # relationship semantics are never rewritten into the anchor goal.
                 material_session_id = session.session_id
-                material_goal = self._verified_relationship_material_source(
-                    brief=brief,
-                    session=session,
+                material_requirement = self._relationship_material_requirement(
+                    requirements=material_requirements,
                     goal=goal,
                 )
-                if material_goal is None:
+                if material_requirement is not None:
+                    material_goal = goal_by_id[material_requirement.anchor_goal_id]
+                    current = self._research.resume_state(
+                        session_id=session.session_id,
+                        principal=principal,
+                    )
+                    material_state = next(
+                        (
+                            _state_value(item.state)
+                            for item in current.obligations
+                            if item.obligation_id == material_goal.goal_id
+                        ),
+                        "UNKNOWN",
+                    )
+                    if material_state != ObligationState.VERIFIED.value:
+                        code = "PRODUCT_COORIGIN_MATERIAL_NOT_VERIFIED"
+                        limitation_codes[goal.goal_id] = code
+                        limitations.append(
+                            CompositionLimitation(
+                                obligation_id=goal.goal_id,
+                                code=code,
+                                detail=(
+                                    "Canonical co-origin analytical material did not "
+                                    "reach VERIFIED; duplicate relationship acquisition "
+                                    "was not opened."
+                                ),
+                                owner="PRODUCT",
+                            )
+                        )
+                        continue
+                else:
                     current = self._research.resume_state(
                         session_id=session.session_id,
                         principal=principal,
