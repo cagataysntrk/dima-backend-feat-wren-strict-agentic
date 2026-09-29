@@ -104,7 +104,7 @@ def test_pinpoint_paid_workflow_is_sequential_closed_budget():
     assert "phase1-f08-trigger-20260929" in source
     assert "phase1-f06-trigger-20260929" in source
     assert "git fetch --no-tags --depth=1 origin feat/dima-metabase-platform" in source
-    assert 'PRODUCT_BEHAVIOR_SHA: "3af16eb16f94ede914aff24edacba0724c717548"' in source
+    assert 'PRODUCT_BEHAVIOR_SHA: "4b3d2a52282638f017eeae1e2548d182c54d0aaf"' in source
     assert 'test "$ENGINE_SHA" = "0f16f2b5a1ec774ac7afee6214c726e82f9ceb3c"' in source
     assert 'test "$CERTIFICATION_RUN_ID" = "36610103287"' in source
     assert 'test "$RUNTIME_TAG" = "v0.63.18-dima.8"' in source
