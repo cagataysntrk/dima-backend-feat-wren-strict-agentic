@@ -1005,6 +1005,64 @@ def test_r5_material_semantic_drift_blocks_verified_evidence(updates, code):
     assert exc.value.code == code
 
 
+@pytest.mark.parametrize(
+    ("identity_kind", "code"),
+    (
+        ("tenant", "P14_NATIVE_TENANT_MISMATCH"),
+        ("principal", "P14_NATIVE_PRINCIPAL_MISMATCH"),
+    ),
+)
+def test_r5_wrong_dima_tenant_or_principal_blocks_before_native_work(
+    identity_kind, code
+):
+    engine = db_engine()
+    seed(engine)
+    store, session, link, query = session_and_link(engine)
+    subjects = NativeSubjectSessionProvider(
+        base_url="http://native.test",
+        expected_identity=expected_identity(),
+        db_engine=engine,
+    )
+    executor = NativeResearchMaterialExecutor(
+        subject_provider=subjects,
+        store=store,
+        expected_identity=expected_identity(),
+    )
+    if identity_kind == "tenant":
+        bad_principal = Principal(
+            user_id=str(USER),
+            tenant_id="00000000-0000-4000-8000-000000000799",
+            roles=["analyst"],
+            tenant_slug="wrong-tenant",
+        )
+    else:
+        bad_principal = Principal(
+            user_id="00000000-0000-4000-8000-000000000798",
+            tenant_id=str(TENANT),
+            roles=["analyst"],
+            tenant_slug="native-direct",
+        )
+    bridge = MaterialBridge(fail_on_execute=True)
+
+    with pytest.raises(ResearchMaterialLimitation) as exc:
+        executor.execute(
+            principal=bad_principal,
+            session=session,
+            obligation_id="g1",
+            bridge=bridge,
+            native_conversation_id=link.native_conversation_id,
+            native_query_id=link.native_query_id,
+            native_query=query,
+            query_fingerprint=link.native_query_fingerprint,
+            execution_link_id=link.id,
+        )
+
+    assert exc.value.code == code
+    assert bridge.calls == []
+    assert bridge.material_observation_calls == []
+    assert store.execution_link(link.id).status == "CANDIDATE_CAPTURED"
+
+
 def test_r5_material_wrong_engine_blocks_verified_evidence():
     runtime = identity_payload()
     runtime["revision_sha"] = "f" * 40
