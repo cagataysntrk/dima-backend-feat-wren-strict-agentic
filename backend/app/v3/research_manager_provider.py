@@ -12,7 +12,7 @@ from typing import Any, Literal, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
-from app.v3.claim_lineage import ClaimFreshness
+from app.v3.claim_lineage import ClaimEvidenceRelation, ClaimFreshness
 from app.v3.structured_transport import (
     StructuredProviderError,
     validate_provider_strict_schema,
@@ -25,6 +25,7 @@ from app.v3.research_manager import (
     ManagerProposal,
     ManagerStopReason,
     ProposedClaimDraft,
+    ProposedClaimEvidenceLink,
     ResearchManagerSnapshot,
 )
 
@@ -129,6 +130,11 @@ class ProviderClosedObject(_Frozen):
         return self
 
 
+class ProviderClaimEvidenceLink(_Frozen):
+    evidence_id: str = Field(min_length=1)
+    relation: ClaimEvidenceRelation
+
+
 class ProviderClaimDraft(_Frozen):
     """Strict provider DTO; mapped deterministically into domain claim shape."""
 
@@ -137,6 +143,7 @@ class ProviderClaimDraft(_Frozen):
     scope: ProviderClosedObject
     freshness: ClaimFreshness
     origin_material_refs: tuple[str, ...] = ()
+    evidence_links: tuple[ProviderClaimEvidenceLink, ...] = ()
     limitations: tuple[str, ...] = ()
 
 
@@ -175,6 +182,13 @@ def _domain_claim(value: ProviderClaimDraft) -> ProposedClaimDraft:
         scope=_provider_object(value.scope),
         freshness=value.freshness,
         origin_material_refs=value.origin_material_refs,
+        evidence_links=tuple(
+            ProposedClaimEvidenceLink(
+                evidence_id=item.evidence_id,
+                relation=item.relation,
+            )
+            for item in value.evidence_links
+        ),
         limitations=value.limitations,
     )
 
@@ -721,6 +735,14 @@ class StructuredResearchProposalManager:
             payload["evidence_refs"] = sorted(
                 ref for ref in snapshot.evidence_refs if ref in evidence
             )
+            payload["evidence_results"] = [
+                item.model_dump(mode="json")
+                for item in snapshot.evidence_results
+                if (
+                    item.obligation_id == target_parent_obligation
+                    and item.evidence_id in evidence
+                )
+            ]
             payload["claims"] = [
                 item.model_dump(mode="json") for item in scoped_claims
             ]
@@ -1343,7 +1365,7 @@ class StructuredResearchProposalManager:
                     "provider branch-key constraint cannot broaden action-profile legality"
                 )
 
-        for definition in (schema.get("$defs") or {}).values():
+        for definition_name, definition in (schema.get("$defs") or {}).items():
                 if not isinstance(definition, dict):
                     continue
                 definition_props = definition.get("properties")
@@ -1357,6 +1379,14 @@ class StructuredResearchProposalManager:
                             "type": "string",
                             "enum": list(closed_material_ids),
                         },
+                    }
+                if (
+                    definition_name == "ProviderClaimEvidenceLink"
+                    and isinstance(definition_props, dict)
+                ):
+                    definition_props["evidence_id"] = {
+                        "type": "string",
+                        "enum": list(closed_evidence_ids),
                     }
 
         # Dynamic action-profile narrowing mutates scalar constraints after
