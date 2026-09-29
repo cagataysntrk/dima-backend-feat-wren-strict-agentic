@@ -186,6 +186,7 @@ class ModelGoalDraft(Frozen):
     goal_key: str = Field(min_length=1, max_length=120)
     kind: ResearchGoalKind
     source_text: str = Field(min_length=1)
+    source_fragment_text: str | None = Field(default=None, min_length=1)
     allowed_relationship_id: str | None = None
     subject_semantic_ids: tuple[str, ...] = ()
     related_semantic_ids: tuple[str, ...] = ()
@@ -337,6 +338,10 @@ Authority rules:
   half-open [start,end) bounds. If the period cannot be resolved unambiguously, return CLARIFY.
 - Do not use implementation-specific SQL/MBQL temporal syntax; time_periods are semantic scope only.
 - Preserve every current MUST analytical/presentation obligation as a separate goal/deliverable.
+- For every READY goal emit source_fragment_text as one exact verbatim substring of the CURRENT
+  user message that directly supports that goal. Never paraphrase the fragment.
+- If multiple goals decompose the same user clause, repeat the same maximal supporting clause
+  verbatim for each of those goals. Different clauses must keep different fragment text.
 - Adaptive instructions such as "if verified evidence reveals a new material direction, follow it"
   are Core-B product-routing intent, NOT a second analytical goal. Emit the actual analytical goal
   once, then emit FOLLOW_VERIFIED_MATERIAL with source_goal_key pointing to that exact goal.
@@ -467,9 +472,14 @@ def _intake_provider_schema(
     common_names = (
         "goal_key",
         "source_text",
+        "source_fragment_text",
         "ranking",
         "comparison_texts",
     )
+    source_fragment_schema = {
+        "type": "string",
+        "minLength": 1,
+    }
     variants: list[dict[str, Any]] = []
     for kind in ResearchGoalKind:
         if kind == ResearchGoalKind.RELATIONSHIP:
@@ -479,6 +489,9 @@ def _intake_provider_schema(
                 name: copy.deepcopy(base_properties[name])
                 for name in common_names
             }
+            properties["source_fragment_text"] = copy.deepcopy(
+                source_fragment_schema
+            )
             properties["kind"] = {
                 "type": "string",
                 "enum": [kind.value],
@@ -492,6 +505,9 @@ def _intake_provider_schema(
                 name: copy.deepcopy(base_properties[name])
                 for name in common_names
             }
+            properties["source_fragment_text"] = copy.deepcopy(
+                source_fragment_schema
+            )
             properties["kind"] = {
                 "type": "string",
                 "enum": [kind.value],
@@ -771,6 +787,18 @@ class ResearchIntakeCompiler:
                     goal.goal_key,
                 )
             seen_goal_keys.add(goal.goal_key)
+            source_fragment_identity = None
+            if goal.source_fragment_text is not None:
+                fragment = goal.source_fragment_text
+                if fragment != fragment.strip() or fragment not in current:
+                    raise ResearchIntakeError(
+                        "INTAKE_SOURCE_FRAGMENT_NOT_VERBATIM",
+                        goal.goal_key,
+                    )
+                source_fragment_identity = (
+                    "fragment-sha256:"
+                    + hashlib.sha256(fragment.encode("utf-8")).hexdigest()
+                )
             relationship = self._relationship_for_goal(
                 goal,
                 catalog=catalog,
@@ -837,6 +865,7 @@ class ResearchIntakeCompiler:
                     goal_id=goal_id,
                     kind=goal.kind,
                     source_text=goal.source_text,
+                    source_fragment_identity=source_fragment_identity,
                     subject_refs=subject,
                     related_refs=related,
                     ranking=ranking,
