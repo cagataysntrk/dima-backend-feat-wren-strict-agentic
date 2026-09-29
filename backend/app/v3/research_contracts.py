@@ -204,6 +204,10 @@ class ResearchQuestion(FrozenModel):
     kind: ResearchGoalKind
     priority: Literal["MUST"] = "MUST"
     source_text: str
+    source_fragment_identity: str | None = Field(
+        default=None,
+        pattern=r"^fragment-sha256:[a-f0-9]{64}$",
+    )
     subject_refs: tuple[ResearchSemanticRef, ...] = ()
     related_refs: tuple[ResearchSemanticRef, ...] = ()
     ranking: RankingSurface | None = None
