@@ -33,7 +33,10 @@ from app.v3.research_contracts import (
     ResearchSemanticRef,
     SemanticTargetKind,
 )
-from app.v3.substrate.metabase.native_models import NativeEngineIdentity
+from app.v3.substrate.metabase.native_models import (
+    NativeEngineIdentity,
+    NativeMaterialObservation,
+)
 
 if TYPE_CHECKING:
     from app.v3.research import ResearchSession
@@ -62,6 +65,18 @@ class NativeTableLocator(Frozen):
     table_id: int = Field(gt=0)
     table_name: str = Field(min_length=1)
     schema_name: str | None = None
+
+
+class NativeMaterialBinding(Frozen):
+    """Governed business candidate -> stable native identity correlation only."""
+
+    candidate_id: str = Field(min_length=1)
+    candidate_kind: str = Field(min_length=1)
+    database_id: int = Field(gt=0)
+    table_id: int | None = Field(default=None, gt=0)
+    field_id: int | None = Field(default=None, gt=0)
+    metric_id: int | None = Field(default=None, gt=0)
+    metric_entity_id: str | None = None
 
 
 def _question(session: ResearchSession, obligation_id: str) -> ResearchQuestion:
@@ -755,3 +770,309 @@ def assert_attested_native_scope(
         exact_artifact_fingerprint=manifest.exact_pmbql_fingerprint,
         request=observation,
     )
+
+def _material_binding(
+    bindings: Mapping[str, NativeMaterialBinding],
+    candidate_id: str,
+) -> NativeMaterialBinding:
+    binding = bindings.get(candidate_id)
+    if binding is None:
+        raise ResearchAnalyticalScopeError(
+            "R1_NATIVE_MATERIAL_BINDING_REQUIRED",
+            candidate_id,
+        )
+    return binding
+
+
+def _material_field_identity(binding: NativeMaterialBinding) -> tuple[int, int | None]:
+    if binding.field_id is None:
+        raise ResearchAnalyticalScopeError(
+            "R1_NATIVE_MATERIAL_FIELD_BINDING_REQUIRED",
+            binding.candidate_id,
+        )
+    return binding.field_id, binding.table_id
+
+
+def _observed_field_identity(value) -> tuple[int, int | None]:
+    return int(value.field_id), (
+        int(value.table_id) if value.table_id is not None else None
+    )
+
+
+def _assert_material_runtime_identity(
+    observation: NativeMaterialObservation,
+    *,
+    expected_engine: NativeEngineIdentity,
+    expected_metabase_subject: int,
+) -> None:
+    runtime = observation.runtime_identity
+    checks = (
+        ("repository", expected_engine.repository),
+        ("revision_sha", expected_engine.engine_sha),
+        ("upstream_base_sha", expected_engine.upstream_base_sha),
+        ("runtime_tag", expected_engine.runtime_tag),
+        ("build_identity", expected_engine.build_identity),
+        ("image_identity", expected_engine.runtime_image_identity),
+    )
+    for key, expected in checks:
+        if expected is not None and str(runtime.get(key) or "") != str(expected):
+            raise ResearchAnalyticalScopeError(
+                "R1_NATIVE_ENGINE_IDENTITY_MISMATCH",
+                f"material observation {key} differs from the pinned engine",
+            )
+    if not runtime.get("runtime_instance_id"):
+        raise ResearchAnalyticalScopeError(
+            "R1_NATIVE_ENGINE_IDENTITY_MISSING",
+            "material observation has no runtime instance identity",
+        )
+    if observation.authenticated_metabase_subject != expected_metabase_subject:
+        raise ResearchAnalyticalScopeError(
+            "R1_NATIVE_SUBJECT_MISMATCH",
+            "material observation belongs to another Metabase subject",
+        )
+
+
+def _assert_material_metric_scope(
+    contract: AnalyticalRequestContract,
+    observation: NativeMaterialObservation,
+    bindings: Mapping[str, NativeMaterialBinding],
+) -> None:
+    expected: set[tuple[int, str]] = set()
+    for candidate_id in contract.metric_refs:
+        binding = _material_binding(bindings, candidate_id)
+        if binding.metric_id is None or not binding.metric_entity_id:
+            raise ResearchAnalyticalScopeError(
+                "R1_NATIVE_METRIC_RESOURCE_BINDING_REQUIRED",
+                candidate_id,
+            )
+        expected.add((binding.metric_id, binding.metric_entity_id))
+    observed = {
+        (item.metabase_metric_id, item.metabase_metric_entity_id)
+        for item in observation.native_metrics
+    }
+    if observed != expected:
+        raise ResearchAnalyticalScopeError(
+            "R1_NATIVE_METRIC_IDENTITY_MISMATCH",
+            "observed governed Metabase metric identities differ from accepted scope",
+        )
+
+
+def _assert_material_filter_scope(
+    contract: AnalyticalRequestContract,
+    observation: NativeMaterialObservation,
+    bindings: Mapping[str, NativeMaterialBinding],
+) -> None:
+    unmatched = list(observation.filters)
+    if len(unmatched) != len(contract.filters):
+        raise ResearchAnalyticalScopeError(
+            "R1_NATIVE_FILTER_SCOPE_MISMATCH",
+            "material filter count differs from accepted scope",
+        )
+    for expected in contract.filters:
+        binding = _material_binding(bindings, expected.source_candidate_id)
+        field_identity = _material_field_identity(binding)
+        match = next(
+            (
+                item
+                for item in unmatched
+                if _observed_field_identity(item) == field_identity
+                and item.operator == "="
+                and tuple(item.values) == (expected.value,)
+            ),
+            None,
+        )
+        if match is None:
+            raise ResearchAnalyticalScopeError(
+                "R1_NATIVE_FILTER_SCOPE_MISMATCH",
+                expected.source_candidate_id,
+            )
+        unmatched.remove(match)
+
+
+def _material_expected_period(
+    contract: AnalyticalRequestContract,
+) -> tuple[str | None, str | None, str | None]:
+    time_ref = _time_field_ref(contract)
+    if time_ref is None:
+        return None, None, None
+    if contract.period is not None:
+        return time_ref, contract.period.start, contract.period.end
+    assert contract.comparison is not None
+    starts = (
+        contract.comparison.reference_period.start,
+        contract.comparison.base_period.start,
+    )
+    ends = (
+        contract.comparison.reference_period.end,
+        contract.comparison.base_period.end,
+    )
+    if any(value is None for value in ends):
+        raise ResearchAnalyticalScopeError(
+            "R1_OPEN_ENDED_TIME_SCOPE_UNSUPPORTED",
+            "material comparison requires bounded periods",
+        )
+    return time_ref, min(starts), max(str(value) for value in ends)
+
+
+def _assert_material_time_scope(
+    contract: AnalyticalRequestContract,
+    observation: NativeMaterialObservation,
+    bindings: Mapping[str, NativeMaterialBinding],
+) -> tuple[int, int | None] | None:
+    time_ref, start, end = _material_expected_period(contract)
+    if time_ref is None:
+        if observation.temporal_scopes:
+            raise ResearchAnalyticalScopeError(
+                "R1_NATIVE_TIME_SCOPE_MISMATCH",
+                "native occurrence introduced unaccepted temporal scope",
+            )
+        return None
+    binding = _material_binding(bindings, time_ref)
+    expected_identity = _material_field_identity(binding)
+    matches = [
+        item
+        for item in observation.temporal_scopes
+        if (item.time_field_id, item.table_id) == expected_identity
+    ]
+    if len(matches) != 1 or len(observation.temporal_scopes) != 1:
+        raise ResearchAnalyticalScopeError(
+            "R1_NATIVE_TIME_SCOPE_MISMATCH",
+            "material temporal scope targets another field or is ambiguous",
+        )
+    item = matches[0]
+    if (
+        item.lower_bound != start
+        or item.lower_inclusive is not True
+        or item.upper_bound != end
+        or item.upper_inclusive is not False
+    ):
+        raise ResearchAnalyticalScopeError(
+            "R1_NATIVE_TIME_SCOPE_MISMATCH",
+            "observed temporal bounds differ from accepted half-open period",
+        )
+    return expected_identity
+
+
+def _assert_material_dimension_scope(
+    contract: AnalyticalRequestContract,
+    observation: NativeMaterialObservation,
+    bindings: Mapping[str, NativeMaterialBinding],
+    *,
+    time_identity: tuple[int, int | None] | None,
+) -> None:
+    expected = {
+        _material_field_identity(_material_binding(bindings, candidate_id))
+        for candidate_id in contract.dimension_refs
+    }
+    observed = {
+        _observed_field_identity(item)
+        for item in observation.dimensions
+        if item.role == "breakout"
+    }
+    if contract.comparison is not None and time_identity is not None:
+        expected.add(time_identity)
+    if observed != expected:
+        raise ResearchAnalyticalScopeError(
+            "R1_NATIVE_DIMENSION_SCOPE_MISMATCH",
+            "material breakout identities differ from accepted dimension scope",
+        )
+
+
+def _assert_material_ranking_scope(
+    contract: AnalyticalRequestContract,
+    observation: NativeMaterialObservation,
+    bindings: Mapping[str, NativeMaterialBinding],
+) -> None:
+    ranking = contract.ranking
+    if ranking is None:
+        if observation.ranking:
+            raise ResearchAnalyticalScopeError(
+                "R1_NATIVE_RANKING_SCOPE_MISMATCH",
+                "native occurrence introduced an unaccepted ranking",
+            )
+        return
+    if isinstance(ranking, AnalyticalEvidenceSynthesisRankingInvariant):
+        if observation.ranking:
+            raise ResearchAnalyticalScopeError(
+                "R1_NATIVE_RANKING_SCOPE_MISMATCH",
+                "evidence-synthesis ranking has no authorized native ranking basis",
+            )
+        return
+    binding = _material_binding(bindings, ranking.measure)
+    if binding.metric_id is None or not binding.metric_entity_id:
+        raise ResearchAnalyticalScopeError(
+            "R1_NATIVE_RANKING_RESOURCE_BINDING_REQUIRED",
+            ranking.measure,
+        )
+    matches = [
+        item
+        for item in observation.ranking
+        if item.target.kind == "metric"
+        and item.target.metabase_metric_id == binding.metric_id
+        and item.target.metabase_metric_entity_id == binding.metric_entity_id
+        and item.direction == ranking.direction
+        and item.limit == ranking.limit
+    ]
+    if len(matches) != 1 or len(observation.ranking) != 1:
+        raise ResearchAnalyticalScopeError(
+            "R1_NATIVE_RANKING_SCOPE_MISMATCH",
+            "material ranking target/direction/limit differs from accepted scope",
+        )
+
+
+def assert_material_native_scope(
+    *,
+    session: ResearchSession,
+    obligation_id: str,
+    contract: AnalyticalRequestContract,
+    observation: NativeMaterialObservation,
+    bindings: Mapping[str, NativeMaterialBinding],
+    expected_engine: NativeEngineIdentity,
+    expected_metabase_subject: int,
+) -> AnalyticalRequestObservation:
+    """Compare engine-reported material semantics to accepted Research authority.
+
+    Only stable native ids and material values participate. Physical aggregation
+    algebra/count, query representation, schema/table/column names, and P13
+    attestation grammar are intentionally outside this R5 boundary.
+    """
+
+    del obligation_id
+    _assert_material_runtime_identity(
+        observation,
+        expected_engine=expected_engine,
+        expected_metabase_subject=expected_metabase_subject,
+    )
+    if any(
+        binding.database_id != observation.database_id
+        for binding in bindings.values()
+    ):
+        raise ResearchAnalyticalScopeError(
+            "R1_NATIVE_RESOURCE_DATABASE_MISMATCH",
+            "material observation database differs from governed bindings",
+        )
+    _assert_material_metric_scope(contract, observation, bindings)
+    _assert_material_filter_scope(contract, observation, bindings)
+    time_identity = _assert_material_time_scope(contract, observation, bindings)
+    _assert_material_dimension_scope(
+        contract,
+        observation,
+        bindings,
+        time_identity=time_identity,
+    )
+    _assert_material_ranking_scope(contract, observation, bindings)
+
+    request = AnalyticalRequestObservation(
+        scope_identity=contract.scope_identity,
+        metric_refs=contract.metric_refs,
+        dimension_refs=contract.dimension_refs,
+        filters=contract.filters,
+        period=contract.period,
+        comparison=contract.comparison,
+        ranking=contract.ranking,
+        grain_constraints=contract.grain_constraints,
+        requested_output_surfaces=contract.requested_output_surfaces,
+    )
+    assert_request_invariants(contract, request)
+    return request
+
