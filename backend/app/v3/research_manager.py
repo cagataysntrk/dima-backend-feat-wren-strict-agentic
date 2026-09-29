@@ -21,7 +21,11 @@ from app.v3.analytical_request_contract import (
     AnalyticalRequestMismatch,
     assert_child_request_scope,
 )
-from app.v3.claim_lineage import ClaimFreshness, ClaimLineageStore
+from app.v3.claim_lineage import (
+    ClaimEvidenceRelation,
+    ClaimFreshness,
+    ClaimLineageStore,
+)
 from app.v3.research import ObligationState, ResearchManager, ResearchSession
 from app.v3.research_analytical_scope import analytical_scope_contract
 from app.v3.root_cause_candidate_contract import (
@@ -130,12 +134,18 @@ class ResearchReasoningBudget(Frozen):
     max_depth: int = Field(default=3, ge=1, le=3)
 
 
+class ProposedClaimEvidenceLink(Frozen):
+    evidence_id: str = Field(min_length=1)
+    relation: ClaimEvidenceRelation
+
+
 class ProposedClaimDraft(Frozen):
     claim_text: str = Field(min_length=1)
     proposition: dict[str, Any]
     scope: dict[str, Any]
     freshness: ClaimFreshness
     origin_material_refs: tuple[str, ...] = ()
+    evidence_links: tuple[ProposedClaimEvidenceLink, ...] = ()
     limitations: tuple[str, ...] = ()
 
     @model_validator(mode="after")
@@ -144,6 +154,9 @@ class ProposedClaimDraft(Frozen):
             raise ValueError("FORM_CLAIM requires a structured proposition")
         if not self.scope:
             raise ValueError("FORM_CLAIM requires an explicit scope")
+        evidence_ids = [item.evidence_id for item in self.evidence_links]
+        if len(evidence_ids) != len(set(evidence_ids)):
+            raise ValueError("FORM_CLAIM Evidence links must be unique")
         return self
 
 
@@ -422,6 +435,25 @@ class MaterialCognitionView(Frozen):
     dashcards: tuple[NativeDashcardCognitionView, ...] = ()
 
 
+class EvidenceResultCognitionView(Frozen):
+    """Bounded read projection of one already VERIFIED native result.
+
+    The durable ResearchExecutionLink remains authority. This view deliberately
+    excludes query/SQL/MBQL and exposes only result values plus exact Evidence
+    lineage so P17 can interpret existing material without reopening analytics.
+    """
+
+    evidence_id: str = Field(min_length=1)
+    receipt_id: str = Field(min_length=1)
+    obligation_id: str = Field(min_length=1)
+    execution_link_id: str = Field(min_length=1)
+    result_hash: str = Field(pattern=r"^[a-f0-9]{64}$")
+    row_count: int = Field(ge=0)
+    columns: tuple[str, ...] = ()
+    rows: tuple[tuple[Any, ...], ...] = ()
+    truncated: bool = False
+
+
 class ResearchManagerSnapshot(Frozen):
     research_session_id: str
     research_authority_id: str
@@ -431,6 +463,7 @@ class ResearchManagerSnapshot(Frozen):
     evidence_refs: tuple[str, ...]
     material_refs: tuple[str, ...]
     materials: tuple[MaterialCognitionView, ...]
+    evidence_results: tuple[EvidenceResultCognitionView, ...] = ()
     action_profile: InvestigationActionProfile
     claims: tuple[ClaimView, ...]
     investigation: InvestigationGraph
@@ -1557,6 +1590,17 @@ class ResearchInvestigationManager:
                     )
                 ).all()
             )
+            verified_result_rows = tuple(
+                db.exec(
+                    select(ResearchExecutionLink)
+                    .where(ResearchExecutionLink.session_id == session.session_id)
+                    .where(ResearchExecutionLink.status == "VERIFIED")
+                    .order_by(
+                        ResearchExecutionLink.created_at,
+                        ResearchExecutionLink.id,
+                    )
+                ).all()
+            )
 
         materials = []
         for row in material_rows:
@@ -1623,6 +1667,92 @@ class ResearchInvestigationManager:
                     dashcards=tuple(dashcards),
                 )
             )
+
+        evidence_results: list[EvidenceResultCognitionView] = []
+        seen_evidence_results: set[str] = set()
+        max_cognition_rows = 100
+        for row in verified_result_rows:
+            if (
+                not row.evidence_id
+                or not row.receipt_id
+                or not row.native_result_json
+                or not row.result_hash
+            ):
+                continue
+            if row.evidence_id in seen_evidence_results:
+                raise ResearchManagerMaturationError(
+                    "P17_EVIDENCE_RESULT_DUPLICATE",
+                    row.evidence_id,
+                )
+            try:
+                payload = json.loads(row.native_result_json)
+            except json.JSONDecodeError as exc:
+                raise ResearchManagerMaturationError(
+                    "P17_EVIDENCE_RESULT_INVALID",
+                    str(row.id),
+                ) from exc
+            if not isinstance(payload, dict):
+                raise ResearchManagerMaturationError(
+                    "P17_EVIDENCE_RESULT_INVALID",
+                    str(row.id),
+                )
+            canonical = json.dumps(
+                payload,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+                allow_nan=False,
+            )
+            if hashlib.sha256(canonical.encode("utf-8")).hexdigest() != row.result_hash:
+                raise ResearchManagerMaturationError(
+                    "P17_EVIDENCE_RESULT_FINGERPRINT_MISMATCH",
+                    str(row.id),
+                )
+
+            data = payload.get("data")
+            raw_rows = data.get("rows") if isinstance(data, dict) else None
+            raw_cols = data.get("cols") if isinstance(data, dict) else None
+            projected_rows: list[tuple[Any, ...]] = []
+            if isinstance(raw_rows, list):
+                for item in raw_rows[:max_cognition_rows]:
+                    if isinstance(item, (list, tuple)):
+                        projected_rows.append(tuple(item))
+            columns: list[str] = []
+            if isinstance(raw_cols, list):
+                for item in raw_cols:
+                    if not isinstance(item, dict):
+                        continue
+                    label = item.get("display_name")
+                    if not isinstance(label, str):
+                        label = item.get("name")
+                    if isinstance(label, str) and label.strip():
+                        columns.append(label.strip())
+
+            raw_count = payload.get("row_count")
+            row_count = (
+                raw_count
+                if isinstance(raw_count, int) and raw_count >= 0
+                else len(raw_rows)
+                if isinstance(raw_rows, list)
+                else len(projected_rows)
+            )
+            evidence_results.append(
+                EvidenceResultCognitionView(
+                    evidence_id=row.evidence_id,
+                    receipt_id=row.receipt_id,
+                    obligation_id=row.obligation_id,
+                    execution_link_id=str(row.id),
+                    result_hash=row.result_hash,
+                    row_count=row_count,
+                    columns=tuple(columns),
+                    rows=tuple(projected_rows),
+                    truncated=(
+                        isinstance(raw_rows, list)
+                        and len(raw_rows) > len(projected_rows)
+                    ),
+                )
+            )
+            seen_evidence_results.add(row.evidence_id)
 
         claims = self._claim_views(session, principal)
         completed = tuple(
@@ -1718,6 +1848,7 @@ class ResearchInvestigationManager:
                 sorted(x.lead_id for x in material_rows)
             ),
             materials=tuple(materials),
+            evidence_results=tuple(evidence_results),
             claims=claims,
             investigation=graph,
             action_profile=action_profile,
@@ -1747,6 +1878,13 @@ class ResearchInvestigationManager:
                 "freshness": proposal.claim.freshness.model_dump(mode="json"),
                 "origin_material_refs": sorted(
                     proposal.claim.origin_material_refs
+                ),
+                "evidence_links": sorted(
+                    (
+                        item.evidence_id,
+                        item.relation.value,
+                    )
+                    for item in proposal.claim.evidence_links
                 ),
                 "limitations": sorted(proposal.claim.limitations),
             }
@@ -1982,6 +2120,13 @@ class ResearchInvestigationManager:
                     "P17_CLAIM_ORIGIN_SCOPE_MISMATCH",
                     "FORM_CLAIM origin belongs to another obligation",
                 )
+            inspected = set(proposal.inspected_evidence_refs)
+            for link in proposal.claim.evidence_links:
+                if link.evidence_id not in inspected:
+                    raise ResearchManagerMaturationError(
+                        "P17_CLAIM_EVIDENCE_NOT_INSPECTED",
+                        link.evidence_id,
+                    )
 
     def _system_stop(
         self,
@@ -2100,6 +2245,14 @@ class ResearchInvestigationManager:
                 origin_material_refs=proposal.claim.origin_material_refs,
                 limitations=proposal.claim.limitations,
             )
+            for evidence_link in proposal.claim.evidence_links:
+                claim = self._claims.link_evidence(
+                    session_id=session.session_id,
+                    claim_id=claim.claim_id,
+                    evidence_id=evidence_link.evidence_id,
+                    relation=evidence_link.relation,
+                    principal=principal,
+                )
             return (
                 self._ledger.complete_step(
                     step.step_id,
