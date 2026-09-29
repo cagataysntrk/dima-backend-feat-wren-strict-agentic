@@ -18,7 +18,6 @@ from app.v3.hypothesis_root_cause import (
     HypothesisRootCauseStore,
     P19EpistemicError,
 )
-from app.v3.product.composition import HeadlessProductComposer
 from app.v3.product.contracts import (
     ArtifactKind,
     ArtifactRef,
@@ -683,19 +682,26 @@ def test_r8_derived_relationship_child_cannot_reopen_mutated_scope_as_root():
         related_refs=(DIM,),
         status=ResearchGoalStatus.RESOLVED,
     )
-    relationship_parent = brief_v2.model_copy(
+    derived_goal = ResearchQuestion(
+        goal_id="g_r8_relationship_material",
+        kind=ResearchGoalKind.COMPARISON,
+        source_text="Compare downtime and faults under the accepted scope.",
+        subject_refs=(METRIC, METRIC_2),
+        related_refs=(DIM,),
+        status=ResearchGoalStatus.RESOLVED,
+    )
+    child = brief_v2.model_copy(
         update={
-            "questions": (relationship_goal,),
-            "must_requirement_ids": (relationship_goal.goal_id,),
+            "brief_id": "rb-r8-derived-material",
+            "objective": derived_goal.source_text,
+            "questions": (derived_goal,),
+            "deliverables": (),
+            "must_requirement_ids": (derived_goal.goal_id,),
+            "blocking_goal_ids": (),
         }
     )
-    child = HeadlessProductComposer._relationship_material_brief(
-        parent_session_id=session_v2.session_id,
-        parent=relationship_parent,
-        goal=relationship_goal,
-    )
 
-    # The derived task retains the accepted user scope exactly. That is correct.
+    # A derived analytical task can retain the accepted user scope exactly.
     assert child.scope == brief_v2.scope
     assert child.scope.scope_version.version_id == "scope_v2"
     assert child.scope.scope_version.parent_version_id == "scope_v1"
