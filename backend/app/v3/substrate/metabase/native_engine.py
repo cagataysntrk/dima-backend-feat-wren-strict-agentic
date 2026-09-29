@@ -23,6 +23,7 @@ from app.v3.substrate.metabase.native_models import (
     NativeEngineObservation,
     NativeProducedQuery,
     NativeEngineRequest,
+    NativeMaterialObservation,
     NativeStreamEvent,
 )
 
@@ -368,6 +369,48 @@ class NativeEngineBridge:
         if not isinstance(body, dict):
             raise NativeEngineBridgeError("native attestation response is not an object")
         return body
+
+    def observe_native_query_material(
+        self,
+        *,
+        conversation_id: UUID,
+        native_query_id: str,
+    ) -> NativeMaterialObservation:
+        """Read material semantics for one persisted native occurrence by locator only."""
+        if not native_query_id.strip():
+            raise ValueError("native_query_id is required")
+        try:
+            response = self._client.post(
+                "/api/dima/engine/v1/native-query-material-observation",
+                json={
+                    "conversation_id": str(conversation_id),
+                    "native_query_id": native_query_id,
+                },
+            )
+        except httpx.TimeoutException as exc:
+            raise NativeEngineBridgeError(
+                "native material observation request timed out"
+            ) from exc
+        except httpx.RequestError as exc:
+            raise NativeEngineBridgeError(
+                f"native material observation transport failed: {exc}"
+            ) from exc
+        if response.status_code != 200:
+            raise NativeEngineBridgeError(
+                f"native material observation returned HTTP {response.status_code}: "
+                f"{response.text[:1000]}"
+            )
+        body = response.json()
+        if not isinstance(body, dict):
+            raise NativeEngineBridgeError(
+                "native material observation response is not an object"
+            )
+        try:
+            return NativeMaterialObservation.model_validate(body)
+        except ValueError as exc:
+            raise NativeEngineBridgeError(
+                f"native material observation response is invalid: {exc}"
+            ) from exc
 
     def execute_native_query(
         self,

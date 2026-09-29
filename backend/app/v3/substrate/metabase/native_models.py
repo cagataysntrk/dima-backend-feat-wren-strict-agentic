@@ -103,6 +103,87 @@ class NativeDatasetExecutionObservation(BaseModel):
 
 
 
+class NativeMaterialMetric(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    stage_number: int = Field(ge=0)
+    aggregation_index: int = Field(ge=0)
+    metabase_metric_id: int = Field(gt=0)
+    metabase_metric_entity_id: str = Field(min_length=1)
+
+
+class NativeMaterialDimension(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    stage_number: int = Field(ge=0)
+    role: Literal["breakout", "filter", "ranking", "temporal"]
+    field_id: int = Field(gt=0)
+    table_id: int | None = Field(default=None, gt=0)
+    temporal_grain: str | None = None
+
+
+class NativeMaterialFilter(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    stage_number: int = Field(ge=0)
+    operator: str = Field(min_length=1)
+    values: tuple[Any, ...] = ()
+    field_id: int = Field(gt=0)
+    table_id: int | None = Field(default=None, gt=0)
+
+
+class NativeMaterialTemporalScope(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    time_field_id: int = Field(gt=0)
+    table_id: int | None = Field(default=None, gt=0)
+    lower_bound: Any | None = None
+    lower_inclusive: bool | None = None
+    upper_bound: Any | None = None
+    upper_inclusive: bool | None = None
+
+
+class NativeMaterialRankingTarget(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    kind: Literal["metric", "field"]
+    metabase_metric_id: int | None = Field(default=None, gt=0)
+    metabase_metric_entity_id: str | None = None
+    field_id: int | None = Field(default=None, gt=0)
+    table_id: int | None = Field(default=None, gt=0)
+
+
+class NativeMaterialRanking(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    stage_number: int = Field(ge=0)
+    order_index: int = Field(ge=0)
+    target: NativeMaterialRankingTarget
+    direction: Literal["asc", "desc"]
+    limit: int | None = Field(default=None, ge=0)
+
+
+class NativeMaterialObservation(BaseModel):
+    """Engine-reported material semantics for one persisted native occurrence."""
+
+    model_config = ConfigDict(frozen=True)
+
+    schema_version: Literal["dima_native_material_observation_v1"]
+    conversation_id: UUID
+    native_query_id: str = Field(min_length=1)
+    assistant_message_id: int = Field(gt=0)
+    tool_call_id: str = Field(min_length=1)
+    query_fingerprint: str = Field(pattern=r"^[a-f0-9]{64}$")
+    authenticated_metabase_subject: int = Field(gt=0)
+    database_id: int = Field(gt=0)
+    runtime_identity: dict[str, Any]
+    native_metrics: tuple[NativeMaterialMetric, ...] = ()
+    dimensions: tuple[NativeMaterialDimension, ...] = ()
+    filters: tuple[NativeMaterialFilter, ...] = ()
+    temporal_scopes: tuple[NativeMaterialTemporalScope, ...] = ()
+    ranking: tuple[NativeMaterialRanking, ...] = ()
+
+
 class NativeExplorationObservation(BaseModel):
     """Transport-only observation for native Metabase exploration material."""
 
