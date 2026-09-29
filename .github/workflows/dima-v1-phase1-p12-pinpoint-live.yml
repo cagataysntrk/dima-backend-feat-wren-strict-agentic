@@ -1,6 +1,9 @@
 name: dima-v1-phase1-pinpoint-live
 
 on:
+  push:
+    branches:
+      - phase1-v4-r8a2-trigger-20260929
   workflow_dispatch:
     inputs:
       probe_id:
@@ -68,6 +71,9 @@ jobs:
             PROBE_ID="${{ inputs.probe_id }}"
           elif [ "$EVENT" = "push" ]; then
             case "${{ github.ref_name }}" in
+              phase1-v4-r8a2-trigger-20260929)
+                PROBE_ID="SCOPE_CURRENTNESS_HARD_V4"
+                ;;
               phase1-v4-trigger-20260929)
                 PROBE_ID="SCOPE_CURRENTNESS_HARD_V4"
                 ;;
