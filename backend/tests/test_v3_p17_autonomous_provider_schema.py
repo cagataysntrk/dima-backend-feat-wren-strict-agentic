@@ -725,6 +725,36 @@ def _semantic_response(*, objective="Source objective."):
     )
 
 
+def test_scoped_constraint_seam_can_expose_only_form_claim_for_verified_relationship_handoff():
+    transport = _CaptureTransport()
+    manager = StructuredResearchProposalManager(transport=transport)
+    snapshot = _scoped_snapshot()
+
+    with pytest.raises(RuntimeError, match="captured-before-provider-call"):
+        manager.propose_for_obligation_with_constraints(
+            snapshot,
+            target_parent_obligation="g_source",
+            allowed_evidence_refs=("evi_source",),
+            allowed_intents=(InvestigationIntent.FORM_CLAIM,),
+        )
+
+    assert transport.schema is not None
+    intents = {
+        value
+        for variant in _variants(transport.schema)
+        for value in variant["properties"]["intent"]["enum"]
+    }
+    assert intents == {InvestigationIntent.FORM_CLAIM.value}
+    provider_view = json.loads(
+        transport.user.split("GOVERNED SNAPSHOT JSON:\n", 1)[1]
+    )
+    assert provider_view["evidence_refs"] == ["evi_source"]
+    assert {
+        item["obligation_id"]
+        for item in provider_view["parent_obligations"]
+    } == {"g_source"}
+
+
 def test_v1_provider_binds_machine_identities_deterministically():
     snapshot = _scoped_snapshot()
     transport = _SequenceTransport([_semantic_response()])
