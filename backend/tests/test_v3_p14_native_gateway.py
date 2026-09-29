@@ -1071,7 +1071,7 @@ def test_r5_material_wrong_engine_blocks_verified_evidence():
     assert exc.value.code == "R1_NATIVE_ENGINE_IDENTITY_MISMATCH"
 
 
-def test_r5_material_wrong_query_fingerprint_blocks_before_evidence():
+def test_r5_material_observation_fingerprint_is_separate_exact_provenance_domain():
     engine = db_engine()
     seed(engine)
     store, session, link, query = session_and_link(engine)
@@ -1085,20 +1085,107 @@ def test_r5_material_wrong_query_fingerprint_blocks_before_evidence():
         store=store,
         expected_identity=expected_identity(),
     )
-    bridge = MaterialBridge(observation_update={"query_fingerprint": "0" * 64})
+    material_fingerprint = "0" * 64
+    bridge = MaterialBridge(
+        observation_update={"query_fingerprint": material_fingerprint}
+    )
+
+    outcome = executor.execute(
+        principal=principal(),
+        session=session,
+        obligation_id="g1",
+        bridge=bridge,
+        native_conversation_id=link.native_conversation_id,
+        native_query_id=link.native_query_id,
+        native_query=query,
+        query_fingerprint=link.native_query_fingerprint,
+        execution_link_id=link.id,
+    )
+
+    # Raw query A remains exact execution provenance.
+    assert outcome.receipt.canonical_query_fingerprint == h(query)
+    # The engine's persisted/Lib occurrence fingerprint is retained separately.
+    assert outcome.evidence.payload["observed_query_fingerprint"] == material_fingerprint
+    assert outcome.evidence.verified
+    assert store.execution_link(link.id).status == "EXECUTED"
+
+
+class TamperedExecutionFingerprintBridge(MaterialBridge):
+    def execute_dataset(self, query):
+        observed = super().execute_dataset(query)
+        return observed.model_copy(update={"query_fingerprint": "0" * 64})
+
+
+def test_r5_raw_execution_query_fingerprint_mismatch_still_fails_closed():
+    engine = db_engine()
+    seed(engine)
+    store, session, link, query = session_and_link(engine)
+    subjects = NativeSubjectSessionProvider(
+        base_url="http://native.test",
+        expected_identity=expected_identity(),
+        db_engine=engine,
+    )
+    executor = NativeResearchMaterialExecutor(
+        subject_provider=subjects,
+        store=store,
+        expected_identity=expected_identity(),
+    )
+
     with pytest.raises(ResearchMaterialLimitation) as exc:
         executor.execute(
             principal=principal(),
             session=session,
             obligation_id="g1",
-            bridge=bridge,
+            bridge=TamperedExecutionFingerprintBridge(),
             native_conversation_id=link.native_conversation_id,
             native_query_id=link.native_query_id,
             native_query=query,
             query_fingerprint=link.native_query_fingerprint,
             execution_link_id=link.id,
         )
-    assert exc.value.code == "R1_NATIVE_QUERY_FINGERPRINT_MISMATCH"
+
+    assert exc.value.code == "P14_NATIVE_QUERY_FINGERPRINT_MISMATCH"
+    assert store.execution_link(link.id).status == "EXECUTION_STARTED"
+
+
+@pytest.mark.parametrize(
+    "observation_update",
+    (
+        {"conversation_id": "00000000-0000-4000-8000-000000000999"},
+        {"native_query_id": "another-native-query"},
+    ),
+)
+def test_r5_material_occurrence_locator_mismatch_still_blocks_verified_evidence(
+    observation_update,
+):
+    engine = db_engine()
+    seed(engine)
+    store, session, link, query = session_and_link(engine)
+    subjects = NativeSubjectSessionProvider(
+        base_url="http://native.test",
+        expected_identity=expected_identity(),
+        db_engine=engine,
+    )
+    executor = NativeResearchMaterialExecutor(
+        subject_provider=subjects,
+        store=store,
+        expected_identity=expected_identity(),
+    )
+
+    with pytest.raises(ResearchMaterialLimitation) as exc:
+        executor.execute(
+            principal=principal(),
+            session=session,
+            obligation_id="g1",
+            bridge=MaterialBridge(observation_update=observation_update),
+            native_conversation_id=link.native_conversation_id,
+            native_query_id=link.native_query_id,
+            native_query=query,
+            query_fingerprint=link.native_query_fingerprint,
+            execution_link_id=link.id,
+        )
+
+    assert exc.value.code == "R1_NATIVE_OCCURRENCE_SCOPE_MISMATCH"
     assert store.execution_link(link.id).status == "EXECUTED"
 
 
