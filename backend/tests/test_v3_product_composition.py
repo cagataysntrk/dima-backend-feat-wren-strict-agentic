@@ -158,6 +158,7 @@ class FakeResearch:
             evidence_refs=(),
             context_version=brief.context_version,
             lineage_id="atl_" + f"{self.counter:020x}",
+            authority_id="atc_fake_" + f"{self.counter:020x}",
             accepted_brief=brief,
         )
         self.sessions[sid] = session
@@ -182,15 +183,14 @@ class FakeResearch:
         goal = next(item for item in brief.questions if item.goal_id == obligation_id)
 
         # Provider-free owner behavior fixture:
-        # - direct RELATIONSHIP cannot manufacture analytical relationship truth;
-        # - OTHER represents a typed unresolved recursive product obligation;
-        # - every ordinary/comparison/root analytical request can yield P14 Evidence.
+        # P14 verifies analytical material, not business-relationship truth.
+        # P18 remains the sole relationship-policy owner downstream.
+        # OTHER represents a typed unresolved recursive product obligation.
         target = (
             ObligationState.LIMITED
             if (
                 goal.goal_id in self.limited_goal_ids
-                or goal.kind
-                in {ResearchGoalKind.RELATIONSHIP, ResearchGoalKind.OTHER}
+                or goal.kind == ResearchGoalKind.OTHER
             )
             else ObligationState.VERIFIED
         )
@@ -589,7 +589,7 @@ def test_relationship_composes_p14_material_p17_and_p18_without_creating_policy(
         report=True,
     )
 
-    # Fake P17 needs the child obligation identity after child creation.
+    # Fake P17 needs the accepted relationship obligation identity.
     original = c._resolve_relationship
     def wrapped(**kwargs):
         reasoning.current_obligation_by_session[kwargs["material_session_id"]] = (
@@ -605,7 +605,7 @@ def test_relationship_composes_p14_material_p17_and_p18_without_creating_policy(
         source_message_hash="b" * 64,
         native_session_token=None,
     )
-    assert result.child_research_session_ids
+    assert result.child_research_session_ids == ()
     assert result.p17_step_refs
     assert result.p18_policy_use_refs == ("bru_" + "1" * 24,)
     assert result.p20_report_ref == "p20r_" + "3" * 24
@@ -624,7 +624,7 @@ def test_relationship_composes_p14_material_p17_and_p18_without_creating_policy(
     assert relationship.contribution_state == RelationshipLayerState.NOT_ESTABLISHED
 
 
-def test_r4_relationship_child_preserves_parent_r1_scope_contract():
+def test_r8_relationship_reuses_parent_r1_scope_contract_without_child_root():
     event_date = ResearchSemanticRef(
         source_mention="event date",
         candidate_id="dimension.event_date",
@@ -654,7 +654,7 @@ def test_r4_relationship_child_preserves_parent_r1_scope_contract():
         related=(DEPT,),
     )
     parent = ResearchBrief(
-        brief_id="rb-r4-parent",
+        brief_id="rb-r8-parent",
         objective="Scoped relationship material.",
         scope=ResearchScope(
             semantic_refs=(DOWNTIME, FAULTS, DEPT, event_date, assembly),
@@ -669,26 +669,37 @@ def test_r4_relationship_child_preserves_parent_r1_scope_contract():
         ),
         questions=(goal,),
         must_requirement_ids=(goal.goal_id,),
-        context_version="ctx-r4",
+        context_version="ctx-r8",
         status=ResearchBriefStatus.READY_FOR_RESEARCH,
     )
-    child = HeadlessProductComposer._relationship_material_brief(
-        parent_session_id="rs_" + "a" * 24,
-        parent=parent,
-        goal=goal,
-    )
-    assert child.scope == parent.scope
 
-    child_session = SimpleNamespace(
-        accepted_brief=child,
-        authority_id="atc_r4_child",
-        session_id="rs_" + "b" * 24,
-        context_version=child.context_version,
-        lineage_id="atl_r4_child",
+    c, research, _, reasoning = composer()
+    original = c._resolve_relationship
+
+    def wrapped(**kwargs):
+        reasoning.current_obligation_by_session[kwargs["material_session_id"]] = (
+            kwargs["material_goal"].goal_id
+        )
+        return original(**kwargs)
+
+    c._resolve_relationship = wrapped
+    result = c.compose(
+        brief=parent,
+        principal=principal(),
+        request_ref="r8-parent-authority",
+        source_message_hash="8" * 64,
+        native_session_token=None,
     )
+
+    assert result.child_research_session_ids == ()
+    assert len(research.sessions) == 1
+    material_session = research.sessions[result.research_session_id]
+    assert material_session.accepted_brief.scope == parent.scope
+    assert material_session.accepted_brief.questions == (goal,)
+
     contract = analytical_scope_contract(
-        session=child_session,
-        obligation_id=child.questions[0].goal_id,
+        session=material_session,
+        obligation_id=goal.goal_id,
     )
     assert contract.scope_identity.version_id == "scope_v2"
     assert contract.period is not None
@@ -967,8 +978,8 @@ def test_relationship_waits_for_p17_owned_fifth_turn_without_product_shadow_budg
     c._resolve_relationship = wrapped
     result = c.compose(brief=b, principal=principal(), request_ref="rel-fifth",
                        source_message_hash="9"*64, native_session_token=None)
-    child = result.child_research_session_ids[0]
-    assert investigation._state(child)["calls"] == 5
+    assert result.child_research_session_ids == ()
+    assert investigation._state(result.research_session_id)["calls"] == 5
     assert result.p18_policy_use_refs
 
 def test_root_waits_for_p17_owned_seventh_turn_for_second_candidate():
