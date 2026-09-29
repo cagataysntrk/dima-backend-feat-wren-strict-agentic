@@ -8,6 +8,7 @@ from unittest.mock import Mock
 
 from app.v3.research_manager import (
     ClaimView,
+    EvidenceResultCognitionView,
     InvestigationGraph,
     InvestigationIntent,
     InvestigationNodeView,
@@ -572,7 +573,32 @@ def _scoped_snapshot():
 def test_obligation_scoped_provider_view_exposes_no_cross_obligation_refs():
     transport = _CaptureTransport()
     manager = StructuredResearchProposalManager(transport=transport)
-    snapshot = _scoped_snapshot()
+    snapshot = _scoped_snapshot().model_copy(
+        update={
+            "evidence_results": (
+                EvidenceResultCognitionView(
+                    evidence_id="evi_source",
+                    receipt_id="dqr_source",
+                    obligation_id="g_source",
+                    execution_link_id="rex_source",
+                    result_hash="5" * 64,
+                    row_count=2,
+                    columns=("Department", "Metric A", "Metric B"),
+                    rows=(("Assembly", 12, 3), ("Packaging", 9, 5)),
+                ),
+                EvidenceResultCognitionView(
+                    evidence_id="evi_other",
+                    receipt_id="dqr_other",
+                    obligation_id="g_other",
+                    execution_link_id="rex_other",
+                    result_hash="6" * 64,
+                    row_count=1,
+                    columns=("Other",),
+                    rows=(("hidden",),),
+                ),
+            )
+        }
+    )
 
     with pytest.raises(RuntimeError, match="captured-before-provider-call"):
         manager.propose_for_obligation(
@@ -754,10 +780,25 @@ def test_scoped_constraint_seam_can_expose_only_form_claim_for_verified_relation
         transport.user.split("GOVERNED SNAPSHOT JSON:\n", 1)[1]
     )
     assert provider_view["evidence_refs"] == ["evi_source"]
+    assert len(provider_view["evidence_results"]) == 1
+    assert provider_view["evidence_results"][0]["evidence_id"] == "evi_source"
+    assert provider_view["evidence_results"][0]["rows"] == [
+        ["Assembly", 12, 3],
+        ["Packaging", 9, 5],
+    ]
+    serialized_view = json.dumps(provider_view, sort_keys=True)
+    assert "evi_other" not in serialized_view
+    assert "hidden" not in serialized_view
     assert {
         item["obligation_id"]
         for item in provider_view["parent_obligations"]
     } == {"g_source"}
+
+    link_definition = transport.schema["$defs"]["ProviderClaimEvidenceLink"]
+    assert link_definition["properties"]["evidence_id"] == {
+        "type": "string",
+        "enum": ["evi_source"],
+    }
 
 
 def test_v1_provider_binds_machine_identities_deterministically():
