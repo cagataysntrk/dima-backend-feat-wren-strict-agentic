@@ -22,17 +22,17 @@ class Settings(BaseSettings):
 
     # Canonical analytical engine: frozen Metabase / Metabot runtime.
     metabase_native_base_url: str = ""
-    metabase_engine_sha: str = "cbe313af9ac2d5960f662068e433d328d896fb06"
+    metabase_engine_sha: str = "14323cdde4f258c65c63bbd88f1034f814a7ecb3"
     metabase_engine_upstream_sha: str = "2ba2485c78d7e00a9a25f82c00fc201da71590c4"
-    metabase_engine_runtime_tag: str = "v0.63.18-dima.6"
+    metabase_engine_runtime_tag: str = "v0.63.18-dima.7"
     metabase_engine_image_digest: str = (
-        "sha256:40e9a44be49904de3ddf12d4683c768e70955851c10a928a9c8f7d8f60780353"
+        "sha256:75a96218bb6a881d792ec13895e438aa5fa897d06a7743c0c3416fa244d13b30"
     )
     metabase_engine_build_identity: str = (
-        "github-actions:36042062775:cbe313af9ac2d5960f662068e433d328d896fb06"
+        "github-actions:36532842632:14323cdde4f258c65c63bbd88f1034f814a7ecb3"
     )
     metabase_engine_image_identity: str = (
-        "sha256:40e9a44be49904de3ddf12d4683c768e70955851c10a928a9c8f7d8f60780353"
+        "sha256:75a96218bb6a881d792ec13895e438aa5fa897d06a7743c0c3416fa244d13b30"
     )
 
     # Canonical cognition transport. The product has one sealed default role/model;
