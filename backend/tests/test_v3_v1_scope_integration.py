@@ -18,6 +18,7 @@ from app.v3.hypothesis_root_cause import (
     HypothesisRootCauseStore,
     P19EpistemicError,
 )
+from app.v3.product.composition import HeadlessProductComposer
 from app.v3.product.contracts import (
     ArtifactKind,
     ArtifactRef,
@@ -53,7 +54,7 @@ from app.v3.report_document import (
     ReportCurrentness,
     ReportDocumentStore,
 )
-from app.v3.research_product import ResearchAskOrchestrator
+from app.v3.research_product import ResearchAskOrchestrator, ResearchProductError
 from app.v3.research_store import ResearchPersistenceError, ResearchSessionStore
 from control_plane.authorize import Principal
 
@@ -644,3 +645,76 @@ def test_scope_v1_report_becomes_stale_when_scope_v2_supersedes_lineage():
         )
         == ReportCurrentness.STALE_SOURCE_SET
     )
+
+
+
+def test_r8_derived_relationship_child_cannot_reopen_mutated_scope_as_root():
+    """R8-A: P14 correctly rejects derived scope_v2 work opened as a new user root."""
+
+    db = db_engine()
+    store, research, _, session_v1 = start_v1(db)
+
+    brief_v2 = ResearchIntakeCompiler(
+        transport=FakeTransport(narrowed_payload())
+    ).compile(
+        question="Assembly only.",
+        catalog=catalog(),
+        prior_brief=session_v1.accepted_brief,
+    ).brief
+    assert brief_v2 is not None
+    assert brief_v2.scope.scope_version.version_id == "scope_v2"
+    assert brief_v2.scope.scope_version.parent_version_id == "scope_v1"
+
+    session_v2 = research.start_from_brief(
+        brief=brief_v2,
+        request_ref="r8-user-scope-v2",
+        source_message_hash="8" * 64,
+        principal=principal(),
+        prior_session_id=session_v1.session_id,
+    )
+    assert session_v2.lineage_id == session_v1.lineage_id
+    assert session_v2.accepted_brief == brief_v2
+
+    relationship_goal = ResearchQuestion(
+        goal_id="g_r8_relationship",
+        kind=ResearchGoalKind.RELATIONSHIP,
+        source_text="Compare downtime and faults by machine under current scope.",
+        subject_refs=(METRIC, METRIC_2),
+        related_refs=(DIM,),
+        status=ResearchGoalStatus.RESOLVED,
+    )
+    relationship_parent = brief_v2.model_copy(
+        update={
+            "questions": (relationship_goal,),
+            "must_requirement_ids": (relationship_goal.goal_id,),
+        }
+    )
+    child = HeadlessProductComposer._relationship_material_brief(
+        parent_session_id=session_v2.session_id,
+        parent=relationship_parent,
+        goal=relationship_goal,
+    )
+
+    # The derived task retains the accepted user scope exactly. That is correct.
+    assert child.scope == brief_v2.scope
+    assert child.scope.scope_version.version_id == "scope_v2"
+    assert child.scope.scope_version.parent_version_id == "scope_v1"
+
+    # What is invalid is reopening that derived work as if it were a fresh
+    # user-scope Research root. P14 must continue to fail closed here.
+    with pytest.raises(ResearchProductError) as exc:
+        research.start_from_brief(
+            brief=child,
+            request_ref="r8-invalid-derived-root",
+            source_message_hash="7" * 64,
+            principal=principal(),
+        )
+    assert exc.value.code == "P14_SCOPE_LINEAGE_REQUIRED"
+
+    # The accepted user lineage remains intact and current.
+    current = research.current_scope_state(
+        session_id=session_v2.session_id,
+        principal=principal(),
+    )
+    assert current.session_id == session_v2.session_id
+    assert current.lineage_id == session_v1.lineage_id
