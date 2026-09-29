@@ -2160,6 +2160,81 @@ class ResearchInvestigationManager:
             task,
         )
 
+    @staticmethod
+    def _verified_evidence_claim_reentry_snapshot(
+        *,
+        session: ResearchSession,
+        snapshot: ResearchManagerSnapshot,
+        obligation_id: str,
+    ) -> ResearchManagerSnapshot:
+        """Authorize one claim-only P17 root from already VERIFIED P14 Evidence.
+
+        This is a downstream re-entry legality projection, not a new analytical
+        material source. It never creates material, never executes native work,
+        and only exists for the exact verified obligation/evidence scope.
+        """
+
+        obligation = ResearchManager.obligation(session, obligation_id)
+        if obligation.state != ObligationState.VERIFIED:
+            raise ResearchManagerMaturationError(
+                "P17_CLAIM_REENTRY_VERIFIED_OBLIGATION_REQUIRED",
+                obligation_id,
+            )
+        evidence_refs = tuple(
+            item.evidence_id
+            for item in session.evidence_refs
+            if item.obligation_id == obligation_id
+        )
+        if not evidence_refs:
+            raise ResearchManagerMaturationError(
+                "P17_CLAIM_REENTRY_EVIDENCE_REQUIRED",
+                obligation_id,
+            )
+
+        open_branches = set(snapshot.investigation.open_branch_ids)
+        scoped_open = tuple(
+            node
+            for node in snapshot.investigation.nodes
+            if (
+                node.root_obligation_id == obligation_id
+                and node.branch_id in open_branches
+                and node.stop_scope != StopScope.INVESTIGATION
+            )
+        )
+        advancing = tuple(
+            node.step_id
+            for node in scoped_open
+            if node.contract_depth < snapshot.action_profile.max_depth
+        )
+        if scoped_open and not advancing:
+            raise ResearchManagerMaturationError(
+                "P17_CLAIM_REENTRY_DEPTH_EXHAUSTED",
+                obligation_id,
+            )
+
+        claim_rule = InvestigationActionRule(
+            intent=InvestigationIntent.FORM_CLAIM,
+            legal_parent_step_ids=advancing,
+            allow_parentless=not scoped_open,
+            branch_behavior=InvestigationBranchBehavior.ROOT_OR_INHERIT,
+            branch_key_policy=InvestigationBranchKeyPolicy.FORBIDDEN,
+            depth_delta=1,
+            gain_requirement=InvestigationGainRequirement.POSITIVE_EXPECTED_GAIN,
+        )
+        rules = tuple(
+            rule
+            for rule in snapshot.action_profile.rules
+            if rule.intent != InvestigationIntent.FORM_CLAIM
+        )
+        return snapshot.model_copy(
+            update={
+                "action_profile": InvestigationActionProfile(
+                    rules=(*rules, claim_rule),
+                    max_depth=snapshot.action_profile.max_depth,
+                )
+            }
+        )
+
     def run_one(
         self,
         *,
@@ -2168,6 +2243,7 @@ class ResearchInvestigationManager:
         manager: ResearchProposalManager,
         native_session_token: str | None = None,
         downstream_reentry_intent: InvestigationIntent | None = None,
+        downstream_reentry_obligation_id: str | None = None,
         child_analytical_scope: AnalyticalRequestContract | None = None,
     ) -> tuple[ResearchReasoningStep, ResearchInvestigationTask | None]:
         session = self._session(session_id, principal)
@@ -2175,15 +2251,34 @@ class ResearchInvestigationManager:
             session_id=session_id,
             principal=principal,
         )
+        if downstream_reentry_intent == InvestigationIntent.FORM_CLAIM:
+            if not downstream_reentry_obligation_id:
+                raise ResearchManagerMaturationError(
+                    "P17_CLAIM_REENTRY_OBLIGATION_REQUIRED",
+                    "FORM_CLAIM downstream reentry requires one exact obligation",
+                )
+            snapshot = self._verified_evidence_claim_reentry_snapshot(
+                session=session,
+                snapshot=snapshot,
+                obligation_id=downstream_reentry_obligation_id,
+            )
+        elif downstream_reentry_obligation_id is not None:
+            raise ResearchManagerMaturationError(
+                "P17_DOWNSTREAM_REENTRY_OBLIGATION_UNEXPECTED",
+                downstream_reentry_obligation_id,
+            )
 
         if snapshot.terminal_stop_reason is not None:
             legal_reentry = (
                 snapshot.terminal_stop_reason
                 == ManagerStopReason.OBJECTIVE_SATISFIED
                 and downstream_reentry_intent
-                == InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE
+                in {
+                    InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE,
+                    InvestigationIntent.FORM_CLAIM,
+                }
                 and snapshot.action_profile.rule_for(
-                    InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE
+                    downstream_reentry_intent
                 )
                 is not None
             )
