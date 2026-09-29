@@ -635,7 +635,7 @@ def test_r5_historical_dmp_dec_0048_path_executes_and_seals_without_p13():
     persisted = store.execution_link(link.id)
     assert persisted.status == "EXECUTED"
     assert persisted.native_result_json is not None
-    assert persisted.native_runtime_identity_json is not None
+    assert persisted.runtime_identity_json is not None
     assert receipt.authority_kind == "research_material"
     assert receipt.canonical_query_fingerprint == link.native_query_fingerprint
     assert receipt.native_subject_ref == native_subject_ref
