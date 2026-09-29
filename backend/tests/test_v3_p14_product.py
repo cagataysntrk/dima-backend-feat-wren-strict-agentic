@@ -447,9 +447,14 @@ def test_evidence_synthesis_ranking_delegates_unranked_governed_material():
     ranking = delegation.request.context["dima_analytical_scope"]["ranking"]
     assert ranking["kind"] == "evidence_synthesis"
     assert ranking["limit"] is None
-    assert "no governed single native metric basis" in delegation.request.message
-    assert "Do not choose or invent a single ranking metric" in delegation.request.message
-    assert "Return unranked analytical material" in delegation.request.message
+    assert "metrics:" in delegation.request.message
+    assert "- cand_sales_order_count" in delegation.request.message
+    assert "- cand_return_count" in delegation.request.message
+    assert "- kind: evidence_synthesis" in delegation.request.message
+    assert "- native_measure: none" in delegation.request.message
+    assert "- native_limit: none" in delegation.request.message
+    assert "do not choose or invent a native ranking metric, composite score, or result limit" in delegation.request.message
+    assert "return unranked analytical material for downstream governed evidence synthesis" in delegation.request.message
     assert ranking_question.source_text in delegation.request.message
 
 

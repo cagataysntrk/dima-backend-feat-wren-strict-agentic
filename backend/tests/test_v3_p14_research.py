@@ -159,7 +159,9 @@ def test_p14_durable_state_delegates_objective_to_real_native_bridge_without_que
         now=NOW,
     )
 
-    assert prepared.request.message == session.obligations[0].objective
+    assert prepared.request.message.startswith("[DIMA ACCEPTED ANALYTICAL CONTRACT]\n")
+    assert "metrics:\n- metric.sales_order_count" in prepared.request.message
+    assert "[USER OBLIGATION]\n" + session.obligations[0].objective in prepared.request.message
     assert prepared.request.context["dima_analytical_scope"]["metric_refs"] == [
         "metric.sales_order_count"
     ]
@@ -205,7 +207,7 @@ def test_p14_durable_state_delegates_objective_to_real_native_bridge_without_que
 
     assert observation.status_code == 202
     assert not observation.errors
-    assert captured["message"] == session.obligations[0].objective
+    assert captured["message"] == prepared.request.message
     assert captured["context"] == prepared.request.context
     assert captured["state"] == {}
     assert "query" not in captured
