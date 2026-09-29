@@ -91,7 +91,9 @@ class CoOriginMaterialRequirement(Frozen):
 
     anchor_goal_id: str = Field(min_length=1)
     source_goal_ids: tuple[str, ...] = Field(min_length=2)
-    source_fragment_identity: str = Field(pattern=r"^text-sha256:[a-f0-9]{64}$")
+    source_fragment_identity: str = Field(
+        pattern=r"^(?:fragment|text)-sha256:[a-f0-9]{64}$"
+    )
     scope_version_id: str = Field(pattern=r"^scope_v[1-9][0-9]*$")
     semantic_context_version: str = Field(min_length=1)
     required_metric_refs: tuple[str, ...] = Field(min_length=1)
@@ -148,10 +150,17 @@ def coorigin_material_requirements(
 
     by_source: dict[str, list[ResearchQuestion]] = {}
     for question in brief.questions:
-        by_source.setdefault(question.source_text, []).append(question)
+        provenance_identity = (
+            question.source_fragment_identity
+            or (
+                "text-sha256:"
+                + hashlib.sha256(question.source_text.encode("utf-8")).hexdigest()
+            )
+        )
+        by_source.setdefault(provenance_identity, []).append(question)
 
     requirements: list[CoOriginMaterialRequirement] = []
-    for source_text, group in by_source.items():
+    for provenance_identity, group in by_source.items():
         relationships = tuple(
             item
             for item in group
@@ -198,10 +207,7 @@ def coorigin_material_requirements(
             CoOriginMaterialRequirement(
                 anchor_goal_id=anchor.goal_id,
                 source_goal_ids=tuple(item.goal_id for item in (anchor, *relationships)),
-                source_fragment_identity=(
-                    "text-sha256:"
-                    + hashlib.sha256(source_text.encode("utf-8")).hexdigest()
-                ),
+                source_fragment_identity=provenance_identity,
                 scope_version_id=brief.scope.scope_version.version_id,
                 semantic_context_version=session.context_version,
                 required_metric_refs=metrics,
