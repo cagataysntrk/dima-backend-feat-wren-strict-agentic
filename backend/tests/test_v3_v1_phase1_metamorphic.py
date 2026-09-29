@@ -3,6 +3,11 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from types import SimpleNamespace
+from uuid import UUID
+
+import pytest
+from sqlalchemy.pool import StaticPool
+from sqlmodel import SQLModel, Session, create_engine
 
 from app.v3.business_relationship_policy import (
     RelationshipPolicyDecision,
@@ -45,6 +50,10 @@ from app.v3.research_analytical_scope import (
     analytical_scope_contract,
     coorigin_material_requirements,
 )
+from app.v3.research_native_gateway import NativeResearchMaterialExecutor
+from app.v3.research_product import ResearchMaterialLimitation
+from control_plane.authorize import Principal
+from control_plane.models import NativeResourceBinding
 from app.v3.research_contracts import (
     RankingSurface,
     ResearchBrief,
@@ -471,10 +480,13 @@ def _coorigin_session(
         status=ResearchBriefStatus.READY_FOR_RESEARCH,
     )
     return SimpleNamespace(
+        session_id="rs_" + "c" * 24,
         accepted_brief=brief,
         authority_id="atc_coorigin",
         context_version=context_version,
         lineage_id="atl_coorigin",
+        tenant_binding="id:00000000-0000-4000-8000-000000009001",
+        principal_subject="00000000-0000-4000-8000-000000009002",
     )
 
 
@@ -566,10 +578,13 @@ def test_coorigin_m5_relationship_only_preserves_direct_material_contract():
         status=ResearchBriefStatus.READY_FOR_RESEARCH,
     )
     session = SimpleNamespace(
+        session_id="rs_" + "d" * 24,
         accepted_brief=brief,
         authority_id="atc_relationship_only",
         context_version=brief.context_version,
         lineage_id="atl_relationship_only",
+        tenant_binding="id:00000000-0000-4000-8000-000000009001",
+        principal_subject="00000000-0000-4000-8000-000000009002",
     )
     assert coorigin_material_requirements(session) == ()
     contract = analytical_scope_contract(
@@ -612,14 +627,75 @@ def test_coorigin_m7_scope_version_is_part_of_projection_identity_and_never_cros
     assert r1 != r2
 
 
-def test_coorigin_m8_missing_governed_scope_ref_fails_closed_before_native_work():
-    session = _coorigin_session(include_downstream_in_scope=False)
-    try:
-        analytical_scope_contract(session=session, obligation_id="g_anchor")
-    except ResearchAnalyticalScopeError as exc:
-        assert exc.code == "R1_COORIGIN_MATERIAL_REF_OUTSIDE_ACCEPTED_SCOPE"
-    else:
-        raise AssertionError("missing governed material ref must fail closed")
+def test_coorigin_m8_missing_governed_native_binding_fails_closed_before_execution():
+    session = _coorigin_session(include_downstream_in_scope=True)
+    contract = analytical_scope_contract(session=session, obligation_id="g_anchor")
+    assert M2.candidate_id in contract.metric_refs
+
+    engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    SQLModel.metadata.create_all(engine)
+    tenant_id = UUID("00000000-0000-4000-8000-000000009001")
+    user_id = UUID("00000000-0000-4000-8000-000000009002")
+    with Session(engine) as db:
+        db.add(
+            NativeResourceBinding(
+                tenant_id=tenant_id,
+                semantic_context_version=session.context_version,
+                candidate_id=M1.candidate_id,
+                candidate_kind=SemanticTargetKind.METRIC.value,
+                semantic_id=M1.candidate_id,
+                canonical_name=M1.canonical_name,
+                locator_kind="metric",
+                metabase_database_id=1,
+                metabase_table_id=10,
+                metabase_metric_id=501,
+                metabase_entity_id="metric-downtime-v1",
+                resource_entity_id="metabase:metric:metric-downtime-v1",
+                resource_fingerprint="1" * 64,
+                resource_version="coorigin-m8-v1",
+                enabled=True,
+            )
+        )
+        db.add(
+            NativeResourceBinding(
+                tenant_id=tenant_id,
+                semantic_context_version=session.context_version,
+                candidate_id=D1.candidate_id,
+                candidate_kind=SemanticTargetKind.DIMENSION.value,
+                semantic_id=D1.candidate_id,
+                canonical_name=D1.canonical_name,
+                locator_kind="field",
+                metabase_database_id=1,
+                metabase_table_id=10,
+                metabase_field_id=20,
+                resource_entity_id="metabase:field:20",
+                resource_fingerprint="2" * 64,
+                resource_version="coorigin-m8-v1",
+                enabled=True,
+            )
+        )
+        db.commit()
+
+    executor = object.__new__(NativeResearchMaterialExecutor)
+    executor._subjects = SimpleNamespace(db_engine=engine)
+    principal = Principal(
+        user_id=str(user_id),
+        tenant_id=str(tenant_id),
+        tenant_slug="coorigin-m8",
+        roles=["analyst"],
+    )
+    with pytest.raises(ResearchMaterialLimitation) as exc:
+        executor._material_bindings(
+            principal=principal,
+            session=session,
+            contract=contract,
+        )
+    assert exc.value.code == "R1_NATIVE_RESOURCE_BINDING_MISSING"
+    assert M2.candidate_id in exc.value.detail
 
 
 def test_coorigin_m9_full_semantic_superset_remains_legal_reuse_material():
