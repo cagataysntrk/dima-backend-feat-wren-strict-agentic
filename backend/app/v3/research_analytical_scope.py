@@ -8,6 +8,7 @@ No SQL/MBQL parser, query planner, fuzzy matcher or prompt classifier lives here
 """
 from __future__ import annotations
 
+import hashlib
 from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any
 
@@ -28,6 +29,7 @@ from app.v3.analytical_request_contract import (
 from app.v3.native_standard.contracts import NativeAttestationEnvelope
 from app.v3.research_contracts import (
     PresentationKind,
+    ResearchGoalKind,
     ResearchNativeVerificationBinding,
     ResearchQuestion,
     ResearchSemanticRef,
@@ -77,6 +79,153 @@ class NativeMaterialBinding(Frozen):
     field_id: int | None = Field(default=None, gt=0)
     metric_id: int | None = Field(default=None, gt=0)
     metric_entity_id: str | None = None
+
+
+class CoOriginMaterialRequirement(Frozen):
+    """Transient execution-only union of compatible co-origin material needs.
+
+    Accepted Research goals remain immutable. This projection says only which
+    governed material refs one native analytical anchor must make available so
+    downstream relationship authority can consume the same verified occurrence.
+    """
+
+    anchor_goal_id: str = Field(min_length=1)
+    source_goal_ids: tuple[str, ...] = Field(min_length=2)
+    source_fragment_identity: str = Field(pattern=r"^text-sha256:[a-f0-9]{64}$")
+    scope_version_id: str = Field(pattern=r"^scope_v[1-9][0-9]*$")
+    semantic_context_version: str = Field(min_length=1)
+    required_metric_refs: tuple[str, ...] = Field(min_length=1)
+    required_dimension_refs: tuple[str, ...] = ()
+
+
+_COORIGIN_ANCHOR_KINDS = frozenset(
+    {
+        ResearchGoalKind.RANKING,
+        ResearchGoalKind.COMPARISON,
+        ResearchGoalKind.BREAKDOWN,
+        ResearchGoalKind.PERFORMANCE,
+        ResearchGoalKind.TREND,
+    }
+)
+_MATERIAL_REF_KINDS = frozenset(
+    {
+        SemanticTargetKind.METRIC,
+        SemanticTargetKind.KPI,
+        SemanticTargetKind.DIMENSION,
+    }
+)
+
+
+def _material_refs(question: ResearchQuestion) -> tuple[ResearchSemanticRef, ...]:
+    return tuple(
+        item
+        for item in (*question.subject_refs, *question.related_refs)
+        if item.target_kind in _MATERIAL_REF_KINDS
+    )
+
+
+def _has_only_material_refs(question: ResearchQuestion) -> bool:
+    refs = (*question.subject_refs, *question.related_refs)
+    return bool(refs) and all(item.target_kind in _MATERIAL_REF_KINDS for item in refs)
+
+
+def coorigin_material_requirements(
+    session: ResearchSession,
+) -> tuple[CoOriginMaterialRequirement, ...]:
+    """Project narrow anchor+relationship sharing groups from one accepted session.
+
+    The function never groups across Research sessions, so brief, scope version,
+    semantic context, tenant and principal/security lens are structurally shared.
+    Provenance matching is exact accepted source_text identity only.
+    """
+
+    brief = session.accepted_brief
+    if brief is None:
+        raise ResearchAnalyticalScopeError(
+            "R1_ACCEPTED_BRIEF_REQUIRED",
+            "co-origin material projection requires the immutable accepted ResearchBrief",
+        )
+
+    by_source: dict[str, list[ResearchQuestion]] = {}
+    for question in brief.questions:
+        by_source.setdefault(question.source_text, []).append(question)
+
+    requirements: list[CoOriginMaterialRequirement] = []
+    for source_text, group in by_source.items():
+        relationships = tuple(
+            item
+            for item in group
+            if item.kind == ResearchGoalKind.RELATIONSHIP
+            and _has_only_material_refs(item)
+        )
+        if not relationships:
+            continue
+        anchors = tuple(item for item in group if item.kind in _COORIGIN_ANCHOR_KINDS)
+        if not anchors:
+            continue
+        if len(anchors) != 1:
+            raise ResearchAnalyticalScopeError(
+                "R1_COORIGIN_MATERIAL_ANCHOR_AMBIGUOUS",
+                "co-origin relationship material has more than one native analytical anchor",
+            )
+        anchor = anchors[0]
+
+        ordered_refs: list[ResearchSemanticRef] = []
+        seen: set[str] = set()
+        for question in (anchor, *relationships):
+            for ref in _material_refs(question):
+                if ref.candidate_id not in seen:
+                    ordered_refs.append(ref)
+                    seen.add(ref.candidate_id)
+
+        metrics = tuple(
+            item.candidate_id
+            for item in ordered_refs
+            if item.target_kind in {SemanticTargetKind.METRIC, SemanticTargetKind.KPI}
+        )
+        dimensions = tuple(
+            item.candidate_id
+            for item in ordered_refs
+            if item.target_kind == SemanticTargetKind.DIMENSION
+        )
+        if not metrics:
+            raise ResearchAnalyticalScopeError(
+                "R1_COORIGIN_MATERIAL_METRIC_REQUIRED",
+                anchor.goal_id,
+            )
+
+        requirements.append(
+            CoOriginMaterialRequirement(
+                anchor_goal_id=anchor.goal_id,
+                source_goal_ids=tuple(item.goal_id for item in (anchor, *relationships)),
+                source_fragment_identity=(
+                    "text-sha256:"
+                    + hashlib.sha256(source_text.encode("utf-8")).hexdigest()
+                ),
+                scope_version_id=brief.scope.scope_version.version_id,
+                semantic_context_version=session.context_version,
+                required_metric_refs=metrics,
+                required_dimension_refs=dimensions,
+            )
+        )
+    return tuple(requirements)
+
+
+def coorigin_material_requirement_for_anchor(
+    session: ResearchSession,
+    obligation_id: str,
+) -> CoOriginMaterialRequirement | None:
+    matches = tuple(
+        item
+        for item in coorigin_material_requirements(session)
+        if item.anchor_goal_id == obligation_id
+    )
+    if len(matches) > 1:
+        raise ResearchAnalyticalScopeError(
+            "R1_COORIGIN_MATERIAL_REQUIREMENT_AMBIGUOUS",
+            obligation_id,
+        )
+    return matches[0] if matches else None
 
 
 def _question(session: ResearchSession, obligation_id: str) -> ResearchQuestion:
@@ -132,14 +281,51 @@ def analytical_scope_contract(
         )
     question = _question(session, obligation_id)
     question_refs = tuple((*question.subject_refs, *question.related_refs))
-    metrics = _unique_refs(
+    goal_metrics = _unique_refs(
         question_refs,
         {SemanticTargetKind.METRIC, SemanticTargetKind.KPI},
     )
-    if not metrics:
+    if not goal_metrics:
         raise ResearchAnalyticalScopeError(
             "R1_METRIC_SCOPE_REQUIRED",
             "native analytical occurrence requires at least one accepted metric/KPI",
+        )
+
+    projection = coorigin_material_requirement_for_anchor(session, obligation_id)
+    accepted_refs = {
+        item.candidate_id: item for item in brief.scope.semantic_refs
+    }
+    if projection is None:
+        material_metrics = goal_metrics
+        material_dimension_refs = _unique_refs(
+            question_refs,
+            {SemanticTargetKind.DIMENSION},
+        )
+    else:
+        if (
+            projection.scope_version_id != brief.scope.scope_version.version_id
+            or projection.semantic_context_version != session.context_version
+        ):
+            raise ResearchAnalyticalScopeError(
+                "R1_COORIGIN_MATERIAL_SCOPE_DRIFT",
+                obligation_id,
+            )
+        missing = (
+            set(projection.required_metric_refs)
+            | set(projection.required_dimension_refs)
+        ) - set(accepted_refs)
+        if missing:
+            raise ResearchAnalyticalScopeError(
+                "R1_COORIGIN_MATERIAL_REF_OUTSIDE_ACCEPTED_SCOPE",
+                ",".join(sorted(missing)),
+            )
+        material_metrics = tuple(
+            accepted_refs[candidate_id]
+            for candidate_id in projection.required_metric_refs
+        )
+        material_dimension_refs = tuple(
+            accepted_refs[candidate_id]
+            for candidate_id in projection.required_dimension_refs
         )
 
     period_dimension_ids = {
@@ -147,10 +333,7 @@ def analytical_scope_contract(
     }
     dimensions = tuple(
         item
-        for item in _unique_refs(
-            question_refs,
-            {SemanticTargetKind.DIMENSION},
-        )
+        for item in material_dimension_refs
         if item.candidate_id not in period_dimension_ids
     )
     filters = _unique_refs(
@@ -217,19 +400,19 @@ def analytical_scope_contract(
     ranking = None
     if question.ranking is not None:
         value = question.ranking
-        metric_ids = {item.candidate_id for item in metrics}
+        goal_metric_ids = {item.candidate_id for item in goal_metrics}
         explicit_measure = value.measure_semantic_id
-        if explicit_measure is not None and explicit_measure not in metric_ids:
+        if explicit_measure is not None and explicit_measure not in goal_metric_ids:
             raise ResearchAnalyticalScopeError(
                 "R1_RANKING_BASIS_OUTSIDE_SCOPE",
                 explicit_measure,
             )
 
         native_measure = explicit_measure
-        if native_measure is None and len(metrics) == 1:
+        if native_measure is None and len(goal_metrics) == 1:
             # Exactly-one metric scope is structurally unambiguous. Destructure
             # the singleton so no ordered-tuple "first metric" authority exists.
-            (sole_metric,) = metrics
+            (sole_metric,) = goal_metrics
             native_measure = sole_metric.candidate_id
 
         if native_measure is not None:
@@ -265,7 +448,7 @@ def analytical_scope_contract(
             lineage_id=session.lineage_id,
             version_id=brief.scope.scope_version.version_id,
         ),
-        metric_refs=tuple(item.candidate_id for item in metrics),
+        metric_refs=tuple(item.candidate_id for item in material_metrics),
         dimension_refs=tuple(item.candidate_id for item in dimensions),
         filters=tuple(filter_invariants),
         period=period,
