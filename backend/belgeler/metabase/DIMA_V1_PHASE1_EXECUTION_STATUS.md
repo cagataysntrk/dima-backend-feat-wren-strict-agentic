@@ -786,3 +786,45 @@ PHASE 1 = IN_PROGRESS
 P13 = BLOCKED / NOT STARTED
 DIMA BRAIN V1 = NOT SEALED
 ```
+
+
+---
+
+## R5 ROOT ARCHITECTURE RECOVERY — 2026-09-29
+
+```text
+PHASE 1 = IN_PROGRESS
+R5 = IN_PROGRESS / BLOCKED ON SUPERVISOR ENGINE DECISION
+V4 = NOT RUN
+RCA_P19_HARD_V2 = NOT RUN
+FINAL P13 = BLOCKED
+DIMA BRAIN V1 = NOT SEALED
+```
+
+Provider-free R5-A regression/historical proofs:
+- `2fb8e5d54bf07c8c78e18ec98fa631754d27ad60`;
+- `a51574b8e156de7a24bc139aca55c6a2ac33de67`.
+
+Canonical production authority remains unchanged:
+- Product behavior `6308b705e3c61aaa36825493421cde8288744561`;
+- engine `cbe313af9ac2d5960f662068e433d328d896fb06` / `0.63.18-dima.6`;
+- digest `sha256:40e9a44be49904de3ddf12d4683c768e70955851c10a928a9c8f7d8f60780353`;
+- migration `fd2a7c9e4b61`.
+
+The attempted representation-by-representation dima.7 direction is not production authority and is
+not resumed.
+
+Existing dima.6/public Metabase surfaces do not expose the complete typed material observation
+needed for Evidence promotion without either reusing P13 as the hot-path microscope or parsing
+query representations in Platform. A proposal-only engine surface is documented in
+`DIMA_R5_MATERIAL_OBSERVATION_ENGINE_PROPOSAL.md`. Implementation requires separate supervisor
+authorization.
+
+R5 development accounting:
+```text
+provider calls = 0
+Terra calls = 0
+Luna calls = 0
+Sol calls = 0
+paid calls = 0
+```

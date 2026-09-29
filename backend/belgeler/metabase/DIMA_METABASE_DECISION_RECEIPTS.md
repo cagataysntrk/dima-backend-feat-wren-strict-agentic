@@ -8740,3 +8740,74 @@ protocol disposition:
 - `DMP-DEC-0075` is NOT created;
 - Phase 1 remains IN_PROGRESS;
 - P13 is BLOCKED / NOT STARTED.
+
+
+---
+
+## DMP-DEC-0074E — R5 PRODUCTION SEMANTIC OBSERVATION / P13 MICROSCOPE SEPARATION
+
+date: 2026-09-29
+
+status:
+`R5 ROOT ARCHITECTURE RATIFIED / REGRESSION PROVIDER-FREE REPRODUCED / ENGINE OBSERVATION GAP PROVED / ENGINE IMPLEMENTATION NOT AUTHORIZED / PHASE 1 IN_PROGRESS`.
+
+authority:
+- DMP-DEC-0048 remains the historical native-direct execution authority;
+- regression commit: `3b33639f934bb67d292de14b5142ea129dc9e65e`;
+- later locator correction: `6308b705e3c61aaa36825493421cde8288744561`;
+- immutable Terra V3: run `36481553724`, artifact `10996548690`;
+- DMP-DEC-0075 remains reserved for the final immutable Phase-1 seal.
+
+R5 root correction:
+
+```text
+P13 exact attestation
+= certification / debug / forensics microscope
+
+ordinary Research execution permission
+!= P13 certification coverage
+
+native execution legality
+!= VERIFIED Evidence promotion
+```
+
+Provider-free R5-A evidence:
+- `2fb8e5d54bf07c8c78e18ec98fa631754d27ad60` reproduces both V3 failure families as a
+  P13-before-dataset architecture gate;
+- `a51574b8e156de7a24bc139aca55c6a2ac33de67` reproduces the historical durable native-direct
+  sequence without any P13 call.
+
+Existing dima.6 surface audit:
+- `/api/dataset` executes exact A but does not return a typed material semantic projection;
+- `/api/dataset/query_metadata` returns dependent databases/tables/fields/snippets but not
+  observed metric use, material filter values/time bounds, ranking identity/direction/limit or grain;
+- Metabot `construct_notebook_query` structured output contains pMBQL/query-json, but parsing those
+  representations in Platform is forbidden;
+- P13 already observes physical facts but must not remain the production permission/semantic
+  substrate.
+
+Therefore current R5 cannot be completed without a separately authorized generic Metabase-owned
+material-observation surface. No dima.7 implementation is authorized by this receipt.
+
+Proposal:
+`backend/belgeler/metabase/DIMA_R5_MATERIAL_OBSERVATION_ENGINE_PROPOSAL.md`.
+
+Current immutable state:
+
+```text
+Platform behavior authority = 6308b705e3c61aaa36825493421cde8288744561
+canonical engine            = cbe313af9ac2d5960f662068e433d328d896fb06
+engine release              = 0.63.18-dima.6
+engine digest               = sha256:40e9a44be49904de3ddf12d4683c768e70955851c10a928a9c8f7d8f60780353
+migration head              = fd2a7c9e4b61
+
+paid calls                  = 0
+Terra calls                 = 0
+Sol calls                   = 0
+
+R5                           = IN_PROGRESS / BLOCKED ON SUPERVISOR ENGINE DECISION
+V4                           = NOT RUN
+RCA_P19_HARD_V2              = NOT RUN
+FINAL P13                    = BLOCKED
+DIMA BRAIN V1                = NOT SEALED
+```
