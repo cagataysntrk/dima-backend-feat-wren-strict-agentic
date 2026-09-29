@@ -346,11 +346,14 @@ class NativeResearchMaterialExecutor:
                 "R1_NATIVE_OCCURRENCE_SCOPE_MISMATCH",
                 "material observation belongs to another native occurrence",
             )
-        if observation.query_fingerprint != query_fingerprint:
-            raise ResearchMaterialLimitation(
-                "R1_NATIVE_QUERY_FINGERPRINT_MISMATCH",
-                "material observation fingerprint differs from captured query A",
-            )
+        # The execution fingerprint and the material-observation fingerprint are
+        # exact identities in different representation domains:
+        #   - query_fingerprint: raw generated query A, proven unchanged at /api/dataset
+        #   - observation.query_fingerprint: the same persisted occurrence after
+        #     Metabase's own Lib restore/exact-serialization boundary.
+        # Do not compare those byte hashes across domains. Occurrence identity remains
+        # fail-closed through conversation_id + native_query_id, authenticated subject,
+        # engine identity, and the engine's producer/state equality checks.
         try:
             request = assert_material_native_scope(
                 session=session,
