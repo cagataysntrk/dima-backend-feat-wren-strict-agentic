@@ -40,7 +40,7 @@ env:
   COMPLETION_TOKEN_CEILING: "16000"
   REASONING_TOKEN_CEILING: "12000"
   PROVIDER_COST_CEILING: "1.00"
-  PRODUCT_BEHAVIOR_SHA: "4829bcb22fedd6f1c97d947ccc106fdc4085895c"
+  PRODUCT_BEHAVIOR_SHA: "cf17b923a151c13c508accb604d359e56c88af94"
 
 concurrency:
   group: dima-v1-phase1-pinpoint-live
@@ -336,7 +336,7 @@ jobs:
           assert provider["blocked_request_count"] == 0, provider
           assert provider["privacy_contract"]["api_keys_persisted"] is False
           assert provider["privacy_contract"]["reasoning_text_persisted"] is False
-          assert report["candidate_product_sha"] == "4829bcb22fedd6f1c97d947ccc106fdc4085895c"
+          assert report["candidate_product_sha"] == "cf17b923a151c13c508accb604d359e56c88af94"
           assert report["model_topology"]["dima_cognition"] == "openai/gpt-5.6-terra"
           assert report["model_topology"]["metabot"] == "openrouter/openai/gpt-5.6-terra"
           assert report["turn_count_executed"] == report["turn_count_expected"]

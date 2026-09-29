@@ -6,6 +6,8 @@ on:
     branches:
       - feat/dima-metabase-platform
     paths:
+      - "backend/app/v3/research.py"
+      - "backend/tests/test_v3_r7_native_contract_delivery.py"
       - "backend/app/v3/hypothesis_root_cause.py"
       - "backend/app/v3/hypothesis_root_cause_provider.py"
       - "backend/app/v3/research_native_gateway.py"

@@ -5,6 +5,8 @@ on:
     branches:
       - feat/dima-metabase-platform
     paths:
+      - "backend/app/v3/research.py"
+      - "backend/tests/test_v3_r7_native_contract_delivery.py"
       - "backend/app/v3/business_relationship_policy.py"
       - "backend/control_plane/models.py"
       - "backend/migrations/versions/f5a1d7c9e2b4_p18_business_relationship_policy.py"
