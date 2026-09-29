@@ -34,7 +34,11 @@ from app.v3.research_native_gateway import (
     NativeResearchMaterialExecutor,
     NativeSubjectSessionProvider,
 )
-from app.v3.research_product import ResearchAskOrchestrator, ResearchMaterialLimitation
+from app.v3.research_product import (
+    ResearchAskOrchestrator,
+    ResearchMaterialLimitation,
+    ResearchMaterialObservationUnavailable,
+)
 from app.v3.research_store import ResearchSessionStore
 from app.v3.substrate.metabase.native_engine import (
     NativeDatasetExecutionError,
@@ -43,6 +47,9 @@ from app.v3.substrate.metabase.native_engine import (
 from app.v3.substrate.metabase.native_models import (
     NativeDatasetExecutionObservation,
     NativeEngineIdentity,
+    NativeMaterialDimension,
+    NativeMaterialMetric,
+    NativeMaterialObservation,
 )
 from control_plane.authorize import Principal
 from control_plane.models import NativeResourceBinding, NativeSubjectBinding, Tenant, User
@@ -353,6 +360,51 @@ def attestation_payload(query):
     }
 
 
+def material_observation_payload(
+    query,
+    *,
+    conversation_id=UUID("00000000-0000-4000-8000-000000000778"),
+    native_query_id="native-query-1",
+    metrics=None,
+    dimensions=None,
+    filters=None,
+    temporal_scopes=None,
+    ranking=None,
+    runtime_identity=None,
+    subject=7,
+):
+    return {
+        "schema_version": "dima_native_material_observation_v1",
+        "conversation_id": str(conversation_id),
+        "native_query_id": native_query_id,
+        "assistant_message_id": 1,
+        "tool_call_id": "tool-p14-test",
+        "query_fingerprint": h(query),
+        "authenticated_metabase_subject": subject,
+        "database_id": 1,
+        "runtime_identity": runtime_identity or identity_payload(),
+        "native_metrics": metrics if metrics is not None else [
+            {
+                "stage_number": 0,
+                "aggregation_index": 0,
+                "metabase_metric_id": 501,
+                "metabase_metric_entity_id": "metric-sales-order-count-v1",
+            }
+        ],
+        "dimensions": dimensions if dimensions is not None else [
+            {
+                "stage_number": 0,
+                "role": "breakout",
+                "field_id": 20,
+                "table_id": 10,
+            }
+        ],
+        "filters": filters if filters is not None else [],
+        "temporal_scopes": temporal_scopes if temporal_scopes is not None else [],
+        "ranking": ranking if ranking is not None else [],
+    }
+
+
 def test_forward_scope_accepts_same_governed_metric_with_different_physical_plan():
     engine = db_engine()
     seed(engine)
@@ -428,10 +480,33 @@ def test_research_forward_scope_is_not_a_query_implementation_validator():
 
 
 class MaterialBridge:
-    def __init__(self, *, forbidden=False, fail_on_execute=False):
+    def __init__(
+        self,
+        *,
+        forbidden=False,
+        fail_on_execute=False,
+        observation_error=False,
+        observation_update=None,
+    ):
         self.calls = []
         self.forbidden = forbidden
         self.fail_on_execute = fail_on_execute
+        self.observation_error = observation_error
+        self.observation_update = observation_update or {}
+        self.attestation_calls = []
+        self.material_observation_calls = []
+
+    @staticmethod
+    def _query():
+        return {
+            "database": 1,
+            "type": "query",
+            "query": {
+                "source-table": 10,
+                "aggregation": [["count"]],
+                "breakout": [["field", 20, None]],
+            },
+        }
 
     def execute_dataset(self, query):
         if self.fail_on_execute:
@@ -458,41 +533,29 @@ class MaterialBridge:
         return identity_payload()
 
     def attest_native_query(self, *, conversation_id, native_query_id):
-        assert native_query_id == "native-query-1"
-        payload = attestation_payload(
-            self.calls[-1]
-            if self.calls
-            else {
-                "database": 1,
-                "type": "query",
-                "query": {
-                    "source-table": 10,
-                    "aggregation": [["count"]],
-                    "breakout": [["field", 20, None]],
-                },
-            }
+        self.attestation_calls.append((conversation_id, native_query_id))
+        raise AssertionError("ordinary R5 Research must not call P13 attestation")
+
+    def observe_native_query_material(self, *, conversation_id, native_query_id):
+        self.material_observation_calls.append((conversation_id, native_query_id))
+        if self.observation_error:
+            raise NativeEngineBridgeError("material observation unavailable")
+        query = self.calls[-1] if self.calls else self._query()
+        payload = material_observation_payload(
+            query,
+            conversation_id=conversation_id,
+            native_query_id=native_query_id,
         )
-        payload["manifest"]["native_conversation_id"] = str(conversation_id)
-        return payload
-
-    def field_metadata(self, field_id):
-        assert field_id == 20
-        return {"id": 20, "name": "channel", "table_id": 10}
-
-    def table_metadata(self, table_id):
-        assert table_id == 10
-        return {"id": 10, "name": "sales_orders", "schema": None}
-
-
+        payload.update(self.observation_update)
+        return NativeMaterialObservation.model_validate(payload)
 
 
 class P13RejectingButDatasetLegalBridge(MaterialBridge):
-    """Reproduce the live R5 regression: P13 rejects before legal dataset execution."""
+    """P13 may reject the physical shape; ordinary R5 never asks it."""
 
     def __init__(self, *, p13_detail: str):
         super().__init__()
         self.p13_detail = p13_detail
-        self.attestation_calls = []
 
     def attest_native_query(self, *, conversation_id, native_query_id):
         self.attestation_calls.append((conversation_id, native_query_id))
@@ -515,7 +578,7 @@ class P13RejectingButDatasetLegalBridge(MaterialBridge):
         ),
     ),
 )
-def test_r5_reproduces_p13_hot_path_blocking_legal_native_execution(p13_detail):
+def test_r5_p13_rejection_does_not_block_legal_native_execution(p13_detail):
     engine = db_engine()
     seed(engine)
     store, session, link, query = session_and_link(engine)
@@ -531,37 +594,37 @@ def test_r5_reproduces_p13_hot_path_blocking_legal_native_execution(p13_detail):
     )
     bridge = P13RejectingButDatasetLegalBridge(p13_detail=p13_detail)
 
-    with pytest.raises(ResearchMaterialLimitation) as exc:
-        executor.execute(
-            principal=principal(),
-            session=session,
-            obligation_id="g1",
-            bridge=bridge,
-            native_conversation_id=link.native_conversation_id,
-            native_query_id=link.native_query_id,
-            native_query=query,
-            query_fingerprint=link.native_query_fingerprint,
-            execution_link_id=link.id,
-        )
+    outcome = executor.execute(
+        principal=principal(),
+        session=session,
+        obligation_id="g1",
+        bridge=bridge,
+        native_conversation_id=link.native_conversation_id,
+        native_query_id=link.native_query_id,
+        native_query=query,
+        query_fingerprint=link.native_query_fingerprint,
+        execution_link_id=link.id,
+    )
 
-    assert exc.value.code == "R1_NATIVE_SCOPE_ATTESTATION_FAILED"
-    assert bridge.attestation_calls == [
+    assert outcome.evidence.verified
+    assert bridge.attestation_calls == []
+    assert bridge.calls == [query]
+    assert bridge.material_observation_calls == [
         (link.native_conversation_id, link.native_query_id)
     ]
-    assert bridge.calls == []
-    assert store.execution_link(link.id).status == "CANDIDATE_CAPTURED"
-
-    # The exact same captured query is transport-legal for ordinary Metabase execution.
-    # The current gateway blocks before reaching it solely because P13 is a prerequisite.
-    direct = bridge.execute_dataset(query)
-    assert direct.query_fingerprint == link.native_query_fingerprint
-    assert direct.payload["status"] == "completed"
-    assert bridge.calls == [query]
+    assert store.execution_link(link.id).status == "EXECUTED"
 
 
-def test_r5_architecture_reproducer_proves_attestation_precedes_dataset_execution():
-    source = inspect.getsource(NativeResearchMaterialExecutor.execute)
-    assert source.index("self._attest_scope(") < source.index("bridge.execute_dataset(")
+
+def test_r5_architecture_removes_p13_from_ordinary_research_permission_path():
+    source = inspect.getsource(gateway_module)
+    execute_source = inspect.getsource(NativeResearchMaterialExecutor.execute)
+    assert "attest_native_query" not in source
+    assert "_attest_scope" not in source
+    assert "observe_native_query_material" in execute_source
+    assert execute_source.index("mark_executed(") < execute_source.index(
+        "_observe_scope("
+    )
 
 
 def test_r5_historical_dmp_dec_0048_path_executes_and_seals_without_p13():
@@ -643,46 +706,11 @@ def test_r5_historical_dmp_dec_0048_path_executes_and_seals_without_p13():
     assert bridge.attestation_calls == []
 
 
-class NativeContractBridge:
-    """Provider-free double exposing only the real NativeEngineBridge material surface."""
-
-    def __init__(self):
-        self.calls = []
-
-    def attest_native_query(self, *, conversation_id, native_query_id):
-        assert native_query_id == "native-query-1"
-        query = {
-            "database": 1,
-            "type": "query",
-            "query": {
-                "source-table": 10,
-                "aggregation": [["count"]],
-                "breakout": [["field", 20, None]],
-            },
-        }
-        payload = attestation_payload(query)
-        payload["manifest"]["native_conversation_id"] = str(conversation_id)
-        return payload
-
-    def execute_dataset(self, query):
-        self.calls.append(query)
-        return NativeDatasetExecutionObservation(
-            status_code=202,
-            latency_ms=3,
-            query_fingerprint=h(query),
-            payload={
-                "status": "completed",
-                "database_id": 1,
-                "row_count": 1,
-                "data": {"rows": [["Web", 4]], "cols": []},
-            },
-        )
-
-    def engine_identity(self):
-        return identity_payload()
+class NativeContractBridge(MaterialBridge):
+    """Provider-free double exposing only execution + R5 material observation."""
 
 
-def test_native_locator_hydration_uses_governed_bindings_not_private_bridge_metadata():
+def test_r5_material_binding_uses_governed_stable_ids_not_private_metadata():
     engine = db_engine()
     seed(engine)
     store, session, link, query = session_and_link(engine)
@@ -710,9 +738,11 @@ def test_native_locator_hydration_uses_governed_bindings_not_private_bridge_meta
         execution_link_id=link.id,
     )
 
-    assert outcome.attestation_id == "att-p14-test"
+    assert outcome.attestation_id is None
     assert outcome.evidence.verified
     assert bridge.calls == [query]
+    assert bridge.attestation_calls == []
+    assert len(bridge.material_observation_calls) == 1
     assert not hasattr(bridge, "table_metadata")
     assert not hasattr(bridge, "field_metadata")
 
@@ -828,10 +858,14 @@ def test_direct_native_result_seals_one_research_receipt_without_resource_or_ope
     assert outcome.receipt.native_query_id == "native-query-1"
     assert outcome.receipt.canonical_query_fingerprint == h(query)
     assert outcome.receipt.resource_entity_ids == ()
-    assert outcome.attestation_id == "att-p14-test"
+    assert outcome.attestation_id is None
     assert outcome.evidence.verified
-    assert outcome.evidence.payload["attestation_id"] == "att-p14-test"
+    assert outcome.evidence.payload["material_observation_schema"] == (
+        "dima_native_material_observation_v1"
+    )
+    assert outcome.evidence.payload["observed_query_fingerprint"] == h(query)
     assert outcome.evidence.payload["scope_identity"]["version_id"] == "scope_v1"
+    assert bridge.attestation_calls == []
 
     updated = ResearchManager.admit_receipted_evidence(
         session,
@@ -903,11 +937,12 @@ def test_executed_occurrence_resumes_from_durable_result_without_second_dataset_
     assert persisted.status == "EXECUTED"
     assert persisted.native_result_json is not None
 
+    second_bridge = MaterialBridge(fail_on_execute=True)
     second = executor.execute(
         principal=principal(),
         session=session,
         obligation_id="g1",
-        bridge=MaterialBridge(fail_on_execute=True),
+        bridge=second_bridge,
         native_conversation_id=link.native_conversation_id,
         native_query_id=link.native_query_id,
         native_query=query,
@@ -917,9 +952,70 @@ def test_executed_occurrence_resumes_from_durable_result_without_second_dataset_
     assert first.receipt.receipt_id == second.receipt.receipt_id
     assert first.receipt.result_hash == second.receipt.result_hash
     assert len(first_bridge.calls) == 1
+    assert second_bridge.calls == []
+    assert len(second_bridge.material_observation_calls) == 1
 
 
-def test_gateway_scope_attestation_adds_no_p13_p10_planning_or_execution_authority():
+def test_observation_unavailable_preserves_executed_result_and_retry_does_not_reexecute():
+    engine = db_engine()
+    seed(engine)
+    store, session, link, query = session_and_link(engine)
+    subjects = NativeSubjectSessionProvider(
+        base_url="http://native.test",
+        expected_identity=expected_identity(),
+        db_engine=engine,
+    )
+    executor = NativeResearchMaterialExecutor(
+        subject_provider=subjects,
+        store=store,
+        expected_identity=expected_identity(),
+    )
+    first_bridge = MaterialBridge(observation_error=True)
+
+    with pytest.raises(ResearchMaterialObservationUnavailable) as exc:
+        executor.execute(
+            principal=principal(),
+            session=session,
+            obligation_id="g1",
+            bridge=first_bridge,
+            native_conversation_id=link.native_conversation_id,
+            native_query_id=link.native_query_id,
+            native_query=query,
+            query_fingerprint=link.native_query_fingerprint,
+            execution_link_id=link.id,
+        )
+    assert exc.value.code == "R1_NATIVE_MATERIAL_OBSERVATION_UNAVAILABLE"
+    persisted = store.execution_link(link.id)
+    assert persisted.status == "EXECUTED"
+    assert persisted.native_result_json is not None
+    assert first_bridge.calls == [query]
+
+    retry_session = ResearchManager.record_retryable_limitation(
+        session,
+        obligation_id="g1",
+        code=exc.value.code,
+        detail=exc.value.detail,
+    )
+    assert retry_session.obligations[0].state == ObligationState.DELEGATED
+
+    second_bridge = MaterialBridge(fail_on_execute=True)
+    outcome = executor.execute(
+        principal=principal(),
+        session=retry_session,
+        obligation_id="g1",
+        bridge=second_bridge,
+        native_conversation_id=link.native_conversation_id,
+        native_query_id=link.native_query_id,
+        native_query=query,
+        query_fingerprint=link.native_query_fingerprint,
+        execution_link_id=link.id,
+    )
+    assert outcome.evidence.verified
+    assert second_bridge.calls == []
+    assert len(second_bridge.material_observation_calls) == 1
+
+
+def test_gateway_r5_has_no_p13_parser_or_second_planner_authority():
     source = inspect.getsource(gateway_module)
     for forbidden in (
         "AuthorizedExecutionArtifact",
@@ -927,6 +1023,8 @@ def test_gateway_scope_attestation_adds_no_p13_p10_planning_or_execution_authori
         "VerifiedExecutionSecurityFacts",
         "NativeResourceBindingProvider",
         "execute_native_query",
+        "attest_native_query",
+        "NativeAttestationEnvelope",
         "ResolvedAnalyticsIntent",
         "TemporalBindingEngine",
         "MetabaseProjectionCompiler",
@@ -936,7 +1034,7 @@ def test_gateway_scope_attestation_adds_no_p13_p10_planning_or_execution_authori
         "query_optimizer",
     ):
         assert forbidden not in source
-    assert "attest_native_query" in source
+    assert "observe_native_query_material" in source
     assert "execute_dataset" in source
 
 
