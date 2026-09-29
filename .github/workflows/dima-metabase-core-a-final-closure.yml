@@ -209,12 +209,12 @@ jobs:
           assert_blob backend/app/v3/research_store.py 659664fa6c8c98e724adb45025ec5e69b9fd7cea
           assert_blob backend/app/v3/research_product.py 0370635ec046c88532c8ae70e49efc5126404489
           assert_blob backend/app/v3/research_native_gateway.py 7bb106517f9bdea49cca7e51e50b06a8fbb73ca4
-          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "14323cdde4f258c65c63bbd88f1034f814a7ecb3"
+          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "0f16f2b5a1ec774ac7afee6214c726e82f9ceb3c"
 
       - name: Final Core A invariant budget
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "14323cdde4f258c65c63bbd88f1034f814a7ecb3"
+          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "0f16f2b5a1ec774ac7afee6214c726e82f9ceb3c"
           ! grep -q '"action:execute"' backend/control_plane/authorize.py
           ! grep -R -nE 'openrouter|openai/gpt|Luna|Sol|C1' backend/app/v3/core_a
