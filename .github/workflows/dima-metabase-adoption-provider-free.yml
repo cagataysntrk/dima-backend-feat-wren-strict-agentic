@@ -36,7 +36,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          fetch-depth: 2
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -118,7 +118,7 @@ jobs:
           set -euo pipefail
           test -z "$(git diff --name-only HEAD^ HEAD -- backend/app/decision.py backend/app/routers/decisions.py)"
           test -z "$(git diff --name-only HEAD^ HEAD -- backend/app/v3/decision_intelligence.py backend/app/v3/report_document.py)"
-          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "cbe313af9ac2d5960f662068e433d328d896fb06"
+          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "14323cdde4f258c65c63bbd88f1034f814a7ecb3"
       - name: Adoption focused provider-free proof
         working-directory: backend
         run: pytest -q tests/test_v3_decision_adoption.py
@@ -152,4 +152,4 @@ jobs:
           set -euo pipefail
           ! grep -nE 'openrouter|openai/gpt|Luna|Sol|C1' backend/app/v3/decision_adoption.py
           ! grep -nE 'email|Slack|ERP|ticket|notification|external API|execute_action' backend/app/v3/decision_adoption.py
-          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "cbe313af9ac2d5960f662068e433d328d896fb06"
+          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "14323cdde4f258c65c63bbd88f1034f814a7ecb3"
