@@ -38,19 +38,19 @@ jobs:
       - name: Install canonical backend
         working-directory: backend
         run: pip install -e ".[dev]"
-      - name: Verify certified dima.7 pin without building engine
+      - name: Verify certified dima.8 pin without building engine
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "14323cdde4f258c65c63bbd88f1034f814a7ecb3"
+          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "0f16f2b5a1ec774ac7afee6214c726e82f9ceb3c"
           python - <<'PY'
           import json
           from pathlib import Path
           lock=json.loads(Path("backend/lab/metabase/core_b/runtime/engine_runtime_lock.json").read_text())
-          assert lock["engine_sha"] == "14323cdde4f258c65c63bbd88f1034f814a7ecb3"
-          assert lock["runtime_tag"] == "v0.63.18-dima.7"
-          assert lock["certification_run_id"] == "36532842632"
-          assert lock["registry_digest"] == "sha256:75a96218bb6a881d792ec13895e438aa5fa897d06a7743c0c3416fa244d13b30"
+          assert lock["engine_sha"] == "0f16f2b5a1ec774ac7afee6214c726e82f9ceb3c"
+          assert lock["runtime_tag"] == "v0.63.18-dima.8"
+          assert lock["certification_run_id"] == "36610103287"
+          assert lock["registry_digest"] == "sha256:b1130357b9046d1208880c196ca0b5f3afba56580fca91fadede89a464521577"
           PY
       - name: R5 ordinary Research and P14 provider-free proof
         working-directory: backend
@@ -144,7 +144,7 @@ jobs:
           ! grep -nE 'sqlparse|parse_mbql|MetabaseProjectionCompiler|MetabaseCanonicalizer|TemporalBindingEngine|ResolvedAnalyticsIntent' "${HOT[@]}"
           ! grep -R -nE 'SCOPE_CURRENTNESS_HARD_V[0-9]|RCA_P19_HARD_V[0-9]' backend/app backend/control_plane
           ! grep -R -nE 'app\.wren|wren_service|WrenAI' backend/app/v3 backend/control_plane
-          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "14323cdde4f258c65c63bbd88f1034f814a7ecb3"
+          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "0f16f2b5a1ec774ac7afee6214c726e82f9ceb3c"
           test ! -d WrenAI-main
           test ! -d frontend
           test ! -d web
