@@ -136,13 +136,13 @@ jobs:
           GITLINK_SHA="$(git ls-tree HEAD engine/metabase | awk '{print $3}')"
           python backend/lab/metabase/core_b/runtime/engine_runtime_lock.py             --lock backend/lab/metabase/core_b/runtime/engine_runtime_lock.json             --gitlink-sha "$GITLINK_SHA"             --github-env "$GITHUB_ENV"
 
-      - name: Pull exact certified dima.7 digest
+      - name: Pull exact certified dima.8 digest
         shell: bash
         run: |
           set -euo pipefail
-          test "$ENGINE_SHA" = "14323cdde4f258c65c63bbd88f1034f814a7ecb3"
-          test "$CERTIFICATION_RUN_ID" = "36532842632"
-          test "$RUNTIME_TAG" = "v0.63.18-dima.7"
+          test "$ENGINE_SHA" = "0f16f2b5a1ec774ac7afee6214c726e82f9ceb3c"
+          test "$CERTIFICATION_RUN_ID" = "36610103287"
+          test "$RUNTIME_TAG" = "v0.63.18-dima.8"
           docker pull "$IMMUTABLE_IMAGE_REF"
           docker image inspect -f '{{range .RepoDigests}}{{println .}}{{end}}'             "$IMMUTABLE_IMAGE_REF" | grep -Fx "$IMMUTABLE_IMAGE_REF"
 
@@ -194,7 +194,7 @@ jobs:
         run: |
           python lab/metabase/core_b/runtime/seed_round2_fixture.py             --fixture eval/round2_neutral_machine_fixture.json
 
-      - name: Start exact certified dima.7 engine
+      - name: Start exact certified dima.8 engine
         shell: bash
         run: |
           set -euo pipefail
