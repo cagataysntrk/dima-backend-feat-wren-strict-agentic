@@ -1,8 +1,9 @@
 name: dima-v1-phase1-pinpoint-live
 
-# Recovery/growth live authority. The R8 Panel A execution is immutable.
-# Temporary paid push trigger is disarmed after the single authorized run.
 on:
+  push:
+    branches:
+      - phase1-v4-d8-trigger-20260929-1
   workflow_dispatch:
     inputs:
       probe_id:
@@ -23,6 +24,8 @@ on:
           - "NO"
           - "YES"
 
+# Recovery/growth live authority. The R8 Panel A execution is immutable.
+# Temporary paid push trigger is disarmed after the single authorized run.
 permissions:
   contents: read
   packages: read
@@ -68,6 +71,9 @@ jobs:
             PROBE_ID="${{ inputs.probe_id }}"
           elif [ "$EVENT" = "push" ]; then
             case "${{ github.ref_name }}" in
+              phase1-v4-d8-trigger-20260929-1)
+                PROBE_ID="SCOPE_CURRENTNESS_HARD_V4"
+                ;;
               phase1-v4-trigger-20260929)
                 PROBE_ID="SCOPE_CURRENTNESS_HARD_V4"
                 ;;
