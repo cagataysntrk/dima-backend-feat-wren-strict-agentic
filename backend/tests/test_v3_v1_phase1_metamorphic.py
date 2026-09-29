@@ -40,7 +40,13 @@ from app.v3.root_cause_candidate_contract import (
     RootCauseCandidateRelation,
     RootCauseCandidateSemantics,
 )
+from app.v3.research_analytical_scope import (
+    ResearchAnalyticalScopeError,
+    analytical_scope_contract,
+    coorigin_material_requirements,
+)
 from app.v3.research_contracts import (
+    RankingSurface,
     ResearchBrief,
     ResearchBriefStatus,
     ResearchGoalKind,
@@ -48,7 +54,9 @@ from app.v3.research_contracts import (
     ResearchQuestion,
     ResearchScope,
     ResearchSemanticRef,
+    ResearchTimePeriod,
     ScopeMutation,
+    ScopeVersion,
     ScopeMutationKind,
     SemanticTargetKind,
     apply_scope_mutation,
@@ -376,3 +384,313 @@ def test_p2_entity_narrowing_advances_exact_scope_version_and_parent():
     assert {x.candidate_id for x in contract.current_scope.semantic_refs} == {
         M1.candidate_id, D1.candidate_id, E1.candidate_id
     }
+
+
+
+# Phase-1 80/90 closure: co-origin material compression matrix.
+
+M3 = _semantic("metric.revenue", SemanticTargetKind.METRIC, "Revenue")
+M4 = _semantic("metric.margin", SemanticTargetKind.METRIC, "Margin")
+D2 = _semantic("dimension.product", SemanticTargetKind.DIMENSION, "Product")
+DT = _semantic("dimension.event_date", SemanticTargetKind.DIMENSION, "Event Date")
+
+
+def _coorigin_session(
+    *,
+    source="Rank by metric A and inspect together with metric B.",
+    anchor_metric=M1,
+    downstream_metric=M2,
+    dimension=D1,
+    anchor_kind=ResearchGoalKind.RANKING,
+    relationship=True,
+    relationship_source=None,
+    anchor_extra_metrics=(),
+    scope_version=ScopeVersion(version_id="scope_v1", ordinal=1),
+    context_version="ctx-coorigin-v1",
+    period=None,
+    include_downstream_in_scope=True,
+):
+    anchor = ResearchQuestion(
+        goal_id="g_anchor",
+        kind=anchor_kind,
+        source_text=source,
+        subject_refs=(dimension, anchor_metric, *anchor_extra_metrics),
+        related_refs=(),
+        ranking=(
+            RankingSurface(
+                text="top 2",
+                direction="desc",
+                limit=2,
+                measure_semantic_id=anchor_metric.candidate_id,
+            )
+            if anchor_kind == ResearchGoalKind.RANKING
+            else None
+        ),
+        status=ResearchGoalStatus.RESOLVED,
+    )
+    questions = [anchor]
+    if relationship:
+        questions.append(
+            ResearchQuestion(
+                goal_id="g_relationship",
+                kind=ResearchGoalKind.RELATIONSHIP,
+                source_text=(relationship_source if relationship_source is not None else source),
+                subject_refs=(anchor_metric, downstream_metric),
+                related_refs=(dimension,),
+                status=ResearchGoalStatus.RESOLVED,
+            )
+        )
+
+    refs = [anchor_metric, dimension, *anchor_extra_metrics]
+    if include_downstream_in_scope and downstream_metric.candidate_id not in {
+        item.candidate_id for item in refs
+    }:
+        refs.append(downstream_metric)
+    if period is not None and DT.candidate_id not in {item.candidate_id for item in refs}:
+        refs.append(DT)
+
+    scope_kwargs = {
+        "semantic_refs": tuple(refs),
+        "scope_version": scope_version,
+    }
+    if period is not None:
+        scope_kwargs.update(
+            {
+                "time_surfaces": (period.source_text,),
+                "periods": (period,),
+                "temporal_dimension_ids": (DT.candidate_id,),
+            }
+        )
+    brief = ResearchBrief(
+        brief_id="rb-coorigin",
+        objective=source,
+        scope=ResearchScope(**scope_kwargs),
+        questions=tuple(questions),
+        must_requirement_ids=tuple(item.goal_id for item in questions),
+        context_version=context_version,
+        status=ResearchBriefStatus.READY_FOR_RESEARCH,
+    )
+    return SimpleNamespace(
+        accepted_brief=brief,
+        authority_id="atc_coorigin",
+        context_version=context_version,
+        lineage_id="atl_coorigin",
+    )
+
+
+def test_coorigin_exact_subset_projects_one_union_without_mutating_ranking_semantics():
+    session = _coorigin_session()
+    requirements = coorigin_material_requirements(session)
+    assert len(requirements) == 1
+    requirement = requirements[0]
+    assert requirement.anchor_goal_id == "g_anchor"
+    assert requirement.source_goal_ids == ("g_anchor", "g_relationship")
+    assert requirement.required_metric_refs == (M1.candidate_id, M2.candidate_id)
+    assert requirement.required_dimension_refs == (D1.candidate_id,)
+
+    contract = analytical_scope_contract(session=session, obligation_id="g_anchor")
+    assert contract.metric_refs == (M1.candidate_id, M2.candidate_id)
+    assert contract.dimension_refs == (D1.candidate_id,)
+    assert contract.ranking is not None
+    assert contract.ranking.kind == "native_metric"
+    assert contract.ranking.measure == M1.candidate_id
+    assert contract.ranking.direction == "desc"
+    assert contract.ranking.limit == 2
+
+    accepted_anchor = session.accepted_brief.questions[0]
+    assert tuple(item.candidate_id for item in accepted_anchor.subject_refs) == (
+        D1.candidate_id,
+        M1.candidate_id,
+    )
+    assert M2.candidate_id not in {
+        item.candidate_id for item in accepted_anchor.subject_refs
+    }
+
+
+def test_coorigin_m1_different_metric_identities_remain_generic():
+    session = _coorigin_session(anchor_metric=M3, downstream_metric=M4, dimension=D2)
+    requirement = coorigin_material_requirements(session)[0]
+    assert requirement.required_metric_refs == (M3.candidate_id, M4.candidate_id)
+    contract = analytical_scope_contract(session=session, obligation_id="g_anchor")
+    assert contract.ranking.measure == M3.candidate_id
+    assert contract.metric_refs == (M3.candidate_id, M4.candidate_id)
+
+
+def test_coorigin_m2_different_dimension_remains_generic():
+    session = _coorigin_session(anchor_metric=M3, downstream_metric=M4, dimension=D2)
+    contract = analytical_scope_contract(session=session, obligation_id="g_anchor")
+    assert contract.dimension_refs == (D2.candidate_id,)
+    assert D1.candidate_id not in contract.dimension_refs
+
+
+def test_coorigin_m3_different_date_range_preserves_typed_period():
+    period = ResearchTimePeriod(
+        source_text="2026-08-10 through 2026-08-24",
+        time_dimension_candidate_id=DT.candidate_id,
+        start="2026-08-10",
+        end="2026-08-25",
+    )
+    session = _coorigin_session(period=period)
+    contract = analytical_scope_contract(session=session, obligation_id="g_anchor")
+    assert contract.period is not None
+    assert contract.period.start == "2026-08-10"
+    assert contract.period.end == "2026-08-25"
+    assert contract.metric_refs == (M1.candidate_id, M2.candidate_id)
+
+
+def test_coorigin_m4_ranking_only_does_not_fetch_unrelated_relationship_material():
+    session = _coorigin_session(relationship=False)
+    assert coorigin_material_requirements(session) == ()
+    contract = analytical_scope_contract(session=session, obligation_id="g_anchor")
+    assert contract.metric_refs == (M1.candidate_id,)
+    assert contract.ranking.measure == M1.candidate_id
+
+
+def test_coorigin_m5_relationship_only_preserves_direct_material_contract():
+    source = "Inspect downtime together with faults by department."
+    relationship = ResearchQuestion(
+        goal_id="g_relationship",
+        kind=ResearchGoalKind.RELATIONSHIP,
+        source_text=source,
+        subject_refs=(M1, M2),
+        related_refs=(D1,),
+        status=ResearchGoalStatus.RESOLVED,
+    )
+    brief = ResearchBrief(
+        brief_id="rb-relationship-only",
+        objective=source,
+        scope=ResearchScope(semantic_refs=(M1, M2, D1)),
+        questions=(relationship,),
+        must_requirement_ids=(relationship.goal_id,),
+        context_version="ctx-relationship-only",
+        status=ResearchBriefStatus.READY_FOR_RESEARCH,
+    )
+    session = SimpleNamespace(
+        accepted_brief=brief,
+        authority_id="atc_relationship_only",
+        context_version=brief.context_version,
+        lineage_id="atl_relationship_only",
+    )
+    assert coorigin_material_requirements(session) == ()
+    contract = analytical_scope_contract(
+        session=session,
+        obligation_id=relationship.goal_id,
+    )
+    assert contract.metric_refs == (M1.candidate_id, M2.candidate_id)
+    assert contract.dimension_refs == (D1.candidate_id,)
+
+
+def test_coorigin_m6_overlapping_refs_different_provenance_do_not_merge():
+    session = _coorigin_session(
+        source="Rank downtime by department.",
+        relationship_source="Inspect downtime and faults together by department.",
+    )
+    assert coorigin_material_requirements(session) == ()
+    contract = analytical_scope_contract(session=session, obligation_id="g_anchor")
+    assert contract.metric_refs == (M1.candidate_id,)
+
+
+def test_coorigin_m7_scope_version_is_part_of_projection_identity_and_never_cross_shared():
+    v1 = _coorigin_session(
+        scope_version=ScopeVersion(version_id="scope_v1", ordinal=1),
+        context_version="ctx-scope-v1",
+    )
+    v2 = _coorigin_session(
+        scope_version=ScopeVersion(
+            version_id="scope_v2",
+            ordinal=2,
+            parent_version_id="scope_v1",
+        ),
+        context_version="ctx-scope-v2",
+    )
+    r1 = coorigin_material_requirements(v1)[0]
+    r2 = coorigin_material_requirements(v2)[0]
+    assert r1.source_fragment_identity == r2.source_fragment_identity
+    assert r1.scope_version_id == "scope_v1"
+    assert r2.scope_version_id == "scope_v2"
+    assert r1.semantic_context_version != r2.semantic_context_version
+    assert r1 != r2
+
+
+def test_coorigin_m8_missing_governed_scope_ref_fails_closed_before_native_work():
+    session = _coorigin_session(include_downstream_in_scope=False)
+    try:
+        analytical_scope_contract(session=session, obligation_id="g_anchor")
+    except ResearchAnalyticalScopeError as exc:
+        assert exc.code == "R1_COORIGIN_MATERIAL_REF_OUTSIDE_ACCEPTED_SCOPE"
+    else:
+        raise AssertionError("missing governed material ref must fail closed")
+
+
+def test_coorigin_m9_full_semantic_superset_remains_legal_reuse_material():
+    session = _coorigin_session(anchor_extra_metrics=(M2,))
+    requirement = coorigin_material_requirements(session)[0]
+    assert requirement.required_metric_refs == (M1.candidate_id, M2.candidate_id)
+    contract = analytical_scope_contract(session=session, obligation_id="g_anchor")
+    assert contract.metric_refs == (M1.candidate_id, M2.candidate_id)
+    assert contract.ranking.measure == M1.candidate_id
+
+
+def test_coorigin_m10_subset_is_expanded_pre_execution_not_reused_post_execution():
+    session = _coorigin_session()
+    anchor = session.accepted_brief.questions[0]
+    assert M2.candidate_id not in {
+        item.candidate_id for item in (*anchor.subject_refs, *anchor.related_refs)
+    }
+    contract = analytical_scope_contract(session=session, obligation_id="g_anchor")
+    assert M2.candidate_id in contract.metric_refs
+    assert contract.ranking.measure == M1.candidate_id
+
+
+def test_coorigin_multiple_native_anchors_fail_closed_instead_of_first_goal_wins():
+    source = "Rank and compare downtime, then inspect it with faults."
+    rank = ResearchQuestion(
+        goal_id="g_rank",
+        kind=ResearchGoalKind.RANKING,
+        source_text=source,
+        subject_refs=(D1, M1),
+        ranking=RankingSurface(
+            text="top 2",
+            direction="desc",
+            limit=2,
+            measure_semantic_id=M1.candidate_id,
+        ),
+        status=ResearchGoalStatus.RESOLVED,
+    )
+    breakdown = ResearchQuestion(
+        goal_id="g_break",
+        kind=ResearchGoalKind.BREAKDOWN,
+        source_text=source,
+        subject_refs=(M1,),
+        related_refs=(D1,),
+        status=ResearchGoalStatus.RESOLVED,
+    )
+    relationship = ResearchQuestion(
+        goal_id="g_relationship",
+        kind=ResearchGoalKind.RELATIONSHIP,
+        source_text=source,
+        subject_refs=(M1, M2),
+        related_refs=(D1,),
+        status=ResearchGoalStatus.RESOLVED,
+    )
+    brief = ResearchBrief(
+        brief_id="rb-ambiguous-anchor",
+        objective=source,
+        scope=ResearchScope(semantic_refs=(M1, M2, D1)),
+        questions=(rank, breakdown, relationship),
+        must_requirement_ids=("g_rank", "g_break", "g_relationship"),
+        context_version="ctx-ambiguous-anchor",
+        status=ResearchBriefStatus.READY_FOR_RESEARCH,
+    )
+    session = SimpleNamespace(
+        accepted_brief=brief,
+        authority_id="atc_ambiguous",
+        context_version=brief.context_version,
+        lineage_id="atl_ambiguous",
+    )
+    try:
+        coorigin_material_requirements(session)
+    except ResearchAnalyticalScopeError as exc:
+        assert exc.code == "R1_COORIGIN_MATERIAL_ANCHOR_AMBIGUOUS"
+    else:
+        raise AssertionError("ambiguous co-origin anchors must fail closed")
