@@ -1,12 +1,15 @@
 name: dima-v1-phase1-pinpoint-live
 
-# Final Phase-1 live authority. Only the two closed pinpoint probes below are authorized.
-# Dedicated trigger branches are short-lived pointers to one frozen Platform commit.
+# Recovery/growth live authority. Exactly five closed pinpoint probes are authorized.
+# Dedicated trigger branches are short-lived pointers to one frozen Platform checkout.
 on:
   push:
     branches:
       - phase1-v4-trigger-20260929
       - phase1-rca-trigger-20260929
+      - phase1-f05-trigger-20260929
+      - phase1-f08-trigger-20260929
+      - phase1-f06-trigger-20260929
   workflow_dispatch:
     inputs:
       probe_id:
@@ -16,6 +19,9 @@ on:
         options:
           - SCOPE_CURRENTNESS_HARD_V4
           - RCA_P19_HARD_V2
+          - RELATIONSHIP_F05_H_RECOVERY
+          - REPORT_F08_H_RECOVERY
+          - ADAPTIVE_F06_H_RETENTION
       confirm_pinpoint_paid:
         description: "Type YES; no automatic retry is permitted"
         required: true
@@ -74,6 +80,15 @@ jobs:
                 ;;
               phase1-rca-trigger-20260929)
                 PROBE_ID="RCA_P19_HARD_V2"
+                ;;
+              phase1-f05-trigger-20260929)
+                PROBE_ID="RELATIONSHIP_F05_H_RECOVERY"
+                ;;
+              phase1-f08-trigger-20260929)
+                PROBE_ID="REPORT_F08_H_RECOVERY"
+                ;;
+              phase1-f06-trigger-20260929)
+                PROBE_ID="ADAPTIVE_F06_H_RETENTION"
                 ;;
               *)
                 echo "unauthorized pinpoint trigger branch" >&2
@@ -282,7 +297,7 @@ jobs:
           PROBE_ID: ${{ steps.auth.outputs.probe_id }}
         run: |
           set -euo pipefail
-          python lab/metabase/core_b/phase1_pinpoint_live.py             --probe-id "$PROBE_ID"             --base-url http://127.0.0.1:3361             --email "$MB_RESTRICTED_EMAIL"             --password "$MB_RESTRICTED_PASSWORD"             --binding-manifest eval/phase1_pinpoint/native_bindings.json             --output "eval/phase1_pinpoint/${PROBE_ID}.json"             --control-db "eval/phase1_pinpoint/${PROBE_ID}.db"             --engine-sha "$ENGINE_SHA"             --upstream-sha "$UPSTREAM_BASE_SHA"             --runtime-tag "$RUNTIME_TAG"             --runtime-image-digest "$REGISTRY_DIGEST"             --build-identity "$BUILD_IDENTITY"             --image-identity "$REGISTRY_DIGEST"             --candidate-product-sha "${{ steps.auth.outputs.candidate_sha }}"             --provider-proxy-base-url "http://127.0.0.1:${PROVIDER_PROXY_PORT}"             --provider-receipt eval/phase1_pinpoint/provider_probe.json             --max-orchestration-boundary-units "12"
+          python lab/metabase/core_b/phase1_pinpoint_live.py             --probe-id "$PROBE_ID"             --base-url http://127.0.0.1:3361             --email "$MB_RESTRICTED_EMAIL"             --password "$MB_RESTRICTED_PASSWORD"             --binding-manifest eval/phase1_pinpoint/native_bindings.json             --output "eval/phase1_pinpoint/${PROBE_ID}.json"             --control-db "eval/phase1_pinpoint/${PROBE_ID}.db"             --engine-sha "$ENGINE_SHA"             --upstream-sha "$UPSTREAM_BASE_SHA"             --runtime-tag "$RUNTIME_TAG"             --runtime-image-digest "$REGISTRY_DIGEST"             --build-identity "$BUILD_IDENTITY"             --image-identity "$REGISTRY_DIGEST"             --candidate-product-sha "${{ steps.auth.outputs.candidate_sha }}"             --checkout-sha "${GITHUB_SHA}"             --provider-proxy-base-url "http://127.0.0.1:${PROVIDER_PROXY_PORT}"             --provider-receipt eval/phase1_pinpoint/provider_probe.json             --max-orchestration-boundary-units "12"
 
       - name: Validate hard mechanical envelope only
         working-directory: backend
@@ -298,6 +313,7 @@ jobs:
               Path(f"eval/phase1_pinpoint/{probe}.json").read_text(encoding="utf-8")
           )
           assert report["probe_id"] == probe
+          assert report["checkout_sha"] == os.environ["GITHUB_SHA"]
           assert report["max_orchestration_boundary_units"] == 12
           assert report["orchestration_boundary_units"] <= 12
           assert report["within_orchestration_boundary_budget"] is True
@@ -355,10 +371,21 @@ jobs:
                   "new_primary_evidence_current",
               ):
                   assert observed[key] is True,(key,observed)
-          else:
+          elif probe == "RCA_P19_HARD_V2":
               observed=report["mechanical_observations"]
               assert observed["max_reasoning_depth"] <= 3, observed
               assert observed["p19_called_when_required"] is True, observed
+          else:
+              # C/D/E are deliberately not auto-scored. Their exact family contracts
+              # are adjudicated manually from the uploaded artifact.
+              assert probe in {
+                  "RELATIONSHIP_F05_H_RECOVERY",
+                  "REPORT_F08_H_RECOVERY",
+                  "ADAPTIVE_F06_H_RETENTION",
+              }
+              assert report["probe_contract"]["scoring_authority"] == (
+                  "MANUAL_ARTIFACT_ADJUDICATION_ONLY"
+              )
 
           assert report["quality_score"] is None
           assert report["manual_adjudication_required"] is True
@@ -383,10 +410,12 @@ jobs:
           provider=report.get("provider_receipt") or {}
           projection={
               "probe_id": report.get("probe_id"),
+              "checkout_sha": report.get("checkout_sha"),
               "candidate_product_sha": report.get("candidate_product_sha"),
               "engine_sha": report.get("engine_sha"),
               "engine_runtime_tag": report.get("engine_runtime_tag"),
               "model_topology": report.get("model_topology"),
+              "probe_contract": report.get("probe_contract"),
               "turn_count_expected": report.get("turn_count_expected"),
               "turn_count_executed": report.get("turn_count_executed"),
               "turns": report.get("turns"),

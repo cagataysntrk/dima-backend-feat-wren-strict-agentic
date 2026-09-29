@@ -42,16 +42,88 @@ MODEL = "openai/gpt-5.6-terra"
 CONTEXT = "phase1-final-pinpoint-v1"
 MAX_ORCHESTRATION_BOUNDARY_UNITS = 12
 
+HISTORICAL_MANUAL_SCORE_SCALE = {
+    "FAIL": 0,
+    "LOW_UTILITY": 1,
+    "PARTIAL": 2,
+    "STRONG_PARTIAL": 3,
+    "FULL": 4,
+}
+
 PROBES = {
     "SCOPE_CURRENTNESS_HARD_V4": {
+        "historical_round2_case_id": None,
         "turns": (
             "Mayıs ve Haziran 2026’da bölüm bazında machine downtime ve fault count değişimini karşılaştır. Kötüleşmeyi sıralayıp hangi bölümlerin dikkat istediğini göster.",
             "Şimdi yalnız Haziran 2026’ya daralt. En yüksek downtime olan iki bölümü fault count ile birlikte incele. Önceki analizi tarihsel bağlam olarak koru ama yeni kapsam için eski Evidence’ı current truth sayma; yeni veriye dayan.",
         ),
+        "manual_contract": (
+            "both turns READY",
+            "native execution and material observation produce governed Evidence",
+            "scope lineage continuity and scope version advance",
+            "old Research becomes SUPERSEDED and old Evidence HISTORICAL",
+            "new Research and new Evidence are CURRENT",
+            "June narrowing, department scope, and ranking target are preserved",
+            "exception=0 and silent semantic drift=0",
+        ),
     },
     "RCA_P19_HARD_V2": {
+        "historical_round2_case_id": None,
         "turns": (
             "Haziran’daki machine downtime artışının ana açıklaması maintenance delay mi yoksa spare-part delay mi?\n\nMayıs-Haziran verisini incele.\n\nİki açıklamayı destekleyen ve zayıflatan kanıtları ayrı göster.\n\nGerekirse ikisini ayırmak için tek bir ek analitik test yap.\n\nVeri nedensellik için yeterli değilse bunu açıkça koru.",
+        ),
+        "manual_contract": (
+            "P17 generates evidence-grounded typed mechanism candidates",
+            "multiple competing candidates are retained when supported",
+            "P19 eligibility is evaluated and P19 is invoked when eligible",
+            "supporting and challenging Evidence are retained",
+            "no fabricated competitor, fake winner, unsupported root cause, or causal overclaim",
+            "bounded discriminating re-entry and provider ceilings are respected",
+        ),
+    },
+    "RELATIONSHIP_F05_H_RECOVERY": {
+        "historical_round2_case_id": "F05_H",
+        "turns": (
+            "Duruş, arıza, bakım gecikmesi ve performans arasındaki ilişkileri birlikte araştır; hangi ilişkilerin daha güçlü veya zayıf göründüğünü supporting ve challenging evidence ile raporla, nedenselliği kanıtlanmış gibi sunma.",
+        ),
+        "manual_contract": (
+            "native analytical work > 0",
+            "P18 invoked > 0 and no unexplained BLOCKED ending",
+            "multiple relevant relationship analyses exist",
+            "supporting Evidence and challenging Evidence exist",
+            "material relationship interpretation and evidence-governed strength differences exist",
+            "association is not promoted to causation",
+            "causal overclaim=0, exception=0, silent wrong=0",
+        ),
+    },
+    "REPORT_F08_H_RECOVERY": {
+        "historical_round2_case_id": "F08_H",
+        "turns": (
+            "Yönetim için kanıta bağlı rapor üret: gözlem, bulgu, hipotez, karşı kanıt, sınırlılık ve karar açısından önemli noktaları ayrı göster; sayısal ve nedensel iddiaların provenance'ını koru ve kanıtın izin verdiğinden daha güçlü ifade kullanma.",
+        ),
+        "manual_contract": (
+            "exception=0 and P20 REPORT or legitimately LIMITED REPORT",
+            "material claims > 0 and governed Evidence > 0",
+            "Claim -> Evidence -> native receipt lineage is intact",
+            "Research/scope lineage and currentness are correct",
+            "observations, findings, hypotheses, counter-Evidence, and limitations remain distinguishable",
+            "numeric provenance is preserved and invented numeric truth=0",
+            "causal promotion beyond P19=0",
+        ),
+    },
+    "ADAPTIVE_F06_H_RETENTION": {
+        "historical_round2_case_id": "F06_H",
+        "turns": (
+            "Mayıs-Haziran duruş bozulmasını araştır. İlk bulgudan sonra en maddi yeni yönü seçip en az iki farklı analitik derinleşme yap; her adımda neden o yönü seçtiğini, hangi kanıtın kararı değiştirdiğini ve nerede durduğunu açıkça kaydet.",
+        ),
+        "manual_contract": (
+            "initial analytical finding exists",
+            "at least two genuinely distinct discriminating follow-up moves when Evidence supports depth",
+            "follow-up direction is Evidence-selected and has typed identity",
+            "P17 reasoning trace exists and new Evidence changes or narrows investigation state",
+            "no pointless breadth expansion or repeated equivalent query disguised as depth",
+            "termination is explicit/governed and budget is respected",
+            "exception=0 and silent wrong=0",
         ),
     },
 }
@@ -466,6 +538,7 @@ def _execute_turn(
     p17,
     p17_manager,
     p19_manager,
+    reports,
     reasoning,
     orchestrator,
     db_engine,
@@ -556,6 +629,27 @@ def _execute_turn(
     except Exception as exc:
         root_snapshot = {"load_error": type(exc).__name__, "detail": str(exc)}
 
+    report_payload = None
+    if composition.p20_report_ref:
+        try:
+            report_doc = reports.load(
+                report_id=composition.p20_report_ref,
+                principal=sealed._principal(),
+            )
+            report_payload = {
+                "document": report_doc.model_dump(mode="json"),
+                "currentness": reports.currentness(
+                    report_id=composition.p20_report_ref,
+                    principal=sealed._principal(),
+                ).value,
+            }
+        except Exception as exc:
+            report_payload = {
+                "report_id": composition.p20_report_ref,
+                "load_error": type(exc).__name__,
+                "detail": str(exc),
+            }
+
     return {
         "turn": turn_no,
         "question": question,
@@ -585,6 +679,7 @@ def _execute_turn(
         "p18_policy_use_refs": list(composition.p18_policy_use_refs),
         "p19_assessment_refs": list(composition.p19_assessment_refs),
         "epistemic_payloads": epistemic_payloads,
+        "p20_report": report_payload,
         "limitations": [_safe_dump(item) for item in composition.limitations],
         "transport_traces": {
             name: _trace_slice(transport, trace_starts[name])
@@ -723,6 +818,7 @@ def main() -> int:
     ap.add_argument("--build-identity", required=True)
     ap.add_argument("--image-identity", required=True)
     ap.add_argument("--candidate-product-sha", required=True)
+    ap.add_argument("--checkout-sha", required=True)
     ap.add_argument("--provider-proxy-base-url", required=True)
     ap.add_argument("--provider-receipt", type=Path, required=True)
     ap.add_argument(
@@ -893,6 +989,7 @@ def main() -> int:
     report: dict[str, Any] = {
         "schema_version": "dima_v1_phase1_final_pinpoint_live_v1",
         "probe_id": args.probe_id,
+        "checkout_sha": args.checkout_sha,
         "candidate_product_sha": args.candidate_product_sha,
         "engine_sha": args.engine_sha,
         "engine_runtime_tag": args.runtime_tag,
@@ -903,6 +1000,14 @@ def main() -> int:
         },
         "max_orchestration_boundary_units": MAX_ORCHESTRATION_BOUNDARY_UNITS,
         "binding_manifest": binding_manifest,
+        "probe_contract": {
+            "historical_round2_case_id": PROBES[args.probe_id][
+                "historical_round2_case_id"
+            ],
+            "manual_contract": list(PROBES[args.probe_id]["manual_contract"]),
+            "historical_manual_score_scale": HISTORICAL_MANUAL_SCORE_SCALE,
+            "scoring_authority": "MANUAL_ARTIFACT_ADJUDICATION_ONLY",
+        },
         "turn_count_expected": len(PROBES[args.probe_id]["turns"]),
         "turns": [],
         "manual_adjudication_required": True,
@@ -929,6 +1034,7 @@ def main() -> int:
                 p17=p17,
                 p17_manager=p17_manager,
                 p19_manager=p19_manager,
+                reports=p20,
                 reasoning=reasoning,
                 orchestrator=orchestrator,
                 db_engine=db_engine,
