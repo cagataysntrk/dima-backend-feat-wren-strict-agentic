@@ -1,16 +1,8 @@
 name: dima-v1-phase1-pinpoint-live
 
-# Recovery/growth live authority. R7 authorizes temporary exact-SHA sequential
-# trigger branches. Creating a later branch remains forbidden until the previous
-# panel probe is manually accepted GREEN.
+# Recovery/growth live authority. R7 Panel A is immutable RED on the frozen
+# candidate. Paid execution is manual-only until fresh supervisor authority.
 on:
-  push:
-    branches:
-      - phase1-v4-trigger-20260929
-      - phase1-rca-trigger-20260929
-      - phase1-f05-trigger-20260929
-      - phase1-f08-trigger-20260929
-      - phase1-f06-trigger-20260929
   workflow_dispatch:
     inputs:
       probe_id:
