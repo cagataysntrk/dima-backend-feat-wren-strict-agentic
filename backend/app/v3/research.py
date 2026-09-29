@@ -255,6 +255,22 @@ class ResearchManager:
         h=Hypothesis(hypothesis_id=hid,statement=statement.strip(),obligation_ids=tuple(dict.fromkeys(obligation_ids)))
         return cls.advance(session,now=now,hypotheses=(*session.hypotheses,h))
 
+    @staticmethod
+    def _native_material_message(item, analytical_scope):
+        ranking = analytical_scope.ranking
+        if getattr(ranking, "kind", None) != "evidence_synthesis":
+            return item.objective
+        return (
+            "Collect governed analytical material for this accepted obligation. "
+            "The accepted ranking is an evidence-synthesis obligation and has no "
+            "governed single native metric basis. Use the exact scoped metrics, "
+            "dimensions, filters, and time surfaces supplied in dima_analytical_scope. "
+            "Do not choose or invent a single ranking metric, composite score, native "
+            "ranking, or result limit. Return unranked analytical material for downstream "
+            "governed evidence synthesis. Accepted obligation: "
+            + item.objective
+        )
+
     @classmethod
     def prepare_native_delegation(cls,session,*,obligation_id,profile_id="nlq",metabot_id=None,now=None):
         if session.stopping.status!=StoppingStatus.ACTIVE: raise ResearchStateError("P14_RESEARCH_NOT_ACTIVE",session.stopping.status)
@@ -271,7 +287,7 @@ class ResearchManager:
         req=NativeEngineRequest(
             profile_id=conv.profile_id,
             metabot_id=conv.metabot_id,
-            message=item.objective,
+            message=cls._native_material_message(item, analytical_scope),
             context={
                 "dima_analytical_scope": analytical_scope.model_dump(
                     mode="json"

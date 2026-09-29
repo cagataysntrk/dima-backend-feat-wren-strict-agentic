@@ -25,7 +25,7 @@ from app.v3.research_contracts import (
     SemanticTargetKind,
 )
 from app.v3.evidence import DimaQueryReceipt, EvidenceArtifact, EvidenceState
-from app.v3.research import ObligationState, StoppingStatus
+from app.v3.research import ObligationState, ResearchManager, StoppingStatus
 from app.v3.research_product import (
     ResearchAskOrchestrator,
     ResearchMaterialLimitation,
@@ -389,6 +389,68 @@ def test_accepted_research_material_context_survives_restart_without_reparse():
     assert tuple(ref.candidate_id for ref in ranking.related_refs) == (
         "cand_sales_order_channel",
     )
+
+
+def test_evidence_synthesis_ranking_delegates_unranked_governed_material():
+    engine = _db_engine()
+    product = _product(engine)
+    base = _brief(two=True)
+    second_metric = ResearchSemanticRef(
+        source_mention="iade adedi",
+        candidate_id="cand_return_count",
+        target_kind=SemanticTargetKind.METRIC,
+        canonical_name="Return Count",
+        cube_names=("satis_siparisleri",),
+    )
+    ranking_question = base.questions[1].model_copy(
+        update={
+            "source_text": "Kanallardaki kötüleşmeyi iki metriğin kanıtıyla değerlendir.",
+            "subject_refs": (
+                base.questions[0].subject_refs[0],
+                second_metric,
+            ),
+            "ranking": RankingSurface(
+                text="iki metrikteki kötüleşmeyi değerlendir",
+                direction="desc",
+                limit=None,
+                measure_semantic_id=None,
+            ),
+        }
+    )
+    brief = base.model_copy(
+        update={
+            "scope": base.scope.model_copy(
+                update={
+                    "semantic_refs": (
+                        *base.scope.semantic_refs,
+                        second_metric,
+                    )
+                }
+            ),
+            "questions": (base.questions[0], ranking_question),
+        }
+    )
+    session = product.start_from_brief(
+        brief=brief,
+        request_ref="r-p14-evidence-synthesis",
+        source_message_hash=hashlib.sha256(
+            b"multi metric evidence synthesis"
+        ).hexdigest(),
+        principal=_principal(),
+    )
+
+    delegation = ResearchManager.prepare_native_delegation(
+        session,
+        obligation_id="g2",
+    )
+
+    ranking = delegation.request.context["dima_analytical_scope"]["ranking"]
+    assert ranking["kind"] == "evidence_synthesis"
+    assert ranking["limit"] is None
+    assert "no governed single native metric basis" in delegation.request.message
+    assert "Do not choose or invent a single ranking metric" in delegation.request.message
+    assert "Return unranked analytical material" in delegation.request.message
+    assert ranking_question.source_text in delegation.request.message
 
 
 def test_product_research_entry_persists_session_and_requires_native_runtime():
