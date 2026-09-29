@@ -220,12 +220,14 @@ class _ObligationScopedProposalManager:
         allowed_evidence_refs: tuple[str, ...],
         claim_semantic_contract: ClaimSemanticContract | None = None,
         allowed_mechanism_refs: tuple[str, ...] = (),
+        allowed_intents: tuple[InvestigationIntent, ...] = (),
     ) -> None:
         self._inner = inner
         self.target_parent_obligation = target_parent_obligation
         self._allowed_evidence_refs = allowed_evidence_refs
         self._claim_semantic_contract = claim_semantic_contract
         self._allowed_mechanism_refs = allowed_mechanism_refs
+        self._allowed_intents = allowed_intents
 
     @property
     def call_count(self) -> int:
@@ -249,15 +251,32 @@ class _ObligationScopedProposalManager:
                 allowed_mechanism_refs=self._allowed_mechanism_refs,
             )
         else:
-            scoped = getattr(self._inner, "propose_for_obligation", None)
-            if callable(scoped):
+            if self._allowed_intents:
+                scoped = getattr(
+                    self._inner,
+                    "propose_for_obligation_with_constraints",
+                    None,
+                )
+                if not callable(scoped):
+                    raise ValueError(
+                        "provider lacks scoped constrained P17 proposal boundary"
+                    )
                 proposal = scoped(
                     snapshot,
                     target_parent_obligation=self.target_parent_obligation,
                     allowed_evidence_refs=self._allowed_evidence_refs,
+                    allowed_intents=self._allowed_intents,
                 )
             else:
-                proposal = self._inner.propose(snapshot)
+                scoped = getattr(self._inner, "propose_for_obligation", None)
+                if callable(scoped):
+                    proposal = scoped(
+                        snapshot,
+                        target_parent_obligation=self.target_parent_obligation,
+                        allowed_evidence_refs=self._allowed_evidence_refs,
+                    )
+                else:
+                    proposal = self._inner.propose(snapshot)
         target = getattr(proposal, "target_parent_obligation", None)
         if target is not None and target != self.target_parent_obligation:
             raise ValueError(
@@ -643,6 +662,8 @@ class HeadlessProductComposer:
         manager: ProposalManager | None = None,
         target_obligation_id: str,
         downstream_ref_present: bool = False,
+        downstream_reentry_intent: InvestigationIntent | None = None,
+        downstream_reentry_obligation_id: str | None = None,
     ):
         executed = 0
         last_error: Exception | None = None
@@ -671,6 +692,10 @@ class HeadlessProductComposer:
                     principal=principal,
                     manager=effective_manager,
                     native_session_token=native_session_token,
+                    downstream_reentry_intent=downstream_reentry_intent,
+                    downstream_reentry_obligation_id=(
+                        downstream_reentry_obligation_id
+                    ),
                 )
                 owner_calls.append("P17")
                 executed += 1
@@ -742,10 +767,16 @@ class HeadlessProductComposer:
             for item in material_session.evidence_refs
             if item.obligation_id == material_goal.goal_id
         )
+        if not allowed_evidence_refs:
+            raise ProductProcessError(
+                "PRODUCT_RELATIONSHIP_MATERIAL_EVIDENCE_REQUIRED",
+                "relationship handoff requires verified same-obligation Evidence",
+            )
         scoped_manager = _ObligationScopedProposalManager(
             inner=self._investigation_manager,
             target_parent_obligation=material_goal.goal_id,
             allowed_evidence_refs=allowed_evidence_refs,
+            allowed_intents=(InvestigationIntent.FORM_CLAIM,),
         )
         snapshot, next_owner, _, last_error = self._run_p17(
             session_id=material_session_id,
@@ -755,6 +786,8 @@ class HeadlessProductComposer:
             owner_calls=owner_calls,
             manager=scoped_manager,
             target_obligation_id=material_goal.goal_id,
+            downstream_reentry_intent=InvestigationIntent.FORM_CLAIM,
+            downstream_reentry_obligation_id=material_goal.goal_id,
         )
         observation, claims, all_steps = self._observe_p17_process(
             snapshot=snapshot,
