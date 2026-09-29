@@ -1,0 +1,171 @@
+name: dima-metabase-platform-final-provider-free
+
+on:
+  push:
+    branches:
+      - feat/dima-metabase-platform
+    paths:
+      - ".github/workflows/dima-metabase-platform-final-provider-free.yml"
+      - "backend/app/v3/core_a/ux_foundations.py"
+      - "backend/product_contracts/ux_foundations.json"
+      - "backend/tests/test_v3_ux_foundations.py"
+      - "backend/belgeler/metabase/DIMA_METABASE_NEUTRAL_COMPARISON_INPUT_CONTRACT.md"
+
+permissions:
+  contents: read
+
+jobs:
+  platform-final-provider-free:
+    if: contains(github.event.head_commit.message, '[platform-final-provider-free]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_INTERACTION_LOG: "false"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          submodules: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install canonical backend
+        working-directory: backend
+        run: pip install -e ".[dev]"
+
+      - name: Canonical repository and control-plane security
+        working-directory: backend
+        run: pytest -q tests/test_repository_hygiene.py tests/test_v3_control_plane_security.py
+
+      - name: Verify single Alembic head
+        working-directory: backend
+        run: |
+          python -m alembic heads > /tmp/platform-heads.txt
+          test "$(grep -Ec '^[0-9a-f]+' /tmp/platform-heads.txt)" -eq 1
+          grep -q '^fc8a1d0e3b42' /tmp/platform-heads.txt
+
+      - name: Final headless product contract closure
+        working-directory: backend
+        run: |
+          pytest -q \
+            tests/test_v3_product_contracts.py \
+            tests/test_v3_product_composition.py \
+            tests/test_v3_product_process_manager.py \
+            tests/test_v3_product_routing_store.py \
+            tests/test_v3_owner_scoped_must_accounting.py \
+            tests/test_v3_research_intake.py \
+            tests/test_v3_core_b_closure_v2.py
+
+      - name: Core A closed-loop and UX foundation freeze
+        working-directory: backend
+        run: |
+          pytest -q \
+            tests/test_v3_action_work.py \
+            tests/test_v3_outcome_observation.py \
+            tests/test_v3_institutional_memory.py \
+            tests/test_v3_watch_signal.py \
+            tests/test_v3_ux_foundations.py
+
+      - name: ActionAuthorization regression
+        working-directory: backend
+        run: pytest -q tests/test_v3_action_authorization.py
+
+      - name: Human Adoption regression
+        working-directory: backend
+        run: pytest -q tests/test_v3_decision_adoption.py
+
+      - name: P21 regression
+        working-directory: backend
+        run: pytest -q tests/test_v3_p21_decision_intelligence.py
+
+      - name: P20 regression
+        working-directory: backend
+        run: pytest -q tests/test_v3_p20_report_document.py
+
+      - name: P19 regression
+        working-directory: backend
+        run: pytest -q tests/test_v3_p19_hypothesis_root_cause.py tests/test_v3_p19_provider.py tests/test_v3_p19_autonomous_eval.py
+
+      - name: P18 regression
+        working-directory: backend
+        run: pytest -q tests/test_v3_p18_business_relationship_policy.py
+
+      - name: P17 regression
+        working-directory: backend
+        run: pytest -q tests/test_v3_p17_authorization_transport.py tests/test_v3_p17_autonomous_provider_schema.py tests/test_v3_p17_autonomous_manager_eval.py tests/test_v3_p17_research_manager.py
+
+      - name: P16 regression
+        working-directory: backend
+        run: pytest -q tests/test_v3_p16_claim_lineage.py
+
+      - name: P15 regression
+        working-directory: backend
+        run: pytest -q tests/test_v3_p15_native_exploration.py
+
+      - name: P14 regression
+        working-directory: backend
+        run: pytest -q tests/test_v3_p14_product.py tests/test_v3_p14_native_gateway.py
+
+      - name: Comparison-ready static invariants
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "cbe313af9ac2d5960f662068e433d328d896fb06"
+          grep -q '^DEFAULT_ACTION_CAPABILITY_REGISTRY = ActionCapabilityRegistry()$' backend/app/v3/action_authorization.py
+          ! grep -q '"action:execute"' backend/control_plane/authorize.py
+          test ! -f backend/app/v3/action_execution.py
+          test ! -d frontend
+          test ! -d web
+          test ! -d ui
+          test ! -e backend/eval/DEV80
+          test ! -e backend/eval/Validation50
+          test ! -e backend/eval/Hidden50
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          value=json.loads(Path("backend/product_contracts/ux_foundations.json").read_text())
+          rows=value["descriptors"]
+          assert len(rows)==50
+          allowed={"HEADLESS_READY","FOUNDATION_ONLY","DATA_DEPENDENT","SPECIAL_ENGINE_DEFERRED","PRODUCTIZATION_DEFERRED"}
+          assert {x["current_feasibility"] for x in rows}==allowed
+          assert value["version"]=="wave-1-comparison-ready-v2"
+          PY
+
+      - name: Freeze candidate metadata artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p backend/eval/platform
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          lock=json.loads(Path("backend/lab/metabase/core_b/runtime/engine_runtime_lock.json").read_text())
+          payload={
+            "schema_version":"dima_metabase_comparison_candidate_receipt_v1",
+            "platform_sha":os.environ["GITHUB_SHA"],
+            "provider_free_run_id":os.environ["GITHUB_RUN_ID"],
+            "engine_sha":lock["engine_sha"],
+            "engine_release":lock["runtime_tag"].removeprefix("v"),
+            "engine_digest":lock["registry_digest"],
+            "alembic_head":"fc8a1d0e3b42",
+            "product_contract_version":"core-b-product-v1",
+            "ux_foundation_version":"wave-1-comparison-ready-v2",
+            "model_topology":{"cognition":"openai/gpt-5.6-luna","cascade":False,"sol":False,"c1":False},
+            "ui_started":False,
+            "external_action_execution":False
+          }
+          Path("backend/eval/platform/comparison_candidate.json").write_text(json.dumps(payload,indent=2)+"\n")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dima-metabase-comparison-candidate
+          path: backend/eval/platform/comparison_candidate.json
+          if-no-files-found: error
+          retention-days: 90

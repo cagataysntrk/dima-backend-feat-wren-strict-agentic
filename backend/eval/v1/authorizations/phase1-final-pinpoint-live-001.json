@@ -1,0 +1,31 @@
+{
+  "schema_version": "dima_v1_phase1_final_pinpoint_authorization_v2",
+  "authorization_id": "phase1-recovery-probe-a-v2-001",
+  "decision": "PINPOINT_PAID_ONLY",
+  "confirm": "YES",
+  "probe_id": "SCOPE_CURRENTNESS_HARD_V2",
+  "candidate_product_sha": "46b3d9b6b19c9d837ed5a32664d10a3d3442392a",
+  "max_orchestration_boundary_units": 12,
+  "hard_provider_request_ceiling": 24,
+  "engine_sha": "cbe313af9ac2d5960f662068e433d328d896fb06",
+  "engine_digest": "sha256:40e9a44be49904de3ddf12d4683c768e70955851c10a928a9c8f7d8f60780353",
+  "migration_head": "fd2a7c9e4b61",
+  "provider_free_receipts": {
+    "phase1_focused": 36469478135,
+    "p12": 36469477928,
+    "core_b_focused": 36469477842,
+    "core_b_seal": 36469477994,
+    "core_a_final": 36469478015,
+    "governance": 36469478183,
+    "cleanup": 36469477927,
+    "temporary_bridge_phase1": 36471828392,
+    "temporary_bridge_p12": 36471828352,
+    "temporary_bridge_governance": 36471828420
+  },
+  "historical_probe_a_red_run_id": 36458656999,
+  "probe_a_run_id": null,
+  "probe_a_adjudication": null,
+  "broad_paid_allowed": false,
+  "automatic_retry": false,
+  "third_probe_allowed": false
+}

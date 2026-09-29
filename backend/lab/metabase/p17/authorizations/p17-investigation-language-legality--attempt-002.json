@@ -1,0 +1,19 @@
+{
+  "decision": "DMP-DEC-0053",
+  "branch": "feat/dima-metabase-platform",
+  "failure_family_id": "p17-investigation-language-legality",
+  "attempt_in_family": 2,
+  "authorization_id": "p17-investigation-language-legality--attempt-002",
+  "candidate_product_sha": "3664d3d706d70225323126cbc994b8c2c732aaf4",
+  "dispatch_parent_sha": "3664d3d706d70225323126cbc994b8c2c732aaf4",
+  "provider_free_run_id": 36158440330,
+  "governance_run_id": 36158440319,
+  "model": "openai/gpt-5.6-luna",
+  "max_manager_calls": 8,
+  "sol_budget": 0,
+  "engine_build_budget": 0,
+  "c1_budget": 0,
+  "purpose": "DMP-DEC-0053 autonomous P17 investigation-language legality certification attempt 2 after full deterministic seal",
+  "previous_red_run_id": 36149372671,
+  "root_fix_sha": "09c0f11a03469123eeae9899c41c475eb556bdb4"
+}

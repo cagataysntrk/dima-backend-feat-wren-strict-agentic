@@ -1,0 +1,377 @@
+name: dima-metabase-core-b-focused-authority-live
+
+on:
+  push:
+    branches:
+      - feat/dima-metabase-platform
+    paths:
+      - ".github/workflows/dima-metabase-core-b-focused-authority-live.yml"
+      - "backend/lab/metabase/core_b/authorizations/relationship-final.json"
+      - "backend/lab/metabase/core_b/authorizations/root-final.json"
+
+permissions:
+  contents: read
+  packages: read
+
+env:
+  DIMA_OPENROUTER_API_KEY: ${{ secrets.DIMA_OPENROUTER_API_KEY || secrets.OPENROUTER_API_KEY }}
+  METABOT_MODEL_IDENTIFIER: openrouter/openai/gpt-5.6-luna
+  DIMA_COGNITION_MODEL: openai/gpt-5.6-luna
+  MB_ADMIN_EMAIL: admin@core-b-authority.local
+  MB_RESTRICTED_EMAIL: restricted@core-b-authority.local
+  MB_RESTRICTED_GROUP: Dima Core B Authority Restricted
+
+jobs:
+  focused-authority-live:
+    if: >-
+      github.event_name == 'push' &&
+      (
+        contains(github.event.head_commit.message, '[core-b-relationship-live]') ||
+        contains(github.event.head_commit.message, '[core-b-root-live]')
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment: DIMA_OPENROUTER_API_KEY
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 4
+          submodules: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Resolve exact focused authorization
+        shell: bash
+        env:
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+        run: |
+          set -euo pipefail
+          if [[ "$COMMIT_MESSAGE" == *"[core-b-relationship-live]"* ]]; then
+            AUTH="backend/lab/metabase/core_b/authorizations/relationship-final.json"
+            CASE_ID="relationship_explicit_tr"
+            RECEIPT="eval/core_b/artifacts/relationship_live.json"
+          elif [[ "$COMMIT_MESSAGE" == *"[core-b-root-live]"* ]]; then
+            AUTH="backend/lab/metabase/core_b/authorizations/root-final.json"
+            CASE_ID="root_cause_tr"
+            RECEIPT="eval/core_b/artifacts/root_live.json"
+          else
+            echo "focused authorization marker missing"
+            exit 1
+          fi
+          test -f "$AUTH"
+          {
+            echo "FOCUSED_AUTH=$AUTH"
+            echo "FOCUSED_CASE_ID=$CASE_ID"
+            echo "FOCUSED_RECEIPT=$RECEIPT"
+          } >> "$GITHUB_ENV"
+
+      - name: Verify frozen behavior and live authorization
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - "$FOCUSED_AUTH" "$FOCUSED_CASE_ID" <<'PY'
+          import json, subprocess, sys
+          from pathlib import Path
+
+          path=Path(sys.argv[1]); expected_case=sys.argv[2]
+          value=json.loads(path.read_text(encoding="utf-8"))
+          assert value["schema_version"]=="core_b_focused_authority_live_auth_v1"
+          assert value["mode"]=="focused_authority"
+          assert value["decision"]=="CORE_B_RELATIONSHIP_ROOT_CLEAN_ROOT_FOCUSED_LIVE"
+          assert value["case_id"]==expected_case
+          assert value["candidate_product_sha"]=="3f29a233a8a54d013a6778a9837359ecda7c5bf8"
+          assert value["relationship_root_fix_sha"]==value["candidate_product_sha"]
+          assert value["provider_free_run_id"]==36293512398
+          assert value["provider_free_status"]=="GREEN"
+          assert value["governance_run_id"]==36293512433
+          assert value["governance_status"]=="GREEN"
+          assert value["focused_product_run_id"]==36293512392
+          assert value["focused_product_status"]=="GREEN"
+          assert value["max_observable_model_boundary_units"]<=30
+          assert value["engine_sha"]=="cbe313af9ac2d5960f662068e433d328d896fb06"
+          assert value["model_topology"]=={
+              "research_intake":"openai/gpt-5.6-luna",
+              "p17_manager":"openai/gpt-5.6-luna",
+              "p19_manager":"openai/gpt-5.6-luna",
+              "metabot":"openrouter/openai/gpt-5.6-luna",
+          }
+          subprocess.check_call(
+              ["git","cat-file","-e",value["candidate_product_sha"]+"^{commit}"]
+          )
+          def gitblob(p):
+              return subprocess.check_output(
+                  ["git","rev-parse",f"HEAD:{p}"],text=True
+              ).strip()
+          expected={
+              "backend/eval/core_b/askv2_matched_20_cases.json":"source_manifest_blob_sha",
+              "backend/lab/metabase/core_b/fixtures/machine_operations.json":"neutral_fixture_blob_sha",
+              "backend/lab/metabase/core_b/runtime/engine_runtime_lock.json":"engine_lock_blob_sha",
+              "backend/lab/metabase/core_b/live_sentinel.py":"live_runner_blob_sha",
+              "backend/app/v3/research_intake.py":"research_intake_blob_sha",
+              "backend/app/v3/product/composition.py":"composition_blob_sha",
+              "backend/app/v3/product_routing_store.py":"routing_store_blob_sha",
+              "backend/app/v3/research_manager_provider.py":"research_manager_provider_blob_sha",
+              "backend/app/v3/research_manager.py":"research_manager_blob_sha",
+              "backend/app/v3/structured_transport.py":"structured_transport_blob_sha",
+          }
+          for p,key in expected.items():
+              assert gitblob(p)==value[key], (p,gitblob(p),value[key])
+          if expected_case=="root_cause_tr":
+              assert int(value["focused_relationship_live_run_id"])>0
+              assert value["focused_relationship_live_status"]=="GREEN"
+          PY
+          test -n "$DIMA_OPENROUTER_API_KEY"
+          test "$(git rev-parse HEAD:backend/app/v3/research_manager.py)" = "d9a2a83e3f5e678870a2ecbaf330ccb81edb73d7"
+          test "$(git rev-parse HEAD:backend/app/v3/business_relationship_policy.py)" = "1c533667bd080331f4f2231b9d37ee0c5e532fa8"
+          test "$(git rev-parse HEAD:backend/app/v3/hypothesis_root_cause.py)" = "19e4f8a2403c7e133137c106c58fa61959c4ceff"
+          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "cbe313af9ac2d5960f662068e433d328d896fb06"
+
+      - name: Derive ephemeral credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          S="${GITHUB_SHA:0:12}"
+          {
+            echo "MB_ADMIN_PASSWORD=Adm-${S}-Aa1!"
+            echo "MB_RESTRICTED_PASSWORD=Res-${S}-Aa1!"
+            echo "PG_OWNER_PASSWORD=PgO-${S}-Aa1!"
+            echo "CORE_B_READONLY_PASSWORD=PgR-${S}-Aa1!"
+            echo "MB_APP_PASSWORD=MbA-${S}-Aa1!"
+          } >> "$GITHUB_ENV"
+
+      - name: Load exact certified engine runtime lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          GITLINK_SHA="$(git ls-tree HEAD engine/metabase | awk '{print $3}')"
+          python backend/lab/metabase/core_b/runtime/engine_runtime_lock.py             --lock backend/lab/metabase/core_b/runtime/engine_runtime_lock.json             --gitlink-sha "$GITLINK_SHA"             --github-env "$GITHUB_ENV"
+
+      - name: Pull exact certified dima.6 digest
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$ENGINE_SHA" = "cbe313af9ac2d5960f662068e433d328d896fb06"
+          test "$CERTIFICATION_RUN_ID" = "36042062775"
+          test "$RUNTIME_TAG" = "v0.63.18-dima.6"
+          docker pull "$IMMUTABLE_IMAGE_REF"
+          docker image inspect -f '{{range .RepoDigests}}{{println .}}{{end}}' "$IMMUTABLE_IMAGE_REF"             | grep -Fx "$IMMUTABLE_IMAGE_REF"
+
+      - name: Install live campaign environment
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+          pip install "psycopg[binary]==3.3.3"
+
+      - name: Start neutral live databases
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker network create dima-core-b-authority
+          PG="postgres@sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675"
+          docker run -d --name analytics-db --network dima-core-b-authority --network-alias analytics-db -p 127.0.0.1:55461:5432             -e POSTGRES_DB=core_b_neutral -e POSTGRES_USER=core_b_owner -e POSTGRES_PASSWORD="$PG_OWNER_PASSWORD" "$PG"
+          docker run -d --name app-db --network dima-core-b-authority --network-alias app-db             -e POSTGRES_DB=metabase_core_b -e POSTGRES_USER=metabase_app -e POSTGRES_PASSWORD="$MB_APP_PASSWORD" "$PG"
+          for n in analytics-db app-db; do
+            for i in $(seq 1 90); do
+              docker exec "$n" pg_isready >/dev/null 2>&1 && break
+              sleep 2
+              test "$i" -lt 90
+            done
+          done
+
+      - name: Seed frozen substrate-neutral fixture
+        working-directory: backend
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: "55461"
+          PGDATABASE: core_b_neutral
+          PGUSER: core_b_owner
+          PGPASSWORD: ${{ env.PG_OWNER_PASSWORD }}
+          CORE_B_READONLY_USER: core_b_readonly
+          CORE_B_READONLY_PASSWORD: ${{ env.CORE_B_READONLY_PASSWORD }}
+        run: |
+          python lab/metabase/core_b/runtime/seed_fixture.py             --fixture lab/metabase/core_b/fixtures/machine_operations.json
+
+      - name: Start exact dima.6 engine with sealed Luna topology
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run -d --name mb-core-b-authority --network dima-core-b-authority -p 127.0.0.1:3361:3000             -e MB_DB_TYPE=postgres -e MB_DB_HOST=app-db -e MB_DB_PORT=5432             -e MB_DB_DBNAME=metabase_core_b -e MB_DB_USER=metabase_app -e MB_DB_PASS="$MB_APP_PASSWORD"             -e MB_AI_FEATURES_ENABLED=true -e MB_METABOT_ENABLED=true -e MB_AGENT_API_ENABLED=true             -e MB_LOAD_SAMPLE_CONTENT=false -e MB_MCP_EXECUTE_SQL_ENABLED=false             -e MB_LLM_OPENROUTER_API_KEY="$DIMA_OPENROUTER_API_KEY"             -e MB_LLM_METABOT_PROVIDER="$METABOT_MODEL_IDENTIFIER"             -e DIMA_ENGINE_REPOSITORY=UpcyTech/dima-metabase-engine             -e DIMA_ENGINE_REVISION_SHA="$ENGINE_SHA"             -e DIMA_ENGINE_UPSTREAM_BASE_SHA="$UPSTREAM_BASE_SHA"             -e DIMA_ENGINE_RUNTIME_TAG="$RUNTIME_TAG"             -e DIMA_ENGINE_BUILD_IDENTITY="$BUILD_IDENTITY"             -e DIMA_ENGINE_IMAGE_IDENTITY="$REGISTRY_DIGEST"             "$IMMUTABLE_IMAGE_REF"
+
+      - name: Bootstrap restricted analytical principal
+        working-directory: backend
+        env:
+          METABASE_URL: http://127.0.0.1:3361
+          MB_SITE_NAME: Dima Core B Focused Authority
+          ANALYTICS_DB_NAME: core_b_neutral
+          ANALYTICS_DB_USER: core_b_readonly
+          ANALYTICS_DB_PASSWORD: ${{ env.CORE_B_READONLY_PASSWORD }}
+          MB_ADMIN_EMAIL: ${{ env.MB_ADMIN_EMAIL }}
+          MB_ADMIN_PASSWORD: ${{ env.MB_ADMIN_PASSWORD }}
+          MB_RESTRICTED_EMAIL: ${{ env.MB_RESTRICTED_EMAIL }}
+          MB_RESTRICTED_PASSWORD: ${{ env.MB_RESTRICTED_PASSWORD }}
+          MB_RESTRICTED_GROUP: ${{ env.MB_RESTRICTED_GROUP }}
+        run: python lab/metabase/core_b/runtime/bootstrap.py
+
+      - name: Run one frozen focused authority case
+        working-directory: backend
+        env:
+          PYTHONPATH: .
+        run: |
+          mkdir -p eval/core_b/artifacts
+          python lab/metabase/core_b/live_sentinel.py             --base-url http://127.0.0.1:3361             --email "$MB_RESTRICTED_EMAIL"             --password "$MB_RESTRICTED_PASSWORD"             --manifest eval/core_b/askv2_matched_20_cases.json             --output "$FOCUSED_RECEIPT"             --control-db eval/core_b/artifacts/focused_authority_live.db             --engine-sha "$ENGINE_SHA"             --upstream-sha "$UPSTREAM_BASE_SHA"             --runtime-tag "$RUNTIME_TAG"             --runtime-image-digest "$REGISTRY_DIGEST"             --build-identity "$BUILD_IDENTITY"             --image-identity "$REGISTRY_DIGEST"             --platform-sha "$GITHUB_SHA"             --case-id "$FOCUSED_CASE_ID"
+
+      - name: Extract exact P16/P17 focused lineage
+        working-directory: backend
+        run: |
+          python - "$FOCUSED_RECEIPT" eval/core_b/artifacts/focused_authority_live.db eval/core_b/artifacts/focused_authority_lineage.json <<'PY'
+          import json, sys
+          from pathlib import Path
+          from sqlalchemy.pool import StaticPool
+          from sqlmodel import Session, create_engine, select
+          from control_plane.models import ResearchClaimRecord, ResearchReasoningStepRecord
+
+          receipt=Path(sys.argv[1]); db=Path(sys.argv[2]); out=Path(sys.argv[3])
+          value=json.loads(receipt.read_text(encoding="utf-8"))
+          case=value["cases"][0]
+          session_ids=tuple(dict.fromkeys((
+              case["research_session_id"],
+              *case.get("child_research_session_ids",[]),
+          )))
+          engine=create_engine(
+              "sqlite:///"+str(db.resolve()),
+              connect_args={"check_same_thread":False},
+              poolclass=StaticPool,
+          )
+          with Session(engine) as s:
+              claims=tuple(
+                  s.exec(
+                      select(ResearchClaimRecord)
+                      .where(ResearchClaimRecord.session_id.in_(session_ids))
+                      .order_by(ResearchClaimRecord.created_at,ResearchClaimRecord.claim_id)
+                  ).all()
+              )
+              steps=tuple(
+                  s.exec(
+                      select(ResearchReasoningStepRecord)
+                      .where(ResearchReasoningStepRecord.session_id.in_(session_ids))
+                      .order_by(ResearchReasoningStepRecord.created_at,ResearchReasoningStepRecord.step_id)
+                  ).all()
+              )
+          payload={
+              "case_id":case["case_id"],
+              "session_ids":list(session_ids),
+              "claims":[
+                  {
+                      "claim_id":x.claim_id,
+                      "session_id":x.session_id,
+                      "obligation_id":x.obligation_id,
+                      "epistemic_state":x.epistemic_state,
+                  }
+                  for x in claims
+              ],
+              "reasoning_steps":[
+                  {
+                      "step_id":x.step_id,
+                      "session_id":x.session_id,
+                      "obligation_id":x.parent_obligation_id,
+                      "status":x.status,
+                      "intent":x.intent,
+                      "result_refs":json.loads(x.result_refs_json),
+                  }
+                  for x in steps
+              ],
+          }
+          out.write_text(json.dumps(payload,sort_keys=True,indent=2)+"\n",encoding="utf-8")
+          print(json.dumps(payload,sort_keys=True))
+          PY
+
+      - name: Verify focused authority result
+        working-directory: backend
+        run: |
+          python - "$FOCUSED_RECEIPT" eval/core_b/artifacts/focused_authority_lineage.json "$FOCUSED_CASE_ID" <<'PY'
+          import json, sys
+          from collections import Counter
+          from pathlib import Path
+
+          value=json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          lineage=json.loads(Path(sys.argv[2]).read_text(encoding="utf-8"))
+          expected=sys.argv[3]
+          assert value["schema_version"]=="core_b_small_live_sentinel_v1"
+          assert value["status"]=="GREEN"
+          assert value["case_count"]==1
+          assert value["passed"]==1
+          assert value["failed"]==0
+          assert value["failed_case_ids"]==[]
+          assert value["observable_model_boundary_units"]<=30
+          assert value["silent_wrong_count"]==0
+          assert value["security_violations"]==0
+          case=value["cases"][0]
+          assert case["case_id"]==expected
+          assert case["passed"] is True
+          assert case["lineage_valid"] is True
+          assert case["security_valid"] is True
+          assert case["causal_overclaim"] is False
+          assert case["p17_refs"]
+          assert case["manager_research_turns"]>0
+
+          claim_scopes=Counter(
+              (item["session_id"],item["obligation_id"])
+              for item in lineage["claims"]
+          )
+          completed_scopes={
+              (item["session_id"],item["obligation_id"])
+              for item in lineage["reasoning_steps"]
+              if item["status"]=="COMPLETED"
+          }
+          if expected=="relationship_explicit_tr":
+              assert case["p18_policy_use_refs"]
+              assert any(
+                  count>=1 and scope in completed_scopes
+                  for scope,count in claim_scopes.items()
+              )
+          elif expected=="root_cause_tr":
+              assert case["p19_assessment_refs"]
+              assert any(count>=2 for count in claim_scopes.values())
+          else:
+              raise AssertionError(expected)
+          PY
+
+      - name: Hard prohibitions
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          test ! -e backend/eval/DEV80
+          test ! -e backend/eval/Validation50
+          test ! -e backend/eval/Hidden50
+          ! grep -R -nE 'openai/gpt-5\.6-sol|C1' backend/lab/metabase/core_b/live_sentinel.py
+          ! grep -R -n 'action:execute' backend/app
+          test "$(git rev-parse HEAD:backend/app/v3/research_manager.py)" = "d9a2a83e3f5e678870a2ecbaf330ccb81edb73d7"
+          test "$(git rev-parse HEAD:backend/app/v3/business_relationship_policy.py)" = "1c533667bd080331f4f2231b9d37ee0c5e532fa8"
+          test "$(git rev-parse HEAD:backend/app/v3/hypothesis_root_cause.py)" = "19e4f8a2403c7e133137c106c58fa61959c4ceff"
+          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "cbe313af9ac2d5960f662068e433d328d896fb06"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: core-b-focused-authority-live-${{ github.run_id }}
+          path: |
+            backend/eval/core_b/artifacts/relationship_live.json
+            backend/eval/core_b/artifacts/root_live.json
+            backend/eval/core_b/artifacts/focused_authority_lineage.json
+          if-no-files-found: warn
+          retention-days: 90
+
+      - name: Runtime logs
+        if: failure()
+        run: docker logs --tail=1500 mb-core-b-authority || true
+
+      - name: Teardown
+        if: always()
+        run: |
+          docker rm -f mb-core-b-authority analytics-db app-db 2>/dev/null || true
+          docker network rm dima-core-b-authority 2>/dev/null || true

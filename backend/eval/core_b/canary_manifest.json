@@ -1,0 +1,68 @@
+{
+  "version": "core-b-provider-free-canary-v1",
+  "status": "CONTINUOUS_PROVIDER_FREE_CANARY",
+  "case_count": 13,
+  "live_model_calls": 0,
+  "external_side_effects": 0,
+  "cases": [
+    {
+      "id": "source_evidence_identity_integrity",
+      "node": "tests/test_v3_product_contracts.py::test_evidence_resume_uses_session_lineage"
+    },
+    {
+      "id": "immutable_revision",
+      "node": "tests/test_v3_p21_decision_intelligence.py::test_new_governed_p20_report_creates_revision_not_rewrite"
+    },
+    {
+      "id": "foreign_evidence_rejection",
+      "node": "tests/test_v3_p16_claim_lineage.py::test_foreign_session_evidence_and_receipt_execution_mismatch_fail_closed"
+    },
+    {
+      "id": "currentness_visibility",
+      "node": "tests/test_v3_product_contracts.py::test_currentness_is_visible"
+    },
+    {
+      "id": "stale_report",
+      "node": "tests/test_v3_p21_decision_intelligence.py::test_stale_p20_report_rejects_new_decision_brief"
+    },
+    {
+      "id": "stale_decision",
+      "node": "tests/test_v3_decision_adoption.py::test_noncurrent_decision_brief_rejects"
+    },
+    {
+      "id": "durable_resume",
+      "node": "tests/test_v3_product_contracts.py::test_restart_resume_reconstructs_same_product_projection"
+    },
+    {
+      "id": "restart_idempotency",
+      "node": "tests/test_v3_decision_adoption.py::test_same_canonical_event_is_idempotent"
+    },
+    {
+      "id": "current_principal_reauthorization",
+      "node": "tests/test_v3_product_contracts.py::test_resume_reauthorizes_current_principal"
+    },
+    {
+      "id": "cross_tenant_non_oracle",
+      "node": "tests/test_v3_product_contracts.py::test_foreign_and_missing_are_non_oracle"
+    },
+    {
+      "id": "outcome_not_causality",
+      "node": "tests/test_v3_outcome_observation.py::test_typed_classification_is_preserved_without_causal_promotion"
+    },
+    {
+      "id": "memory_not_truth_authority",
+      "node": "tests/test_v3_institutional_memory.py::test_current_context_exposes_stale_source"
+    },
+    {
+      "id": "external_execution_dark_and_sealed_nonmutation",
+      "node": "tests/test_v3_action_authorization.py::test_legacy_and_sealed_owner_rows_are_unchanged"
+    }
+  ],
+  "forbidden": [
+    "DEV80",
+    "Validation50",
+    "Hidden50",
+    "live provider calls",
+    "external action execution"
+  ]
+}

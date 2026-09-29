@@ -1,0 +1,1463 @@
+## FORWARD AUTHORITY — 2026-09-27 — METABASE/METABOT WINNER → DIMA V1 3-PHASE ROADMAP ACTIVE
+
+~~~text
+neutral comparison                     = COMPLETE
+winner / canonical V1 engine           = METABASE / METABOT
+engine selection                       = CLOSED
+canonical V1 roadmap                   = backend/belgeler/metabase/DIMA_V1_NIHAI_3_FAZLI_YOL_HARITASI.md
+roadmap authority commit               = 23256335e57213f5a09dfc6daba29313afff5e6a
+roadmap canonical blob                 = a1586f69ad8ccd24e78b0a74beacc46d564b0054
+original exact-import commit           = 6c9c438841bd747aa5f1969786453a69f6ed4728
+original exact-import blob             = 139a26d308606d2651f09489ac83062891ba3c0b
+
+comparison candidate baseline          = 72641b39159f11b08757048ae96644438badcc20
+engine                                 = cbe313af9ac2d5960f662068e433d328d896fb06 / 0.63.18-dima.6
+final provider-free comparison closure = 36313727354 SUCCESS / 527 PASS
+Core-B live closure                    = 36311996172 SUCCESS / 6 of 6
+silent wrong                           = 0
+security violations                    = 0
+
+current forward phase                  = FAZ 1 — BRAIN CONVERGENCE & INTELLIGENCE CLOSURE
+Phase-1 exit                           = SEALED DIMA BRAIN V1
+Phase 2                                = BLOCKED UNTIL PHASE 1 EXIT
+Phase 3 UI implementation              = REQUIRES EXPLICIT USER AUTHORIZATION
+
+DEV80                                  = CANCELLED FROM FORWARD PLAN / DO NOT RUN
+Validation50                           = CANCELLED FROM FORWARD PLAN / DO NOT RUN
+Hidden50                               = CANCELLED FROM FORWARD PLAN / DO NOT RUN
+Wren production runtime                = NOT SELECTED
+Wren code merge                        = FORBIDDEN
+Wren research-pattern harvest          = AUTHORIZED BY ROADMAP
+UI implementation                      = NOT AUTHORIZED
+~~~
+
+The neutral comparison is complete and Metabase/Metabot is the selected production foundation.
+The former comparison-ready STOP is superseded as forward execution state.
+
+Canonical current handoff:
+
+`backend/belgeler/metabase/DIMA_V1_CURRENT_EXECUTION_HANDOFF.md`
+
+The roadmap originated as an exact byte-preserving import at `6c9c438841bd747aa5f1969786453a69f6ed4728` / `139a26d308606d2651f09489ac83062891ba3c0b`.
+The current canonical authority is the surgically hardened revision `23256335e57213f5a09dfc6daba29313afff5e6a` / `a1586f69ad8ccd24e78b0a74beacc46d564b0054`.
+Do not silently edit or normalize it; future changes require explicit roadmap authority.
+
+Immediate next work:
+
+~~~text
+READ canonical roadmap
+→ build Phase-1 current-state gap map
+→ build WREN_RESEARCH_HARVEST_MATRIX
+→ close measured Phase-1 gaps generically
+→ same Round-2 development benchmark without prompt-specific patches
+→ new metamorphic / hidden-like validation corpus
+→ seal Phase 1
+→ only then Phase 2
+~~~
+
+Existing sealed P14-P21/Core-A/Core-B/comparison receipts remain baseline evidence; do not mechanically destroy or reopen them.
+
+UI/UX remains forbidden until explicit user authorization even when the roadmap later reaches Phase 3.
+
+This block supersedes older "neutral comparison pending / winner not selected / comparison-ready STOP" forward language below. Historical sections remain evidence.
+
+
+
+# DIMA + METABASE — CURRENT PRODUCT PLAN OVERLAY
+
+## CURRENT FORWARD AUTHORITY — 2026-09-27 — COMPARISON-READY STOP
+
+~~~text
+branch                                = feat/dima-metabase-platform
+Platform comparison candidate SHA     = 72641b39159f11b08757048ae96644438badcc20
+candidate artifact                    = dima-metabase-comparison-candidate
+candidate artifact digest             = sha256:c842390a1d3850f58805411d0c3b0c50731acf56eed51a4405e0a740bcae0dcf
+
+final provider-free integrated closure = 36313727354 SUCCESS
+governance                            = 36313727413 SUCCESS
+provider-free assertions              = 527 PASS
+repository/security                   = 25 PASS
+headless Product closure              = 111 PASS
+Core A closed-loop + UX freeze        = 70 PASS
+ActionAuthorization                   = 38 PASS
+Human Adoption                        = 29 PASS
+P21                                   = 25 PASS
+P20                                   = 19 PASS
+P19                                   = 44 PASS
+P18                                   = 24 PASS
+P17                                   = 116 PASS
+P16                                   = 6 PASS
+P15                                   = 5 PASS
+P14                                   = 15 PASS
+
+Core-B integrated live Closure-v2      = 36311996172 SUCCESS / 6 of 6
+Core-B observable model units          = 19 / 30
+Core-B Metabase analytical calls       = 8
+Core-B silent wrong                    = 0
+Core-B security violations             = 0
+Core-B causal overclaim                = 0
+Core-B invented numeric truth          = 0
+new paid/live calls after Core-B seal  = 0
+
+engine SHA                            = cbe313af9ac2d5960f662068e433d328d896fb06
+engine release                        = 0.63.18-dima.6
+engine digest                         = sha256:40e9a44be49904de3ddf12d4683c768e70955851c10a928a9c8f7d8f60780353
+Alembic head                          = fc8a1d0e3b42
+product contract                      = core-b-product-v1
+UX foundation matrix                  = wave-1-comparison-ready-v2
+model topology                        = openai/gpt-5.6-luna / no cascade / no Sol / no C1
+UI implementation                     = NOT STARTED
+external action execution             = ABSENT
+
+50 UX readiness distribution:
+HEADLESS_READY                         = 4
+FOUNDATION_ONLY                        = 2
+DATA_DEPENDENT                        = 27
+SPECIAL_ENGINE_DEFERRED               = 15
+PRODUCTIZATION_DEFERRED               = 2
+
+PLATFORM INTERNAL CLOSURE              = SEALED
+PLATFORM COMPARISON CANDIDATE          = SEALED
+NEUTRAL COMPARISON                     = PENDING EXTERNAL AUTHORITY
+WINNER                                 = NOT SELECTED HERE
+DEV80                                  = NOT RUN / NOT REQUIRED HERE
+Validation50                           = NOT RUN / NOT REQUIRED HERE
+Hidden50                               = NOT RUN / NOT REQUIRED HERE
+UI                                     = NOT AUTHORIZED
+~~~
+
+Canonical comparison handoff:
+
+- input contract: `backend/belgeler/metabase/DIMA_METABASE_NEUTRAL_COMPARISON_INPUT_CONTRACT.md`
+- Platform dossier: `backend/belgeler/metabase/DIMA_METABASE_NEUTRAL_COMPARISON_DOSSIER.md`
+- Wren counterpart observed only for identity: `feat/ask-v2-mvp@8f472fb252f1f81d7357c6edcdbedf89bf60f666`
+- no Wren evaluation, tuning, merge, scoring or winner selection occurred here.
+
+Forward sequence is now final:
+
+~~~text
+PLATFORM INTERNAL CLOSURE
+→ CANDIDATE FREEZE
+→ NEUTRAL COMPARISON HANDOFF
+→ STOP
+~~~
+
+
+No additional Platform architecture or feature phase is authorized on this branch before the separate neutral comparison authority acts.
+
+
+
+## CURRENT FORWARD AUTHORITY — 2026-09-27 — ROOT RECOVERY SEALED
+
+This block overrides older current/blocked language below; historical sections remain evidence.
+
+~~~text
+branch                                = feat/dima-metabase-platform
+Core Closure A                        = SEALED
+Core-B root architecture recovery     = FINALLY SEALED ON ACTIVE BRANCH
+
+active merge                          = 50d6d2fb15d6bf9a62638a3e77e7dbd950d819a6
+certified recovery                    = 67af244d3097dbaf221c15ba76d007586edcbc45
+P17 GLOBAL_CONTROL fix                = ef3f775d3dfd148bdced6c403ab7dbda219a23f8
+active certified behavior             = 8b56fd56e864873b851ddbeeb5480abbd0a6dd28
+
+Core-B focused                        = 36311623955 SUCCESS / 118 PASS
+sealed P14-P19 affected               = 149 PASS
+P17 provider-free                     = 36311756394 SUCCESS
+diagnostic lifecycle guard            = 36311756577 SUCCESS
+governance                            = 36311756380 SUCCESS
+focused relationship-v2               = 36311835463 SUCCESS
+full active Closure-v2                = 36311996172 SUCCESS / 6 of 6
+provider-free seal canary             = 36312261896 SUCCESS
+
+model boundary units                  = 19 / 30
+Metabase analytical calls             = 8
+silent wrong                          = 0
+security violations                   = 0
+causal overclaim                      = 0
+invented numeric truth                = 0
+engine                                = cbe313af9ac2d5960f662068e433d328d896fb06
+engine runtime                        = 0.63.18-dima.6
+
+Research Intake closed-world          = SEALED
+Product process-manager correction    = SEALED
+P17 provider schema fidelity          = SEALED
+P17 GLOBAL_CONTROL validator          = SEALED
+Closure-v2 owner-legality             = SEALED
+P18/P19 semantics                     = UNCHANGED
+~~~
+
+Forward sequence now resumes the existing Core-B roadmap immediately before broad/final
+certification. No new architecture phase is created and root recovery is not reopened.
+
+~~~text
+next = existing Core-B finalization / pre-broad-certification work
+DEV80 = NOT AUTHORIZED
+Validation50 = NOT AUTHORIZED
+Hidden50 = NOT AUTHORIZED
+UI / UX = NOT STARTED
+Wren merge/evaluation = NOT AUTHORIZED
+Resend live = NOT AUTHORIZED
+external execution = NOT AUTHORIZED
+dima.7 = NOT AUTHORIZED
+~~~
+
+
+## CURRENT FORWARD AUTHORITY — 2026-09-26
+
+~~~text
+branch                                = feat/dima-metabase-platform
+repository canonicalization           = SEALED
+cleanup behavior SHA                  = 2a8534990757d6b84634aac1e70fdf78f99798f0
+cleanup-focused                       = 36237748801 SUCCESS
+governance                            = 36237748789 SUCCESS
+Core A final                          = 36237748799 SUCCESS
+
+P14-P21                               = SEALED
+Human Adoption                        = SEALED
+ActionAuthorization                   = SEALED
+Core Closure A                        = SEALED
+Core Closure B                        = ACTIVE
+
+Core A durable families               = 5
+Alembic head                          = fb4e6d2a1074
+engine SHA                            = cbe313af9ac2d5960f662068e433d328d896fb06
+engine release                        = 0.63.18-dima.6
+
+external side effects                 = 0
+action:execute                        = ABSENT
+DEFAULT Action capability registry    = EMPTY
+UI / frontend                         = ABSENT
+
+final target                          = SEALED NEUTRAL-COMPARISON CANDIDATE
+DEV80                                 = NOT AUTHORIZED / DEV80 is not run
+Validation50                          = NOT AUTHORIZED
+Hidden50                              = NOT AUTHORIZED
+neutral comparison                    = NOT PERFORMED BY THIS DEVELOPER
+~~~
+
+Forward sequence:
+
+~~~text
+Core B product DTO/projection layer
+→ durable-ID resume / currentness / security
+→ artifact timeline / observability
+→ 24+ provider-free closed-loop rehearsal
+→ 50 UX readiness matrix freeze
+→ one final provider-free integrated closure
+→ product contract freeze
+→ immutable neutral-comparison candidate
+→ Platform-only comparison dossier
+→ STOP
+~~~
+
+No Wren evaluation, winner selection, broad final-certification corpus, UI implementation or
+external execution is part of this sequence.
+
+## CURRENT CORE-B RETURN — 2026-09-27
+
+~~~text
+adaptive dependency correction        = GREEN
+adaptive root-fix SHA                 = 773caa54540e495f52a53d44cf9dabe67acda8c4
+focused adaptive live                 = 36279322283 SUCCESS
+final frozen sentinel                 = 36279494474 FAILURE
+final score                           = 4 / 6
+
+failed family 1                       = P18_RELATIONSHIP_AUTHORITY_NOT_COMPOSED
+failed family 2                       = P19_EPISTEMIC_AUTHORITY_NOT_COMPOSED
+
+P17 core semantic diff                = 0
+P18 core semantic diff                = 0
+P19 core semantic diff                = 0
+engine diff                           = 0
+frozen manifest/prompt/fixture diff   = 0
+~~~
+
+The adaptive product requirement is now an explicit typed product-routing contract rooted in its
+source analytical goal. It is not a synthetic P14 obligation. Restart persistence is carried by the
+immutable Product routing correlation surface. P17 remains the final legality owner.
+
+No further change is authorized under the adaptive directive because the final sentinel reached two
+different sealed-owner composition failure families. Wait for supervisor authority before any
+relationship/root-cause composition change.
+
+
+## HISTORICAL / SUPERSEDED P17 RECOVERY AND PRIOR CURRENT-STATE SECTIONS
+
+## P17 SEALED — DMP-DEC-0053
+
+```text
+P17 IS AN INVESTIGATION LANGUAGE,
+NOT AN ANALYTICS ENGINE.
+
+MODEL CHOOSES AMONG LEGAL MOVES.
+DIMA OWNS MOVE LEGALITY.
+METABASE OWNS ANALYTICAL EXECUTION.
+
+BRANCH IDENTITY IS CREATED
+BY INVESTIGATION SEMANTICS,
+NOT BY THE PRESENCE OF A STRING FIELD.
+
+P17 INVESTIGATION GRAPH != P19 CAUSAL GRAPH.
+
+RAW NATIVE MATERIAL IS DURABLE.
+MANAGER COGNITION PACKET IS A THIN PROJECTION.
+```
+
+`InvestigationActionProfile` is a pure state projection of legal moves now. It is not a planner,
+ranker, interestingness engine, dimension selector or business-answer oracle.
+
+## CURRENT AUTHORITY SNAPSHOT — 2026-09-25
+
+> **FORWARD AUTHORITY.** This block overrides older current/next/blocked language. Historical
+> receipts remain append-only.
+
+```text
+branch                                = feat/dima-metabase-platform
+sealed P17 product/code candidate     = 3664d3d706d70225323126cbc994b8c2c732aaf4
+live dispatch / receipt-only SHA      = 5595544fcd94f5250961b5ac3a158a1a9c02e9fb
+forward authority                     = DMP-DEC-0048 + DMP-DEC-0049 + DMP-DEC-0050 + DMP-DEC-0051 + DMP-DEC-0052 + DMP-DEC-0053
+
+engine SHA                            = cbe313af9ac2d5960f662068e433d328d896fb06
+engine release                        = 0.63.18-dima.6
+engine digest                         = sha256:40e9a44be49904de3ddf12d4683c768e70955851c10a928a9c8f7d8f60780353
+engine certification                  = 36042062775 SUCCESS
+engine changes/builds                 = 0 / 0
+
+P17 provider-free                     = 36158440330 SUCCESS
+P17 governance                        = 36158440319 SUCCESS
+dispatch governance                   = 36160559032 SUCCESS
+P17 autonomous live                   = 36160559037 SUCCESS
+artifact id                           = 10875785534
+artifact digest                       = sha256:65e4df9c5676a31ff3eee987ca3cd6d2f2ec66ef4243888da1980bc4b7fc6829
+
+family-aware authorization            = 30 PASS
+provider strict schema/envelope       = 8 PASS
+trajectory-invariant evaluator        = 8 PASS
+P17 legality/reasoning/adversarial    = 49 PASS
+P16 claim-lineage                     = 6 PASS
+P15 native Exploration                = 5 PASS
+P14 native-direct                     = 17 PASS
+
+live manager Luna calls               = 8
+live native P17 follow-ups            = 3
+live VERIFIED native occurrences      = 4 including base
+live max observed depth               = 3
+live terminal stop                    = NO_NEW_EVIDENCE
+new Evidence reached later manager    = YES
+distinct alternatives considered      = YES
+candidate received native test        = YES
+branch outcome                        = one stopped / one retained
+
+P14 authority immutable               = YES
+P16 sole claim authority              = YES
+native analytics only                 = YES
+follow-up lineage valid               = YES
+single receipt family                 = YES
+P13 hot path                          = 0
+second native executor                = 0
+second receipt family                 = 0
+second claim authority                = 0
+P19 truth promotion                   = 0
+Dima Python analytics                 = 0
+Wren/raw-SQL/admin fallback           = 0 / 0 / 0
+Sol / C1 / engine builds              = 0 / 0 / 0
+
+p17-cert-auth-transport               = CLOSED
+p17-manager-structured-schema         = CLOSED
+p17-manager-semantic-output           = CLOSED
+p17-investigation-language-legality   = CLOSED AT ATTEMPT 2 GREEN
+
+P14                                   = SEALED
+P15                                   = SEALED
+P16                                   = SEALED
+P17                                   = SEALED
+P18                                   = PREDEVELOPMENT REVIEW COMPLETE
+P18 implementation                    = NOT STARTED / NOT AUTHORIZED BY THIS HANDOFF
+UI / UX                               = FORBIDDEN UNTIL P21 SEALED
+```
+
+### CURRENT PHASE GATE
+
+P17 is closed. No additional P17 Luna rerun, engine build, P13 reopen, analytical fallback,
+planner layer or trajectory-specific patch is authorized.
+
+The only completed forward work after the P17 seal is the P18 material-business-relationship
+pre-development review. P18 implementation has not started. The next developer/supervisor must use
+that review as the implementation gate rather than extending P17.
+
+### DMP-DEC-0050 AUTONOMOUS LIVE RETURN — RED / INFRA TRANSPORT
+
+The one authorized DMP-DEC-0050 certification dispatch was `36137304596 = FAILURE`.
+It did not enter manager cognition. The authorization commit
+`5801ac71ba00867921dec17edff20568dc0fce05` genuinely **added**
+`AUTONOMOUS_LUNA_AUTHORIZATION.json` and modified only the compatibility entrypoint transport
+marker. The entrypoint then required that added path to appear in the GitHub push event's
+`head_commit.added` field; this Actions event did not surface the path there, so the fail-closed
+transport rejected the dispatch before `autonomous_manager_canary.py` was entered.
+
+```text
+first wrong transition:
+valid add-only authorization commit
+→ event-field-based add-only check
+→ authorization path not observed in head_commit.added
+→ RuntimeError before autonomous canary entry
+
+owner:
+INFRA / EVALUATOR TRANSPORT
+
+manager Luna calls        = 0
+Metabot occurrences       = 0
+/api/dataset occurrences  = 0
+Sol                       = 0
+engine builds             = 0
+C1                        = 0
+```
+
+This RED does not invalidate P17 provider-free recursive authority or the DMP-DEC-0050
+trajectory-invariant evaluator. It is not a manager-cognition, structured-output, state-machine,
+native-analytics, lineage, or Metabase-engine failure.
+
+The historical DMP-DEC-0050 one-shot stop rule is superseded for recovery procedure by
+DMP-DEC-0051. P17 remains **NOT SEALED** and P18 remains **BLOCKED**, but Cycle 1 / 3 may continue
+after exact-Git transport provider-free proof and governance are GREEN.
+
+### DMP-DEC-0051 PERMANENT RECOVERY RULES
+
+```text
+RED IS EVIDENCE, NOT AN INSTRUCTION TO PATCH.
+
+FIRST WRONG TRANSITION → OWNER → ROOT CAUSE → GENERIC FIX.
+
+MAX THREE BOUNDED RECOVERY CYCLES BEFORE SUPERVISOR STOP.
+
+NO BLIND RERUNS.
+NO REGEX / FUZZY / MORPH SEMANTIC PATCHES.
+NO TEST-SPECIFIC PRODUCT BEHAVIOR.
+DO NOT TUNE A PROBABILISTIC AGENT TO ONE TRAJECTORY.
+
+GIT OBJECT TRUTH BEATS CI EVENT PROJECTIONS
+FOR COMMIT/AUTHORIZATION IDENTITY.
+
+METABASE + METABOT = ANALYTICAL ENGINE.
+DIMA = INVESTIGATION / EPISTEMICS / DECISION BRAIN.
+```
+
+Current Cycle 1 owner is `INFRA / EVALUATOR TRANSPORT`. Product behavior is frozen. The historical
+`AUTONOMOUS_LUNA_AUTHORIZATION.json` remains immutable evidence; new recovery receipts are
+append-only under `backend/lab/metabase/p17/authorizations/`.
+
+Permanent forward split:
+
+```text
+METABASE + METABOT = ANALYTICAL ENGINE
+
+DIMA = INVESTIGATION
+     + EPISTEMICS
+     + DECISION BRAIN
+
+DIMA CHOOSES THE NEXT ANALYTICAL QUESTION.
+METABASE ANSWERS IT NATIVELY.
+
+RECURSIVE DEPTH = DIMA.
+ANALYTICAL EXECUTION AT EVERY DEPTH = METABASE.
+
+P17 INVESTIGATION GRAPH != P19 CAUSAL GRAPH.
+```
+
+Permanent ownership:
+
+```text
+METABASE + METABOT
+= analytics cognition + exploration + analytical semantics
++ native permissions + query construction/repair + execution
+
+DIMA
+= business context + Research + lineage + epistemic state
++ claims + hypotheses/root cause + reports
++ decisions + actions + outcomes + memory
+```
+
+```text
+METABASE PROVES THE ANALYSIS.
+DIMA PROVES THE LINEAGE, EPISTEMIC STATE, AND DECISION CONTEXT.
+```
+
+### P14 is CLOSED
+
+P14 is not a place for more trust middleware. The sealed product hot path is:
+
+```text
+Research obligation
+→ same principal-scoped native Metabot session
+→ capture exact query A
+→ persist query A/fingerprint
+→ direct native Metabase /api/dataset execution ONCE
+→ persist result/runtime/subject provenance
+→ one DimaQueryReceipt(authority_kind=research_material)
+→ Evidence
+→ Research state
+```
+
+Durability is fail-closed:
+
+```text
+EXECUTED + persisted result
+→ resume from persisted result
+→ same deterministic receipt
+→ NO second /api/dataset call
+
+EXECUTION_STARTED + no persisted result
+→ UNKNOWN OUTCOME
+→ NO BLIND RETRY
+→ explicit limitation/recovery path
+```
+
+Do not restore mandatory P13 attestation/re-execution, P10 synthetic Research access facts,
+operator-level MBQL/resource validation, Standard projection hashes, Wren/raw-SQL/Agent-API fallback,
+shared admin/service analytical sessions, or any second analytics/security/receipt authority.
+
+P13 remains sealed beside the product path as a **CERTIFICATION / DEBUG / FORENSICS microscope**.
+
+### Forward phase chain
+
+```text
+P14 Research                  SEALED
+→ P15 native Exploration      SEALED
+→ P16 claim-lineage Evidence  SEALED
+→ P17 Research reasoning      OPEN NOW
+→ P18 material business relationship policy
+→ P19 Hypothesis / Root Cause
+→ P20 ReportDocument
+→ P21 DecisionBrief
+→ only then UI/UX architecture
+```
+
+Every phase consumes the authority produced below it. No disconnected subsystem and no parallel truth
+owner.
+
+### Next bounded objective — P17
+
+P17 matures the existing durable Research ledger into an agentic bounded investigation loop. It
+consumes the already-sealed P14/P15/P16 authority chain:
+
+```text
+ResearchSession + obligations
++ P15 Research material
++ P14 Evidence
++ P16 claims / support-challenge lineage
+→ Research Manager proposes the next bounded step
+→ deterministic Dima layer validates/records the transition
+```
+
+The Research Manager may propose:
+- inspect current Evidence/claims;
+- identify a gap;
+- request a bounded native analytical/exploration step;
+- form or refine an explicit claim;
+- seek counter-evidence;
+- stop with a supported/challenged/inconclusive/insufficient result.
+
+Deterministic Dima code owns only:
+- allowed state transitions;
+- obligation and claim identity;
+- Evidence eligibility;
+- budgets;
+- no-progress detection;
+- completion/stopping rules;
+- restart durability.
+
+Do **not** build a giant deterministic analytics state machine such as
+`if trend → breakdown → segment → compare`. The LLM/Research Manager proposes investigative steps;
+Metabase remains analytical owner. Counter-evidence is first-class and no forced answer is required.
+
+Start provider-free with a typed manager-proposal contract and scripted/fake manager tests. Use one
+bounded Luna canary only if actual manager cognition cannot be resolved provider-free and changes the
+decision. No Sol by default. No UI/UX before P21.
+
+### Current STOP conditions
+
+Stop for supervisor only if one of these becomes concrete:
+
+- Metabot/QP/Lib/driver/core engine modification is necessary;
+- principal-scoped native security cannot be preserved;
+- native permission enforcement is insufficient for a real Dima-specific policy;
+- a second analytical, security, or receipt authority appears necessary;
+- silent wrong can enter trusted claim/finding/decision state;
+- destructive semantic migration is required;
+- large paid evaluation is required;
+- a phase cannot consume prior-phase authority without a parallel system.
+
+Otherwise continue through the core chain. Do not return to UI work before P21.
+
+---
+
+**Authority:** DMP-DEC-0044  
+**Date:** 2026-09-24  
+**Role:** Binding forward-development overlay for P13+.
+
+The sealed historical roadmap
+`backend/belgeler/metabase/DIMA_METABASE_NIHAI_UYGULAMA_YOL_HARITASI.md`
+remains byte-for-byte immutable for audit/governance. Where its older P13+ language conflicts with
+this file or DMP-DEC-0044, this current plan is the forward implementation authority.
+
+---
+
+## 1. Product sentence
+
+```text
+DIMA = institutional intelligence / decision operating layer
+ON TOP OF
+METABASE + METABOT = native analytics substrate
+```
+
+The product is not a second BI/query engine.
+
+Metabase/Metabot supply native analytical capability. Dima turns company context + native analytical
+results into Research, Evidence, Findings, Decisions, Actions and Memory.
+
+---
+
+## 2. Permanent native inheritance contract
+
+```text
+USE_NATIVE
+→ COMPOSE_NATIVE
+→ WRAP_NATIVE
+→ HOOK_NATIVE
+→ DIMA_OWNS
+```
+
+Before building any Dima analytical mechanism ask:
+
+```text
+Does pinned Metabase/Metabot already own this capability?
+```
+
+If yes, use it in place.
+
+Do not port native filter, breakout, ranking, temporal, repair, query-lifecycle, visualization,
+Explorations or permission machinery into Python.
+
+`DIMA_OWNS` requires a measured product-specific gap that native Metabase does not own.
+
+---
+
+## 3. Native substrate immutability
+
+```text
+NATIVE_SUBSTRATE_IMMUTABILITY = BINDING
+NATIVE_CORE_PATCH              = EXCEPTION ONLY
+```
+
+Normal Dima integration work does not modify Metabot prompts/profiles/skills, Metabase Lib, Query
+Processor or drivers.
+
+If a native capability works without Dima but fails through Dima, investigate Dima first.
+
+Even when a pinned-native defect is independently reproduced, prefer a reversible Dima integration
+compatibility seam over owning a permanent native-core fork.
+
+---
+
+## 4. Ownership split — no duplicate truth engine
+
+For the native Metabase path:
+
+```text
+METABASE + METABOT OWN
+- persisted native Metric / Model analytical definitions
+- field/query analytical semantics
+- analytical cognition and strategy
+- native query construction / repair
+- filters / breakouts / ranking / temporal mechanics
+- MBQL / Query Processor / drivers
+- native data-permission enforcement
+- dashboards / visualization / Explorations / native lifecycle
+
+DIMA OWNS
+- stable business concept identity
+- company terminology / aliases / sector context
+- mapping concept → exact engine resource/version
+- material business relationship policy when product-specific
+- Research objectives / obligations / hypotheses / stopping
+- claim lineage / Evidence epistemic state
+- Findings / Root Cause epistemic promotion
+- Decision / Action / Outcome / Memory
+- product-level tenant/principal/policy binding
+```
+
+Do not independently author the same analytical formula in both systems.
+
+Existing P7/P8/P9 `DimaSemanticSpec` / DIMA_MANAGED resources remain valid sealed migration and
+compatibility assets. Do not delete or mass-refactor them during P14. New work must not expand them
+into a shadow Metric/Model/query-definition engine.
+
+A later explicit semantic-ownership migration may narrow DimaSemanticSpec toward:
+
+```text
+DIMA BUSINESS ONTOLOGY / ENGINE MAPPING
+```
+
+but that migration is not part of P14 foundation and may not silently rewrite sealed semantics.
+
+---
+
+## 5. Security split
+
+Metabase + DB enforce native data access.
+
+Dima:
+- binds tenant/principal to the correct native engine subject;
+- retains P10 access/provenance identity;
+- owns Research/Evidence/Decision/Action sharing and approval policy.
+
+Do not build a generic second RLS/CLS engine in Dima.
+
+P10 is a binding/provenance contract, not a replacement database-permission system.
+
+---
+
+## 6. Evidence split
+
+```text
+ENGINE
+→ proves what native analytical resource/query executed
+→ produces result + execution identity
+
+DIMA
+→ binds result to a Research obligation / claim
+→ records principal/scope/resource lineage
+→ assigns Evidence epistemic state
+→ promotes Findings/Hypotheses/Decisions only when justified
+```
+
+Evidence is not a second MBQL interpreter.
+
+`VERIFIED` still requires no unresolved material ambiguity. Unsupported native representation or
+unresolved engine-resource mapping must fail closed or become an explicit limitation.
+
+---
+
+## 7. P13 final disposition
+
+P13's purpose was to prove that native Metabot analytics can cross Dima's identity/provenance/
+execution/Evidence boundary safely.
+
+That proof is sufficient.
+
+```text
+P13A                               = GREEN
+P13B                               = GREEN
+P13C                               = GREEN
+
+P13D BREAKDOWN LIVE                = GREEN / VERIFIED
+P13D TOP-N RANKING LIVE            = GREEN / VERIFIED
+P13D PERIOD COMPARISON             = DEFERRED COMPATIBILITY GAP / NOT GREEN
+
+P13 STANDARD TRUST BASELINE        = SEALED
+P13 OPERATOR-FAMILY GENERALIZATION = STOPPED
+P13E / P13F                        = DO NOT CREATE
+```
+
+Do not claim the original three-case P13D slice fully GREEN.
+
+The comparison gap is explicit technical debt, not a global product blocker.
+
+---
+
+## 8. Current comparison debt
+
+Certified engine:
+
+```text
+SHA           = cbe313af9ac2d5960f662068e433d328d896fb06
+release       = 0.63.18-dima.6
+certification = 36042062775 SUCCESS
+digest        = sha256:40e9a44be49904de3ddf12d4683c768e70955851c10a928a9c8f7d8f60780353
+```
+
+Final P13D live:
+
+```text
+run = 36046994140
+```
+
+Breakdown and ranking completed with exact fingerprint chains, QueryReceipts, independent oracles and
+VERIFIED Evidence.
+
+Comparison fail-closed at Dima native compatibility with
+`NATIVE_QUERY_RUNTIME_REPRESENTATION_UNSUPPORTED`.
+
+Policy:
+
+- do not cut dima.7 merely to complete the old certification table;
+- do not spend another Luna to rediscover the representation;
+- if real P14/product work hits it materially, capture the exact native representation;
+- fix only the smallest reversible Dima compatibility seam provider-free;
+- never rewrite the native query to force success;
+- native core remains immutable by default.
+
+---
+
+## 9. P14 — Native Research — FOUNDATION GREEN / CONTINUE PRODUCT INTEGRATION
+
+P14 is no longer blocked by comparison certification.
+
+The first coherent Research foundation vertical is already sealed GREEN:
+
+```text
+implementation             = a8c7b5d2b922e85ff046c6c7ce1bfce92aa13552
+integrated exact-occurrence = bab26fe51978929ace44f7703543f78099c692ce
+provider-free               = 36052728145 SUCCESS
+P14 focused                 = 6 passed
+P13D/P10/P5 regression      = 69 passed
+engine build                = 0
+model calls                 = 0
+native Metabase/Metabot diff= 0
+```
+
+Current Research foundation owns:
+
+```text
+ResearchSession
+ResearchObligation
+Hypothesis
+CounterEvidenceRef
+EvidenceRef
+ResearchBudget
+StoppingState
+NativeMetabotConversationRef
+ResearchLimitation
+```
+
+The integrated provider-free flow already proves:
+
+```text
+Research obligation
+→ native Metabot delegation identity
+→ existing P13 authorization
+→ exact native occurrence execution
+→ P10 access identity
+→ P5 QueryReceipt
+→ VERIFIED Evidence
+→ Research state
+```
+
+ResearchManager does not see or author raw MBQL/SQL as analytical strategy.
+
+It owns **what must be investigated and what the evidence means**, not **how Metabase constructs the
+query**.
+
+Next coherent P14 slice is product-level integration, not another foundation rewrite:
+
+1. wire the Research aggregate into the real Ask/Research orchestration boundary;
+2. durably correlate ResearchSession with a real native Metabot conversation/session;
+3. delegate governed obligations to the native engine;
+4. reuse the same P13 exact-occurrence/P10/P5/Evidence chain for every material execution;
+5. add durable resume/correlation and obligation-scoped limitations;
+6. keep engine builds and model calls at zero until a real native Research bridge exists and one
+   bounded live evaluation can change a product/architecture decision.
+
+---
+
+## 10. P15 — Native Metabase Explorations Integration
+
+Use native Explorations in place.
+
+Do not harvest/rewrite its primitives.
+
+Reuse where supported:
+
+- metric-dimension applicability;
+- variants;
+- top-N + Other;
+- temporal patterns;
+- interestingness;
+- runner;
+- stored results;
+- cancellation/restart;
+- idempotency;
+- derived permissions;
+- native query/result lifecycle.
+
+Dima binds these to Research obligations, Evidence and decision context.
+
+```text
+Metabase interestingness
+!=
+Dima VERIFIED Finding
+```
+
+---
+
+## 11. P16 — Evidence / claim lineage
+
+Evolve Evidence around:
+
+```text
+claim
+research obligation
+engine resource
+native occurrence / execution
+result
+scope
+principal
+freshness
+receipt
+epistemic state
+```
+
+Do not add operator-level semantic interpreters.
+
+---
+
+## 12. P17 — Research Manager maturation
+
+Add:
+- obligation ledger;
+- inspect/replan loop;
+- bounded budgets;
+- no-progress;
+- counter-evidence;
+- stopping/completion;
+- durable resume.
+
+The loop is agentic cognition, not a deterministic:
+`trend → breakdown → segment → compare`
+state machine.
+
+---
+
+## 13. P18 — Relationships
+
+Metabase owns native join mechanics.
+
+Dima owns only material business relationship policy that is company/sector specific and required for
+safe interpretation.
+
+Do not mirror Metabase's join planner.
+
+Unapproved material relationship use may block VERIFIED promotion, but physical/native join
+representation is not reimplemented in Dima.
+
+---
+
+## 14. P19–P21 — Dima differentiation
+
+P19:
+Hypothesis / Root Cause epistemics.
+
+P20:
+ReportDocument / claim-to-evidence synthesis.
+
+P21:
+DecisionBrief / options / tradeoffs / recommendation / limitation.
+
+These are core Dima product value and should receive development effort instead of additional P13
+operator certification.
+
+---
+
+## 15. Product direction after P21
+
+The broader product becomes:
+
+```text
+CONNECT
+→ UNDERSTAND
+→ WATCH
+→ AUDIT
+→ THINK / INVESTIGATE
+→ DECIDE
+→ ACT
+→ REMEMBER
+```
+
+Metabase remains strongest in analytical execution/BI surfaces.
+
+Dima adds company/sector intelligence, continuous monitoring, Research, optimization, decisions,
+actions and institutional memory.
+
+Chat is one interface to this brain, not the product itself.
+
+---
+
+## 16. One Ask surface
+
+Do not expose "Metabase mode" versus "Dima mode" to the user.
+
+There is one Dima Ask/Research surface.
+
+Internally a native execution either:
+- satisfies the material binding/provenance requirements and can support VERIFIED Evidence;
+- fails closed / records an explicit limitation.
+
+A future scoped-evidence state may be introduced only by an explicit Evidence-plane decision. Do not
+silently downgrade truth requirements.
+
+---
+
+## 17. Speed and test economy
+
+Permanent cadence:
+
+```text
+build coherent product slice
+→ focused owner tests
+→ one provider-free seal
+→ model/live only if cognition changed and the result changes a decision
+→ continue
+```
+
+Do not:
+- rerun P13B/P13C;
+- rebuild unchanged engine;
+- certify every Metabase operator;
+- run Sol/C1/full corpus for Dima state-model changes;
+- stop after every small commit.
+
+---
+
+## 18. STOP conditions
+
+Stop for supervisor only if:
+
+1. native Metabot/QP/driver/Lib modification appears necessary;
+2. a second analytics planner is being introduced;
+3. a second semantic formula owner is being introduced;
+4. a second security/receipt authority is being introduced;
+5. silent wrong reaches VERIFIED Evidence;
+6. a broad paid/model corpus is proposed without a decision-changing hypothesis;
+7. destructive P7/P9 semantic ownership migration is proposed.
+
+Ordinary P14 implementation progress is not a STOP.
+
+---
+
+## 19. Immediate developer objective
+
+DMP-DEC-0046 sealed the P14 product Research/Ask boundary provider-free.
+
+Do not reopen P13 or rebuild P14 foundation/product wiring.
+
+Next coherent phase:
+
+```text
+P15 NATIVE METABASE EXPLORATIONS INTEGRATION
+```
+
+First inspect the pinned native Explorations surfaces and reuse them in place:
+
+```text
+applicability
+variants
+interestingness
+Top-N + Other
+temporal patterns
+stored results
+runner
+cancel/restart
+idempotency
+derived permissions
+native query/result lifecycle
+```
+
+Dima maps native Exploration work into Research obligations and Evidence. It must not copy those
+analytical primitives into Python and must not treat Metabase interestingness as VERIFIED Finding.
+
+The principal-scoped native/P13 runtime binding remains a required deployment seam. Do not create a
+shared admin/service-session fallback or a second security identity owner to satisfy it.
+
+Use focused provider-free tests while building one coherent P15 vertical. No model/live run or engine
+build is required unless a decision-changing hypothesis specifically justifies one.
+
+Return after one provider-free native Exploration → Research/Evidence vertical is GREEN, or after one
+genuine STOP condition.
+
+
+---
+
+## 18. 2026-09-25 P14 production-runtime activation checkpoint
+
+The production-runtime directive supersedes the premature implication that P15 may start immediately
+after DMP-DEC-0046. P15 remains gated by P14 runtime + one real Research canary.
+
+Accepted-context preservation is now implemented without a second semantic system:
+- exact accepted `ResearchBrief` is stored in the existing fingerprinted Research checkpoint;
+- resolver-proven semantic refs survive restart;
+- typed ranking/comparison payloads survive and participate in brief authority identity;
+- resume continues to bypass language interpretation.
+
+No new database table/store was added for semantic context.
+
+P14 runtime wiring is currently blocked before implementation of a production
+`NativeBridgeFactory` / `ResearchMaterialExecutor` because the current repository exposes no
+existing production owner that can faithfully provide all of:
+
+```text
+Dima principal -> exact authenticated Metabase subject/session
+current production DimaExecutionBindingSnapshot / ManagedResourceBinding
+truthful VerifiedExecutionSecurityFacts for that same lens
+accepted exact temporal authority for absolute named-month Research scope
+```
+
+The existing contracts remain the intended owners; the gap is their production materialization and
+binding, not analytical logic.
+
+Until that owner boundary is resolved:
+
+```text
+P14 PRODUCTION NATIVE RUNTIME = NOT GREEN
+P14 LIVE RESEARCH CANARY      = NOT AUTHORIZED/RUN
+P15                           = NOT STARTED
+```
+
+Do not add a new identity broker, temporal parser/planner, security issuer or fixture-backed
+production truth to make the gate pass.
+---
+
+## 20. 2026-09-25 — P14 thin native gateway correction (DMP-DEC-0047)
+
+DMP-DEC-0047 supersedes the temporal portion of the prior production-runtime STOP.
+
+The current P14 rule is:
+
+```text
+Research does not compile every accepted analytical surface into a second P13 operator contract.
+
+Research preserves WHAT the user/company needs investigated.
+Metabot/Metabase own HOW native analytics interprets and executes ordinary analytical mechanics.
+Dima owns the thin material boundary around principal, engine-resource mapping, provenance,
+claim-lineage Evidence and product-level business policy.
+```
+
+### Removed generic gate
+
+An ordinary accepted surface such as `Haziran 2026` does not require Dima to create a second generic
+absolute-month temporal authority before Metabot may work.
+
+Do not build a new absolute-month parser/planner for P14. Do not reparse old prompts on resume.
+Company-specific fiscal calendars or other genuinely material business time policy remain Dima-owned.
+
+### Remaining real production seams
+
+1. **Native subject/session binding**
+
+```text
+Dima Principal → exact effective Metabase subject/session
+```
+
+Implement only as a thin provider around native Metabase auth/session capability. No shared admin,
+global service analytical user, duplicate RLS engine or new identity authority.
+
+2. **Current engine-resource/security binding**
+
+```text
+Dima business concept/context → exact current Metabase resource identity/version
+```
+
+Reuse P9/P10/P13 mappings/current native resource facts. Do not duplicate Metabase Metric/Model
+formulas and do not promote lab fixture mappings to production truth.
+
+### P14 material execution target
+
+```text
+Research obligation
+→ native Metabot
+→ exact native occurrence
+→ thin material gateway
+→ native execution
+→ P5 QueryReceipt
+→ claim-lineage Evidence
+→ Research state
+```
+
+P13 exact-occurrence/runtime/receipt lessons remain inherited. P13 operator-by-operator semantic
+generalization remains STOPPED.
+
+The next developer objective is to implement the two thin production providers above and wire the
+existing `ResearchMaterialExecutor` to the native occurrence path without reconstructing a full
+analytical planner or temporal interpreter.
+
+Reference-only `feat/ask-v2-mvp` may be inspected for principal pass-through, idempotent Research
+task lifecycle and durable obligation patterns. No merge/cherry-pick and no Wren planner/temporal
+ownership import.
+
+P15 remains after one real P14 native runtime/canary boundary.
+
+
+
+---
+
+## 21. 2026-09-25 — DMP-DEC-0048 forward architecture: native-direct Research execution
+
+DMP-DEC-0048 supersedes DMP-DEC-0047 as forward implementation authority.
+DMP-DEC-0047 remains historical/transitional evidence and is not deleted.
+
+### Permanent ownership
+
+```text
+METABASE + METABOT
+= ANALYTICAL TRUTH
++ ANALYTICAL EXECUTION
+
+DIMA
+= BUSINESS ONTOLOGY
++ RESEARCH
++ EVIDENCE / CLAIM LINEAGE
++ HYPOTHESIS
++ ROOT CAUSE
++ DECISION
++ ACTION
++ OUTCOME
++ MEMORY
+```
+
+Permanent rule:
+
+```text
+METABASE PROVES THE ANALYSIS.
+DIMA PROVES THE LINEAGE AND DECISION CONTEXT.
+```
+
+### P13 role cutover
+
+P13 is preserved and remains SEALED, but its forward role is now **CERTIFICATION MICROSCOPE**:
+release/certification, benchmark diagnostics, incident investigation, forensic audit,
+silent-wrong investigation and high-risk compatibility analysis.
+
+P13 attestation and P13 exact-occurrence re-execution are **not mandatory production middleware**
+for ordinary Research. Do not extend P13 operator grammar and do not remove its historical code/tests.
+
+### P14 production hot path
+
+```text
+USER
+→ DIMA Research
+→ ResearchSession / obligation
+→ authenticated principal-scoped native Metabot session
+→ METABOT
+→ native query A
+→ METABASE native execution under the SAME authenticated subject
+→ native result
+→ ONE DimaQueryReceipt
+→ Evidence
+→ Research state
+→ user-facing answer / chart / insight
+```
+
+There is exactly one analytics execution.
+
+Forbidden forward pattern:
+
+```text
+Metabot
+→ Dima attestation
+→ Dima re-certifies analytical semantics
+→ Dima re-authorizes query grammar
+→ Metabase executes again
+```
+
+### Native execution invariant
+
+Capture the query representation Metabot actually produced and submit that exact representation to
+the pinned Metabase native execution path, preferably `POST /api/dataset` if pinned-source proof
+confirms compatibility.
+
+No Dima compiler, canonicalizer, MBQL parser, temporal parser, ranking/filter/breakout validator,
+query normalization layer, alternative query B, Wren/raw-SQL fallback, or second analytics planner.
+
+### Security seam
+
+`NativeSubjectBinding` may remain only as explicit Dima-principal ↔ native Metabase-subject
+**identity correlation**.
+
+At runtime:
+
+```text
+presented principal-scoped Metabase session
+→ /api/user/current
+→ exact correlated native subject
+```
+
+Metabase remains permission authority. Shared admin session, global analytical service account and
+admin fallback are forbidden.
+
+`security_profile` / `policy_version`, if retained temporarily for compatibility, are
+non-authoritative metadata and must not be used to manufacture Metabase permission truth.
+
+### Resource mapping seam
+
+Dima may keep useful business-concept → native Metric/Model/resource mappings for ontology,
+provenance and discovery context. Generic P14 Research must not require a mapping row for every
+native query and must not inspect MBQL operators to prove the mapped resource before native execution.
+
+### P10/P5 cut
+
+Generic Research must not manufacture
+`VerifiedExecutionSecurityFacts → ExecutionAccessSnapshot` merely to duplicate authenticated
+Metabase enforcement.
+
+Keep **one** `DimaQueryReceipt` family. For `authority_kind=research_material`, widen the existing
+receipt contract cleanly so Research-native receipts record Research authority/session, obligation,
+Dima principal, native subject, conversation/query identity, query fingerprint, runtime/database,
+result hash/row count and optional naturally available resource refs.
+
+Do not stuff Research hashes into Standard-only `projection_hash` or
+`resolved_intent_hash` fields. Standard receipt semantics remain unchanged.
+
+### Evidence meaning
+
+For native Research, `EvidenceState.VERIFIED` means:
+- native execution occurred;
+- authenticated native subject is known;
+- execution/result provenance is intact;
+- the single receipt is intact;
+- Research obligation linkage is intact;
+- no unresolved Dima-owned business-policy ambiguity remains.
+
+It does **not** mean Dima independently re-proved COUNT/ranking/temporal/filter/breakout semantics.
+
+### Current unsealed slice
+
+At `3dc544b95c05044e35c6903b720a6ddb824e9b37`:
+
+```text
+governance                 = 36095837229 SUCCESS
+P14 provider-free          = 36095837211 FAILURE
+focused result             = 13 PASS / 6 FAIL
+slice status               = NOT SEALED
+```
+
+Do not repair/seal the current thick gateway as-is. Refactor it downward first:
+remove/bypass mandatory P13 attestation/re-execution, AuthorizedExecutionArtifact synthesis,
+P10 access-snapshot synthesis and operator-level NativeExecutionManifest/resource validation.
+
+### Immediate P14 execution order
+
+1. source-backed provider-free proof of the exact Metabot-produced query representation;
+2. durably capture query A in the existing `ResearchExecutionLink` without creating an analytical
+   definition store;
+3. add the smallest native bridge transport: same authenticated client → exact query A →
+   native Metabase dataset execution;
+4. keep only principal/native-subject correlation and occurrence/result/runtime provenance;
+5. cleanly widen the one receipt family for `research_material`;
+6. fix legitimate focused owner bugs, including timezone-aware defaults on **new P14 binding rows**;
+7. run one focused provider-free P14 seal + P5 receipt regression;
+8. if provider-free cannot prove query-representation compatibility, use at most one deterministic
+   no-model native probe;
+9. after provider-free GREEN, run one Luna Research canary only;
+10. then close P14 and immediately continue P15 Native Metabase Explorations.
+
+No P13 live, C1, Sol, engine build/certification, historical M1/M2 or broad corpus in this cut.
+
+### Roadmap after P14
+
+```text
+P15 Native Metabase Explorations
+→ P16 claim-lineage Evidence
+→ P17 Research maturation
+→ P18 material relationships
+→ P19 Hypothesis / Root Cause
+→ P20 Report
+→ P21 Decision Intelligence
+→ Action
+→ Outcome
+→ Memory
+```
+
+This is the forward product roadmap. Do not build another Metabase inside Dima.
+
+
+---
+
+# 2026-09-26 — P20 SEALED — DMP-DEC-0056 / P21 PRE-DEVELOPMENT COMPLETE
+
+Forward status:
+
+```text
+P14 = SEALED
+P15 = SEALED
+P16 = SEALED
+P17 = SEALED
+P18 = SEALED / HARDENED
+P19 = SEALED
+P20 = SEALED
+
+P21 PRE-DEVELOPMENT = COMPLETE
+P21 IMPLEMENTATION = NOT AUTHORIZED
+UI / UX = FORBIDDEN
+```
+
+P20 canonical product candidate:
+
+```text
+46bbc5f22ea18f6be239014750d77fc254508c46
+```
+
+P20 closure:
+
+```text
+provider-free = 36192492612 SUCCESS
+governance    = 36192492542 SUCCESS
+Alembic head  = f7c4a2d8b930
+
+P20 = 19 PASS
+P19 = 42 PASS
+P18 = 24 PASS
+P17 = 95 PASS
+P16 = 6 PASS
+P15 = 5 PASS
+P14 = 17 PASS
+```
+
+P20 owns one durable record family only:
+
+```text
+ReportDocument / p20_report_document
+```
+
+P20 performs no analytics and creates no duplicate receipt/Evidence/claim/root-cause authority.
+USER_MUST accounting, exact numeric provenance, epistemic ceiling preservation, restart idempotency,
+source-set staleness and immutable revisions are provider-free GREEN.
+
+Engine remains frozen:
+
+```text
+cbe313af9ac2d5960f662068e433d328d896fb06
+0.63.18-dima.6
+engine changes/builds = 0 / 0
+```
+
+P20 model calls:
+
+```text
+Luna / Sol / C1 = 0 / 0 / 0
+```
+
+P21 pre-development authority is DMP-DEC-0057.
+
+Critical P21 boundary:
+
+```text
+CURRENT sealed P20 ReportDocument
+→ typed DecisionBrief
+→ deterministic DecisionLegalityGate
+
+DecisionBrief != legacy DecisionRecord
+Recommendation != adopted human decision
+P21 != analytics
+P21 != action execution
+```
+
+Legacy `DecisionRecord` and its Query-Contract/Cube replay semantics remain historical compatibility
+and are not repurposed. No P21 production code was written.
+
+Next bounded objective requires new supervisor authorization:
+
+```text
+provider-free DecisionBrief + DecisionLegalityGate
+one durable DecisionBrief record family max
+no router / no UI / no model required
+```

@@ -1,0 +1,89 @@
+name: dima-metabase-p16-provider-free
+
+on:
+  push:
+    branches:
+      - feat/dima-metabase-platform
+    paths:
+      - "backend/app/v3/claim_lineage.py"
+      - "backend/app/v3/research_exploration.py"
+      - "backend/app/v3/research_store.py"
+      - "backend/control_plane/models.py"
+      - "backend/app/main.py"
+      - "backend/migrations/versions/c8b4d7e1a295_p16_claim_lineage.py"
+      - "backend/tests/test_v3_p16_claim_lineage.py"
+      - "backend/tests/test_v3_p15_native_exploration.py"
+      - "backend/belgeler/metabase/predev/P16_CLAIM_LINEAGE_PREDEVELOPMENT_REVIEW.md"
+      - ".github/workflows/dima-metabase-p16-provider-free.yml"
+      - ".github/workflows/dima-metabase-governance.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  claim-lineage-provider-free:
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[p16-seal]'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_INTERACTION_LOG: "false"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install canonical backend test environment
+        working-directory: backend
+        run: pip install -e ".[dev]"
+
+      - name: Enforce P16 claim-lineage ownership boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          REVIEW="backend/belgeler/metabase/predev/P16_CLAIM_LINEAGE_PREDEVELOPMENT_REVIEW.md"
+          grep -q "SEALED / P16 CLAIM-LINEAGE IMPLEMENTATION AUTHORIZED" "$REVIEW"
+          HOT="backend/app/v3/claim_lineage.py"
+          ! grep -nE 'NativeStandardTrustOrchestrator|ResolvedAnalyticsIntent|TemporalBindingEngine|MetabaseProjectionCompiler|MetabaseCanonicalizer|execute_dataset[[:space:]]*\(|explore_adhoc[[:space:]]*\(|attest_native_query[[:space:]]*\(|execute_native_query[[:space:]]*\(|app\.wren|wren_service|MetabaseAgentClient' "$HOT"
+          ! grep -nE '^(from|import)[[:space:]]+(numpy|pandas|scipy|statistics)([[:space:].]|$)' "$HOT"
+          ! grep -nE 'confidence(_score)?[[:space:]]*[:=]' "$HOT"
+
+      - name: Compile P16 claim-lineage slice
+        working-directory: backend
+        run: |
+          python -m py_compile \
+            app/v3/claim_lineage.py \
+            app/v3/research.py \
+            app/v3/research_store.py \
+            app/v3/research_exploration.py \
+            control_plane/models.py \
+            migrations/versions/c8b4d7e1a295_p16_claim_lineage.py \
+            tests/test_v3_p16_claim_lineage.py
+
+      - name: Verify single Alembic head includes P16 claim durability
+        working-directory: backend
+        run: |
+          set -euo pipefail
+          heads="$(python -m alembic heads)"
+          test "$(printf '%s\n' "$heads" | grep -Ec '^[0-9a-f]+')" -eq 1
+          printf '%s\n' "$heads" | grep -q '^c8b4d7e1a295'
+
+      - name: P16 focused provider-free claim-lineage proof
+        working-directory: backend
+        run: pytest -q tests/test_v3_p16_claim_lineage.py
+
+      - name: P15 native Exploration authority remains GREEN
+        working-directory: backend
+        run: pytest -q tests/test_v3_p15_native_exploration.py
+
+      - name: P14 native-direct authority remains GREEN
+        working-directory: backend
+        run: pytest -q tests/test_v3_p14_native_gateway.py

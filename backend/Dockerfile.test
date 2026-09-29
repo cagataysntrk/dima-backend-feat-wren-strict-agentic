@@ -1,0 +1,31 @@
+# dima-test — KAPI İMAJI. `Dockerfile`'ın (çalışma zamanı) üstüne **dev** bağımlılıkları.
+#
+# ## 🔴 NEDEN AYRI BİR DOSYA VAR — ölçülen kusur (2026-08-04)
+#
+# `dima-test` imajı bugüne kadar **reçetesiz** duruyordu: birinin bir kez elle kurduğu,
+# hiçbir dosyada yazılı olmayan bir imajdı. Ve bugün tam olarak beklenen şey oldu —
+# `docker build -t dima-test -f Dockerfile .` komutu onu **çalışma-zamanı imajıyla ezdi**
+# ve `pytest` **imajdan tamamen kayboldu**. Yani deponun bütün kapıları, bir tek `docker
+# build` komutuyla **hiç koşamaz** hâle geldi.
+#
+# *Ölçüm aracının kendisi de bir bağımlılıktır* (MIMARI §6.4) — ve yazılı olmayan bir
+# bağımlılık, var olmayan bir bağımlılıktır.
+#
+# ## Kullanım
+#
+#     docker build -t dima-test -f Dockerfile.test .
+#
+# ⚠ **`pytest-xdist` İSTEĞE BAĞLI DEĞİL:** `lab/kapi.py` süiti `-n 8` ile koşar; eksikse
+# kapı `unrecognized arguments: -n` ile **hiç başlamadan** düşer.
+
+# Taban: `Dockerfile`'ın ürettiği ÇALIŞMA ZAMANI imajı. Önce o derlenir:
+#     docker build -t dima-api -f Dockerfile .
+FROM dima-api:latest
+
+# `pyproject.toml` zaten kopyalanmış durumda (bkz. Dockerfile) — dev ekstralarını
+# ORADAN kur ki iki yerde iki liste olmasın ("aynı kuralın iki sahibi").
+RUN pip install --no-cache-dir -e ".[dev]"
+
+# 🔴 DUMAN TESTİ: kapının çalışması için gereken her şey GERÇEKTEN kurulu mu?
+# Eksikse build BURADA kırılır — demet sonunda, kapıyı beklerken değil.
+RUN python -c "import pytest, xdist, yaml, httpx; print('kapı bağımlılıkları OK')"

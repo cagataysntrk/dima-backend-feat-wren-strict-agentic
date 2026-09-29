@@ -1,0 +1,20 @@
+name: dima-v1-phase1-p12-live
+
+# Historical broad paid workflow retained only as a fail-closed tombstone.
+# DMP-DEC-0073B forbids any 30-case paid execution.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  broad-paid-forbidden:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Refuse broad paid execution
+        shell: bash
+        run: |
+          echo "DMP-DEC-0073B: broad 30-case paid benchmark is forbidden."
+          echo "Use dima-v1-phase1-p12-pinpoint-live for the exact two authorized probes."
+          exit 1
