@@ -638,6 +638,7 @@ def test_request_scoped_intake_schema_closes_authority_ids_before_domain_executi
     assert set(relationship["properties"]) == {
         "goal_key",
         "source_text",
+        "source_fragment_text",
         "ranking",
         "comparison_texts",
         "kind",
