@@ -739,11 +739,16 @@ def test_scoped_constraint_seam_can_expose_only_form_claim_for_verified_relation
         )
 
     assert transport.schema is not None
-    intents = {
-        value
-        for variant in _variants(transport.schema)
-        for value in variant["properties"]["intent"]["enum"]
-    }
+    if "proposal" in transport.schema.get("properties", {}):
+        intents = {
+            value
+            for variant in _variants(transport.schema)
+            for value in variant["properties"]["intent"]["enum"]
+        }
+    else:
+        intents = set(
+            transport.schema["properties"]["intent"]["enum"]
+        )
     assert intents == {InvestigationIntent.FORM_CLAIM.value}
     provider_view = json.loads(
         transport.user.split("GOVERNED SNAPSHOT JSON:\n", 1)[1]
