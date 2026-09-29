@@ -351,6 +351,17 @@ class ResearchManager:
         item=item.model_copy(update={"state":ObligationState.LIMITED,"limitation_refs":(*item.limitation_refs,lid)})
         return cls.advance(session,now=stamp,obligations=cls.replace(session,item),limitations=(*session.limitations,lim))
 
+    @classmethod
+    def record_retryable_limitation(cls,session,*,obligation_id,code,detail,now=None):
+        """Record transient post-execution observation failure without terminalizing Research."""
+        item=cls.obligation(session,obligation_id)
+        if item.state==ObligationState.VERIFIED:
+            raise ResearchStateError("P14_VERIFIED_OBLIGATION_IMMUTABLE",obligation_id)
+        stamp=_now(now)
+        lid=_id("lim_",{"session":session.session_id,"obligation":obligation_id,"code":code,"detail":detail,"revision":session.revision+1})
+        lim=ResearchLimitation(limitation_id=lid,obligation_id=obligation_id,code=code,detail=detail,recorded_at=stamp)
+        return cls.advance(session,now=stamp,limitations=(*session.limitations,lim))
+
     @staticmethod
     def checkpoint(session): return ResearchCheckpoint(session=session,fingerprint=session.fingerprint)
 

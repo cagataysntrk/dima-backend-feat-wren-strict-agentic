@@ -7,8 +7,9 @@ the single DimaQueryReceipt family, Evidence, and Research correlation.
 
 No analytical planner, MBQL parser, semantic guesser, re-execution dependency,
 P10 access-snapshot synthesis, or resource-planning authority lives here.
-The engine attestation seam is used only to verify material request invariants
-before a native result may become governed Evidence.
+The dima.7 material-observation seam reports stable material native semantics
+after durable execution; Dima compares them to the accepted analytical contract
+before a native result may become governed Evidence. P13 attestation is forensic only.
 """
 from __future__ import annotations
 
@@ -27,17 +28,16 @@ from app.v3.execution_identity import (
     ExecutionResultSnapshot,
     RuntimeIdentity,
 )
-from app.v3.native_standard.contracts import NativeAttestationEnvelope
 from app.v3.research import ResearchSession
 from app.v3.research_analytical_scope import (
-    NativeFieldLocator,
-    NativeTableLocator,
+    NativeMaterialBinding,
     ResearchAnalyticalScopeError,
     analytical_scope_contract,
-    assert_attested_native_scope,
+    assert_material_native_scope,
 )
 from app.v3.research_product import (
     ResearchMaterialLimitation,
+    ResearchMaterialObservationUnavailable,
     ResearchMaterialOutcome,
 )
 from app.v3.research_store import ResearchSessionStore
@@ -201,103 +201,48 @@ class NativeResearchMaterialExecutor:
         self._expected = expected_identity
 
     @staticmethod
-    def _required_field_ids(attestation: NativeAttestationEnvelope) -> set[int]:
-        manifest = attestation.manifest
-        field_ids: set[int] = set()
-        for item in manifest.aggregations:
-            field_ids.update(int(value) for value in item.referenced_field_ids)
-        field_ids.update(int(item.field_id) for item in manifest.breakouts)
-        field_ids.update(
-            int(item.time_field_id) for item in manifest.temporal_predicates
-        )
-        field_ids.update(
-            int(item.field_id) for item in manifest.textual_equality_predicates
-        )
-        return field_ids
+    def _contract_candidate_ids(contract) -> set[str]:
+        candidate_ids = set(contract.metric_refs)
+        candidate_ids.update(contract.dimension_refs)
+        candidate_ids.update(item.source_candidate_id for item in contract.filters)
+        if contract.period is not None:
+            candidate_ids.add(contract.period.time_dimension)
+        if contract.comparison is not None:
+            candidate_ids.add(contract.comparison.reference_period.time_dimension)
+            candidate_ids.add(contract.comparison.base_period.time_dimension)
+        ranking = contract.ranking
+        if getattr(ranking, "kind", None) == "native_metric":
+            candidate_ids.add(ranking.measure)
+        return candidate_ids
 
-    @staticmethod
-    def _merge_table_locator(
-        target: dict[int, NativeTableLocator],
-        value: NativeTableLocator,
-    ) -> None:
-        prior = target.get(value.table_id)
-        if prior is not None and prior != value:
-            raise ResearchMaterialLimitation(
-                "R1_NATIVE_RESOURCE_LOCATOR_CONFLICT",
-                f"conflicting governed table locator for {value.table_id}",
-            )
-        target[value.table_id] = value
-
-    @staticmethod
-    def _merge_field_locator(
-        target: dict[int, NativeFieldLocator],
-        value: NativeFieldLocator,
-    ) -> None:
-        prior = target.get(value.field_id)
-        if prior is not None and prior != value:
-            raise ResearchMaterialLimitation(
-                "R1_NATIVE_RESOURCE_LOCATOR_CONFLICT",
-                f"conflicting governed field locator for {value.field_id}",
-            )
-        target[value.field_id] = value
-
-    def _native_locators(
+    def _material_bindings(
         self,
         *,
         principal: Principal,
         session: ResearchSession,
-        attestation: NativeAttestationEnvelope,
-    ) -> tuple[
-        dict[int, NativeFieldLocator],
-        dict[int, NativeTableLocator],
-    ]:
-        """Compose attested physical IDs with already-governed native bindings.
-
-        This is correlation only. Names come from the immutable accepted Research
-        verification bindings; IDs come from NativeResourceBinding and must be
-        present in the exact native attestation. No Metabase metadata endpoint,
-        query inspection, or semantic inference is used.
-        """
+        contract,
+    ) -> dict[str, NativeMaterialBinding]:
+        """Load exact stable native ids for accepted semantic candidates only."""
         brief = session.accepted_brief
         if brief is None:
             raise ResearchMaterialLimitation(
                 "R1_ACCEPTED_BRIEF_REQUIRED",
-                "native locator correlation requires the immutable accepted ResearchBrief",
+                "material observation requires the immutable accepted ResearchBrief",
             )
         tenant_id = _tenant_uuid(principal, session)
-        manifest = attestation.manifest
         accepted_refs = {
             item.candidate_id: item for item in brief.scope.semantic_refs
         }
-        verification = {
-            item.candidate_id: item
-            for item in brief.scope.native_verification_bindings
-        }
-        if set(verification) - set(accepted_refs):
+        required = self._contract_candidate_ids(contract)
+        if not required.issubset(accepted_refs):
             raise ResearchMaterialLimitation(
-                "R1_NATIVE_RESOURCE_BINDING_OUTSIDE_SCOPE",
-                "native verification binding is outside accepted Research scope",
+                "R1_SEMANTIC_REF_OUTSIDE_ACCEPTED_SCOPE",
+                "material contract references a candidate outside accepted Research scope",
             )
-
-        required_tables = {
-            int(value) for value in manifest.referenced_source_table_ids
-        }
-        required_fields = self._required_field_ids(attestation)
-        observed_metrics = {
-            (
-                int(item.metabase_metric_id),
-                str(item.metabase_metric_entity_id),
-            )
-            for item in manifest.native_metric_references
-        }
-
-        table_locators: dict[int, NativeTableLocator] = {}
-        field_locators: dict[int, NativeFieldLocator] = {}
-
+        output: dict[str, NativeMaterialBinding] = {}
         with Session(self._subjects.db_engine) as db:
-            for candidate_id in sorted(verification):
+            for candidate_id in sorted(required):
                 ref = accepted_refs[candidate_id]
-                expected = verification[candidate_id]
                 rows = db.exec(
                     select(NativeResourceBinding)
                     .where(NativeResourceBinding.tenant_id == tenant_id)
@@ -315,17 +260,9 @@ class NativeResearchMaterialExecutor:
                 if len(rows) != 1:
                     raise ResearchMaterialLimitation(
                         "R1_NATIVE_RESOURCE_BINDING_MISSING",
-                        (
-                            "exactly one governed native resource binding is "
-                            f"required for {candidate_id}"
-                        ),
+                        f"exactly one governed native binding is required for {candidate_id}",
                     )
                 binding = rows[0]
-                if binding.canonical_name != ref.canonical_name:
-                    raise ResearchMaterialLimitation(
-                        "R1_NATIVE_RESOURCE_BINDING_STALE",
-                        f"canonical identity drift for {candidate_id}",
-                    )
                 if (
                     not str(binding.semantic_id or "").strip()
                     or not str(binding.resource_entity_id or "").strip()
@@ -343,110 +280,34 @@ class NativeResearchMaterialExecutor:
                         "R1_NATIVE_RESOURCE_FINGERPRINT_INVALID",
                         candidate_id,
                     )
-                if int(binding.metabase_database_id) != int(manifest.database_id):
-                    raise ResearchMaterialLimitation(
-                        "R1_NATIVE_RESOURCE_DATABASE_MISMATCH",
-                        candidate_id,
-                    )
-
-                table_id = (
-                    int(binding.metabase_table_id)
-                    if binding.metabase_table_id is not None
-                    else None
+                output[candidate_id] = NativeMaterialBinding(
+                    candidate_id=candidate_id,
+                    candidate_kind=ref.target_kind.value,
+                    database_id=int(binding.metabase_database_id),
+                    table_id=(
+                        int(binding.metabase_table_id)
+                        if binding.metabase_table_id is not None
+                        else None
+                    ),
+                    field_id=(
+                        int(binding.metabase_field_id)
+                        if binding.metabase_field_id is not None
+                        else None
+                    ),
+                    metric_id=(
+                        int(binding.metabase_metric_id)
+                        if binding.metabase_metric_id is not None
+                        else None
+                    ),
+                    metric_entity_id=(
+                        str(binding.metabase_entity_id)
+                        if binding.metabase_entity_id is not None
+                        else None
+                    ),
                 )
-                field_id = (
-                    int(binding.metabase_field_id)
-                    if binding.metabase_field_id is not None
-                    else None
-                )
-                metric_id = (
-                    int(binding.metabase_metric_id)
-                    if binding.metabase_metric_id is not None
-                    else None
-                )
-                metric_entity_id = (
-                    str(binding.metabase_entity_id)
-                    if binding.metabase_entity_id is not None
-                    else None
-                )
+        return output
 
-                if binding.locator_kind == "table":
-                    if table_id is None:
-                        raise ResearchMaterialLimitation(
-                            "R1_NATIVE_RESOURCE_LOCATOR_INVALID",
-                            candidate_id,
-                        )
-                elif binding.locator_kind == "field":
-                    if (
-                        table_id is None
-                        or field_id is None
-                        or expected.column_name is None
-                    ):
-                        raise ResearchMaterialLimitation(
-                            "R1_NATIVE_RESOURCE_LOCATOR_INVALID",
-                            candidate_id,
-                        )
-                elif binding.locator_kind == "metric":
-                    if metric_id is None or metric_entity_id is None:
-                        raise ResearchMaterialLimitation(
-                            "R1_NATIVE_RESOURCE_LOCATOR_INVALID",
-                            candidate_id,
-                        )
-                    if expected.native_metric_entity_id != metric_entity_id:
-                        raise ResearchMaterialLimitation(
-                            "R1_NATIVE_METRIC_RESOURCE_BINDING_MISMATCH",
-                            candidate_id,
-                        )
-                    if (metric_id, metric_entity_id) not in observed_metrics:
-                        raise ResearchMaterialLimitation(
-                            "R1_NATIVE_METRIC_RESOURCE_BINDING_MISMATCH",
-                            candidate_id,
-                        )
-                else:
-                    raise ResearchMaterialLimitation(
-                        "R1_NATIVE_RESOURCE_LOCATOR_KIND_UNSUPPORTED",
-                        str(binding.locator_kind),
-                    )
-
-                if table_id is not None and table_id in required_tables:
-                    self._merge_table_locator(
-                        table_locators,
-                        NativeTableLocator(
-                            table_id=table_id,
-                            table_name=expected.table_name,
-                            schema_name=expected.schema_name,
-                        ),
-                    )
-                if field_id is not None and field_id in required_fields:
-                    if table_id is None or expected.column_name is None:
-                        raise ResearchMaterialLimitation(
-                            "R1_NATIVE_RESOURCE_LOCATOR_INVALID",
-                            candidate_id,
-                        )
-                    self._merge_field_locator(
-                        field_locators,
-                        NativeFieldLocator(
-                            field_id=field_id,
-                            table_id=table_id,
-                            table_name=expected.table_name,
-                            schema_name=expected.schema_name,
-                            column_name=expected.column_name,
-                        ),
-                    )
-
-        missing_tables = sorted(required_tables - set(table_locators))
-        missing_fields = sorted(required_fields - set(field_locators))
-        if missing_tables or missing_fields:
-            raise ResearchMaterialLimitation(
-                "R1_NATIVE_RESOURCE_LOCATOR_MISSING",
-                (
-                    f"tables={missing_tables or '[]'} "
-                    f"fields={missing_fields or '[]'}"
-                ),
-            )
-        return field_locators, table_locators
-
-    def _attest_scope(
+    def _observe_scope(
         self,
         *,
         principal: Principal,
@@ -455,53 +316,54 @@ class NativeResearchMaterialExecutor:
         obligation_id: str,
         native_conversation_id: uuid.UUID,
         native_query_id: str,
+        query_fingerprint: str,
         metabase_user_id: int,
     ):
+        contract = analytical_scope_contract(
+            session=session,
+            obligation_id=obligation_id,
+        )
+        bindings = self._material_bindings(
+            principal=principal,
+            session=session,
+            contract=contract,
+        )
         try:
-            raw = bridge.attest_native_query(
+            observation = bridge.observe_native_query_material(
                 conversation_id=native_conversation_id,
                 native_query_id=native_query_id,
             )
-            attestation = NativeAttestationEnvelope.model_validate(raw)
-            if (
-                attestation.manifest.native_conversation_id
-                != native_conversation_id
-                or attestation.manifest.native_query_id != native_query_id
-            ):
-                raise ResearchMaterialLimitation(
-                    "R1_NATIVE_OCCURRENCE_SCOPE_MISMATCH",
-                    "scope attestation belongs to another native occurrence",
-                )
-            contract = analytical_scope_contract(
-                session=session,
-                obligation_id=obligation_id,
+        except NativeEngineBridgeError as exc:
+            raise ResearchMaterialObservationUnavailable(
+                "R1_NATIVE_MATERIAL_OBSERVATION_UNAVAILABLE",
+                str(exc),
+            ) from exc
+        if (
+            observation.conversation_id != native_conversation_id
+            or observation.native_query_id != native_query_id
+        ):
+            raise ResearchMaterialLimitation(
+                "R1_NATIVE_OCCURRENCE_SCOPE_MISMATCH",
+                "material observation belongs to another native occurrence",
             )
-            field_locators, table_locators = self._native_locators(
-                principal=principal,
-                session=session,
-                attestation=attestation,
+        if observation.query_fingerprint != query_fingerprint:
+            raise ResearchMaterialLimitation(
+                "R1_NATIVE_QUERY_FINGERPRINT_MISMATCH",
+                "material observation fingerprint differs from captured query A",
             )
-            observation = assert_attested_native_scope(
+        try:
+            request = assert_material_native_scope(
                 session=session,
                 obligation_id=obligation_id,
                 contract=contract,
-                attestation=attestation,
-                field_locators=field_locators,
-                table_locators=table_locators,
+                observation=observation,
+                bindings=bindings,
                 expected_engine=self._expected,
                 expected_metabase_subject=metabase_user_id,
             )
-        except NativeEngineBridgeError as exc:
-            raise ResearchMaterialLimitation(
-                "R1_NATIVE_SCOPE_ATTESTATION_FAILED",
-                str(exc),
-            ) from exc
-        except (ValueError, ResearchAnalyticalScopeError) as exc:
-            code = getattr(exc, "code", "R1_NATIVE_SCOPE_OBSERVATION_INVALID")
-            detail = getattr(exc, "detail", str(exc))
-            raise ResearchMaterialLimitation(code, detail) from exc
-
-        return observation
+        except ResearchAnalyticalScopeError as exc:
+            raise ResearchMaterialLimitation(exc.code, exc.detail) from exc
+        return request, observation
 
     @staticmethod
     def _row_count(payload: dict[str, Any]) -> int:
@@ -560,10 +422,10 @@ class NativeResearchMaterialExecutor:
         binding = self._subjects.binding_for(principal=principal, session=session)
         native_subject_ref = f"metabase-user:{binding.metabase_user_id}"
         link = self._store.execution_link(execution_link_id)
-        if link.obligation_id != obligation_id:
+        if link.session_id != session.session_id or link.obligation_id != obligation_id:
             raise ResearchMaterialLimitation(
                 "P14_NATIVE_OBLIGATION_CORRELATION_MISMATCH",
-                "execution link belongs to another Research obligation",
+                "execution link belongs to another Research session or obligation",
             )
 
         if link.status == "EXECUTION_STARTED":
@@ -574,16 +436,6 @@ class NativeResearchMaterialExecutor:
                     "blind retry is forbidden"
                 ),
             )
-
-        scope_observation = self._attest_scope(
-            principal=principal,
-            bridge=bridge,
-            session=session,
-            obligation_id=obligation_id,
-            native_conversation_id=native_conversation_id,
-            native_query_id=native_query_id,
-            metabase_user_id=int(binding.metabase_user_id),
-        )
 
         if link.status == "EXECUTED":
             (
@@ -659,6 +511,17 @@ class NativeResearchMaterialExecutor:
                 executed_at=executed_at,
             )
 
+        scope_observation, material_observation = self._observe_scope(
+            principal=principal,
+            bridge=bridge,
+            session=session,
+            obligation_id=obligation_id,
+            native_conversation_id=native_conversation_id,
+            native_query_id=native_query_id,
+            query_fingerprint=query_fingerprint,
+            metabase_user_id=int(binding.metabase_user_id),
+        )
+
         provenance_base = f"research-execution-link:{execution_link_id}"
         event = ExecutionEventIdentity(
             execution_id=f"native-dataset:{execution_link_id}",
@@ -695,13 +558,31 @@ class NativeResearchMaterialExecutor:
                 "native_conversation_id": str(native_conversation_id),
                 "native_query_id": native_query_id,
                 "query_fingerprint": query_fingerprint,
-                "attestation_id": scope_observation.attestation_id,
-                "attested_query_fingerprint": (
-                    scope_observation.exact_artifact_fingerprint
-                ),
-                "scope_identity": scope_observation.request.scope_identity.model_dump(
+                "material_observation_schema": material_observation.schema_version,
+                "observed_query_fingerprint": material_observation.query_fingerprint,
+                "scope_identity": scope_observation.scope_identity.model_dump(
                     mode="json"
                 ),
+                "material_native_metrics": [
+                    item.model_dump(mode="json")
+                    for item in material_observation.native_metrics
+                ],
+                "material_dimensions": [
+                    item.model_dump(mode="json")
+                    for item in material_observation.dimensions
+                ],
+                "material_filters": [
+                    item.model_dump(mode="json")
+                    for item in material_observation.filters
+                ],
+                "material_temporal_scopes": [
+                    item.model_dump(mode="json")
+                    for item in material_observation.temporal_scopes
+                ],
+                "material_ranking": [
+                    item.model_dump(mode="json")
+                    for item in material_observation.ranking
+                ],
                 "native_subject_ref": native_subject_ref,
                 "result_hash": result.result_hash,
                 "row_count": result.row_count,
@@ -711,7 +592,7 @@ class NativeResearchMaterialExecutor:
         return ResearchMaterialOutcome(
             native_conversation_id=native_conversation_id,
             native_query_id=native_query_id,
-            attestation_id=scope_observation.attestation_id,
+            attestation_id=None,
             receipt=receipt,
             evidence=evidence,
         )

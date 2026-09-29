@@ -50,6 +50,10 @@ class ResearchMaterialLimitation(ResearchProductError):
     """One material execution failed closed without poisoning independent obligations."""
 
 
+class ResearchMaterialObservationUnavailable(ResearchMaterialLimitation):
+    """Post-execution semantic observation is unavailable; exact execution is reusable."""
+
+
 class ResearchMaterialOutcome(Frozen):
     native_conversation_id: UUID
     native_query_id: str = Field(min_length=1)
@@ -543,6 +547,29 @@ class ResearchAskOrchestrator:
             limitation_detail=detail,
         )
 
+    def _retryable_observation_limit(
+        self,
+        *,
+        session: ResearchSession,
+        obligation_id: str,
+        code: str,
+        detail: str,
+    ) -> ResearchAskResponse:
+        prior_revision = session.revision
+        updated = ResearchManager.record_retryable_limitation(
+            session,
+            obligation_id=obligation_id,
+            code=code,
+            detail=detail,
+        )
+        self._store.save(updated, expected_revision=prior_revision)
+        return self._response(
+            updated,
+            obligation_id=obligation_id,
+            limitation_code=code,
+            limitation_detail=detail,
+        )
+
     def run_next(
         self,
         *,
@@ -626,6 +653,13 @@ class ResearchAskOrchestrator:
                 link=pending,
                 request=(prepared.request if prepared is not None else None),
                 native_session_token=native_session_token,
+            )
+        except ResearchMaterialObservationUnavailable as exc:
+            return self._retryable_observation_limit(
+                session=session,
+                obligation_id=selected,
+                code=exc.code,
+                detail=exc.detail,
             )
         except ResearchMaterialLimitation as exc:
             return self._limit(
