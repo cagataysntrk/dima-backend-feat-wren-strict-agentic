@@ -1463,6 +1463,25 @@ class StructuredResearchProposalManager:
             allowed_evidence_refs=allowed_evidence_refs,
         )
 
+    def propose_for_obligation_with_constraints(
+        self,
+        snapshot: ResearchManagerSnapshot,
+        *,
+        target_parent_obligation: str,
+        allowed_evidence_refs: tuple[str, ...],
+        allowed_intents: tuple[InvestigationIntent, ...],
+    ) -> ManagerProposal:
+        """Narrow one obligation to a closed subset of already-legal P17 moves."""
+
+        if not allowed_intents:
+            raise ValueError("allowed_intents must not be empty")
+        return self._propose(
+            snapshot,
+            target_parent_obligation=target_parent_obligation,
+            allowed_evidence_refs=allowed_evidence_refs,
+            allowed_intents=allowed_intents,
+        )
+
     def propose_root_candidate_for_obligation(
         self,
         snapshot: ResearchManagerSnapshot,
