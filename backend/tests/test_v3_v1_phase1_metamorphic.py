@@ -407,6 +407,9 @@ DT = _semantic("dimension.event_date", SemanticTargetKind.DIMENSION, "Event Date
 def _coorigin_session(
     *,
     source="Rank by metric A and inspect together with metric B.",
+    anchor_source=None,
+    source_fragment_identity="fragment-sha256:" + "a" * 64,
+    relationship_fragment_identity=None,
     anchor_metric=M1,
     downstream_metric=M2,
     dimension=D1,
@@ -422,7 +425,8 @@ def _coorigin_session(
     anchor = ResearchQuestion(
         goal_id="g_anchor",
         kind=anchor_kind,
-        source_text=source,
+        source_text=(anchor_source if anchor_source is not None else source),
+        source_fragment_identity=source_fragment_identity,
         subject_refs=(dimension, anchor_metric, *anchor_extra_metrics),
         related_refs=(),
         ranking=(
@@ -444,6 +448,11 @@ def _coorigin_session(
                 goal_id="g_relationship",
                 kind=ResearchGoalKind.RELATIONSHIP,
                 source_text=(relationship_source if relationship_source is not None else source),
+                source_fragment_identity=(
+                    relationship_fragment_identity
+                    if relationship_fragment_identity is not None
+                    else source_fragment_identity
+                ),
                 subject_refs=(anchor_metric, downstream_metric),
                 related_refs=(dimension,),
                 status=ResearchGoalStatus.RESOLVED,
@@ -491,7 +500,12 @@ def _coorigin_session(
 
 
 def test_coorigin_exact_subset_projects_one_union_without_mutating_ranking_semantics():
-    session = _coorigin_session()
+    session = _coorigin_session(
+        anchor_source="En yüksek downtime olan iki bölümü incele.",
+        relationship_source=(
+            "En yüksek downtime olan iki bölümü fault count ile birlikte incele."
+        ),
+    )
     requirements = coorigin_material_requirements(session)
     assert len(requirements) == 1
     requirement = requirements[0]
@@ -597,8 +611,11 @@ def test_coorigin_m5_relationship_only_preserves_direct_material_contract():
 
 def test_coorigin_m6_overlapping_refs_different_provenance_do_not_merge():
     session = _coorigin_session(
-        source="Rank downtime by department.",
+        source="One current message with two distinct clauses.",
+        anchor_source="Rank downtime by department.",
         relationship_source="Inspect downtime and faults together by department.",
+        source_fragment_identity="fragment-sha256:" + "b" * 64,
+        relationship_fragment_identity="fragment-sha256:" + "c" * 64,
     )
     assert coorigin_material_requirements(session) == ()
     contract = analytical_scope_contract(session=session, obligation_id="g_anchor")
