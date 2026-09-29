@@ -835,3 +835,144 @@ Luna calls = 0
 Sol calls = 0
 paid calls = 0
 ```
+
+
+---
+
+## R8 PANEL A — PRODUCT LINEAGE RECOVERY CLOSED, ENGINE-OWNED RED / SUPERVISOR STOP — 2026-09-29
+
+R8-A provider-free diagnosis and correction:
+
+```text
+reproducer
+cd434c445b0df3611d30064cd1ca57b54f2b5598
+
+Product generic fix
+af5f0477176c0b3b1ec3b7f733ad393e5fe80bb3
+
+relationship authority proof
+cab6af39af69eb371662f98c9aaffe9548945452
+
+P14 fail-closed lineage proof
+281507d82284963a78afb6deea3807ef4f082f10
+```
+
+The Product correction removes the artificial relationship child Research root and reuses the
+accepted user ResearchSession / obligation for derived relationship reasoning. It does not disable
+`P14_SCOPE_LINEAGE_REQUIRED`, alter scope currentness, copy historical Evidence, or weaken P17/P18.
+
+Provider-free closure on the corrected candidate:
+
+```text
+Core-B focused              36601184795 = SUCCESS
+Core-B seal                 36601184682 = SUCCESS
+Core-A final                36601184704 = SUCCESS
+Phase-1 focused             36601184606 = SUCCESS
+Phase-1 final provider-free 36601652755 = SUCCESS
+P12 provider-free           36601652669 = SUCCESS
+governance                  36601184647 = SUCCESS
+```
+
+Exact paid Panel A was then executed once, as authorized:
+
+```text
+probe
+SCOPE_CURRENTNESS_HARD_V4
+
+checkout SHA
+44fdcc4ce54de92e9ea7bf77a8e1bf32ad91fc68
+
+Product behavior SHA
+af5f0477176c0b3b1ec3b7f733ad393e5fe80bb3
+
+run
+36602428211
+
+artifact
+11049457487
+
+artifact digest
+sha256:7719c5c85dc2178958e1b65a85ca38d0df3dbd5c15e3234f6c623f534795d097
+
+result
+RED / IMMUTABLE
+```
+
+Provider accounting:
+
+```text
+orchestration boundary units = 7 / 12
+actual provider requests      = 19 / 24
+
+research_intake = 2
+metabase        = 16
+p17_manager     = 1
+```
+
+First wrong transition:
+
+```text
+accepted Research / Product lineage path
+→ native material observation
+→ engine HTTP 500
+→ clojure.lang.ArityException
+→ fail! invoked with 3 args
+→ R1_NATIVE_MATERIAL_OBSERVATION_UNAVAILABLE
+```
+
+Exact engine trace identifies:
+
+```text
+metabase.dima.native-material-observation/semantic_literal
+→ metabase.dima.native-material-observation/fail!
+→ Wrong number of args (3)
+```
+
+This supersedes the earlier Product-lineage failure as the current first wrong transition for the
+R8-A family. The Product fix moved the failure frontier into the certified engine observation seam.
+
+Binding supervisor constraints now force STOP:
+
+```text
+dima.7 rebuild = FORBIDDEN
+engine source-build recertification = FORBIDDEN
+dima.8 = FORBIDDEN
+engine product change necessary = IMMEDIATE SUPERVISOR STOP
+same-SHA paid retry = FORBIDDEN
+B/C/D/E = BLOCKED
+30-case / broad paid = FORBIDDEN
+Sol = NOT AUTHORIZED
+```
+
+The temporary paid push bridge was removed after the single execution. Current workflow is
+manual-only.
+
+Post-disarm verification:
+
+```text
+branch HEAD before this receipt
+4f44c062f7b20641b98ae372864d1ca4c8249463
+
+governance
+36602880104 = SUCCESS
+
+P12 provider-free
+36602880265 = SUCCESS
+```
+
+Current disposition:
+
+```text
+PHASE 1 = IN_PROGRESS / NOT SEALED
+A = RED / IMMUTABLE
+B = NOT RUN / BLOCKED
+C = NOT RUN / BLOCKED
+D = NOT RUN / BLOCKED
+E = NOT RUN / BLOCKED
+30-CASE READY = NO
+DIMA BRAIN V1 = NOT SEALED
+```
+
+Next legal transition is a supervisor decision on whether and how to reopen the immutable engine
+boundary for the `native-material-observation/fail!` arity defect. No further paid run or engine
+change is authorized under the current directive.
