@@ -1039,3 +1039,63 @@ def test_catalog_reordering_preserves_authority_identity_and_relationship_expans
         ref.candidate_id
         for ref in first.brief.questions[0].related_refs
     ] == ["dimension.department"]
+
+
+
+def test_coorigin_source_fragment_provenance_is_exact_and_shared_across_goal_decomposition():
+    fragment = "En yüksek downtime olan iki bölümü fault count ile birlikte incele."
+    payload = ready_payload(
+        kind="ranking",
+        subject=("dimension.department", "metric.downtime"),
+        related=(),
+    )
+    payload["goals"][0]["source_text"] = "En yüksek downtime olan iki bölümü incele."
+    payload["goals"][0]["source_fragment_text"] = fragment
+    payload["goals"][0]["ranking"] = {
+        "direction": "desc",
+        "limit": 2,
+        "measure_semantic_id": "metric.downtime",
+        "source_text": "En yüksek downtime olan iki bölüm",
+    }
+    payload["goals"].append(
+        {
+            "goal_key": "g-relationship",
+            "kind": "relationship",
+            "source_text": fragment,
+            "source_fragment_text": fragment,
+            "allowed_relationship_id": "rel.downtime_fault_by_department",
+            "ranking": None,
+            "comparison_texts": [],
+        }
+    )
+
+    current = (
+        "Şimdi yalnız Haziran 2026’ya daralt. "
+        + fragment
+        + " Önceki analizi tarihsel bağlam olarak koru."
+    )
+    result = ResearchIntakeCompiler(
+        transport=FakeTransport(payload)
+    ).compile(
+        question=current,
+        catalog=catalog(),
+    )
+    assert result.brief is not None
+    ranking, relationship = result.brief.questions
+    assert ranking.source_text != relationship.source_text
+    assert ranking.source_fragment_identity is not None
+    assert ranking.source_fragment_identity == relationship.source_fragment_identity
+    assert ranking.source_fragment_identity.startswith("fragment-sha256:")
+
+
+def test_intake_rejects_nonverbatim_goal_fragment_provenance():
+    payload = ready_payload()
+    payload["goals"][0]["source_fragment_text"] = "a paraphrase not present in the message"
+    with pytest.raises(ResearchIntakeError) as exc:
+        ResearchIntakeCompiler(
+            transport=FakeTransport(payload)
+        ).compile(
+            question="Show machine downtime by department.",
+            catalog=catalog(),
+        )
+    assert exc.value.code == "INTAKE_SOURCE_FRAGMENT_NOT_VERBATIM"
