@@ -158,7 +158,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "14323cdde4f258c65c63bbd88f1034f814a7ecb3"
+          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "0f16f2b5a1ec774ac7afee6214c726e82f9ceb3c"
       - name: Verify P20 is provider-free
         shell: bash
         run: |
