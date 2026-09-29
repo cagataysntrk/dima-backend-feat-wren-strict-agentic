@@ -43,12 +43,19 @@ Platform test commits:
 
 - `2fb8e5d54bf07c8c78e18ec98fa631754d27ad60` — reproduces the mandatory P13 hot-path gate for
   both immutable V3 failure families and proves `/api/dataset` is not reached;
-- `a51574b8e156de7a24bc139aca55c6a2ac33de67` — proves the historical DMP-DEC-0048 sequence can
+- `f8f8b21fa4380a13715a9e5e2f993cdae492f0f3` — proves the historical DMP-DEC-0048 sequence can
   durably traverse
   `CANDIDATE_CAPTURED -> EXECUTION_STARTED -> exact dataset execution -> EXECUTED -> one
   DimaQueryReceipt` without a P13 call.
 
 No Product behavior was changed by either commit.
+
+Provider-free receipts on the corrected proof HEAD:
+- Phase-1 focused `36522384031 = SUCCESS`;
+- governance `36522384015 = SUCCESS`;
+- Core-B focused `36522384035 = SUCCESS`;
+- Core-B provider-free seal `36522384032 = SUCCESS`;
+- Core-A final `36522384072 = SUCCESS`.
 
 ## 3. Existing dima.6 / Metabase-native surface audit
 

@@ -803,7 +803,14 @@ DIMA BRAIN V1 = NOT SEALED
 
 Provider-free R5-A regression/historical proofs:
 - `2fb8e5d54bf07c8c78e18ec98fa631754d27ad60`;
-- `a51574b8e156de7a24bc139aca55c6a2ac33de67`.
+- `f8f8b21fa4380a13715a9e5e2f993cdae492f0f3`.
+
+Provider-free receipts:
+- Phase-1 focused `36522384031 = SUCCESS`;
+- governance `36522384015 = SUCCESS`;
+- Core-B focused `36522384035 = SUCCESS`;
+- Core-B seal `36522384032 = SUCCESS`;
+- Core-A final `36522384072 = SUCCESS`.
 
 Canonical production authority remains unchanged:
 - Product behavior `6308b705e3c61aaa36825493421cde8288744561`;

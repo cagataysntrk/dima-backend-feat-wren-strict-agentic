@@ -8774,8 +8774,15 @@ native execution legality
 Provider-free R5-A evidence:
 - `2fb8e5d54bf07c8c78e18ec98fa631754d27ad60` reproduces both V3 failure families as a
   P13-before-dataset architecture gate;
-- `a51574b8e156de7a24bc139aca55c6a2ac33de67` reproduces the historical durable native-direct
+- `f8f8b21fa4380a13715a9e5e2f993cdae492f0f3` reproduces the historical durable native-direct
   sequence without any P13 call.
+
+Final provider-free receipts on the corrected test/docs HEAD:
+- Phase-1 focused `36522384031 = SUCCESS`;
+- governance `36522384015 = SUCCESS`;
+- Core-B focused `36522384035 = SUCCESS`;
+- Core-B provider-free seal `36522384032 = SUCCESS`;
+- Core-A final `36522384072 = SUCCESS`.
 
 Existing dima.6 surface audit:
 - `/api/dataset` executes exact A but does not return a typed material semantic projection;
