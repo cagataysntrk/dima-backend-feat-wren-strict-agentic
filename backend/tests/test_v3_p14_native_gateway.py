@@ -31,7 +31,10 @@ from app.v3.research_native_gateway import (
 )
 from app.v3.research_product import ResearchAskOrchestrator, ResearchMaterialLimitation
 from app.v3.research_store import ResearchSessionStore
-from app.v3.substrate.metabase.native_engine import NativeDatasetExecutionError
+from app.v3.substrate.metabase.native_engine import (
+    NativeDatasetExecutionError,
+    NativeEngineBridgeError,
+)
 from app.v3.substrate.metabase.native_models import (
     NativeDatasetExecutionObservation,
     NativeEngineIdentity,
@@ -475,6 +478,85 @@ class MaterialBridge:
         assert table_id == 10
         return {"id": 10, "name": "sales_orders", "schema": None}
 
+
+
+
+class P13RejectingButDatasetLegalBridge(MaterialBridge):
+    """Reproduce the live R5 regression: P13 rejects before legal dataset execution."""
+
+    def __init__(self, *, p13_detail: str):
+        super().__init__()
+        self.p13_detail = p13_detail
+        self.attestation_calls = []
+
+    def attest_native_query(self, *, conversation_id, native_query_id):
+        self.attestation_calls.append((conversation_id, native_query_id))
+        raise NativeEngineBridgeError(self.p13_detail)
+
+
+@pytest.mark.parametrize(
+    "p13_detail",
+    (
+        (
+            "native attestation returned HTTP 422: "
+            "NATIVE_QUERY_RUNTIME_REPRESENTATION_UNSUPPORTED "
+            "clause-tag=absolute-datetime"
+        ),
+        (
+            "native attestation returned HTTP 422: "
+            "NATIVE_METRIC_EXPANSION_UNSUPPORTED "
+            "native-metric-reference-count=1 "
+            "original-aggregation-count=3 expanded-aggregation-count=3"
+        ),
+    ),
+)
+def test_r5_reproduces_p13_hot_path_blocking_legal_native_execution(p13_detail):
+    engine = db_engine()
+    seed(engine)
+    store, session, link, query = session_and_link(engine)
+    subjects = NativeSubjectSessionProvider(
+        base_url="http://native.test",
+        expected_identity=expected_identity(),
+        db_engine=engine,
+    )
+    executor = NativeResearchMaterialExecutor(
+        subject_provider=subjects,
+        store=store,
+        expected_identity=expected_identity(),
+    )
+    bridge = P13RejectingButDatasetLegalBridge(p13_detail=p13_detail)
+
+    with pytest.raises(ResearchMaterialLimitation) as exc:
+        executor.execute(
+            principal=principal(),
+            session=session,
+            obligation_id="g1",
+            bridge=bridge,
+            native_conversation_id=link.native_conversation_id,
+            native_query_id=link.native_query_id,
+            native_query=query,
+            query_fingerprint=link.native_query_fingerprint,
+            execution_link_id=link.id,
+        )
+
+    assert exc.value.code == "R1_NATIVE_SCOPE_ATTESTATION_FAILED"
+    assert bridge.attestation_calls == [
+        (link.native_conversation_id, link.native_query_id)
+    ]
+    assert bridge.calls == []
+    assert store.execution_link(link.id).status == "CANDIDATE_CAPTURED"
+
+    # The exact same captured query is transport-legal for ordinary Metabase execution.
+    # The current gateway blocks before reaching it solely because P13 is a prerequisite.
+    direct = bridge.execute_dataset(query)
+    assert direct.query_fingerprint == link.native_query_fingerprint
+    assert direct.payload["status"] == "completed"
+    assert bridge.calls == [query]
+
+
+def test_r5_architecture_reproducer_proves_attestation_precedes_dataset_execution():
+    source = inspect.getsource(NativeResearchMaterialExecutor.execute)
+    assert source.index("self._attest_scope(") < source.index("bridge.execute_dataset(")
 
 
 class NativeContractBridge:
