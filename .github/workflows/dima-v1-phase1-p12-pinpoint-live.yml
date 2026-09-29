@@ -1,8 +1,11 @@
 name: dima-v1-phase1-pinpoint-live
 
-# Recovery/growth live authority. R7 Panel A is immutable RED on the frozen
-# candidate. Paid execution is manual-only until fresh supervisor authority.
+# Recovery/growth live authority. R8 authorizes one fresh-candidate Panel A
+# execution after provider-free closure. The temporary push trigger is exact.
 on:
+  push:
+    branches:
+      - phase1-v4-trigger-20260929
   workflow_dispatch:
     inputs:
       probe_id:
@@ -40,7 +43,7 @@ env:
   COMPLETION_TOKEN_CEILING: "16000"
   REASONING_TOKEN_CEILING: "12000"
   PROVIDER_COST_CEILING: "1.00"
-  PRODUCT_BEHAVIOR_SHA: "cf17b923a151c13c508accb604d359e56c88af94"
+  PRODUCT_BEHAVIOR_SHA: "af5f0477176c0b3b1ec3b7f733ad393e5fe80bb3"
 
 concurrency:
   group: dima-v1-phase1-pinpoint-live
