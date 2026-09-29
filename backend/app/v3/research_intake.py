@@ -264,7 +264,6 @@ class ModelReadyResearchIntake(Frozen):
     goals: tuple[ModelGoalDraft, ...] = Field(min_length=1)
     deliverables: tuple[ModelDeliverableDraft, ...] = ()
     investigation_directives: tuple[ModelInvestigationDirectiveDraft, ...] = ()
-    time_surfaces: tuple[str, ...] = ()
     time_periods: tuple[ModelTimePeriodDraft, ...] = ()
     required_domains: tuple[str, ...] = ()
     scope_mutation_kind: ScopeMutationKind | None = None
@@ -409,7 +408,6 @@ def _intake_provider_schema(
     # current governed catalog/turn are absent from the provider contract,
     # rather than being required null/empty boilerplate.
     if not catalog.temporal_dimension_ids:
-        ready_properties.pop("time_surfaces", None)
         ready_properties.pop("time_periods", None)
         definitions.pop("ModelTimePeriodDraft", None)
     if not has_prior_brief:
@@ -717,7 +715,10 @@ class ResearchIntakeCompiler:
                     investigation_directives=(
                         provider_result.investigation_directives
                     ),
-                    time_surfaces=provider_result.time_surfaces,
+                    time_surfaces=tuple(
+                        item.source_text
+                        for item in provider_result.time_periods
+                    ),
                     time_periods=provider_result.time_periods,
                     required_domains=provider_result.required_domains,
                     scope_mutation_kind=(
@@ -911,18 +912,8 @@ class ResearchIntakeCompiler:
                 "READY intake must contain at least one analytical goal",
             )
 
-        time_surfaces = tuple(dict.fromkeys(draft.time_surfaces))
-        if len(time_surfaces) != len(draft.time_surfaces):
-            raise ResearchIntakeError(
-                "INTAKE_TIME_SURFACE_DUPLICATE",
-                "accepted time surfaces must be unique",
-            )
-        if bool(time_surfaces) != bool(draft.time_periods):
-            raise ResearchIntakeError(
-                "INTAKE_TIME_SCOPE_BINDING_REQUIRED",
-                "every accepted time surface requires one typed period binding",
-            )
         period_by_source: dict[str, ModelTimePeriodDraft] = {}
+        period_identities: set[tuple[str, str, str]] = set()
         periods: list[ResearchTimePeriod] = []
         for item in draft.time_periods:
             if item.source_text in period_by_source:
@@ -930,7 +921,18 @@ class ResearchIntakeCompiler:
                     "INTAKE_TIME_PERIOD_DUPLICATE",
                     item.source_text,
                 )
+            identity = (
+                item.time_dimension_semantic_id,
+                item.start,
+                item.end,
+            )
+            if identity in period_identities:
+                raise ResearchIntakeError(
+                    "INTAKE_TIME_PERIOD_DUPLICATE",
+                    "|".join(identity),
+                )
             period_by_source[item.source_text] = item
+            period_identities.add(identity)
             dimension_ref = by_id.get(item.time_dimension_semantic_id)
             if (
                 dimension_ref is None
@@ -959,16 +961,9 @@ class ResearchIntakeCompiler:
                     "INTAKE_TIME_PERIOD_INVALID",
                     str(exc),
                 ) from exc
-        if set(period_by_source) != set(time_surfaces):
-            raise ResearchIntakeError(
-                "INTAKE_TIME_PERIOD_SURFACE_MISMATCH",
-                "typed periods must exactly cover accepted time surfaces",
-            )
-        periods_by_surface = {
-            item.source_text: item for item in periods
-        }
-        ordered_periods = tuple(
-            periods_by_surface[item] for item in time_surfaces
+        ordered_periods = tuple(periods)
+        time_surfaces = tuple(
+            item.source_text for item in ordered_periods
         )
 
         accepted_ids = set(scope_refs)
