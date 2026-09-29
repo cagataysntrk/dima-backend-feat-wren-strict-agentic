@@ -747,6 +747,333 @@ def test_r5_material_binding_uses_governed_stable_ids_not_private_metadata():
     assert not hasattr(bridge, "table_metadata")
     assert not hasattr(bridge, "field_metadata")
 
+
+def rich_material_contract():
+    return scope_module.AnalyticalRequestContract(
+        authority_id="arc-r5-negative",
+        request_ref="r5-negative",
+        semantic_context_version=CONTEXT,
+        scope_identity=scope_module.AnalyticalScopeIdentity(
+            lineage_id="scope-line-r5",
+            version_id="scope_v2",
+        ),
+        metric_refs=("metric.downtime",),
+        dimension_refs=("dimension.department",),
+        filters=(
+            scope_module.AnalyticalFilterInvariant(
+                semantic_ref="entity.assembly",
+                source_candidate_id="entity.assembly",
+                dimension_name="Department",
+                value="Assembly",
+            ),
+        ),
+        period=scope_module.AnalyticalPeriodInvariant(
+            kind="explicit_half_open",
+            time_dimension="time.event_date",
+            start="2026-06-01",
+            end="2026-07-01",
+        ),
+        ranking=scope_module.AnalyticalRankingInvariant(
+            measure="metric.downtime",
+            direction="desc",
+            limit=5,
+        ),
+        grain_constraints=("dimension.department",),
+    )
+
+
+def rich_material_bindings():
+    return {
+        "metric.downtime": scope_module.NativeMaterialBinding(
+            candidate_id="metric.downtime",
+            candidate_kind="metric",
+            database_id=1,
+            table_id=10,
+            metric_id=501,
+            metric_entity_id="metric-downtime-v1",
+        ),
+        "dimension.department": scope_module.NativeMaterialBinding(
+            candidate_id="dimension.department",
+            candidate_kind="dimension",
+            database_id=1,
+            table_id=10,
+            field_id=20,
+        ),
+        "entity.assembly": scope_module.NativeMaterialBinding(
+            candidate_id="entity.assembly",
+            candidate_kind="entity_value",
+            database_id=1,
+            table_id=10,
+            field_id=20,
+        ),
+        "time.event_date": scope_module.NativeMaterialBinding(
+            candidate_id="time.event_date",
+            candidate_kind="dimension",
+            database_id=1,
+            table_id=10,
+            field_id=30,
+        ),
+    }
+
+
+def rich_material_observation(**updates):
+    payload = {
+        "schema_version": "dima_native_material_observation_v1",
+        "conversation_id": "00000000-0000-4000-8000-000000000778",
+        "native_query_id": "native-query-rich",
+        "assistant_message_id": 1,
+        "tool_call_id": "tool-rich",
+        "query_fingerprint": "a" * 64,
+        "authenticated_metabase_subject": 7,
+        "database_id": 1,
+        "runtime_identity": identity_payload(),
+        "native_metrics": [
+            {
+                "stage_number": 0,
+                "aggregation_index": 0,
+                "metabase_metric_id": 501,
+                "metabase_metric_entity_id": "metric-downtime-v1",
+            }
+        ],
+        "dimensions": [
+            {
+                "stage_number": 0,
+                "role": "breakout",
+                "field_id": 20,
+                "table_id": 10,
+            },
+            {
+                "stage_number": 0,
+                "role": "filter",
+                "field_id": 20,
+                "table_id": 10,
+            },
+            {
+                "stage_number": 0,
+                "role": "temporal",
+                "field_id": 30,
+                "table_id": 10,
+            },
+        ],
+        "filters": [
+            {
+                "stage_number": 0,
+                "operator": "=",
+                "values": ["Assembly"],
+                "field_id": 20,
+                "table_id": 10,
+            }
+        ],
+        "temporal_scopes": [
+            {
+                "time_field_id": 30,
+                "table_id": 10,
+                "lower_bound": "2026-06-01",
+                "lower_inclusive": True,
+                "upper_bound": "2026-07-01",
+                "upper_inclusive": False,
+            }
+        ],
+        "ranking": [
+            {
+                "stage_number": 0,
+                "order_index": 0,
+                "target": {
+                    "kind": "metric",
+                    "metabase_metric_id": 501,
+                    "metabase_metric_entity_id": "metric-downtime-v1",
+                },
+                "direction": "desc",
+                "limit": 5,
+            }
+        ],
+    }
+    payload.update(updates)
+    return NativeMaterialObservation.model_validate(payload)
+
+
+def assert_rich_material(observation):
+    _, session, _, _ = session_and_link(db_engine())
+    return scope_module.assert_material_native_scope(
+        session=session,
+        obligation_id="g1",
+        contract=rich_material_contract(),
+        observation=observation,
+        bindings=rich_material_bindings(),
+        expected_engine=expected_identity(),
+        expected_metabase_subject=7,
+    )
+
+
+def test_r5_material_semantics_matching_stable_ids_are_accepted():
+    observed = assert_rich_material(rich_material_observation())
+    assert observed.scope_identity.version_id == "scope_v2"
+    assert observed.metric_refs == ("metric.downtime",)
+
+
+@pytest.mark.parametrize(
+    ("updates", "code"),
+    (
+        ({"temporal_scopes": []}, "R1_NATIVE_TIME_SCOPE_MISMATCH"),
+        ({"filters": []}, "R1_NATIVE_FILTER_SCOPE_MISMATCH"),
+        (
+            {
+                "native_metrics": [
+                    {
+                        "stage_number": 0,
+                        "aggregation_index": 0,
+                        "metabase_metric_id": 502,
+                        "metabase_metric_entity_id": "metric-faults-v1",
+                    }
+                ]
+            },
+            "R1_NATIVE_METRIC_IDENTITY_MISMATCH",
+        ),
+        (
+            {
+                "dimensions": [
+                    {
+                        "stage_number": 0,
+                        "role": "breakout",
+                        "field_id": 21,
+                        "table_id": 10,
+                    }
+                ]
+            },
+            "R1_NATIVE_DIMENSION_SCOPE_MISMATCH",
+        ),
+        (
+            {
+                "ranking": [
+                    {
+                        "stage_number": 0,
+                        "order_index": 0,
+                        "target": {
+                            "kind": "metric",
+                            "metabase_metric_id": 502,
+                            "metabase_metric_entity_id": "metric-changeover-v1",
+                        },
+                        "direction": "desc",
+                        "limit": 5,
+                    }
+                ]
+            },
+            "R1_NATIVE_RANKING_SCOPE_MISMATCH",
+        ),
+        (
+            {
+                "ranking": [
+                    {
+                        "stage_number": 0,
+                        "order_index": 0,
+                        "target": {
+                            "kind": "metric",
+                            "metabase_metric_id": 501,
+                            "metabase_metric_entity_id": "metric-downtime-v1",
+                        },
+                        "direction": "asc",
+                        "limit": 5,
+                    }
+                ]
+            },
+            "R1_NATIVE_RANKING_SCOPE_MISMATCH",
+        ),
+        (
+            {
+                "ranking": [
+                    {
+                        "stage_number": 0,
+                        "order_index": 0,
+                        "target": {
+                            "kind": "metric",
+                            "metabase_metric_id": 501,
+                            "metabase_metric_entity_id": "metric-downtime-v1",
+                        },
+                        "direction": "desc",
+                        "limit": 10,
+                    }
+                ]
+            },
+            "R1_NATIVE_RANKING_SCOPE_MISMATCH",
+        ),
+        ({"authenticated_metabase_subject": 8}, "R1_NATIVE_SUBJECT_MISMATCH"),
+    ),
+)
+def test_r5_material_semantic_drift_blocks_verified_evidence(updates, code):
+    with pytest.raises(scope_module.ResearchAnalyticalScopeError) as exc:
+        assert_rich_material(rich_material_observation(**updates))
+    assert exc.value.code == code
+
+
+def test_r5_material_wrong_engine_blocks_verified_evidence():
+    runtime = identity_payload()
+    runtime["revision_sha"] = "f" * 40
+    with pytest.raises(scope_module.ResearchAnalyticalScopeError) as exc:
+        assert_rich_material(rich_material_observation(runtime_identity=runtime))
+    assert exc.value.code == "R1_NATIVE_ENGINE_IDENTITY_MISMATCH"
+
+
+def test_r5_material_wrong_query_fingerprint_blocks_before_evidence():
+    engine = db_engine()
+    seed(engine)
+    store, session, link, query = session_and_link(engine)
+    subjects = NativeSubjectSessionProvider(
+        base_url="http://native.test",
+        expected_identity=expected_identity(),
+        db_engine=engine,
+    )
+    executor = NativeResearchMaterialExecutor(
+        subject_provider=subjects,
+        store=store,
+        expected_identity=expected_identity(),
+    )
+    bridge = MaterialBridge(observation_update={"query_fingerprint": "0" * 64})
+    with pytest.raises(ResearchMaterialLimitation) as exc:
+        executor.execute(
+            principal=principal(),
+            session=session,
+            obligation_id="g1",
+            bridge=bridge,
+            native_conversation_id=link.native_conversation_id,
+            native_query_id=link.native_query_id,
+            native_query=query,
+            query_fingerprint=link.native_query_fingerprint,
+            execution_link_id=link.id,
+        )
+    assert exc.value.code == "R1_NATIVE_QUERY_FINGERPRINT_MISMATCH"
+    assert store.execution_link(link.id).status == "EXECUTED"
+
+
+def test_r5_stale_scope_occurrence_cannot_cross_research_session_identity():
+    engine = db_engine()
+    seed(engine)
+    store, session, link, query = session_and_link(engine)
+    stale = session.model_copy(update={"session_id": "rs_stale_scope_v1"})
+    subjects = NativeSubjectSessionProvider(
+        base_url="http://native.test",
+        expected_identity=expected_identity(),
+        db_engine=engine,
+    )
+    executor = NativeResearchMaterialExecutor(
+        subject_provider=subjects,
+        store=store,
+        expected_identity=expected_identity(),
+    )
+    with pytest.raises(ResearchMaterialLimitation) as exc:
+        executor.execute(
+            principal=principal(),
+            session=stale,
+            obligation_id="g1",
+            bridge=MaterialBridge(),
+            native_conversation_id=link.native_conversation_id,
+            native_query_id=link.native_query_id,
+            native_query=query,
+            query_fingerprint=link.native_query_fingerprint,
+            execution_link_id=link.id,
+        )
+    assert exc.value.code == "P14_NATIVE_OBLIGATION_CORRELATION_MISMATCH"
+
+
 def test_new_p14_binding_timestamp_is_timezone_aware_and_metadata_is_not_permission_truth():
     engine = db_engine()
     seed(engine)
