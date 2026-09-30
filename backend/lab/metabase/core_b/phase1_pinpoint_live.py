@@ -609,6 +609,87 @@ def _result_payload(link):
         return {"_invalid_native_result_json": True}
 
 
+def _native_acquisition_telemetry(
+    links,
+    *,
+    scope_version_id: str,
+) -> list[dict[str, Any]]:
+    """Privacy-safe material-acquisition lineage; never prompt/query text."""
+    out: list[dict[str, Any]] = []
+    for link in links:
+        if not getattr(link, "native_result_json", None):
+            continue
+        out.append(
+            {
+                "native_acquisition_id": str(link.id),
+                "source_goal_id": link.obligation_id,
+                "execution_kind": link.execution_kind,
+                "native_query_id": link.native_query_id,
+                "result_hash": link.result_hash,
+                "status": link.status,
+                "scope_version": scope_version_id,
+            }
+        )
+    return out
+
+
+def _cognition_purpose(owner: str, probe_id: str) -> str:
+    if owner == "research_intake":
+        return "INTERPRET_INTENT"
+    if owner == "p17_manager":
+        return (
+            "DISCOVER_HYPOTHESIS"
+            if probe_id == "R_LIVE_3_DISCOVERY"
+            else "DISCRIMINATE_HYPOTHESES"
+        )
+    if owner == "p19_manager":
+        return "DISCRIMINATE_HYPOTHESES"
+    return "UNKNOWN"
+
+
+def _cognition_telemetry(
+    *,
+    probe_id: str,
+    traces: dict[str, list[dict[str, Any]]],
+    scope_version_id: str,
+    brief_id: str,
+    evidence_refs: tuple[str, ...],
+    reasoning_step_refs: tuple[str, ...],
+    p19_assessment_refs: tuple[str, ...],
+) -> list[dict[str, Any]]:
+    """Turn-scoped state delta/reuse telemetry with no prompt persistence."""
+    out: list[dict[str, Any]] = []
+    for owner, owner_traces in traces.items():
+        for trace in owner_traces:
+            if owner == "research_intake":
+                new_refs = (brief_id,)
+                reused_refs: tuple[str, ...] = ()
+            elif owner == "p17_manager":
+                new_refs = reasoning_step_refs
+                reused_refs = evidence_refs
+            elif owner == "p19_manager":
+                new_refs = p19_assessment_refs
+                reused_refs = evidence_refs
+            else:
+                new_refs = ()
+                reused_refs = ()
+            out.append(
+                {
+                    "owner": owner,
+                    "purpose": _cognition_purpose(owner, probe_id),
+                    "native_acquisition_id": None,
+                    "prompt_tokens": trace.get("prompt_tokens"),
+                    "completion_tokens": trace.get("completion_tokens"),
+                    "new_state_refs": list(new_refs),
+                    "reused_state_refs": list(reused_refs),
+                    "scope_version": scope_version_id,
+                    "call_ordinal_by_role": trace.get("call_ordinal_by_role"),
+                    "model": trace.get("model"),
+                }
+            )
+    return out
+
+
 def _exception_payload(exc: Exception) -> dict[str, Any]:
     diagnostic = getattr(exc, "diagnostic", None)
     cause = getattr(exc, "__cause__", None)
@@ -917,6 +998,41 @@ def _execute_turn(
                 "detail": str(exc),
             }
 
+    scope_version_id = final.accepted_brief.scope.scope_version.version_id
+    evidence_ids = tuple(
+        dict.fromkeys(
+            evidence_id
+            for values in _evidence_by_session(
+                orchestrator,
+                session_ids,
+                sealed._principal(),
+            ).values()
+            for evidence_id in values
+        )
+    )
+    turn_traces = {
+        name: _trace_slice(transport, trace_starts[name])
+        for name, transport in transports.items()
+    }
+    native_acquisitions = _native_acquisition_telemetry(
+        all_links,
+        scope_version_id=scope_version_id,
+    )
+    cognition_telemetry = _cognition_telemetry(
+        probe_id=probe_id,
+        traces=turn_traces,
+        scope_version_id=scope_version_id,
+        brief_id=brief.brief_id,
+        evidence_refs=evidence_ids,
+        reasoning_step_refs=tuple(
+            item["step"]["step_id"]
+            for item in reasoning_records
+            if isinstance(item.get("step"), dict)
+            and item["step"].get("step_id")
+        ),
+        p19_assessment_refs=tuple(composition.p19_assessment_refs),
+    )
+
     return {
         "turn": turn_no,
         "question": question,
@@ -930,7 +1046,7 @@ def _execute_turn(
         "child_research_session_ids": list(composition.child_research_session_ids),
         "session_ids": list(session_ids),
         "scope_lineage_id": final.lineage_id,
-        "scope_version_id": final.accepted_brief.scope.scope_version.version_id,
+        "scope_version_id": scope_version_id,
         "evidence_by_session": _evidence_by_session(
             orchestrator,
             session_ids,
@@ -943,15 +1059,14 @@ def _execute_turn(
             for link in all_links
             if _result_payload(link) is not None
         ],
+        "native_acquisitions": native_acquisitions,
+        "cognition_telemetry": cognition_telemetry,
         "p18_policy_use_refs": list(composition.p18_policy_use_refs),
         "p19_assessment_refs": list(composition.p19_assessment_refs),
         "epistemic_payloads": epistemic_payloads,
         "p20_report": report_payload,
         "limitations": [_safe_dump(item) for item in composition.limitations],
-        "transport_traces": {
-            name: _trace_slice(transport, trace_starts[name])
-            for name, transport in transports.items()
-        },
+        "transport_traces": turn_traces,
         "total_latency_ms": int((time.monotonic() - started) * 1000),
     }, brief, composition.research_session_id
 
@@ -1057,18 +1172,50 @@ def _mechanical_r_live(
         if isinstance(item.get("mechanism_identity"), list)
         and len(item["mechanism_identity"]) == 2
     }
+    brief = turn.get("brief_payload") or {}
+    questions = brief.get("questions") or []
+    root_questions = [
+        item for item in questions if item.get("kind") == "root_cause"
+    ]
+    typed_candidate_count = 0
+    if len(root_questions) == 1:
+        causal = root_questions[0].get("causal_competition") or {}
+        typed_candidate_count = len(
+            causal.get("candidate_mechanism_semantic_ids") or []
+        )
+    epistemic_payloads = turn.get("epistemic_payloads") or []
+    p19_candidate_count = max(
+        (
+            len(item.get("candidates") or [])
+            for item in epistemic_payloads
+            if isinstance(item, dict)
+        ),
+        default=0,
+    )
     mode = _root_mode_payload(turn)
     p19_count = len(turn.get("p19_assessment_refs") or [])
     reasoning = turn.get("reasoning_records") or []
+    traces = turn.get("transport_traces") or {}
+    composition = turn.get("composition_payload") or {}
+    completion = composition.get("completion_ledger") or {}
+    native_acquisition_count = len(turn.get("native_acquisitions") or [])
     base = {
         "ready": bool(turn.get("ready")),
         "governed_evidence_exists": any(
             turn.get("evidence_by_session", {}).values()
         ),
-        "evidence_backed_candidate_count": len(evidence_backed),
-        "distinct_governed_mechanism_count": len(distinct),
+        "analytical_goal_count": len(questions),
+        "native_acquisition_count": native_acquisition_count,
+        "intake_model_call_count": len(traces.get("research_intake") or []),
+        "p17_model_call_count": len(traces.get("p17_manager") or []),
+        "p19_model_call_count": len(traces.get("p19_manager") or []),
+        "typed_user_candidate_count": typed_candidate_count,
+        "p19_candidate_count": p19_candidate_count,
+        "evidence_backed_discovery_candidate_count": len(evidence_backed),
+        "distinct_discovery_mechanism_count": len(distinct),
         "p19_assessment_exists": p19_count > 0,
         "single_root_mode_result": mode is not None,
+        "requirement_complete": completion.get("requirement_complete") is True,
     }
     if mode is None:
         return base
@@ -1087,6 +1234,13 @@ def _mechanical_r_live(
         base.update(
             {
                 "expected_one_pass": mode.get("mode") == "ONE_PASS",
+                "one_analytical_obligation": len(questions) == 1,
+                "one_initial_native_acquisition": native_acquisition_count == 1,
+                "nominal_intake_is_one_call": len(
+                    traces.get("research_intake") or []
+                )
+                == 1,
+                "no_p17_cognition": len(traces.get("p17_manager") or []) == 0,
                 "no_analytical_reentry": int(
                     mode.get("analytical_reentry_count") or 0
                 )
@@ -1094,13 +1248,19 @@ def _mechanical_r_live(
                 "user_candidates_preserved": bool(
                     mode.get("user_seeded_candidates")
                 ),
-                "multiple_candidates_reach_epistemics": len(distinct) >= 2,
+                "multiple_candidates_reach_epistemics": (
+                    typed_candidate_count >= 2
+                    and p19_candidate_count == typed_candidate_count
+                ),
             }
         )
     elif probe_id == "R_LIVE_2_ADAPTIVE":
         base.update(
             {
                 "expected_adaptive": mode.get("mode") == "ADAPTIVE",
+                "one_initial_plus_one_discriminating_acquisition": (
+                    native_acquisition_count == 2
+                ),
                 "exactly_one_analytical_reentry": int(
                     mode.get("analytical_reentry_count") or 0
                 )
@@ -1108,17 +1268,26 @@ def _mechanical_r_live(
                 "user_candidates_preserved": bool(
                     mode.get("user_seeded_candidates")
                 ),
-                "multiple_candidates_reach_epistemics": len(distinct) >= 2,
+                "multiple_candidates_reach_epistemics": (
+                    typed_candidate_count >= 2
+                    and p19_candidate_count == typed_candidate_count
+                ),
             }
         )
     elif probe_id == "R_LIVE_3_DISCOVERY":
         base.update(
             {
+                "one_analytical_obligation": len(questions) == 1,
                 "no_user_seeded_candidates": not bool(
                     mode.get("user_seeded_candidates")
                 ),
                 "p17_discovery_trace_exists": bool(reasoning),
+                "p17_discovery_cognition_exists": len(
+                    traces.get("p17_manager") or []
+                )
+                > 0,
                 "multiple_discovered_candidates": len(distinct) >= 2,
+                "multiple_candidates_reach_epistemics": p19_candidate_count >= 2,
             }
         )
     return base
@@ -1525,6 +1694,22 @@ def main() -> int:
             report["provider_reported_cost"] = provider.get(
                 "provider_reported_cost"
             )
+            if (
+                args.probe_id
+                in {
+                    "R_LIVE_1_ONE_PASS",
+                    "R_LIVE_2_ADAPTIVE",
+                    "R_LIVE_3_DISCOVERY",
+                }
+                and isinstance(report.get("mechanical_observations"), dict)
+            ):
+                headroom = int(report["hard_provider_request_ceiling"]) - int(
+                    report["actual_provider_request_count"]
+                )
+                report["mechanical_observations"][
+                    "provider_request_headroom_exists"
+                ] = headroom > 0
+                report["provider_request_headroom"] = headroom
         except Exception as exc:
             report["provider_receipt_error"] = {
                 "error_type": type(exc).__name__,
