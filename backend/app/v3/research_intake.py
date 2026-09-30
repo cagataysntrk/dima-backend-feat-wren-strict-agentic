@@ -887,7 +887,14 @@ class ResearchIntakeCompiler:
     def _canonicalize_analytical_goals(
         draft: ModelResearchBriefDraft,
     ) -> ModelResearchBriefDraft:
-        """Remove provider graph amplification using typed accepted identities only.
+        """Canonicalize typed analytical authority before execution.
+
+        ROOT_CAUSE causal_competition is itself governed typed semantic intent.
+        Its effect/candidate identities therefore belong to the goal's accepted
+        measure scope and its diagnostic identities belong to the related scope,
+        even when the provider does not redundantly repeat those IDs in the
+        generic subject/related arrays. This is deterministic typed assembly,
+        not semantic inference.
 
         A generic OTHER goal can be presentation/epistemic wording rather than a
         distinct analytical obligation. It is safe to remove from P14 only when:
@@ -902,8 +909,48 @@ class ResearchIntakeCompiler:
         if (
             draft.terminal != ResearchIntakeTerminal.READY
             or not draft.goals
-            or not draft.deliverables
         ):
+            return draft
+
+        normalized_goals: list[ModelGoalDraft] = []
+        scope_changed = False
+        for goal in draft.goals:
+            causal = goal.causal_competition
+            if goal.kind == ResearchGoalKind.ROOT_CAUSE and causal is not None:
+                subject_ids = tuple(
+                    dict.fromkeys(
+                        (
+                            *goal.subject_semantic_ids,
+                            causal.effect_semantic_id,
+                            *causal.candidate_mechanism_semantic_ids,
+                        )
+                    )
+                )
+                related_ids = tuple(
+                    dict.fromkeys(
+                        (
+                            *goal.related_semantic_ids,
+                            *causal.diagnostic_dimension_ids,
+                        )
+                    )
+                )
+                if (
+                    subject_ids != goal.subject_semantic_ids
+                    or related_ids != goal.related_semantic_ids
+                ):
+                    scope_changed = True
+                    goal = goal.model_copy(
+                        update={
+                            "subject_semantic_ids": subject_ids,
+                            "related_semantic_ids": related_ids,
+                        }
+                    )
+            normalized_goals.append(goal)
+
+        if scope_changed:
+            draft = draft.model_copy(update={"goals": tuple(normalized_goals)})
+
+        if not draft.deliverables:
             return draft
 
         presentation_sources = {
