@@ -453,7 +453,7 @@ class DimaBrainV2Activities(BrainActivities):
                 else CognitionPurpose.INTERPRET_NEW_INTENT
             ),
             objective_id=goal.goal_id,
-            legal_profile_hash=self._catalog.fingerprint(),
+            legal_profile_hash=self._catalog.fingerprint,
         ).fingerprint
         return IntakeActivityResult(
             research_session_id=session.session_id,
