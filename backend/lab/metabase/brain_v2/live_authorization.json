@@ -1,6 +1,6 @@
 {
   "schema_version": "dima_brain_v2_live_authorization_v1",
-  "enabled": true,
+  "enabled": false,
   "probe_id": "R_LIVE_1_ONE_PASS",
   "candidate_product_sha": "348f66a62bb5816207a4e6fd0b93cbd67fee1141",
   "provider_free_run_id": 36770164118,
@@ -10,5 +10,5 @@
   "model_policy": "LUNA_FIRST",
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
-  "authorization_receipt": "phase1-one-pass-closed-temporal-union-v1"
+  "authorization_receipt": "one-pass-reviewed-36770386638"
 }
