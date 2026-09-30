@@ -28,6 +28,8 @@ from app.v3.research_contracts import (
     ResearchBrief,
     ResearchBriefStatus,
     ResearchDeliverableRequirement,
+    ResearchDirectiveKind,
+    ResearchDirectiveRequirement,
     ResearchGoalKind,
     ResearchGoalStatus,
     ResearchQuestion,
@@ -242,6 +244,15 @@ class ModelDeliverableDraft(Frozen):
     source_text: str = Field(min_length=1)
 
 
+class ModelDirectiveDraft(Frozen):
+    """Provider semantic atom; Dima binds it to one accepted analytical goal."""
+
+    key: str = Field(min_length=1, max_length=120)
+    kind: ResearchDirectiveKind
+    source_goal_key: str = Field(min_length=1, max_length=120)
+    source_text: str = Field(min_length=1)
+
+
 class ModelInvestigationDirectiveDraft(Frozen):
     key: str = Field(min_length=1, max_length=120)
     kind: ProductInvestigationRequirementKind
@@ -254,6 +265,7 @@ class ModelResearchBriefDraft(Frozen):
     objective: str | None = None
     goals: tuple[ModelGoalDraft, ...] = ()
     deliverables: tuple[ModelDeliverableDraft, ...] = ()
+    directives: tuple[ModelDirectiveDraft, ...] = ()
     investigation_directives: tuple[ModelInvestigationDirectiveDraft, ...] = ()
     time_surfaces: tuple[str, ...] = ()
     time_periods: tuple[ModelTimePeriodDraft, ...] = ()
@@ -275,6 +287,7 @@ class ModelResearchBriefDraft(Frozen):
             if (
                 self.goals
                 or self.deliverables
+                or self.directives
                 or self.investigation_directives
                 or self.unsupported_reason is not None
             ):
@@ -285,6 +298,7 @@ class ModelResearchBriefDraft(Frozen):
             if (
                 self.goals
                 or self.deliverables
+                or self.directives
                 or self.investigation_directives
                 or self.clarification_question is not None
             ):
@@ -299,6 +313,7 @@ class ModelReadyResearchIntake(Frozen):
     objective: str = Field(min_length=1)
     goals: tuple[ModelGoalDraft, ...] = Field(min_length=1)
     deliverables: tuple[ModelDeliverableDraft, ...] = ()
+    directives: tuple[ModelDirectiveDraft, ...] = ()
     investigation_directives: tuple[ModelInvestigationDirectiveDraft, ...] = ()
     time_periods: tuple[ModelTimePeriodDraft, ...] = ()
     required_domains: tuple[str, ...] = ()
@@ -387,7 +402,15 @@ Authority rules:
   actual period-vs-period comparison. Use CAUSAL_CANDIDATE for user-provided candidate mechanisms,
   and ENTITY_OR_MEASURE for governed entity/measure competition. Every non-temporal comparison item
   must carry one semantic_id from the grounded catalog and from that goal's accepted refs.
-- Preserve every current MUST analytical/presentation obligation as a separate goal/deliverable.
+- Emit goals ONLY for requests that require a distinct native analytical result. Never use OTHER as
+  a catch-all for explanation, evidence-handling, causal-restraint, or stopping instructions.
+- Emit presentation requests as deliverables.
+- Emit SUPPORT_CHALLENGE, CAUSAL_RESTRAINT and STOP_WHEN_SUFFICIENT as typed directives bound to
+  the analytical goal they govern. These directives are USER_MUST requirements but NEVER native
+  analytical goals and never authorize a second material acquisition.
+- Preserve every current MUST analytical/presentation/epistemic/stop obligation in exactly one typed
+  atom. Do not duplicate one clause across analytical and non-analytical atoms unless the user
+  independently requested both distinct outputs.
 - For every READY goal emit source_fragment_text as one exact verbatim substring of the CURRENT
   user message that directly supports that goal. Never paraphrase the fragment.
 - If multiple goals decompose the same user clause, repeat the same maximal supporting clause
@@ -597,6 +620,10 @@ def _intake_provider_schema(
     }
     variants: list[dict[str, Any]] = []
     for kind in ResearchGoalKind:
+        # OTHER remains a historical domain value but is not provider authority.
+        # Every live analytical goal must have one explicit governed analytical kind.
+        if kind == ResearchGoalKind.OTHER:
+            continue
         if kind == ResearchGoalKind.RELATIONSHIP:
             if not relationship_ids:
                 continue
@@ -784,6 +811,13 @@ class ResearchIntakeCompiler:
                 }
                 for item in brief.deliverables
             ],
+            "directives": [
+                {
+                    "kind": item.kind.value,
+                    "source_text": item.source_text,
+                }
+                for item in brief.directives
+            ],
             "required_domains": list(brief.required_domains),
         }
 
@@ -913,6 +947,7 @@ class ResearchIntakeCompiler:
                         objective=provider_result.objective,
                         goals=provider_result.goals,
                         deliverables=provider_result.deliverables,
+                        directives=provider_result.directives,
                         investigation_directives=(
                             provider_result.investigation_directives
                         ),
@@ -951,24 +986,9 @@ class ResearchIntakeCompiler:
         )
 
         duplicate_root_keys = self._duplicate_root_cause_goal_keys(draft)
-        if duplicate_root_keys and self.call_count < 2:
-            draft = invoke_provider(
-                instruction=(
-                    "Repair one typed analytical-goal contract violation. Multiple "
-                    "ROOT_CAUSE goals carried the same causal competition and the "
-                    "same governed semantic refs. Return the complete CURRENT intent "
-                    "with exactly one ROOT_CAUSE goal for each distinct typed causal "
-                    "identity. Preserve presentation/support/challenge/stopping "
-                    "obligations as deliverable or investigation semantics when "
-                    "appropriate. Do not invent or remove governed refs."
-                ),
-                reconsideration={
-                    "kind": "DUPLICATE_ANALYTICAL_GOAL_REPAIR",
-                    "duplicate_goal_keys": list(duplicate_root_keys),
-                },
-            )
-            duplicate_root_keys = self._duplicate_root_cause_goal_keys(draft)
         if duplicate_root_keys:
+            # Deterministic canonicalization is the authority boundary. A second
+            # model call may not rewrite an invalid workflow graph until lucky.
             raise ResearchIntakeError(
                 "INTAKE_DUPLICATE_ANALYTICAL_GOAL",
                 ",".join(duplicate_root_keys),
@@ -1217,6 +1237,45 @@ class ResearchIntakeCompiler:
                 )
             )
 
+        directives: list[ResearchDirectiveRequirement] = []
+        seen_requirement_directive_keys: set[str] = set()
+        seen_requirement_directive_identity: set[tuple[str, str]] = set()
+        for index, item in enumerate(draft.directives, start=1):
+            if item.key in seen_requirement_directive_keys:
+                raise ResearchIntakeError(
+                    "INTAKE_DIRECTIVE_KEY_DUPLICATE",
+                    item.key,
+                )
+            seen_requirement_directive_keys.add(item.key)
+            source_goal_id = goal_id_by_key.get(item.source_goal_key)
+            if source_goal_id is None:
+                raise ResearchIntakeError(
+                    "INTAKE_DIRECTIVE_SOURCE_UNKNOWN",
+                    item.source_goal_key,
+                )
+            identity = (item.kind.value, source_goal_id)
+            if identity in seen_requirement_directive_identity:
+                raise ResearchIntakeError(
+                    "INTAKE_DIRECTIVE_DUPLICATE",
+                    item.key,
+                )
+            seen_requirement_directive_identity.add(identity)
+            directives.append(
+                ResearchDirectiveRequirement(
+                    requirement_id=self._ids(
+                        "dr_",
+                        {
+                            "directive": item.model_dump(mode="json"),
+                            "source_goal_id": source_goal_id,
+                        },
+                        index,
+                    ),
+                    kind=item.kind,
+                    source_goal_id=source_goal_id,
+                    source_text=item.source_text,
+                )
+            )
+
         investigation_requirements: list[ProductInvestigationRequirement] = []
         seen_directive_keys: set[str] = set()
         seen_directive_identity: set[tuple[str, str]] = set()
@@ -1452,6 +1511,7 @@ class ResearchIntakeCompiler:
         must_ids = tuple(
             [item.goal_id for item in questions]
             + [item.requirement_id for item in deliverables]
+            + [item.requirement_id for item in directives]
         )
         brief = ResearchBrief(
             brief_id=brief_id,
@@ -1460,6 +1520,7 @@ class ResearchIntakeCompiler:
             required_domains=tuple(dict.fromkeys(draft.required_domains)),
             questions=tuple(questions),
             deliverables=tuple(deliverables),
+            directives=tuple(directives),
             must_requirement_ids=must_ids,
             blocking_goal_ids=(),
             context_version=catalog.context_version,
