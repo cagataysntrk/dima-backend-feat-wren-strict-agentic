@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import json
+from enum import StrEnum
 
 import httpx
 import pytest
+from pydantic import BaseModel, ConfigDict
 
 from app.v3.structured_trace import (
     build_provider_bound_payload,
@@ -13,6 +15,7 @@ from app.v3.structured_transport import (
     OpenRouterStructuredJSONTransport,
     StructuredProviderError,
     schema_fingerprint,
+    strict_json_schema,
     validate_provider_strict_schema,
 )
 
@@ -715,6 +718,42 @@ def test_recursive_schema_guard_rejects_unsupported_object_control_keyword():
 
     assert caught.value.code == "COGNITION_PROVIDER_SCHEMA_UNSAFE"
     assert "patternProperties" in caught.value.detail
+
+
+def test_provider_strict_schema_strips_model_defaults_and_rejects_manual_defaults():
+    class Role(StrEnum):
+        MATERIAL_WINDOW = "MATERIAL_WINDOW"
+
+    class Payload(BaseModel):
+        model_config = ConfigDict(extra="forbid")
+        role: Role = Role.MATERIAL_WINDOW
+
+    raw = Payload.model_json_schema()
+    assert raw["properties"]["role"]["$ref"] == "#/$defs/Role"
+    assert raw["properties"]["role"]["default"] == "MATERIAL_WINDOW"
+
+    strict = strict_json_schema(Payload)
+    assert strict["properties"]["role"]["$ref"] == "#/$defs/Role"
+    assert "default" not in strict["properties"]["role"]
+    assert strict["required"] == ["role"]
+    assert "\"default\"" not in json.dumps(strict, sort_keys=True)
+
+    manual = {
+        "type": "object",
+        "properties": {
+            "role": {
+                "type": "string",
+                "enum": ["MATERIAL_WINDOW"],
+                "default": "MATERIAL_WINDOW",
+            }
+        },
+        "required": ["role"],
+        "additionalProperties": False,
+    }
+    with pytest.raises(StructuredProviderError) as caught:
+        validate_provider_strict_schema(manual)
+    assert caught.value.code == "COGNITION_PROVIDER_SCHEMA_UNSAFE"
+    assert "default" in caught.value.detail
 
 
 def test_recursive_schema_guard_accepts_closed_refs_and_arrays():
