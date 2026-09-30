@@ -287,6 +287,12 @@ class FakeInvestigation:
         state.setdefault("reentry_intents", []).append(
             getattr(downstream_reentry_intent, "value", downstream_reentry_intent)
         )
+        state.setdefault("manager_allowed_intents", []).append(
+            tuple(
+                getattr(item, "value", item)
+                for item in getattr(manager, "_allowed_intents", ())
+            )
+        )
         state["obligation"] = getattr(
             manager,
             "target_parent_obligation",
@@ -832,6 +838,12 @@ def test_root_cause_composes_p17_then_p19_and_preserves_inconclusive_outcome():
         native_session_token=None,
     )
     assert len(result.p17_step_refs) >= 2
+    state = investigation._state(result.research_session_id)
+    assert state["manager_allowed_intents"]
+    assert all(
+        intents == ("FORM_CLAIM", "STOP_INVESTIGATION")
+        for intents in state["manager_allowed_intents"]
+    )
     assert result.p19_assessment_refs == ("p19a_" + "2" * 24,)
     assert result.p20_report_ref == "p20r_" + "3" * 24
     assert any(

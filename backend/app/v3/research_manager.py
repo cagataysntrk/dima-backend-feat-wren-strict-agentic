@@ -1133,6 +1133,7 @@ def _build_action_profile(
     graph: InvestigationGraph,
     claims: tuple[ClaimView, ...],
     materials: tuple[MaterialCognitionView, ...],
+    evidence_results: tuple[EvidenceResultCognitionView, ...],
     remaining_followup_native_turns: int,
     remaining_counter_evidence_attempts: int,
     max_depth: int,
@@ -1238,7 +1239,10 @@ def _build_action_profile(
             branch_key=InvestigationBranchKeyPolicy.FORBIDDEN,
             depth_delta=1,
         )
-    if materials:
+    # VERIFIED native Evidence is already governed analytical material.
+    # P17 may synthesize a typed claim from its bounded read-only result view
+    # without opening another native acquisition merely to make FORM_CLAIM legal.
+    if materials or evidence_results:
         add(
             InvestigationIntent.FORM_CLAIM,
             parents=advancing,
@@ -1794,6 +1798,7 @@ class ResearchInvestigationManager:
             graph=graph,
             claims=claims,
             materials=tuple(materials),
+            evidence_results=tuple(evidence_results),
             remaining_followup_native_turns=remaining_followup_native_turns,
             remaining_counter_evidence_attempts=(
                 remaining_counter_evidence_attempts

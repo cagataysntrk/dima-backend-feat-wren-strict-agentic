@@ -1181,12 +1181,26 @@ class HeadlessProductComposer:
                 else ProductProcessNext.TERMINAL
             )
         else:
+            # Once the initial governed material is VERIFIED, discovery must
+            # first synthesize typed candidate claims from that Evidence. A new
+            # native acquisition is legal only after P19 exposes a typed
+            # discriminating gap (the NextTest path below). This prevents a
+            # second stacked agent loop from reopening analytics by default.
+            discovery_intents = (
+                (
+                    InvestigationIntent.FORM_CLAIM,
+                    InvestigationIntent.STOP_INVESTIGATION,
+                )
+                if allowed_evidence_refs
+                else ()
+            )
             scoped_manager = _ObligationScopedProposalManager(
                 inner=self._investigation_manager,
                 target_parent_obligation=goal.goal_id,
                 allowed_evidence_refs=allowed_evidence_refs,
                 claim_semantic_contract=ClaimSemanticContract.ROOT_CAUSE_CANDIDATE,
                 allowed_mechanism_refs=allowed_mechanism_refs,
+                allowed_intents=discovery_intents,
             )
             snapshot, next_owner, _, last_error = self._run_p17(
                 session_id=session_id,
