@@ -2,6 +2,11 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
+from app.v3.business_relationship_v1 import (
+    RelationshipAnalyticalKind,
+    RelationshipLayerState,
+    RelationshipResultProjection,
+)
 from app.v3.product.composition import (
     HeadlessProductComposer,
     ProductRequirementState,
@@ -16,6 +21,7 @@ from app.v3.research_contracts import (
     ResearchGoalStatus,
     ResearchQuestion,
     ResearchScope,
+    RelationshipIntentKind,
 )
 from app.v3.research_intake import (
     ResearchIntakeCompiler,
@@ -256,3 +262,57 @@ def test_xray_h8_user_seeded_hypotheses_bind_directly_to_evidence_without_p17():
         item["relation"].value == "CONTEXT"
         for item in recorder.groundings
     )
+
+
+def test_xray_h6_observational_relationship_does_not_require_business_policy():
+    goal = ResearchQuestion(
+        goal_id="g_rel",
+        kind=ResearchGoalKind.RELATIONSHIP,
+        source_text="Inspect governed co-movement.",
+        relationship_intent=RelationshipIntentKind.OBSERVATIONAL,
+        status=ResearchGoalStatus.RESOLVED,
+    )
+    brief = ResearchBrief(
+        brief_id="rb-phase15-h6",
+        objective="Keep observational and business-policy authority distinct.",
+        scope=ResearchScope(),
+        questions=(goal,),
+        must_requirement_ids=("g_rel",),
+        context_version="ctx-phase15-h6",
+        status=ResearchBriefStatus.READY_FOR_RESEARCH,
+    )
+    relationship = RelationshipResultProjection(
+        research_session_id="rs_" + "4" * 24,
+        obligation_id="g_rel",
+        claim_id="clm_" + "5" * 24,
+        policy_use_id="bru_" + "6" * 24,
+        policy_id=None,
+        policy_required=False,
+        scope_lineage_id="atl_phase15_h6",
+        scope_version_id="scope_v1",
+        applicability_scope={"kind": "observational"},
+        analytical_kind=RelationshipAnalyticalKind.CO_MOVEMENT,
+        association_state=RelationshipLayerState.SUPPORTED,
+        co_movement_state=RelationshipLayerState.SUPPORTED,
+        business_relationship_state=RelationshipLayerState.NOT_ESTABLISHED,
+        limitation_codes=("ASSOCIATION_IS_NOT_CAUSATION",),
+    )
+    session = SimpleNamespace(
+        obligations=(
+            SimpleNamespace(
+                obligation_id="g_rel",
+                state=SimpleNamespace(value="VERIFIED"),
+            ),
+        )
+    )
+
+    projected, total, accounted, fulfilled = HeadlessProductComposer._project_user_must(
+        brief=brief,
+        session=session,
+        report=None,
+        relationship_results=(relationship,),
+    )
+
+    assert total == accounted == fulfilled == 1
+    assert projected[0].state == ProductRequirementState.FULFILLED
+    assert projected[0].fulfilled_by_ref == relationship.policy_use_id
