@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import pytest
 from pathlib import Path
 
 from lab.metabase.core_b.phase1_pinpoint_live import (
