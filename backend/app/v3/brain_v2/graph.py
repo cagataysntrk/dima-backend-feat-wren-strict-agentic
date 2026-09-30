@@ -99,6 +99,7 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
             raise ValueError("Brain V2 intake requires one current user input")
         result = IntakeActivityResult.model_validate(\n            intake_activity(current.model_dump(mode="json")).result()\n        )
         return {
+            "research_session_id": result.research_session_id,
             "accepted_brief_ref": result.accepted_brief_ref,
             "scope_version_id": result.scope_version_id,
             "open_requirement_ids": result.open_requirement_ids,
@@ -145,6 +146,9 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
         return {
             "evidence_revision": result.evidence_revision,
             "evidence_ids": result.evidence_ids,
+            "hypothesis_revision": result.hypothesis_revision,
+            "hypothesis_ids": result.hypothesis_ids,
+            "discovery_required": result.discovery_required,
             "last_completed_node": "ADMIT_EVIDENCE",
             "activity_fingerprints": _append_fingerprint(
                 current, result.activity_fingerprint
