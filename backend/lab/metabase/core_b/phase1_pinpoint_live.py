@@ -328,11 +328,10 @@ def _native_resource_fingerprint(payload: dict[str, Any]) -> str:
     ).hexdigest()
 
 
-def seed_native_resource_bindings(
-    db_engine,
+def _native_resource_binding_rows(
     binding_manifest: dict[str, Any],
-) -> None:
-    """Persist exact runtime locators; never derive business semantics here."""
+) -> list[NativeResourceBinding]:
+    """Build exact governed runtime bindings from the sealed live manifest."""
     database_id = int(binding_manifest["database_id"])
     table_id = int(binding_manifest["table_id"])
     rows: list[NativeResourceBinding] = []
@@ -397,6 +396,43 @@ def seed_native_resource_bindings(
             )
         )
 
+    entity_values = binding_manifest.get("entity_values")
+    if not isinstance(entity_values, list):
+        raise RuntimeError("pinpoint entity-value bindings missing")
+    for item in entity_values:
+        candidate_id = str(item["candidate_id"])
+        field_id = int(item["field_id"])
+        locator = {
+            "database_id": database_id,
+            "table_id": table_id,
+            "field_id": field_id,
+        }
+        rows.append(
+            NativeResourceBinding(
+                tenant_id=sealed.TENANT_ID,
+                semantic_context_version=CONTEXT,
+                candidate_id=candidate_id,
+                candidate_kind=SemanticTargetKind.ENTITY_VALUE.value,
+                semantic_id=candidate_id,
+                canonical_name=str(item["canonical_name"]),
+                locator_kind="field",
+                metabase_database_id=database_id,
+                metabase_table_id=table_id,
+                metabase_field_id=field_id,
+                resource_entity_id=f"metabase:field:{field_id}",
+                resource_fingerprint=_native_resource_fingerprint(locator),
+                resource_version=str(binding_manifest["schema_version"]),
+            )
+        )
+    return rows
+
+
+def seed_native_resource_bindings(
+    db_engine,
+    binding_manifest: dict[str, Any],
+) -> None:
+    """Persist exact runtime locators; never derive business semantics here."""
+    rows = _native_resource_binding_rows(binding_manifest)
     with Session(db_engine) as db:
         for row in rows:
             db.add(row)
