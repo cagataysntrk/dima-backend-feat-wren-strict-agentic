@@ -5,7 +5,7 @@ on:
   # are eligible; the platform branch itself never launches paid validation.
   push:
     branches:
-      - phase1-r-live-1-entity-scope-trigger-20260930
+      - phase1-r-live-1-token-cap-trigger-20260930
       - phase1-r-live-2-trigger-20260930
       - phase1-r-live-3-trigger-20260930
       - phase1-v4-trigger-20260929
@@ -89,7 +89,7 @@ jobs:
             PROBE_ID="${{ inputs.probe_id }}"
           elif [ "$EVENT" = "push" ]; then
             case "${{ github.ref_name }}" in
-              phase1-r-live-1-entity-scope-trigger-20260930)
+              phase1-r-live-1-token-cap-trigger-20260930)
                 PROBE_ID="R_LIVE_1_ONE_PASS"
                 ;;
               phase1-r-live-2-trigger-20260930)

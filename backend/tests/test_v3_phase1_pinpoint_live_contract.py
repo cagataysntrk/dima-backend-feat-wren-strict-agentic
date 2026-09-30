@@ -235,7 +235,7 @@ def test_pinpoint_workflow_is_one_probe_per_run_and_no_broad_scorer():
     assert "validate_phase1_round2.py" not in workflow
     assert "--manifest eval/dima_neutral_feature_benchmark_round2.json" not in workflow
     assert "backend/eval/v1/authorizations/phase1-final-pinpoint-live-v3.json" not in workflow
-    assert "phase1-r-live-1-entity-scope-trigger-20260930" in workflow
+    assert "phase1-r-live-1-token-cap-trigger-20260930" in workflow
     assert "phase1-r-live-2-trigger-20260930" in workflow
     assert "phase1-r-live-3-trigger-20260930" in workflow
     assert "phase1-v4-trigger-20260929" in workflow
