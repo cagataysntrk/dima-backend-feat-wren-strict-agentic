@@ -230,6 +230,65 @@ def test_causal_competition_is_one_root_cause_goal_not_relationship_query_plan()
     assert "P17/P19 own governed hypothesis competition" in system
 
 
+def test_typed_causal_surface_canonicalizes_required_refs_into_goal_scope():
+    payload = ready_payload(
+        kind="root_cause",
+        subject=(
+            "metric.downtime",
+            "metric.fault_count",
+            "metric.performance",
+        ),
+        related=("dimension.event_date",),
+    )
+    fragment = "Evaluate two governed explanations within the accepted diagnostic scope."
+    payload["goals"][0]["source_text"] = fragment
+    payload["goals"][0]["source_fragment_text"] = fragment
+    payload["goals"][0]["causal_competition"] = {
+        "effect_semantic_id": "metric.downtime",
+        "candidate_mechanism_semantic_ids": [
+            "metric.fault_count",
+            "metric.performance",
+        ],
+        "diagnostic_dimension_ids": [
+            "dimension.department",
+            "dimension.event_date",
+        ],
+    }
+    transport = FakeTransport(payload)
+
+    result = ResearchIntakeCompiler(
+        transport=transport,
+        calendar_reference_date="2026-09-30",
+    ).compile(
+        question=fragment,
+        catalog=catalog(),
+    )
+
+    assert result.brief is not None
+    assert transport.call_count == 1
+    goal = result.brief.questions[0]
+    assert tuple(item.candidate_id for item in goal.subject_refs) == (
+        "metric.downtime",
+        "metric.fault_count",
+        "metric.performance",
+    )
+    assert tuple(item.candidate_id for item in goal.related_refs) == (
+        "dimension.event_date",
+        "dimension.department",
+    )
+    assert goal.causal_competition == CausalCompetitionSurface(
+        effect_semantic_id="metric.downtime",
+        candidate_mechanism_semantic_ids=(
+            "metric.fault_count",
+            "metric.performance",
+        ),
+        diagnostic_dimension_ids=(
+            "dimension.department",
+            "dimension.event_date",
+        ),
+    )
+
+
 def test_duplicate_root_cause_identity_fails_closed_without_stochastic_repair():
     first_clause = "Determine which governed explanation better accounts for downtime."
     second_clause = "Keep supporting and challenging evidence separate."
