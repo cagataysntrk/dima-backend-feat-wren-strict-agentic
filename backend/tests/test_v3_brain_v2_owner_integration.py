@@ -526,6 +526,30 @@ class AdaptiveP19Manager:
     def __init__(self) -> None:
         self.call_count = 0
 
+        self.context_calls = []
+
+    def propose_with_context(
+        self,
+        snapshot,
+        *,
+        objective,
+        discriminating_test_available,
+        policy_statuses=None,
+        deterministic_feedback_code=None,
+    ):
+        self.context_calls.append(
+            {
+                "objective": objective,
+                "discriminating_test_available": discriminating_test_available,
+                "deterministic_feedback_code": deterministic_feedback_code,
+            }
+        )
+        return self.propose(
+            snapshot,
+            policy_statuses=policy_statuses,
+            deterministic_feedback_code=deterministic_feedback_code,
+        )
+
     def propose(
         self,
         snapshot,
@@ -1013,7 +1037,7 @@ def test_legacy_v2_shadow_replay_preserves_semantic_product_outcome() -> None:
 
 
 
-def _adaptive_stack(*, discovery: bool = False):
+def _adaptive_stack(*, discovery: bool = False, p19_manager_override=None):
     db = _engine()
     store = ResearchSessionStore(db)
     bridge = BridgeFactory()
@@ -1049,9 +1073,13 @@ def _adaptive_stack(*, discovery: bool = False):
         db_engine=db,
     )
     p19_manager = (
-        DeterministicP19Manager()
-        if discovery
-        else AdaptiveP19Manager()
+        p19_manager_override
+        if p19_manager_override is not None
+        else (
+            DeterministicP19Manager()
+            if discovery
+            else AdaptiveP19Manager()
+        )
     )
     discovery_manager = (
         DeterministicDiscoveryManager()
@@ -1127,6 +1155,20 @@ def test_real_owner_adaptive_runs_one_typed_followup_without_duplicate_native() 
     )
     assert len(next_test_steps) == 1
     assert len(snapshot.evidence_results) == 2
+    assert len(p19_manager.context_calls) == 2
+    assert p19_manager.context_calls[0][
+        "discriminating_test_available"
+    ] is True
+    assert p19_manager.context_calls[0][
+        "deterministic_feedback_code"
+    ] == "P19_DISCRIMINATING_TEST_AVAILABLE"
+    assert "Duruş artışını" in p19_manager.context_calls[0]["objective"]
+    assert p19_manager.context_calls[1][
+        "discriminating_test_available"
+    ] is False
+    assert p19_manager.context_calls[1][
+        "deterministic_feedback_code"
+    ] == "P19_NO_CALLABLE_DISCRIMINATING_TEST"
 
 
 def test_real_owner_discovery_forms_governed_candidates_without_extra_native() -> None:
