@@ -2393,6 +2393,91 @@ class ResearchInvestigationManager:
             }
         )
 
+    @staticmethod
+    def _verified_evidence_discriminating_reentry_snapshot(
+        *,
+        session: ResearchSession,
+        snapshot: ResearchManagerSnapshot,
+        obligation_id: str,
+    ) -> ResearchManagerSnapshot:
+        """Authorize one typed P19 -> P17 discriminating native re-entry.
+
+        Direct P19 may be reached without any prior P17 node when the user
+        supplied the competing hypotheses. A typed NextTestRequest must still
+        be able to request exactly one high-information P17 test without
+        inventing a synthetic discovery step.
+
+        This projection is fail-closed: it requires the exact VERIFIED parent
+        obligation and governed Evidence, preserves the existing depth/native
+        budgets, and adds only TEST_DISCRIMINATING_EVIDENCE legality.
+        """
+
+        obligation = ResearchManager.obligation(session, obligation_id)
+        if obligation.state != ObligationState.VERIFIED:
+            raise ResearchManagerMaturationError(
+                "P17_TEST_REENTRY_VERIFIED_OBLIGATION_REQUIRED",
+                obligation_id,
+            )
+        evidence_refs = tuple(
+            item.evidence_id
+            for item in session.evidence_refs
+            if item.obligation_id == obligation_id
+        )
+        if not evidence_refs:
+            raise ResearchManagerMaturationError(
+                "P17_TEST_REENTRY_EVIDENCE_REQUIRED",
+                obligation_id,
+            )
+        if snapshot.remaining_followup_native_turns <= 0:
+            raise ResearchManagerMaturationError(
+                "P17_TEST_REENTRY_NATIVE_BUDGET_EXHAUSTED",
+                obligation_id,
+            )
+
+        open_branches = set(snapshot.investigation.open_branch_ids)
+        scoped_open = tuple(
+            node
+            for node in snapshot.investigation.nodes
+            if (
+                node.root_obligation_id == obligation_id
+                and node.branch_id in open_branches
+                and node.stop_scope != StopScope.INVESTIGATION
+            )
+        )
+        advancing = tuple(
+            node.step_id
+            for node in scoped_open
+            if node.contract_depth < snapshot.action_profile.max_depth
+        )
+        if scoped_open and not advancing:
+            raise ResearchManagerMaturationError(
+                "P17_TEST_REENTRY_DEPTH_EXHAUSTED",
+                obligation_id,
+            )
+
+        test_rule = InvestigationActionRule(
+            intent=InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE,
+            legal_parent_step_ids=advancing,
+            allow_parentless=not scoped_open,
+            branch_behavior=InvestigationBranchBehavior.ROOT_OR_INHERIT,
+            branch_key_policy=InvestigationBranchKeyPolicy.FORBIDDEN,
+            depth_delta=1,
+            gain_requirement=InvestigationGainRequirement.POSITIVE_EXPECTED_GAIN,
+        )
+        rules = tuple(
+            rule
+            for rule in snapshot.action_profile.rules
+            if rule.intent != InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE
+        )
+        return snapshot.model_copy(
+            update={
+                "action_profile": InvestigationActionProfile(
+                    rules=(*rules, test_rule),
+                    max_depth=snapshot.action_profile.max_depth,
+                )
+            }
+        )
+
     def run_one(
         self,
         *,
@@ -2416,6 +2501,23 @@ class ResearchInvestigationManager:
                     "FORM_CLAIM downstream reentry requires one exact obligation",
                 )
             snapshot = self._verified_evidence_claim_reentry_snapshot(
+                session=session,
+                snapshot=snapshot,
+                obligation_id=downstream_reentry_obligation_id,
+            )
+        elif (
+            downstream_reentry_intent
+            == InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE
+        ):
+            if not downstream_reentry_obligation_id:
+                raise ResearchManagerMaturationError(
+                    "P17_TEST_REENTRY_OBLIGATION_REQUIRED",
+                    (
+                        "TEST_DISCRIMINATING_EVIDENCE downstream reentry "
+                        "requires one exact obligation"
+                    ),
+                )
+            snapshot = self._verified_evidence_discriminating_reentry_snapshot(
                 session=session,
                 snapshot=snapshot,
                 obligation_id=downstream_reentry_obligation_id,
