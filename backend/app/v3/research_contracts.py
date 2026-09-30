@@ -24,6 +24,14 @@ class PresentationKind(StrEnum):
     NONE = "none"
 
 
+class ResearchDirectiveKind(StrEnum):
+    """Typed non-analytical USER_MUST intent owned downstream of P14."""
+
+    SUPPORT_CHALLENGE = "SUPPORT_CHALLENGE"
+    CAUSAL_RESTRAINT = "CAUSAL_RESTRAINT"
+    STOP_WHEN_SUFFICIENT = "STOP_WHEN_SUFFICIENT"
+
+
 class RankingSurface(FrozenModel):
     """Accepted user/product ranking obligation, not automatically native ORDER BY."""
 
@@ -304,6 +312,16 @@ class ResearchDeliverableRequirement(FrozenModel):
     source_text: str
 
 
+class ResearchDirectiveRequirement(FrozenModel):
+    """Accepted epistemic/stop intent that must never become a native query."""
+
+    requirement_id: str
+    kind: ResearchDirectiveKind
+    source_goal_id: str
+    priority: Literal["MUST"] = "MUST"
+    source_text: str
+
+
 class ResearchScope(FrozenModel):
     semantic_refs: tuple[ResearchSemanticRef, ...] = ()
     time_surfaces: tuple[str, ...] = ()
@@ -523,6 +541,7 @@ class ResearchBrief(FrozenModel):
     required_domains: tuple[str, ...] = ()
     questions: tuple[ResearchQuestion, ...] = ()
     deliverables: tuple[ResearchDeliverableRequirement, ...] = ()
+    directives: tuple[ResearchDirectiveRequirement, ...] = ()
     must_requirement_ids: tuple[str, ...] = ()
     blocking_goal_ids: tuple[str, ...] = ()
     budget: ResearchBudget = Field(default_factory=ResearchBudget)
