@@ -1,6 +1,6 @@
 name: dima-metabase-governance
-# FINAL STRICT-SCHEMA RECOVERY SEAL: c2a0cfda12ab6b1329ef56171b6a5d8e58eda005
-# 90+ convergence final provider-free freeze v2: Product behavior c2a0cfda12ab6b1329ef56171b6a5d8e58eda005
+# FINAL STRICT-SCHEMA RECOVERY SEAL: a50c752da10d2fea9b0dec553bd574838d7e76c3
+# 90+ convergence final provider-free freeze v2: Product behavior a50c752da10d2fea9b0dec553bd574838d7e76c3
 
 on:
   push:

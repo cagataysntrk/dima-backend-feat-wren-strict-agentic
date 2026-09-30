@@ -5,7 +5,7 @@ on:
   # are eligible; the platform branch itself never launches paid validation.
   push:
     branches:
-      - phase1-r-live-1-luna-trigger-20260930
+      - phase1-r-live-1-product-repair-luna-trigger-20260930
       - phase1-r-live-2-trigger-20260930
       - phase1-r-live-3-trigger-20260930
       - phase1-v4-trigger-20260929
@@ -61,7 +61,7 @@ env:
   COMPLETION_TOKEN_CEILING: "16000"
   REASONING_TOKEN_CEILING: "12000"
   PROVIDER_COST_CEILING: "1.00"
-  PRODUCT_BEHAVIOR_SHA: "c2a0cfda12ab6b1329ef56171b6a5d8e58eda005"
+  PRODUCT_BEHAVIOR_SHA: "a50c752da10d2fea9b0dec553bd574838d7e76c3"
 
 concurrency:
   group: dima-v1-phase1-pinpoint-live
@@ -89,7 +89,7 @@ jobs:
             PROBE_ID="${{ inputs.probe_id }}"
           elif [ "$EVENT" = "push" ]; then
             case "${{ github.ref_name }}" in
-              phase1-r-live-1-luna-trigger-20260930)
+              phase1-r-live-1-product-repair-luna-trigger-20260930)
                 PROBE_ID="R_LIVE_1_ONE_PASS"
                 ;;
               phase1-r-live-2-trigger-20260930)
@@ -375,7 +375,7 @@ jobs:
           assert provider["blocked_request_count"] == 0, provider
           assert provider["privacy_contract"]["api_keys_persisted"] is False
           assert provider["privacy_contract"]["reasoning_text_persisted"] is False
-          assert report["candidate_product_sha"] == "c2a0cfda12ab6b1329ef56171b6a5d8e58eda005"
+          assert report["candidate_product_sha"] == "a50c752da10d2fea9b0dec553bd574838d7e76c3"
           assert report["model_topology"]["dima_cognition"] == "openai/gpt-5.6-luna"
           assert report["model_topology"]["metabot"] == "openrouter/openai/gpt-5.6-luna"
           assert report["turn_count_executed"] == report["turn_count_expected"]
