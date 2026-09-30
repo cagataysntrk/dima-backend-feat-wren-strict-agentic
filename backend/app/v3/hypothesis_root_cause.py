@@ -302,12 +302,31 @@ class HypothesisSnapshot(Frozen):
     groundings: tuple[P19GroundingLink, ...]
 
 
+class P19EvidenceObservation(Frozen):
+    """Bounded read-only projection of exact VERIFIED P14 Evidence.
+
+    Query text, SQL/MBQL, native planning metadata and runtime internals are
+    deliberately excluded. P19 may inspect observed values but this projection
+    grants no numeric-provenance or causal-identification authority.
+    """
+
+    evidence_id: str = Field(pattern=r"^evi_[a-f0-9]{24}$")
+    receipt_id: str = Field(pattern=r"^dqr_[a-f0-9]{24}$")
+    execution_link_id: str = Field(min_length=1)
+    result_hash: str = Field(pattern=r"^[a-f0-9]{64}$")
+    row_count: int = Field(ge=0)
+    columns: tuple[str, ...] = ()
+    rows: tuple[tuple[Any, ...], ...] = ()
+    truncated: bool = False
+
+
 class P19CaseSnapshot(Frozen):
     research_session_id: str
     obligation_id: str
     tenant_binding: str
     semantic_context_version: str
     hypotheses: tuple[HypothesisSnapshot, ...]
+    evidence_observations: tuple[P19EvidenceObservation, ...] = ()
 
 
 def _canonical_json(value: Any, *, code: str) -> tuple[str, str]:
@@ -822,17 +841,117 @@ class HypothesisRootCauseStore:
             session_id=session.session_id,
             obligation_id=obligation_id,
         )
+        hypothesis_snapshots = tuple(
+            HypothesisSnapshot(
+                hypothesis=h,
+                groundings=self._groundings(h.hypothesis_id),
+            )
+            for h in hypotheses
+        )
+
+        evidence_by_id: dict[str, P19EvidenceObservation] = {}
+        max_cognition_rows = 100
+        for item in hypothesis_snapshots:
+            for link in item.groundings:
+                if link.source_kind != GroundingSourceKind.P14_EVIDENCE:
+                    continue
+                row = self._source_authority(
+                    session_id=session.session_id,
+                    obligation_id=obligation_id,
+                    source_kind=link.source_kind,
+                    source_ref=link.source_ref,
+                    source_receipt_id=link.source_receipt_id,
+                )
+                if (
+                    not row.evidence_id
+                    or not row.receipt_id
+                    or not row.native_result_json
+                    or not row.result_hash
+                ):
+                    raise P19EpistemicError(
+                        "P19_EVIDENCE_OBSERVATION_INCOMPLETE",
+                        link.source_ref,
+                    )
+                try:
+                    payload = json.loads(row.native_result_json)
+                except json.JSONDecodeError as exc:
+                    raise P19EpistemicError(
+                        "P19_EVIDENCE_OBSERVATION_INVALID",
+                        link.source_ref,
+                    ) from exc
+                if not isinstance(payload, dict):
+                    raise P19EpistemicError(
+                        "P19_EVIDENCE_OBSERVATION_INVALID",
+                        link.source_ref,
+                    )
+                canonical = json.dumps(
+                    payload,
+                    ensure_ascii=False,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                    allow_nan=False,
+                )
+                if hashlib.sha256(canonical.encode("utf-8")).hexdigest() != row.result_hash:
+                    raise P19EpistemicError(
+                        "P19_EVIDENCE_OBSERVATION_FINGERPRINT_MISMATCH",
+                        link.source_ref,
+                    )
+
+                data = payload.get("data")
+                raw_rows = data.get("rows") if isinstance(data, dict) else None
+                raw_cols = data.get("cols") if isinstance(data, dict) else None
+                projected_rows: list[tuple[Any, ...]] = []
+                if isinstance(raw_rows, list):
+                    for raw_item in raw_rows[:max_cognition_rows]:
+                        if isinstance(raw_item, (list, tuple)):
+                            projected_rows.append(tuple(raw_item))
+                columns: list[str] = []
+                if isinstance(raw_cols, list):
+                    for raw_item in raw_cols:
+                        if not isinstance(raw_item, dict):
+                            continue
+                        label = raw_item.get("display_name")
+                        if not isinstance(label, str):
+                            label = raw_item.get("name")
+                        if isinstance(label, str) and label.strip():
+                            columns.append(label.strip())
+                raw_count = payload.get("row_count")
+                row_count = (
+                    raw_count
+                    if isinstance(raw_count, int) and raw_count >= 0
+                    else len(raw_rows)
+                    if isinstance(raw_rows, list)
+                    else len(projected_rows)
+                )
+                observation = P19EvidenceObservation(
+                    evidence_id=row.evidence_id,
+                    receipt_id=row.receipt_id,
+                    execution_link_id=str(row.id),
+                    result_hash=row.result_hash,
+                    row_count=row_count,
+                    columns=tuple(columns),
+                    rows=tuple(projected_rows),
+                    truncated=(
+                        isinstance(raw_rows, list)
+                        and len(raw_rows) > len(projected_rows)
+                    ),
+                )
+                existing = evidence_by_id.get(observation.evidence_id)
+                if existing is not None and existing != observation:
+                    raise P19EpistemicError(
+                        "P19_EVIDENCE_OBSERVATION_CONFLICT",
+                        observation.evidence_id,
+                    )
+                evidence_by_id[observation.evidence_id] = observation
+
         return P19CaseSnapshot(
             research_session_id=session.session_id,
             obligation_id=obligation_id,
             tenant_binding=session.tenant_binding,
             semantic_context_version=session.context_version,
-            hypotheses=tuple(
-                HypothesisSnapshot(
-                    hypothesis=h,
-                    groundings=self._groundings(h.hypothesis_id),
-                )
-                for h in hypotheses
+            hypotheses=hypothesis_snapshots,
+            evidence_observations=tuple(
+                evidence_by_id[key] for key in sorted(evidence_by_id)
             ),
         )
 
