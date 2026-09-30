@@ -452,7 +452,28 @@ class ReportClaimGate:
                 raise P20ReportError('P20_UNCERTAINTY_OUTCOME_MISMATCH', statement.statement_id)
             if statement.upstream_epistemic_ceiling != assessment.aggregate_outcome.value:
                 raise P20ReportError('P20_UNCERTAINTY_CEILING_MISMATCH', statement.statement_id)
-            return self._canonical_statement(statement, 'No defensible root cause established.')
+            retained = tuple(
+                item
+                for item in assessment.candidates
+                if item.disposition != HypothesisDisposition.REJECTED
+            )
+            parts: list[str] = []
+            for candidate in retained:
+                hypothesis = self._load_hypothesis(
+                    session=session,
+                    obligation_id=ref.obligation_id,
+                    hypothesis_id=candidate.hypothesis_id,
+                )
+                parts.append(
+                    f'{hypothesis.statement} '
+                    f'[epistemic={candidate.epistemic_class.value}; '
+                    f'evidence={candidate.evidence_strength.value}; '
+                    f'causal={candidate.causal_qualification.value}]'
+                )
+            text = 'No defensible root cause established.'
+            if parts:
+                text += ' Retained candidates: ' + '; '.join(parts)
+            return self._canonical_statement(statement, text)
         raise P20ReportError('P20_P19_STATEMENT_KIND_INVALID', statement.statement_kind.value)
 
     def _validate_statement(self, *, session, statement: ReportStatement, limitations: dict[str, ReportLimitation], principal: Principal) -> ReportStatement:
