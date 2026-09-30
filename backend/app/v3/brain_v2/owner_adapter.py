@@ -19,6 +19,7 @@ from app.v3.hypothesis_root_cause import (
 )
 from app.v3.hypothesis_root_cause_v1 import (
     NextTestRequest,
+    discriminating_test_capacity_available,
     discriminating_test_is_callable,
     next_test_request,
 )
@@ -860,6 +861,18 @@ class DimaBrainV2Activities(BrainActivities):
                 goal.goal_id,
             )
 
+        investigation_snapshot = self._investigation.snapshot(
+            session_id=session.session_id,
+            principal=self._principal,
+        )
+        discrimination_capacity = (
+            state.adaptive_reentries < state.max_adaptive_reentries
+            and discriminating_test_capacity_available(
+                snapshot=investigation_snapshot,
+                evidence_surface_available=bool(self._native_session_token),
+                target_obligation_id=goal.goal_id,
+            )
+        )
         key = self._cognition_key(
             state=state,
             owner="P19",
@@ -872,6 +885,8 @@ class DimaBrainV2Activities(BrainActivities):
                         for item in snapshot.hypotheses
                     ],
                     "scope": state.scope_version_id,
+                    "discriminating_test_capacity": discrimination_capacity,
+                    "investigation_fingerprint": investigation_snapshot.fingerprint,
                 }
             ),
         )
@@ -892,11 +907,30 @@ class DimaBrainV2Activities(BrainActivities):
                 assessment = prior
 
         if assessment is None:
-            draft = self._epistemic_manager.propose(
-                snapshot,
-                policy_statuses={},
-                deterministic_feedback_code=None,
+            feedback_code = (
+                "P19_DISCRIMINATING_TEST_AVAILABLE"
+                if discrimination_capacity
+                else "P19_NO_CALLABLE_DISCRIMINATING_TEST"
             )
+            propose_with_context = getattr(
+                self._epistemic_manager,
+                "propose_with_context",
+                None,
+            )
+            if callable(propose_with_context):
+                draft = propose_with_context(
+                    snapshot,
+                    objective=goal.source_text,
+                    discriminating_test_available=discrimination_capacity,
+                    policy_statuses={},
+                    deterministic_feedback_code=feedback_code,
+                )
+            else:
+                draft = self._epistemic_manager.propose(
+                    snapshot,
+                    policy_statuses={},
+                    deterministic_feedback_code=feedback_code,
+                )
             assessment = self._epistemics.assess(
                 draft=draft,
                 principal=self._principal,
@@ -908,6 +942,49 @@ class DimaBrainV2Activities(BrainActivities):
             scope_lineage_id=session.lineage_id,
             scope_version_id=state.scope_version_id or "scope_v1",
         )
+        if request is not None and not discriminating_test_is_callable(
+            snapshot=investigation_snapshot,
+            request=request,
+            evidence_surface_available=bool(self._native_session_token),
+            target_obligation_id=goal.goal_id,
+        ):
+            # P19 asked for discrimination but the deterministic P17/native
+            # boundary says it cannot be executed legally. P19, not LangGraph,
+            # owns the honest terminal reassessment.
+            propose_with_context = getattr(
+                self._epistemic_manager,
+                "propose_with_context",
+                None,
+            )
+            if callable(propose_with_context):
+                terminal_draft = propose_with_context(
+                    snapshot,
+                    objective=goal.source_text,
+                    discriminating_test_available=False,
+                    policy_statuses={},
+                    deterministic_feedback_code=(
+                        "P19_NO_CALLABLE_DISCRIMINATING_TEST"
+                    ),
+                )
+            else:
+                terminal_draft = self._epistemic_manager.propose(
+                    snapshot,
+                    policy_statuses={},
+                    deterministic_feedback_code=(
+                        "P19_NO_CALLABLE_DISCRIMINATING_TEST"
+                    ),
+                )
+            assessment = self._epistemics.assess(
+                draft=terminal_draft,
+                principal=self._principal,
+            )
+            request = next_test_request(
+                snapshot=snapshot,
+                assessment=assessment,
+                scope_lineage_id=session.lineage_id,
+                scope_version_id=state.scope_version_id or "scope_v1",
+            )
+
         if assessment.aggregate_outcome != AggregateOutcome.IN_PROGRESS:
             route = BrainP19Route.SUFFICIENT
         elif request is not None:
