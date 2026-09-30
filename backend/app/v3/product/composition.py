@@ -67,6 +67,7 @@ from app.v3.research_contracts import (
     PresentationKind,
     ResearchBrief,
     ResearchBriefStatus,
+    ResearchDirectiveKind,
     ResearchGoalKind,
     ResearchQuestion,
     SemanticTargetKind,
@@ -127,6 +128,8 @@ class CompositionLimitation(Frozen):
 class ProductRequirementKind(StrEnum):
     ANALYTICAL = "ANALYTICAL"
     DELIVERABLE = "DELIVERABLE"
+    EPISTEMIC = "EPISTEMIC"
+    STOP_POLICY = "STOP_POLICY"
 
 
 class ProductRequirementState(StrEnum):
@@ -1433,7 +1436,12 @@ class HeadlessProductComposer:
             )
 
         for deliverable in brief.deliverables:
-            if deliverable.kind == PresentationKind.REPORT and report is not None:
+            if (
+                deliverable.kind in {PresentationKind.REPORT, PresentationKind.EXPLAIN}
+                and report is not None
+            ):
+                # P20 is the governed narrative/report owner. EXPLAIN is fulfilled
+                # only when an actual sealed report exists; TABLE/CHART stay explicit.
                 state = ProductRequirementState.FULFILLED
                 fulfilled_by_ref = report.report_id
             else:
@@ -1445,6 +1453,40 @@ class HeadlessProductComposer:
                     requirement_kind=ProductRequirementKind.DELIVERABLE,
                     state=state,
                     fulfilled_by_ref=fulfilled_by_ref,
+                )
+            )
+
+        for directive in brief.directives:
+            assessment = root_cause_by_goal.get(directive.source_goal_id)
+            terminal_assessment = (
+                assessment is not None
+                and _state_value(assessment.aggregate_outcome) != "IN_PROGRESS"
+            )
+            if directive.kind in {
+                ResearchDirectiveKind.SUPPORT_CHALLENGE,
+                ResearchDirectiveKind.CAUSAL_RESTRAINT,
+            }:
+                requirement_kind = ProductRequirementKind.EPISTEMIC
+            elif directive.kind == ResearchDirectiveKind.STOP_WHEN_SUFFICIENT:
+                requirement_kind = ProductRequirementKind.STOP_POLICY
+            else:
+                raise ValueError(
+                    f"unsupported Research directive kind: {directive.kind}"
+                )
+            projected.append(
+                ProductRequirementFulfillment(
+                    requirement_id=directive.requirement_id,
+                    requirement_kind=requirement_kind,
+                    state=(
+                        ProductRequirementState.FULFILLED
+                        if terminal_assessment
+                        else ProductRequirementState.PENDING
+                    ),
+                    fulfilled_by_ref=(
+                        assessment.assessment_id
+                        if terminal_assessment
+                        else None
+                    ),
                 )
             )
 
@@ -1476,7 +1518,12 @@ class HeadlessProductComposer:
         unsupported = {
             item.requirement_id
             for item in brief.deliverables
-            if item.kind != PresentationKind.REPORT
+            if item.kind
+            in {
+                PresentationKind.TABLE,
+                PresentationKind.CHART,
+                PresentationKind.NONE,
+            }
         }
         entries: list[ProductRequirementCompletion] = []
         for item in projected:
@@ -1490,6 +1537,15 @@ class HeadlessProductComposer:
             elif item.requirement_id in unsupported:
                 disposition = ProductRequirementDisposition.UNSUPPORTED
             elif terminal == ProductCompositionTerminal.INCONCLUSIVE:
+                disposition = ProductRequirementDisposition.INCONCLUSIVE
+            elif (
+                item.requirement_kind
+                in {
+                    ProductRequirementKind.EPISTEMIC,
+                    ProductRequirementKind.STOP_POLICY,
+                }
+                and terminal == ProductCompositionTerminal.REPORT
+            ):
                 disposition = ProductRequirementDisposition.INCONCLUSIVE
             elif (
                 terminal == ProductCompositionTerminal.REPORT
