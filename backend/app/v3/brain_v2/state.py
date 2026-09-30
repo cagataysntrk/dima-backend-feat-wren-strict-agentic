@@ -50,6 +50,8 @@ class BrainGraphState(BaseModel):
 
     open_requirement_ids: tuple[str, ...] = ()
     material_requirement_ids: tuple[str, ...] = ()
+    investigation_requirement_ids: tuple[str, ...] = ()
+    follow_verified_material_goal_ids: tuple[str, ...] = ()
     pending_evidence_ids: tuple[str, ...] = ()
     pending_receipt_refs: tuple[str, ...] = ()
 
@@ -87,6 +89,10 @@ class BrainGraphState(BaseModel):
         unique_fields = {
             "open_requirement_ids": self.open_requirement_ids,
             "material_requirement_ids": self.material_requirement_ids,
+            "investigation_requirement_ids": self.investigation_requirement_ids,
+            "follow_verified_material_goal_ids": (
+                self.follow_verified_material_goal_ids
+            ),
             "pending_evidence_ids": self.pending_evidence_ids,
             "pending_receipt_refs": self.pending_receipt_refs,
             "evidence_ids": self.evidence_ids,
@@ -131,6 +137,8 @@ class BrainStatePayload(TypedDict, total=False):
     scope_version_id: str | None
     open_requirement_ids: tuple[str, ...]
     material_requirement_ids: tuple[str, ...]
+    investigation_requirement_ids: tuple[str, ...]
+    follow_verified_material_goal_ids: tuple[str, ...]
     pending_evidence_ids: tuple[str, ...]
     pending_receipt_refs: tuple[str, ...]
     evidence_revision: int
