@@ -31,9 +31,9 @@ class BrainRunTelemetry(Frozen):
     native_acquisitions: int = Field(ge=0)
     provider_usage: tuple[OwnerProviderUsage, ...] = ()
     latency_ms: int = Field(ge=0)
-    cognition_dedup_hits: int = Field(ge=0)
-    native_dedup_hits: int = Field(ge=0)
-    checkpoint_resume_events: int = Field(ge=0)
+    cognition_dedup_hits: int = Field(default=0, ge=0)
+    native_dedup_hits: int = Field(default=0, ge=0)
+    checkpoint_resume_events: int = Field(default=0, ge=0)
 
     manual_quality: int | None = Field(default=None, ge=0, le=4)
     mechanical_green: bool | None = None
