@@ -69,7 +69,7 @@ jobs:
       - name: Research and scope authority regressions
         working-directory: backend
         run: |
-          pytest -q             tests/test_v3_research_intake.py             tests/test_v3_v1_scope_contract.py             tests/test_v3_v1_scope_integration.py             tests/test_v3_p14_product.py             tests/test_v3_p14_native_gateway.py
+          pytest -q             tests/test_v3_research_intake.py             tests/test_v3_v1_scope_contract.py             tests/test_v3_v1_scope_integration.py             tests/test_v3_p14_product.py             tests/test_v3_p14_native_gateway.py             tests/test_v3_research_material_coverage.py
 
       - name: P17 investigation regressions
         working-directory: backend
