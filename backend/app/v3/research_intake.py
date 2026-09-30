@@ -906,14 +906,19 @@ class ResearchIntakeCompiler:
         not semantic inference.
 
         A generic OTHER goal can be presentation/epistemic wording rather than a
-        distinct analytical obligation. It is safe to remove from P14 only when:
-        - the exact source was also emitted as a typed deliverable,
-        - it carries no ranking/comparison/relationship/causal analytical surface,
-        - every governed semantic ref it carries is already covered by another
-          non-OTHER analytical goal in this same provider result.
+        distinct analytical obligation. It is safe to remove from P14 when it
+        carries no ranking/comparison/relationship/causal analytical surface and
+        either:
+        - its exact source was also emitted as a typed deliverable and all refs
+          are already covered by another typed analytical goal, or
+        - all of its governed refs are already covered by exactly one ROOT_CAUSE
+          goal. In that second case OTHER adds no independently executable
+          analytical authority; P17/P19 already own the evidence/hypothesis
+          treatment inside that governed causal investigation.
 
-        The deliverable remains immutable USER_MUST authority. No wording,
-        regex, similarity or benchmark identity participates in this decision.
+        Typed RELATIONSHIP/RANKING/TREND/etc., distinct refs/scope, and real
+        multi-intent are never collapsed by this rule. No wording, regex,
+        similarity or benchmark identity participates in the decision.
         """
         if (
             draft.terminal != ResearchIntakeTerminal.READY
@@ -981,6 +986,13 @@ class ResearchIntakeCompiler:
                 *item.related_semantic_ids,
             )
         }
+        root_ref_sets = tuple(
+            frozenset(
+                (*item.subject_semantic_ids, *item.related_semantic_ids)
+            )
+            for item in analytical
+            if item.kind == ResearchGoalKind.ROOT_CAUSE
+        )
 
         canonical: list[ModelGoalDraft] = []
         for goal in draft.goals:
@@ -995,12 +1007,17 @@ class ResearchIntakeCompiler:
                 or goal.causal_competition is not None
             )
             refs = set((*goal.subject_semantic_ids, *goal.related_semantic_ids))
-            represented_as_non_analytical = (
+            represented_by_deliverable = (
                 goal.source_text in presentation_sources
                 and not has_distinct_analytical_surface
                 and refs.issubset(covered_refs)
             )
-            if represented_as_non_analytical:
+            subsumed_by_one_root = (
+                not has_distinct_analytical_surface
+                and bool(refs)
+                and sum(refs.issubset(root_refs) for root_refs in root_ref_sets) == 1
+            )
+            if represented_by_deliverable or subsumed_by_one_root:
                 continue
             canonical.append(goal)
 
