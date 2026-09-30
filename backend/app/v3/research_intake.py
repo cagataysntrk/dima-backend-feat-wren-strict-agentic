@@ -1264,9 +1264,14 @@ class ResearchIntakeCompiler:
                     "INTAKE_CAUSAL_SURFACE_ON_NON_ROOT_CAUSE",
                     goal.goal_key,
                 )
+            goal_seed = goal.model_dump(mode="json")
+            if goal_seed.get("relationship_intent") is None:
+                # Preserve historical/non-relationship stable identity. The new
+                # optional field becomes authority only when it is explicitly set.
+                goal_seed.pop("relationship_intent", None)
             goal_id = self._ids(
                 "g_",
-                goal.model_dump(mode="json"),
+                goal_seed,
                 index,
             )
             goal_id_by_key[goal.goal_key] = goal_id
