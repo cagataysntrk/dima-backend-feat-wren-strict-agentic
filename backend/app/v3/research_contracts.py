@@ -471,9 +471,17 @@ def apply_scope_mutation(
         }
         old_other = old_refs - old_entities
         new_other = new_refs - new_entities
+        # No explicit ENTITY_VALUE refs means the accepted population is
+        # unfiltered, not empty. Narrowing an unrestricted governed population
+        # to one or more explicit governed entity values is therefore legal.
+        # Once an explicit filter exists, ordinary strict-subset semantics apply.
+        entity_narrowed = (
+            (not old_entities and bool(new_entities))
+            or (bool(old_entities) and new_entities < old_entities)
+        )
         if (
             old_other != new_other
-            or not new_entities < old_entities
+            or not entity_narrowed
             or old_times != new_times
             or old_periods != new_periods
         ):
@@ -489,9 +497,16 @@ def apply_scope_mutation(
         }
         old_other = old_refs - old_entities
         new_other = new_refs - new_entities
+        # Removing the last explicit entity filter expands back to the
+        # unrestricted governed population. Otherwise use strict-superset
+        # semantics for explicit entity-value expansion.
+        entity_expanded = (
+            (bool(old_entities) and not new_entities)
+            or (bool(old_entities) and old_entities < new_entities)
+        )
         if (
             old_other != new_other
-            or not old_entities < new_entities
+            or not entity_expanded
             or old_times != new_times
             or old_periods != new_periods
         ):
