@@ -168,7 +168,7 @@ jobs:
           grep -q 'InvestigationBranchBehavior.GLOBAL_CONTROL' backend/app/v3/research_manager.py
           grep -q 'P17_BRANCH_TERMINAL' backend/app/v3/research_manager.py
           test "$(git rev-parse HEAD:backend/app/v3/business_relationship_policy.py)" = "1c533667bd080331f4f2231b9d37ee0c5e532fa8"
-          test "$(git rev-parse HEAD:backend/app/v3/hypothesis_root_cause.py)" = "fb6c4bfe17cd4193b9584b79fa32b63dc6c85563"
+          test "$(git rev-parse HEAD:backend/app/v3/hypothesis_root_cause.py)" = "2fc938fe5ede8edec17212efd2ab7d923340b469"
           test "$(git rev-parse HEAD:backend/app/v3/report_document.py)" = "c2d1e266c4a7335bf7c62349b3229d7a55a38bee"
           test "$(git rev-parse HEAD:backend/app/v3/decision_intelligence.py)" = "1a40508048d668829344ca30aa7aadf881cebb82"
           test "$(git rev-parse HEAD:backend/app/v3/claim_lineage.py)" = "76589172d19d4d9ffa1db9f94f4ee9ee9f277e5a"
