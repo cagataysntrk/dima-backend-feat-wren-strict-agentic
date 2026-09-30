@@ -24,6 +24,10 @@ on:
           - "NO"
           - "YES"
 
+  push:
+    branches:
+      - phase1-rca-trigger-20260930-v2
+
 # Recovery/growth live authority. The R8 Panel A execution is immutable.
 # Temporary paid push trigger is armed exactly once for B-v2; remove after run.
 permissions:
