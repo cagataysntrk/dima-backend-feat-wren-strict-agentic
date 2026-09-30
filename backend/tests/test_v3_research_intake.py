@@ -1107,6 +1107,12 @@ def test_request_scoped_intake_schema_closes_authority_ids_before_domain_executi
         if item["properties"]["kind"]["enum"] == ["root_cause"]
     )
     assert "causal_competition" in root_cause["properties"]
+    assert root_cause["properties"]["temporal_material_mode"]["enum"] == [
+        "none",
+        "window",
+        "comparison",
+    ]
+    assert "temporal_material_mode" in root_cause["required"]
     causal_ref = root_cause["properties"]["causal_competition"]["$ref"]
     causal = schema["$defs"][causal_ref.rsplit("/", 1)[-1]]
     assert set(causal["properties"]["effect_semantic_id"]["enum"]) == {
@@ -1285,6 +1291,122 @@ def test_r6_multi_period_comparison_preserves_two_typed_half_open_periods():
     assert result.brief.questions[0].comparisons[0].role == (
         ComparisonRole.TEMPORAL_PERIOD
     )
+
+
+def test_root_temporal_material_mode_mints_typed_comparison_authority():
+    payload = ready_payload(
+        kind="root_cause",
+        subject=(
+            "metric.downtime",
+            "metric.fault_count",
+            "metric.performance",
+        ),
+        related=("dimension.department",),
+    )
+    payload["goals"][0]["causal_competition"] = {
+        "effect_semantic_id": "metric.downtime",
+        "candidate_mechanism_semantic_ids": [
+            "metric.fault_count",
+            "metric.performance",
+        ],
+        "diagnostic_dimension_ids": ["dimension.department"],
+    }
+    payload["goals"][0]["temporal_material_mode"] = "comparison"
+    payload["time_periods"] = [
+        _r6_period("later interval", "2026-06-01", "2026-07-01"),
+        _r6_period("earlier interval", "2026-05-01", "2026-06-01"),
+    ]
+
+    result = ResearchIntakeCompiler(
+        transport=FakeTransport(payload)
+    ).compile(
+        question="Investigate the governed RCA over two accepted periods.",
+        catalog=_r6_temporal_catalog(),
+    )
+
+    assert result.brief is not None
+    assert len(result.brief.questions) == 1
+    goal = result.brief.questions[0]
+    assert goal.kind == ResearchGoalKind.ROOT_CAUSE
+    assert [item.role for item in goal.comparisons] == [
+        ComparisonRole.TEMPORAL_PERIOD
+    ]
+    by_start = {
+        item.start: item.role for item in result.brief.scope.periods
+    }
+    assert by_start == {
+        "2026-05-01": TemporalRole.BASELINE_PERIOD,
+        "2026-06-01": TemporalRole.COMPARISON_PERIOD,
+    }
+
+
+def test_root_temporal_comparison_mode_fails_closed_without_two_periods():
+    payload = ready_payload(
+        kind="root_cause",
+        subject=(
+            "metric.downtime",
+            "metric.fault_count",
+            "metric.performance",
+        ),
+        related=("dimension.department",),
+    )
+    payload["goals"][0]["causal_competition"] = {
+        "effect_semantic_id": "metric.downtime",
+        "candidate_mechanism_semantic_ids": [
+            "metric.fault_count",
+            "metric.performance",
+        ],
+        "diagnostic_dimension_ids": ["dimension.department"],
+    }
+    payload["goals"][0]["temporal_material_mode"] = "comparison"
+    payload["time_periods"] = [
+        _r6_period("pooled interval", "2026-05-01", "2026-07-01"),
+    ]
+
+    with pytest.raises(ResearchIntakeError) as exc:
+        ResearchIntakeCompiler(
+            transport=FakeTransport(payload)
+        ).compile(
+            question="Investigate the governed comparison.",
+            catalog=_r6_temporal_catalog(),
+        )
+
+    assert exc.value.code == "INTAKE_TEMPORAL_COMPARISON_PERIODS_REQUIRED"
+
+
+def test_root_window_mode_does_not_invent_period_comparison():
+    payload = ready_payload(
+        kind="root_cause",
+        subject=(
+            "metric.downtime",
+            "metric.fault_count",
+            "metric.performance",
+        ),
+        related=("dimension.department",),
+    )
+    payload["goals"][0]["causal_competition"] = {
+        "effect_semantic_id": "metric.downtime",
+        "candidate_mechanism_semantic_ids": [
+            "metric.fault_count",
+            "metric.performance",
+        ],
+        "diagnostic_dimension_ids": ["dimension.department"],
+    }
+    payload["goals"][0]["temporal_material_mode"] = "window"
+    payload["time_periods"] = [
+        _r6_period("pooled interval", "2026-05-01", "2026-07-01"),
+    ]
+
+    result = ResearchIntakeCompiler(
+        transport=FakeTransport(payload)
+    ).compile(
+        question="Investigate within the governed pooled interval.",
+        catalog=_r6_temporal_catalog(),
+    )
+
+    assert result.brief is not None
+    assert result.brief.questions[0].comparisons == ()
+    assert result.brief.scope.periods[0].role == TemporalRole.MATERIAL_WINDOW
 
 
 def test_coorigin_temporal_comparison_subgoal_merges_into_root_cause():
