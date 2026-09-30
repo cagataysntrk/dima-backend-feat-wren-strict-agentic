@@ -41,6 +41,7 @@ class FakeActivities:
     def intake(self, state: BrainGraphState) -> IntakeActivityResult:
         self.calls["intake"] += 1
         return IntakeActivityResult(
+            research_session_id="rs_" + "c" * 24,
             accepted_brief_ref="brief:fixture",
             scope_version_id="scope_v1",
             open_requirement_ids=("goal-1",),
@@ -77,9 +78,14 @@ class FakeActivities:
         self.calls["evidence"] += 1
         revision = state.evidence_revision + 1
         evidence_id = "evi_" + (str(revision) * 24)
+        seeded = state.hypothesis_ids
+        discovery_required = state.discovery_required
         return EvidenceActivityResult(
             evidence_revision=revision,
             evidence_ids=(*state.evidence_ids, evidence_id),
+            hypothesis_revision=state.hypothesis_revision,
+            hypothesis_ids=seeded,
+            discovery_required=discovery_required,
             activity_fingerprint=self._fp("evidence", state),
         )
 
