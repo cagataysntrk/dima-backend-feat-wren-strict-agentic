@@ -69,20 +69,21 @@ class FakeActivities:
 
     def acquire_material(self, state: BrainGraphState) -> MaterialActivityResult:
         self.calls["material"] += 1
+        ordinal = self.calls["material"]
         return MaterialActivityResult(
             material_requirement_ids=state.material_requirement_ids,
+            produced_evidence_ids=("evi_" + (str(ordinal) * 24),),
             activity_fingerprint=self._fp("material", state),
         )
 
     def admit_evidence(self, state: BrainGraphState) -> EvidenceActivityResult:
         self.calls["evidence"] += 1
-        revision = state.evidence_revision + 1
-        evidence_id = "evi_" + (str(revision) * 24)
+        revision = state.evidence_revision + len(state.pending_evidence_ids)
         seeded = state.hypothesis_ids
         discovery_required = state.discovery_required
         return EvidenceActivityResult(
             evidence_revision=revision,
-            evidence_ids=(*state.evidence_ids, evidence_id),
+            evidence_ids=tuple(dict.fromkeys((*state.evidence_ids, *state.pending_evidence_ids))),
             hypothesis_revision=state.hypothesis_revision,
             hypothesis_ids=seeded,
             discovery_required=discovery_required,
