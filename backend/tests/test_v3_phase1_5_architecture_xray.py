@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-import pytest
-
 from app.v3.product.composition import (
     HeadlessProductComposer,
     ProductRequirementState,
@@ -18,11 +16,9 @@ from app.v3.research_contracts import (
     ResearchGoalStatus,
     ResearchQuestion,
     ResearchScope,
-    SemanticTargetKind,
 )
 from app.v3.research_intake import (
     ResearchIntakeCompiler,
-    ResearchIntakeCatalog,
     ResearchIntakeTerminal,
 )
 
