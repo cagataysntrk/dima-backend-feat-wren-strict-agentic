@@ -35,7 +35,7 @@ permissions:
   contents: read
 
 env:
-  PRODUCT_BEHAVIOR_SHA: "87020e31fc553b316d16983c561dd6f2e8b64210"
+  PRODUCT_BEHAVIOR_SHA: "efc52ee9e0f6546118003263f635737ce9a922a8"
 
 jobs:
   p12-provider-free:
