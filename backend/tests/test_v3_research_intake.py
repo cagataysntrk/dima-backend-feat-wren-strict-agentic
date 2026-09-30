@@ -1109,17 +1109,26 @@ def test_request_scoped_intake_schema_closes_authority_ids_before_domain_executi
     assert "causal_competition" in root_cause["properties"]
     assert "temporal_material" in root_cause["properties"]
     assert "temporal_material" in root_cause["required"]
-    temporal_ref = root_cause["properties"]["temporal_material"]["$ref"]
-    temporal = schema["$defs"][temporal_ref.rsplit("/", 1)[-1]]
-    assert set(temporal["properties"]) == {
+    temporal_variants = root_cause["properties"]["temporal_material"]["anyOf"]
+    temporal_defs = [
+        schema["$defs"][item["$ref"].rsplit("/", 1)[-1]]
+        for item in temporal_variants
+    ]
+    assert {
+        item["properties"]["mode"]["const"]
+        for item in temporal_defs
+    } == {"none", "window", "comparison"}
+    by_mode = {
+        item["properties"]["mode"]["const"]: item
+        for item in temporal_defs
+    }
+    assert set(by_mode["none"]["properties"]) == {"mode"}
+    assert set(by_mode["window"]["properties"]) == {"mode", "window"}
+    assert set(by_mode["comparison"]["properties"]) == {
         "mode",
-        "window",
         "baseline_period",
         "comparison_period",
     }
-    assert temporal["properties"]["mode"]["$ref"].endswith(
-        "/ModelTemporalMaterialMode"
-    )
     causal_ref = root_cause["properties"]["causal_competition"]["$ref"]
     causal = schema["$defs"][causal_ref.rsplit("/", 1)[-1]]
     assert set(causal["properties"]["effect_semantic_id"]["enum"]) == {
@@ -1320,7 +1329,6 @@ def test_root_temporal_material_lifts_comparison_periods_into_scope():
     }
     payload["goals"][0]["temporal_material"] = {
         "mode": "comparison",
-        "window": None,
         "baseline_period": _r6_period(
             "earlier interval",
             "2026-05-01",
@@ -1385,7 +1393,6 @@ def test_root_temporal_comparison_shape_fails_closed_when_period_missing():
     }
     payload["goals"][0]["temporal_material"] = {
         "mode": "comparison",
-        "window": None,
         "baseline_period": _r6_period(
             "earlier interval",
             "2026-05-01",
@@ -1430,8 +1437,6 @@ def test_root_temporal_window_lifts_one_material_window_without_comparison():
             "2026-05-01",
             "2026-07-01",
         ),
-        "baseline_period": None,
-        "comparison_period": None,
     }
     payload["time_periods"] = []
 
