@@ -6,29 +6,39 @@
 **Roadmap:** `DIMA_BRAIN_V2_TWO_PHASE_ROADMAP.md`  
 **Execution directive:** `DIMA BRAIN V2 — FINAL DEVELOPER EXECUTION DIRECTIVE`
 
+
 ## Current identities
 
 ~~~text
-branch point / legacy Platform HEAD
-8d1e011053b01005179ff7a31b7921bb3a7307b9
+branch
+feat/dima-brain-v2
 
-legacy Product behavior
-c5069e8e4606e21bdd8ce41f4c1dc4bf7d23c789
+current Platform HEAD
+cf94c31a45dd11baa8532364f25763f4c9b8791a
+
+current semantic Product
+27adda56a5ed8369766bad879cf327511e1c5885
+
+Product -> Platform proof
+27adda56... -> cf94c31...
+backend/app/** = ZERO DIFF
+backend/pyproject.toml = ZERO DIFF
+engine/metabase = ZERO DIFF
+
+current provider-free authority
+36771765176
+SUCCESS
 
 engine
 0f16f2b5a1ec774ac7afee6214c726e82f9ceb3c
 0.63.18-dima.8
-
-engine state
 FROZEN
 
-engine builds during Brain V2 work
+engine builds during Brain V2
 0
 ~~~
 
-The active branch HEAD moves with the small-commit acceptance work. Read the
-branch HEAD directly before editing; do not use the historical HEAD embedded in
-the original execution directive.
+Read branch HEAD directly before every edit. Older embedded HEADs are historical only.
 
 ## Current architecture decision
 
@@ -126,20 +136,17 @@ legacy-v2 semantic compatibility gates
 Do not refactor these foundations unless a concrete correctness defect proves it
 necessary.
 
+
 ## Latest ONE_PASS live receipt
 
-Latest completed live:
+Latest completed ONE_PASS live before the current P19 interpretation fix:
 
 ~~~text
 run
-36764193520
+36770386638
 
-candidate Product SHA
-3f62c9e6a8b85def214314749baf6ea395c7af49
-
-engine
-0f16f2b5a1ec774ac7afee6214c726e82f9ceb3c
-0.63.18-dima.8
+candidate
+733da230311240b8a0b782a3780c71c51cbef798
 
 mechanical
 GREEN
@@ -151,119 +158,105 @@ provider requests
 0 P17
 1 P19
 
-prompt tokens
-88,838
-
 native acquisitions
 1
 
+prompt / completion / reasoning
+97,620 / 2,330 / 617
+
 latency
-28,883 ms
+~27.9 sec
 
 provider reported cost
-$0.01218943
+$0.01346711
 ~~~
 
-This is a material orchestration/cost improvement over the old custom runtime.
-
-However **Phase 1 is NOT accepted yet**.
-
-Manual Product adjudication found a real material-fidelity defect:
+Observed governed native result:
 
 ~~~text
-accepted user authority:
-May 2026 vs June 2026 causal investigation
-+ maintenance-delay candidate
-+ spare-part-delay candidate
-
-native Evidence result:
-columns
-- Machine Downtime Minutes
-- Maintenance Delay Hours
-- Spare Part Delay Hours
-
-rows
-[656, 21.0, 10.0]
+Event Date Month | Machine Downtime | Maintenance Delay | Spare Part Delay
+May 2026         | 291              | 8                 | 4
+June 2026        | 365              | 13                | 6
 ~~~
 
-The result was one aggregate observation. It did not expose the accepted
-May-vs-June comparison as result-level Evidence. P19 therefore correctly
-terminalized with:
+Therefore the historical aggregate-material defect is CLOSED in this artifact:
+two accepted periods are observable, all required candidate metrics are present, and native
+acquisition cardinality remains one.
+
+The remaining quality gap was downstream epistemic interpretation. Both candidate Evidence
+groundings were CONTEXT, so P19 retained both candidates without useful discrimination. P19
+correctly did not invent causality.
+
+Current semantic Product after that live:
 
 ~~~text
-NO_DEFENSIBLE_ROOT_CAUSE_ESTABLISHED
+27adda56a5ed8369766bad879cf327511e1c5885
 ~~~
 
-and correctly stated that temporal comparison/ordering was unavailable.
+It adds bounded assessment-local support/challenge refs and typed candidate
+support/challenge interpretation.
 
-Mechanical GREEN therefore did not equal Product-quality FULL. The current
-ONE_PASS receipt is not the final 4/4 acceptance artifact.
+Current full provider-free authority:
+
+~~~text
+36771765176
+SUCCESS
+~~~
+
+Exact next action:
+
+~~~text
+ONE fresh R_LIVE_1_ONE_PASS
+on semantic Product 27adda56...
+then immediate disarm
+then manual 0-4 adjudication
+~~~
+
+No same-candidate retry.
+
 
 ## Current root-cause diagnosis
 
-The first wrong transition was:
+Historical temporal-material root cause is CLOSED.
+
+Current acceptance frontier:
 
 ~~~text
-typed temporal comparison authority
-→ native analytical contract
-→ native occurrence query semantics
-→ aggregate result
-→ Evidence admitted as obligation-complete
+LangGraph routing/checkpoint = SEALED unless defect proven
+dedup                       = SEALED unless defect proven
+engine dima.8               = FROZEN
+native acquisition count    = healthy for ONE_PASS
+temporal material fidelity  = healthy in latest live
+P19 Evidence interpretation = CURRENT ACCEPTANCE FRONTIER
+ONE_PASS acceptance         = YELLOW
 ~~~
 
-The defect is **not** LangGraph routing and **not** P19.
+Do not reopen temporal/material architecture unless a new independent reproducer proves a
+generic regression.
 
-The missing invariant was result-level material coverage:
-
-~~~text
-User semantic comparison
-→ typed AnalyticalRequestContract
-→ exact native result
-→ deterministic Evidence coverage
-~~~
-
-For an accepted two-period comparison, a result that does not actually expose
-both accepted periods must not become FULL/VERIFIED obligation coverage.
 
 ## Current fix family
 
-Do not solve this with regex, month names, metric names, benchmark wording or
-provider-limit inflation.
-
-The active generic fix family is:
-
-1. typed temporal comparison canonicalization:
-   - temporal comparison authority comes from typed `TEMPORAL_PERIOD`
-     comparison + exact accepted periods;
-   - operational baseline/comparison roles are canonicalized deterministically;
-   - the RCA-specific prompt patch is removed;
-
-2. deterministic result coverage before Evidence promotion:
-   - exact governed time-field identity comes from native bindings;
-   - Metabase dataset column metadata must expose that exact time field;
-   - result rows must contain at least one value in each accepted half-open
-     comparison period;
-   - incomplete coverage fails closed before VERIFIED Evidence is created;
-
-3. persist a bounded `material_result_coverage` receipt inside Evidence payload.
-
-Current small commits in this fix family include:
+Latest generic P19 interpretation family:
 
 ~~~text
-446f33d3  fix(intake): canonicalize typed temporal comparison authority
-c8023fe7  feat(p14): verify typed temporal result coverage before Evidence
-7189cbab  feat(p14): fail closed on incomplete comparison Evidence coverage
-23c37227  test(p14): prove typed comparison result coverage
-80623d58  ci(brain-v2): include material result coverage in closure
+21fe0a19  feat(p19): persist assessment-local support challenge refs
+27adda56  feat(p19): type candidate support challenge interpretation
+924b1643  test(p19): seal assessment-local evidence interpretation refs
+94e53900  test(p19): close support challenge refs to candidate groundings
+51ea0482  test(p19): preserve foreign-grounding ownership regression
+cf94c31a  ci(brain-v2): revalidate P19 evidence interpretation
 ~~~
 
-The full provider-free closure for this family is:
+Provider-free closure:
 
 ~~~text
-36766883034
+36771765176
+GREEN
 ~~~
 
-Treat its final conclusion as the next authority before any paid rerun.
+No further Product patch is authorized before the fresh live unless a provider-free
+reproducer exposes a structural defect.
 
 ## Paid/live discipline
 
