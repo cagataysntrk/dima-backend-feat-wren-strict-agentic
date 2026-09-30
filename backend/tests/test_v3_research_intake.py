@@ -119,6 +119,28 @@ class FakeTransport:
         return json.dumps({"result": self.payload})
 
 
+class SequenceTransport:
+    def __init__(self, payloads: list[dict]):
+        self.payloads = list(payloads)
+        self.calls: list[dict] = []
+        self.call_count = 0
+
+    def structured_json(self, system, user, *, schema, schema_name):
+        if self.call_count >= len(self.payloads):
+            raise AssertionError("unexpected extra intake provider call")
+        payload = self.payloads[self.call_count]
+        self.call_count += 1
+        self.calls.append(
+            {
+                "system": system,
+                "user": json.loads(user),
+                "schema": schema,
+                "schema_name": schema_name,
+            }
+        )
+        return json.dumps({"result": payload})
+
+
 def ready_payload(
     *,
     kind="breakdown",
@@ -390,6 +412,142 @@ def test_bounded_non_executable_terminal_states(payload, terminal, field):
     assert result.terminal == terminal
     assert result.brief is None
     assert getattr(result, field)
+
+
+def _temporal_catalog() -> ResearchIntakeCatalog:
+    return catalog().model_copy(
+        update={"temporal_dimension_ids": ("dimension.event_date",)}
+    )
+
+
+def test_temporal_only_clarification_gets_one_bounded_calendar_reconsideration():
+    first = {
+        "terminal": "CLARIFY",
+        "clarification_question": "Which year do May and June refer to?",
+    }
+    second = ready_payload(
+        kind="comparison",
+        subject=("metric.downtime",),
+        related=("dimension.department",),
+    )
+    second["time_periods"] = [
+        {
+            "source_text": "May-June",
+            "time_dimension_semantic_id": "dimension.event_date",
+            "start": "2026-05-01",
+            "end": "2026-07-01",
+        }
+    ]
+    transport = SequenceTransport([first, second])
+    result = ResearchIntakeCompiler(
+        transport=transport,
+        calendar_reference_date="2026-09-30",
+    ).compile(
+        question="Compare May-June downtime by department.",
+        catalog=_temporal_catalog(),
+    )
+    assert result.terminal == ResearchIntakeTerminal.READY
+    assert result.model_calls == 2
+    assert result.brief is not None
+    assert result.brief.scope.periods[0].start == "2026-05-01"
+    assert result.brief.scope.periods[0].end == "2026-07-01"
+    assert transport.calls[0]["user"]["calendar_reference_date"] == "2026-09-30"
+    assert (
+        transport.calls[1]["user"]["reconsideration"]["kind"]
+        == "TEMPORAL_CLARIFICATION_ONLY"
+    )
+
+
+def test_non_temporal_clarification_remains_fail_closed_after_bounded_reconsideration():
+    clarify = {
+        "terminal": "CLARIFY",
+        "clarification_question": "Which governed metric do you mean?",
+    }
+    transport = SequenceTransport([clarify, clarify])
+    result = ResearchIntakeCompiler(
+        transport=transport,
+        calendar_reference_date="2026-09-30",
+    ).compile(
+        question="Compare the important metric by department.",
+        catalog=_temporal_catalog(),
+    )
+    assert result.terminal == ResearchIntakeTerminal.CLARIFY
+    assert result.model_calls == 2
+    assert result.brief is None
+
+
+def test_single_domain_report_only_intent_gets_one_grounded_overview_reconsideration():
+    first = {
+        "terminal": "UNSUPPORTED",
+        "unsupported_reason": "No explicit analytical subject was selected.",
+    }
+    second = ready_payload(
+        kind="breakdown",
+        subject=("metric.downtime", "metric.fault_count"),
+        related=("dimension.department",),
+    )
+    second["deliverables"] = [
+        {
+            "key": "management-report",
+            "kind": "report",
+            "source_text": "Produce an evidence-backed management report.",
+        }
+    ]
+    transport = SequenceTransport([first, second])
+    result = ResearchIntakeCompiler(
+        transport=transport,
+        calendar_reference_date="2026-09-30",
+    ).compile(
+        question=(
+            "Produce an evidence-backed management report over the governed "
+            "operational domain and preserve limitations."
+        ),
+        catalog=catalog(),
+    )
+    assert result.terminal == ResearchIntakeTerminal.READY
+    assert result.model_calls == 2
+    assert result.brief is not None
+    assert result.brief.deliverables[0].kind.value == "report"
+    assert (
+        transport.calls[1]["user"]["reconsideration"]["kind"]
+        == "SINGLE_DOMAIN_GROUNDED_OVERVIEW"
+    )
+    assert (
+        transport.calls[1]["user"]["reconsideration"]["supported_domain"]
+        == "machine_operations"
+    )
+
+
+def test_single_domain_reconsideration_cannot_rescue_absent_concepts():
+    unsupported = {
+        "terminal": "UNSUPPORTED",
+        "unsupported_reason": (
+            "Requested psychological and predictive concepts are absent from "
+            "the grounded catalog."
+        ),
+    }
+    transport = SequenceTransport([unsupported, unsupported])
+    result = ResearchIntakeCompiler(
+        transport=transport,
+        calendar_reference_date="2026-09-30",
+    ).compile(
+        question="Predict employee morale from unavailable psychological data.",
+        catalog=catalog(),
+    )
+    assert result.terminal == ResearchIntakeTerminal.UNSUPPORTED
+    assert result.model_calls == 2
+    assert result.brief is None
+
+
+def test_calendar_reference_date_must_be_iso_date():
+    with pytest.raises(
+        ResearchIntakeError,
+        match="INTAKE_CALENDAR_REFERENCE_INVALID",
+    ):
+        ResearchIntakeCompiler(
+            transport=FakeTransport(ready_payload()),
+            calendar_reference_date="September 30",
+        )
 
 
 def prior_brief() -> ResearchBrief:
