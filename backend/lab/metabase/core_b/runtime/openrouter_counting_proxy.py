@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """Eval-only fail-closed counting proxy for OpenRouter Chat Completions.
 
-The proxy is deliberately outside Product semantics. It forwards request bodies
-unchanged, never retries, never persists prompts/headers/reasoning text, and
-rejects chat-completion request N+1 locally before forwarding once the configured
-hard ceiling has been consumed.
+The proxy is deliberately outside Product semantics. It never retries, never
+persists prompts/headers/reasoning text, and rejects chat-completion request N+1
+locally before forwarding once the configured hard ceiling has been consumed.
+When a completion-token ceiling is configured, the proxy enforces only that
+numeric transport bound on the upstream `max_tokens` field; it never inspects or
+rewrites prompt semantics.
 """
 from __future__ import annotations
 
@@ -85,6 +87,38 @@ def _usage_from_mapping(body: Any) -> dict[str, int | float | None]:
         "reasoning_tokens": reasoning,
         "provider_reported_cost": cost,
     }
+
+
+def bounded_chat_request_body(
+    body: bytes,
+    *,
+    completion_token_ceiling: int | None,
+) -> bytes:
+    """Enforce the eval completion budget without interpreting prompt semantics."""
+    if completion_token_ceiling is None:
+        return body
+    try:
+        payload = json.loads(body)
+    except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+        raise ValueError("chat completion request body must be valid JSON") from exc
+    if not isinstance(payload, dict):
+        raise ValueError("chat completion request body must be a JSON object")
+    requested = payload.get("max_tokens")
+    if requested is None:
+        effective = completion_token_ceiling
+    else:
+        requested_int = _non_negative_int(requested)
+        if requested_int is None or requested_int < 1:
+            raise ValueError("max_tokens must be a positive integer when present")
+        effective = min(requested_int, completion_token_ceiling)
+    if effective < 1:
+        raise ValueError("completion token ceiling must allow at least one token")
+    payload["max_tokens"] = effective
+    return json.dumps(
+        payload,
+        ensure_ascii=False,
+        separators=(",", ":"),
+    ).encode("utf-8")
 
 
 def response_usage(content_type: str, body: bytes) -> dict[str, int | float | None]:
@@ -382,7 +416,12 @@ class CountingOpenRouterProxy:
         split = urlsplit(request_path)
         suffix = f"?{split.query}" if split.query else ""
         reservation = None
+        outbound_body = body
         if method.upper() == "POST" and upstream_path == _CHAT_PATH:
+            outbound_body = bounded_chat_request_body(
+                body,
+                completion_token_ceiling=self.ledger.completion_token_ceiling,
+            )
             reservation = self.ledger.reserve(source)
 
         outbound_headers = {
@@ -395,7 +434,7 @@ class CountingOpenRouterProxy:
                 method.upper(),
                 self.upstream_base_url + upstream_path + suffix,
                 headers=outbound_headers,
-                content=body,
+                content=outbound_body,
             )
             response_body = response.content
         except Exception:
