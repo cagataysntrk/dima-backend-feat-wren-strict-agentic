@@ -154,7 +154,7 @@ def project_relationship_result(
         claim_id=claim.claim_id,
         policy_use_id=decision.policy_use_id,
         policy_id=decision.policy_id,
-        policy_required=decision.required,
+        policy_required=bool(getattr(decision, "required", True)),
         scope_lineage_id=scope_lineage_id,
         scope_version_id=scope_version_id,
         applicability_scope=applicability_scope,
