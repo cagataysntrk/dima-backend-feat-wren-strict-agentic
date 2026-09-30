@@ -1,3 +1,4 @@
+# PHASE1.5 FINAL PRODUCT BEHAVIOR FREEZE: 5245c703550622cdf6a54578e4d1a923e26baa91
 # PHASE1.5 PROVIDER-FREE FREEZE: cb89bc94acf0d88b5b37a94b1160ad77daa1bb86
 name: dima-v1-phase1-pinpoint-live
 
@@ -62,7 +63,7 @@ env:
   COMPLETION_TOKEN_CEILING: "16000"
   REASONING_TOKEN_CEILING: "12000"
   PROVIDER_COST_CEILING: "1.00"
-  PRODUCT_BEHAVIOR_SHA: "cb89bc94acf0d88b5b37a94b1160ad77daa1bb86"
+  PRODUCT_BEHAVIOR_SHA: "5245c703550622cdf6a54578e4d1a923e26baa91"
 
 concurrency:
   group: dima-v1-phase1-pinpoint-live
@@ -376,7 +377,7 @@ jobs:
           assert provider["blocked_request_count"] == 0, provider
           assert provider["privacy_contract"]["api_keys_persisted"] is False
           assert provider["privacy_contract"]["reasoning_text_persisted"] is False
-          assert report["candidate_product_sha"] == "cb89bc94acf0d88b5b37a94b1160ad77daa1bb86"
+          assert report["candidate_product_sha"] == "5245c703550622cdf6a54578e4d1a923e26baa91"
           assert report["model_topology"]["dima_cognition"] == "openai/gpt-5.6-luna"
           assert report["model_topology"]["metabot"] == "openrouter/openai/gpt-5.6-luna"
           assert report["turn_count_executed"] == report["turn_count_expected"]
