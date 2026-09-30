@@ -45,11 +45,14 @@ jobs:
           python - <<'PY'
           import langgraph
           import app.v3.brain_v2
+          import app.v3.brain_v2.owner_adapter
+          import app.v3.brain_v2.checkpoint
           from app.v3.brain_v2.state import BrainGraphState
           from app.v3.brain_v2.keys import CognitionRequestKey, NativeMaterialRequestKey
           from app.v3.brain_v2.views import EvidenceDigest
           print("Brain V2 contracts import OK")
           PY
+          python -m compileall -q app/v3/brain_v2
 
       - name: Brain V2 focused provider-free contracts
         working-directory: backend
