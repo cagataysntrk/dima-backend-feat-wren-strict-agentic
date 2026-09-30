@@ -8,6 +8,7 @@ import pytest
 from lab.metabase.core_b.runtime.openrouter_counting_proxy import (
     CountingOpenRouterProxy,
     ProviderCeilingExceeded,
+    bounded_chat_request_body,
     ProviderRequestLedger,
     response_usage,
     source_and_upstream_path,
@@ -76,6 +77,58 @@ def test_source_prefix_counts_dima_structured_and_metabase_separately(tmp_path):
     assert len(calls) == 2
     assert calls[0].url.path == "/api/v1/chat/completions"
     assert calls[1].url.path == "/api/v1/chat/completions"
+
+
+@pytest.mark.parametrize(
+    ("payload", "expected_max_tokens"),
+    [
+        ({"messages": []}, 16000),
+        ({"messages": [], "max_tokens": 4096}, 4096),
+        ({"messages": [], "max_tokens": 65536}, 16000),
+    ],
+)
+def test_completion_ceiling_is_enforced_on_wire_only(payload, expected_max_tokens):
+    original = json.loads(json.dumps(payload))
+    bounded = json.loads(
+        bounded_chat_request_body(
+            json.dumps(payload).encode("utf-8"),
+            completion_token_ceiling=16000,
+        )
+    )
+    assert bounded["max_tokens"] == expected_max_tokens
+    assert bounded.get("messages") == original.get("messages")
+    for key, value in original.items():
+        if key != "max_tokens":
+            assert bounded[key] == value
+
+
+def test_proxy_applies_completion_ceiling_before_upstream(tmp_path):
+    calls: list[httpx.Request] = []
+    ledger = ProviderRequestLedger(
+        ceiling=2,
+        receipt_path=tmp_path / "receipt.json",
+        completion_token_ceiling=16000,
+    )
+    proxy = CountingOpenRouterProxy(
+        upstream_base_url="https://provider.invalid/api",
+        ledger=ledger,
+        client=_client(calls),
+    )
+    proxy.forward(
+        method="POST",
+        request_path="/v1/chat/completions",
+        headers={},
+        body=json.dumps(
+            {
+                "messages": [{"role": "user", "content": "opaque"}],
+                "max_tokens": 65536,
+            }
+        ).encode("utf-8"),
+    )
+    forwarded = json.loads(calls[0].content)
+    assert forwarded["max_tokens"] == 16000
+    assert forwarded["messages"] == [{"role": "user", "content": "opaque"}]
+    assert ledger.snapshot()["completion_token_ceiling"] == 16000
 
 
 def test_ceiling_rejects_n_plus_one_before_upstream(tmp_path):
