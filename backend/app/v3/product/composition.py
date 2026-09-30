@@ -1432,13 +1432,40 @@ class HeadlessProductComposer:
                 )
             )
 
+        terminal_root_refs = tuple(
+            assessment.assessment_id
+            for assessment in root_cause_by_goal.values()
+            if _state_value(assessment.aggregate_outcome) != "IN_PROGRESS"
+        )
+        terminal_relationship_refs = tuple(
+            result.policy_use_id
+            for result in relationship_by_goal.values()
+            if result is not None
+        )
+
         for deliverable in brief.deliverables:
+            fulfilled_by_ref = None
             if deliverable.kind == PresentationKind.REPORT and report is not None:
                 state = ProductRequirementState.FULFILLED
                 fulfilled_by_ref = report.report_id
+            elif deliverable.kind == PresentationKind.EXPLAIN:
+                # EXPLAIN is not automatically a P20/report obligation. When one
+                # exact terminal epistemic/relationship owner exists for this
+                # accepted brief, that governed artifact discharges the explanation
+                # requirement. Ambiguous multi-owner cases remain PENDING rather
+                # than inventing a dependency from wording.
+                owner_refs = tuple(
+                    dict.fromkeys(
+                        (*terminal_root_refs, *terminal_relationship_refs)
+                    )
+                )
+                if len(owner_refs) == 1:
+                    state = ProductRequirementState.FULFILLED
+                    fulfilled_by_ref = owner_refs[0]
+                else:
+                    state = ProductRequirementState.PENDING
             else:
                 state = ProductRequirementState.PENDING
-                fulfilled_by_ref = None
             projected.append(
                 ProductRequirementFulfillment(
                     requirement_id=deliverable.requirement_id,
@@ -1476,7 +1503,12 @@ class HeadlessProductComposer:
         unsupported = {
             item.requirement_id
             for item in brief.deliverables
-            if item.kind != PresentationKind.REPORT
+            if item.kind in {PresentationKind.TABLE, PresentationKind.CHART}
+        }
+        explain_requirements = {
+            item.requirement_id
+            for item in brief.deliverables
+            if item.kind == PresentationKind.EXPLAIN
         }
         entries: list[ProductRequirementCompletion] = []
         for item in projected:
@@ -1503,6 +1535,11 @@ class HeadlessProductComposer:
                     for question in brief.questions
                 )
             ):
+                disposition = ProductRequirementDisposition.INCONCLUSIVE
+            elif item.requirement_id in explain_requirements:
+                # An accepted EXPLAIN whose upstream owner did not reach one
+                # unambiguous governed artifact is incomplete, not structurally
+                # unsupported.
                 disposition = ProductRequirementDisposition.INCONCLUSIVE
             elif terminal == ProductCompositionTerminal.LIMITED:
                 disposition = ProductRequirementDisposition.LIMITED

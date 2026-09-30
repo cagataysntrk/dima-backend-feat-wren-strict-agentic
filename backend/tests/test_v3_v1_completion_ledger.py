@@ -181,3 +181,103 @@ def test_all_fulfilled_user_must_is_both_process_and_requirement_complete():
     assert ledger.requirement_complete is True
     assert ledger.trusted_complete is True
 
+def test_root_cause_terminal_assessment_fulfills_single_explain_requirement():
+    goal = ResearchQuestion(
+        goal_id="g_root",
+        kind=ResearchGoalKind.ROOT_CAUSE,
+        source_text="Evaluate competing mechanisms.",
+        status=ResearchGoalStatus.RESOLVED,
+    )
+    explain = ResearchDeliverableRequirement(
+        requirement_id="d_explain",
+        kind=PresentationKind.EXPLAIN,
+        source_text="Explain the terminal epistemic conclusion.",
+    )
+    item = ResearchBrief(
+        brief_id="rb-v1-explain-owner",
+        objective="Map typed completion to the actual owner.",
+        scope=ResearchScope(),
+        questions=(goal,),
+        deliverables=(explain,),
+        must_requirement_ids=(goal.goal_id, explain.requirement_id),
+        context_version="ctx-v1-explain-owner",
+        status=ResearchBriefStatus.READY_FOR_RESEARCH,
+    )
+    session = type(
+        "Session",
+        (),
+        {
+            "obligations": (
+                type(
+                    "Obligation",
+                    (),
+                    {"obligation_id": goal.goal_id, "state": "VERIFIED"},
+                )(),
+            )
+        },
+    )()
+    assessment = type(
+        "Assessment",
+        (),
+        {
+            "assessment_id": "p19a_" + "1" * 24,
+            "aggregate_outcome": "NO_DEFENSIBLE_ROOT_CAUSE_ESTABLISHED",
+        },
+    )()
+
+    projected, total, accounted, fulfilled = HeadlessProductComposer._project_user_must(
+        brief=item,
+        session=session,
+        report=None,
+        root_cause_assessments={goal.goal_id: assessment},
+    )
+    by_id = {entry.requirement_id: entry for entry in projected}
+
+    assert by_id[goal.goal_id].state == ProductRequirementState.FULFILLED
+    assert by_id[explain.requirement_id].state == ProductRequirementState.FULFILLED
+    assert by_id[explain.requirement_id].fulfilled_by_ref == assessment.assessment_id
+    assert (total, accounted, fulfilled) == (2, 2, 2)
+
+
+def test_pending_explain_is_inconclusive_not_structurally_unsupported():
+    goal = ResearchQuestion(
+        goal_id="g_root",
+        kind=ResearchGoalKind.ROOT_CAUSE,
+        source_text="Evaluate candidates.",
+        status=ResearchGoalStatus.RESOLVED,
+    )
+    explain = ResearchDeliverableRequirement(
+        requirement_id="d_explain",
+        kind=PresentationKind.EXPLAIN,
+        source_text="Explain the result.",
+    )
+    item = ResearchBrief(
+        brief_id="rb-v1-explain-inconclusive",
+        objective="Keep incomplete explanation honest.",
+        scope=ResearchScope(),
+        questions=(goal,),
+        deliverables=(explain,),
+        must_requirement_ids=(goal.goal_id, explain.requirement_id),
+        context_version="ctx-v1-explain-inconclusive",
+        status=ResearchBriefStatus.READY_FOR_RESEARCH,
+    )
+    projected = (
+        ProductRequirementFulfillment(
+            requirement_id=goal.goal_id,
+            requirement_kind=ProductRequirementKind.ANALYTICAL,
+            state=ProductRequirementState.FULFILLED,
+        ),
+        ProductRequirementFulfillment(
+            requirement_id=explain.requirement_id,
+            requirement_kind=ProductRequirementKind.DELIVERABLE,
+            state=ProductRequirementState.PENDING,
+        ),
+    )
+    ledger = HeadlessProductComposer._completion_ledger(
+        brief=item,
+        projected=projected,
+        terminal=ProductCompositionTerminal.REPORT,
+    )
+    by_id = {entry.requirement_id: entry.disposition for entry in ledger.entries}
+    assert by_id[explain.requirement_id] == ProductRequirementDisposition.INCONCLUSIVE
+

@@ -116,7 +116,7 @@ def test_xray_h1_h2_canonicalizes_epistemic_directive_without_second_acquisition
     ]
 
 
-def test_xray_h5_current_completion_marks_explain_unsupported():
+def test_xray_h5_pending_explain_is_inconclusive_not_structurally_unsupported():
     goal = ResearchQuestion(
         goal_id="g_root",
         kind=ResearchGoalKind.ROOT_CAUSE,
@@ -163,7 +163,7 @@ def test_xray_h5_current_completion_marks_explain_unsupported():
     )
 
     by_id = {item.requirement_id: item.disposition for item in ledger.entries}
-    assert by_id[explain.requirement_id] == ProductRequirementDisposition.UNSUPPORTED
+    assert by_id[explain.requirement_id] == ProductRequirementDisposition.INCONCLUSIVE
 
 
 class _CountingInvestigation:
