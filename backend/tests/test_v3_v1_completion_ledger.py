@@ -100,6 +100,8 @@ def test_five_part_user_must_contract_has_one_terminal_disposition_each():
         ProductRequirementDisposition.INCONCLUSIVE,
         ProductRequirementDisposition.UNSUPPORTED,
     ]
+    assert ledger.process_complete is True
+    assert ledger.requirement_complete is False
     assert ledger.trusted_complete is True
 
 
@@ -154,3 +156,28 @@ def test_unsupported_is_structural_not_text_inference():
     )
     by_id = {x.requirement_id: x.disposition for x in ledger.entries}
     assert by_id["d_chart"] == ProductRequirementDisposition.UNSUPPORTED
+
+def test_all_fulfilled_user_must_is_both_process_and_requirement_complete():
+    item = brief()
+    projected = tuple(
+        ProductRequirementFulfillment(
+            requirement_id=requirement_id,
+            requirement_kind=(
+                ProductRequirementKind.DELIVERABLE
+                if requirement_id.startswith("d_")
+                else ProductRequirementKind.ANALYTICAL
+            ),
+            state=ProductRequirementState.FULFILLED,
+            fulfilled_by_ref="artifact:" + requirement_id,
+        )
+        for requirement_id in item.must_requirement_ids
+    )
+    ledger = HeadlessProductComposer._completion_ledger(
+        brief=item,
+        projected=projected,
+        terminal=ProductCompositionTerminal.REPORT,
+    )
+    assert ledger.process_complete is True
+    assert ledger.requirement_complete is True
+    assert ledger.trusted_complete is True
+

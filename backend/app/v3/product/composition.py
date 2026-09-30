@@ -137,6 +137,9 @@ class ProductRequirementCompletion(Frozen):
 
 class ProductCompletionLedger(Frozen):
     entries: tuple[ProductRequirementCompletion, ...]
+    process_complete: bool
+    requirement_complete: bool
+    # Historical compatibility alias: terminal accounting, not fulfillment.
     trusted_complete: bool
 
 
@@ -1304,6 +1307,7 @@ class HeadlessProductComposer:
         session,
         report,
         relationship_results: tuple[RelationshipResultProjection, ...] = (),
+        root_cause_assessments: dict[str, Any] | None = None,
     ) -> tuple[tuple[ProductRequirementFulfillment, ...], int, int, int]:
         obligation_map = {item.obligation_id: item for item in session.obligations}
         relationship_by_goal: dict[str, RelationshipResultProjection] = {}
@@ -1318,6 +1322,7 @@ class HeadlessProductComposer:
                     "multiple governed relationship results target one USER_MUST goal"
                 )
             relationship_by_goal[goal_id] = result
+        root_cause_by_goal = root_cause_assessments or {}
         projected: list[ProductRequirementFulfillment] = []
 
         for question in brief.questions:
@@ -1328,22 +1333,37 @@ class HeadlessProductComposer:
                 else ProductRequirementState.PENDING.value
             )
             fulfilled_by_ref = None
-            if raw_state == ObligationState.VERIFIED.value:
-                state = ProductRequirementState.VERIFIED
-            elif (
-                question.kind == ResearchGoalKind.RELATIONSHIP
-                and question.goal_id in relationship_by_goal
-            ):
-                relationship = relationship_by_goal[question.goal_id]
-                fulfilled_by_ref = relationship.policy_use_id
+            if question.kind == ResearchGoalKind.ROOT_CAUSE:
+                assessment = root_cause_by_goal.get(question.goal_id)
                 if (
-                    _state_value(relationship.business_relationship_state)
-                    == "SATISFIED"
-                    and not relationship.limitation_codes
+                    assessment is not None
+                    and _state_value(assessment.aggregate_outcome)
+                    != "IN_PROGRESS"
                 ):
                     state = ProductRequirementState.FULFILLED
-                else:
+                    fulfilled_by_ref = assessment.assessment_id
+                elif raw_state == ObligationState.LIMITED.value:
                     state = ProductRequirementState.LIMITED
+                else:
+                    state = ProductRequirementState.PENDING
+            elif question.kind == ResearchGoalKind.RELATIONSHIP:
+                relationship = relationship_by_goal.get(question.goal_id)
+                if relationship is not None:
+                    fulfilled_by_ref = relationship.policy_use_id
+                    if (
+                        _state_value(relationship.business_relationship_state)
+                        == "SATISFIED"
+                        and not relationship.limitation_codes
+                    ):
+                        state = ProductRequirementState.FULFILLED
+                    else:
+                        state = ProductRequirementState.LIMITED
+                elif raw_state == ObligationState.LIMITED.value:
+                    state = ProductRequirementState.LIMITED
+                else:
+                    state = ProductRequirementState.PENDING
+            elif raw_state == ObligationState.VERIFIED.value:
+                state = ProductRequirementState.VERIFIED
             elif raw_state == ObligationState.LIMITED.value:
                 state = ProductRequirementState.LIMITED
             else:
@@ -1416,6 +1436,19 @@ class HeadlessProductComposer:
                 disposition = ProductRequirementDisposition.UNSUPPORTED
             elif terminal == ProductCompositionTerminal.INCONCLUSIVE:
                 disposition = ProductRequirementDisposition.INCONCLUSIVE
+            elif (
+                terminal == ProductCompositionTerminal.REPORT
+                and any(
+                    question.goal_id == item.requirement_id
+                    and question.kind
+                    in {
+                        ResearchGoalKind.RELATIONSHIP,
+                        ResearchGoalKind.ROOT_CAUSE,
+                    }
+                    for question in brief.questions
+                )
+            ):
+                disposition = ProductRequirementDisposition.INCONCLUSIVE
             elif terminal == ProductCompositionTerminal.LIMITED:
                 disposition = ProductRequirementDisposition.LIMITED
             else:
@@ -1435,9 +1468,31 @@ class HeadlessProductComposer:
             raise ValueError(
                 "Product Completion Ledger must preserve exact USER_MUST identity"
             )
+        process_complete = (
+            len(entries) == len(brief.must_requirement_ids)
+            and all(
+                item.disposition
+                in {
+                    ProductRequirementDisposition.FULFILLED,
+                    ProductRequirementDisposition.LIMITED,
+                    ProductRequirementDisposition.UNSUPPORTED,
+                    ProductRequirementDisposition.INCONCLUSIVE,
+                }
+                for item in entries
+            )
+        )
+        requirement_complete = (
+            process_complete
+            and all(
+                item.disposition == ProductRequirementDisposition.FULFILLED
+                for item in entries
+            )
+        )
         return ProductCompletionLedger(
             entries=tuple(entries),
-            trusted_complete=len(entries) == len(brief.must_requirement_ids),
+            process_complete=process_complete,
+            requirement_complete=requirement_complete,
+            trusted_complete=process_complete,
         )
 
     def compose(
@@ -1461,6 +1516,8 @@ class HeadlessProductComposer:
         p17_refs: list[str] = []
         p18_refs: list[str] = []
         p19_refs: list[str] = []
+        root_cause_assessments: dict[str, Any] = {}
+        root_cause_complete_goal_ids: set[str] = set()
         relationship_results: list[RelationshipResultProjection] = []
         limitations: list[CompositionLimitation] = []
         p17_required: list[str] = []
@@ -1668,6 +1725,9 @@ class HeadlessProductComposer:
                     )
                 else:
                     p19_refs.append(assessment.assessment_id)
+                    root_cause_assessments[goal.goal_id] = assessment
+                    if _state_value(assessment.aggregate_outcome) != "IN_PROGRESS":
+                        root_cause_complete_goal_ids.add(goal.goal_id)
                     limitation_codes[goal.goal_id] = assessment.aggregate_outcome.value
                     if assessment.limitations:
                         limitations.append(
@@ -1816,18 +1876,29 @@ class HeadlessProductComposer:
                 for item in accepted_investigation_requirements
             }
         )
-        advanced_incomplete = (
-            any(
-                goal.kind == ResearchGoalKind.RELATIONSHIP
-                for goal in brief.questions
+        relationship_goal_ids = {
+            goal.goal_id
+            for goal in brief.questions
+            if goal.kind == ResearchGoalKind.RELATIONSHIP
+        }
+        root_cause_goal_ids = {
+            goal.goal_id
+            for goal in brief.questions
+            if goal.kind == ResearchGoalKind.ROOT_CAUSE
+        }
+        relationship_completed_goal_ids = {
+            str(
+                result.applicability_scope.get(
+                    "accepted_relationship_goal_id"
+                )
+                or ""
             )
-            and not p18_refs
-        ) or (
-            any(
-                goal.kind == ResearchGoalKind.ROOT_CAUSE
-                for goal in brief.questions
-            )
-            and not p19_refs
+            for result in relationship_results
+        }
+        advanced_incomplete = bool(
+            relationship_goal_ids - relationship_completed_goal_ids
+        ) or bool(
+            root_cause_goal_ids - root_cause_complete_goal_ids
         ) or adaptive_incomplete
 
         if report is not None:
@@ -1845,6 +1916,7 @@ class HeadlessProductComposer:
                 session=current,
                 report=report,
                 relationship_results=tuple(relationship_results),
+                root_cause_assessments=root_cause_assessments,
             )
         )
 

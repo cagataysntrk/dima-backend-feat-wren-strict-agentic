@@ -838,6 +838,15 @@ def test_root_cause_composes_p17_then_p19_and_preserves_inconclusive_outcome():
         item.code == "NO_DEFENSIBLE_ROOT_CAUSE_ESTABLISHED"
         for item in result.limitations
     )
+    fulfillment = {
+        item.requirement_id: item
+        for item in result.user_must_fulfillment
+    }
+    assert fulfillment["g_root"].state.value == "FULFILLED"
+    assert fulfillment["g_root"].fulfilled_by_ref == result.p19_assessment_refs[0]
+    assert result.completion_ledger is not None
+    assert result.completion_ledger.process_complete is True
+    assert result.completion_ledger.requirement_complete is True
     assert result.execution_mode == ProductExecutionMode.INVESTIGATION
 
 
@@ -1149,6 +1158,14 @@ def test_root_does_not_enter_p17_when_p14_parent_is_limited():
         and item.obligation_id == "g_root"
         for item in result.limitations
     )
+    fulfillment = {
+        item.requirement_id: item
+        for item in result.user_must_fulfillment
+    }
+    assert fulfillment["g_root"].state.value == "LIMITED"
+    assert result.completion_ledger is not None
+    assert result.completion_ledger.process_complete is True
+    assert result.completion_ledger.requirement_complete is False
 
 
 def test_r3_product_root_candidate_projection_has_no_hidden_predicate_object_contract():
