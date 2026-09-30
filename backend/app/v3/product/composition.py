@@ -65,6 +65,7 @@ from app.v3.research_analytical_scope import (
 )
 from app.v3.research_contracts import (
     PresentationKind,
+    RelationshipIntent,
     ResearchBrief,
     ResearchBriefStatus,
     ResearchGoalKind,
@@ -929,6 +930,17 @@ class HeadlessProductComposer:
                 return after, ProductProcessNext.TERMINAL, executed, last_error
 
     @staticmethod
+    def _relationship_policy_required(goal: ResearchQuestion) -> bool:
+        """Route only typed policy intent through required P18 authority.
+
+        Historical accepted briefs predate relationship_intent. They remain
+        fail-conservative and require policy exactly as before.
+        """
+        if goal.kind != ResearchGoalKind.RELATIONSHIP:
+            raise ValueError("relationship policy routing requires RELATIONSHIP goal")
+        return goal.relationship_intent != RelationshipIntent.OBSERVATIONAL
+
+    @staticmethod
     def _relationship_refs(goal: ResearchQuestion) -> tuple[str, str, tuple[str, ...]]:
         refs = tuple(dict.fromkeys((*goal.subject_refs, *goal.related_refs)))
         measures = tuple(
@@ -1038,7 +1050,7 @@ class HeadlessProductComposer:
                     ).context_version
                 ),
                 applicability_scope=scope,
-                required=True,
+                required=self._relationship_policy_required(original_goal),
             ),
             principal=principal,
         )
@@ -1405,7 +1417,17 @@ class HeadlessProductComposer:
                 relationship = relationship_by_goal.get(question.goal_id)
                 if relationship is not None:
                     fulfilled_by_ref = relationship.policy_use_id
-                    if (
+                    if not relationship.policy_required:
+                        association_state = _state_value(
+                            relationship.association_state
+                        )
+                        state = (
+                            ProductRequirementState.FULFILLED
+                            if association_state
+                            in {"SUPPORTED", "CHALLENGED", "CONTESTED"}
+                            else ProductRequirementState.LIMITED
+                        )
+                    elif (
                         _state_value(relationship.business_relationship_state)
                         == "SATISFIED"
                         and not relationship.limitation_codes

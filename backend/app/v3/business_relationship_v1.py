@@ -50,6 +50,7 @@ class RelationshipResultProjection(Frozen):
     association_state: RelationshipLayerState
     co_movement_state: RelationshipLayerState
     business_relationship_state: RelationshipLayerState
+    policy_required: bool = True
     contribution_state: RelationshipLayerState = RelationshipLayerState.NOT_ESTABLISHED
     causality_state: RelationshipLayerState = RelationshipLayerState.NOT_ESTABLISHED
     supporting_evidence_refs: tuple[str, ...] = ()
@@ -131,12 +132,16 @@ def project_relationship_result(
         if kind == RelationshipAnalyticalKind.CO_MOVEMENT
         else RelationshipLayerState.NOT_ESTABLISHED
     )
-    business_state = (
-        RelationshipLayerState.SATISFIED
-        if decision.resolution_status
-        == RelationshipPolicyResolutionStatus.SATISFIED
-        else RelationshipLayerState.BLOCKED
-    )
+    if decision.resolution_status == RelationshipPolicyResolutionStatus.SATISFIED:
+        business_state = RelationshipLayerState.SATISFIED
+    elif (
+        not decision.required
+        and decision.resolution_status
+        == RelationshipPolicyResolutionStatus.NOT_REQUIRED
+    ):
+        business_state = RelationshipLayerState.NOT_ESTABLISHED
+    else:
+        business_state = RelationshipLayerState.BLOCKED
     limitations = list(getattr(claim, "limitations", ()) or ())
     if decision.limitation_code:
         limitations.append(decision.limitation_code)
@@ -154,6 +159,7 @@ def project_relationship_result(
         association_state=claim_state,
         co_movement_state=co_movement,
         business_relationship_state=business_state,
+        policy_required=decision.required,
         supporting_evidence_refs=tuple(dict.fromkeys(by_relation["SUPPORTS"])),
         challenging_evidence_refs=tuple(dict.fromkeys(by_relation["CHALLENGES"])),
         contextual_evidence_refs=tuple(dict.fromkeys(by_relation["CONTEXTUALIZES"])),

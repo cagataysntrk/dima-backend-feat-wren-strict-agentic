@@ -1493,3 +1493,56 @@ def test_intake_rejects_nonverbatim_goal_fragment_provenance():
             catalog=catalog(),
         )
     assert exc.value.code == "INTAKE_SOURCE_FRAGMENT_NOT_VERBATIM"
+
+def test_relationship_intent_is_typed_and_observational_is_preserved():
+    payload = ready_payload(
+        kind="relationship",
+        subject=(),
+        related=(),
+    )
+    payload["goals"][0] = {
+        "goal_key": "g-rel",
+        "kind": "relationship",
+        "source_text": "Compare downtime and fault count as an observational relationship.",
+        "source_fragment_text": "Compare downtime and fault count as an observational relationship.",
+        "allowed_relationship_id": "rel.downtime_fault_by_department",
+        "relationship_intent": "observational",
+        "ranking": None,
+        "comparisons": [],
+    }
+    question = payload["goals"][0]["source_text"]
+    transport = FakeTransport(payload)
+
+    result = ResearchIntakeCompiler(transport=transport).compile(
+        question=question,
+        catalog=catalog(),
+    )
+
+    assert result.brief is not None
+    goal = result.brief.questions[0]
+    assert goal.kind == ResearchGoalKind.RELATIONSHIP
+    assert goal.relationship_intent.value == "observational"
+    schema = transport.calls[0]["schema"]
+    variants = schema["$defs"]["ModelGoalDraft"]["anyOf"]
+    relationship_variant = next(
+        item
+        for item in variants
+        if item["properties"]["kind"].get("enum") == ["relationship"]
+    )
+    assert relationship_variant["properties"]["relationship_intent"]["enum"] == [
+        "observational",
+        "business_policy",
+    ]
+
+
+def test_relationship_intent_is_forbidden_on_non_relationship_goal():
+    payload = ready_payload()
+    payload["goals"][0]["relationship_intent"] = "observational"
+    transport = FakeTransport(payload)
+
+    with pytest.raises(Exception):
+        ResearchIntakeCompiler(transport=transport).compile(
+            question=payload["goals"][0]["source_text"],
+            catalog=catalog(),
+        )
+

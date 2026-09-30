@@ -97,6 +97,13 @@ class ResearchGoalKind(StrEnum):
     OTHER = "other"
 
 
+class RelationshipIntent(StrEnum):
+    """Accepted meaning of a RELATIONSHIP request, never inferred downstream."""
+
+    OBSERVATIONAL = "observational"
+    BUSINESS_POLICY = "business_policy"
+
+
 class ResearchGoalStatus(StrEnum):
     RESOLVED = "RESOLVED"
     BLOCKED = "BLOCKED"
@@ -263,11 +270,19 @@ class ResearchQuestion(FrozenModel):
     ranking: RankingSurface | None = None
     comparisons: tuple[ComparisonSurface, ...] = ()
     causal_competition: CausalCompetitionSurface | None = None
+    relationship_intent: RelationshipIntent | None = None
     unresolved: tuple[ResearchUnresolvedRef, ...] = ()
     status: ResearchGoalStatus
 
     @model_validator(mode="after")
     def coherent_causal_competition(self):
+        if (
+            self.kind != ResearchGoalKind.RELATIONSHIP
+            and self.relationship_intent is not None
+        ):
+            raise ValueError(
+                "relationship intent is only valid for RELATIONSHIP goals"
+            )
         surface = self.causal_competition
         if surface is None:
             return self

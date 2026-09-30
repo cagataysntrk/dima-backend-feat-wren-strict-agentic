@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import inspect
 from types import SimpleNamespace
 
 from app.v3.product.composition import (
@@ -205,6 +204,26 @@ def test_xray_h8_current_user_seeded_synthesis_calls_p17_per_candidate():
     assert owner_calls == ["P17", "P17"]
 
 
-def test_xray_h6_current_relationship_resolution_forces_policy_required():
-    source = inspect.getsource(HeadlessProductComposer._resolve_relationship)
-    assert "required=True" in source
+def test_xray_h6_typed_relationship_intent_controls_policy_requirement():
+    from app.v3.research_contracts import RelationshipIntent
+
+    observational = ResearchQuestion(
+        goal_id="g_rel_obs",
+        kind=ResearchGoalKind.RELATIONSHIP,
+        source_text="Observe association.",
+        relationship_intent=RelationshipIntent.OBSERVATIONAL,
+        status=ResearchGoalStatus.RESOLVED,
+    )
+    business = observational.model_copy(
+        update={
+            "goal_id": "g_rel_policy",
+            "relationship_intent": RelationshipIntent.BUSINESS_POLICY,
+        }
+    )
+    historical = observational.model_copy(
+        update={"goal_id": "g_rel_legacy", "relationship_intent": None}
+    )
+
+    assert HeadlessProductComposer._relationship_policy_required(observational) is False
+    assert HeadlessProductComposer._relationship_policy_required(business) is True
+    assert HeadlessProductComposer._relationship_policy_required(historical) is True

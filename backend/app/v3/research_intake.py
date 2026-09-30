@@ -25,6 +25,7 @@ from app.v3.research_contracts import (
     ComparisonSurface,
     PresentationKind,
     RankingSurface,
+    RelationshipIntent,
     ResearchBrief,
     ResearchBriefStatus,
     ResearchDeliverableRequirement,
@@ -217,6 +218,7 @@ class ModelGoalDraft(Frozen):
     source_text: str = Field(min_length=1)
     source_fragment_text: str | None = Field(default=None, min_length=1)
     allowed_relationship_id: str | None = None
+    relationship_intent: RelationshipIntent | None = None
     subject_semantic_ids: tuple[str, ...] = ()
     related_semantic_ids: tuple[str, ...] = ()
     ranking: DraftRanking | None = None
@@ -358,8 +360,13 @@ Authority rules:
 - Use ONLY semantic IDs present in the supplied grounded catalog.
 - Never invent a metric, dimension, entity value, relationship, number, SQL, or factual result.
 - This step performs NO analytics and creates NO Evidence.
-- For RELATIONSHIP, select exactly one allowed_relationship_id from the supplied catalog.
-  Do not reconstruct its left/right/dimension identities yourself.
+- For RELATIONSHIP, select exactly one allowed_relationship_id from the supplied catalog
+  and exactly one relationship_intent.
+  Use OBSERVATIONAL for association/co-movement/relationship-strength interpretation.
+  Use BUSINESS_POLICY only when the user explicitly requests governed business-policy,
+  directional business-rule, or policy applicability meaning. Do not infer BUSINESS_POLICY
+  merely because two governed measures have an allowed relationship identity.
+  Do not reconstruct relationship left/right/dimension identities yourself.
 - If the request depends on unavailable concepts/data (including psychological/predictive truth
   not represented by the catalog), return UNSUPPORTED.
 - If the user's actual intent cannot be determined without one bounded question, return CLARIFY.
@@ -615,6 +622,10 @@ def _intake_provider_schema(
                 "type": "string",
                 "enum": list(relationship_ids),
             }
+            properties["relationship_intent"] = {
+                "type": "string",
+                "enum": [item.value for item in RelationshipIntent],
+            }
         else:
             properties = {
                 name: copy.deepcopy(base_properties[name])
@@ -751,6 +762,11 @@ class ResearchIntakeCompiler:
             "questions": [
                 {
                     "kind": question.kind.value,
+                    "relationship_intent": (
+                        question.relationship_intent.value
+                        if question.relationship_intent is not None
+                        else None
+                    ),
                     "source_text": question.source_text,
                     "subject_semantic_ids": [
                         item.candidate_id
@@ -799,7 +815,17 @@ class ResearchIntakeCompiler:
                     "INTAKE_RELATIONSHIP_ID_ON_NON_RELATIONSHIP",
                     goal.goal_key,
                 )
+            if goal.relationship_intent is not None:
+                raise ResearchIntakeError(
+                    "INTAKE_RELATIONSHIP_INTENT_ON_NON_RELATIONSHIP",
+                    goal.goal_key,
+                )
             return None
+        if goal.relationship_intent is None:
+            raise ResearchIntakeError(
+                "INTAKE_RELATIONSHIP_INTENT_REQUIRED",
+                goal.goal_key,
+            )
         if goal.subject_semantic_ids or goal.related_semantic_ids:
             raise ResearchIntakeError(
                 "INTAKE_RELATIONSHIP_RECONSTRUCTION_FORBIDDEN",
@@ -1255,6 +1281,7 @@ class ResearchIntakeCompiler:
                     ranking=ranking,
                     comparisons=comparisons,
                     causal_competition=causal_competition,
+                    relationship_intent=goal.relationship_intent,
                     status=ResearchGoalStatus.RESOLVED,
                 )
             )
