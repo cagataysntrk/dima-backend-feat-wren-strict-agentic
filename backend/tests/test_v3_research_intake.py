@@ -339,6 +339,124 @@ def test_duplicate_root_cause_identity_fails_closed_without_stochastic_repair():
 
     assert transport.call_count == 1
 
+
+def test_non_executable_other_subgoal_fully_covered_by_one_root_cause_is_absorbed():
+    clause = "Determine which governed explanation better accounts for downtime."
+    evidence_clause = "Preserve the governed evidence needed to assess the alternatives."
+    question = clause + " " + evidence_clause
+    payload = ready_payload(
+        kind="root_cause",
+        subject=(
+            "metric.downtime",
+            "metric.fault_count",
+            "metric.performance",
+        ),
+        related=("dimension.department",),
+    )
+    payload["goals"][0].update(
+        {
+            "goal_key": "g-causal-main",
+            "source_text": clause,
+            "source_fragment_text": clause,
+            "causal_competition": {
+                "effect_semantic_id": "metric.downtime",
+                "candidate_mechanism_semantic_ids": [
+                    "metric.fault_count",
+                    "metric.performance",
+                ],
+                "diagnostic_dimension_ids": ["dimension.department"],
+            },
+        }
+    )
+    payload["goals"].append(
+        {
+            "goal_key": "g-evidence-handling",
+            "kind": "other",
+            "source_text": evidence_clause,
+            "source_fragment_text": evidence_clause,
+            "subject_semantic_ids": [
+                "metric.downtime",
+                "metric.fault_count",
+            ],
+            "related_semantic_ids": ["dimension.department"],
+            "ranking": None,
+            "comparisons": [],
+            "causal_competition": None,
+        }
+    )
+    transport = FakeTransport(payload)
+
+    result = ResearchIntakeCompiler(
+        transport=transport,
+        calendar_reference_date="2026-09-30",
+    ).compile(
+        question=question,
+        catalog=catalog(),
+    )
+
+    assert result.brief is not None
+    assert transport.call_count == 1
+    assert len(result.brief.questions) == 1
+    assert result.brief.questions[0].kind == ResearchGoalKind.ROOT_CAUSE
+
+
+def test_other_goal_with_distinct_governed_scope_is_not_absorbed_into_root_cause():
+    clause = "Determine which governed explanation better accounts for downtime."
+    separate_clause = "Also inspect machine-level context."
+    question = clause + " " + separate_clause
+    payload = ready_payload(
+        kind="root_cause",
+        subject=(
+            "metric.downtime",
+            "metric.fault_count",
+            "metric.performance",
+        ),
+        related=("dimension.department",),
+    )
+    payload["goals"][0].update(
+        {
+            "goal_key": "g-causal-main",
+            "source_text": clause,
+            "source_fragment_text": clause,
+            "causal_competition": {
+                "effect_semantic_id": "metric.downtime",
+                "candidate_mechanism_semantic_ids": [
+                    "metric.fault_count",
+                    "metric.performance",
+                ],
+                "diagnostic_dimension_ids": ["dimension.department"],
+            },
+        }
+    )
+    payload["goals"].append(
+        {
+            "goal_key": "g-machine-context",
+            "kind": "other",
+            "source_text": separate_clause,
+            "source_fragment_text": separate_clause,
+            "subject_semantic_ids": ["metric.downtime"],
+            "related_semantic_ids": ["dimension.machine_id"],
+            "ranking": None,
+            "comparisons": [],
+            "causal_competition": None,
+        }
+    )
+
+    result = ResearchIntakeCompiler(
+        transport=FakeTransport(payload),
+        calendar_reference_date="2026-09-30",
+    ).compile(
+        question=question,
+        catalog=catalog(),
+    )
+
+    assert result.brief is not None
+    assert tuple(item.kind for item in result.brief.questions) == (
+        ResearchGoalKind.ROOT_CAUSE,
+        ResearchGoalKind.OTHER,
+    )
+
+
 def test_ready_breakdown_compiles_to_typed_research_brief():
     transport = FakeTransport(ready_payload())
     compiler = ResearchIntakeCompiler(transport=transport)
