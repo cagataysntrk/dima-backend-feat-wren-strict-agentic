@@ -126,6 +126,52 @@ PROBES = {
             "exception=0 and silent wrong=0",
         ),
     },
+    "CONVERSATION_F10_H_RECOVERY": {
+        "historical_round2_case_id": "F10_H",
+        "turns": (
+            "Mayıs-Haziran duruş artışını çok faktörlü araştır; alternatif nedenleri ve karşı kanıtı da değerlendir.",
+            "Düzeltme: yalnız Assembly bölümüne odaklan; Packaging ve diğer bölümleri yeni kapsamdan çıkar.",
+            "Şimdi yalnız düzeltilmiş Assembly kapsamı içinde en güçlü iki açıklamayı derinleştir; eski geniş kapsamın bulgularını yeni kanıt gibi kullanma.",
+        ),
+        "manual_contract": (
+            "multiple turns execute under one governed conversation lineage",
+            "scope correction narrows to Assembly and advances scope version",
+            "prior wider Research/Evidence remains historical rather than current truth",
+            "investigation continues only inside the corrected scope",
+            "no stale Evidence reuse and no re-expansion to removed departments",
+            "manual usefulness is FULL-preferred for 80+ readiness",
+            "exception=0, silent wrong=0, and blocked provider requests=0",
+        ),
+    },
+    "RCA_F07_H_RECOVERY": {
+        "historical_round2_case_id": "F07_H",
+        "turns": (
+            "Mayıs-Haziran duruş artışının kök nedenlerini çok faktörlü araştır. Birden fazla maddi katkı olabilir. Aday nedenleri yarışmaya sok, destek ve karşı kanıt ara, önemli nedenlerin nedenlerine üç seviyeye kadar in; dominant/material/secondary olarak ayır, emin olmadığın yerde inconclusive de ve adım adım investigation trace üret.",
+        ),
+        "manual_contract": (
+            "multiple plausible root-cause candidates remain available when supported",
+            "supporting and challenging Evidence are explicit and same-scope",
+            "discriminating analyses genuinely separate competing candidates",
+            "P17 investigation reaches P19 only when epistemically eligible",
+            "no fabricated winner, unsupported dominant cause, or causal overclaim",
+            "stepwise investigation trace and governed inconclusive behavior are preserved",
+            "exception=0, silent wrong=0, and blocked provider requests=0",
+        ),
+    },
+    "MULTI_INTENT_F04_H_RECOVERY": {
+        "historical_round2_case_id": "F04_H",
+        "turns": (
+            "Mayıs-Haziran 2026 üretim görünümünü duruş, arıza, performans, bakım gecikmesi, yedek parça gecikmesi, önleyici bakım uyumu ve changeover üzerinden birlikte araştır; çelişkili sinyalleri saklama, kanıta bağlı kısa yönetim raporu üret.",
+        ),
+        "manual_contract": (
+            "all accepted material signals are retained without silent metric loss",
+            "conflicting findings remain visible rather than collapsed into one narrative",
+            "synthesis is Evidence-backed with preserved Claim/Evidence/receipt lineage",
+            "no invented priority score or unsupported causal promotion",
+            "P20 output is a concise management-useful synthesis rather than a raw-data shell",
+            "exception=0, silent wrong=0, and blocked provider requests=0",
+        ),
+    },
 }
 
 
