@@ -91,10 +91,6 @@ class P17ActivityResult(ActivityResult):
     def coherent_transition(self):
         if len(self.produced_evidence_ids) != len(self.produced_receipt_refs):
             raise ValueError("P17 produced Evidence/receipt refs must be paired")
-        if not self.discovery_required and not self.hypothesis_ids:
-            raise ValueError(
-                "completed P17 transition requires governed hypothesis refs"
-            )
         return self
 
 
