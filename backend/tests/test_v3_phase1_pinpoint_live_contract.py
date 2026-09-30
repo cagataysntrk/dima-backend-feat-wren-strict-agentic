@@ -9,6 +9,10 @@ from lab.metabase.core_b.phase1_pinpoint_live import (
     PROBES,
     OrchestrationBudget,
     PinpointBudgetExceeded,
+    _mechanical_conversation,
+    _mechanical_contextual_report,
+    _mechanical_multi_intent,
+    _mechanical_observational_relationship,
     _mechanical_r_live,
     _mechanical_verdict,
     _model_ceiling_events,
@@ -77,25 +81,24 @@ def test_final_pinpoint_probes_are_closed_and_not_benchmark_cases():
     assert "maintenance delay" in serialized
     assert "spare-part delay" in serialized
     assert "supporting ve challenging evidence" in serialized
-    assert "gözlem, bulgu, hipotez, karşı kanıt" in serialized
+    assert "association/co-movement" in serialized
+    assert "Bunu yönetim için kanıta bağlı rapora dönüştür" in serialized
     assert "en az iki farklı analitik derinleşme" in serialized
 
 
-def test_recovery_growth_probes_bind_exact_frozen_round2_historical_requests():
+def test_recovery_growth_probes_preserve_historical_family_identity_without_freezing_obsolete_contracts():
     manifest = json.loads(
         (Path(__file__).parents[1] / "eval" / "dima_neutral_feature_benchmark_round2.json")
         .read_text(encoding="utf-8")
     )
     cases = {item["id"]: item for item in manifest["cases"]}
-    bindings = {
-        "RELATIONSHIP_F05_H_RECOVERY": "F05_H",
-        "REPORT_F08_H_RECOVERY": "F08_H",
+    exact_bindings = {
         "ADAPTIVE_F06_H_RETENTION": "F06_H",
         "CONVERSATION_F10_H_RECOVERY": "F10_H",
         "RCA_F07_H_RECOVERY": "F07_H",
         "MULTI_INTENT_F04_H_RECOVERY": "F04_H",
     }
-    for probe_id, case_id in bindings.items():
+    for probe_id, case_id in exact_bindings.items():
         probe = PROBES[probe_id]
         assert probe["historical_round2_case_id"] == case_id
         expected_turns = tuple(
@@ -103,6 +106,22 @@ def test_recovery_growth_probes_bind_exact_frozen_round2_historical_requests():
         )
         assert probe["turns"] == expected_turns
         assert probe["manual_contract"]
+
+    migrated = {
+        "RELATIONSHIP_F05_H_RECOVERY": "F05_H",
+        "REPORT_F08_H_RECOVERY": "F08_H",
+    }
+    for probe_id, case_id in migrated.items():
+        probe = PROBES[probe_id]
+        assert probe["historical_round2_case_id"] == case_id
+        historical_turns = tuple(
+            cases[case_id].get("turns") or (cases[case_id]["question"],)
+        )
+        assert probe["turns"] != historical_turns
+        assert probe["manual_contract"]
+
+    assert "OBSERVATIONAL" in PROBES["RELATIONSHIP_F05_H_RECOVERY"]["manual_contract"][0]
+    assert len(PROBES["REPORT_F08_H_RECOVERY"]["turns"]) == 2
     assert all(
         probe["historical_round2_case_id"] is None
         for probe_id, probe in PROBES.items()
@@ -471,6 +490,116 @@ def test_phase15_adaptive_mechanics_require_exactly_one_discriminating_reentry()
     assert observations["initial_plus_one_discriminating_acquisition"] is True
     assert observations["one_p17_discriminating_owner_call"] is True
     assert observations["all_user_must_requirements_complete"] is True
+
+
+def test_phase15_t1_conversation_mechanics_require_scope_repair_and_current_evidence():
+    turns = [
+        {
+            "ready": True,
+            "research_session_id": "rs_old",
+            "scope_lineage_id": "lineage",
+            "scope_version_id": "v1",
+            "native_results": [{"q": 1}],
+            "evidence_by_session": {"rs_old": ["evi_old"]},
+            "composition_payload": {"completion_ledger": {"requirement_complete": True}},
+        },
+        {
+            "ready": True,
+            "research_session_id": "rs_corrected",
+            "scope_lineage_id": "lineage",
+            "scope_version_id": "v2",
+            "native_results": [{"q": 2}],
+            "evidence_by_session": {"rs_corrected": ["evi_mid"]},
+            "composition_payload": {"completion_ledger": {"requirement_complete": True}},
+        },
+        {
+            "ready": True,
+            "research_session_id": "rs_final",
+            "scope_lineage_id": "lineage",
+            "scope_version_id": "v2",
+            "native_results": [{"q": 3}],
+            "evidence_by_session": {"rs_final": ["evi_final"]},
+            "composition_payload": {"completion_ledger": {"requirement_complete": True}},
+        },
+    ]
+    snapshots = [
+        {
+            "research_currentness": "SUPERSEDED",
+            "evidence": [
+                {"scope_id": "rs_old", "currentness": "HISTORICAL"},
+            ],
+        },
+        {
+            "research_currentness": "SUPERSEDED",
+            "evidence": [
+                {"scope_id": "rs_corrected", "currentness": "HISTORICAL"},
+            ],
+        },
+        {
+            "research_currentness": "CURRENT",
+            "evidence": [
+                {"scope_id": "rs_final", "currentness": "CURRENT"},
+            ],
+        },
+    ]
+    observed = _mechanical_conversation(turns, snapshots)
+    assert all(observed.values())
+
+
+def test_phase15_t5_observational_relationship_forbids_unrequested_p18():
+    turn = {
+        "ready": True,
+        "brief_payload": {
+            "questions": [
+                {
+                    "kind": "relationship",
+                    "relationship_intent": "OBSERVATIONAL",
+                }
+            ]
+        },
+        "p18_policy_use_refs": [],
+        "p19_assessment_refs": [],
+        "native_results": [{"q": 1}],
+        "evidence_by_session": {"rs": ["evi"]},
+        "composition_payload": {"completion_ledger": {"requirement_complete": True}},
+    }
+    observed = _mechanical_observational_relationship(turn)
+    assert all(observed.values())
+    turn["p18_policy_use_refs"] = ["p18use_x"]
+    assert _mechanical_observational_relationship(turn)["no_business_policy_use"] is False
+
+
+def test_phase15_t6_contextual_report_reuses_governed_state_without_new_analytics():
+    investigation = {
+        "ready": True,
+        "scope_lineage_id": "lineage",
+        "native_results": [{"q": 1}],
+        "evidence_by_session": {"rs": ["evi"]},
+    }
+    report_turn = {
+        "ready": True,
+        "scope_lineage_id": "lineage",
+        "native_results": [],
+        "p20_report": {
+            "document": {"report_id": "rep_x"},
+            "currentness": "CURRENT",
+        },
+        "composition_payload": {"completion_ledger": {"requirement_complete": True}},
+    }
+    observed = _mechanical_contextual_report([investigation, report_turn])
+    assert all(observed.values())
+
+
+def test_phase15_t7_multi_intent_requires_evidence_report_and_completion():
+    turn = {
+        "ready": True,
+        "native_results": [{"q": 1}],
+        "evidence_by_session": {"rs": ["evi"]},
+        "p20_report": {"document": {"report_id": "rep_x"}},
+        "composition_payload": {"completion_ledger": {"requirement_complete": True}},
+    }
+    observed = _mechanical_multi_intent(turn)
+    assert all(observed.values())
 
 
 def _one_pass_provider_report(
