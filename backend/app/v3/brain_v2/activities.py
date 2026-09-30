@@ -26,6 +26,8 @@ class IntakeActivityResult(ActivityResult):
     scope_version_id: str = Field(pattern=r"^scope_v[1-9][0-9]*$")
     open_requirement_ids: tuple[str, ...] = ()
     material_requirement_ids: tuple[str, ...] = ()
+    investigation_requirement_ids: tuple[str, ...] = ()
+    follow_verified_material_goal_ids: tuple[str, ...] = ()
     discovery_required: bool = False
 
 
