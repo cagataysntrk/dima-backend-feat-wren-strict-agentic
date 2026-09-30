@@ -347,11 +347,37 @@ class DimaBrainV2Activities(BrainActivities):
 
     @staticmethod
     def _evidence_pairs(session, obligation_id: str) -> tuple[tuple[str, str], ...]:
+        """Canonical P14 Evidence refs already admitted to the Research session."""
         return tuple(
             (item.evidence_id, item.receipt_id)
             for item in session.evidence_refs
             if item.obligation_id == obligation_id
         )
+
+    def _durable_evidence_pairs(
+        self,
+        *,
+        session,
+        obligation_id: str,
+    ) -> tuple[tuple[str, str], ...]:
+        """Project all VERIFIED canonical Evidence occurrences for one obligation.
+
+        P17 follow-up Evidence is durably owned by the sealed ResearchExecutionLink
+        path and intentionally does not mutate the already-VERIFIED parent P14
+        session record. ResearchInvestigationManager.snapshot exposes that exact
+        receipt/Evidence lineage without creating a second truth family.
+        """
+        base = self._evidence_pairs(session, obligation_id)
+        snapshot = self._investigation.snapshot(
+            session_id=session.session_id,
+            principal=self._principal,
+        )
+        followups = tuple(
+            (item.evidence_id, item.receipt_id)
+            for item in snapshot.evidence_results
+            if item.obligation_id == obligation_id
+        )
+        return tuple(dict.fromkeys((*base, *followups)))
 
     @staticmethod
     def _question_fingerprint(session, goal: ResearchQuestion) -> str:
@@ -604,7 +630,10 @@ class DimaBrainV2Activities(BrainActivities):
     def admit_evidence(self, state: BrainGraphState) -> EvidenceActivityResult:
         session = self._session(state)
         goal = self._root_goal(session)
-        persisted_pairs = self._evidence_pairs(session, goal.goal_id)
+        persisted_pairs = self._durable_evidence_pairs(
+            session=session,
+            obligation_id=goal.goal_id,
+        )
         persisted = set(persisted_pairs)
         pending = tuple(
             zip(
@@ -730,7 +759,10 @@ class DimaBrainV2Activities(BrainActivities):
     def discover_hypotheses(self, state: BrainGraphState) -> P17ActivityResult:
         session = self._session(state)
         goal = self._root_goal(session)
-        evidence_pairs = self._evidence_pairs(session, goal.goal_id)
+        evidence_pairs = self._durable_evidence_pairs(
+            session=session,
+            obligation_id=goal.goal_id,
+        )
         if not evidence_pairs:
             raise BrainV2OwnerError(
                 "BRAIN_V2_DISCOVERY_EVIDENCE_REQUIRED",
@@ -761,6 +793,8 @@ class DimaBrainV2Activities(BrainActivities):
             principal=self._principal,
             manager=manager,
             native_session_token=self._native_session_token,
+            downstream_reentry_intent=InvestigationIntent.FORM_CLAIM,
+            downstream_reentry_obligation_id=goal.goal_id,
         )
         after = self._investigation.snapshot(
             session_id=session.session_id,
@@ -911,7 +945,12 @@ class DimaBrainV2Activities(BrainActivities):
                 request.request_id,
             )
 
-        before_pairs = set(self._evidence_pairs(session, goal.goal_id))
+        before_pairs = set(
+            self._durable_evidence_pairs(
+                session=session,
+                obligation_id=goal.goal_id,
+            )
+        )
         step, _ = self._investigation.run_one(
             session_id=session.session_id,
             principal=self._principal,
@@ -938,7 +977,10 @@ class DimaBrainV2Activities(BrainActivities):
             session_id=session.session_id,
             principal=self._principal,
         )
-        after_pairs = self._evidence_pairs(current, goal.goal_id)
+        after_pairs = self._durable_evidence_pairs(
+            session=current,
+            obligation_id=goal.goal_id,
+        )
         new_pairs = tuple(
             item for item in after_pairs
             if item not in before_pairs
