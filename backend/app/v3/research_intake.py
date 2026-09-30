@@ -390,11 +390,6 @@ Authority rules:
   analysis window; BASELINE_PERIOD + COMPARISON_PERIOD for a true temporal comparison;
   EFFECT_PERIOD + EVIDENCE_WINDOW for causal investigation when those distinct roles are requested.
   Never infer roles from tuple position.
-- A ROOT_CAUSE request that explicitly asks to explain an increase/decrease/change FROM one named
-  calendar period TO another is itself a temporal comparison authority. Emit the two exact periods
-  as BASELINE_PERIOD and COMPARISON_PERIOD and carry one TEMPORAL_PERIOD comparison on that same
-  ROOT_CAUSE goal. Do not collapse those two periods into one MATERIAL_WINDOW merely because the
-  causal investigation spans both. If the two compared periods cannot be resolved uniquely, CLARIFY.
 - Emit typed comparisons, never free-text comparison authority. Use TEMPORAL_PERIOD only for an
   actual period-vs-period comparison. Use CAUSAL_CANDIDATE for user-provided candidate mechanisms,
   and ENTITY_OR_MEASURE for governed entity/measure competition. Every non-temporal comparison item
@@ -1028,6 +1023,98 @@ class ResearchIntakeCompiler:
         return draft.model_copy(update={"goals": tuple(canonical)})
 
     @staticmethod
+    def _canonicalize_typed_temporal_comparison(
+        draft: ModelResearchBriefDraft,
+    ) -> ModelResearchBriefDraft:
+        """Bind typed temporal-comparison authority to exact period roles.
+
+        The provider decides only whether the user asked for a temporal
+        comparison and resolves exact periods. Dima deterministically assigns
+        the operational earlier/later role when exactly one temporal-comparison
+        goal and exactly two same-dimension periods exist. No wording, tuple
+        position, metric identity, month name, or benchmark case participates.
+        """
+
+        if draft.terminal != ResearchIntakeTerminal.READY:
+            return draft
+        comparison_goals = tuple(
+            goal
+            for goal in draft.goals
+            if any(
+                item.role == ComparisonRole.TEMPORAL_PERIOD
+                for item in goal.comparisons
+            )
+        )
+        if not comparison_goals:
+            return draft
+        if len(comparison_goals) != 1:
+            raise ResearchIntakeError(
+                "INTAKE_TEMPORAL_COMPARISON_AMBIGUOUS",
+                "multiple analytical goals carry temporal-comparison authority",
+            )
+        if len(draft.time_periods) != 2:
+            raise ResearchIntakeError(
+                "INTAKE_TEMPORAL_COMPARISON_PERIODS_REQUIRED",
+                "one typed temporal comparison requires exactly two accepted periods",
+            )
+        left, right = draft.time_periods
+        if (
+            left.time_dimension_semantic_id
+            != right.time_dimension_semantic_id
+        ):
+            raise ResearchIntakeError(
+                "INTAKE_TEMPORAL_COMPARISON_DIMENSION_DRIFT",
+                "typed temporal comparison periods must use one time dimension",
+            )
+        existing = {left.role, right.role}
+        if existing == {
+            TemporalRole.BASELINE_PERIOD,
+            TemporalRole.COMPARISON_PERIOD,
+        }:
+            return draft
+        if existing != {TemporalRole.MATERIAL_WINDOW}:
+            raise ResearchIntakeError(
+                "INTAKE_TEMPORAL_COMPARISON_ROLE_CONFLICT",
+                "typed temporal comparison conflicts with non-comparison period roles",
+            )
+        ordered = sorted(
+            (left, right),
+            key=lambda item: (item.start, item.end, item.source_text),
+        )
+        baseline = ordered[0].model_copy(
+            update={"role": TemporalRole.BASELINE_PERIOD}
+        )
+        comparison = ordered[1].model_copy(
+            update={"role": TemporalRole.COMPARISON_PERIOD}
+        )
+        by_identity = {
+            (
+                baseline.time_dimension_semantic_id,
+                baseline.start,
+                baseline.end,
+                baseline.source_text,
+            ): baseline,
+            (
+                comparison.time_dimension_semantic_id,
+                comparison.start,
+                comparison.end,
+                comparison.source_text,
+            ): comparison,
+        }
+        canonical = tuple(
+            by_identity[
+                (
+                    item.time_dimension_semantic_id,
+                    item.start,
+                    item.end,
+                    item.source_text,
+                )
+            ]
+            for item in draft.time_periods
+        )
+        return draft.model_copy(update={"time_periods": canonical})
+
+    @staticmethod
     def _canonicalize_exact_period_repeats(
         draft: ModelResearchBriefDraft,
     ) -> ModelResearchBriefDraft:
@@ -1146,6 +1233,7 @@ class ResearchIntakeCompiler:
 
         draft = self._canonicalize_analytical_goals(draft)
         draft = self._canonicalize_exact_period_repeats(draft)
+        draft = self._canonicalize_typed_temporal_comparison(draft)
         duplicate_root_keys = self._duplicate_root_cause_goal_keys(draft)
         if duplicate_root_keys:
             # Duplicate typed analytical authority is deterministic invalid input
@@ -1199,6 +1287,7 @@ class ResearchIntakeCompiler:
 
         draft = self._canonicalize_analytical_goals(draft)
         draft = self._canonicalize_exact_period_repeats(draft)
+        draft = self._canonicalize_typed_temporal_comparison(draft)
         duplicate_root_keys = self._duplicate_root_cause_goal_keys(draft)
         if duplicate_root_keys:
             raise ResearchIntakeError(
