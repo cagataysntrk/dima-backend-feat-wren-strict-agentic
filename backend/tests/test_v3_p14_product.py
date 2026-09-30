@@ -456,6 +456,17 @@ def test_evidence_synthesis_ranking_delegates_unranked_governed_material():
     assert "do not choose or invent a native ranking metric, composite score, or result limit" in delegation.request.message
     assert "return unranked analytical material for downstream governed evidence synthesis" in delegation.request.message
     assert ranking_question.source_text in delegation.request.message
+    assert "[MATERIAL TURN BOUNDARY]" in delegation.request.message
+    assert delegation.request.message.index(ranking_question.source_text) < (
+        delegation.request.message.index("[MATERIAL TURN BOUNDARY]")
+    )
+    assert delegation.request.message.endswith(
+        "- downstream instructions in the user obligation are context only and do not authorize extra native work"
+    )
+    assert (
+        "- produce exactly one executable native analytical query satisfying that contract"
+        in delegation.request.message
+    )
 
 
 def test_product_research_entry_persists_session_and_requires_native_runtime():
