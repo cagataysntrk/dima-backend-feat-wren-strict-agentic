@@ -1266,8 +1266,19 @@ def _mechanical_verdict(report: dict[str, Any]) -> str:
         ceiling = int(report.get("hard_provider_request_ceiling") or 0)
         if actual > ceiling:
             return "FAIL"
-        if report.get("probe_id") == "R_LIVE_1_ONE_PASS" and actual >= ceiling:
-            return "FAIL"
+        if report.get("probe_id") == "R_LIVE_1_ONE_PASS":
+            sources = provider.get("provider_requests_by_source") or {}
+            if actual > 12:
+                return "FAIL"
+            if int(sources.get("research_intake") or 0) != 1:
+                return "FAIL"
+            if int(sources.get("metabase") or 0) > 10:
+                return "FAIL"
+            if int(sources.get("p17_manager") or 0) != 0:
+                return "FAIL"
+            prompt_tokens = provider.get("prompt_tokens")
+            if prompt_tokens is None or int(prompt_tokens) > 180000:
+                return "FAIL"
     observations = report.get("mechanical_observations") or {}
     boolean_checks = [
         value

@@ -472,21 +472,56 @@ def test_phase15_adaptive_mechanics_require_exactly_one_discriminating_reentry()
     assert observations["all_user_must_requirements_complete"] is True
 
 
-def test_phase15_one_pass_at_provider_ceiling_is_not_mechanical_green():
+def _one_pass_provider_report(
+    *,
+    total: int = 12,
+    intake: int = 1,
+    metabase: int = 10,
+    p17: int = 0,
+    p19: int = 1,
+    prompt_tokens: int = 180000,
+) -> dict:
     turn = _phase15_mode_turn(mode="ONE_PASS", native_results=1, p17_calls=0)
-    report = {
+    return {
         "probe_id": "R_LIVE_1_ONE_PASS",
         "exception": None,
         "within_orchestration_boundary_budget": True,
         "turn_count_executed": 1,
         "turn_count_expected": 1,
         "turns": [turn],
-        "provider_receipt": {"blocked_request_count": 0},
-        "actual_provider_request_count": 24,
+        "provider_receipt": {
+            "blocked_request_count": 0,
+            "provider_requests_by_source": {
+                "research_intake": intake,
+                "metabase": metabase,
+                "p17_manager": p17,
+                "p19_manager": p19,
+            },
+            "prompt_tokens": prompt_tokens,
+        },
+        "actual_provider_request_count": total,
         "hard_provider_request_ceiling": 24,
         "mechanical_observations": _mechanical_r_live(
             "R_LIVE_1_ONE_PASS",
             turn,
         ),
     }
+
+
+def test_phase15_one_pass_readiness_slo_accepts_exact_operational_boundary():
+    assert _mechanical_verdict(_one_pass_provider_report()) == "PASS"
+
+
+@pytest.mark.parametrize(
+    ("override", "value"),
+    (
+        ("total", 13),
+        ("intake", 2),
+        ("metabase", 11),
+        ("p17", 1),
+        ("prompt_tokens", 180001),
+    ),
+)
+def test_phase15_one_pass_readiness_slo_fails_closed(override, value):
+    report = _one_pass_provider_report(**{override: value})
     assert _mechanical_verdict(report) == "FAIL"

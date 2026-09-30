@@ -414,6 +414,12 @@ jobs:
               "R_LIVE_3_DISCOVERY",
           }:
               observed=report["mechanical_observations"]
+              if probe == "R_LIVE_1_ONE_PASS":
+                  assert report["actual_provider_request_count"] <= 12, report
+                  assert provider["provider_requests_by_source"].get("research_intake", 0) == 1, provider
+                  assert provider["provider_requests_by_source"].get("metabase", 0) <= 10, provider
+                  assert provider["provider_requests_by_source"].get("p17_manager", 0) == 0, provider
+                  assert provider["prompt_tokens"] <= 180000, provider
               assert observed["p19_assessment_exists"] is True, observed
               assert observed["single_root_mode_result"] is True, observed
               assert observed["governed_evidence_exists"] is True, observed
