@@ -1023,6 +1023,35 @@ class ResearchIntakeCompiler:
         return draft.model_copy(update={"goals": tuple(canonical)})
 
     @staticmethod
+    def _canonicalize_exact_period_repeats(
+        draft: ModelResearchBriefDraft,
+    ) -> ModelResearchBriefDraft:
+        """Collapse only byte-equivalent typed period DTO repetition.
+
+        A provider may mechanically repeat the exact same structured period
+        object. That carries zero additional authority and is safe to make
+        idempotent before durable binding. Any difference in wording, role,
+        dimension or bounds remains visible to the existing duplicate/conflict
+        checks and therefore still fails closed.
+        """
+        if (
+            draft.terminal != ResearchIntakeTerminal.READY
+            or len(draft.time_periods) < 2
+        ):
+            return draft
+        seen: set[str] = set()
+        periods: list[ModelTimePeriodDraft] = []
+        for item in draft.time_periods:
+            identity = _canonical(item.model_dump(mode="json"))
+            if identity in seen:
+                continue
+            seen.add(identity)
+            periods.append(item)
+        if len(periods) == len(draft.time_periods):
+            return draft
+        return draft.model_copy(update={"time_periods": tuple(periods)})
+
+    @staticmethod
     def _ids(prefix: str, seed: dict[str, Any], ordinal: int) -> str:
         raw = _canonical({"seed": seed, "ordinal": ordinal})
         return prefix + hashlib.sha256(raw.encode("utf-8")).hexdigest()[:20]
@@ -1111,6 +1140,7 @@ class ResearchIntakeCompiler:
         )
 
         draft = self._canonicalize_analytical_goals(draft)
+        draft = self._canonicalize_exact_period_repeats(draft)
         duplicate_root_keys = self._duplicate_root_cause_goal_keys(draft)
         if duplicate_root_keys:
             # Duplicate typed analytical authority is deterministic invalid input
@@ -1163,6 +1193,7 @@ class ResearchIntakeCompiler:
             )
 
         draft = self._canonicalize_analytical_goals(draft)
+        draft = self._canonicalize_exact_period_repeats(draft)
         duplicate_root_keys = self._duplicate_root_cause_goal_keys(draft)
         if duplicate_root_keys:
             raise ResearchIntakeError(
