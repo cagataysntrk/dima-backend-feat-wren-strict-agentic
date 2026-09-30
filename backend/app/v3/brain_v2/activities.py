@@ -21,6 +21,7 @@ class ActivityResult(Frozen):
 
 
 class IntakeActivityResult(ActivityResult):
+    research_session_id: str = Field(pattern=r"^rs_[a-f0-9]{24}$")
     accepted_brief_ref: str = Field(min_length=1)
     scope_version_id: str = Field(pattern=r"^scope_v[1-9][0-9]*$")
     open_requirement_ids: tuple[str, ...] = ()
@@ -50,6 +51,15 @@ class MaterialActivityResult(ActivityResult):
 class EvidenceActivityResult(ActivityResult):
     evidence_revision: int = Field(ge=1)
     evidence_ids: tuple[str, ...] = Field(min_length=1)
+    hypothesis_revision: int = Field(ge=0)
+    hypothesis_ids: tuple[str, ...] = ()
+    discovery_required: bool = False
+
+    @model_validator(mode="after")
+    def discovery_matches_hypotheses(self):
+        if self.discovery_required and self.hypothesis_ids:
+            raise ValueError("discovery cannot remain required after hypotheses exist")
+        return self
 
 
 class P19ActivityResult(ActivityResult):
