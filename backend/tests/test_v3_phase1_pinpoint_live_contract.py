@@ -12,6 +12,7 @@ from lab.metabase.core_b.phase1_pinpoint_live import (
     build_catalog,
 )
 from lab.metabase.core_b.runtime.seed_phase1_pinpoint_metrics import (
+    entity_value_bindings_from_fixture,
     metric_card_payload,
     metric_specs,
 )
@@ -29,6 +30,18 @@ def _bindings():
             }
             for index, (candidate_id, _name, column, _agg)
             in enumerate(metric_specs(), start=1)
+        ],
+        "entity_values": [
+            {
+                "candidate_id": "entity_value.0123456789abcdef01234567",
+                "canonical_name": "Packaging",
+                "source_mention": "Packaging",
+                "dimension_candidate_id": "dimension.department",
+                "dimension_name": "department",
+                "value": "Packaging",
+                "column_name": "department",
+                "field_id": 17,
+            }
         ],
     }
 
@@ -119,6 +132,59 @@ def test_live_catalog_binds_all_metrics_to_governed_native_resources():
     }
     assert set(native) == metric_refs
     assert all(native.values())
+    entity_refs = {
+        item.candidate_id: item
+        for item in catalog.semantic_refs
+        if item.target_kind.value == "entity_value"
+    }
+    assert set(entity_refs) == {"entity_value.0123456789abcdef01234567"}
+    assert entity_refs["entity_value.0123456789abcdef01234567"].value == "Packaging"
+    entity_binding = next(
+        item
+        for item in catalog.native_verification_bindings
+        if item.candidate_id == "entity_value.0123456789abcdef01234567"
+    )
+    assert entity_binding.column_name == "department"
+
+
+def test_fixture_entity_authority_is_derived_from_exact_fixture_values(tmp_path):
+    fixture = tmp_path / "fixture.json"
+    fixture.write_text(
+        json.dumps(
+            {
+                "columns": [
+                    ["department", "text"],
+                    ["machine_id", "text"],
+                ],
+                "rows": [
+                    ["Cell Blue", "M-2"],
+                    ["Cell Red", "M-1"],
+                    ["Cell Blue", "M-3"],
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    first = entity_value_bindings_from_fixture(
+        fixture=fixture,
+        fields={"department": 17, "machine_id": 19},
+    )
+    second = entity_value_bindings_from_fixture(
+        fixture=fixture,
+        fields={"department": 17, "machine_id": 19},
+    )
+    assert first == second
+    assert {
+        (item["dimension_candidate_id"], item["value"])
+        for item in first
+    } == {
+        ("dimension.department", "Cell Blue"),
+        ("dimension.department", "Cell Red"),
+        ("dimension.machine_id", "M-1"),
+        ("dimension.machine_id", "M-2"),
+        ("dimension.machine_id", "M-3"),
+    }
+    assert len({item["candidate_id"] for item in first}) == len(first)
 
 
 def test_metric_fixture_setup_is_closed_and_creates_metric_cards():
