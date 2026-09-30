@@ -9,6 +9,7 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+from datetime import date
 from enum import StrEnum
 from typing import Any, Literal, Protocol
 
@@ -335,7 +336,14 @@ Authority rules:
 - Never emit a scope version or lineage id. Dima deterministically binds those after validation.
 - For every explicit calendar/time surface in READY, emit exactly one time_periods entry.
   Select time_dimension_semantic_id only from the grounded catalog, and resolve exact ISO-8601
-  half-open [start,end) bounds. If the period cannot be resolved unambiguously, return CLARIFY.
+  half-open [start,end) bounds. The payload includes calendar_reference_date. For a bare named
+  month/month-range with no year, resolve only the most recent non-future occurrence anchored by
+  calendar_reference_date when that interpretation is unique; otherwise return CLARIFY.
+- calendar_reference_date is calendar context only. It never proves that data exists for a period.
+- A bounded management report/overview does not require the user to enumerate every metric. When
+  exactly one supported domain exists, you MAY form a grounded domain overview from materially
+  relevant catalog refs and explicit deliverables. Never use this rule to satisfy concepts absent
+  from the catalog, invent KPI priorities, invent causes, or silently broaden a specific request.
 - Do not use implementation-specific SQL/MBQL temporal syntax; time_periods are semantic scope only.
 - Preserve every current MUST analytical/presentation obligation as a separate goal/deliverable.
 - For every READY goal emit source_fragment_text as one exact verbatim substring of the CURRENT
@@ -542,9 +550,19 @@ class ResearchIntakeCompiler:
         *,
         transport: StructuredJSONTransport,
         schema_name: str = "dima_research_intake_v1",
+        calendar_reference_date: str | None = None,
     ) -> None:
         self._transport = transport
         self._schema_name = schema_name
+        reference = calendar_reference_date or date.today().isoformat()
+        try:
+            date.fromisoformat(reference)
+        except ValueError as exc:
+            raise ResearchIntakeError(
+                "INTAKE_CALENDAR_REFERENCE_INVALID",
+                reference,
+            ) from exc
+        self._calendar_reference_date = reference
 
     @property
     def call_count(self) -> int:
@@ -701,63 +719,115 @@ class ResearchIntakeCompiler:
                 "current user question is required",
             )
 
-        user_payload: dict[str, Any] = {
-            "current_user_message": current,
-            "grounded_catalog": self._catalog_payload(catalog),
-            "prior_brief": self._provider_prior_brief_payload(prior_brief),
-            "instruction": (
-                "Return the complete CURRENT intent only. Prior brief is context, "
-                "not authority to restore obligations the user removed."
-            ),
-        }
-        raw = self._transport.structured_json(
-            _SYSTEM,
-            _canonical(user_payload),
-            schema=_intake_provider_schema(
-                catalog,
-                has_prior_brief=prior_brief is not None,
-            ),
-            schema_name=self._schema_name,
-        )
-        try:
-            envelope = ModelResearchIntakeEnvelope.model_validate_json(raw)
-            provider_result = envelope.result
-            if isinstance(provider_result, ModelReadyResearchIntake):
-                draft = ModelResearchBriefDraft(
-                    terminal=ResearchIntakeTerminal.READY,
-                    objective=provider_result.objective,
-                    goals=provider_result.goals,
-                    deliverables=provider_result.deliverables,
-                    investigation_directives=(
-                        provider_result.investigation_directives
-                    ),
-                    time_surfaces=tuple(
-                        item.source_text
-                        for item in provider_result.time_periods
-                    ),
-                    time_periods=provider_result.time_periods,
-                    required_domains=provider_result.required_domains,
-                    scope_mutation_kind=(
-                        provider_result.scope_mutation_kind
-                    ),
-                )
-            elif isinstance(provider_result, ModelClarifyResearchIntake):
-                draft = ModelResearchBriefDraft(
-                    terminal=ResearchIntakeTerminal.CLARIFY,
-                    clarification_question=(
-                        provider_result.clarification_question
-                    ),
-                )
-            else:
-                draft = ModelResearchBriefDraft(
+        def invoke_provider(
+            *,
+            instruction: str,
+            reconsideration: dict[str, Any] | None = None,
+        ) -> ModelResearchBriefDraft:
+            user_payload: dict[str, Any] = {
+                "current_user_message": current,
+                "grounded_catalog": self._catalog_payload(catalog),
+                "prior_brief": self._provider_prior_brief_payload(prior_brief),
+                "calendar_reference_date": self._calendar_reference_date,
+                "instruction": instruction,
+            }
+            if reconsideration is not None:
+                user_payload["reconsideration"] = reconsideration
+            raw = self._transport.structured_json(
+                _SYSTEM,
+                _canonical(user_payload),
+                schema=_intake_provider_schema(
+                    catalog,
+                    has_prior_brief=prior_brief is not None,
+                ),
+                schema_name=self._schema_name,
+            )
+            try:
+                envelope = ModelResearchIntakeEnvelope.model_validate_json(raw)
+                provider_result = envelope.result
+                if isinstance(provider_result, ModelReadyResearchIntake):
+                    return ModelResearchBriefDraft(
+                        terminal=ResearchIntakeTerminal.READY,
+                        objective=provider_result.objective,
+                        goals=provider_result.goals,
+                        deliverables=provider_result.deliverables,
+                        investigation_directives=(
+                            provider_result.investigation_directives
+                        ),
+                        time_surfaces=tuple(
+                            item.source_text
+                            for item in provider_result.time_periods
+                        ),
+                        time_periods=provider_result.time_periods,
+                        required_domains=provider_result.required_domains,
+                        scope_mutation_kind=(
+                            provider_result.scope_mutation_kind
+                        ),
+                    )
+                if isinstance(provider_result, ModelClarifyResearchIntake):
+                    return ModelResearchBriefDraft(
+                        terminal=ResearchIntakeTerminal.CLARIFY,
+                        clarification_question=(
+                            provider_result.clarification_question
+                        ),
+                    )
+                return ModelResearchBriefDraft(
                     terminal=ResearchIntakeTerminal.UNSUPPORTED,
                     unsupported_reason=provider_result.unsupported_reason,
                 )
-        except Exception as exc:
-            raise ResearchIntakeError(
-                "INTAKE_MODEL_OUTPUT_INVALID",
-                "structured provider output failed the typed intake contract",
-            ) from exc
+            except Exception as exc:
+                raise ResearchIntakeError(
+                    "INTAKE_MODEL_OUTPUT_INVALID",
+                    "structured provider output failed the typed intake contract",
+                ) from exc
+
+        draft = invoke_provider(
+            instruction=(
+                "Return the complete CURRENT intent only. Prior brief is context, "
+                "not authority to restore obligations the user removed."
+            ),
+        )
+
+        # One bounded reconsideration is allowed inside the same intake owner.
+        # It is not a retry loop: the provider ceiling remains two calls. The
+        # second pass receives no new authority, only deterministic calendar /
+        # single-domain context already present in this request.
+        if (
+            prior_brief is None
+            and self.call_count < 2
+            and draft.terminal == ResearchIntakeTerminal.CLARIFY
+            and len(catalog.temporal_dimension_ids) == 1
+        ):
+            draft = invoke_provider(
+                instruction=(
+                    "Reconsider once. Preserve CLARIFY unless the sole blocker is "
+                    "calendar anchoring that calendar_reference_date resolves under "
+                    "the system rule. Do not guess metrics, entities, or unavailable data."
+                ),
+                reconsideration={
+                    "kind": "TEMPORAL_CLARIFICATION_ONLY",
+                    "prior_clarification_question": draft.clarification_question,
+                },
+            )
+        elif (
+            prior_brief is None
+            and self.call_count < 2
+            and draft.terminal == ResearchIntakeTerminal.UNSUPPORTED
+            and len(catalog.supported_domains) == 1
+        ):
+            draft = invoke_provider(
+                instruction=(
+                    "Reconsider once against the single grounded domain. A broad "
+                    "management report/overview may become READY only if it can be "
+                    "bounded entirely to materially relevant governed catalog refs. "
+                    "Requests that depend on absent concepts/data MUST remain UNSUPPORTED."
+                ),
+                reconsideration={
+                    "kind": "SINGLE_DOMAIN_GROUNDED_OVERVIEW",
+                    "supported_domain": catalog.supported_domains[0],
+                    "prior_unsupported_reason": draft.unsupported_reason,
+                },
+            )
 
         calls = self.call_count
         if draft.terminal == ResearchIntakeTerminal.CLARIFY:
