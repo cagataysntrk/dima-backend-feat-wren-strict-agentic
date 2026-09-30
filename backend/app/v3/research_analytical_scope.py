@@ -408,14 +408,46 @@ def analytical_scope_contract(
     period_dimension_ids = {
         item.time_dimension_candidate_id for item in brief.scope.periods
     }
+    filters = _unique_refs(
+        tuple(brief.scope.semantic_refs),
+        {SemanticTargetKind.ENTITY_VALUE},
+    )
+    # An exact governed entity equality already fixes its underlying field.
+    # Requiring that same field again as a breakout/grain would turn accepted
+    # semantic scope into a physical query-shape identity constraint.
+    verification_bindings = {
+        item.candidate_id: item
+        for item in brief.scope.native_verification_bindings
+    }
+    fixed_filter_fields = {
+        (
+            binding.schema_name,
+            binding.table_name,
+            binding.column_name,
+        )
+        for item in filters
+        if (binding := verification_bindings.get(item.candidate_id)) is not None
+        and binding.column_name is not None
+    }
+
+    def fixed_by_entity_filter(item: ResearchSemanticRef) -> bool:
+        binding = verification_bindings.get(item.candidate_id)
+        return bool(
+            binding is not None
+            and binding.column_name is not None
+            and (
+                binding.schema_name,
+                binding.table_name,
+                binding.column_name,
+            )
+            in fixed_filter_fields
+        )
+
     dimensions = tuple(
         item
         for item in material_dimension_refs
         if item.candidate_id not in period_dimension_ids
-    )
-    filters = _unique_refs(
-        tuple(brief.scope.semantic_refs),
-        {SemanticTargetKind.ENTITY_VALUE},
+        and not fixed_by_entity_filter(item)
     )
     filter_invariants: list[AnalyticalFilterInvariant] = []
     for item in filters:
