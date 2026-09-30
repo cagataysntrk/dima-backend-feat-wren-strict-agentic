@@ -49,6 +49,8 @@ class ModelCandidateJudgment(Frozen):
     epistemic_class: HypothesisEpistemicClass
     contribution_class: ContributionClass
     evidence_strength: EvidenceStrength
+    supporting_grounding_link_ids: tuple[str, ...] = ()
+    challenging_grounding_link_ids: tuple[str, ...] = ()
     causal_qualification: CausalQualification = CausalQualification.NOT_CLAIMED
     relationship_dependent: bool = False
     relationship_policy_use_id: str | None = Field(
@@ -61,6 +63,23 @@ class ModelCandidateJudgment(Frozen):
     def coherent(self):
         if len(self.grounding_link_ids) != len(set(self.grounding_link_ids)):
             raise ValueError("grounding_link_ids must be unique")
+        if len(self.supporting_grounding_link_ids) != len(
+            set(self.supporting_grounding_link_ids)
+        ):
+            raise ValueError("supporting grounding_link_ids must be unique")
+        if len(self.challenging_grounding_link_ids) != len(
+            set(self.challenging_grounding_link_ids)
+        ):
+            raise ValueError("challenging grounding_link_ids must be unique")
+        selected = set(self.grounding_link_ids)
+        if not set(self.supporting_grounding_link_ids).issubset(selected):
+            raise ValueError(
+                "supporting grounding_link_ids must be selected groundings"
+            )
+        if not set(self.challenging_grounding_link_ids).issubset(selected):
+            raise ValueError(
+                "challenging grounding_link_ids must be selected groundings"
+            )
         if (
             self.relationship_dependent
             and self.relationship_policy_use_id is None
@@ -126,6 +145,10 @@ Architecture:
 - If deterministic_feedback_code is P19_DISCRIMINATING_TEST_COMPLETED, reassess the
   updated governed grounding rather than repeating the prior judgment by inertia.
 - Use only hypothesis ids and grounding ids present in the supplied packet.
+- For each candidate, classify selected grounding ids into supporting_grounding_link_ids and
+  challenging_grounding_link_ids when the governed packet supports those qualitative roles.
+  This classification is assessment-local: it never rewrites the durable grounding relation and
+  never creates causal-identification authority. A mixed Evidence artifact may appear in both.
 - Return one qualitative assessment draft. Deterministic Dima validates it.
 """
 
@@ -227,14 +250,28 @@ def provider_schema(
             "type": "string",
             "enum": [hypothesis_id],
         }
+        grounding_ids = sorted(
+            link.grounding_link_id for link in item.groundings
+        )
         properties["grounding_link_ids"] = {
             "type": "array",
             "items": {
                 "type": "string",
-                "enum": sorted(
-                    link.grounding_link_id
-                    for link in item.groundings
-                ),
+                "enum": grounding_ids,
+            },
+        }
+        properties["supporting_grounding_link_ids"] = {
+            "type": "array",
+            "items": {
+                "type": "string",
+                "enum": grounding_ids,
+            },
+        }
+        properties["challenging_grounding_link_ids"] = {
+            "type": "array",
+            "items": {
+                "type": "string",
+                "enum": grounding_ids,
             },
         }
         properties["relationship_policy_use_id"] = (
@@ -404,6 +441,14 @@ class StructuredP19AssessmentManager:
                     raise ValueError(
                         "model assessment used unknown/foreign grounding"
                     )
+            for interpreted in (
+                candidate.supporting_grounding_link_ids,
+                candidate.challenging_grounding_link_ids,
+            ):
+                if not set(interpreted).issubset(selected):
+                    raise ValueError(
+                        "model assessment interpretation used unselected grounding"
+                    )
             if not challenge_ids[candidate.hypothesis_id].issubset(selected):
                 raise ValueError(
                     "model assessment cannot hide governed challenge grounding"
@@ -420,6 +465,12 @@ class StructuredP19AssessmentManager:
                     epistemic_class=item.epistemic_class,
                     contribution_class=item.contribution_class,
                     evidence_strength=item.evidence_strength,
+                    supporting_grounding_link_ids=(
+                        item.supporting_grounding_link_ids
+                    ),
+                    challenging_grounding_link_ids=(
+                        item.challenging_grounding_link_ids
+                    ),
                     causal_qualification=item.causal_qualification,
                     relationship_dependent=item.relationship_dependent,
                     relationship_policy_use_id=(
