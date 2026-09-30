@@ -134,6 +134,7 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
         result = MaterialActivityResult.model_validate(\n            material_activity(current.model_dump(mode="json")).result()\n        )
         return {
             "material_requirement_ids": result.material_requirement_ids,
+            "pending_evidence_ids": result.produced_evidence_ids,
             "last_completed_node": "ACQUIRE_MATERIAL",
             "activity_fingerprints": _append_fingerprint(
                 current, result.activity_fingerprint
@@ -149,6 +150,7 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
             "hypothesis_revision": result.hypothesis_revision,
             "hypothesis_ids": result.hypothesis_ids,
             "discovery_required": result.discovery_required,
+            "pending_evidence_ids": (),
             "last_completed_node": "ADMIT_EVIDENCE",
             "activity_fingerprints": _append_fingerprint(
                 current, result.activity_fingerprint
@@ -201,7 +203,6 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
             "hypothesis_ids": result.hypothesis_ids,
             "material_requirement_ids": result.material_requirement_ids,
             "discovery_required": False,
-            "pending_next_test_ref": None,
             "adaptive_reentries": current.adaptive_reentries + 1,
             "last_completed_node": "P17_NEXT_TEST",
             "activity_fingerprints": _append_fingerprint(
