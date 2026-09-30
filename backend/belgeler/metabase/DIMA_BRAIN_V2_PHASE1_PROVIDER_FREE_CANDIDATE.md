@@ -37,3 +37,13 @@ terminal/action-profile legality remains unchanged otherwise.
 Candidate parent for this closure retry:
 
 `1c819861f14d8a6f90427c14df88c6264879e498`
+
+## Final closure candidate
+
+The prior closure reached 141/142 P17 regression tests and exposed only a
+missing `ResearchStateError` import in the new fail-closed direct-P19 helper.
+That import is now explicit.
+
+Frozen Product candidate parent:
+
+`45073f3661d542282cf1794cf616135bedfaba59`
