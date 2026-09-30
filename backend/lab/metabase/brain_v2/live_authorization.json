@@ -1,6 +1,6 @@
 {
   "schema_version": "dima_brain_v2_live_authorization_v1",
-  "enabled": true,
+  "enabled": false,
   "probe_id": "R_LIVE_1_ONE_PASS",
   "candidate_product_sha": "0f21190cc61dc1cb26c0551ecae6a18b20d08d57",
   "provider_free_run_id": 36778856559,
@@ -10,5 +10,5 @@
   "model_policy": "LUNA_FIRST",
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
-  "authorization_receipt": "phase1-one-pass-evidence-timezone-live-v1"
+  "authorization_receipt": "one-pass-running-36779033101"
 }
