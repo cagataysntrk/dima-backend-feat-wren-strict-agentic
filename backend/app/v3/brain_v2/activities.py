@@ -47,6 +47,13 @@ class CanonicalizeActivityResult(ActivityResult):
 class MaterialActivityResult(ActivityResult):
     material_requirement_ids: tuple[str, ...] = ()
     produced_evidence_ids: tuple[str, ...] = ()
+    produced_receipt_refs: tuple[str, ...] = ()
+
+    @model_validator(mode="after")
+    def evidence_has_receipt_provenance(self):
+        if len(self.produced_evidence_ids) != len(self.produced_receipt_refs):
+            raise ValueError("produced Evidence/receipt refs must be paired")
+        return self
 
 
 class EvidenceActivityResult(ActivityResult):
