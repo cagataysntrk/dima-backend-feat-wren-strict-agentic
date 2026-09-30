@@ -954,6 +954,51 @@ def test_r5_unranked_material_allows_non_limiting_presentation_ordering():
     assert observed.ranking is None
 
 
+def test_r5_bounded_period_allows_same_governed_time_field_as_optional_breakout():
+    _, session, _, _ = session_and_link(db_engine())
+    observation = rich_material_observation(
+        dimensions=[
+            {
+                "stage_number": 0,
+                "role": "breakout",
+                "field_id": 20,
+                "table_id": 10,
+            },
+            {
+                "stage_number": 0,
+                "role": "breakout",
+                "field_id": 30,
+                "table_id": 10,
+                "temporal_grain": "month",
+            },
+            {
+                "stage_number": 0,
+                "role": "filter",
+                "field_id": 20,
+                "table_id": 10,
+            },
+            {
+                "stage_number": 0,
+                "role": "temporal",
+                "field_id": 30,
+                "table_id": 10,
+            },
+        ]
+    )
+
+    observed = scope_module.assert_material_native_scope(
+        session=session,
+        obligation_id="g1",
+        contract=rich_material_contract(),
+        observation=observation,
+        bindings=rich_material_bindings(),
+        expected_engine=expected_identity(),
+        expected_metabase_subject=7,
+    )
+
+    assert observed.dimension_refs == ("dimension.department",)
+
+
 def test_r5_unranked_material_still_blocks_unaccepted_row_limiting_order():
     _, session, _, _ = session_and_link(db_engine())
     contract = rich_material_contract().model_copy(update={"ranking": None})
