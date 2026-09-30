@@ -152,7 +152,7 @@ def test_relationship_readiness_may_legally_arrive_on_fifth_p17_turn():
     )
     composer = composer_for(investigation)
 
-    snapshot, executed, error = composer._run_p17(
+    snapshot, next_owner, executed, error = composer._run_p17(
         session_id="rs_" + "1" * 24,
         principal=object(),
         native_session_token=None,
@@ -163,6 +163,7 @@ def test_relationship_readiness_may_legally_arrive_on_fifth_p17_turn():
     )
 
     assert error is None
+    assert next_owner.value == "P18"
     assert executed == 5
     assert investigation.calls == 5
     assert len(snapshot.claims) == 1
@@ -188,6 +189,7 @@ def test_root_cause_second_candidate_may_legally_arrive_on_fifth_p17_turn():
     )
 
     assert error is None
+    assert next_owner.value == "P19"
     assert executed == 5
     assert investigation.calls == 5
     scoped = tuple(
