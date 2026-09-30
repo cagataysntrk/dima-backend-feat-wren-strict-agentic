@@ -34,10 +34,12 @@ from app.v3.research_contracts import (
     ResearchGoalKind,
     ResearchGoalStatus,
     ResearchQuestion,
+    ResearchDeliverableRequirement,
     ResearchScope,
     ResearchSemanticRef,
     ScopeVersion,
     SemanticTargetKind,
+    PresentationKind,
 )
 from app.v3.research_intake import (
     ResearchIntakeCatalog,
@@ -167,7 +169,14 @@ def _brief(*, ordinal: int = 1, narrowed: bool = False) -> ResearchBrief:
             scope_version=version,
         ),
         questions=(question,),
-        must_requirement_ids=(question.goal_id,),
+        deliverables=(
+            ResearchDeliverableRequirement(
+                requirement_id="r_report",
+                kind=PresentationKind.REPORT,
+                source_text="Yönetim raporu olarak sun.",
+            ),
+        ),
+        must_requirement_ids=(question.goal_id, "r_report"),
         context_version=CONTEXT,
         status=ResearchBriefStatus.READY_FOR_RESEARCH,
     )
