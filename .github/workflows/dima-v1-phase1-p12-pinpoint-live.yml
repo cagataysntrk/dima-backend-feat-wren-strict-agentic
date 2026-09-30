@@ -1,6 +1,9 @@
 name: dima-v1-phase1-pinpoint-live
 
 on:
+  push:
+    branches:
+      - phase1-rca-trigger-20260929
   workflow_dispatch:
     inputs:
       probe_id:
