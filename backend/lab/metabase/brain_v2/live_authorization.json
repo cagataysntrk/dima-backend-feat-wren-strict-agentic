@@ -1,14 +1,14 @@
 {
   "schema_version": "dima_brain_v2_live_authorization_v1",
-  "enabled": true,
+  "enabled": false,
   "probe_id": "R_LIVE_2_ADAPTIVE",
-  "candidate_product_sha": "ade3d83a521f16ff7e37372827eb75982596ac21",
-  "provider_free_run_id": 36762030782,
-  "provider_free_status": "GREEN",
+  "candidate_product_sha": "2f62d4c214279069da062c370e406f249940be16",
+  "provider_free_run_id": 0,
+  "provider_free_status": "PENDING",
   "engine_sha": "0f16f2b5a1ec774ac7afee6214c726e82f9ceb3c",
   "engine_release": "0.63.18-dima.8",
   "model_policy": "LUNA_FIRST",
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
-  "authorization_receipt": "phase1-adaptive-after-one-pass-full"
+  "authorization_receipt": "phase1-exact-period-idempotency-preflight"
 }
