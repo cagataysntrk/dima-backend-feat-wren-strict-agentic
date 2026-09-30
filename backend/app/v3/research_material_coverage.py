@@ -7,7 +7,7 @@ represents the typed material surface it claims to satisfy.
 """
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from typing import Any, Literal, Mapping
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -88,6 +88,20 @@ def _column_field_id(column: object) -> int | None:
     return None
 
 
+def _canonical_datetime(value: str) -> datetime:
+    """Normalize a typed/result ISO datetime into one comparable UTC domain.
+
+    AnalyticalPeriodInvariant does not carry a separate timezone authority.
+    Offset-less datetimes therefore use the platform's canonical UTC basis;
+    offset-aware values preserve their instant and are converted to UTC.
+    """
+
+    stamp = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    if stamp.tzinfo is None or stamp.utcoffset() is None:
+        return stamp.replace(tzinfo=timezone.utc)
+    return stamp.astimezone(timezone.utc)
+
+
 def _period_value(
     raw: object,
     period: AnalyticalPeriodInvariant,
@@ -114,7 +128,7 @@ def _period_value(
                 "comparison result temporal value is not ISO-8601",
             ) from exc
     try:
-        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+        return _canonical_datetime(value)
     except ValueError as exc:
         raise ResearchMaterialCoverageError(
             "R1_RESULT_TEMPORAL_VALUE_INVALID",
@@ -132,10 +146,16 @@ def _period_bounds(
         )
     if "T" not in period.start and "T" not in period.end:
         return date.fromisoformat(period.start), date.fromisoformat(period.end)
-    return (
-        datetime.fromisoformat(period.start.replace("Z", "+00:00")),
-        datetime.fromisoformat(period.end.replace("Z", "+00:00")),
-    )
+    try:
+        return (
+            _canonical_datetime(period.start),
+            _canonical_datetime(period.end),
+        )
+    except ValueError as exc:
+        raise ResearchMaterialCoverageError(
+            "R1_RESULT_COMPARISON_PERIOD_INVALID",
+            "comparison period bounds are not ISO-8601",
+        ) from exc
 
 
 def _contains(
