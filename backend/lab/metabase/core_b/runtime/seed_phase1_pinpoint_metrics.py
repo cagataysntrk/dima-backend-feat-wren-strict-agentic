@@ -257,19 +257,15 @@ def _fixture_metadata(
 
 
 
-def _internal_metabot_collection_id(
-    *,
-    base_url: str,
-    admin_session: str,
-) -> int:
-    """Return the exact collection searched by the default internal NLQ Metabot."""
+def internal_metabot_collection_scope(body: Any) -> int | None:
+    """Return the exact configured NLQ collection scope.
 
-    body = _request(
-        base_url,
-        "GET",
-        "/api/metabot/metabot",
-        session=admin_session,
-    )
+    Metabase represents the internal AI-exploration root/unscoped collection as
+    null. That is a stable scope value, not missing authority. A positive
+    integer means the internal Metabot is explicitly restricted to that
+    collection. Any other shape fails closed.
+    """
+
     items = body.get("items", []) if isinstance(body, dict) else []
     matches = [
         item
@@ -282,11 +278,29 @@ def _internal_metabot_collection_id(
             "exactly one internal Metabot discovery authority is required"
         )
     collection_id = matches[0].get("collection_id")
+    if collection_id is None:
+        return None
     if not isinstance(collection_id, int) or collection_id <= 0:
         raise RuntimeError(
-            "internal Metabot has no stable discovery collection"
+            "internal Metabot discovery collection has invalid identity"
         )
     return collection_id
+
+
+def _internal_metabot_collection_id(
+    *,
+    base_url: str,
+    admin_session: str,
+) -> int | None:
+    """Read the exact collection scope searched by internal NLQ Metabot."""
+
+    body = _request(
+        base_url,
+        "GET",
+        "/api/metabot/metabot",
+        session=admin_session,
+    )
+    return internal_metabot_collection_scope(body)
 
 
 def metric_search_result_contains(
@@ -307,7 +321,7 @@ def _verify_restricted_search_visibility(
     *,
     base_url: str,
     restricted_session: str,
-    collection_id: int,
+    collection_id: int | None,
     metrics: list[dict[str, Any]],
     attempts: int = 60,
     delay_seconds: float = 0.25,
@@ -323,14 +337,14 @@ def _verify_restricted_search_visibility(
     last: dict[int, Any] = {}
     for _ in range(attempts):
         for metric_id, item in tuple(pending.items()):
-            query = urllib.parse.urlencode(
-                [
-                    ("q", str(item["canonical_name"])),
-                    ("models", "metric"),
-                    ("collection", str(collection_id)),
-                    ("limit", "20"),
-                ]
-            )
+            query_items = [
+                ("q", str(item["canonical_name"])),
+                ("models", "metric"),
+                ("limit", "20"),
+            ]
+            if collection_id is not None:
+                query_items.append(("collection", str(collection_id)))
+            query = urllib.parse.urlencode(query_items)
             body = _request(
                 base_url,
                 "GET",
@@ -359,7 +373,7 @@ def _create_metrics(
     database_id: int,
     table_id: int,
     fields: dict[str, int],
-    collection_id: int,
+    collection_id: int | None,
 ) -> list[dict[str, Any]]:
     created: list[dict[str, Any]] = []
     for candidate_id, name, column_name, aggregation in _METRIC_SPECS:
