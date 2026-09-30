@@ -81,9 +81,21 @@ class P19ActivityResult(ActivityResult):
 
 class P17ActivityResult(ActivityResult):
     hypothesis_revision: int = Field(ge=0)
-    hypothesis_ids: tuple[str, ...] = Field(min_length=1)
+    hypothesis_ids: tuple[str, ...] = ()
     material_requirement_ids: tuple[str, ...] = ()
     discovery_required: bool = False
+    produced_evidence_ids: tuple[str, ...] = ()
+    produced_receipt_refs: tuple[str, ...] = ()
+
+    @model_validator(mode="after")
+    def coherent_transition(self):
+        if len(self.produced_evidence_ids) != len(self.produced_receipt_refs):
+            raise ValueError("P17 produced Evidence/receipt refs must be paired")
+        if not self.discovery_required and not self.hypothesis_ids:
+            raise ValueError(
+                "completed P17 transition requires governed hypothesis refs"
+            )
+        return self
 
 
 class ReportActivityResult(ActivityResult):
