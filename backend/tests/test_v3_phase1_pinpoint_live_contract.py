@@ -21,6 +21,7 @@ from lab.metabase.core_b.phase1_pinpoint_live import (
 )
 from lab.metabase.core_b.runtime.seed_phase1_pinpoint_metrics import (
     entity_value_bindings_from_fixture,
+    internal_metabot_collection_scope,
     metric_card_payload,
     metric_search_result_contains,
     metric_specs,
@@ -244,6 +245,44 @@ def test_fixture_entity_authority_is_derived_from_exact_fixture_values(tmp_path)
     }
     assert len({item["candidate_id"] for item in first}) == len(first)
 
+
+
+
+def test_internal_metabot_null_collection_is_legal_root_search_scope():
+    body = {
+        "items": [
+            {
+                "entity_id": "metabotmetabotmetabot",
+                "collection_id": None,
+            }
+        ]
+    }
+    assert internal_metabot_collection_scope(body) is None
+
+
+def test_internal_metabot_configured_collection_remains_exact_scope():
+    body = {
+        "items": [
+            {
+                "entity_id": "metabotmetabotmetabot",
+                "collection_id": 41,
+            }
+        ]
+    }
+    assert internal_metabot_collection_scope(body) == 41
+
+
+def test_internal_metabot_invalid_collection_shape_fails_closed():
+    body = {
+        "items": [
+            {
+                "entity_id": "metabotmetabotmetabot",
+                "collection_id": "41",
+            }
+        ]
+    }
+    with pytest.raises(RuntimeError, match="discovery collection"):
+        internal_metabot_collection_scope(body)
 
 
 def test_metric_fixture_card_is_scoped_to_metabot_discovery_collection():
