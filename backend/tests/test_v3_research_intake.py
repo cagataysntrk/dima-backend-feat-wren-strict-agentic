@@ -914,6 +914,7 @@ def test_request_scoped_intake_schema_closes_authority_ids_before_domain_executi
         "comparisons",
         "kind",
         "allowed_relationship_id",
+        "relationship_intent",
     }
     assert relationship["properties"]["allowed_relationship_id"]["enum"] == [
         "rel.downtime_fault_by_department",
@@ -1545,4 +1546,29 @@ def test_relationship_intent_is_forbidden_on_non_relationship_goal():
             question=payload["goals"][0]["source_text"],
             catalog=catalog(),
         )
+
+def test_relationship_fixture_without_new_intent_defaults_fail_conservative_business_policy():
+    payload = ready_payload(
+        kind="relationship",
+        subject=(),
+        related=(),
+    )
+    payload["goals"][0].update(
+        {
+            "allowed_relationship_id": "rel.downtime_fault_by_department",
+            "source_text": "Compare downtime and fault count.",
+            "source_fragment_text": "Compare downtime and fault count.",
+        }
+    )
+    payload["goals"][0].pop("relationship_intent", None)
+    transport = FakeTransport(payload)
+
+    result = ResearchIntakeCompiler(transport=transport).compile(
+        question="Compare downtime and fault count.",
+        catalog=catalog(),
+    )
+
+    assert result.brief is not None
+    goal = result.brief.questions[0]
+    assert goal.relationship_intent.value == "business_policy"
 

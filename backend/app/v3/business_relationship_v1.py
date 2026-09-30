@@ -159,7 +159,7 @@ def project_relationship_result(
         association_state=claim_state,
         co_movement_state=co_movement,
         business_relationship_state=business_state,
-        policy_required=decision.required,
+        policy_required=bool(getattr(decision, "required", True)),
         supporting_evidence_refs=tuple(dict.fromkeys(by_relation["SUPPORTS"])),
         challenging_evidence_refs=tuple(dict.fromkeys(by_relation["CHALLENGES"])),
         contextual_evidence_refs=tuple(dict.fromkeys(by_relation["CONTEXTUALIZES"])),

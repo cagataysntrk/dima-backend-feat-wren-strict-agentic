@@ -821,11 +821,6 @@ class ResearchIntakeCompiler:
                     goal.goal_key,
                 )
             return None
-        if goal.relationship_intent is None:
-            raise ResearchIntakeError(
-                "INTAKE_RELATIONSHIP_INTENT_REQUIRED",
-                goal.goal_key,
-            )
         if goal.subject_semantic_ids or goal.related_semantic_ids:
             raise ResearchIntakeError(
                 "INTAKE_RELATIONSHIP_RECONSTRUCTION_FORBIDDEN",
@@ -1286,7 +1281,10 @@ class ResearchIntakeCompiler:
                     ranking=ranking,
                     comparisons=comparisons,
                     causal_competition=causal_competition,
-                    relationship_intent=goal.relationship_intent,
+                    relationship_intent=(
+                        goal.relationship_intent
+                        or RelationshipIntent.BUSINESS_POLICY
+                    ),
                     status=ResearchGoalStatus.RESOLVED,
                 )
             )
