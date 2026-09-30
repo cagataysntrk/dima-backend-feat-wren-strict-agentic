@@ -861,17 +861,20 @@ class DimaBrainV2Activities(BrainActivities):
                 goal.goal_id,
             )
 
-        investigation_snapshot = self._investigation.snapshot(
-            session_id=session.session_id,
-            principal=self._principal,
+        # P19 may know whether a bounded analytical re-entry is potentially
+        # available without touching P17 at all. This preserves the ONE_PASS
+        # invariant: P17 is consulted only after P19 actually emits a typed
+        # NextTestRequest. Final callability remains fail-closed below.
+        parent_verified = any(
+            item.obligation_id == goal.goal_id
+            and str(getattr(item.state, "value", item.state)) == "VERIFIED"
+            for item in session.obligations
         )
         discrimination_capacity = (
             state.adaptive_reentries < state.max_adaptive_reentries
-            and discriminating_test_capacity_available(
-                snapshot=investigation_snapshot,
-                evidence_surface_available=bool(self._native_session_token),
-                target_obligation_id=goal.goal_id,
-            )
+            and bool(self._native_session_token)
+            and parent_verified
+            and bool(state.evidence_ids)
         )
         key = self._cognition_key(
             state=state,
@@ -886,7 +889,6 @@ class DimaBrainV2Activities(BrainActivities):
                     ],
                     "scope": state.scope_version_id,
                     "discriminating_test_capacity": discrimination_capacity,
-                    "investigation_fingerprint": investigation_snapshot.fingerprint,
                 }
             ),
         )
@@ -942,6 +944,11 @@ class DimaBrainV2Activities(BrainActivities):
             scope_lineage_id=session.lineage_id,
             scope_version_id=state.scope_version_id or "scope_v1",
         )
+        if request is not None:
+            investigation_snapshot = self._investigation.snapshot(
+                session_id=session.session_id,
+                principal=self._principal,
+            )
         if request is not None and not discriminating_test_is_callable(
             snapshot=investigation_snapshot,
             request=request,
