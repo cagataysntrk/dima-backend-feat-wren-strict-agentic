@@ -921,6 +921,7 @@ def test_request_scoped_intake_schema_closes_authority_ids_before_domain_executi
         "comparisons",
         "kind",
         "allowed_relationship_id",
+        "relationship_intent",
     }
     assert relationship["properties"]["allowed_relationship_id"]["enum"] == [
         "rel.downtime_fault_by_department",
