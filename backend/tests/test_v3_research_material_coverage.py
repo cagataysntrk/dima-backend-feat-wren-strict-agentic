@@ -140,6 +140,107 @@ def test_comparison_result_covering_both_accepted_periods_is_full() -> None:
     )
 
 
+def _datetime_contract(
+    *,
+    reference_start: str,
+    reference_end: str,
+    base_start: str,
+    base_end: str,
+) -> AnalyticalRequestContract:
+    return _contract().model_copy(
+        update={
+            "comparison": AnalyticalComparisonInvariant(
+                mode="explicit_periods",
+                reference_period=AnalyticalPeriodInvariant(
+                    kind="accepted_period",
+                    time_dimension="dimension.time",
+                    start=reference_start,
+                    end=reference_end,
+                ),
+                base_period=AnalyticalPeriodInvariant(
+                    kind="accepted_period",
+                    time_dimension="dimension.time",
+                    start=base_start,
+                    end=base_end,
+                ),
+            )
+        }
+    )
+
+
+def _datetime_payload(reference_value: str, base_value: str) -> dict:
+    return {
+        "data": {
+            "cols": [
+                _col(44, "Accepted Time"),
+                {"display_name": "Effect"},
+            ],
+            "rows": [
+                [reference_value, 100],
+                [base_value, 120],
+            ],
+        }
+    }
+
+
+def test_datetime_comparison_normalizes_naive_bounds_against_utc_result() -> None:
+    coverage = assert_material_result_coverage(
+        contract=_datetime_contract(
+            reference_start="2026-03-01T00:00:00",
+            reference_end="2026-04-01T00:00:00",
+            base_start="2026-04-01T00:00:00",
+            base_end="2026-05-01T00:00:00",
+        ),
+        result_payload=_datetime_payload(
+            "2026-03-01T00:00:00Z",
+            "2026-04-01T00:00:00+00:00",
+        ),
+        bindings=_bindings(),
+    )
+
+    assert coverage.status == "FULL"
+    assert coverage.covered_comparison_roles == (
+        "reference_period",
+        "base_period",
+    )
+
+
+def test_datetime_comparison_normalizes_naive_result_against_utc_bounds() -> None:
+    coverage = assert_material_result_coverage(
+        contract=_datetime_contract(
+            reference_start="2026-03-01T00:00:00Z",
+            reference_end="2026-04-01T00:00:00Z",
+            base_start="2026-04-01T00:00:00Z",
+            base_end="2026-05-01T00:00:00Z",
+        ),
+        result_payload=_datetime_payload(
+            "2026-03-01T00:00:00",
+            "2026-04-01T00:00:00",
+        ),
+        bindings=_bindings(),
+    )
+
+    assert coverage.status == "FULL"
+
+
+def test_datetime_comparison_compares_equivalent_instants_across_offsets() -> None:
+    coverage = assert_material_result_coverage(
+        contract=_datetime_contract(
+            reference_start="2026-03-01T03:00:00+03:00",
+            reference_end="2026-04-01T03:00:00+03:00",
+            base_start="2026-04-01T03:00:00+03:00",
+            base_end="2026-05-01T03:00:00+03:00",
+        ),
+        result_payload=_datetime_payload(
+            "2026-03-01T00:00:00Z",
+            "2026-04-01T00:00:00Z",
+        ),
+        bindings=_bindings(),
+    )
+
+    assert coverage.status == "FULL"
+
+
 def test_non_comparison_material_does_not_invent_temporal_coverage_requirement() -> None:
     contract = _contract().model_copy(update={"comparison": None})
     payload = {
