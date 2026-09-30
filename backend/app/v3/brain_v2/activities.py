@@ -46,6 +46,7 @@ class CanonicalizeActivityResult(ActivityResult):
 
 class MaterialActivityResult(ActivityResult):
     material_requirement_ids: tuple[str, ...] = ()
+    produced_evidence_ids: tuple[str, ...] = ()
 
 
 class EvidenceActivityResult(ActivityResult):
