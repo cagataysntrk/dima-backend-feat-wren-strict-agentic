@@ -105,6 +105,13 @@ class ResearchGoalKind(StrEnum):
     OTHER = "other"
 
 
+class RelationshipIntentKind(StrEnum):
+    """Whether a relationship request needs governed business-policy authority."""
+
+    OBSERVATIONAL = "OBSERVATIONAL"
+    BUSINESS_POLICY = "BUSINESS_POLICY"
+
+
 class ResearchGoalStatus(StrEnum):
     RESOLVED = "RESOLVED"
     BLOCKED = "BLOCKED"
@@ -271,11 +278,19 @@ class ResearchQuestion(FrozenModel):
     ranking: RankingSurface | None = None
     comparisons: tuple[ComparisonSurface, ...] = ()
     causal_competition: CausalCompetitionSurface | None = None
+    relationship_intent: RelationshipIntentKind | None = None
     unresolved: tuple[ResearchUnresolvedRef, ...] = ()
     status: ResearchGoalStatus
 
     @model_validator(mode="after")
     def coherent_causal_competition(self):
+        if (
+            self.kind != ResearchGoalKind.RELATIONSHIP
+            and self.relationship_intent is not None
+        ):
+            raise ValueError(
+                "relationship intent is only valid for RELATIONSHIP goals"
+            )
         surface = self.causal_competition
         if surface is None:
             return self
