@@ -15,6 +15,11 @@ from app.v3.brain_v2.owner_adapter import DimaBrainV2Activities
 from app.v3.brain_v2.service import BrainV2Service, BrainV2ThreadError
 from app.v3.brain_v2.state import BrainGraphState, BrainWorkflowStatus
 from app.v3.evidence import DimaQueryReceipt, EvidenceArtifact, EvidenceState
+from app.v3.business_relationship_policy import BusinessRelationshipPolicyStore
+from app.v3.claim_lineage import ClaimLineageStore
+from app.v3.product.composition import HeadlessProductComposer
+from app.v3.research_manager import ResearchInvestigationManager, ResearchReasoningStore
+
 from app.v3.hypothesis_root_cause import (
     AggregateOutcome,
     CandidateAssessment,
@@ -586,3 +591,125 @@ def test_real_owner_foreign_thread_replay_is_blocked_before_owner_work() -> None
         )
 
     assert (bridge.metabot_posts, material.calls, p19_manager.call_count) == before
+
+
+
+def test_legacy_v2_shadow_replay_preserves_semantic_product_outcome() -> None:
+    question = "Provider-free ONE_PASS RCA."
+    thread_id = "shadow-one-pass"
+
+    # Brain V2 path.
+    _, v2_store, _, _, v2_p19, _, v2_activities = _stack()
+    v2 = BrainV2Service(activities=v2_activities).run(
+        BrainGraphState(
+            thread_id=thread_id,
+            tenant_binding=f"id:{TENANT_ID}",
+            principal_ref=USER_ID,
+            current_user_input=question,
+        )
+    )
+    v2_session = v2_store.load(
+        v2.research_session_id,
+        tenant=f"id:{TENANT_ID}",
+        principal=USER_ID,
+    )
+    v2_assessment = v2_p19.load_assessment(
+        assessment_id=v2.latest_p19_assessment_ref,
+        principal=_principal(),
+    )
+    v2_report = ReportDocumentStore(
+        research_store=v2_store,
+        db_engine=v2_store._engine,
+    ).load(
+        report_id=v2.report_ref,
+        principal=_principal(),
+    )
+
+    # Frozen legacy semantic reference over the same typed fixture.
+    legacy_db = _engine()
+    legacy_store = ResearchSessionStore(legacy_db)
+    legacy_bridge = BridgeFactory()
+    legacy_material = DurableMaterialExecutor(legacy_store)
+    legacy_research = ResearchAskOrchestrator(
+        store=legacy_store,
+        bridge_factory=legacy_bridge,
+        material_executor=legacy_material,
+    )
+    legacy_claims = ClaimLineageStore(
+        research_store=legacy_store,
+        db_engine=legacy_db,
+    )
+    legacy_reasoning = ResearchReasoningStore(legacy_db)
+    legacy_investigation = ResearchInvestigationManager(
+        research_store=legacy_store,
+        claim_store=legacy_claims,
+        reasoning_store=legacy_reasoning,
+        db_engine=legacy_db,
+    )
+    legacy_p19 = HypothesisRootCauseStore(
+        research_store=legacy_store,
+        db_engine=legacy_db,
+    )
+    legacy_reports = ReportDocumentStore(
+        research_store=legacy_store,
+        db_engine=legacy_db,
+    )
+    legacy = HeadlessProductComposer(
+        research=legacy_research,
+        investigation=legacy_investigation,
+        investigation_manager=BombP17(),
+        reasoning=legacy_reasoning,
+        relationships=BusinessRelationshipPolicyStore(
+            research_store=legacy_store,
+            db_engine=legacy_db,
+        ),
+        epistemics=legacy_p19,
+        epistemic_manager=DeterministicP19Manager(),
+        reports=legacy_reports,
+    ).compose(
+        brief=_brief(),
+        principal=_principal(),
+        request_ref=f"brain-v2:{thread_id}:{_brief().brief_id}",
+        source_message_hash=hashlib.sha256(question.encode("utf-8")).hexdigest(),
+        native_session_token="provider-free-native-session",
+    )
+
+    legacy_session = legacy_store.load(
+        legacy.research_session_id,
+        tenant=f"id:{TENANT_ID}",
+        principal=USER_ID,
+    )
+    assert len(legacy.p19_assessment_refs) == 1
+    legacy_assessment = legacy_p19.load_assessment(
+        assessment_id=legacy.p19_assessment_refs[0],
+        principal=_principal(),
+    )
+    assert legacy.p20_report_ref is not None
+    legacy_report = legacy_reports.load(
+        report_id=legacy.p20_report_ref,
+        principal=_principal(),
+    )
+
+    assert v2_session.accepted_brief.scope == legacy_session.accepted_brief.scope
+    assert tuple(x.evidence_id for x in v2_session.evidence_refs) == tuple(
+        x.evidence_id for x in legacy_session.evidence_refs
+    )
+    assert v2.hypothesis_ids == tuple(
+        item.hypothesis.hypothesis_id
+        for item in legacy_p19.snapshot(
+            research_session_id=legacy_session.session_id,
+            obligation_id="g_root",
+            principal=_principal(),
+        ).hypotheses
+    )
+    assert v2_assessment.aggregate_outcome == legacy_assessment.aggregate_outcome
+    assert v2_assessment.root_cause_hypothesis_ids == (
+        legacy_assessment.root_cause_hypothesis_ids
+    )
+    assert tuple(x.coverage_status for x in v2_report.coverage) == tuple(
+        x.coverage_status for x in legacy_report.coverage
+    )
+    assert tuple(x.obligation_id for x in v2_report.coverage) == tuple(
+        x.obligation_id for x in legacy_report.coverage
+    )
+    assert legacy_bridge.metabot_posts == 1
