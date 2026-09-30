@@ -1344,8 +1344,9 @@ def test_v1_same_statement_distinct_durable_candidate_refs_do_not_collapse():
     assert a.identity_fingerprint != b.identity_fingerprint
 
 
-def test_p19_snapshot_projects_only_exact_grounded_verified_evidence_values(db_engine):
-    state = make_state(db_engine, suffix="evidence-observation")
+def test_p19_snapshot_projects_only_exact_grounded_verified_evidence_values():
+    engine = db_engine()
+    state = make_state(engine, suffix="evidence-observation")
     a, b = make_hypotheses(state)
 
     ungrounded = state["p19"].snapshot(
