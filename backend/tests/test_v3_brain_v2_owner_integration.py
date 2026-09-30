@@ -689,6 +689,13 @@ def test_real_owner_one_pass_uses_one_native_and_zero_p17() -> None:
     assert replay.produced_evidence_ids == result.evidence_ids
     assert bridge.metabot_posts == before
 
+    # Exact same epistemic input reuses the durable P19 assessment rather than
+    # paying for cognition again.
+    before_p19 = p19_manager.call_count
+    replayed_assessment = activities.assess_p19(result)
+    assert replayed_assessment.assessment_ref == result.latest_p19_assessment_ref
+    assert p19_manager.call_count == before_p19
+
 
 def test_real_owner_scope_repair_creates_new_scope_without_stale_evidence_reuse() -> None:
     _, store, bridge, _, _, _, activities = _stack()
