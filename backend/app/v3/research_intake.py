@@ -20,6 +20,7 @@ from app.v3.product.contracts import (
     ProductInvestigationRequirementKind,
 )
 from app.v3.research_contracts import (
+    ComparisonRole,
     ComparisonSurface,
     PresentationKind,
     RankingSurface,
@@ -36,6 +37,7 @@ from app.v3.research_contracts import (
     ScopeMutation,
     ScopeMutationKind,
     SemanticTargetKind,
+    TemporalRole,
     TurnScopeContract,
     apply_scope_mutation,
 )
@@ -183,6 +185,25 @@ class DraftRanking(Frozen):
     source_text: str = Field(min_length=1)
 
 
+class ModelComparisonDraft(Frozen):
+    text: str = Field(min_length=1)
+    role: ComparisonRole
+    semantic_id: str | None = Field(default=None, min_length=1)
+
+    @model_validator(mode="after")
+    def coherent(self):
+        if self.role == ComparisonRole.TEMPORAL_PERIOD:
+            if self.semantic_id is not None:
+                raise ValueError(
+                    "temporal comparison surface cannot carry a business semantic id"
+                )
+        elif self.semantic_id is None:
+            raise ValueError(
+                "business/causal comparison surface requires a governed semantic id"
+            )
+        return self
+
+
 class ModelGoalDraft(Frozen):
     goal_key: str = Field(min_length=1, max_length=120)
     kind: ResearchGoalKind
@@ -192,6 +213,10 @@ class ModelGoalDraft(Frozen):
     subject_semantic_ids: tuple[str, ...] = ()
     related_semantic_ids: tuple[str, ...] = ()
     ranking: DraftRanking | None = None
+    comparisons: tuple[ModelComparisonDraft, ...] = ()
+    # Compatibility-only for historical deterministic fixtures. This field is
+    # deliberately omitted from the provider schema below; live intake cannot
+    # mint new untyped comparison authority.
     comparison_texts: tuple[str, ...] = ()
 
 
@@ -200,6 +225,7 @@ class ModelTimePeriodDraft(Frozen):
     time_dimension_semantic_id: str = Field(min_length=1)
     start: str = Field(min_length=1)
     end: str = Field(min_length=1)
+    role: TemporalRole = TemporalRole.MATERIAL_WINDOW
 
 
 class ModelDeliverableDraft(Frozen):
@@ -345,6 +371,14 @@ Authority rules:
   relevant catalog refs and explicit deliverables. Never use this rule to satisfy concepts absent
   from the catalog, invent KPI priorities, invent causes, or silently broaden a specific request.
 - Do not use implementation-specific SQL/MBQL temporal syntax; time_periods are semantic scope only.
+- Every time_period must carry its semantic role. Use MATERIAL_WINDOW for one ordinary bounded
+  analysis window; BASELINE_PERIOD + COMPARISON_PERIOD for a true temporal comparison;
+  EFFECT_PERIOD + EVIDENCE_WINDOW for causal investigation when those distinct roles are requested.
+  Never infer roles from tuple position.
+- Emit typed comparisons, never free-text comparison authority. Use TEMPORAL_PERIOD only for an
+  actual period-vs-period comparison. Use CAUSAL_CANDIDATE for user-provided candidate mechanisms,
+  and ENTITY_OR_MEASURE for governed entity/measure competition. Every non-temporal comparison item
+  must carry one semantic_id from the grounded catalog and from that goal's accepted refs.
 - Preserve every current MUST analytical/presentation obligation as a separate goal/deliverable.
 - For every READY goal emit source_fragment_text as one exact verbatim substring of the CURRENT
   user message that directly supports that goal. Never paraphrase the fragment.
@@ -489,12 +523,25 @@ def _intake_provider_schema(
                 "type": "string",
                 "enum": list(time_dimension_ids),
             }
+    comparison_definition = definitions.get("ModelComparisonDraft")
+    if isinstance(comparison_definition, dict):
+        comparison_properties = comparison_definition.get("properties")
+        if isinstance(comparison_properties, dict):
+            comparison_properties["semantic_id"] = {
+                "anyOf": [
+                    {
+                        "type": "string",
+                        "enum": list(semantic_ids),
+                    },
+                    {"type": "null"},
+                ],
+            }
     common_names = (
         "goal_key",
         "source_text",
         "source_fragment_text",
         "ranking",
-        "comparison_texts",
+        "comparisons",
     )
     source_fragment_schema = {
         "type": "string",
@@ -657,8 +704,9 @@ class ResearchIntakeCompiler:
                         if question.ranking is not None
                         else None
                     ),
-                    "comparison_texts": [
-                        item.text for item in question.comparisons
+                    "comparisons": [
+                        item.model_dump(mode="json")
+                        for item in question.comparisons
                     ],
                 }
                 for question in brief.questions
@@ -932,10 +980,38 @@ class ResearchIntakeCompiler:
                     limit=goal.ranking.limit,
                     measure_semantic_id=ranking_measure,
                 )
-            comparisons = tuple(
-                ComparisonSurface(text=text)
-                for text in goal.comparison_texts
-            )
+            if goal.comparisons and goal.comparison_texts:
+                raise ResearchIntakeError(
+                    "INTAKE_COMPARISON_AUTHORITY_AMBIGUOUS",
+                    goal.goal_key,
+                )
+            typed_comparisons: list[ComparisonSurface] = []
+            if goal.comparisons:
+                goal_ref_ids = set(ids)
+                for item in goal.comparisons:
+                    if (
+                        item.semantic_id is not None
+                        and item.semantic_id not in goal_ref_ids
+                    ):
+                        raise ResearchIntakeError(
+                            "INTAKE_COMPARISON_SEMANTIC_OUTSIDE_GOAL_SCOPE",
+                            item.semantic_id,
+                        )
+                    typed_comparisons.append(
+                        ComparisonSurface(
+                            text=item.text,
+                            role=item.role,
+                            semantic_id=item.semantic_id,
+                        )
+                    )
+            else:
+                # Historical deterministic fixtures may still deserialize this
+                # compatibility field. Live provider schema cannot emit it.
+                typed_comparisons.extend(
+                    ComparisonSurface(text=text)
+                    for text in goal.comparison_texts
+                )
+            comparisons = tuple(typed_comparisons)
             goal_id = self._ids(
                 "g_",
                 goal.model_dump(mode="json"),
@@ -1065,6 +1141,7 @@ class ResearchIntakeCompiler:
                         ),
                         start=item.start,
                         end=item.end,
+                        role=item.role,
                     )
                 )
             except ValueError as exc:

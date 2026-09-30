@@ -13,6 +13,7 @@ from app.v3.product.contracts import (
 from app.v3.product.errors import ProductError
 from app.v3.product.service import HeadlessProductService, ProductSources
 from app.v3.research_contracts import (
+    ComparisonRole,
     ResearchBrief,
     ResearchBriefStatus,
     ResearchGoalKind,
@@ -21,6 +22,7 @@ from app.v3.research_contracts import (
     ResearchScope,
     ResearchSemanticRef,
     SemanticTargetKind,
+    TemporalRole,
 )
 from app.v3.research_intake import (
     AllowedRelationship,
@@ -158,7 +160,7 @@ def ready_payload(
                 "subject_semantic_ids": list(subject),
                 "related_semantic_ids": list(related),
                 "ranking": None,
-                "comparison_texts": [],
+                "comparisons": [],
             }
         ],
         "deliverables": [],
@@ -842,7 +844,7 @@ def test_request_scoped_intake_schema_closes_authority_ids_before_domain_executi
         "source_text",
         "source_fragment_text",
         "ranking",
-        "comparison_texts",
+        "comparisons",
         "kind",
         "allowed_relationship_id",
     }
@@ -932,12 +934,14 @@ def _r6_period(
     end: str,
     *,
     dimension_id: str = "dimension.event_date",
+    role: str = "material_window",
 ) -> dict:
     return {
         "source_text": source_text,
         "time_dimension_semantic_id": dimension_id,
         "start": start,
         "end": end,
+        "role": role,
     }
 
 
@@ -971,10 +975,26 @@ def test_r6_multi_period_comparison_preserves_two_typed_half_open_periods():
         kind="comparison",
         subject=("metric.downtime", "metric.fault_count"),
     )
-    payload["goals"][0]["comparison_texts"] = ["May versus June"]
+    payload["goals"][0]["comparisons"] = [
+        {
+            "text": "May versus June",
+            "role": "temporal_period",
+            "semantic_id": None,
+        }
+    ]
     payload["time_periods"] = [
-        _r6_period("May 2026", "2026-05-01", "2026-06-01"),
-        _r6_period("June 2026", "2026-06-01", "2026-07-01"),
+        _r6_period(
+            "May 2026",
+            "2026-05-01",
+            "2026-06-01",
+            role="baseline_period",
+        ),
+        _r6_period(
+            "June 2026",
+            "2026-06-01",
+            "2026-07-01",
+            role="comparison_period",
+        ),
     ]
     result = ResearchIntakeCompiler(
         transport=FakeTransport(payload)
@@ -991,6 +1011,13 @@ def test_r6_multi_period_comparison_preserves_two_typed_half_open_periods():
         ("2026-05-01", "2026-06-01"),
         ("2026-06-01", "2026-07-01"),
     ]
+    assert [x.role for x in result.brief.scope.periods] == [
+        TemporalRole.BASELINE_PERIOD,
+        TemporalRole.COMPARISON_PERIOD,
+    ]
+    assert result.brief.questions[0].comparisons[0].role == (
+        ComparisonRole.TEMPORAL_PERIOD
+    )
 
 
 def test_r6_follow_up_narrowing_advances_scope_from_two_periods_to_one():
@@ -998,9 +1025,26 @@ def test_r6_follow_up_narrowing_advances_scope_from_two_periods_to_one():
         kind="comparison",
         subject=("metric.downtime", "metric.fault_count"),
     )
+    initial_payload["goals"][0]["comparisons"] = [
+        {
+            "text": "May versus June",
+            "role": "temporal_period",
+            "semantic_id": None,
+        }
+    ]
     initial_payload["time_periods"] = [
-        _r6_period("May 2026", "2026-05-01", "2026-06-01"),
-        _r6_period("June 2026", "2026-06-01", "2026-07-01"),
+        _r6_period(
+            "May 2026",
+            "2026-05-01",
+            "2026-06-01",
+            role="baseline_period",
+        ),
+        _r6_period(
+            "June 2026",
+            "2026-06-01",
+            "2026-07-01",
+            role="comparison_period",
+        ),
     ]
     initial = ResearchIntakeCompiler(
         transport=FakeTransport(initial_payload)
@@ -1182,6 +1226,54 @@ def test_r6_missing_typed_period_field_fails_closed():
             catalog=_r6_temporal_catalog(),
         )
     assert exc.value.code == "INTAKE_MODEL_OUTPUT_INVALID"
+
+
+def test_typed_causal_candidate_comparison_requires_goal_scoped_semantic_id():
+    payload = ready_payload(
+        kind="root_cause",
+        subject=("metric.downtime", "metric.fault_count"),
+        related=("dimension.department",),
+    )
+    payload["goals"][0]["comparisons"] = [
+        {
+            "text": "fault count",
+            "role": "causal_candidate",
+            "semantic_id": "metric.fault_count",
+        }
+    ]
+    result = ResearchIntakeCompiler(
+        transport=FakeTransport(payload)
+    ).compile(
+        question="Test fault count as a candidate explanation for downtime.",
+        catalog=catalog(),
+    )
+    assert result.brief is not None
+    comparison = result.brief.questions[0].comparisons[0]
+    assert comparison.role == ComparisonRole.CAUSAL_CANDIDATE
+    assert comparison.semantic_id == "metric.fault_count"
+
+
+def test_typed_causal_candidate_outside_goal_scope_fails_closed():
+    payload = ready_payload(
+        kind="root_cause",
+        subject=("metric.downtime",),
+        related=("dimension.department",),
+    )
+    payload["goals"][0]["comparisons"] = [
+        {
+            "text": "fault count",
+            "role": "causal_candidate",
+            "semantic_id": "metric.fault_count",
+        }
+    ]
+    with pytest.raises(ResearchIntakeError) as exc:
+        ResearchIntakeCompiler(
+            transport=FakeTransport(payload)
+        ).compile(
+            question="Test the requested explanation.",
+            catalog=catalog(),
+        )
+    assert exc.value.code == "INTAKE_COMPARISON_SEMANTIC_OUTSIDE_GOAL_SCOPE"
 
 
 def test_relationship_provider_cannot_reconstruct_left_right_dimension_tuple():
