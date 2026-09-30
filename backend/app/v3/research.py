@@ -364,7 +364,17 @@ class ResearchManager:
         elif ranking is not None:
             lines.append("- preserve the governed native ranking basis exactly")
 
-        lines.extend(("[USER OBLIGATION]", item.objective))
+        lines.extend(
+            (
+                "[USER OBLIGATION]",
+                item.objective,
+                "[MATERIAL TURN BOUNDARY]",
+                "- this native turn acquires only the analytical material defined by the accepted contract above",
+                "- produce exactly one executable native analytical query satisfying that contract",
+                "- do not perform downstream investigation, hypothesis adjudication, next-test planning, reporting, or workflow orchestration in this turn",
+                "- downstream instructions in the user obligation are context only and do not authorize extra native work",
+            )
+        )
         return "\n".join(lines)
 
     @classmethod
