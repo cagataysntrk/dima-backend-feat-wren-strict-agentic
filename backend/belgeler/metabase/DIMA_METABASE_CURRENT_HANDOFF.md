@@ -1,3 +1,48 @@
+## FORWARD AUTHORITY — 2026-09-30 — BRAIN V2 STRANGLER MIGRATION
+
+This block is the current forward handoff. Older comparison/Phase-1 sections below remain historical receipts.
+
+~~~text
+active branch
+feat/dima-brain-v2
+
+source branch
+feat/dima-metabase-platform
+
+branch point
+8d1e011053b01005179ff7a31b7921bb3a7307b9
+
+legacy Product
+c5069e8e4606e21bdd8ce41f4c1dc4bf7d23c789
+
+analytical engine
+Metabase / Metabot
+0f16f2b5a1ec774ac7afee6214c726e82f9ceb3c
+0.63.18-dima.8
+
+new orchestration runtime
+LangGraph low-level StateGraph/checkpoint primitives
+
+Dima DB
+canonical truth authority
+
+roadmap
+backend/belgeler/metabase/DIMA_BRAIN_V2_TWO_PHASE_ROADMAP.md
+
+handoff
+backend/belgeler/metabase/DIMA_BRAIN_V2_CURRENT_HANDOFF.md
+~~~
+
+The Metabase/Metabot engine selection is NOT reopened.
+
+Wren remains epistemic/research-pattern reference only.
+
+The migration target is custom orchestration plumbing, not Metabase analytics or the sealed Dima business/epistemic primitives.
+
+30-case / DEV80 / Validation50 / Hidden50 remain unauthorized here.
+
+---
+
 ## FORWARD AUTHORITY — 2026-09-27 — METABASE/METABOT WINNER → DIMA V1 3-PHASE ROADMAP ACTIVE
 
 ~~~text
