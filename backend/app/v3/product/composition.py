@@ -1511,7 +1511,6 @@ class HeadlessProductComposer:
                             not relationship.policy_required
                             and association_state
                             in {"SUPPORTED", "CHALLENGED", "CONTESTED"}
-                            and not relationship.limitation_codes
                         ):
                             state = ProductRequirementState.FULFILLED
                         else:
