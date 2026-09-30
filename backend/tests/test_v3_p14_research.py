@@ -11,15 +11,18 @@ import pytest
 from app.v3.authority import AcceptedResearchAuthority
 from app.v3.evidence import DimaQueryReceipt, EvidenceArtifact, EvidenceState
 from app.v3.research_contracts import (
+    CausalCompetitionSurface,
     ResearchBrief,
     ResearchBriefStatus,
     ResearchGoalKind,
     ResearchGoalStatus,
+    ResearchNativeVerificationBinding,
     ResearchQuestion,
     ResearchScope,
     ResearchSemanticRef,
     SemanticTargetKind,
 )
+from app.v3.research_analytical_scope import analytical_scope_contract
 from app.v3.research import (
     EvidenceRelation,
     HypothesisState,
@@ -98,6 +101,94 @@ def _session(*obligation_ids: str):
         session_id="rs_" + "1" * 24,
         accepted_brief=brief,
     )
+
+
+def test_r1_entity_fixed_diagnostic_dimension_is_filter_not_required_breakout():
+    authority = _authority("g-filtered-root")
+    downtime = ResearchSemanticRef(
+        source_mention="downtime",
+        candidate_id="metric.downtime",
+        target_kind=SemanticTargetKind.METRIC,
+        canonical_name="Downtime",
+    )
+    maintenance = ResearchSemanticRef(
+        source_mention="maintenance delay",
+        candidate_id="metric.maintenance_delay",
+        target_kind=SemanticTargetKind.METRIC,
+        canonical_name="Maintenance Delay",
+    )
+    department = ResearchSemanticRef(
+        source_mention="department",
+        candidate_id="dimension.department",
+        target_kind=SemanticTargetKind.DIMENSION,
+        canonical_name="Department",
+    )
+    packaging = ResearchSemanticRef(
+        source_mention="Packaging",
+        candidate_id="entity.department.packaging",
+        target_kind=SemanticTargetKind.ENTITY_VALUE,
+        canonical_name="Packaging",
+        dimension_name="department",
+        value="Packaging",
+    )
+    question = ResearchQuestion(
+        goal_id="g-filtered-root",
+        kind=ResearchGoalKind.ROOT_CAUSE,
+        source_text="Investigate Packaging downtime against maintenance delay.",
+        subject_refs=(packaging, downtime, maintenance),
+        related_refs=(department,),
+        causal_competition=CausalCompetitionSurface(
+            effect_semantic_id=downtime.candidate_id,
+            candidate_mechanism_semantic_ids=(maintenance.candidate_id,),
+            diagnostic_dimension_ids=(department.candidate_id,),
+        ),
+        status=ResearchGoalStatus.RESOLVED,
+    )
+    brief = ResearchBrief(
+        brief_id="rb-filtered-root",
+        objective=question.source_text,
+        scope=ResearchScope(
+            semantic_refs=(packaging, downtime, maintenance, department),
+            native_verification_bindings=(
+                ResearchNativeVerificationBinding(
+                    candidate_id=department.candidate_id,
+                    table_name="machine_operations",
+                    column_name="department",
+                ),
+                ResearchNativeVerificationBinding(
+                    candidate_id=packaging.candidate_id,
+                    table_name="machine_operations",
+                    column_name="department",
+                ),
+            ),
+        ),
+        questions=(question,),
+        must_requirement_ids=(question.goal_id,),
+        context_version=CONTEXT,
+        status=ResearchBriefStatus.READY_FOR_RESEARCH,
+    )
+    session = ResearchManager.start(
+        authority=authority,
+        objective=brief.objective,
+        obligation_objectives={question.goal_id: question.source_text},
+        tenant_binding=TENANT,
+        principal_subject=PRINCIPAL,
+        budget=ResearchBudget(max_native_turns=4, max_material_executions=4),
+        now=NOW,
+        session_id="rs_" + "9" * 24,
+        accepted_brief=brief,
+    )
+
+    contract = analytical_scope_contract(
+        session=session,
+        obligation_id=question.goal_id,
+    )
+
+    assert contract.dimension_refs == ()
+    assert contract.grain_constraints == ()
+    assert len(contract.filters) == 1
+    assert contract.filters[0].source_candidate_id == packaging.candidate_id
+    assert contract.filters[0].value == "Packaging"
 
 
 def _receipt(obligation_id: str) -> DimaQueryReceipt:
