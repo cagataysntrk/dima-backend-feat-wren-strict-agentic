@@ -392,22 +392,49 @@ def _phase15_mode_turn(*, mode: str, native_results: int, p17_calls: int) -> dic
     owner_calls = ["P14", "P14"] + ["P17"] * p17_calls + ["P19", "P20"]
     return {
         "ready": True,
-        "brief_payload": {"questions": [{"goal_id": "g_root"}]},
-        "native_results": [{"query": index} for index in range(native_results)],
-        "evidence_by_session": {"rs_" + "1" * 24: ["evi_" + "1" * 24]},
-        "root_cause_state": {
-            "root_cause_candidates": [
+        "brief_payload": {
+            "questions": [
                 {
-                    "mechanism_identity": ["EXPLANATORY_CANDIDATE", "metric.h1"],
-                    "evidence_refs": ["evi_" + "1" * 24],
-                },
-                {
-                    "mechanism_identity": ["EXPLANATORY_CANDIDATE", "metric.h2"],
-                    "evidence_refs": ["evi_" + "1" * 24],
-                },
+                    "goal_id": "g_root",
+                    "causal_competition": {
+                        "effect_semantic_id": "metric.effect",
+                        "candidate_mechanism_semantic_ids": [
+                            "metric.h1",
+                            "metric.h2",
+                        ],
+                        "diagnostic_dimension_ids": [],
+                    },
+                }
             ]
         },
+        "native_results": [{"query": index} for index in range(native_results)],
+        "evidence_by_session": {"rs_" + "1" * 24: ["evi_" + "1" * 24]},
+        "root_cause_state": {"root_cause_candidates": []},
         "p19_assessment_refs": ["p19a_" + "1" * 24],
+        "p19_case_snapshots": [
+            {
+                "hypotheses": [
+                    {
+                        "hypothesis": {"hypothesis_id": "p19h_" + "1" * 24},
+                        "groundings": [
+                            {
+                                "source_kind": "P14_EVIDENCE",
+                                "source_ref": "evi_" + "1" * 24,
+                            }
+                        ],
+                    },
+                    {
+                        "hypothesis": {"hypothesis_id": "p19h_" + "2" * 24},
+                        "groundings": [
+                            {
+                                "source_kind": "P14_EVIDENCE",
+                                "source_ref": "evi_" + "1" * 24,
+                            }
+                        ],
+                    },
+                ]
+            }
+        ],
         "reasoning_records": [],
         "composition_payload": {
             "owner_calls": owner_calls,
