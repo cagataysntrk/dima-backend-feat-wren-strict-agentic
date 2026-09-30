@@ -283,8 +283,10 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
 
     def after_discovery(state: BrainStatePayload) -> str:
         current = _snapshot(state)
-        if not current.discovery_required and len(current.hypothesis_ids) >= 2:
+        if len(current.hypothesis_ids) >= 2:
             return "p19_assess"
+        if not current.discovery_required:
+            return "honest_stop"
         if current.discovery_turns < current.max_discovery_turns:
             return "p17_discover"
         return "honest_stop"
