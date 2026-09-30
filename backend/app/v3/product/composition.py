@@ -357,12 +357,15 @@ class _NextTestProposalManager:
             )
             == self.target_parent_obligation
         )
-        if not legal:
+        if legal:
+            parent = max(legal, key=lambda item: ordered.get(item, -1))
+        elif rule.allow_parentless:
+            parent = None
+        else:
             raise ProductProcessError(
                 "PRODUCT_NEXT_TEST_PARENT_MISSING",
                 self.request.request_id,
             )
-        parent = max(legal, key=lambda item: ordered.get(item, -1))
         return ManagerProposal(
             proposal_id="p17-next-" + self.request.request_id[4:],
             source_revision=snapshot.source_revision,
@@ -1276,6 +1279,7 @@ class HeadlessProductComposer:
                 snapshot=latest,
                 request=request,
                 evidence_surface_available=bool(native_session_token),
+                target_obligation_id=goal.goal_id,
             ):
                 unresolved_without_callable_test = True
                 # P19 still owns the terminal epistemic conclusion. Give it one
@@ -1314,6 +1318,7 @@ class HeadlessProductComposer:
                 downstream_reentry_intent=(
                     InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE
                 ),
+                downstream_reentry_obligation_id=goal.goal_id,
             )
             owner_calls.append("P17")
 
