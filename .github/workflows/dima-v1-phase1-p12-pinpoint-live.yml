@@ -25,7 +25,7 @@ on:
           - "YES"
 
 # Recovery/growth live authority. The R8 Panel A execution is immutable.
-# Temporary paid push trigger is disarmed after the single authorized run.
+# Temporary paid push trigger is armed exactly once for B-v2; remove after run.
 permissions:
   contents: read
   packages: read
