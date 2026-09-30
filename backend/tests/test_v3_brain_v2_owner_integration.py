@@ -552,7 +552,13 @@ class DeterministicDiscoveryManager:
         allowed_mechanism_refs,
         allowed_intents,
     ):
-        assert allowed_intents == (InvestigationIntent.FORM_CLAIM,)
+        assert InvestigationIntent.FORM_CLAIM in allowed_intents
+        assert set(allowed_intents).issubset(
+            {
+                InvestigationIntent.FORM_CLAIM,
+                InvestigationIntent.STOP_INVESTIGATION,
+            }
+        )
         assert len(allowed_mechanism_refs) >= 2
         self.call_count += 1
         mechanism = allowed_mechanism_refs[self.call_count - 1]
