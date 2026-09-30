@@ -1534,6 +1534,196 @@ def test_coorigin_temporal_comparison_subgoal_merges_into_root_cause():
     }
 
 
+
+def test_typed_temporal_material_parent_merges_distinct_fragments_into_root_cause():
+    root_fragment = "Evaluate the governed explanations for the observed change."
+    material_fragment = "Compare the accepted earlier and later periods."
+    question = root_fragment + " " + material_fragment
+    payload = ready_payload(
+        kind="root_cause",
+        subject=(
+            "metric.downtime",
+            "metric.fault_count",
+            "metric.performance",
+        ),
+        related=("dimension.department",),
+    )
+    payload["goals"][0].update(
+        {
+            "goal_key": "g-root",
+            "source_text": root_fragment,
+            "source_fragment_text": root_fragment,
+            "causal_competition": {
+                "effect_semantic_id": "metric.downtime",
+                "candidate_mechanism_semantic_ids": [
+                    "metric.fault_count",
+                    "metric.performance",
+                ],
+                "diagnostic_dimension_ids": ["dimension.department"],
+            },
+            "temporal_material": {
+                "mode": "comparison",
+                "baseline_period": _r6_period(
+                    "earlier accepted interval",
+                    "2026-03-01",
+                    "2026-04-01",
+                ),
+                "comparison_period": _r6_period(
+                    "later accepted interval",
+                    "2026-04-01",
+                    "2026-05-01",
+                ),
+            },
+        }
+    )
+    payload["goals"].append(
+        {
+            "goal_key": "g-temporal-material",
+            "kind": "comparison",
+            "source_text": material_fragment,
+            "source_fragment_text": material_fragment,
+            "material_parent_goal_key": "g-root",
+            "subject_semantic_ids": ["metric.downtime"],
+            "related_semantic_ids": [],
+            "ranking": None,
+            "comparisons": [
+                {
+                    "text": "accepted period comparison",
+                    "role": "temporal_period",
+                    "semantic_id": None,
+                }
+            ],
+            "causal_competition": None,
+        }
+    )
+    payload["time_periods"] = []
+
+    result = ResearchIntakeCompiler(
+        transport=FakeTransport(payload)
+    ).compile(
+        question=question,
+        catalog=_r6_temporal_catalog(),
+    )
+
+    assert result.brief is not None
+    assert len(result.brief.questions) == 1
+    goal = result.brief.questions[0]
+    assert goal.kind == ResearchGoalKind.ROOT_CAUSE
+    assert [item.role for item in goal.comparisons] == [
+        ComparisonRole.TEMPORAL_PERIOD
+    ]
+    assert [
+        (item.start, item.end, item.role)
+        for item in result.brief.scope.periods
+    ] == [
+        (
+            "2026-03-01",
+            "2026-04-01",
+            TemporalRole.BASELINE_PERIOD,
+        ),
+        (
+            "2026-04-01",
+            "2026-05-01",
+            TemporalRole.COMPARISON_PERIOD,
+        ),
+    ]
+
+
+def test_typed_temporal_material_parent_is_not_wording_authority():
+    root_fragment = "Assess competing governed mechanisms."
+    material_fragment = "Contrast the two bounded windows as material."
+    question = root_fragment + " " + material_fragment
+    payload = ready_payload(
+        kind="root_cause",
+        subject=(
+            "metric.fault_count",
+            "metric.downtime",
+            "metric.performance",
+        ),
+        related=("dimension.department",),
+    )
+    payload["goals"][0].update(
+        {
+            "goal_key": "g-cause",
+            "source_text": root_fragment,
+            "source_fragment_text": root_fragment,
+            "causal_competition": {
+                "effect_semantic_id": "metric.fault_count",
+                "candidate_mechanism_semantic_ids": [
+                    "metric.downtime",
+                    "metric.performance",
+                ],
+                "diagnostic_dimension_ids": ["dimension.department"],
+            },
+            "temporal_material": {
+                "mode": "comparison",
+                "baseline_period": _r6_period(
+                    "window alpha",
+                    "2026-01-01",
+                    "2026-02-01",
+                ),
+                "comparison_period": _r6_period(
+                    "window beta",
+                    "2026-02-01",
+                    "2026-03-01",
+                ),
+            },
+        }
+    )
+    payload["goals"].append(
+        {
+            "goal_key": "g-material",
+            "kind": "comparison",
+            "source_text": material_fragment,
+            "source_fragment_text": material_fragment,
+            "material_parent_goal_key": "g-cause",
+            "subject_semantic_ids": ["metric.fault_count"],
+            "related_semantic_ids": [],
+            "ranking": None,
+            "comparisons": [
+                {
+                    "text": "bounded windows",
+                    "role": "temporal_period",
+                    "semantic_id": None,
+                }
+            ],
+            "causal_competition": None,
+        }
+    )
+    payload["time_periods"] = []
+
+    result = ResearchIntakeCompiler(
+        transport=FakeTransport(payload)
+    ).compile(
+        question=question,
+        catalog=_r6_temporal_catalog(),
+    )
+
+    assert result.brief is not None
+    assert len(result.brief.questions) == 1
+    assert result.brief.questions[0].kind == ResearchGoalKind.ROOT_CAUSE
+    assert {
+        item.candidate_id
+        for item in result.brief.questions[0].subject_refs
+    } == {
+        "metric.fault_count",
+        "metric.downtime",
+        "metric.performance",
+    }
+
+
+def test_comparison_provider_schema_exposes_typed_material_parent_key():
+    schema = _intake_provider_schema(_r6_temporal_catalog())
+    variants = schema["$defs"]["ModelGoalDraft"]["anyOf"]
+    comparison = next(
+        item
+        for item in variants
+        if item["properties"]["kind"]["enum"] == ["comparison"]
+    )
+    assert "material_parent_goal_key" in comparison["properties"]
+    assert "material_parent_goal_key" in comparison["required"]
+
+
 def test_distinct_fragment_temporal_comparison_remains_real_multi_intent():
     root_fragment = "Investigate the governed causal explanations."
     compare_fragment = "Separately compare the two accepted periods."
