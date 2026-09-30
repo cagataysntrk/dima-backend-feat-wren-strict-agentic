@@ -7,6 +7,142 @@
 **Execution directive:** `DIMA BRAIN V2 — FINAL DEVELOPER EXECUTION DIRECTIVE`
 
 
+## 2026-10-01 current authority override
+
+This section supersedes older embedded HEAD/run values below. Historical sections remain for provenance only.
+
+~~~text
+branch
+feat/dima-brain-v2
+
+current Platform HEAD at this receipt
+4d75a70695af25438a279dafbda9484c1aec7698
+
+current semantic Product
+0f21190cc61dc1cb26c0551ecae6a18b20d08d57
+
+latest full provider-free authority
+36778856559
+SUCCESS
+
+engine
+0f16f2b5a1ec774ac7afee6214c726e82f9ceb3c
+0.63.18-dima.8
+sha256:b1130357b9046d1208880c196ca0b5f3afba56580fca91fadede89a464521577
+FROZEN
+
+engine builds during Brain V2
+0
+~~~
+
+Latest Luna ONE_PASS live:
+
+~~~text
+run
+36779033101
+
+candidate
+0f21190cc61dc1cb26c0551ecae6a18b20d08d57
+
+mechanical
+GREEN
+
+provider requests
+7 total
+1 Research Intake
+5 Metabase/Metabot
+0 P17
+1 P19
+
+native acquisitions
+1
+
+prompt / completion / reasoning
+92,703 / 1,983 / 294
+
+latency
+25,906 ms
+
+provider reported cost
+$0.00955113
+~~~
+
+Manual adjudication:
+
+~~~text
+score
+2 / 4
+
+status
+NOT ACCEPTED
+~~~
+
+Reason:
+
+~~~text
+accepted H1/H2 identities                 PASS
+one native acquisition                    PASS
+P17 calls / analytical re-entry           0 / 0
+P19 causal ceiling                        PASS
+
+May/June distinguishable result material  FAIL
+downtime temporal change visible          FAIL
+maintenance temporal change visible       FAIL
+spare-part temporal change visible        FAIL
+
+actual governed Evidence
+columns = downtime, maintenance delay, spare-part delay
+rows    = [[656, 21.0, 10.0]]
+~~~
+
+P19 correctly treated this as one bounded associative observation and did not invent causality.
+The earliest wrong transition is therefore upstream of P19.
+
+Current diagnosis:
+
+~~~text
+Research Intake typed temporal intent
+-> accepted analytical contract
+-> native material
+
+The accepted contract reached Evidence admission without comparison authority.
+research_material_coverage is fail-closed when contract.comparison exists, so aggregate VERIFIED
+material proves comparison authority was absent before Evidence admission.
+
+failure family
+= INTENT AUTHORITY / model cognition
+
+not
+= P19
+not
+= Evidence coverage implementation
+not
+= LangGraph
+not
+= engine
+~~~
+
+No regex, month-name, morphology, fuzzy matching, benchmark branch, or prompt-case patch is authorized.
+
+Directive-permitted next action:
+
+~~~text
+same frozen semantic Product
++ PF GREEN
++ Luna mechanical GREEN
++ Luna manual <= 2
++ no deterministic architecture defect identified
+
+=> ONE controlled Terra A/B
+~~~
+
+Metabot analytics remains Luna for the A/B. Only Dima cognition is switched to Terra so the
+Research Intake semantic interpretation boundary is isolated as much as the current topology allows.
+
+If Terra does not materially improve Product quality, do not retry. Re-open the typed intent owner
+for architecture review before another paid attempt.
+
+
 ## Current identities
 
 ~~~text
