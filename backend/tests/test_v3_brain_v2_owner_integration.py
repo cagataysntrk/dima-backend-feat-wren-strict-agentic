@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from contextlib import AbstractContextManager
 from datetime import datetime, timezone
 from uuid import UUID
@@ -101,6 +102,15 @@ def _engine():
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
     )
+    SQLModel.metadata.create_all(engine)
+    return engine
+
+
+def _postgres_engine():
+    dsn = os.environ.get("DIMA_BRAIN_V2_TEST_POSTGRES_DSN", "").strip()
+    if not dsn:
+        pytest.skip("provider-free Postgres DSN is not configured")
+    engine = create_engine(dsn, pool_pre_ping=True)
     SQLModel.metadata.create_all(engine)
     return engine
 
@@ -729,8 +739,9 @@ class BombP17:
         raise AssertionError(f"ONE_PASS must not invoke P17: {name}")
 
 
-def _stack(*, epistemic_manager=None):
-    db = _engine()
+def _stack(*, epistemic_manager=None, db=None):
+    if db is None:
+        db = _engine()
     store = ResearchSessionStore(db)
     bridge = BridgeFactory()
     material = DurableMaterialExecutor(store)
@@ -762,6 +773,49 @@ def _stack(*, epistemic_manager=None):
         engine_identity=ENGINE_IDENTITY,
     )
     return db, store, bridge, material, p19, p19_manager, activities
+
+
+def test_real_owner_one_pass_postgres_timestamp_boundary_is_timezone_safe() -> None:
+    db = _postgres_engine()
+    try:
+        _, store, bridge, material, p19, p19_manager, activities = _stack(db=db)
+        result = BrainV2Service(activities=activities).run(
+            BrainGraphState(
+                thread_id="real-one-pass-postgres-timezone",
+                tenant_binding=f"id:{TENANT_ID}",
+                principal_ref=USER_ID,
+                current_user_input="Provider-free Postgres ONE_PASS RCA.",
+            )
+        )
+
+        assert result.workflow_status == BrainWorkflowStatus.COMPLETE
+        assert bridge.metabot_posts == 1
+        assert material.calls == 1
+        assert p19_manager.call_count == 1
+        assert result.latest_p19_assessment_ref is not None
+        assert result.report_ref is not None
+
+        session = store.load(
+            result.research_session_id,
+            tenant=f"id:{TENANT_ID}",
+            principal=USER_ID,
+        )
+        assert session.updated_at.tzinfo is not None
+        assessment = p19.load_assessment(
+            assessment_id=result.latest_p19_assessment_ref,
+            principal=_principal(),
+        )
+        assert assessment.created_at.tzinfo is not None
+        report = ReportDocumentStore(
+            research_store=store,
+            db_engine=db,
+        ).load(
+            report_id=result.report_ref,
+            principal=_principal(),
+        )
+        assert report.created_at.tzinfo is not None
+    finally:
+        db.dispose()
 
 
 def test_real_owner_one_pass_uses_one_native_and_zero_p17() -> None:
