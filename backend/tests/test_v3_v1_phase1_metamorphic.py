@@ -55,6 +55,7 @@ from app.v3.research_product import ResearchMaterialLimitation
 from control_plane.authorize import Principal
 from control_plane.models import NativeResourceBinding
 from app.v3.research_contracts import (
+    ComparisonSurface,
     RankingSurface,
     ResearchBrief,
     ResearchBriefStatus,
@@ -787,3 +788,97 @@ def test_coorigin_multiple_native_anchors_fail_closed_instead_of_first_goal_wins
         assert exc.code == "R1_COORIGIN_MATERIAL_ANCHOR_AMBIGUOUS"
     else:
         raise AssertionError("ambiguous co-origin anchors must fail closed")
+
+
+def _temporal_contract_session(*, periods, comparisons):
+    question = ResearchQuestion(
+        goal_id="g_temporal",
+        kind=ResearchGoalKind.ROOT_CAUSE,
+        source_text="Compare governed explanations across accepted time scope.",
+        subject_refs=(M1,),
+        related_refs=(M2, D1),
+        comparisons=tuple(ComparisonSurface(text=value) for value in comparisons),
+        status=ResearchGoalStatus.RESOLVED,
+    )
+    scope = ResearchScope(
+        semantic_refs=(M1, M2, D1, DT),
+        time_surfaces=tuple(item.source_text for item in periods),
+        periods=tuple(periods),
+        temporal_dimension_ids=(DT.candidate_id,),
+        scope_version=ScopeVersion(version_id="scope_v1", ordinal=1),
+    )
+    brief = ResearchBrief(
+        brief_id="rb-temporal-contract",
+        objective=question.source_text,
+        scope=scope,
+        questions=(question,),
+        must_requirement_ids=(question.goal_id,),
+        context_version="ctx-temporal-contract",
+        status=ResearchBriefStatus.READY_FOR_RESEARCH,
+    )
+    return SimpleNamespace(
+        session_id="rs_" + "t" * 24,
+        accepted_brief=brief,
+        authority_id="atc_temporal",
+        context_version=brief.context_version,
+        lineage_id="atl_temporal",
+        tenant_binding="id:00000000-0000-4000-8000-000000009001",
+        principal_subject="00000000-0000-4000-8000-000000009002",
+    )
+
+
+def test_nested_periods_with_non_temporal_competitors_project_one_bounded_window():
+    june = ResearchTimePeriod(
+        source_text="June",
+        time_dimension_candidate_id=DT.candidate_id,
+        start="2026-06-01",
+        end="2026-07-01",
+    )
+    may_june = ResearchTimePeriod(
+        source_text="May-June",
+        time_dimension_candidate_id=DT.candidate_id,
+        start="2026-05-01",
+        end="2026-07-01",
+    )
+    session = _temporal_contract_session(
+        periods=(june, may_june),
+        comparisons=("maintenance delay", "spare-part delay"),
+    )
+    contract = analytical_scope_contract(
+        session=session,
+        obligation_id="g_temporal",
+    )
+    assert contract.comparison is None
+    assert contract.period is not None
+    assert contract.period.kind == "explicit_half_open_window"
+    assert contract.period.start == "2026-05-01"
+    assert contract.period.end == "2026-07-01"
+
+
+def test_disjoint_periods_with_exact_period_comparisons_preserve_temporal_comparison():
+    may = ResearchTimePeriod(
+        source_text="May",
+        time_dimension_candidate_id=DT.candidate_id,
+        start="2026-05-01",
+        end="2026-06-01",
+    )
+    june = ResearchTimePeriod(
+        source_text="June",
+        time_dimension_candidate_id=DT.candidate_id,
+        start="2026-06-01",
+        end="2026-07-01",
+    )
+    session = _temporal_contract_session(
+        periods=(may, june),
+        comparisons=("May", "June"),
+    )
+    contract = analytical_scope_contract(
+        session=session,
+        obligation_id="g_temporal",
+    )
+    assert contract.period is None
+    assert contract.comparison is not None
+    assert contract.comparison.reference_period.start == "2026-05-01"
+    assert contract.comparison.reference_period.end == "2026-06-01"
+    assert contract.comparison.base_period.start == "2026-06-01"
+    assert contract.comparison.base_period.end == "2026-07-01"
