@@ -1133,7 +1133,7 @@ def _build_action_profile(
     graph: InvestigationGraph,
     claims: tuple[ClaimView, ...],
     materials: tuple[MaterialCognitionView, ...],
-    evidence_results: tuple[EvidenceResultCognitionView, ...],
+    evidence_results: tuple[EvidenceResultCognitionView, ...] = (),
     remaining_followup_native_turns: int,
     remaining_counter_evidence_attempts: int,
     max_depth: int,
