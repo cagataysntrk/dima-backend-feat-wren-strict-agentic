@@ -1,14 +1,14 @@
 {
   "schema_version": "dima_brain_v2_live_authorization_v1",
-  "enabled": true,
+  "enabled": false,
   "probe_id": "R_LIVE_1_ONE_PASS",
   "candidate_product_sha": "0f21190cc61dc1cb26c0551ecae6a18b20d08d57",
   "provider_free_run_id": 36778856559,
   "provider_free_status": "GREEN",
   "engine_sha": "0f16f2b5a1ec774ac7afee6214c726e82f9ceb3c",
   "engine_release": "0.63.18-dima.8",
-  "model_policy": "TERRA_AB",
+  "model_policy": "LUNA_FIRST",
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
-  "authorization_receipt": "one-pass-terra-ab-after-luna-manual-2-v1"
+  "authorization_receipt": "terra-one-pass-running-36793657928"
 }
