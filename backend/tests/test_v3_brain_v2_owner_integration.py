@@ -440,7 +440,7 @@ class DeterministicP19Manager:
             candidates=tuple(candidates),
             aggregate_outcome=AggregateOutcome.MULTIPLE_MATERIAL_CONTRIBUTORS,
             root_cause_hypothesis_ids=(),
-            limitations=("Provider-free fixture preserves causal ceiling.",),
+            limitations=(),
         )
 
 
