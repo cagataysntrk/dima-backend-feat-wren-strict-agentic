@@ -26,7 +26,7 @@ from app.v3.claim_lineage import (
     ClaimFreshness,
     ClaimLineageStore,
 )
-from app.v3.research import ObligationState, ResearchManager, ResearchSession
+from app.v3.research import ObligationState, ResearchManager, ResearchSession, ResearchStateError
 from app.v3.research_analytical_scope import analytical_scope_contract
 from app.v3.root_cause_candidate_contract import (
     RootCauseCandidateRelation,
