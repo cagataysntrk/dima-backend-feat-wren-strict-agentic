@@ -1,3 +1,61 @@
+# FORWARD AUTHORITY — 2026-09-30 — DIMA BRAIN V2 TWO-PHASE ROADMAP ACTIVE
+
+This block supersedes the older post-comparison three-phase forward execution language below. Historical comparison and Phase-1 receipts remain evidence.
+
+~~~text
+active branch
+feat/dima-brain-v2
+
+branch point
+8d1e011053b01005179ff7a31b7921bb3a7307b9
+
+legacy Product behavior
+c5069e8e4606e21bdd8ce41f4c1dc4bf7d23c789
+
+engine
+0f16f2b5a1ec774ac7afee6214c726e82f9ceb3c / 0.63.18-dima.8
+FROZEN
+
+decision
+backend/belgeler/metabase/DMP-DEC-0076_DIMA_BRAIN_V2_LANGGRAPH_STRANGLER.md
+
+roadmap
+backend/belgeler/metabase/DIMA_BRAIN_V2_TWO_PHASE_ROADMAP.md
+
+current handoff
+backend/belgeler/metabase/DIMA_BRAIN_V2_CURRENT_HANDOFF.md
+~~~
+
+Final forward decision:
+
+~~~text
+DO NOT rollback to the historical 70.8 Product.
+
+KEEP current Metabase/Metabot + Dima domain authorities.
+
+FREEZE strategic development of the legacy custom orchestrator.
+
+BUILD a parallel LangGraph-backed Brain V2 strangler path.
+
+PHASE 1 = LangGraph orchestration V2.
+PHASE 2 = thin Product/API + demo/UX.
+
+30-case remains forbidden until the user separately authorizes it.
+~~~
+
+Permanent architecture:
+
+~~~text
+METABASE computes.
+LANGGRAPH orchestrates.
+DIMA governs, interprets, remembers and decides.
+UX projects governed state.
+~~~
+
+The previous three-phase V1 roadmap remains historical design context, not the current forward execution schedule.
+
+---
+
 # DIMA V1 — CURRENT EXECUTION HANDOFF
 
 ## FORWARD AUTHORITY — 2026-09-27 — METABASE/METABOT WINNER → DIMA V1 3-PHASE ROADMAP ACTIVE
