@@ -404,6 +404,10 @@ Authority rules:
   outcome, asks competing explanations to be tested, or asks supporting/challenging evidence to
   discriminate causal hypotheses. One such clause should normally be ONE ROOT_CAUSE goal carrying
   the governed outcome/candidate material refs needed for its initial analytical acquisition.
+  Do not split the same causal competition into another ROOT_CAUSE goal merely to preserve
+  support/challenge, reporting, causal-boundary, or stopping instructions; those remain
+  deliverable/investigation semantics unless the user actually supplied a distinct governed
+  outcome, candidate set, diagnostic scope, or analytical material need.
   Every ROOT_CAUSE goal MUST emit causal_competition: one governed effect_semantic_id, only the
   candidate_mechanism_semantic_ids explicitly supplied by the user (empty when none were supplied),
   and the governed diagnostic_dimension_ids needed by the request. This typed contract is identity,
@@ -823,6 +827,42 @@ class ResearchIntakeCompiler:
         return relationship
 
     @staticmethod
+    def _duplicate_root_cause_goal_keys(
+        draft: ModelResearchBriefDraft,
+    ) -> tuple[str, ...]:
+        """Return exact typed duplicate RCA identities, never text similarity."""
+        seen: dict[
+            tuple[
+                str,
+                tuple[str, ...],
+                tuple[str, ...],
+                tuple[str, ...],
+                tuple[str, ...],
+            ],
+            str,
+        ] = {}
+        duplicates: list[str] = []
+        for goal in draft.goals:
+            causal = goal.causal_competition
+            if goal.kind != ResearchGoalKind.ROOT_CAUSE or causal is None:
+                continue
+            identity = (
+                causal.effect_semantic_id,
+                tuple(sorted(causal.candidate_mechanism_semantic_ids)),
+                tuple(sorted(causal.diagnostic_dimension_ids)),
+                tuple(sorted(goal.subject_semantic_ids)),
+                tuple(sorted(goal.related_semantic_ids)),
+            )
+            first = seen.get(identity)
+            if first is None:
+                seen[identity] = goal.goal_key
+                continue
+            if first not in duplicates:
+                duplicates.append(first)
+            duplicates.append(goal.goal_key)
+        return tuple(dict.fromkeys(duplicates))
+
+    @staticmethod
     def _ids(prefix: str, seed: dict[str, Any], ordinal: int) -> str:
         raw = _canonical({"seed": seed, "ordinal": ordinal})
         return prefix + hashlib.sha256(raw.encode("utf-8")).hexdigest()[:20]
@@ -910,7 +950,31 @@ class ResearchIntakeCompiler:
             ),
         )
 
-        # One bounded reconsideration is allowed inside the same intake owner.
+        duplicate_root_keys = self._duplicate_root_cause_goal_keys(draft)
+        if duplicate_root_keys and self.call_count < 2:
+            draft = invoke_provider(
+                instruction=(
+                    "Repair one typed analytical-goal contract violation. Multiple "
+                    "ROOT_CAUSE goals carried the same causal competition and the "
+                    "same governed semantic refs. Return the complete CURRENT intent "
+                    "with exactly one ROOT_CAUSE goal for each distinct typed causal "
+                    "identity. Preserve presentation/support/challenge/stopping "
+                    "obligations as deliverable or investigation semantics when "
+                    "appropriate. Do not invent or remove governed refs."
+                ),
+                reconsideration={
+                    "kind": "DUPLICATE_ANALYTICAL_GOAL_REPAIR",
+                    "duplicate_goal_keys": list(duplicate_root_keys),
+                },
+            )
+            duplicate_root_keys = self._duplicate_root_cause_goal_keys(draft)
+        if duplicate_root_keys:
+            raise ResearchIntakeError(
+                "INTAKE_DUPLICATE_ANALYTICAL_GOAL",
+                ",".join(duplicate_root_keys),
+            )
+
+        # At most one bounded reconsideration is allowed inside the same intake owner.
         # It is not a retry loop: the provider ceiling remains two calls. The
         # second pass receives no new authority, only deterministic calendar /
         # single-domain context already present in this request.
