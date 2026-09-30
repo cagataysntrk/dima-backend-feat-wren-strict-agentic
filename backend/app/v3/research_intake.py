@@ -34,6 +34,7 @@ from app.v3.research_contracts import (
     ResearchGoalStatus,
     ResearchQuestion,
     ResearchNativeVerificationBinding,
+    RelationshipIntentKind,
     ResearchScope,
     ResearchSemanticRef,
     ResearchTimePeriod,
@@ -219,6 +220,7 @@ class ModelGoalDraft(Frozen):
     source_text: str = Field(min_length=1)
     source_fragment_text: str | None = Field(default=None, min_length=1)
     allowed_relationship_id: str | None = None
+    relationship_intent: RelationshipIntentKind | None = None
     subject_semantic_ids: tuple[str, ...] = ()
     related_semantic_ids: tuple[str, ...] = ()
     ranking: DraftRanking | None = None
@@ -375,6 +377,10 @@ Authority rules:
 - This step performs NO analytics and creates NO Evidence.
 - For RELATIONSHIP, select exactly one allowed_relationship_id from the supplied catalog.
   Do not reconstruct its left/right/dimension identities yourself.
+- For every RELATIONSHIP classify relationship_intent explicitly:
+  OBSERVATIONAL for association/co-movement/descriptive relationship analysis;
+  BUSINESS_POLICY only when the request explicitly depends on governed business-policy
+  relationship authority. Observational association must not be upgraded to policy.
 - If the request depends on unavailable concepts/data (including psychological/predictive truth
   not represented by the catalog), return UNSUPPORTED.
 - If the user's actual intent cannot be determined without one bounded question, return CLARIFY.
@@ -642,6 +648,13 @@ def _intake_provider_schema(
                 "type": "string",
                 "enum": list(relationship_ids),
             }
+            properties["relationship_intent"] = {
+                "type": "string",
+                "enum": [
+                    RelationshipIntentKind.OBSERVATIONAL.value,
+                    RelationshipIntentKind.BUSINESS_POLICY.value,
+                ],
+            }
         else:
             properties = {
                 name: copy.deepcopy(base_properties[name])
@@ -799,6 +812,11 @@ class ResearchIntakeCompiler:
                     "causal_competition": (
                         question.causal_competition.model_dump(mode="json")
                         if question.causal_competition is not None
+                        else None
+                    ),
+                    "relationship_intent": (
+                        question.relationship_intent.value
+                        if question.relationship_intent is not None
                         else None
                     ),
                 }
@@ -1079,7 +1097,12 @@ class ResearchIntakeCompiler:
                 goal,
                 catalog=catalog,
             )
+            relationship_intent = None
             if relationship is not None:
+                relationship_intent = (
+                    goal.relationship_intent
+                    or RelationshipIntentKind.BUSINESS_POLICY
+                )
                 subject_ids = (
                     relationship.left_semantic_id,
                     relationship.right_semantic_id,
@@ -1090,6 +1113,11 @@ class ResearchIntakeCompiler:
                     else ()
                 )
             else:
+                if goal.relationship_intent is not None:
+                    raise ResearchIntakeError(
+                        "INTAKE_RELATIONSHIP_INTENT_ON_NON_RELATIONSHIP",
+                        goal.goal_key,
+                    )
                 subject_ids = goal.subject_semantic_ids
                 related_ids = goal.related_semantic_ids
             ids = (*subject_ids, *related_ids)
@@ -1211,6 +1239,7 @@ class ResearchIntakeCompiler:
                     ranking=ranking,
                     comparisons=comparisons,
                     causal_competition=causal_competition,
+                    relationship_intent=relationship_intent,
                     status=ResearchGoalStatus.RESOLVED,
                 )
             )
