@@ -184,6 +184,7 @@ class NativeResearchFollowupExecutor:
                 link=link,
                 request=(request if created else None),
                 native_session_token=native_session_token,
+                analytical_scope=task.analytical_scope,
             )
         except NativeEngineBridgeError as exc:
             link = self._store.mark_limited(

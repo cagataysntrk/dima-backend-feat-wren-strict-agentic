@@ -14,6 +14,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.v3.analytical_request_contract import AnalyticalRequestContract
 from app.v3.research_contracts import ResearchBrief, ResearchBriefStatus
 from app.v3.authority import AcceptedResearchAuthority
 from app.v3.evidence import DimaQueryReceipt, EvidenceArtifact
@@ -86,6 +87,7 @@ class ResearchMaterialExecutor(Protocol):
         native_query: dict[str, Any],
         query_fingerprint: str,
         execution_link_id: UUID,
+        analytical_scope: AnalyticalRequestContract | None = None,
     ) -> ResearchMaterialOutcome: ...
 
 
@@ -136,6 +138,7 @@ class NativeResearchOccurrenceRunner:
         link,
         request: NativeEngineRequest | None,
         native_session_token: str | None,
+        analytical_scope: AnalyticalRequestContract | None = None,
     ) -> NativeResearchOccurrenceResult:
         resumed_exact = False
         with self._bridges.open(
@@ -180,6 +183,7 @@ class NativeResearchOccurrenceRunner:
                 native_query=native_query,
                 query_fingerprint=query_fingerprint,
                 execution_link_id=link.id,
+                analytical_scope=analytical_scope,
             )
 
         if outcome.native_conversation_id != link.native_conversation_id:

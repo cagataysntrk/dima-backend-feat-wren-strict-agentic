@@ -3285,6 +3285,15 @@ class UnexpectedRuntimeOccurrenceRunner:
         raise RuntimeError("unexpected follow-up implementation failure")
 
 
+class CapturingScopeOccurrenceRunner:
+    def __init__(self):
+        self.kwargs = None
+
+    def execute(self, **kwargs):
+        self.kwargs = kwargs
+        raise NativeEngineBridgeError("stop after capturing child analytical scope")
+
+
 def _native_followup_failure_service(db, runner):
     store, session, _, _, claims, _ = setup_state(db)
     followup = NativeResearchFollowupExecutor(
@@ -3309,6 +3318,29 @@ def _native_followup_failure_service(db, runner):
         )
     )
     return store, session, service, manager
+
+
+def test_p17_followup_passes_durable_child_scope_to_shared_material_admission():
+    db = db_engine()
+    runner = CapturingScopeOccurrenceRunner()
+    _, session, service, manager = _native_followup_failure_service(db, runner)
+    parent = analytical_scope_contract(session=session, obligation_id="g1")
+    child = parent.model_copy(
+        update={"request_ref": "p17-child-scope-propagation"}
+    )
+
+    step, task = service.run_one(
+        session_id=session.session_id,
+        principal=principal(),
+        manager=manager,
+        child_analytical_scope=child,
+    )
+
+    assert task is not None
+    assert task.analytical_scope == child
+    assert runner.kwargs is not None
+    assert runner.kwargs["analytical_scope"] == child
+    assert step.status == ReasoningStepStatus.COMPLETED
 
 
 def test_p17_native_followup_no_query_is_durable_typed_limitation_not_raw_failure():

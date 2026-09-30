@@ -21,6 +21,7 @@ from typing import Any
 
 from sqlmodel import Session, select
 
+from app.v3.analytical_request_contract import AnalyticalRequestContract
 from app.v3.evidence import EvidenceArtifact, EvidenceState
 from app.v3.execution_identity import (
     DimaQueryReceiptSealer,
@@ -318,8 +319,9 @@ class NativeResearchMaterialExecutor:
         native_query_id: str,
         query_fingerprint: str,
         metabase_user_id: int,
+        analytical_scope: AnalyticalRequestContract | None = None,
     ):
-        contract = analytical_scope_contract(
+        contract = analytical_scope or analytical_scope_contract(
             session=session,
             obligation_id=obligation_id,
         )
@@ -421,6 +423,7 @@ class NativeResearchMaterialExecutor:
         native_query: dict[str, Any],
         query_fingerprint: str,
         execution_link_id: uuid.UUID,
+        analytical_scope: AnalyticalRequestContract | None = None,
     ) -> ResearchMaterialOutcome:
         binding = self._subjects.binding_for(principal=principal, session=session)
         native_subject_ref = f"metabase-user:{binding.metabase_user_id}"
@@ -523,6 +526,7 @@ class NativeResearchMaterialExecutor:
             native_query_id=native_query_id,
             query_fingerprint=query_fingerprint,
             metabase_user_id=int(binding.metabase_user_id),
+            analytical_scope=analytical_scope,
         )
 
         provenance_base = f"research-execution-link:{execution_link_id}"
