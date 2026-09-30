@@ -3849,4 +3849,4 @@ def test_discriminating_reentry_requires_exact_verified_obligation():
             ),
             downstream_reentry_obligation_id="g_foreign",
         )
-    assert exc.value.code == "P14_OBLIGATION_UNKNOWN"
+    assert exc.value.code == "P17_TEST_REENTRY_OBLIGATION_INVALID"
