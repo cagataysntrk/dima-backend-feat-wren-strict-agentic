@@ -97,7 +97,9 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
         current = _snapshot(state)
         if not current.current_user_input:
             raise ValueError("Brain V2 intake requires one current user input")
-        result = IntakeActivityResult.model_validate(\n            intake_activity(current.model_dump(mode="json")).result()\n        )
+        result = IntakeActivityResult.model_validate(
+            intake_activity(current.model_dump(mode="json")).result()
+        )
         return {
             "research_session_id": result.research_session_id,
             "accepted_brief_ref": result.accepted_brief_ref,
@@ -114,7 +116,9 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
 
     def canonicalize_node(state: BrainStatePayload):
         current = _snapshot(state)
-        result = CanonicalizeActivityResult.model_validate(\n            canonicalize_activity(current.model_dump(mode="json")).result()\n        )
+        result = CanonicalizeActivityResult.model_validate(
+            canonicalize_activity(current.model_dump(mode="json")).result()
+        )
         return {
             "research_session_id": result.research_session_id,
             "scope_version_id": result.scope_version_id,
@@ -131,7 +135,9 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
 
     def material_node(state: BrainStatePayload):
         current = _snapshot(state)
-        result = MaterialActivityResult.model_validate(\n            material_activity(current.model_dump(mode="json")).result()\n        )
+        result = MaterialActivityResult.model_validate(
+            material_activity(current.model_dump(mode="json")).result()
+        )
         return {
             "material_requirement_ids": result.material_requirement_ids,
             "pending_evidence_ids": result.produced_evidence_ids,
@@ -144,7 +150,9 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
 
     def evidence_node(state: BrainStatePayload):
         current = _snapshot(state)
-        result = EvidenceActivityResult.model_validate(\n            evidence_activity(current.model_dump(mode="json")).result()\n        )
+        result = EvidenceActivityResult.model_validate(
+            evidence_activity(current.model_dump(mode="json")).result()
+        )
         return {
             "evidence_revision": result.evidence_revision,
             "evidence_ids": result.evidence_ids,
@@ -161,7 +169,9 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
 
     def discovery_node(state: BrainStatePayload):
         current = _snapshot(state)
-        result = P17ActivityResult.model_validate(\n            discovery_activity(current.model_dump(mode="json")).result()\n        )
+        result = P17ActivityResult.model_validate(
+            discovery_activity(current.model_dump(mode="json")).result()
+        )
         return {
             "hypothesis_revision": result.hypothesis_revision,
             "hypothesis_ids": result.hypothesis_ids,
@@ -176,7 +186,9 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
 
     def p19_node(state: BrainStatePayload):
         current = _snapshot(state)
-        result = P19ActivityResult.model_validate(\n            p19_activity(current.model_dump(mode="json")).result()\n        )
+        result = P19ActivityResult.model_validate(
+            p19_activity(current.model_dump(mode="json")).result()
+        )
         return {
             "latest_p19_assessment_ref": result.assessment_ref,
             "latest_p19_route": result.route,
@@ -200,7 +212,9 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
             raise ValueError("P17 next-test node requires typed P19 NextTestRequest")
         if current.adaptive_reentries >= current.max_adaptive_reentries:
             raise ValueError("P17 next-test node exceeded bounded re-entry limit")
-        result = P17ActivityResult.model_validate(\n            next_test_activity(current.model_dump(mode="json")).result()\n        )
+        result = P17ActivityResult.model_validate(
+            next_test_activity(current.model_dump(mode="json")).result()
+        )
         return {
             "hypothesis_revision": result.hypothesis_revision,
             "hypothesis_ids": result.hypothesis_ids,
@@ -215,7 +229,9 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
 
     def report_node(state: BrainStatePayload):
         current = _snapshot(state)
-        result = ReportActivityResult.model_validate(\n            report_activity(current.model_dump(mode="json")).result()\n        )
+        result = ReportActivityResult.model_validate(
+            report_activity(current.model_dump(mode="json")).result()
+        )
         return {
             "report_ref": result.report_ref,
             "workflow_status": BrainWorkflowStatus.COMPLETE,
