@@ -3756,3 +3756,97 @@ def test_form_claim_cannot_link_evidence_it_did_not_explicitly_inspect():
             downstream_reentry_obligation_id="g1",
         )
     assert exc.value.code == "P17_CLAIM_EVIDENCE_NOT_INSPECTED"
+
+
+
+def test_direct_p19_can_open_one_typed_parentless_discriminating_reentry():
+    db = db_engine()
+    store, session, _, _, claims, _ = setup_state(db)
+    followup = LineagedFollowup(db, store)
+    service = ResearchInvestigationManager(
+        research_store=store,
+        claim_store=claims,
+        followup_executor=followup,
+        db_engine=db,
+    )
+
+    request_ref = "ntr_" + "a" * 24
+
+    def propose(snapshot):
+        rule = snapshot.action_profile.rule_for(
+            InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE
+        )
+        assert rule is not None
+        assert rule.allow_parentless is True
+        assert rule.legal_parent_step_ids == ()
+        return ManagerProposal(
+            proposal_id="direct-p19-next-test",
+            source_revision=snapshot.source_revision,
+            target_parent_obligation="g1",
+            action=ManagerAction.EXPLORE_NATIVE,
+            intent=InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE,
+            parent_step_id=None,
+            branch_key=None,
+            target_kind=InvestigationTargetKind.EXPLANATION,
+            target_ref=request_ref,
+            objective_key="direct.p19.next.test",
+            bounded_objective=(
+                "Discriminate the governed alternatives with one exact "
+                "high-information test."
+            ),
+            rationale="Typed P19 ambiguity requires one bounded test.",
+            inspected_evidence_refs=("evi_" + "1" * 24,),
+            inspected_claim_refs=(),
+            inspected_material_refs=(),
+            expected_information_gain="Positive material discrimination.",
+        )
+
+    step, task = service.run_one(
+        session_id=session.session_id,
+        principal=principal(),
+        manager=ScriptedManager(propose),
+        native_session_token="provider-free",
+        downstream_reentry_intent=(
+            InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE
+        ),
+        downstream_reentry_obligation_id="g1",
+    )
+
+    assert task is not None
+    assert step.parent_step_id is None
+    assert step.intent == InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE
+    assert step.target_ref == request_ref
+    assert task.evidence_refs == ("evi_" + "2" * 24,)
+    snapshot = service.snapshot(
+        session_id=session.session_id,
+        principal=principal(),
+    )
+    assert any(
+        item.evidence_id == "evi_" + "2" * 24
+        and item.receipt_id == "dqr_" + "2" * 24
+        for item in snapshot.evidence_results
+    )
+
+
+def test_discriminating_reentry_requires_exact_verified_obligation():
+    db = db_engine()
+    store, session, _, _, claims, _ = setup_state(db)
+    service = ResearchInvestigationManager(
+        research_store=store,
+        claim_store=claims,
+        followup_executor=LineagedFollowup(db, store),
+        db_engine=db,
+    )
+
+    with pytest.raises(ResearchManagerMaturationError) as exc:
+        service.run_one(
+            session_id=session.session_id,
+            principal=principal(),
+            manager=NeverCalledManager(),
+            native_session_token="provider-free",
+            downstream_reentry_intent=(
+                InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE
+            ),
+            downstream_reentry_obligation_id="g_foreign",
+        )
+    assert exc.value.code == "P14_OBLIGATION_UNKNOWN"
