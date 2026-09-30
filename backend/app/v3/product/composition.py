@@ -99,6 +99,20 @@ class ProductCompositionTerminal(StrEnum):
     INCONCLUSIVE = "INCONCLUSIVE"
 
 
+class RootCauseExecutionMode(StrEnum):
+    ONE_PASS = "ONE_PASS"
+    ADAPTIVE = "ADAPTIVE"
+    GOVERNED_INCONCLUSIVE = "GOVERNED_INCONCLUSIVE"
+
+
+class RootCauseModeResult(Frozen):
+    obligation_id: str = Field(min_length=1)
+    mode: RootCauseExecutionMode
+    assessment_ref: str = Field(pattern=r"^p19a_[a-f0-9]{24}$")
+    user_seeded_candidates: bool
+    analytical_reentry_count: int = Field(ge=0)
+
+
 class ProductCompositionCurrentness(StrEnum):
     CURRENT = "CURRENT"
 
@@ -156,6 +170,7 @@ class ProductCompositionResult(Frozen):
     p17_step_refs: tuple[str, ...] = ()
     p18_policy_use_refs: tuple[str, ...] = ()
     p19_assessment_refs: tuple[str, ...] = ()
+    root_cause_mode_results: tuple[RootCauseModeResult, ...] = ()
     p20_report_ref: str | None = None
     p21_decision_ref: str | None = None
     evidence_refs: tuple[str, ...] = ()
@@ -391,6 +406,21 @@ def _question_map(brief: ResearchBrief) -> dict[str, ResearchQuestion]:
 
 def _state_value(value: Any) -> str:
     return str(getattr(value, "value", value))
+
+
+def _root_cause_execution_mode(
+    *,
+    aggregate_outcome: Any,
+    analytical_reentry_count: int,
+) -> RootCauseExecutionMode:
+    if analytical_reentry_count > 0:
+        return RootCauseExecutionMode.ADAPTIVE
+    if _state_value(aggregate_outcome) in {
+        "IN_PROGRESS",
+        "NO_DEFENSIBLE_ROOT_CAUSE_ESTABLISHED",
+    }:
+        return RootCauseExecutionMode.GOVERNED_INCONCLUSIVE
+    return RootCauseExecutionMode.ONE_PASS
 
 
 class HeadlessProductComposer:
@@ -1518,6 +1548,7 @@ class HeadlessProductComposer:
         p19_refs: list[str] = []
         root_cause_assessments: dict[str, Any] = {}
         root_cause_complete_goal_ids: set[str] = set()
+        root_cause_modes: list[RootCauseModeResult] = []
         relationship_results: list[RelationshipResultProjection] = []
         limitations: list[CompositionLimitation] = []
         p17_required: list[str] = []
@@ -1728,6 +1759,35 @@ class HeadlessProductComposer:
                     root_cause_assessments[goal.goal_id] = assessment
                     if _state_value(assessment.aggregate_outcome) != "IN_PROGRESS":
                         root_cause_complete_goal_ids.add(goal.goal_id)
+                    goal_steps = tuple(
+                        step
+                        for step in self._reasoning.steps(session.session_id)
+                        if step.parent_obligation_id == goal.goal_id
+                    )
+                    analytical_reentry_count = sum(
+                        _state_value(getattr(step, "action", ""))
+                        in {
+                            ManagerAction.EXPLORE_NATIVE.value,
+                            ManagerAction.SEEK_COUNTER_EVIDENCE.value,
+                        }
+                        for step in goal_steps
+                    )
+                    surface = goal.causal_competition
+                    root_cause_modes.append(
+                        RootCauseModeResult(
+                            obligation_id=goal.goal_id,
+                            mode=_root_cause_execution_mode(
+                                aggregate_outcome=assessment.aggregate_outcome,
+                                analytical_reentry_count=analytical_reentry_count,
+                            ),
+                            assessment_ref=assessment.assessment_id,
+                            user_seeded_candidates=bool(
+                                surface is not None
+                                and surface.candidate_mechanism_semantic_ids
+                            ),
+                            analytical_reentry_count=analytical_reentry_count,
+                        )
+                    )
                     limitation_codes[goal.goal_id] = assessment.aggregate_outcome.value
                     if assessment.limitations:
                         limitations.append(
@@ -1932,6 +1992,7 @@ class HeadlessProductComposer:
             p17_step_refs=tuple(p17_refs),
             p18_policy_use_refs=tuple(p18_refs),
             p19_assessment_refs=tuple(p19_refs),
+            root_cause_mode_results=tuple(root_cause_modes),
             p20_report_ref=(report.report_id if report is not None else None),
             evidence_refs=evidence_refs,
             limitations=tuple(limitations),
