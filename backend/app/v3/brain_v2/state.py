@@ -59,6 +59,8 @@ class BrainGraphState(BaseModel):
     hypothesis_revision: int = Field(default=0, ge=0)
     hypothesis_ids: tuple[str, ...] = ()
     discovery_required: bool = False
+    discovery_turns: int = Field(default=0, ge=0)
+    max_discovery_turns: int = Field(default=3, ge=1, le=6)
 
     latest_p19_assessment_ref: str | None = Field(
         default=None, pattern=r"^p19a_[a-f0-9]{24}$"
@@ -112,8 +114,8 @@ class BrainGraphState(BaseModel):
             raise ValueError("activity fingerprints must be sha256 hex")
         if self.adaptive_reentries > self.max_adaptive_reentries:
             raise ValueError("adaptive re-entry count exceeds configured bound")
-        if self.discovery_required and self.hypothesis_ids:
-            raise ValueError("discovery cannot remain required after hypotheses exist")
+        if self.discovery_turns > self.max_discovery_turns:
+            raise ValueError("discovery turn count exceeds configured bound")
         return self
 
 
@@ -136,6 +138,8 @@ class BrainStatePayload(TypedDict, total=False):
     hypothesis_revision: int
     hypothesis_ids: tuple[str, ...]
     discovery_required: bool
+    discovery_turns: int
+    max_discovery_turns: int
     latest_p19_assessment_ref: str | None
     pending_next_test_ref: str | None
     latest_p19_route: BrainP19Route | None
