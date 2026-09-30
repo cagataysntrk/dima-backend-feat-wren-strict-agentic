@@ -1287,6 +1287,155 @@ def test_r6_multi_period_comparison_preserves_two_typed_half_open_periods():
     )
 
 
+def test_coorigin_temporal_comparison_subgoal_merges_into_root_cause():
+    fragment = "Investigate the same governed two-period causal comparison."
+    payload = ready_payload(
+        kind="root_cause",
+        subject=(
+            "metric.downtime",
+            "metric.fault_count",
+            "metric.performance",
+        ),
+        related=("dimension.department",),
+    )
+    payload["goals"][0].update(
+        {
+            "goal_key": "g-root",
+            "source_text": fragment,
+            "source_fragment_text": fragment,
+            "causal_competition": {
+                "effect_semantic_id": "metric.downtime",
+                "candidate_mechanism_semantic_ids": [
+                    "metric.fault_count",
+                    "metric.performance",
+                ],
+                "diagnostic_dimension_ids": ["dimension.department"],
+            },
+        }
+    )
+    payload["goals"].append(
+        {
+            "goal_key": "g-temporal-material",
+            "kind": "comparison",
+            "source_text": fragment,
+            "source_fragment_text": fragment,
+            "subject_semantic_ids": ["metric.downtime"],
+            "related_semantic_ids": [],
+            "ranking": None,
+            "comparisons": [
+                {
+                    "text": "accepted two-period comparison",
+                    "role": "temporal_period",
+                    "semantic_id": None,
+                }
+            ],
+            "causal_competition": None,
+        }
+    )
+    payload["time_periods"] = [
+        _r6_period("period later", "2026-06-01", "2026-07-01"),
+        _r6_period("period earlier", "2026-05-01", "2026-06-01"),
+    ]
+
+    result = ResearchIntakeCompiler(
+        transport=FakeTransport(payload)
+    ).compile(
+        question=fragment,
+        catalog=_r6_temporal_catalog(),
+    )
+
+    assert result.brief is not None
+    assert len(result.brief.questions) == 1
+    goal = result.brief.questions[0]
+    assert goal.kind == ResearchGoalKind.ROOT_CAUSE
+    assert [item.role for item in goal.comparisons] == [
+        ComparisonRole.TEMPORAL_PERIOD
+    ]
+    by_start = {
+        item.start: item.role for item in result.brief.scope.periods
+    }
+    assert by_start == {
+        "2026-05-01": TemporalRole.BASELINE_PERIOD,
+        "2026-06-01": TemporalRole.COMPARISON_PERIOD,
+    }
+
+
+def test_distinct_fragment_temporal_comparison_remains_real_multi_intent():
+    root_fragment = "Investigate the governed causal explanations."
+    compare_fragment = "Separately compare the two accepted periods."
+    question = root_fragment + " " + compare_fragment
+    payload = ready_payload(
+        kind="root_cause",
+        subject=(
+            "metric.downtime",
+            "metric.fault_count",
+            "metric.performance",
+        ),
+        related=("dimension.department",),
+    )
+    payload["goals"][0].update(
+        {
+            "goal_key": "g-root",
+            "source_text": root_fragment,
+            "source_fragment_text": root_fragment,
+            "causal_competition": {
+                "effect_semantic_id": "metric.downtime",
+                "candidate_mechanism_semantic_ids": [
+                    "metric.fault_count",
+                    "metric.performance",
+                ],
+                "diagnostic_dimension_ids": ["dimension.department"],
+            },
+        }
+    )
+    payload["goals"].append(
+        {
+            "goal_key": "g-independent-comparison",
+            "kind": "comparison",
+            "source_text": compare_fragment,
+            "source_fragment_text": compare_fragment,
+            "subject_semantic_ids": ["metric.downtime"],
+            "related_semantic_ids": [],
+            "ranking": None,
+            "comparisons": [
+                {
+                    "text": "accepted two-period comparison",
+                    "role": "temporal_period",
+                    "semantic_id": None,
+                }
+            ],
+            "causal_competition": None,
+        }
+    )
+    payload["time_periods"] = [
+        _r6_period(
+            "period earlier",
+            "2026-05-01",
+            "2026-06-01",
+            role="baseline_period",
+        ),
+        _r6_period(
+            "period later",
+            "2026-06-01",
+            "2026-07-01",
+            role="comparison_period",
+        ),
+    ]
+
+    result = ResearchIntakeCompiler(
+        transport=FakeTransport(payload)
+    ).compile(
+        question=question,
+        catalog=_r6_temporal_catalog(),
+    )
+
+    assert result.brief is not None
+    assert tuple(item.kind for item in result.brief.questions) == (
+        ResearchGoalKind.ROOT_CAUSE,
+        ResearchGoalKind.COMPARISON,
+    )
+
+
 def test_typed_temporal_comparison_canonicalizes_period_roles_without_prompt_semantics():
     payload = ready_payload(
         kind="root_cause",
