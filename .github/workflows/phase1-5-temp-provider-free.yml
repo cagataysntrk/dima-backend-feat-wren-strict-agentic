@@ -15,6 +15,10 @@ on:
       - "backend/lab/metabase/core_b/phase1_pinpoint_live.py"
       - "backend/tests/test_v3_phase1_5_architecture_xray.py"
       - "backend/tests/test_v3_research_intake.py"
+      - "backend/tests/test_v3_product_composition.py"
+      - "backend/tests/test_v3_p19_provider.py"
+      - "backend/tests/test_v3_p19_hypothesis_root_cause.py"
+      - "backend/tests/test_v3_p18_business_relationship_policy.py"
   workflow_dispatch:
 
 permissions:
