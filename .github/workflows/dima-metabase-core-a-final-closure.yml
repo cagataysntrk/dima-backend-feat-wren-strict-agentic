@@ -1,6 +1,7 @@
+# PHASE1.5 PROVIDER-FREE FREEZE: cb89bc94acf0d88b5b37a94b1160ad77daa1bb86
 # R8 dima.8 provider-free closure trigger
-# FINAL STRICT-SCHEMA RECOVERY SEAL: a50c752da10d2fea9b0dec553bd574838d7e76c3
-# 90+ convergence final provider-free freeze v2: Product behavior a50c752da10d2fea9b0dec553bd574838d7e76c3
+# FINAL STRICT-SCHEMA RECOVERY SEAL: cb89bc94acf0d88b5b37a94b1160ad77daa1bb86
+# 90+ convergence final provider-free freeze v2: Product behavior cb89bc94acf0d88b5b37a94b1160ad77daa1bb86
 name: dima-metabase-core-a-final-closure
 
 on:
