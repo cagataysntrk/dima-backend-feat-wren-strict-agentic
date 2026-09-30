@@ -150,6 +150,13 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
 
     def material_node(state: BrainStatePayload):
         current = _snapshot(state)
+        # P17's sealed follow-up executor may already have performed the exact
+        # typed acquisition. In that case the graph advances using its durable
+        # Evidence/receipt refs and MUST NOT pay Metabot a second time.
+        if current.pending_evidence_ids:
+            return {
+                "last_completed_node": "ACQUIRE_MATERIAL",
+            }
         result = MaterialActivityResult.model_validate(
             material_activity(current.model_dump(mode="json")).result()
         )
@@ -234,6 +241,8 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
             "hypothesis_revision": result.hypothesis_revision,
             "hypothesis_ids": result.hypothesis_ids,
             "material_requirement_ids": result.material_requirement_ids,
+            "pending_evidence_ids": result.produced_evidence_ids,
+            "pending_receipt_refs": result.produced_receipt_refs,
             "discovery_required": False,
             "adaptive_reentries": current.adaptive_reentries + 1,
             "last_completed_node": "P17_NEXT_TEST",
