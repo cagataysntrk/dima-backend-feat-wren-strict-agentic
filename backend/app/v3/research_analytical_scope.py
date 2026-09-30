@@ -83,15 +83,16 @@ class NativeMaterialBinding(Frozen):
 
 
 class CoOriginMaterialRequirement(Frozen):
-    """Transient execution-only union of compatible co-origin material needs.
+    """Transient execution-only union of compatible accepted material needs.
 
-    Accepted Research goals remain immutable. This projection says only which
-    governed material refs one native analytical anchor must make available so
-    downstream relationship authority can consume the same verified occurrence.
+    Accepted Research goals remain immutable. This projection is the execution
+    center for the minimum governed analytical material one native occurrence
+    must make available. It may represent one ROOT_CAUSE goal or a compatible
+    anchor+relationship co-origin group; it never becomes a query plan.
     """
 
     anchor_goal_id: str = Field(min_length=1)
-    source_goal_ids: tuple[str, ...] = Field(min_length=2)
+    source_goal_ids: tuple[str, ...] = Field(min_length=1)
     source_fragment_identity: str = Field(
         pattern=r"^(?:fragment|text)-sha256:[a-f0-9]{64}$"
     )
@@ -99,6 +100,7 @@ class CoOriginMaterialRequirement(Frozen):
     semantic_context_version: str = Field(min_length=1)
     required_metric_refs: tuple[str, ...] = Field(min_length=1)
     required_dimension_refs: tuple[str, ...] = ()
+    required_temporal_roles: tuple[TemporalRole, ...] = ()
 
 
 _COORIGIN_ANCHOR_KINDS = frozenset(
@@ -161,7 +163,74 @@ def coorigin_material_requirements(
         by_source.setdefault(provenance_identity, []).append(question)
 
     requirements: list[CoOriginMaterialRequirement] = []
+    temporal_roles = tuple(
+        dict.fromkeys(item.role for item in brief.scope.periods)
+    )
     for provenance_identity, group in by_source.items():
+        # A typed ROOT_CAUSE goal is itself one material-coverage anchor. User
+        # candidates and discovery material are carried as governed semantic
+        # refs; no per-candidate native acquisition is opened here.
+        root_causes = tuple(
+            item
+            for item in group
+            if (
+                item.kind == ResearchGoalKind.ROOT_CAUSE
+                and item.causal_competition is not None
+                and _has_only_material_refs(item)
+            )
+        )
+        for root in root_causes:
+            refs_by_id = {
+                item.candidate_id: item
+                for item in _material_refs(root)
+            }
+            causal = root.causal_competition
+            ordered_ids = tuple(
+                dict.fromkeys(
+                    (
+                        causal.effect_semantic_id,
+                        *causal.candidate_mechanism_semantic_ids,
+                        *causal.diagnostic_dimension_ids,
+                        *(item.candidate_id for item in _material_refs(root)),
+                    )
+                )
+            )
+            missing = [item for item in ordered_ids if item not in refs_by_id]
+            if missing:
+                raise ResearchAnalyticalScopeError(
+                    "R1_CAUSAL_MATERIAL_REF_OUTSIDE_GOAL",
+                    ",".join(missing),
+                )
+            ordered_refs = tuple(refs_by_id[item] for item in ordered_ids)
+            metrics = tuple(
+                item.candidate_id
+                for item in ordered_refs
+                if item.target_kind
+                in {SemanticTargetKind.METRIC, SemanticTargetKind.KPI}
+            )
+            dimensions = tuple(
+                item.candidate_id
+                for item in ordered_refs
+                if item.target_kind == SemanticTargetKind.DIMENSION
+            )
+            if not metrics:
+                raise ResearchAnalyticalScopeError(
+                    "R1_COORIGIN_MATERIAL_METRIC_REQUIRED",
+                    root.goal_id,
+                )
+            requirements.append(
+                CoOriginMaterialRequirement(
+                    anchor_goal_id=root.goal_id,
+                    source_goal_ids=(root.goal_id,),
+                    source_fragment_identity=provenance_identity,
+                    scope_version_id=brief.scope.scope_version.version_id,
+                    semantic_context_version=session.context_version,
+                    required_metric_refs=metrics,
+                    required_dimension_refs=dimensions,
+                    required_temporal_roles=temporal_roles,
+                )
+            )
+
         relationships = tuple(
             item
             for item in group
@@ -213,6 +282,7 @@ def coorigin_material_requirements(
                 semantic_context_version=session.context_version,
                 required_metric_refs=metrics,
                 required_dimension_refs=dimensions,
+                required_temporal_roles=temporal_roles,
             )
         )
     return tuple(requirements)

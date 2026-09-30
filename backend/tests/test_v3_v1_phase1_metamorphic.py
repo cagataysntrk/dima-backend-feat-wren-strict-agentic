@@ -55,6 +55,7 @@ from app.v3.research_product import ResearchMaterialLimitation
 from control_plane.authorize import Principal
 from control_plane.models import NativeResourceBinding
 from app.v3.research_contracts import (
+    CausalCompetitionSurface,
     ComparisonRole,
     ComparisonSurface,
     RankingSurface,
@@ -565,6 +566,105 @@ def test_coorigin_m3_different_date_range_preserves_typed_period():
     assert contract.period.start == "2026-08-10"
     assert contract.period.end == "2026-08-25"
     assert contract.metric_refs == (M1.candidate_id, M2.candidate_id)
+
+
+def test_rca_material_requirement_is_one_typed_union_with_time_roles():
+    maintenance = _semantic(
+        "metric.maintenance_delay",
+        SemanticTargetKind.METRIC,
+        "Maintenance Delay",
+    )
+    spare = _semantic(
+        "metric.spare_part_delay",
+        SemanticTargetKind.METRIC,
+        "Spare Part Delay",
+    )
+    effect_period = ResearchTimePeriod(
+        source_text="June 2026",
+        time_dimension_candidate_id=DT.candidate_id,
+        start="2026-06-01",
+        end="2026-07-01",
+        role=TemporalRole.EFFECT_PERIOD,
+    )
+    evidence_window = ResearchTimePeriod(
+        source_text="May-June 2026",
+        time_dimension_candidate_id=DT.candidate_id,
+        start="2026-05-01",
+        end="2026-07-01",
+        role=TemporalRole.EVIDENCE_WINDOW,
+    )
+    goal = ResearchQuestion(
+        goal_id="g_root_material",
+        kind=ResearchGoalKind.ROOT_CAUSE,
+        source_text="Compare accepted explanations for the June outcome.",
+        subject_refs=(M1, maintenance, spare),
+        related_refs=(D1, DT),
+        causal_competition=CausalCompetitionSurface(
+            effect_semantic_id=M1.candidate_id,
+            candidate_mechanism_semantic_ids=(
+                maintenance.candidate_id,
+                spare.candidate_id,
+            ),
+            diagnostic_dimension_ids=(D1.candidate_id,),
+        ),
+        status=ResearchGoalStatus.RESOLVED,
+    )
+    brief = ResearchBrief(
+        brief_id="rb-root-material",
+        objective=goal.source_text,
+        scope=ResearchScope(
+            semantic_refs=(M1, maintenance, spare, D1, DT),
+            time_surfaces=(
+                effect_period.source_text,
+                evidence_window.source_text,
+            ),
+            periods=(effect_period, evidence_window),
+            temporal_dimension_ids=(DT.candidate_id,),
+        ),
+        questions=(goal,),
+        must_requirement_ids=(goal.goal_id,),
+        context_version="ctx-root-material",
+        status=ResearchBriefStatus.READY_FOR_RESEARCH,
+    )
+    session = SimpleNamespace(
+        session_id="rs_" + "e" * 24,
+        accepted_brief=brief,
+        authority_id="atc_root_material",
+        context_version=brief.context_version,
+        lineage_id="atl_root_material",
+        tenant_binding="id:00000000-0000-4000-8000-000000009001",
+        principal_subject="00000000-0000-4000-8000-000000009002",
+    )
+
+    requirements = coorigin_material_requirements(session)
+    assert len(requirements) == 1
+    requirement = requirements[0]
+    assert requirement.anchor_goal_id == goal.goal_id
+    assert requirement.source_goal_ids == (goal.goal_id,)
+    assert requirement.required_metric_refs == (
+        M1.candidate_id,
+        maintenance.candidate_id,
+        spare.candidate_id,
+    )
+    assert requirement.required_dimension_refs == (
+        D1.candidate_id,
+        DT.candidate_id,
+    )
+    assert requirement.required_temporal_roles == (
+        TemporalRole.EFFECT_PERIOD,
+        TemporalRole.EVIDENCE_WINDOW,
+    )
+
+    contract = analytical_scope_contract(
+        session=session,
+        obligation_id=goal.goal_id,
+    )
+    assert contract.metric_refs == requirement.required_metric_refs
+    assert contract.dimension_refs == (D1.candidate_id,)
+    assert contract.comparison is None
+    assert contract.period is not None
+    assert contract.period.start == "2026-05-01"
+    assert contract.period.end == "2026-07-01"
 
 
 def test_coorigin_m4_ranking_only_does_not_fetch_unrelated_relationship_material():
