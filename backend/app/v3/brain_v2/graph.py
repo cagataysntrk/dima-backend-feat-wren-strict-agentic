@@ -167,6 +167,7 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
             "hypothesis_ids": result.hypothesis_ids,
             "material_requirement_ids": result.material_requirement_ids,
             "discovery_required": result.discovery_required,
+            "discovery_turns": current.discovery_turns + 1,
             "last_completed_node": "P17_DISCOVERY",
             "activity_fingerprints": _append_fingerprint(
                 current, result.activity_fingerprint
@@ -240,6 +241,14 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
             return "p17_discover"
         return "p19_assess"
 
+    def after_discovery(state: BrainStatePayload) -> str:
+        current = _snapshot(state)
+        if not current.discovery_required and len(current.hypothesis_ids) >= 2:
+            return "p19_assess"
+        if current.discovery_turns < current.max_discovery_turns:
+            return "p17_discover"
+        return "honest_stop"
+
     def after_p19(state: BrainStatePayload) -> str:
         current = _snapshot(state)
         if current.latest_p19_route == BrainP19Route.SUFFICIENT:
@@ -274,7 +283,15 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
             "p19_assess": "p19_assess",
         },
     )
-    builder.add_edge("p17_discover", "p19_assess")
+    builder.add_conditional_edges(
+        "p17_discover",
+        after_discovery,
+        {
+            "p17_discover": "p17_discover",
+            "p19_assess": "p19_assess",
+            "honest_stop": "honest_stop",
+        },
+    )
     builder.add_conditional_edges(
         "p19_assess",
         after_p19,
