@@ -385,6 +385,7 @@ _UNSAFE_PROVIDER_SCHEMA_KEYWORDS = frozenset(
         "then",
         "else",
         "not",
+        "default",
     }
 )
 
@@ -470,6 +471,11 @@ def strict_json_schema(model: type[BaseModel]) -> dict[str, Any]:
 
     def visit(node: Any) -> None:
         if isinstance(node, dict):
+            # JSON Schema "default" is only an annotation and does not
+            # participate in Pydantic/runtime validation. OpenAI-compatible
+            # strict structured-output providers reject it (including next to
+            # $ref), so remove it only from the provider-facing representation.
+            node.pop("default", None)
             props = node.get("properties")
             if isinstance(props, dict):
                 node["additionalProperties"] = False
