@@ -82,6 +82,24 @@ def _links(db_engine, session_id: str):
     return tuple(sealed._links(db_engine, session_id))
 
 
+def _native_occurrence_projection(links) -> list[dict[str, Any]]:
+    """Sanitized exact native occurrence receipt over canonical persisted fields."""
+
+    return [
+        {
+            "execution_link_id": str(item.id),
+            "obligation_id": item.obligation_id,
+            "status": item.status,
+            "native_query_id": item.native_query_id,
+            "query_fingerprint": item.native_query_fingerprint,
+            "receipt_id": item.receipt_id,
+            "evidence_id": item.evidence_id,
+            "execution_kind": item.execution_kind,
+        }
+        for item in links
+    ]
+
+
 def _mechanical(
     *,
     probe_id: str,
@@ -418,19 +436,7 @@ def main() -> int:
             "snapshot": _safe(p19_snapshot),
         }
         report["p20"] = _safe(report_doc)
-        report["native_occurrences"] = [
-            {
-                "execution_link_id": str(item.id),
-                "obligation_id": item.obligation_id,
-                "status": item.status,
-                "native_query_id": item.native_query_id,
-                "query_fingerprint": item.native_query_fingerprint,
-                "receipt_id": item.receipt_id,
-                "evidence_id": item.evidence_id,
-                "execution_kind": item.execution_kind,
-            }
-            for item in links
-        ]
+        report["native_occurrences"] = _native_occurrence_projection(links)
         report["provider_receipt"] = provider
         report["orchestration_boundary_units"] = budget.used
         report["orchestration_boundary_units_by_owner"] = dict(sorted(budget.by_owner.items()))
