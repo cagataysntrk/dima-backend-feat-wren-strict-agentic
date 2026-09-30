@@ -12,7 +12,9 @@ from app.v3.brain_v2.activities import (
     P19ActivityResult,
     ReportActivityResult,
 )
-from app.v3.brain_v2.service import BrainV2Service
+import pytest
+
+from app.v3.brain_v2.service import BrainV2Service, BrainV2ThreadError
 from app.v3.brain_v2.state import (
     BrainGraphState,
     BrainP19Route,
@@ -40,10 +42,11 @@ class FakeActivities:
 
     def intake(self, state: BrainGraphState) -> IntakeActivityResult:
         self.calls["intake"] += 1
+        continuing = state.research_session_id is not None
         return IntakeActivityResult(
-            research_session_id="rs_" + "c" * 24,
-            accepted_brief_ref="brief:fixture",
-            scope_version_id="scope_v1",
+            research_session_id="rs_" + ("d" if continuing else "c") * 24,
+            accepted_brief_ref=("brief:fixture:v2" if continuing else "brief:fixture:v1"),
+            scope_version_id=("scope_v2" if continuing else "scope_v1"),
             open_requirement_ids=("goal-1",),
             material_requirement_ids=("goal-1",),
             discovery_required=self.mode == "discovery",
@@ -57,9 +60,11 @@ class FakeActivities:
             if self.mode == "discovery"
             else ("p19h_" + "a" * 24, "p19h_" + "b" * 24)
         )
+        assert state.research_session_id is not None
+        assert state.scope_version_id is not None
         return CanonicalizeActivityResult(
-            research_session_id="rs_" + "c" * 24,
-            scope_version_id="scope_v1",
+            research_session_id=state.research_session_id,
+            scope_version_id=state.scope_version_id,
             open_requirement_ids=("goal-1",),
             material_requirement_ids=("goal-1",),
             hypothesis_ids=hypotheses,
@@ -210,3 +215,58 @@ def test_reentry_bound_stops_second_next_test_instead_of_looping() -> None:
     assert activities.calls["p17_next_test"] == 1
     assert activities.calls["p19"] == 2
     assert result.adaptive_reentries == 1
+
+
+
+def test_continue_turn_advances_scope_without_reusing_old_current_evidence() -> None:
+    activities = FakeActivities("one_pass")
+    service = BrainV2Service(activities=activities)
+    first = service.run(
+        BrainGraphState(
+            thread_id="thread-scope-repair",
+            tenant_binding="id:tenant",
+            principal_ref="user-1",
+            current_user_input="Initial governed question.",
+        )
+    )
+    first_evidence = first.evidence_ids
+
+    second = service.continue_turn(
+        thread_id="thread-scope-repair",
+        tenant_binding="id:tenant",
+        principal_ref="user-1",
+        user_input="Narrow the accepted scope.",
+    )
+
+    assert first.scope_version_id == "scope_v1"
+    assert second.scope_version_id == "scope_v2"
+    assert second.research_session_id == "rs_" + "d" * 24
+    assert first_evidence
+    assert second.evidence_ids
+    assert set(first_evidence).isdisjoint(second.evidence_ids)
+    assert activities.calls["intake"] == 2
+    assert activities.calls["material"] == 2
+
+
+def test_foreign_principal_cannot_resume_or_trigger_activities() -> None:
+    activities = FakeActivities("one_pass")
+    service = BrainV2Service(activities=activities)
+    service.run(
+        BrainGraphState(
+            thread_id="thread-secure",
+            tenant_binding="id:tenant",
+            principal_ref="user-1",
+            current_user_input="Initial governed question.",
+        )
+    )
+    before = activities.calls.copy()
+
+    with pytest.raises(BrainV2ThreadError):
+        service.continue_turn(
+            thread_id="thread-secure",
+            tenant_binding="id:foreign",
+            principal_ref="user-foreign",
+            user_input="Try to continue another tenant's thread.",
+        )
+
+    assert activities.calls == before
