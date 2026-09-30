@@ -302,22 +302,12 @@ class HypothesisSnapshot(Frozen):
     groundings: tuple[P19GroundingLink, ...]
 
 
-class P19EvidenceObservation(Frozen):
-    """Provider-facing projection of one exact VERIFIED P14 Evidence occurrence."""
-
-    evidence_id: str = Field(pattern=r"^evi_[a-f0-9]{24}$")
-    receipt_id: str = Field(pattern=r"^dqr_[a-f0-9]{24}$")
-    result_hash: str = Field(pattern=r"^[a-f0-9]{64}$")
-    payload: Any
-
-
 class P19CaseSnapshot(Frozen):
     research_session_id: str
     obligation_id: str
     tenant_binding: str
     semantic_context_version: str
     hypotheses: tuple[HypothesisSnapshot, ...]
-    evidence_observations: tuple[P19EvidenceObservation, ...] = ()
 
 
 def _canonical_json(value: Any, *, code: str) -> tuple[str, str]:
@@ -832,58 +822,17 @@ class HypothesisRootCauseStore:
             session_id=session.session_id,
             obligation_id=obligation_id,
         )
-        hypothesis_snapshots = tuple(
-            HypothesisSnapshot(
-                hypothesis=h,
-                groundings=self._groundings(h.hypothesis_id),
-            )
-            for h in hypotheses
-        )
-        evidence_by_id: dict[str, P19EvidenceObservation] = {}
-        for item in hypothesis_snapshots:
-            for link in item.groundings:
-                if link.source_kind != GroundingSourceKind.P14_EVIDENCE:
-                    continue
-                row = self._source_authority(
-                    session_id=session.session_id,
-                    obligation_id=obligation_id,
-                    source_kind=link.source_kind,
-                    source_ref=link.source_ref,
-                    source_receipt_id=link.source_receipt_id,
-                )
-                if (
-                    not row.receipt_id
-                    or not row.result_hash
-                    or not row.native_result_json
-                ):
-                    raise P19EpistemicError(
-                        "P19_EVIDENCE_OBSERVATION_INCOMPLETE",
-                        link.source_ref,
-                    )
-                observation = P19EvidenceObservation(
-                    evidence_id=link.source_ref,
-                    receipt_id=row.receipt_id,
-                    result_hash=row.result_hash,
-                    payload=_json_object(
-                        row.native_result_json,
-                        code="P19_EVIDENCE_OBSERVATION_INVALID",
-                    ),
-                )
-                existing = evidence_by_id.get(observation.evidence_id)
-                if existing is not None and existing != observation:
-                    raise P19EpistemicError(
-                        "P19_EVIDENCE_OBSERVATION_CONFLICT",
-                        observation.evidence_id,
-                    )
-                evidence_by_id[observation.evidence_id] = observation
         return P19CaseSnapshot(
             research_session_id=session.session_id,
             obligation_id=obligation_id,
             tenant_binding=session.tenant_binding,
             semantic_context_version=session.context_version,
-            hypotheses=hypothesis_snapshots,
-            evidence_observations=tuple(
-                evidence_by_id[key] for key in sorted(evidence_by_id)
+            hypotheses=tuple(
+                HypothesisSnapshot(
+                    hypothesis=h,
+                    groundings=self._groundings(h.hypothesis_id),
+                )
+                for h in hypotheses
             ),
         )
 

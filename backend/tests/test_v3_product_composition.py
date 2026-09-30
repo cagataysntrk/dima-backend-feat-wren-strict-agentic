@@ -764,7 +764,7 @@ def test_r4_exact_active_p18_policy_promotes_only_business_relationship_layer():
     )
 
 
-def test_root_cause_user_seeded_candidates_use_claim_synthesis_without_analytical_reentry():
+def test_root_cause_user_seeded_candidates_bypass_p17_rediscovery_without_analytical_reentry():
     c, research, investigation, reasoning = composer()
     causal = CausalCompetitionSurface(
         effect_semantic_id=DOWNTIME.candidate_id,
@@ -799,8 +799,8 @@ def test_root_cause_user_seeded_candidates_use_claim_synthesis_without_analytica
         native_session_token=None,
     )
     state = investigation._state(result.research_session_id)
-    assert state["calls"] == 2
-    assert state["reentry_intents"] == ["FORM_CLAIM", "FORM_CLAIM"]
+    assert state["calls"] == 0
+    assert state["reentry_intents"] == []
     assert result.p19_assessment_refs == ("p19a_" + "2" * 24,)
     snapshot = c._epistemics.snapshot(
         research_session_id=result.research_session_id,
