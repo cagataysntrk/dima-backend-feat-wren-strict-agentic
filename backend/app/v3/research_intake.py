@@ -1023,6 +1023,92 @@ class ResearchIntakeCompiler:
         return draft.model_copy(update={"goals": tuple(canonical)})
 
     @staticmethod
+    def _canonicalize_temporal_comparison_subgoals(
+        draft: ModelResearchBriefDraft,
+    ) -> ModelResearchBriefDraft:
+        """Absorb co-origin temporal comparison material into one RCA goal.
+
+        A provider may decompose one user clause into ROOT_CAUSE plus COMPARISON
+        even though the comparison is only material scope for that same causal
+        investigation. Dima may merge them only when typed provenance proves
+        co-origin: exact source_fragment_text, temporal-only comparison surface,
+        and semantic refs already covered by exactly one ROOT_CAUSE goal.
+        Distinct fragments remain distinct analytical user intent.
+        """
+
+        if draft.terminal != ResearchIntakeTerminal.READY:
+            return draft
+        roots = tuple(
+            goal
+            for goal in draft.goals
+            if (
+                goal.kind == ResearchGoalKind.ROOT_CAUSE
+                and goal.causal_competition is not None
+            )
+        )
+        if not roots:
+            return draft
+
+        merged = {goal.goal_key: goal for goal in roots}
+        removed: set[str] = set()
+        for goal in draft.goals:
+            if goal.kind != ResearchGoalKind.COMPARISON:
+                continue
+            if (
+                goal.ranking is not None
+                or goal.allowed_relationship_id is not None
+                or goal.relationship_intent is not None
+                or goal.causal_competition is not None
+                or not goal.comparisons
+                or any(
+                    item.role != ComparisonRole.TEMPORAL_PERIOD
+                    or item.semantic_id is not None
+                    for item in goal.comparisons
+                )
+                or goal.source_fragment_text is None
+            ):
+                continue
+
+            refs = set((*goal.subject_semantic_ids, *goal.related_semantic_ids))
+            matches = []
+            for root in roots:
+                root_refs = set(
+                    (*root.subject_semantic_ids, *root.related_semantic_ids)
+                )
+                if (
+                    root.source_fragment_text == goal.source_fragment_text
+                    and refs.issubset(root_refs)
+                ):
+                    matches.append(root)
+            if len(matches) != 1:
+                continue
+
+            root = merged[matches[0].goal_key]
+            seen = {
+                _canonical(item.model_dump(mode="json"))
+                for item in root.comparisons
+            }
+            comparisons = list(root.comparisons)
+            for item in goal.comparisons:
+                identity = _canonical(item.model_dump(mode="json"))
+                if identity not in seen:
+                    comparisons.append(item)
+                    seen.add(identity)
+            merged[root.goal_key] = root.model_copy(
+                update={"comparisons": tuple(comparisons)}
+            )
+            removed.add(goal.goal_key)
+
+        if not removed:
+            return draft
+        canonical = tuple(
+            merged.get(goal.goal_key, goal)
+            for goal in draft.goals
+            if goal.goal_key not in removed
+        )
+        return draft.model_copy(update={"goals": canonical})
+
+    @staticmethod
     def _canonicalize_typed_temporal_comparison(
         draft: ModelResearchBriefDraft,
     ) -> ModelResearchBriefDraft:
@@ -1232,6 +1318,7 @@ class ResearchIntakeCompiler:
         )
 
         draft = self._canonicalize_analytical_goals(draft)
+        draft = self._canonicalize_temporal_comparison_subgoals(draft)
         draft = self._canonicalize_exact_period_repeats(draft)
         draft = self._canonicalize_typed_temporal_comparison(draft)
         duplicate_root_keys = self._duplicate_root_cause_goal_keys(draft)
@@ -1286,6 +1373,7 @@ class ResearchIntakeCompiler:
             )
 
         draft = self._canonicalize_analytical_goals(draft)
+        draft = self._canonicalize_temporal_comparison_subgoals(draft)
         draft = self._canonicalize_exact_period_repeats(draft)
         draft = self._canonicalize_typed_temporal_comparison(draft)
         duplicate_root_keys = self._duplicate_root_cause_goal_keys(draft)
