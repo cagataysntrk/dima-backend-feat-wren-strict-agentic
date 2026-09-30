@@ -1407,15 +1407,9 @@ class ResearchIntakeCompiler:
                 "READY intake must contain at least one analytical goal",
             )
 
-        period_by_source: dict[str, ModelTimePeriodDraft] = {}
         period_identities: set[tuple[str, str, str]] = set()
         periods: list[ResearchTimePeriod] = []
         for item in draft.time_periods:
-            if item.source_text in period_by_source:
-                raise ResearchIntakeError(
-                    "INTAKE_TIME_PERIOD_DUPLICATE",
-                    item.source_text,
-                )
             identity = (
                 item.time_dimension_semantic_id,
                 item.start,
@@ -1426,7 +1420,6 @@ class ResearchIntakeCompiler:
                     "INTAKE_TIME_PERIOD_DUPLICATE",
                     "|".join(identity),
                 )
-            period_by_source[item.source_text] = item
             period_identities.add(identity)
             dimension_ref = by_id.get(item.time_dimension_semantic_id)
             if (
@@ -1459,7 +1452,7 @@ class ResearchIntakeCompiler:
                 ) from exc
         ordered_periods = tuple(periods)
         time_surfaces = tuple(
-            item.source_text for item in ordered_periods
+            dict.fromkeys(item.source_text for item in ordered_periods)
         )
 
         accepted_ids = set(scope_refs)
