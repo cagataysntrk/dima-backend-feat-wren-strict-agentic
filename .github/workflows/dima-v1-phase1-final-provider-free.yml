@@ -1,4 +1,5 @@
 # R8 dima.8 provider-free closure trigger
+# 90+ convergence provider-free freeze: Product behavior dc4be27491d7fb41443491a93a812899e2645bb8
 name: dima-v1-phase1-final-provider-free
 
 on:
@@ -17,7 +18,7 @@ permissions:
   contents: read
 
 env:
-  PRODUCT_BEHAVIOR_SHA: "d2021b2157b8c36d7cf57d3e42556ddb1aa93f7d"
+  PRODUCT_BEHAVIOR_SHA: "dc4be27491d7fb41443491a93a812899e2645bb8"
   DIMA_VQR_EMBEDDER: "off"
   DIMA_SCHEDULER_ENABLED: "false"
   DIMA_INTERACTION_LOG: "false"
