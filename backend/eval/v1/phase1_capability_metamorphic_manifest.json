@@ -1,0 +1,77 @@
+{
+  "schema_version": "dima_phase1_capability_metamorphic_v1",
+  "purpose": "Independent provider-free generalization layer for Dima V1 90+ convergence",
+  "cases": [
+    {
+      "case_id": "M_SCOPE_CURRENTNESS_ALT",
+      "family": "scope_currentness",
+      "mutations": [
+        "metric",
+        "dimension",
+        "date",
+        "entity",
+        "wording"
+      ]
+    },
+    {
+      "case_id": "M_RELATIONSHIP_ALT",
+      "family": "relationship",
+      "mutations": [
+        "metrics",
+        "dimension",
+        "wording"
+      ]
+    },
+    {
+      "case_id": "M_ADAPTIVE_ALT",
+      "family": "adaptive",
+      "mutations": [
+        "metric",
+        "source_goal",
+        "wording"
+      ]
+    },
+    {
+      "case_id": "M_RCA_ONE_PASS_ALT",
+      "family": "rca_one_pass",
+      "mutations": [
+        "effect_metric",
+        "candidate_mechanisms",
+        "dimension",
+        "dates"
+      ]
+    },
+    {
+      "case_id": "M_RCA_ADAPTIVE_ALT",
+      "family": "rca_adaptive",
+      "mutations": [
+        "effect_metric",
+        "candidate_mechanisms",
+        "evidence_need"
+      ]
+    },
+    {
+      "case_id": "M_REPORTING_ALT",
+      "family": "reporting",
+      "mutations": [
+        "metric",
+        "deliverable",
+        "wording"
+      ]
+    },
+    {
+      "case_id": "M_MULTI_INTENT_ALT",
+      "family": "multi_intent",
+      "mutations": [
+        "ranking_metric",
+        "relationship_metric",
+        "dimension",
+        "date",
+        "wording"
+      ]
+    }
+  ],
+  "paid_cognition_required": false,
+  "benchmark_case_ids": [],
+  "genericity_rule": "No fixture IDs, benchmark IDs, month-specific branches, department-specific branches, regex or fuzzy semantic routing."
+}
