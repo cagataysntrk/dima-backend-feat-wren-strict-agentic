@@ -400,10 +400,19 @@ Authority rules:
 - If multiple goals decompose the same user clause, repeat the same maximal supporting clause
   verbatim for each of those goals. Different clauses must keep different fragment text.
 - Adaptive instructions such as "if verified evidence reveals a new material direction, follow it"
-  are Core-B product-routing intent, NOT a second analytical goal. Emit the actual analytical goal
-  once, then emit FOLLOW_VERIFIED_MATERIAL with source_goal_key pointing to that exact goal.
+  or "if current governed Evidence cannot discriminate the accepted alternatives, run one bounded
+  discriminating test" are Core-B product-routing intent, NOT a second analytical goal. Emit the
+  actual analytical goal once, then emit FOLLOW_VERIFIED_MATERIAL with source_goal_key pointing to
+  that exact goal.
+- FOLLOW_VERIFIED_MATERIAL is AFFIRMATIVE conditional routing authority. Emit it only when the user
+  explicitly asks for additional analytical/investigative work to occur if a governed condition is
+  met (for example insufficient discrimination or a newly verified material direction).
+- A negative stopping/depth instruction such as "do not open another query when current Evidence is
+  sufficient", "do not deepen just to look thorough", or merely "stop when enough" does NOT authorize
+  future analytical work and MUST NOT emit FOLLOW_VERIFIED_MATERIAL. Causal-boundary language alone
+  also does not authorize a follow-up.
 - An investigation directive never asserts that evidence is material; it only preserves the user's
-  conditional instruction for later governed P17 evaluation.
+  affirmative conditional instruction for later governed P17 evaluation.
 - Do not convert association into causality. ROOT_CAUSE means bounded investigation, not a cause.
 - Use RELATIONSHIP when the user's requested analytical object is observational association,
   co-movement, relative relationship strength, or similar non-causal relationship interpretation.
