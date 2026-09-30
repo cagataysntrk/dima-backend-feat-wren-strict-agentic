@@ -169,7 +169,7 @@ def test_pinpoint_workflow_is_one_probe_per_run_and_no_broad_scorer():
     assert "validate_phase1_round2.py" not in workflow
     assert "--manifest eval/dima_neutral_feature_benchmark_round2.json" not in workflow
     assert "backend/eval/v1/authorizations/phase1-final-pinpoint-live-v3.json" not in workflow
-    assert "phase1-r-live-1-trigger-20260930" in workflow
+    assert "phase1-r-live-1-recovery-trigger-20260930" in workflow
     assert "phase1-r-live-2-trigger-20260930" in workflow
     assert "phase1-r-live-3-trigger-20260930" in workflow
     assert "phase1-v4-trigger-20260929" in workflow
@@ -181,8 +181,8 @@ def test_pinpoint_workflow_is_one_probe_per_run_and_no_broad_scorer():
     assert "phase1-f07-trigger-20260930" in workflow
     assert "phase1-f04-trigger-20260930" in workflow
     assert "feat/dima-metabase-platform" in workflow
-    assert 'PRODUCT_BEHAVIOR_SHA: "dc4be27491d7fb41443491a93a812899e2645bb8"' in workflow
-    assert 'assert report["candidate_product_sha"] == "dc4be27491d7fb41443491a93a812899e2645bb8"' in workflow
+    assert 'PRODUCT_BEHAVIOR_SHA: "c2a0cfda12ab6b1329ef56171b6a5d8e58eda005"' in workflow
+    assert 'assert report["candidate_product_sha"] == "c2a0cfda12ab6b1329ef56171b6a5d8e58eda005"' in workflow
     assert 'test "$ENGINE_SHA" = "0f16f2b5a1ec774ac7afee6214c726e82f9ceb3c"' in workflow
     assert 'test "$CERTIFICATION_RUN_ID" = "36610103287"' in workflow
     assert 'test "$RUNTIME_TAG" = "v0.63.18-dima.8"' in workflow
