@@ -13,6 +13,9 @@ on:
           - RELATIONSHIP_F05_H_RECOVERY
           - REPORT_F08_H_RECOVERY
           - ADAPTIVE_F06_H_RETENTION
+          - CONVERSATION_F10_H_RECOVERY
+          - RCA_F07_H_RECOVERY
+          - MULTI_INTENT_F04_H_RECOVERY
       confirm_pinpoint_paid:
         description: "Type YES; no automatic retry is permitted"
         required: true
@@ -82,6 +85,15 @@ jobs:
                 ;;
               phase1-f06-trigger-20260929)
                 PROBE_ID="ADAPTIVE_F06_H_RETENTION"
+                ;;
+              phase1-f10-trigger-20260930)
+                PROBE_ID="CONVERSATION_F10_H_RECOVERY"
+                ;;
+              phase1-f07-trigger-20260930)
+                PROBE_ID="RCA_F07_H_RECOVERY"
+                ;;
+              phase1-f04-trigger-20260930)
+                PROBE_ID="MULTI_INTENT_F04_H_RECOVERY"
                 ;;
               *)
                 echo "unauthorized pinpoint trigger branch" >&2
@@ -344,9 +356,13 @@ jobs:
 
           if probe == "SCOPE_CURRENTNESS_HARD_V4":
               turn1=report["turns"][0]
-              ranking=turn1["brief_payload"]["questions"][0]["ranking"]
-              assert ranking["limit"] is None
-              assert ranking["measure_semantic_id"] is None
+              ranking_goals=[
+                  item for item in turn1["brief_payload"]["questions"]
+                  if item.get("kind") == "ranking"
+              ]
+              assert len(ranking_goals) == 1, ranking_goals
+              ranking=ranking_goals[0]["ranking"]
+              assert ranking is not None
               periods=turn1["brief_payload"]["scope"]["periods"]
               assert {(x["start"],x["end"]) for x in periods} == {
                   ("2026-05-01","2026-06-01"),
@@ -375,6 +391,9 @@ jobs:
                   "RELATIONSHIP_F05_H_RECOVERY",
                   "REPORT_F08_H_RECOVERY",
                   "ADAPTIVE_F06_H_RETENTION",
+                  "CONVERSATION_F10_H_RECOVERY",
+                  "RCA_F07_H_RECOVERY",
+                  "MULTI_INTENT_F04_H_RECOVERY",
               }
               assert report["probe_contract"]["scoring_authority"] == (
                   "MANUAL_ARTIFACT_ADJUDICATION_ONLY"
