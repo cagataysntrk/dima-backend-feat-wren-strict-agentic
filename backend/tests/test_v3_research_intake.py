@@ -1107,12 +1107,19 @@ def test_request_scoped_intake_schema_closes_authority_ids_before_domain_executi
         if item["properties"]["kind"]["enum"] == ["root_cause"]
     )
     assert "causal_competition" in root_cause["properties"]
-    assert root_cause["properties"]["temporal_material_mode"]["enum"] == [
-        "none",
+    assert "temporal_material" in root_cause["properties"]
+    assert "temporal_material" in root_cause["required"]
+    temporal_ref = root_cause["properties"]["temporal_material"]["$ref"]
+    temporal = schema["$defs"][temporal_ref.rsplit("/", 1)[-1]]
+    assert set(temporal["properties"]) == {
+        "mode",
         "window",
-        "comparison",
-    ]
-    assert "temporal_material_mode" in root_cause["required"]
+        "baseline_period",
+        "comparison_period",
+    }
+    assert temporal["properties"]["mode"]["$ref"].endswith(
+        "/ModelTemporalMaterialMode"
+    )
     causal_ref = root_cause["properties"]["causal_competition"]["$ref"]
     causal = schema["$defs"][causal_ref.rsplit("/", 1)[-1]]
     assert set(causal["properties"]["effect_semantic_id"]["enum"]) == {
@@ -1293,7 +1300,7 @@ def test_r6_multi_period_comparison_preserves_two_typed_half_open_periods():
     )
 
 
-def test_root_temporal_material_mode_mints_typed_comparison_authority():
+def test_root_temporal_material_lifts_comparison_periods_into_scope():
     payload = ready_payload(
         kind="root_cause",
         subject=(
@@ -1311,11 +1318,21 @@ def test_root_temporal_material_mode_mints_typed_comparison_authority():
         ],
         "diagnostic_dimension_ids": ["dimension.department"],
     }
-    payload["goals"][0]["temporal_material_mode"] = "comparison"
-    payload["time_periods"] = [
-        _r6_period("later interval", "2026-06-01", "2026-07-01"),
-        _r6_period("earlier interval", "2026-05-01", "2026-06-01"),
-    ]
+    payload["goals"][0]["temporal_material"] = {
+        "mode": "comparison",
+        "window": None,
+        "baseline_period": _r6_period(
+            "earlier interval",
+            "2026-05-01",
+            "2026-06-01",
+        ),
+        "comparison_period": _r6_period(
+            "later interval",
+            "2026-06-01",
+            "2026-07-01",
+        ),
+    }
+    payload["time_periods"] = []
 
     result = ResearchIntakeCompiler(
         transport=FakeTransport(payload)
@@ -1331,16 +1348,24 @@ def test_root_temporal_material_mode_mints_typed_comparison_authority():
     assert [item.role for item in goal.comparisons] == [
         ComparisonRole.TEMPORAL_PERIOD
     ]
-    by_start = {
-        item.start: item.role for item in result.brief.scope.periods
-    }
-    assert by_start == {
-        "2026-05-01": TemporalRole.BASELINE_PERIOD,
-        "2026-06-01": TemporalRole.COMPARISON_PERIOD,
-    }
+    assert [
+        (item.start, item.end, item.role)
+        for item in result.brief.scope.periods
+    ] == [
+        (
+            "2026-05-01",
+            "2026-06-01",
+            TemporalRole.BASELINE_PERIOD,
+        ),
+        (
+            "2026-06-01",
+            "2026-07-01",
+            TemporalRole.COMPARISON_PERIOD,
+        ),
+    ]
 
 
-def test_root_temporal_comparison_mode_fails_closed_without_two_periods():
+def test_root_temporal_comparison_shape_fails_closed_when_period_missing():
     payload = ready_payload(
         kind="root_cause",
         subject=(
@@ -1358,10 +1383,16 @@ def test_root_temporal_comparison_mode_fails_closed_without_two_periods():
         ],
         "diagnostic_dimension_ids": ["dimension.department"],
     }
-    payload["goals"][0]["temporal_material_mode"] = "comparison"
-    payload["time_periods"] = [
-        _r6_period("pooled interval", "2026-05-01", "2026-07-01"),
-    ]
+    payload["goals"][0]["temporal_material"] = {
+        "mode": "comparison",
+        "window": None,
+        "baseline_period": _r6_period(
+            "earlier interval",
+            "2026-05-01",
+            "2026-06-01",
+        ),
+        "comparison_period": None,
+    }
 
     with pytest.raises(ResearchIntakeError) as exc:
         ResearchIntakeCompiler(
@@ -1371,10 +1402,10 @@ def test_root_temporal_comparison_mode_fails_closed_without_two_periods():
             catalog=_r6_temporal_catalog(),
         )
 
-    assert exc.value.code == "INTAKE_TEMPORAL_COMPARISON_PERIODS_REQUIRED"
+    assert exc.value.code == "INTAKE_MODEL_OUTPUT_INVALID"
 
 
-def test_root_window_mode_does_not_invent_period_comparison():
+def test_root_temporal_window_lifts_one_material_window_without_comparison():
     payload = ready_payload(
         kind="root_cause",
         subject=(
@@ -1392,10 +1423,17 @@ def test_root_window_mode_does_not_invent_period_comparison():
         ],
         "diagnostic_dimension_ids": ["dimension.department"],
     }
-    payload["goals"][0]["temporal_material_mode"] = "window"
-    payload["time_periods"] = [
-        _r6_period("pooled interval", "2026-05-01", "2026-07-01"),
-    ]
+    payload["goals"][0]["temporal_material"] = {
+        "mode": "window",
+        "window": _r6_period(
+            "pooled interval",
+            "2026-05-01",
+            "2026-07-01",
+        ),
+        "baseline_period": None,
+        "comparison_period": None,
+    }
+    payload["time_periods"] = []
 
     result = ResearchIntakeCompiler(
         transport=FakeTransport(payload)
@@ -1406,7 +1444,16 @@ def test_root_window_mode_does_not_invent_period_comparison():
 
     assert result.brief is not None
     assert result.brief.questions[0].comparisons == ()
-    assert result.brief.scope.periods[0].role == TemporalRole.MATERIAL_WINDOW
+    assert [
+        (item.start, item.end, item.role)
+        for item in result.brief.scope.periods
+    ] == [
+        (
+            "2026-05-01",
+            "2026-07-01",
+            TemporalRole.MATERIAL_WINDOW,
+        )
+    ]
 
 
 def test_coorigin_temporal_comparison_subgoal_merges_into_root_cause():
