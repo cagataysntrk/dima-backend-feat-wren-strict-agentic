@@ -47,7 +47,7 @@ HISTORICAL_MANUAL_SCORE_SCALE = {
     "FAIL": 0,
     "LOW_UTILITY": 1,
     "PARTIAL": 2,
-    "STRONG_PARTIAL": 3,
+    "STRONG": 3,
     "FULL": 4,
 }
 
@@ -127,29 +127,32 @@ PROBES = {
     "RELATIONSHIP_F05_H_RECOVERY": {
         "historical_round2_case_id": "F05_H",
         "turns": (
-            "Duruş, arıza, bakım gecikmesi ve performans arasındaki ilişkileri birlikte araştır; hangi ilişkilerin daha güçlü veya zayıf göründüğünü supporting ve challenging evidence ile raporla, nedenselliği kanıtlanmış gibi sunma.",
+            "Mayıs-Haziran 2026'da bölüm bazında machine downtime ile fault count birlikte hareket ediyor mu? Gözlemsel association/co-movement kanıtını supporting ve challenging evidence olarak ayır. Bu istek için yeni bir BUSINESS_POLICY ilişkisi kurma ve association'ı causation gibi sunma.",
         ),
         "manual_contract": (
-            "native analytical work > 0",
-            "P18 invoked > 0 and no unexplained BLOCKED ending",
-            "multiple relevant relationship analyses exist",
-            "supporting Evidence and challenging Evidence exist",
-            "material relationship interpretation and evidence-governed strength differences exist",
-            "association is not promoted to causation",
+            "relationship intent remains OBSERVATIONAL",
+            "native analytical work > 0 and governed Evidence exists",
+            "P18 policy use = 0 because no business-policy relationship was requested",
+            "supporting/challenging or explicitly insufficient Evidence is preserved",
+            "association/co-movement interpretation is decision-useful",
+            "business relationship may remain NOT_ESTABLISHED",
+            "causality remains NOT_ESTABLISHED unless separate P19 authority exists",
             "causal overclaim=0, exception=0, silent wrong=0",
         ),
     },
     "REPORT_F08_H_RECOVERY": {
         "historical_round2_case_id": "F08_H",
         "turns": (
-            "Yönetim için kanıta bağlı rapor üret: gözlem, bulgu, hipotez, karşı kanıt, sınırlılık ve karar açısından önemli noktaları ayrı göster; sayısal ve nedensel iddiaların provenance'ını koru ve kanıtın izin verdiğinden daha güçlü ifade kullanma.",
+            "Mayıs-Haziran 2026'da Assembly bölümündeki machine downtime, fault count ve maintenance delay görünümünü kanıta bağlı olarak araştır. Bulguları, karşı kanıtı ve sınırlılıkları koru; nedenselliği kanıtlanmış gibi sunma.",
+            "Bunu yönetim için kanıta bağlı rapora dönüştür. Gözlem, bulgu, hipotez/epistemik durum, supporting/challenging veya eksik Evidence, sınırlılık ve karar açısından önemli noktaları ayrı göster; sayısal iddiaların provenance'ını koru.",
         ),
         "manual_contract": (
-            "exception=0 and P20 REPORT or legitimately LIMITED REPORT",
-            "material claims > 0 and governed Evidence > 0",
-            "Claim -> Evidence -> native receipt lineage is intact",
-            "Research/scope lineage and currentness are correct",
-            "observations, findings, hypotheses, counter-Evidence, and limitations remain distinguishable",
+            "turn 1 creates real governed investigation state and Evidence",
+            "turn 2 produces P20 ReportDocument from governed state",
+            "turn 2 opens no unnecessary new native analytical acquisition",
+            "Claim -> Evidence -> receipt/native lineage is intact",
+            "Research/scope lineage and currentness remain correct",
+            "observations, findings, hypotheses, counter/missing Evidence, and limitations remain distinguishable",
             "numeric provenance is preserved and invented numeric truth=0",
             "causal promotion beyond P19=0",
         ),
@@ -1049,6 +1052,131 @@ def _mechanical_a(turns: list[dict[str, Any]], currentness: dict[str, Any]) -> d
     }
 
 
+def _requirement_complete(turn: dict[str, Any]) -> bool:
+    composition = turn.get("composition_payload") or {}
+    completion = composition.get("completion_ledger") or {}
+    return completion.get("requirement_complete") is True
+
+
+def _mechanical_conversation(
+    turns: list[dict[str, Any]],
+    snapshots: list[dict[str, Any]],
+) -> dict[str, bool]:
+    if len(turns) != 3 or len(snapshots) != 3:
+        return {"three_turns_executed": False}
+    first, corrected, final = turns
+    old = snapshots[0]
+    latest = snapshots[-1]
+    old_primary = [
+        item for item in old["evidence"]
+        if item["scope_id"] == first["research_session_id"]
+    ]
+    latest_primary = [
+        item for item in latest["evidence"]
+        if item["scope_id"] == final["research_session_id"]
+    ]
+    return {
+        "three_turns_executed": True,
+        "all_turns_ready": all(bool(item.get("ready")) for item in turns),
+        "scope_lineage_continuity": len(
+            {item["scope_lineage_id"] for item in turns}
+        ) == 1,
+        "scope_correction_advanced_version": (
+            first["scope_version_id"] != corrected["scope_version_id"]
+        ),
+        "old_research_not_current": (
+            old["research_currentness"] in {"SUPERSEDED", "HISTORICAL"}
+        ),
+        "old_primary_evidence_historical": (
+            bool(old_primary)
+            and all(item["currentness"] == "HISTORICAL" for item in old_primary)
+        ),
+        "final_research_current": latest["research_currentness"] == "CURRENT",
+        "final_primary_evidence_current": (
+            bool(latest_primary)
+            and all(item["currentness"] == "CURRENT" for item in latest_primary)
+        ),
+        "continued_useful_analysis": (
+            bool(final.get("native_results"))
+            and any(final.get("evidence_by_session", {}).values())
+        ),
+        "final_requirement_complete": _requirement_complete(final),
+    }
+
+
+def _mechanical_observational_relationship(
+    turn: dict[str, Any],
+) -> dict[str, bool]:
+    brief = turn.get("brief_payload") or {}
+    relationship_questions = [
+        item for item in brief.get("questions") or []
+        if item.get("kind") == "relationship"
+    ]
+    return {
+        "ready": bool(turn.get("ready")),
+        "single_observational_relationship": (
+            len(relationship_questions) == 1
+            and relationship_questions[0].get("relationship_intent")
+            == "OBSERVATIONAL"
+        ),
+        "no_business_policy_use": not bool(turn.get("p18_policy_use_refs")),
+        "no_causal_assessment_for_observation": not bool(
+            turn.get("p19_assessment_refs")
+        ),
+        "native_material_exists": bool(turn.get("native_results")),
+        "governed_evidence_exists": any(
+            turn.get("evidence_by_session", {}).values()
+        ),
+        "requirement_complete": _requirement_complete(turn),
+    }
+
+
+def _mechanical_contextual_report(
+    turns: list[dict[str, Any]],
+) -> dict[str, bool]:
+    if len(turns) != 2:
+        return {"two_turns_executed": False}
+    investigation, report_turn = turns
+    report_payload = report_turn.get("p20_report") or {}
+    return {
+        "two_turns_executed": True,
+        "both_turns_ready": bool(
+            investigation.get("ready") and report_turn.get("ready")
+        ),
+        "same_scope_lineage": (
+            investigation.get("scope_lineage_id")
+            == report_turn.get("scope_lineage_id")
+        ),
+        "investigation_has_native_material": bool(
+            investigation.get("native_results")
+        ),
+        "investigation_has_governed_evidence": any(
+            investigation.get("evidence_by_session", {}).values()
+        ),
+        "report_turn_has_no_new_native_acquisition": (
+            len(report_turn.get("native_results") or []) == 0
+        ),
+        "p20_report_exists": bool(report_payload.get("document")),
+        "p20_report_load_clean": not bool(report_payload.get("load_error")),
+        "p20_report_current": report_payload.get("currentness") == "CURRENT",
+        "report_requirement_complete": _requirement_complete(report_turn),
+    }
+
+
+def _mechanical_multi_intent(turn: dict[str, Any]) -> dict[str, bool]:
+    report_payload = turn.get("p20_report") or {}
+    return {
+        "ready": bool(turn.get("ready")),
+        "native_material_exists": bool(turn.get("native_results")),
+        "governed_evidence_exists": any(
+            turn.get("evidence_by_session", {}).values()
+        ),
+        "p20_report_exists": bool(report_payload.get("document")),
+        "p20_report_load_clean": not bool(report_payload.get("load_error")),
+        "requirement_complete": _requirement_complete(turn),
+    }
+
+
 def _root_mode_payload(turn: dict[str, Any]) -> dict[str, Any] | None:
     composition = turn.get("composition_payload") or {}
     modes = composition.get("root_cause_mode_results") or []
@@ -1581,6 +1709,41 @@ def main() -> int:
             and report["turns"]
         ):
             report["mechanical_observations"] = _mechanical_b(
+                report["turns"][0]
+            )
+        elif (
+            args.probe_id == "CONVERSATION_F10_H_RECOVERY"
+            and len(report["turns"]) == 3
+            and all(item.get("ready") for item in report["turns"])
+        ):
+            snapshots = [
+                _currentness(product=product, turn=item)
+                for item in report["turns"]
+            ]
+            report["currentness"] = {"turns": snapshots}
+            report["mechanical_observations"] = _mechanical_conversation(
+                report["turns"],
+                snapshots,
+            )
+        elif (
+            args.probe_id == "RELATIONSHIP_F05_H_RECOVERY"
+            and report["turns"]
+        ):
+            report["mechanical_observations"] = (
+                _mechanical_observational_relationship(report["turns"][0])
+            )
+        elif (
+            args.probe_id == "REPORT_F08_H_RECOVERY"
+            and report["turns"]
+        ):
+            report["mechanical_observations"] = _mechanical_contextual_report(
+                report["turns"]
+            )
+        elif (
+            args.probe_id == "MULTI_INTENT_F04_H_RECOVERY"
+            and report["turns"]
+        ):
+            report["mechanical_observations"] = _mechanical_multi_intent(
                 report["turns"][0]
             )
     except Exception as exc:
