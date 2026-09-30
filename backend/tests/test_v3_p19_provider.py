@@ -276,6 +276,11 @@ def test_provider_rejects_foreign_grounding_assignment():
     payload["candidates"][0]["grounding_link_ids"] = [
         payload["candidates"][1]["grounding_link_ids"][0]
     ]
+    # Keep the new assessment-local interpretation internally coherent so this
+    # regression continues to exercise candidate ownership rather than the
+    # earlier selected-grounding subset validator.
+    payload["candidates"][0]["supporting_grounding_link_ids"] = []
+    payload["candidates"][0]["challenging_grounding_link_ids"] = []
     manager = StructuredP19AssessmentManager(
         transport=FakeTransport(payload)
     )
