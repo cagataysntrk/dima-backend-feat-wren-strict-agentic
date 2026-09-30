@@ -8,6 +8,7 @@ from lab.metabase.core_b.phase1_pinpoint_live import (
     PROBES,
     OrchestrationBudget,
     PinpointBudgetExceeded,
+    _mechanical_r_live,
     _mechanical_verdict,
     _model_ceiling_events,
     _native_resource_binding_rows,
@@ -385,3 +386,80 @@ def test_pinpoint_workflow_persists_manual_quality_as_pending_not_auto_score():
     assert 'report["manual_quality_status"] == "PENDING"' in workflow
     assert 'report["manual_quality_score"] is None' in workflow
 
+
+
+def _phase15_mode_turn(*, mode: str, native_results: int, p17_calls: int) -> dict:
+    owner_calls = ["P14", "P14"] + ["P17"] * p17_calls + ["P19", "P20"]
+    return {
+        "ready": True,
+        "brief_payload": {"questions": [{"goal_id": "g_root"}]},
+        "native_results": [{"query": index} for index in range(native_results)],
+        "evidence_by_session": {"rs_" + "1" * 24: ["evi_" + "1" * 24]},
+        "root_cause_state": {
+            "root_cause_candidates": [
+                {
+                    "mechanism_identity": ["EXPLANATORY_CANDIDATE", "metric.h1"],
+                    "evidence_refs": ["evi_" + "1" * 24],
+                },
+                {
+                    "mechanism_identity": ["EXPLANATORY_CANDIDATE", "metric.h2"],
+                    "evidence_refs": ["evi_" + "1" * 24],
+                },
+            ]
+        },
+        "p19_assessment_refs": ["p19a_" + "1" * 24],
+        "reasoning_records": [],
+        "composition_payload": {
+            "owner_calls": owner_calls,
+            "completion_ledger": {"requirement_complete": True},
+            "root_cause_mode_results": [
+                {
+                    "mode": mode,
+                    "user_seeded_candidates": True,
+                    "analytical_reentry_count": 1 if mode == "ADAPTIVE" else 0,
+                }
+            ],
+        },
+    }
+
+
+def test_phase15_one_pass_mechanics_require_one_goal_one_acquisition_no_p17():
+    observations = _mechanical_r_live(
+        "R_LIVE_1_ONE_PASS",
+        _phase15_mode_turn(mode="ONE_PASS", native_results=1, p17_calls=0),
+    )
+    assert observations["one_analytical_obligation"] is True
+    assert observations["one_initial_native_acquisition"] is True
+    assert observations["no_redundant_p17_cognition"] is True
+    assert observations["all_user_must_requirements_complete"] is True
+
+
+def test_phase15_adaptive_mechanics_require_exactly_one_discriminating_reentry():
+    observations = _mechanical_r_live(
+        "R_LIVE_2_ADAPTIVE",
+        _phase15_mode_turn(mode="ADAPTIVE", native_results=2, p17_calls=1),
+    )
+    assert observations["one_analytical_obligation"] is True
+    assert observations["initial_plus_one_discriminating_acquisition"] is True
+    assert observations["one_p17_discriminating_owner_call"] is True
+    assert observations["all_user_must_requirements_complete"] is True
+
+
+def test_phase15_one_pass_at_provider_ceiling_is_not_mechanical_green():
+    turn = _phase15_mode_turn(mode="ONE_PASS", native_results=1, p17_calls=0)
+    report = {
+        "probe_id": "R_LIVE_1_ONE_PASS",
+        "exception": None,
+        "within_orchestration_boundary_budget": True,
+        "turn_count_executed": 1,
+        "turn_count_expected": 1,
+        "turns": [turn],
+        "provider_receipt": {"blocked_request_count": 0},
+        "actual_provider_request_count": 24,
+        "hard_provider_request_ceiling": 24,
+        "mechanical_observations": _mechanical_r_live(
+            "R_LIVE_1_ONE_PASS",
+            turn,
+        ),
+    }
+    assert _mechanical_verdict(report) == "FAIL"
