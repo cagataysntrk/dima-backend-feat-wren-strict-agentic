@@ -41,6 +41,10 @@ from app.v3.research_product import (
     ResearchMaterialObservationUnavailable,
     ResearchMaterialOutcome,
 )
+from app.v3.research_material_coverage import (
+    ResearchMaterialCoverageError,
+    assert_material_result_coverage,
+)
 from app.v3.research_store import ResearchSessionStore
 from app.v3.substrate.metabase.native_engine import (
     NativeDatasetExecutionError,
@@ -517,6 +521,10 @@ class NativeResearchMaterialExecutor:
                 executed_at=executed_at,
             )
 
+        contract = analytical_scope or analytical_scope_contract(
+            session=session,
+            obligation_id=obligation_id,
+        )
         scope_observation, material_observation = self._observe_scope(
             principal=principal,
             bridge=bridge,
@@ -526,8 +534,21 @@ class NativeResearchMaterialExecutor:
             native_query_id=native_query_id,
             query_fingerprint=query_fingerprint,
             metabase_user_id=int(binding.metabase_user_id),
-            analytical_scope=analytical_scope,
+            analytical_scope=contract,
         )
+        coverage_bindings = self._material_bindings(
+            principal=principal,
+            session=session,
+            contract=contract,
+        )
+        try:
+            result_coverage = assert_material_result_coverage(
+                contract=contract,
+                result_payload=result_payload,
+                bindings=coverage_bindings,
+            )
+        except ResearchMaterialCoverageError as exc:
+            raise ResearchMaterialLimitation(exc.code, exc.detail) from exc
 
         provenance_base = f"research-execution-link:{execution_link_id}"
         event = ExecutionEventIdentity(
@@ -590,6 +611,9 @@ class NativeResearchMaterialExecutor:
                     item.model_dump(mode="json")
                     for item in material_observation.ranking
                 ],
+                "material_result_coverage": result_coverage.model_dump(
+                    mode="json"
+                ),
                 "native_subject_ref": native_subject_ref,
                 "result_hash": result.result_hash,
                 "row_count": result.row_count,
