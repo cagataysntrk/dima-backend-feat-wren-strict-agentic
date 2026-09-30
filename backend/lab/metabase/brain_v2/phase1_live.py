@@ -98,9 +98,9 @@ def _mechanical(
         if getattr(item, "status", None) == "VERIFIED"
     )
     query_fingerprints = tuple(
-        str(getattr(item, "query_fingerprint", "") or "")
+        str(getattr(item, "native_query_fingerprint", "") or "")
         for item in verified_links
-        if getattr(item, "query_fingerprint", None)
+        if getattr(item, "native_query_fingerprint", None)
     )
     duplicate_native = len(query_fingerprints) - len(set(query_fingerprints))
     p17_test_steps = tuple(
@@ -424,7 +424,7 @@ def main() -> int:
                 "obligation_id": item.obligation_id,
                 "status": item.status,
                 "native_query_id": item.native_query_id,
-                "query_fingerprint": item.query_fingerprint,
+                "query_fingerprint": item.native_query_fingerprint,
                 "receipt_id": item.receipt_id,
                 "evidence_id": item.evidence_id,
                 "execution_kind": item.execution_kind,
