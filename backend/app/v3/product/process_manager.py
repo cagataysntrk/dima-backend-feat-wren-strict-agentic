@@ -93,6 +93,22 @@ def p19_eligibility(
     return P19EligibilityDecision.INCONCLUSIVE
 
 
+def user_seeded_p19_eligibility(
+    *,
+    mechanism_refs: tuple[str, ...],
+    evidence_refs: tuple[str, ...],
+) -> P19EligibilityDecision:
+    """Call P19 directly when accepted user candidates already have P14 Evidence.
+
+    This function owns no analytical/epistemic truth. It only prevents P17 from
+    rediscovering identities that Research Intake already accepted.
+    """
+    distinct = tuple(dict.fromkeys(mechanism_refs))
+    if len(distinct) >= 2 and evidence_refs:
+        return P19EligibilityDecision.CALL_P19
+    return P19EligibilityDecision.INCONCLUSIVE
+
+
 class ProductProcessError(RuntimeError):
     def __init__(self, code: str, detail: str) -> None:
         super().__init__(f"{code}: {detail}")

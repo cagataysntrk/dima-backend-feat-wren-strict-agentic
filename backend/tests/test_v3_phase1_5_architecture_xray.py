@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
+from app.v3.hypothesis_root_cause import GroundingRelation
 from app.v3.product.composition import (
     HeadlessProductComposer,
     ProductCompositionTerminal,
@@ -165,44 +166,81 @@ def test_xray_h5_pending_explain_is_inconclusive_not_structurally_unsupported():
     assert by_id[explain.requirement_id] == ProductRequirementDisposition.INCONCLUSIVE
 
 
-class _CountingInvestigation:
+class _FakeEpistemics:
     def __init__(self) -> None:
-        self.run_calls = 0
+        self.hypotheses: list[tuple[str, str]] = []
+        self.groundings: list[dict] = []
 
-    def run_one(self, **kwargs):
-        self.run_calls += 1
-        return None
+    def create_hypothesis(
+        self,
+        *,
+        statement,
+        candidate_identity_ref,
+        **kwargs,
+    ):
+        self.hypotheses.append((candidate_identity_ref, statement))
+        return SimpleNamespace(
+            hypothesis_id="p19h_" + str(len(self.hypotheses)) * 24
+        )
 
-    def snapshot(self, **kwargs):
-        return SimpleNamespace()
+    def create_grounding(self, **kwargs):
+        self.groundings.append(kwargs)
 
 
-def test_xray_h8_current_user_seeded_synthesis_calls_p17_per_candidate():
+def test_xray_h8_user_seeded_candidates_bypass_duplicate_p17_synthesis():
     composer = object.__new__(HeadlessProductComposer)
-    investigation = _CountingInvestigation()
-    composer._investigation = investigation
-    composer._investigation_manager = SimpleNamespace(call_count=0)
-    owner_calls: list[str] = []
+    epistemics = _FakeEpistemics()
+    composer._epistemics = epistemics
     goal = ResearchQuestion(
         goal_id="g_root",
         kind=ResearchGoalKind.ROOT_CAUSE,
         source_text="Evaluate candidates.",
+        causal_competition=CausalCompetitionSurface(
+            effect_semantic_id="metric.effect",
+            candidate_mechanism_semantic_ids=("metric.a", "metric.b"),
+        ),
         status=ResearchGoalStatus.RESOLVED,
     )
+    refs = tuple(
+        SimpleNamespace(candidate_id=cid, canonical_name=name)
+        for cid, name in (
+            ("metric.effect", "Effect"),
+            ("metric.a", "Candidate A"),
+            ("metric.b", "Candidate B"),
+        )
+    )
+    source_session = SimpleNamespace(
+        accepted_brief=SimpleNamespace(
+            scope=SimpleNamespace(semantic_refs=refs)
+        ),
+        evidence_refs=(
+            SimpleNamespace(
+                evidence_id="evi_" + "1" * 24,
+                receipt_id="dqr_" + "1" * 24,
+                obligation_id=goal.goal_id,
+            ),
+        ),
+    )
 
-    composer._synthesize_root_candidates(
+    seeded = composer._seed_user_root_candidates_to_p19(
         session_id="rs_" + "1" * 24,
         goal=goal,
         principal=SimpleNamespace(),
-        native_session_token=None,
-        owner_calls=owner_calls,
+        source_session=source_session,
         mechanism_refs=("metric.a", "metric.b"),
         evidence_refs=("evi_" + "1" * 24,),
     )
 
-    assert investigation.run_calls == 2
-    assert owner_calls == ["P17", "P17"]
-
+    assert seeded == ("metric.a", "metric.b")
+    assert [item[0] for item in epistemics.hypotheses] == [
+        "metric.a",
+        "metric.b",
+    ]
+    assert len(epistemics.groundings) == 2
+    assert all(
+        item["relation"] == GroundingRelation.CONTEXT
+        for item in epistemics.groundings
+    )
 
 def test_xray_h6_typed_relationship_intent_controls_policy_requirement():
     from app.v3.research_contracts import RelationshipIntent

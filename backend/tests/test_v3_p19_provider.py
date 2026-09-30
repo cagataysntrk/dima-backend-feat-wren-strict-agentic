@@ -13,6 +13,7 @@ from app.v3.hypothesis_root_cause import (
     GroundingSourceKind,
     HypothesisSnapshot,
     P19CaseSnapshot,
+    P19EvidenceObservation,
     P19GroundingLink,
     P19Hypothesis,
 )
@@ -324,3 +325,36 @@ def test_p19_schema_without_governed_policy_use_makes_policy_identity_unrepresen
         assert variant["properties"]["relationship_policy_use_id"] == {
             "type": "null"
         }
+
+def test_p19_packet_exposes_only_exact_governed_evidence_observation():
+    snap = snapshot().model_copy(
+        update={
+            "evidence_observations": (
+                P19EvidenceObservation(
+                    evidence_id="evi_" + "1" * 24,
+                    receipt_id="dqr_" + "1" * 24,
+                    result_hash="1" * 64,
+                    payload={
+                        "columns": ["month", "effect", "candidate"],
+                        "rows": [["2026-05", 10, 2], ["2026-06", 14, 4]],
+                        "row_count": 2,
+                        "truncated": False,
+                    },
+                ),
+            )
+        }
+    )
+    transport = FakeTransport(valid_payload())
+    manager = StructuredP19AssessmentManager(transport=transport)
+    draft = manager.propose(
+        snap,
+        policy_statuses={"bru_" + "1" * 24: "SATISFIED"},
+    )
+
+    packet = transport.calls[0]["user"]
+    assert '"numeric_values_exposed_to_model": true' in packet
+    assert '"evidence_id": "evi_' in packet
+    assert '"rows": [["2026-05", 10, 2], ["2026-06", 14, 4]]' in packet
+    assert all(not item.numeric_provenance for item in draft.candidates)
+    assert all(not item.causal_identification_refs for item in draft.candidates)
+
