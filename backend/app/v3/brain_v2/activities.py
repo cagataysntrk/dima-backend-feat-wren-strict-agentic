@@ -37,11 +37,6 @@ class CanonicalizeActivityResult(ActivityResult):
     hypothesis_ids: tuple[str, ...] = ()
     discovery_required: bool = False
 
-    @model_validator(mode="after")
-    def discovery_matches_hypotheses(self):
-        if self.discovery_required and self.hypothesis_ids:
-            raise ValueError("discovery cannot be required when hypotheses already exist")
-        return self
 
 
 class MaterialActivityResult(ActivityResult):
@@ -63,11 +58,6 @@ class EvidenceActivityResult(ActivityResult):
     hypothesis_ids: tuple[str, ...] = ()
     discovery_required: bool = False
 
-    @model_validator(mode="after")
-    def discovery_matches_hypotheses(self):
-        if self.discovery_required and self.hypothesis_ids:
-            raise ValueError("discovery cannot remain required after hypotheses exist")
-        return self
 
 
 class P19ActivityResult(ActivityResult):
