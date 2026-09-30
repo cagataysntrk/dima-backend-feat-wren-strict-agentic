@@ -1425,6 +1425,34 @@ def test_r6_follow_up_surface_rewording_does_not_mint_new_scope_version():
     ]
 
 
+def test_r6_exact_structured_period_repeat_is_idempotent():
+    payload = ready_payload()
+    period = _r6_period("May-June 2026", "2026-05-01", "2026-07-01")
+    payload["time_periods"] = [period, dict(period)]
+
+    result = ResearchIntakeCompiler(
+        transport=FakeTransport(payload)
+    ).compile(
+        question="Inspect May-June 2026.",
+        catalog=_r6_temporal_catalog(),
+    )
+
+    assert result.brief is not None
+    assert len(result.brief.scope.periods) == 1
+    accepted = result.brief.scope.periods[0]
+    assert (
+        accepted.time_dimension_candidate_id,
+        accepted.start,
+        accepted.end,
+        accepted.role,
+    ) == (
+        "dimension.event_date",
+        "2026-05-01",
+        "2026-07-01",
+        TemporalRole.MATERIAL_WINDOW,
+    )
+
+
 def test_r6_duplicate_typed_period_identity_is_rejected_even_with_new_wording():
     payload = ready_payload()
     payload["time_periods"] = [
