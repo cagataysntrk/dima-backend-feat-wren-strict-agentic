@@ -90,7 +90,7 @@ def _phase15_rca_payload() -> dict:
     return main
 
 
-def test_xray_h1_h2_current_intake_overdecomposes_epistemic_directive():
+def test_xray_h1_h2_canonicalizes_epistemic_directive_without_second_acquisition():
     payload = _phase15_rca_payload()
     question = (
         "Evaluate fault count and performance as candidate mechanisms. "
@@ -108,9 +108,12 @@ def test_xray_h1_h2_current_intake_overdecomposes_epistemic_directive():
     assert transport.call_count == 1
     assert [item.kind for item in result.brief.questions] == [
         ResearchGoalKind.ROOT_CAUSE,
-        ResearchGoalKind.OTHER,
     ]
-    assert len(result.brief.questions) == 2
+    assert len(result.brief.questions) == 1
+    assert [item.kind for item in result.brief.deliverables] == [
+        PresentationKind.REPORT,
+        PresentationKind.EXPLAIN,
+    ]
 
 
 def test_xray_h5_current_completion_marks_explain_unsupported():

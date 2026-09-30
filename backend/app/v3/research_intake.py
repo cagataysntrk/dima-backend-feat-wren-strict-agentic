@@ -863,6 +863,75 @@ class ResearchIntakeCompiler:
         return tuple(dict.fromkeys(duplicates))
 
     @staticmethod
+    def _canonicalize_analytical_goals(
+        draft: ModelResearchBriefDraft,
+    ) -> ModelResearchBriefDraft:
+        """Remove provider graph amplification using typed accepted identities only.
+
+        A generic OTHER goal can be presentation/epistemic wording rather than a
+        distinct analytical obligation. It is safe to remove from P14 only when:
+        - the exact source was also emitted as a typed deliverable,
+        - it carries no ranking/comparison/relationship/causal analytical surface,
+        - every governed semantic ref it carries is already covered by another
+          non-OTHER analytical goal in this same provider result.
+
+        The deliverable remains immutable USER_MUST authority. No wording,
+        regex, similarity or benchmark identity participates in this decision.
+        """
+        if (
+            draft.terminal != ResearchIntakeTerminal.READY
+            or not draft.goals
+            or not draft.deliverables
+        ):
+            return draft
+
+        presentation_sources = {
+            item.source_text
+            for item in draft.deliverables
+            if item.kind != PresentationKind.NONE
+        }
+        analytical = tuple(
+            item for item in draft.goals
+            if item.kind != ResearchGoalKind.OTHER
+        )
+        if not analytical:
+            return draft
+        covered_refs = {
+            semantic_id
+            for item in analytical
+            for semantic_id in (
+                *item.subject_semantic_ids,
+                *item.related_semantic_ids,
+            )
+        }
+
+        canonical: list[ModelGoalDraft] = []
+        for goal in draft.goals:
+            if goal.kind != ResearchGoalKind.OTHER:
+                canonical.append(goal)
+                continue
+            has_distinct_analytical_surface = bool(
+                goal.allowed_relationship_id
+                or goal.ranking is not None
+                or goal.comparisons
+                or goal.comparison_texts
+                or goal.causal_competition is not None
+            )
+            refs = set((*goal.subject_semantic_ids, *goal.related_semantic_ids))
+            represented_as_non_analytical = (
+                goal.source_text in presentation_sources
+                and not has_distinct_analytical_surface
+                and refs.issubset(covered_refs)
+            )
+            if represented_as_non_analytical:
+                continue
+            canonical.append(goal)
+
+        if len(canonical) == len(draft.goals):
+            return draft
+        return draft.model_copy(update={"goals": tuple(canonical)})
+
+    @staticmethod
     def _ids(prefix: str, seed: dict[str, Any], ordinal: int) -> str:
         raw = _canonical({"seed": seed, "ordinal": ordinal})
         return prefix + hashlib.sha256(raw.encode("utf-8")).hexdigest()[:20]
@@ -950,25 +1019,12 @@ class ResearchIntakeCompiler:
             ),
         )
 
+        draft = self._canonicalize_analytical_goals(draft)
         duplicate_root_keys = self._duplicate_root_cause_goal_keys(draft)
-        if duplicate_root_keys and self.call_count < 2:
-            draft = invoke_provider(
-                instruction=(
-                    "Repair one typed analytical-goal contract violation. Multiple "
-                    "ROOT_CAUSE goals carried the same causal competition and the "
-                    "same governed semantic refs. Return the complete CURRENT intent "
-                    "with exactly one ROOT_CAUSE goal for each distinct typed causal "
-                    "identity. Preserve presentation/support/challenge/stopping "
-                    "obligations as deliverable or investigation semantics when "
-                    "appropriate. Do not invent or remove governed refs."
-                ),
-                reconsideration={
-                    "kind": "DUPLICATE_ANALYTICAL_GOAL_REPAIR",
-                    "duplicate_goal_keys": list(duplicate_root_keys),
-                },
-            )
-            duplicate_root_keys = self._duplicate_root_cause_goal_keys(draft)
         if duplicate_root_keys:
+            # Duplicate typed analytical authority is deterministic invalid input
+            # from the provider. Do not spend a second stochastic call rewriting
+            # the workflow graph; fail closed instead.
             raise ResearchIntakeError(
                 "INTAKE_DUPLICATE_ANALYTICAL_GOAL",
                 ",".join(duplicate_root_keys),
@@ -1013,6 +1069,14 @@ class ResearchIntakeCompiler:
                     "supported_domain": catalog.supported_domains[0],
                     "prior_unsupported_reason": draft.unsupported_reason,
                 },
+            )
+
+        draft = self._canonicalize_analytical_goals(draft)
+        duplicate_root_keys = self._duplicate_root_cause_goal_keys(draft)
+        if duplicate_root_keys:
+            raise ResearchIntakeError(
+                "INTAKE_DUPLICATE_ANALYTICAL_GOAL",
+                ",".join(duplicate_root_keys),
             )
 
         calls = self.call_count

@@ -230,7 +230,7 @@ def test_causal_competition_is_one_root_cause_goal_not_relationship_query_plan()
     assert "P17/P19 own governed hypothesis competition" in system
 
 
-def test_duplicate_root_cause_identity_gets_one_bounded_contract_repair():
+def test_duplicate_root_cause_identity_fails_closed_without_stochastic_repair():
     first_clause = "Determine which governed explanation better accounts for downtime."
     second_clause = "Keep supporting and challenging evidence separate."
     question = first_clause + " " + second_clause
@@ -264,43 +264,21 @@ def test_duplicate_root_cause_identity_gets_one_bounded_contract_repair():
     duplicate["source_text"] = second_clause
     duplicate["source_fragment_text"] = second_clause
     bad["goals"].append(duplicate)
+    transport = FakeTransport(bad)
 
-    repaired = ready_payload(
-        kind="root_cause",
-        subject=(
-            "metric.downtime",
-            "metric.fault_count",
-            "metric.performance",
-        ),
-        related=("dimension.department",),
-    )
-    repaired["goals"][0].update(
-        {
-            "goal_key": "g-causal",
-            "source_text": question,
-            "source_fragment_text": question,
-            "causal_competition": causal,
-        }
-    )
-    transport = SequenceTransport([bad, repaired])
+    with pytest.raises(
+        ResearchIntakeError,
+        match="INTAKE_DUPLICATE_ANALYTICAL_GOAL",
+    ):
+        ResearchIntakeCompiler(
+            transport=transport,
+            calendar_reference_date="2026-09-30",
+        ).compile(
+            question=question,
+            catalog=catalog(),
+        )
 
-    result = ResearchIntakeCompiler(
-        transport=transport,
-        calendar_reference_date="2026-09-30",
-    ).compile(
-        question=question,
-        catalog=catalog(),
-    )
-
-    assert result.brief is not None
-    assert len(result.brief.questions) == 1
-    assert result.brief.questions[0].kind == ResearchGoalKind.ROOT_CAUSE
-    assert transport.call_count == 2
-    assert (
-        transport.calls[1]["user"]["reconsideration"]["kind"]
-        == "DUPLICATE_ANALYTICAL_GOAL_REPAIR"
-    )
-
+    assert transport.call_count == 1
 
 def test_ready_breakdown_compiles_to_typed_research_brief():
     transport = FakeTransport(ready_payload())
