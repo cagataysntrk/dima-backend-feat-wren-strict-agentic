@@ -272,10 +272,26 @@ class ModelGoalDraft(Frozen):
     comparisons: tuple[ModelComparisonDraft, ...] = ()
     causal_competition: ModelCausalCompetitionDraft | None = None
     temporal_material: ModelTemporalMaterialDraft | None = None
+    material_parent_goal_key: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=120,
+    )
     # Compatibility-only for historical deterministic fixtures. This field is
     # deliberately omitted from the provider schema below; live intake cannot
     # mint new untyped comparison authority.
     comparison_texts: tuple[str, ...] = ()
+
+    @model_validator(mode="after")
+    def material_parent_is_comparison_only(self):
+        if (
+            self.material_parent_goal_key is not None
+            and self.kind != ResearchGoalKind.COMPARISON
+        ):
+            raise ValueError(
+                "material_parent_goal_key is legal only on COMPARISON goals"
+            )
+        return self
 
 
 class ModelDeliverableDraft(Frozen):
@@ -482,6 +498,10 @@ Authority rules:
   investigation, preserve them as distinct goals. Never collapse genuinely distinct user clauses.
 - Goal decomposition is semantic obligation decomposition, not a query plan. Do not create multiple
   analytical goals solely because several governed metrics may be useful to one investigation.
+- If a COMPARISON goal exists only to preserve temporal material for one ROOT_CAUSE goal in the
+  same response, set material_parent_goal_key to that ROOT_CAUSE goal_key. If the comparison is an
+  independently requested analytical obligation, set material_parent_goal_key to null. This typed
+  parentage records semantic obligation ownership only; it never specifies SQL, MBQL or query shape.
 - ranking.limit is null unless the user explicitly requested a bounded top-N/result count. Never invent top-N.
 - ranking.measure_semantic_id is set only when the user explicitly identifies one governed metric/KPI
   as the ranking basis. With multiple metrics and no explicit single basis, keep it null; do not pick
@@ -703,6 +723,10 @@ def _intake_provider_schema(
             }
             properties["subject_semantic_ids"] = copy.deepcopy(closed_refs)
             properties["related_semantic_ids"] = copy.deepcopy(closed_refs)
+            if kind == ResearchGoalKind.COMPARISON:
+                properties["material_parent_goal_key"] = copy.deepcopy(
+                    base_properties["material_parent_goal_key"]
+                )
             if kind == ResearchGoalKind.ROOT_CAUSE:
                 raw_causal = copy.deepcopy(base_properties["causal_competition"])
                 choices = raw_causal.get("anyOf") or []
@@ -1212,14 +1236,15 @@ class ResearchIntakeCompiler:
     def _canonicalize_temporal_comparison_subgoals(
         draft: ModelResearchBriefDraft,
     ) -> ModelResearchBriefDraft:
-        """Absorb co-origin temporal comparison material into one RCA goal.
+        """Absorb typed temporal material subgoals into their canonical RCA owner.
 
-        A provider may decompose one user clause into ROOT_CAUSE plus COMPARISON
-        even though the comparison is only material scope for that same causal
-        investigation. Dima may merge them only when typed provenance proves
-        co-origin: exact source_fragment_text, temporal-only comparison surface,
-        and semantic refs already covered by exactly one ROOT_CAUSE goal.
-        Distinct fragments remain distinct analytical user intent.
+        Live provider output carries explicit material_parent_goal_key on a
+        COMPARISON goal. That typed relation is the authority for deciding
+        whether the comparison is material for one ROOT_CAUSE or an independent
+        analytical obligation. Wording and fragment identity do not participate.
+
+        Historical deterministic fixtures predate the field. For those fixtures
+        only, exact source-fragment identity remains a compatibility bridge.
         """
 
         if draft.terminal != ResearchIntakeTerminal.READY:
@@ -1235,41 +1260,98 @@ class ResearchIntakeCompiler:
         if not roots:
             return draft
 
-        merged = {goal.goal_key: goal for goal in roots}
+        roots_by_key = {goal.goal_key: goal for goal in roots}
+        if len(roots_by_key) != len(roots):
+            raise ResearchIntakeError(
+                "INTAKE_DUPLICATE_GOAL_KEY",
+                "ROOT_CAUSE goal keys must be unique",
+            )
+
+        merged = dict(roots_by_key)
         removed: set[str] = set()
         for goal in draft.goals:
             if goal.kind != ResearchGoalKind.COMPARISON:
                 continue
-            if (
-                goal.ranking is not None
-                or goal.allowed_relationship_id is not None
-                or goal.relationship_intent is not None
-                or goal.causal_competition is not None
-                or not goal.comparisons
-                or any(
-                    item.role != ComparisonRole.TEMPORAL_PERIOD
-                    or item.semantic_id is not None
+
+            temporal_only = (
+                goal.ranking is None
+                and goal.allowed_relationship_id is None
+                and goal.relationship_intent is None
+                and goal.causal_competition is None
+                and bool(goal.comparisons)
+                and all(
+                    item.role == ComparisonRole.TEMPORAL_PERIOD
+                    and item.semantic_id is None
                     for item in goal.comparisons
                 )
-                or goal.source_fragment_text is None
-            ):
+            )
+            if not temporal_only:
+                if goal.material_parent_goal_key is not None:
+                    raise ResearchIntakeError(
+                        "INTAKE_TEMPORAL_MATERIAL_PARENT_CONFLICT",
+                        goal.goal_key,
+                    )
                 continue
 
-            refs = set((*goal.subject_semantic_ids, *goal.related_semantic_ids))
-            matches = []
-            for root in roots:
+            parent_was_explicit = (
+                "material_parent_goal_key" in goal.model_fields_set
+            )
+            parent_key = goal.material_parent_goal_key
+
+            if parent_key is not None:
+                root = merged.get(parent_key)
+                if root is None:
+                    raise ResearchIntakeError(
+                        "INTAKE_TEMPORAL_MATERIAL_PARENT_INVALID",
+                        parent_key,
+                    )
+                temporal = root.temporal_material
+                if temporal is None or temporal.mode != "comparison":
+                    raise ResearchIntakeError(
+                        "INTAKE_TEMPORAL_MATERIAL_PARENT_CONFLICT",
+                        parent_key,
+                    )
                 root_refs = set(
                     (*root.subject_semantic_ids, *root.related_semantic_ids)
                 )
-                if (
-                    root.source_fragment_text == goal.source_fragment_text
-                    and refs.issubset(root_refs)
-                ):
-                    matches.append(root)
-            if len(matches) != 1:
+                refs = set(
+                    (*goal.subject_semantic_ids, *goal.related_semantic_ids)
+                )
+                if not refs.issubset(root_refs):
+                    raise ResearchIntakeError(
+                        "INTAKE_TEMPORAL_MATERIAL_PARENT_SCOPE_ESCAPE",
+                        goal.goal_key,
+                    )
+            elif parent_was_explicit:
+                # Current strict provider schema requires this nullable field.
+                # Explicit null therefore means independently requested intent.
                 continue
+            else:
+                # Compatibility only: historical deterministic fixtures had no
+                # typed parent field. Current provider output never uses this.
+                if goal.source_fragment_text is None:
+                    continue
+                refs = set(
+                    (*goal.subject_semantic_ids, *goal.related_semantic_ids)
+                )
+                matches = []
+                for candidate in roots:
+                    root_refs = set(
+                        (
+                            *candidate.subject_semantic_ids,
+                            *candidate.related_semantic_ids,
+                        )
+                    )
+                    if (
+                        candidate.source_fragment_text
+                        == goal.source_fragment_text
+                        and refs.issubset(root_refs)
+                    ):
+                        matches.append(candidate)
+                if len(matches) != 1:
+                    continue
+                root = merged[matches[0].goal_key]
 
-            root = merged[matches[0].goal_key]
             seen = {
                 _canonical(item.model_dump(mode="json"))
                 for item in root.comparisons
