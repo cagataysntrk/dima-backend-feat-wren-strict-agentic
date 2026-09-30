@@ -43,6 +43,7 @@ class RelationshipResultProjection(Frozen):
     claim_id: str = Field(pattern=r"^clm_[a-f0-9]{24}$")
     policy_use_id: str = Field(pattern=r"^bru_[a-f0-9]{24}$")
     policy_id: str | None = Field(default=None, pattern=r"^brp_[a-f0-9]{24}$")
+    policy_required: bool = True
     scope_lineage_id: str = Field(min_length=1)
     scope_version_id: str = Field(pattern=r"^scope_v[1-9][0-9]*$")
     applicability_scope: dict[str, Any]
@@ -131,12 +132,18 @@ def project_relationship_result(
         if kind == RelationshipAnalyticalKind.CO_MOVEMENT
         else RelationshipLayerState.NOT_ESTABLISHED
     )
-    business_state = (
-        RelationshipLayerState.SATISFIED
-        if decision.resolution_status
+    if (
+        decision.resolution_status
         == RelationshipPolicyResolutionStatus.SATISFIED
-        else RelationshipLayerState.BLOCKED
-    )
+    ):
+        business_state = RelationshipLayerState.SATISFIED
+    elif (
+        decision.resolution_status
+        == RelationshipPolicyResolutionStatus.NOT_REQUIRED
+    ):
+        business_state = RelationshipLayerState.NOT_ESTABLISHED
+    else:
+        business_state = RelationshipLayerState.BLOCKED
     limitations = list(getattr(claim, "limitations", ()) or ())
     if decision.limitation_code:
         limitations.append(decision.limitation_code)
@@ -147,6 +154,7 @@ def project_relationship_result(
         claim_id=claim.claim_id,
         policy_use_id=decision.policy_use_id,
         policy_id=decision.policy_id,
+        policy_required=decision.required,
         scope_lineage_id=scope_lineage_id,
         scope_version_id=scope_version_id,
         applicability_scope=applicability_scope,
