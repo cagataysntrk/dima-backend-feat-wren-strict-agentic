@@ -1,6 +1,21 @@
 name: dima-v1-phase1-pinpoint-live
 
 on:
+  # Temporary exact-probe push bridge. Only the closed trigger branches below
+  # are eligible; the platform branch itself never launches paid validation.
+  push:
+    branches:
+      - phase1-r-live-1-trigger-20260930
+      - phase1-r-live-2-trigger-20260930
+      - phase1-r-live-3-trigger-20260930
+      - phase1-v4-trigger-20260929
+      - phase1-rca-trigger-20260929
+      - phase1-f05-trigger-20260929
+      - phase1-f08-trigger-20260929
+      - phase1-f06-trigger-20260929
+      - phase1-f10-trigger-20260930
+      - phase1-f07-trigger-20260930
+      - phase1-f04-trigger-20260930
   workflow_dispatch:
     inputs:
       probe_id:
@@ -8,6 +23,9 @@ on:
         required: true
         type: choice
         options:
+          - R_LIVE_1_ONE_PASS
+          - R_LIVE_2_ADAPTIVE
+          - R_LIVE_3_DISCOVERY
           - SCOPE_CURRENTNESS_HARD_V4
           - RCA_P19_HARD_V2
           - RELATIONSHIP_F05_H_RECOVERY
@@ -43,7 +61,7 @@ env:
   COMPLETION_TOKEN_CEILING: "16000"
   REASONING_TOKEN_CEILING: "12000"
   PROVIDER_COST_CEILING: "1.00"
-  PRODUCT_BEHAVIOR_SHA: "d2021b2157b8c36d7cf57d3e42556ddb1aa93f7d"
+  PRODUCT_BEHAVIOR_SHA: "dc4be27491d7fb41443491a93a812899e2645bb8"
 
 concurrency:
   group: dima-v1-phase1-pinpoint-live
@@ -71,6 +89,15 @@ jobs:
             PROBE_ID="${{ inputs.probe_id }}"
           elif [ "$EVENT" = "push" ]; then
             case "${{ github.ref_name }}" in
+              phase1-r-live-1-trigger-20260930)
+                PROBE_ID="R_LIVE_1_ONE_PASS"
+                ;;
+              phase1-r-live-2-trigger-20260930)
+                PROBE_ID="R_LIVE_2_ADAPTIVE"
+                ;;
+              phase1-r-live-3-trigger-20260930)
+                PROBE_ID="R_LIVE_3_DISCOVERY"
+                ;;
               phase1-v4-trigger-20260929)
                 PROBE_ID="SCOPE_CURRENTNESS_HARD_V4"
                 ;;
@@ -348,7 +375,7 @@ jobs:
           assert provider["blocked_request_count"] == 0, provider
           assert provider["privacy_contract"]["api_keys_persisted"] is False
           assert provider["privacy_contract"]["reasoning_text_persisted"] is False
-          assert report["candidate_product_sha"] == "d2021b2157b8c36d7cf57d3e42556ddb1aa93f7d"
+          assert report["candidate_product_sha"] == "dc4be27491d7fb41443491a93a812899e2645bb8"
           assert report["model_topology"]["dima_cognition"] == "openai/gpt-5.6-terra"
           assert report["model_topology"]["metabot"] == "openrouter/openai/gpt-5.6-terra"
           assert report["turn_count_executed"] == report["turn_count_expected"]
@@ -380,6 +407,29 @@ jobs:
                   "new_primary_evidence_current",
               ):
                   assert observed[key] is True,(key,observed)
+          elif probe in {
+              "R_LIVE_1_ONE_PASS",
+              "R_LIVE_2_ADAPTIVE",
+              "R_LIVE_3_DISCOVERY",
+          }:
+              observed=report["mechanical_observations"]
+              assert observed["p19_assessment_exists"] is True, observed
+              assert observed["single_root_mode_result"] is True, observed
+              assert observed["governed_evidence_exists"] is True, observed
+              if probe == "R_LIVE_1_ONE_PASS":
+                  assert observed["expected_one_pass"] is True, observed
+                  assert observed["no_analytical_reentry"] is True, observed
+                  assert observed["user_candidates_preserved"] is True, observed
+                  assert observed["multiple_candidates_reach_epistemics"] is True, observed
+              elif probe == "R_LIVE_2_ADAPTIVE":
+                  assert observed["expected_adaptive"] is True, observed
+                  assert observed["exactly_one_analytical_reentry"] is True, observed
+                  assert observed["user_candidates_preserved"] is True, observed
+                  assert observed["multiple_candidates_reach_epistemics"] is True, observed
+              else:
+                  assert observed["no_user_seeded_candidates"] is True, observed
+                  assert observed["p17_discovery_trace_exists"] is True, observed
+                  assert observed["multiple_discovered_candidates"] is True, observed
           elif probe == "RCA_P19_HARD_V2":
               observed=report["mechanical_observations"]
               assert observed["max_reasoning_depth"] <= 3, observed

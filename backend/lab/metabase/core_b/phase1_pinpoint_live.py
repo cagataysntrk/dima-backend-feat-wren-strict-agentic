@@ -51,6 +51,48 @@ HISTORICAL_MANUAL_SCORE_SCALE = {
 }
 
 PROBES = {
+    "R_LIVE_1_ONE_PASS": {
+        "historical_round2_case_id": None,
+        "turns": (
+            "Packaging bölümünde Mayıs-Haziran 2026 machine downtime artışını açıklarken maintenance delay ile spare-part delay adaylarını değerlendir. İki adayın destekleyen ve zayıflatan kanıtlarını ayrı tut. Mevcut governed Evidence adayları yeterince değerlendiriyorsa sırf derinlik göstermek için ek analitik sorgu açma; P19 ile en savunulabilir terminal sonuca ulaş ve nedensellik sınırını koru.",
+        ),
+        "manual_contract": (
+            "accepted user candidate identities are preserved exactly",
+            "initial native material produces governed Evidence",
+            "P17 may synthesize existing Evidence but does not perform redundant analytical re-entry",
+            "P19 assessment exists",
+            "root_cause_mode = ONE_PASS and analytical_reentry_count = 0",
+            "support/challenge and causal limitations are useful and legally preserved",
+        ),
+    },
+    "R_LIVE_2_ADAPTIVE": {
+        "historical_round2_case_id": None,
+        "turns": (
+            "Assembly bölümünde Mayıs-Haziran 2026 machine downtime artışını maintenance delay ile spare-part delay adayları arasında araştır. İlk governed Evidence iki adayı güvenli biçimde ayıramıyorsa yalnız bir yüksek bilgi değerli discriminating analitik test yap, yeni Evidence ile P19 değerlendirmesini yenile ve sonra dur. Destek, karşı kanıt ve nedensellik sınırını koru.",
+        ),
+        "manual_contract": (
+            "accepted user candidate identities are preserved exactly",
+            "initial P19 assessment identifies a real unresolved discrimination need",
+            "exactly one materially useful analytical re-entry occurs when needed",
+            "new Evidence is grounded before P19 reassessment",
+            "root_cause_mode = ADAPTIVE with one analytical re-entry",
+            "no retry-until-lucky, duplicate analytics, or causal overclaim",
+        ),
+    },
+    "R_LIVE_3_DISCOVERY": {
+        "historical_round2_case_id": None,
+        "turns": (
+            "Assembly bölümünde Mayıs-Haziran 2026 machine downtime artışını açıkla. Aday neden vermiyorum: governed operasyon metrikleri içinden kanıtla desteklenebilen birden fazla aday mekanizmayı keşfet, destek ve karşı kanıtlarını değerlendir, sonra P19 ile savunulabilir sonuca ulaş. Gereksiz analitik tekrar yapma ve nedensellik sınırını koru.",
+        ),
+        "manual_contract": (
+            "causal_competition contains no user-seeded candidate identities",
+            "P17 discovery path creates governed typed mechanism candidates from accepted refs",
+            "at least two evidence-backed distinct candidates reach P19 when supported",
+            "P19 assessment exists",
+            "no fabricated semantic identity or free-text mechanism authority",
+            "no redundant analytics or causal overclaim",
+        ),
+    },
     "SCOPE_CURRENTNESS_HARD_V4": {
         "historical_round2_case_id": None,
         "turns": (
@@ -73,12 +115,12 @@ PROBES = {
             "Haziran’daki machine downtime artışının ana açıklaması maintenance delay mi yoksa spare-part delay mi?\n\nMayıs-Haziran verisini incele.\n\nİki açıklamayı destekleyen ve zayıflatan kanıtları ayrı göster.\n\nGerekirse ikisini ayırmak için tek bir ek analitik test yap.\n\nVeri nedensellik için yeterli değilse bunu açıkça koru.",
         ),
         "manual_contract": (
-            "P17 generates evidence-grounded typed mechanism candidates",
-            "multiple competing candidates are retained when supported",
+            "accepted explicit candidate identities remain governed",
+            "P17 synthesis may interpret existing Evidence without mandatory analytical re-entry",
             "P19 eligibility is evaluated and P19 is invoked when eligible",
             "supporting and challenging Evidence are retained",
+            "the selected ONE_PASS / ADAPTIVE / GOVERNED_INCONCLUSIVE mode fits the Evidence",
             "no fabricated competitor, fake winner, unsupported root cause, or causal overclaim",
-            "bounded discriminating re-entry and provider ceilings are respected",
         ),
     },
     "RELATIONSHIP_F05_H_RECOVERY": {
@@ -829,6 +871,96 @@ def _mechanical_a(turns: list[dict[str, Any]], currentness: dict[str, Any]) -> d
     }
 
 
+def _root_mode_payload(turn: dict[str, Any]) -> dict[str, Any] | None:
+    composition = turn.get("composition_payload") or {}
+    modes = composition.get("root_cause_mode_results") or []
+    if len(modes) != 1:
+        return None
+    return modes[0]
+
+
+def _mechanical_r_live(
+    probe_id: str,
+    turn: dict[str, Any],
+) -> dict[str, Any]:
+    state = turn.get("root_cause_state") or {}
+    candidates = state.get("root_cause_candidates") or []
+    evidence_backed = [
+        item for item in candidates if item.get("evidence_refs")
+    ]
+    distinct = {
+        tuple(item["mechanism_identity"])
+        for item in evidence_backed
+        if isinstance(item.get("mechanism_identity"), list)
+        and len(item["mechanism_identity"]) == 2
+    }
+    mode = _root_mode_payload(turn)
+    p19_count = len(turn.get("p19_assessment_refs") or [])
+    reasoning = turn.get("reasoning_records") or []
+    base = {
+        "ready": bool(turn.get("ready")),
+        "governed_evidence_exists": any(
+            turn.get("evidence_by_session", {}).values()
+        ),
+        "evidence_backed_candidate_count": len(evidence_backed),
+        "distinct_governed_mechanism_count": len(distinct),
+        "p19_assessment_exists": p19_count > 0,
+        "single_root_mode_result": mode is not None,
+    }
+    if mode is None:
+        return base
+    base.update(
+        {
+            "mode": mode.get("mode"),
+            "user_seeded_candidates": bool(
+                mode.get("user_seeded_candidates")
+            ),
+            "analytical_reentry_count": int(
+                mode.get("analytical_reentry_count") or 0
+            ),
+        }
+    )
+    if probe_id == "R_LIVE_1_ONE_PASS":
+        base.update(
+            {
+                "expected_one_pass": mode.get("mode") == "ONE_PASS",
+                "no_analytical_reentry": int(
+                    mode.get("analytical_reentry_count") or 0
+                )
+                == 0,
+                "user_candidates_preserved": bool(
+                    mode.get("user_seeded_candidates")
+                ),
+                "multiple_candidates_reach_epistemics": len(distinct) >= 2,
+            }
+        )
+    elif probe_id == "R_LIVE_2_ADAPTIVE":
+        base.update(
+            {
+                "expected_adaptive": mode.get("mode") == "ADAPTIVE",
+                "exactly_one_analytical_reentry": int(
+                    mode.get("analytical_reentry_count") or 0
+                )
+                == 1,
+                "user_candidates_preserved": bool(
+                    mode.get("user_seeded_candidates")
+                ),
+                "multiple_candidates_reach_epistemics": len(distinct) >= 2,
+            }
+        )
+    elif probe_id == "R_LIVE_3_DISCOVERY":
+        base.update(
+            {
+                "no_user_seeded_candidates": not bool(
+                    mode.get("user_seeded_candidates")
+                ),
+                "p17_discovery_trace_exists": bool(reasoning),
+                "multiple_discovered_candidates": len(distinct) >= 2,
+            }
+        )
+    return base
+
+
 def _mechanical_b(turn: dict[str, Any]) -> dict[str, Any]:
     state = turn.get("root_cause_state") or {}
     candidates = state.get("root_cause_candidates") or []
@@ -1165,6 +1297,19 @@ def main() -> int:
             report["mechanical_observations"] = _mechanical_a(
                 report["turns"],
                 currentness,
+            )
+        elif (
+            args.probe_id
+            in {
+                "R_LIVE_1_ONE_PASS",
+                "R_LIVE_2_ADAPTIVE",
+                "R_LIVE_3_DISCOVERY",
+            }
+            and report["turns"]
+        ):
+            report["mechanical_observations"] = _mechanical_r_live(
+                args.probe_id,
+                report["turns"][0],
             )
         elif (
             args.probe_id == "RCA_P19_HARD_V2"

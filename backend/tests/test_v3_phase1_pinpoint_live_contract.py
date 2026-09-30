@@ -35,6 +35,9 @@ def _bindings():
 
 def test_final_pinpoint_probes_are_closed_and_not_benchmark_cases():
     assert tuple(PROBES) == (
+        "R_LIVE_1_ONE_PASS",
+        "R_LIVE_2_ADAPTIVE",
+        "R_LIVE_3_DISCOVERY",
         "SCOPE_CURRENTNESS_HARD_V4",
         "RCA_P19_HARD_V2",
         "RELATIONSHIP_F05_H_RECOVERY",
@@ -148,6 +151,9 @@ def test_pinpoint_workflow_is_one_probe_per_run_and_no_broad_scorer():
         / "workflows"
         / "dima-v1-phase1-p12-pinpoint-live.yml"
     ).read_text(encoding="utf-8")
+    assert "R_LIVE_1_ONE_PASS" in workflow
+    assert "R_LIVE_2_ADAPTIVE" in workflow
+    assert "R_LIVE_3_DISCOVERY" in workflow
     assert "SCOPE_CURRENTNESS_HARD_V4" in workflow
     assert "RCA_P19_HARD_V2" in workflow
     assert "RELATIONSHIP_F05_H_RECOVERY" in workflow
@@ -163,6 +169,9 @@ def test_pinpoint_workflow_is_one_probe_per_run_and_no_broad_scorer():
     assert "validate_phase1_round2.py" not in workflow
     assert "--manifest eval/dima_neutral_feature_benchmark_round2.json" not in workflow
     assert "backend/eval/v1/authorizations/phase1-final-pinpoint-live-v3.json" not in workflow
+    assert "phase1-r-live-1-trigger-20260930" in workflow
+    assert "phase1-r-live-2-trigger-20260930" in workflow
+    assert "phase1-r-live-3-trigger-20260930" in workflow
     assert "phase1-v4-trigger-20260929" in workflow
     assert "phase1-rca-trigger-20260929" in workflow
     assert "phase1-f05-trigger-20260929" in workflow
@@ -172,8 +181,8 @@ def test_pinpoint_workflow_is_one_probe_per_run_and_no_broad_scorer():
     assert "phase1-f07-trigger-20260930" in workflow
     assert "phase1-f04-trigger-20260930" in workflow
     assert "feat/dima-metabase-platform" in workflow
-    assert 'PRODUCT_BEHAVIOR_SHA: "d2021b2157b8c36d7cf57d3e42556ddb1aa93f7d"' in workflow
-    assert 'assert report["candidate_product_sha"] == "d2021b2157b8c36d7cf57d3e42556ddb1aa93f7d"' in workflow
+    assert 'PRODUCT_BEHAVIOR_SHA: "dc4be27491d7fb41443491a93a812899e2645bb8"' in workflow
+    assert 'assert report["candidate_product_sha"] == "dc4be27491d7fb41443491a93a812899e2645bb8"' in workflow
     assert 'test "$ENGINE_SHA" = "0f16f2b5a1ec774ac7afee6214c726e82f9ceb3c"' in workflow
     assert 'test "$CERTIFICATION_RUN_ID" = "36610103287"' in workflow
     assert 'test "$RUNTIME_TAG" = "v0.63.18-dima.8"' in workflow
