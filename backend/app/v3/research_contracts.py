@@ -336,8 +336,16 @@ class ResearchScope(FrozenModel):
         if len(self.time_surfaces) != len(set(self.time_surfaces)):
             raise ValueError("Research time surfaces must be unique")
         period_sources = [item.source_text for item in self.periods]
-        if len(period_sources) != len(set(period_sources)):
-            raise ValueError("Research periods must have unique source_text")
+        period_identities = [
+            (
+                item.time_dimension_candidate_id,
+                item.start,
+                item.end,
+            )
+            for item in self.periods
+        ]
+        if len(period_identities) != len(set(period_identities)):
+            raise ValueError("Research periods must have unique typed identity")
         if self.periods and set(period_sources) != set(self.time_surfaces):
             raise ValueError(
                 "typed Research periods must exactly cover accepted time surfaces"
