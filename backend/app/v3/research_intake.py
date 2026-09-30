@@ -218,6 +218,62 @@ class ModelComparisonDraft(Frozen):
         return self
 
 
+class ModelTimePeriodDraft(Frozen):
+    source_text: str = Field(min_length=1)
+    time_dimension_semantic_id: str = Field(min_length=1)
+    start: str = Field(min_length=1)
+    end: str = Field(min_length=1)
+    role: TemporalRole = TemporalRole.MATERIAL_WINDOW
+
+
+class ModelTemporalMaterialDraft(Frozen):
+    """Provider-facing typed temporal material shape for one ROOT_CAUSE goal."""
+
+    mode: ModelTemporalMaterialMode
+    window: ModelTimePeriodDraft | None = None
+    baseline_period: ModelTimePeriodDraft | None = None
+    comparison_period: ModelTimePeriodDraft | None = None
+
+    @model_validator(mode="after")
+    def coherent(self):
+        if self.mode == ModelTemporalMaterialMode.NONE:
+            if any(
+                item is not None
+                for item in (
+                    self.window,
+                    self.baseline_period,
+                    self.comparison_period,
+                )
+            ):
+                raise ValueError("NONE temporal material cannot carry periods")
+        elif self.mode == ModelTemporalMaterialMode.WINDOW:
+            if (
+                self.window is None
+                or self.baseline_period is not None
+                or self.comparison_period is not None
+            ):
+                raise ValueError(
+                    "WINDOW temporal material requires exactly one window"
+                )
+        else:
+            if (
+                self.window is not None
+                or self.baseline_period is None
+                or self.comparison_period is None
+            ):
+                raise ValueError(
+                    "COMPARISON temporal material requires baseline and comparison periods"
+                )
+            if (
+                self.baseline_period.time_dimension_semantic_id
+                != self.comparison_period.time_dimension_semantic_id
+            ):
+                raise ValueError(
+                    "comparison temporal material must use one time dimension"
+                )
+        return self
+
+
 class ModelGoalDraft(Frozen):
     goal_key: str = Field(min_length=1, max_length=120)
     kind: ResearchGoalKind
@@ -230,23 +286,11 @@ class ModelGoalDraft(Frozen):
     ranking: DraftRanking | None = None
     comparisons: tuple[ModelComparisonDraft, ...] = ()
     causal_competition: ModelCausalCompetitionDraft | None = None
-    # Provider-facing language-understanding decision. Durable authority remains
-    # the validated ResearchTimePeriod/ComparisonSurface contract produced below.
-    temporal_material_mode: ModelTemporalMaterialMode = (
-        ModelTemporalMaterialMode.NONE
-    )
+    temporal_material: ModelTemporalMaterialDraft | None = None
     # Compatibility-only for historical deterministic fixtures. This field is
     # deliberately omitted from the provider schema below; live intake cannot
     # mint new untyped comparison authority.
     comparison_texts: tuple[str, ...] = ()
-
-
-class ModelTimePeriodDraft(Frozen):
-    source_text: str = Field(min_length=1)
-    time_dimension_semantic_id: str = Field(min_length=1)
-    start: str = Field(min_length=1)
-    end: str = Field(min_length=1)
-    role: TemporalRole = TemporalRole.MATERIAL_WINDOW
 
 
 class ModelDeliverableDraft(Frozen):
@@ -401,11 +445,13 @@ Authority rules:
   analysis window; BASELINE_PERIOD + COMPARISON_PERIOD for a true temporal comparison;
   EFFECT_PERIOD + EVIDENCE_WINDOW for causal investigation when those distinct roles are requested.
   Never infer roles from tuple position.
-- Every ROOT_CAUSE goal must classify its temporal material need with temporal_material_mode:
-  NONE when no time material is required; WINDOW when one pooled bounded interval is sufficient;
-  COMPARISON when answering the analytical question requires values from accepted periods to remain
-  distinguishable rather than pooled. COMPARISON requires exactly two same-dimension time_periods,
-  one for each contrasted interval. This field interprets intent only; it never asserts data truth.
+- Every ROOT_CAUSE goal must emit one typed temporal_material object.
+  mode=none means no temporal material and all period fields are null.
+  mode=window means one pooled bounded interval is sufficient: fill window only.
+  mode=comparison means answering the analytical question requires two accepted periods to remain
+  distinguishable: fill baseline_period and comparison_period, leave window null, and use one time
+  dimension. The nested periods are the ROOT_CAUSE temporal authority; do not duplicate them into
+  top-level time_periods. This object interprets user intent only; it never asserts data truth.
 - Emit typed comparisons, never free-text comparison authority. Use TEMPORAL_PERIOD only for an
   actual period-vs-period comparison. Use CAUSAL_CANDIDATE for user-provided candidate mechanisms,
   and ENTITY_OR_MEASURE for governed entity/measure competition. Every non-temporal comparison item
@@ -685,12 +731,24 @@ def _intake_provider_schema(
                         "ROOT_CAUSE causal competition schema is invalid",
                     )
                 properties["causal_competition"] = non_null[0]
-                properties["temporal_material_mode"] = {
-                    "type": "string",
-                    "enum": [
-                        item.value for item in ModelTemporalMaterialMode
-                    ],
-                }
+                raw_temporal = copy.deepcopy(
+                    base_properties["temporal_material"]
+                )
+                temporal_choices = raw_temporal.get("anyOf") or []
+                temporal_non_null = [
+                    item
+                    for item in temporal_choices
+                    if not (
+                        isinstance(item, dict)
+                        and item.get("type") == "null"
+                    )
+                ]
+                if len(temporal_non_null) != 1:
+                    raise ResearchIntakeError(
+                        "INTAKE_SCHEMA_INVALID",
+                        "ROOT_CAUSE temporal material schema is invalid",
+                    )
+                properties["temporal_material"] = temporal_non_null[0]
         variants.append(
             {
                 "type": "object",
@@ -1045,50 +1103,72 @@ class ResearchIntakeCompiler:
         return draft.model_copy(update={"goals": tuple(canonical)})
 
     @staticmethod
-    def _canonicalize_root_temporal_material_mode(
+    def _canonicalize_root_temporal_material(
         draft: ModelResearchBriefDraft,
     ) -> ModelResearchBriefDraft:
-        """Turn the provider's closed temporal mode into validated typed authority."""
+        """Lift closed ROOT_CAUSE temporal material into durable typed scope."""
 
         if draft.terminal != ResearchIntakeTerminal.READY:
             return draft
+        roots = tuple(
+            goal
+            for goal in draft.goals
+            if goal.kind == ResearchGoalKind.ROOT_CAUSE
+        )
         changed = False
         goals: list[ModelGoalDraft] = []
+        lifted_periods: list[ModelTimePeriodDraft] = []
         for goal in draft.goals:
             if goal.kind != ResearchGoalKind.ROOT_CAUSE:
                 goals.append(goal)
                 continue
-            temporal = tuple(
+            temporal = goal.temporal_material
+            # Historical deterministic fixtures predate this provider-facing
+            # DTO. Existing typed comparisons/time_periods remain authoritative.
+            if temporal is None:
+                goals.append(goal)
+                continue
+
+            temporal_comparisons = tuple(
                 item
                 for item in goal.comparisons
                 if item.role == ComparisonRole.TEMPORAL_PERIOD
             )
-            mode = goal.temporal_material_mode
-            if mode == ModelTemporalMaterialMode.COMPARISON:
-                if len(draft.time_periods) != 2:
+            if temporal.mode == ModelTemporalMaterialMode.NONE:
+                if temporal_comparisons:
                     raise ResearchIntakeError(
-                        "INTAKE_TEMPORAL_COMPARISON_PERIODS_REQUIRED",
-                        "ROOT_CAUSE comparison material requires exactly two accepted periods",
+                        "INTAKE_TEMPORAL_MATERIAL_MODE_CONFLICT",
+                        goal.goal_key,
                     )
-                dimensions = {
-                    item.time_dimension_semantic_id
-                    for item in draft.time_periods
-                }
-                if len(dimensions) != 1:
+            elif temporal.mode == ModelTemporalMaterialMode.WINDOW:
+                if temporal_comparisons:
                     raise ResearchIntakeError(
-                        "INTAKE_TEMPORAL_COMPARISON_DIMENSION_DRIFT",
-                        "ROOT_CAUSE comparison periods must share one time dimension",
+                        "INTAKE_TEMPORAL_MATERIAL_MODE_CONFLICT",
+                        goal.goal_key,
                     )
-                if len(temporal) > 1:
+                assert temporal.window is not None
+                lifted_periods.append(
+                    temporal.window.model_copy(
+                        update={"role": TemporalRole.MATERIAL_WINDOW}
+                    )
+                )
+            else:
+                assert temporal.baseline_period is not None
+                assert temporal.comparison_period is not None
+                baseline = temporal.baseline_period.model_copy(
+                    update={"role": TemporalRole.BASELINE_PERIOD}
+                )
+                comparison = temporal.comparison_period.model_copy(
+                    update={"role": TemporalRole.COMPARISON_PERIOD}
+                )
+                lifted_periods.extend((baseline, comparison))
+                if len(temporal_comparisons) > 1:
                     raise ResearchIntakeError(
                         "INTAKE_TEMPORAL_COMPARISON_AMBIGUOUS",
                         goal.goal_key,
                     )
-                if not temporal:
-                    label = (
-                        goal.source_fragment_text
-                        or goal.source_text
-                    )
+                if not temporal_comparisons:
+                    label = goal.source_fragment_text or goal.source_text
                     goal = goal.model_copy(
                         update={
                             "comparisons": (
@@ -1102,21 +1182,55 @@ class ResearchIntakeCompiler:
                         }
                     )
                     changed = True
-            elif mode == ModelTemporalMaterialMode.WINDOW:
-                if temporal:
-                    raise ResearchIntakeError(
-                        "INTAKE_TEMPORAL_MATERIAL_MODE_CONFLICT",
-                        goal.goal_key,
-                    )
-            elif temporal:
-                # Explicit typed comparison authority is stronger than the
-                # compatibility default used by historical deterministic fixtures.
-                # Live provider schema always requires the mode.
-                pass
             goals.append(goal)
-        if not changed:
-            return draft
-        return draft.model_copy(update={"goals": tuple(goals)})
+
+        if lifted_periods:
+            if len(roots) == 1 and draft.time_periods:
+                typed_ids = {
+                    (
+                        item.time_dimension_semantic_id,
+                        item.start,
+                        item.end,
+                    )
+                    for item in lifted_periods
+                }
+                top_ids = {
+                    (
+                        item.time_dimension_semantic_id,
+                        item.start,
+                        item.end,
+                    )
+                    for item in draft.time_periods
+                }
+                if top_ids != typed_ids:
+                    raise ResearchIntakeError(
+                        "INTAKE_ROOT_TEMPORAL_TOP_LEVEL_CONFLICT",
+                        "ROOT_CAUSE nested temporal material conflicts with top-level periods",
+                    )
+            existing = {
+                (
+                    item.time_dimension_semantic_id,
+                    item.start,
+                    item.end,
+                ): item
+                for item in draft.time_periods
+            }
+            for item in lifted_periods:
+                existing[
+                    (
+                        item.time_dimension_semantic_id,
+                        item.start,
+                        item.end,
+                    )
+                ] = item
+            draft = draft.model_copy(
+                update={"time_periods": tuple(existing.values())}
+            )
+            changed = True
+
+        if changed:
+            draft = draft.model_copy(update={"goals": tuple(goals)})
+        return draft
 
     @staticmethod
     def _canonicalize_temporal_comparison_subgoals(
@@ -1415,7 +1529,7 @@ class ResearchIntakeCompiler:
 
         draft = self._canonicalize_analytical_goals(draft)
         draft = self._canonicalize_temporal_comparison_subgoals(draft)
-        draft = self._canonicalize_root_temporal_material_mode(draft)
+        draft = self._canonicalize_root_temporal_material(draft)
         draft = self._canonicalize_exact_period_repeats(draft)
         draft = self._canonicalize_typed_temporal_comparison(draft)
         duplicate_root_keys = self._duplicate_root_cause_goal_keys(draft)
@@ -1471,7 +1585,7 @@ class ResearchIntakeCompiler:
 
         draft = self._canonicalize_analytical_goals(draft)
         draft = self._canonicalize_temporal_comparison_subgoals(draft)
-        draft = self._canonicalize_root_temporal_material_mode(draft)
+        draft = self._canonicalize_root_temporal_material(draft)
         draft = self._canonicalize_exact_period_repeats(draft)
         draft = self._canonicalize_typed_temporal_comparison(draft)
         duplicate_root_keys = self._duplicate_root_cause_goal_keys(draft)
