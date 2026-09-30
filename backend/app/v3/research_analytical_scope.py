@@ -1149,7 +1149,7 @@ def _assert_material_dimension_scope(
     *,
     time_identity: tuple[int, int | None] | None,
 ) -> None:
-    expected = {
+    required = {
         _material_field_identity(_material_binding(bindings, candidate_id))
         for candidate_id in contract.dimension_refs
     }
@@ -1159,8 +1159,18 @@ def _assert_material_dimension_scope(
         if item.role == "breakout"
     }
     if contract.comparison is not None and time_identity is not None:
-        expected.add(time_identity)
-    if observed != expected:
+        # A typed period comparison requires the governed temporal grain.
+        required.add(time_identity)
+        allowed = set(required)
+    else:
+        # Within an already accepted bounded period, Metabase may expose the
+        # same governed temporal field as an additional breakout so cognition
+        # can inspect change inside that period. This adds no new scope or data
+        # source; any other extra breakout remains unauthorized.
+        allowed = set(required)
+        if contract.period is not None and time_identity is not None:
+            allowed.add(time_identity)
+    if not required.issubset(observed) or not observed.issubset(allowed):
         raise ResearchAnalyticalScopeError(
             "R1_NATIVE_DIMENSION_SCOPE_MISMATCH",
             "material breakout identities differ from accepted dimension scope",
