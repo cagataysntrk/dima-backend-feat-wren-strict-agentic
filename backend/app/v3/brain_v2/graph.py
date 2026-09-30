@@ -3,9 +3,19 @@ from __future__ import annotations
 
 from typing import Any
 
+from langgraph.func import task
 from langgraph.graph import END, START, StateGraph
 
-from .activities import BrainActivities
+from .activities import (
+    BrainActivities,
+    CanonicalizeActivityResult,
+    EvidenceActivityResult,
+    IntakeActivityResult,
+    MaterialActivityResult,
+    P17ActivityResult,
+    P19ActivityResult,
+    ReportActivityResult,
+)
 from .state import (
     BrainGraphState,
     BrainP19Route,
@@ -32,11 +42,62 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
 
     builder = StateGraph(BrainStatePayload)
 
+    # Every owner/provider/native boundary is a LangGraph task. Completed task
+    # results live in orchestration persistence and are replayed instead of
+    # blindly repeating paid/non-deterministic work.
+    @task(name="brain_v2_intake_activity")
+    def intake_activity(payload: dict[str, Any]) -> dict[str, Any]:
+        return activities.intake(
+            BrainGraphState.model_validate(payload)
+        ).model_dump(mode="json")
+
+    @task(name="brain_v2_canonicalize_activity")
+    def canonicalize_activity(payload: dict[str, Any]) -> dict[str, Any]:
+        return activities.canonicalize(
+            BrainGraphState.model_validate(payload)
+        ).model_dump(mode="json")
+
+    @task(name="brain_v2_material_activity")
+    def material_activity(payload: dict[str, Any]) -> dict[str, Any]:
+        return activities.acquire_material(
+            BrainGraphState.model_validate(payload)
+        ).model_dump(mode="json")
+
+    @task(name="brain_v2_evidence_activity")
+    def evidence_activity(payload: dict[str, Any]) -> dict[str, Any]:
+        return activities.admit_evidence(
+            BrainGraphState.model_validate(payload)
+        ).model_dump(mode="json")
+
+    @task(name="brain_v2_p19_activity")
+    def p19_activity(payload: dict[str, Any]) -> dict[str, Any]:
+        return activities.assess_p19(
+            BrainGraphState.model_validate(payload)
+        ).model_dump(mode="json")
+
+    @task(name="brain_v2_discovery_activity")
+    def discovery_activity(payload: dict[str, Any]) -> dict[str, Any]:
+        return activities.discover_hypotheses(
+            BrainGraphState.model_validate(payload)
+        ).model_dump(mode="json")
+
+    @task(name="brain_v2_next_test_activity")
+    def next_test_activity(payload: dict[str, Any]) -> dict[str, Any]:
+        return activities.design_next_test(
+            BrainGraphState.model_validate(payload)
+        ).model_dump(mode="json")
+
+    @task(name="brain_v2_report_activity")
+    def report_activity(payload: dict[str, Any]) -> dict[str, Any]:
+        return activities.synthesize_report(
+            BrainGraphState.model_validate(payload)
+        ).model_dump(mode="json")
+
     def intake_node(state: BrainStatePayload):
         current = _snapshot(state)
         if not current.current_user_input:
             raise ValueError("Brain V2 intake requires one current user input")
-        result = activities.intake(current)
+        result = IntakeActivityResult.model_validate(\n            intake_activity(current.model_dump(mode="json")).result()\n        )
         return {
             "accepted_brief_ref": result.accepted_brief_ref,
             "scope_version_id": result.scope_version_id,
@@ -52,7 +113,7 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
 
     def canonicalize_node(state: BrainStatePayload):
         current = _snapshot(state)
-        result = activities.canonicalize(current)
+        result = CanonicalizeActivityResult.model_validate(\n            canonicalize_activity(current.model_dump(mode="json")).result()\n        )
         return {
             "research_session_id": result.research_session_id,
             "scope_version_id": result.scope_version_id,
@@ -69,7 +130,7 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
 
     def material_node(state: BrainStatePayload):
         current = _snapshot(state)
-        result = activities.acquire_material(current)
+        result = MaterialActivityResult.model_validate(\n            material_activity(current.model_dump(mode="json")).result()\n        )
         return {
             "material_requirement_ids": result.material_requirement_ids,
             "last_completed_node": "ACQUIRE_MATERIAL",
@@ -80,7 +141,7 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
 
     def evidence_node(state: BrainStatePayload):
         current = _snapshot(state)
-        result = activities.admit_evidence(current)
+        result = EvidenceActivityResult.model_validate(\n            evidence_activity(current.model_dump(mode="json")).result()\n        )
         return {
             "evidence_revision": result.evidence_revision,
             "evidence_ids": result.evidence_ids,
@@ -92,7 +153,7 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
 
     def discovery_node(state: BrainStatePayload):
         current = _snapshot(state)
-        result = activities.discover_hypotheses(current)
+        result = P17ActivityResult.model_validate(\n            discovery_activity(current.model_dump(mode="json")).result()\n        )
         return {
             "hypothesis_revision": result.hypothesis_revision,
             "hypothesis_ids": result.hypothesis_ids,
@@ -106,7 +167,7 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
 
     def p19_node(state: BrainStatePayload):
         current = _snapshot(state)
-        result = activities.assess_p19(current)
+        result = P19ActivityResult.model_validate(\n            p19_activity(current.model_dump(mode="json")).result()\n        )
         return {
             "latest_p19_assessment_ref": result.assessment_ref,
             "latest_p19_route": result.route,
@@ -130,7 +191,7 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
             raise ValueError("P17 next-test node requires typed P19 NextTestRequest")
         if current.adaptive_reentries >= current.max_adaptive_reentries:
             raise ValueError("P17 next-test node exceeded bounded re-entry limit")
-        result = activities.design_next_test(current)
+        result = P17ActivityResult.model_validate(\n            next_test_activity(current.model_dump(mode="json")).result()\n        )
         return {
             "hypothesis_revision": result.hypothesis_revision,
             "hypothesis_ids": result.hypothesis_ids,
@@ -146,7 +207,7 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
 
     def report_node(state: BrainStatePayload):
         current = _snapshot(state)
-        result = activities.synthesize_report(current)
+        result = ReportActivityResult.model_validate(\n            report_activity(current.model_dump(mode="json")).result()\n        )
         return {
             "report_ref": result.report_ref,
             "workflow_status": BrainWorkflowStatus.COMPLETE,
