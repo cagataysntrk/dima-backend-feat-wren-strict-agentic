@@ -103,6 +103,10 @@ Architecture:
 - Keep contribution class and evidence strength as independent qualitative axes.
 - Never invent numeric confidence, contribution %, effect %, probability, score,
   SQL, MBQL, joins, or analytical values.
+- governed_evidence_observations contains only bounded values from exact VERIFIED P14 Evidence
+  already bound to supplied grounding identities. You may compare those observed values
+  qualitatively, but must not invent missing values, recompute a new analytical result, or treat
+  co-movement as causal identification. These observations never waive the causal-promotion gate.
 - Association/correlation must not be promoted directly to cause.
 - P18 SATISFIED means interpretation eligibility only, never causal proof.
 - A blocked required P18 policy cannot support trusted causal promotion.
@@ -289,9 +293,15 @@ def _packet(
         "obligation_id": snapshot.obligation_id,
         "semantic_context_version": snapshot.semantic_context_version,
         "hypotheses": hypotheses,
+        "governed_evidence_observations": [
+            item.model_dump(mode="json")
+            for item in snapshot.evidence_observations
+        ],
         "p18_policy_use_statuses": policy_statuses or {},
         "causal_identification_source_refs_exposed": [],
-        "numeric_values_exposed_to_model": False,
+        "numeric_values_exposed_to_model": bool(
+            snapshot.evidence_observations
+        ),
         "deterministic_feedback_code": deterministic_feedback_code,
     }
     return json.dumps(packet, ensure_ascii=False, sort_keys=True)
