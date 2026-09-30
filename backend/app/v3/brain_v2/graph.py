@@ -135,6 +135,7 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
         return {
             "material_requirement_ids": result.material_requirement_ids,
             "pending_evidence_ids": result.produced_evidence_ids,
+            "pending_receipt_refs": result.produced_receipt_refs,
             "last_completed_node": "ACQUIRE_MATERIAL",
             "activity_fingerprints": _append_fingerprint(
                 current, result.activity_fingerprint
@@ -151,6 +152,7 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
             "hypothesis_ids": result.hypothesis_ids,
             "discovery_required": result.discovery_required,
             "pending_evidence_ids": (),
+            "pending_receipt_refs": (),
             "last_completed_node": "ADMIT_EVIDENCE",
             "activity_fingerprints": _append_fingerprint(
                 current, result.activity_fingerprint
