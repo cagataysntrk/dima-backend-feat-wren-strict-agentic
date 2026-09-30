@@ -302,12 +302,22 @@ class HypothesisSnapshot(Frozen):
     groundings: tuple[P19GroundingLink, ...]
 
 
+class P19EvidenceObservation(Frozen):
+    """Bounded governed Evidence payload exposed to the epistemic owner only."""
+
+    evidence_id: str = Field(min_length=1)
+    receipt_id: str = Field(min_length=1)
+    result_hash: str | None = None
+    payload: Any
+
+
 class P19CaseSnapshot(Frozen):
     research_session_id: str
     obligation_id: str
     tenant_binding: str
     semantic_context_version: str
     hypotheses: tuple[HypothesisSnapshot, ...]
+    evidence_observations: tuple[P19EvidenceObservation, ...] = ()
 
 
 def _canonical_json(value: Any, *, code: str) -> tuple[str, str]:
@@ -822,18 +832,44 @@ class HypothesisRootCauseStore:
             session_id=session.session_id,
             obligation_id=obligation_id,
         )
+        hypothesis_snapshots = tuple(
+            HypothesisSnapshot(
+                hypothesis=h,
+                groundings=self._groundings(h.hypothesis_id),
+            )
+            for h in hypotheses
+        )
+        evidence_observations: dict[str, P19EvidenceObservation] = {}
+        for hypothesis in hypothesis_snapshots:
+            for link in hypothesis.groundings:
+                if link.source_kind != GroundingSourceKind.P14_EVIDENCE:
+                    continue
+                if link.source_ref in evidence_observations:
+                    continue
+                row = self._source_authority(
+                    session_id=session.session_id,
+                    obligation_id=obligation_id,
+                    source_kind=GroundingSourceKind.P14_EVIDENCE,
+                    source_ref=link.source_ref,
+                    source_receipt_id=link.source_receipt_id,
+                )
+                payload = _json_object(
+                    row.native_result_json,
+                    code="P19_EVIDENCE_SOURCE_PAYLOAD_INVALID",
+                )
+                evidence_observations[link.source_ref] = P19EvidenceObservation(
+                    evidence_id=link.source_ref,
+                    receipt_id=str(row.receipt_id),
+                    result_hash=row.result_hash,
+                    payload=payload,
+                )
         return P19CaseSnapshot(
             research_session_id=session.session_id,
             obligation_id=obligation_id,
             tenant_binding=session.tenant_binding,
             semantic_context_version=session.context_version,
-            hypotheses=tuple(
-                HypothesisSnapshot(
-                    hypothesis=h,
-                    groundings=self._groundings(h.hypothesis_id),
-                )
-                for h in hypotheses
-            ),
+            hypotheses=hypothesis_snapshots,
+            evidence_observations=tuple(evidence_observations.values()),
         )
 
     def _validate_numeric(
