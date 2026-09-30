@@ -27,6 +27,7 @@ from app.v3.root_cause_candidate_contract import (
     embed_root_cause_candidate_semantics,
 )
 from app.v3.research_contracts import (
+    CausalCompetitionSurface,
     PresentationKind,
     ResearchBrief,
     ResearchBriefStatus,
@@ -79,6 +80,7 @@ def dim(cid: str, name: str):
 
 DOWNTIME = metric("metric.downtime", "Machine Downtime Minutes")
 FAULTS = metric("metric.faults", "Fault Count")
+MAINT = metric("metric.maintenance_delay", "Maintenance Delay")
 DEPT = dim("dimension.department", "Department")
 
 
@@ -88,6 +90,7 @@ def question(
     *,
     subjects=(DOWNTIME,),
     related=(DEPT,),
+    causal_competition=None,
 ):
     return ResearchQuestion(
         goal_id=goal_id,
@@ -95,6 +98,7 @@ def question(
         source_text=f"Governed {kind.value} request.",
         subject_refs=subjects,
         related_refs=related,
+        causal_competition=causal_competition,
         status=ResearchGoalStatus.RESOLVED,
     )
 
@@ -278,13 +282,11 @@ class FakeInvestigation:
         downstream_reentry_intent=None,
         downstream_reentry_obligation_id=None,
     ):
-        del (
-            principal,
-            native_session_token,
-            downstream_reentry_intent,
-            downstream_reentry_obligation_id,
-        )
+        del principal, native_session_token, downstream_reentry_obligation_id
         state = self._state(session_id)
+        state.setdefault("reentry_intents", []).append(
+            getattr(downstream_reentry_intent, "value", downstream_reentry_intent)
+        )
         state["obligation"] = getattr(
             manager,
             "target_parent_obligation",
@@ -320,7 +322,11 @@ class FakeInvestigation:
                                 relation_kind=(
                                     RootCauseCandidateRelation.EXPLANATORY_CANDIDATE
                                 ),
-                                mechanism_ref=f"ibr_fake_{n}",
+                                mechanism_ref=(
+                                    manager._allowed_mechanism_refs[0]
+                                    if len(getattr(manager, "_allowed_mechanism_refs", ())) == 1
+                                    else f"ibr_fake_{n}"
+                                ),
                                 scope_lineage_id=session.lineage_id,
                                 scope_version_id=(
                                     session.accepted_brief.scope.scope_version.version_id
@@ -756,6 +762,52 @@ def test_r4_exact_active_p18_policy_promotes_only_business_relationship_layer():
         item.code == "P18_RELATIONSHIP_POLICY_MISSING"
         for item in result.limitations
     )
+
+
+def test_root_cause_user_seeded_candidates_use_claim_synthesis_without_analytical_reentry():
+    c, research, investigation, reasoning = composer()
+    causal = CausalCompetitionSurface(
+        effect_semantic_id=DOWNTIME.candidate_id,
+        candidate_mechanism_semantic_ids=(
+            FAULTS.candidate_id,
+            MAINT.candidate_id,
+        ),
+        diagnostic_dimension_ids=(DEPT.candidate_id,),
+    )
+    b = brief(
+        question(
+            "g_root_seeded",
+            ResearchGoalKind.ROOT_CAUSE,
+            subjects=(DOWNTIME, FAULTS, MAINT),
+            related=(DEPT,),
+            causal_competition=causal,
+        )
+    )
+    original = c._assess_root_cause
+    def wrapped(**kwargs):
+        reasoning.current_obligation_by_session[kwargs["session_id"]] = (
+            kwargs["goal"].goal_id
+        )
+        return original(**kwargs)
+    c._assess_root_cause = wrapped
+
+    result = c.compose(
+        brief=b,
+        principal=principal(),
+        request_ref="root-seeded-one-pass",
+        source_message_hash="1" * 64,
+        native_session_token=None,
+    )
+    state = investigation._state(result.research_session_id)
+    assert state["calls"] == 2
+    assert state["reentry_intents"] == ["FORM_CLAIM", "FORM_CLAIM"]
+    assert result.p19_assessment_refs == ("p19a_" + "2" * 24,)
+    snapshot = c._epistemics.snapshot(
+        research_session_id=result.research_session_id,
+        obligation_id="g_root_seeded",
+        principal=principal(),
+    )
+    assert len(snapshot.hypotheses) == 2
 
 
 def test_root_cause_composes_p17_then_p19_and_preserves_inconclusive_outcome():

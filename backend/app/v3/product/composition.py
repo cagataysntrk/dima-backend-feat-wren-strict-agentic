@@ -235,21 +235,24 @@ class _ObligationScopedProposalManager:
 
     def propose(self, snapshot):
         if self._claim_semantic_contract == ClaimSemanticContract.ROOT_CAUSE_CANDIDATE:
-            scoped = getattr(
-                self._inner,
-                "propose_root_candidate_for_obligation",
-                None,
+            method_name = (
+                "propose_root_candidate_for_obligation_with_constraints"
+                if self._allowed_intents
+                else "propose_root_candidate_for_obligation"
             )
+            scoped = getattr(self._inner, method_name, None)
             if not callable(scoped):
                 raise ValueError(
                     "root-cause provider lacks governed mechanism selection boundary"
                 )
-            proposal = scoped(
-                snapshot,
-                target_parent_obligation=self.target_parent_obligation,
-                allowed_evidence_refs=self._allowed_evidence_refs,
-                allowed_mechanism_refs=self._allowed_mechanism_refs,
-            )
+            kwargs = {
+                "target_parent_obligation": self.target_parent_obligation,
+                "allowed_evidence_refs": self._allowed_evidence_refs,
+                "allowed_mechanism_refs": self._allowed_mechanism_refs,
+            }
+            if self._allowed_intents:
+                kwargs["allowed_intents"] = self._allowed_intents
+            proposal = scoped(snapshot, **kwargs)
         else:
             if self._allowed_intents:
                 scoped = getattr(
@@ -532,6 +535,163 @@ class HeadlessProductComposer:
             semantics=semantics,
             evidence_refs=evidence_refs,
         )
+
+    @staticmethod
+    def _root_cause_mechanism_refs(
+        *,
+        goal: ResearchQuestion,
+        source_session,
+    ) -> tuple[tuple[str, ...], bool]:
+        surface = goal.causal_competition
+        goal_refs = tuple((*goal.subject_refs, *goal.related_refs))
+        if surface is not None:
+            if surface.candidate_mechanism_semantic_ids:
+                return surface.candidate_mechanism_semantic_ids, True
+            return (
+                tuple(
+                    dict.fromkeys(
+                        item.candidate_id
+                        for item in goal_refs
+                        if (
+                            item.target_kind
+                            in {SemanticTargetKind.METRIC, SemanticTargetKind.KPI}
+                            and item.candidate_id != surface.effect_semantic_id
+                        )
+                    )
+                ),
+                False,
+            )
+
+        # Compatibility for historical accepted briefs that predate the typed
+        # causal surface. Live Research Intake can no longer mint this shape.
+        subject_refs = {item.candidate_id for item in goal.subject_refs}
+        brief = getattr(source_session, "accepted_brief", None)
+        return (
+            tuple(
+                sorted(
+                    item.candidate_id
+                    for item in (brief.scope.semantic_refs if brief else ())
+                    if (
+                        item.target_kind
+                        in {SemanticTargetKind.METRIC, SemanticTargetKind.KPI}
+                        and item.candidate_id not in subject_refs
+                    )
+                )
+            ),
+            False,
+        )
+
+    def _synthesize_root_candidates(
+        self,
+        *,
+        session_id: str,
+        goal: ResearchQuestion,
+        principal: Principal,
+        native_session_token: str | None,
+        owner_calls: list[str],
+        mechanism_refs: tuple[str, ...],
+        evidence_refs: tuple[str, ...],
+    ):
+        """Interpret already VERIFIED Evidence for exact governed mechanisms.
+
+        This is P17 claim synthesis only. FORM_CLAIM cannot execute analytics,
+        so explicit user candidates do not trigger redundant Metabase re-entry.
+        """
+        if not evidence_refs:
+            return self._investigation.snapshot(
+                session_id=session_id,
+                principal=principal,
+            )
+        for mechanism_ref in tuple(dict.fromkeys(mechanism_refs)):
+            manager = _ObligationScopedProposalManager(
+                inner=self._investigation_manager,
+                target_parent_obligation=goal.goal_id,
+                allowed_evidence_refs=evidence_refs,
+                claim_semantic_contract=ClaimSemanticContract.ROOT_CAUSE_CANDIDATE,
+                allowed_mechanism_refs=(mechanism_ref,),
+                allowed_intents=(InvestigationIntent.FORM_CLAIM,),
+            )
+            self._investigation.run_one(
+                session_id=session_id,
+                principal=principal,
+                manager=manager,
+                native_session_token=native_session_token,
+                downstream_reentry_intent=InvestigationIntent.FORM_CLAIM,
+                downstream_reentry_obligation_id=goal.goal_id,
+            )
+            owner_calls.append("P17")
+        return self._investigation.snapshot(
+            session_id=session_id,
+            principal=principal,
+        )
+
+    def _sync_root_candidates_to_p19(
+        self,
+        *,
+        session_id: str,
+        goal: ResearchQuestion,
+        principal: Principal,
+        source_session,
+        claims: tuple[Any, ...],
+    ) -> tuple[str, ...]:
+        brief = source_session.accepted_brief
+        if brief is None:
+            return ()
+        refs = {item.candidate_id: item for item in brief.scope.semantic_refs}
+        relation_map = {
+            "SUPPORTS": GroundingRelation.SUPPORTS,
+            "CHALLENGES": GroundingRelation.CHALLENGES,
+            "CONTEXTUALIZES": GroundingRelation.CONTEXT,
+            "INSUFFICIENT": GroundingRelation.INSUFFICIENT,
+        }
+        mechanism_refs: list[str] = []
+        for claim in claims:
+            candidate = self._root_cause_candidate(
+                claim,
+                expected_subject_ref=goal.goal_id,
+                expected_scope_lineage_id=source_session.lineage_id,
+                expected_scope_version_id=brief.scope.scope_version.version_id,
+            )
+            if candidate is None:
+                continue
+            mechanism_ref = candidate.semantics.mechanism_ref
+            mechanism_refs.append(mechanism_ref)
+            semantic = refs.get(mechanism_ref)
+            statement = (
+                semantic.canonical_name
+                if semantic is not None
+                else mechanism_ref
+            )
+            hypothesis = self._epistemics.create_hypothesis(
+                research_session_id=session_id,
+                obligation_id=goal.goal_id,
+                statement=statement,
+                principal=principal,
+                candidate_identity_ref=mechanism_ref,
+            )
+            self._epistemics.create_grounding(
+                hypothesis_id=hypothesis.hypothesis_id,
+                source_kind=GroundingSourceKind.P16_CLAIM,
+                source_ref=claim.claim_id,
+                relation=GroundingRelation.CONTEXT,
+                principal=principal,
+            )
+            for link in claim.evidence_links:
+                relation = relation_map.get(link.relation)
+                if relation is None:
+                    raise ProductProcessError(
+                        "PRODUCT_P16_EVIDENCE_RELATION_UNKNOWN",
+                        link.relation,
+                    )
+                self._epistemics.create_grounding(
+                    hypothesis_id=hypothesis.hypothesis_id,
+                    source_kind=GroundingSourceKind.P14_EVIDENCE,
+                    source_ref=link.evidence_id,
+                    source_receipt_id=link.receipt_id,
+                    relation=relation,
+                    principal=principal,
+                )
+        return tuple(dict.fromkeys(mechanism_refs))
 
     def _observe_p17_process(
         self,
@@ -881,95 +1041,67 @@ class HeadlessProductComposer:
             for item in source_session.evidence_refs
             if item.obligation_id == goal.goal_id
         )
-        subject_refs = {item.candidate_id for item in goal.subject_refs}
-        allowed_mechanism_refs = (
-            tuple(
-                sorted(
-                    item.candidate_id
-                    for item in source_session.accepted_brief.scope.semantic_refs
-                    if (
-                        item.target_kind
-                        in {SemanticTargetKind.METRIC, SemanticTargetKind.KPI}
-                        and item.candidate_id not in subject_refs
-                    )
-                )
+        allowed_mechanism_refs, user_seeded = self._root_cause_mechanism_refs(
+            goal=goal,
+            source_session=source_session,
+        )
+        last_error = None
+        if user_seeded:
+            snapshot = self._synthesize_root_candidates(
+                session_id=session_id,
+                goal=goal,
+                principal=principal,
+                native_session_token=native_session_token,
+                owner_calls=owner_calls,
+                mechanism_refs=allowed_mechanism_refs,
+                evidence_refs=allowed_evidence_refs,
             )
-            if source_session.accepted_brief is not None
-            else ()
-        )
-        scoped_manager = _ObligationScopedProposalManager(
-            inner=self._investigation_manager,
-            target_parent_obligation=goal.goal_id,
-            allowed_evidence_refs=allowed_evidence_refs,
-            claim_semantic_contract=(
-                ClaimSemanticContract.ROOT_CAUSE_CANDIDATE
-            ),
-            allowed_mechanism_refs=allowed_mechanism_refs,
-        )
-        snapshot, next_owner, _, last_error = self._run_p17(
-            session_id=session_id,
-            principal=principal,
-            native_session_token=native_session_token,
-            purpose=ProductProcessPurpose.ROOT_CAUSE,
-            owner_calls=owner_calls,
-            manager=scoped_manager,
-            target_obligation_id=goal.goal_id,
-        )
-        observation, claims, _ = self._observe_p17_process(
-            snapshot=snapshot,
-            session_id=session_id,
-            target_obligation_id=goal.goal_id,
-            principal=principal,
-        )
+            observation, claims, _ = self._observe_p17_process(
+                snapshot=snapshot,
+                session_id=session_id,
+                target_obligation_id=goal.goal_id,
+                principal=principal,
+            )
+            next_owner = decide_next_owner(
+                ProductProcessPurpose.ROOT_CAUSE,
+                observation,
+            )
+        else:
+            scoped_manager = _ObligationScopedProposalManager(
+                inner=self._investigation_manager,
+                target_parent_obligation=goal.goal_id,
+                allowed_evidence_refs=allowed_evidence_refs,
+                claim_semantic_contract=ClaimSemanticContract.ROOT_CAUSE_CANDIDATE,
+                allowed_mechanism_refs=allowed_mechanism_refs,
+            )
+            snapshot, next_owner, _, last_error = self._run_p17(
+                session_id=session_id,
+                principal=principal,
+                native_session_token=native_session_token,
+                purpose=ProductProcessPurpose.ROOT_CAUSE,
+                owner_calls=owner_calls,
+                manager=scoped_manager,
+                target_obligation_id=goal.goal_id,
+            )
+            observation, claims, _ = self._observe_p17_process(
+                snapshot=snapshot,
+                session_id=session_id,
+                target_obligation_id=goal.goal_id,
+                principal=principal,
+            )
         if next_owner != ProductProcessNext.P19:
             return None, snapshot, self._p17_terminal_code(
                 snapshot=snapshot,
                 last_error=last_error,
             )
 
-        eligible_claim_ids = {
-            item.claim_id for item in observation.root_cause_candidates
-        }
-        hypothesis_by_claim: dict[str, Any] = {}
-        relation_map = {
-            "SUPPORTS": GroundingRelation.SUPPORTS,
-            "CHALLENGES": GroundingRelation.CHALLENGES,
-            "CONTEXTUALIZES": GroundingRelation.CONTEXT,
-            "INSUFFICIENT": GroundingRelation.INSUFFICIENT,
-        }
-        for claim in claims:
-            if claim.claim_id not in eligible_claim_ids:
-                continue
-            hypothesis = self._epistemics.create_hypothesis(
-                research_session_id=session_id,
-                obligation_id=goal.goal_id,
-                statement=claim.claim_text,
-                principal=principal,
-                candidate_identity_ref=claim.claim_id,
-            )
-            hypothesis_by_claim[claim.claim_id] = hypothesis
-            self._epistemics.create_grounding(
-                hypothesis_id=hypothesis.hypothesis_id,
-                source_kind=GroundingSourceKind.P16_CLAIM,
-                source_ref=claim.claim_id,
-                relation=GroundingRelation.CONTEXT,
-                principal=principal,
-            )
-            for link in claim.evidence_links:
-                relation = relation_map.get(link.relation)
-                if relation is None:
-                    raise ProductProcessError(
-                        "PRODUCT_P16_EVIDENCE_RELATION_UNKNOWN",
-                        link.relation,
-                    )
-                self._epistemics.create_grounding(
-                    hypothesis_id=hypothesis.hypothesis_id,
-                    source_kind=GroundingSourceKind.P14_EVIDENCE,
-                    source_ref=link.evidence_id,
-                    source_receipt_id=link.receipt_id,
-                    relation=relation,
-                    principal=principal,
-                )
+        active_mechanism_refs = self._sync_root_candidates_to_p19(
+            session_id=session_id,
+            goal=goal,
+            principal=principal,
+            source_session=source_session,
+            claims=claims,
+        )
 
         scope_version_id = (
             source_session.accepted_brief.scope.scope_version.version_id
@@ -1064,16 +1196,43 @@ class HeadlessProductComposer:
                     and item.evidence_id not in before_evidence
                 )
             )
-            for hypothesis_id in target_hypotheses:
-                for evidence in new_evidence:
-                    self._epistemics.create_grounding(
-                        hypothesis_id=hypothesis_id,
-                        source_kind=GroundingSourceKind.P14_EVIDENCE,
-                        source_ref=evidence.evidence_id,
-                        source_receipt_id=evidence.receipt_id,
-                        relation=GroundingRelation.CONTEXT,
+            if new_evidence and active_mechanism_refs:
+                synthesis_snapshot = self._synthesize_root_candidates(
+                    session_id=session_id,
+                    goal=goal,
+                    principal=principal,
+                    native_session_token=native_session_token,
+                    owner_calls=owner_calls,
+                    mechanism_refs=active_mechanism_refs,
+                    evidence_refs=tuple(item.evidence_id for item in new_evidence),
+                )
+                _, refreshed_claims, _ = self._observe_p17_process(
+                    snapshot=synthesis_snapshot,
+                    session_id=session_id,
+                    target_obligation_id=goal.goal_id,
+                    principal=principal,
+                )
+                active_mechanism_refs = self._sync_root_candidates_to_p19(
+                    session_id=session_id,
+                    goal=goal,
+                    principal=principal,
+                    source_session=self._research.resume_state(
+                        session_id=session_id,
                         principal=principal,
-                    )
+                    ),
+                    claims=refreshed_claims,
+                )
+            else:
+                for hypothesis_id in target_hypotheses:
+                    for evidence in new_evidence:
+                        self._epistemics.create_grounding(
+                            hypothesis_id=hypothesis_id,
+                            source_kind=GroundingSourceKind.P14_EVIDENCE,
+                            source_ref=evidence.evidence_id,
+                            source_receipt_id=evidence.receipt_id,
+                            relation=GroundingRelation.CONTEXT,
+                            principal=principal,
+                        )
             feedback_code = "P19_DISCRIMINATING_TEST_COMPLETED"
 
         assert assessment is not None

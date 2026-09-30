@@ -1528,6 +1528,26 @@ class StructuredResearchProposalManager:
             allowed_mechanism_refs=allowed_mechanism_refs,
         )
 
+    def propose_root_candidate_for_obligation_with_constraints(
+        self,
+        snapshot: ResearchManagerSnapshot,
+        *,
+        target_parent_obligation: str,
+        allowed_evidence_refs: tuple[str, ...],
+        allowed_mechanism_refs: tuple[str, ...],
+        allowed_intents: tuple[InvestigationIntent, ...],
+    ) -> ManagerProposal:
+        """Root-candidate synthesis narrowed to a closed legal intent subset."""
+        if not allowed_intents:
+            raise ValueError("allowed_intents must not be empty")
+        return self._propose(
+            snapshot,
+            target_parent_obligation=target_parent_obligation,
+            allowed_evidence_refs=allowed_evidence_refs,
+            allowed_mechanism_refs=allowed_mechanism_refs,
+            allowed_intents=allowed_intents,
+        )
+
     def propose_with_guidance(
         self,
         snapshot: ResearchManagerSnapshot,
