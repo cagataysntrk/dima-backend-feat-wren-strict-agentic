@@ -39,6 +39,9 @@ def test_final_pinpoint_probes_are_closed_and_not_benchmark_cases():
         "RELATIONSHIP_F05_H_RECOVERY",
         "REPORT_F08_H_RECOVERY",
         "ADAPTIVE_F06_H_RETENTION",
+        "CONVERSATION_F10_H_RECOVERY",
+        "RCA_F07_H_RECOVERY",
+        "MULTI_INTENT_F04_H_RECOVERY",
     )
     assert MAX_ORCHESTRATION_BOUNDARY_UNITS == 12
     from lab.metabase.core_b.phase1_pinpoint_live import MODEL
@@ -64,11 +67,17 @@ def test_recovery_growth_probes_bind_exact_frozen_round2_historical_requests():
         "RELATIONSHIP_F05_H_RECOVERY": "F05_H",
         "REPORT_F08_H_RECOVERY": "F08_H",
         "ADAPTIVE_F06_H_RETENTION": "F06_H",
+        "CONVERSATION_F10_H_RECOVERY": "F10_H",
+        "RCA_F07_H_RECOVERY": "F07_H",
+        "MULTI_INTENT_F04_H_RECOVERY": "F04_H",
     }
     for probe_id, case_id in bindings.items():
         probe = PROBES[probe_id]
         assert probe["historical_round2_case_id"] == case_id
-        assert probe["turns"] == (cases[case_id]["question"],)
+        expected_turns = tuple(
+            cases[case_id].get("turns") or (cases[case_id]["question"],)
+        )
+        assert probe["turns"] == expected_turns
         assert probe["manual_contract"]
     assert all(
         probe["historical_round2_case_id"] is None
@@ -143,6 +152,9 @@ def test_pinpoint_workflow_is_one_probe_per_run_and_no_broad_scorer():
     assert "RELATIONSHIP_F05_H_RECOVERY" in workflow
     assert "REPORT_F08_H_RECOVERY" in workflow
     assert "ADAPTIVE_F06_H_RETENTION" in workflow
+    assert "CONVERSATION_F10_H_RECOVERY" in workflow
+    assert "RCA_F07_H_RECOVERY" in workflow
+    assert "MULTI_INTENT_F04_H_RECOVERY" in workflow
     assert "probe_id" in workflow
     assert "max-orchestration-boundary-units \"12\"" in workflow
     assert "F02_M" not in workflow
@@ -155,6 +167,9 @@ def test_pinpoint_workflow_is_one_probe_per_run_and_no_broad_scorer():
     assert "phase1-f05-trigger-20260929" in workflow
     assert "phase1-f08-trigger-20260929" in workflow
     assert "phase1-f06-trigger-20260929" in workflow
+    assert "phase1-f10-trigger-20260930" in workflow
+    assert "phase1-f07-trigger-20260930" in workflow
+    assert "phase1-f04-trigger-20260930" in workflow
     assert "feat/dima-metabase-platform" in workflow
     assert 'PRODUCT_BEHAVIOR_SHA: "87020e31fc553b316d16983c561dd6f2e8b64210"' in workflow
     assert 'assert report["candidate_product_sha"] == "87020e31fc553b316d16983c561dd6f2e8b64210"' in workflow
