@@ -20,6 +20,12 @@ class BrainWorkflowStatus(StrEnum):
     BLOCKED = "BLOCKED"
 
 
+class BrainP19Route(StrEnum):
+    SUFFICIENT = "SUFFICIENT"
+    NEXT_TEST_REQUIRED = "NEXT_TEST_REQUIRED"
+    INCONCLUSIVE = "INCONCLUSIVE"
+
+
 class BrainGraphState(BaseModel):
     """LangGraph checkpoint state containing refs/revisions, never domain truth bodies."""
 
@@ -49,6 +55,7 @@ class BrainGraphState(BaseModel):
 
     hypothesis_revision: int = Field(default=0, ge=0)
     hypothesis_ids: tuple[str, ...] = ()
+    discovery_required: bool = False
 
     latest_p19_assessment_ref: str | None = Field(
         default=None, pattern=r"^p19a_[a-f0-9]{24}$"
@@ -56,6 +63,10 @@ class BrainGraphState(BaseModel):
     pending_next_test_ref: str | None = Field(
         default=None, pattern=r"^ntr_[a-f0-9]{24}$"
     )
+    latest_p19_route: BrainP19Route | None = None
+    adaptive_reentries: int = Field(default=0, ge=0)
+    max_adaptive_reentries: int = Field(default=1, ge=0, le=4)
+
     report_ref: str | None = Field(
         default=None, pattern=r"^p20r_[a-f0-9]{24}$"
     )
@@ -92,4 +103,8 @@ class BrainGraphState(BaseModel):
             for value in self.activity_fingerprints
         ):
             raise ValueError("activity fingerprints must be sha256 hex")
+        if self.adaptive_reentries > self.max_adaptive_reentries:
+            raise ValueError("adaptive re-entry count exceeds configured bound")
+        if self.discovery_required and self.hypothesis_ids:
+            raise ValueError("discovery cannot remain required after hypotheses exist")
         return self
