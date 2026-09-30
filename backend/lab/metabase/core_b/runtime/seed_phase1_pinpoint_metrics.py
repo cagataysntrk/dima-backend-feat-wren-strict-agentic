@@ -10,13 +10,16 @@ import argparse
 import hashlib
 import json
 import os
+import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from pathlib import Path
 from typing import Any
 
 SCHEMA_VERSION = "phase1_pinpoint_native_bindings_v1"
 TABLE_NAME = "machine_operations"
+INTERNAL_METABOT_ENTITY_ID = "metabotmetabotmetabot"
 
 _ENTITY_DIMENSION_SPECS = (
     ("dimension.department", "Department", "department"),
@@ -123,10 +126,11 @@ def metric_card_payload(
     field_id: int,
     name: str,
     aggregation: str,
+    collection_id: int | None = None,
 ) -> dict[str, Any]:
     if aggregation not in {"sum", "avg"}:
         raise ValueError("pinpoint metric aggregation must be a closed fixture choice")
-    return {
+    payload = {
         "name": name,
         "type": "metric",
         "dataset_query": {
@@ -145,6 +149,11 @@ def metric_card_payload(
             "Governed Phase-1 pinpoint fixture metric over machine_operations."
         ),
     }
+    if collection_id is not None:
+        if collection_id <= 0:
+            raise ValueError("Metabot collection id must be positive")
+        payload["collection_id"] = collection_id
+    return payload
 
 
 def _request(
@@ -247,6 +256,102 @@ def _fixture_metadata(
     return database_id, table_id, fields
 
 
+
+def _internal_metabot_collection_id(
+    *,
+    base_url: str,
+    admin_session: str,
+) -> int:
+    """Return the exact collection searched by the default internal NLQ Metabot."""
+
+    body = _request(
+        base_url,
+        "GET",
+        "/api/metabot/metabot",
+        session=admin_session,
+    )
+    items = body.get("items", []) if isinstance(body, dict) else []
+    matches = [
+        item
+        for item in items
+        if isinstance(item, dict)
+        and item.get("entity_id") == INTERNAL_METABOT_ENTITY_ID
+    ]
+    if len(matches) != 1:
+        raise RuntimeError(
+            "exactly one internal Metabot discovery authority is required"
+        )
+    collection_id = matches[0].get("collection_id")
+    if not isinstance(collection_id, int) or collection_id <= 0:
+        raise RuntimeError(
+            "internal Metabot has no stable discovery collection"
+        )
+    return collection_id
+
+
+def metric_search_result_contains(
+    body: Any,
+    *,
+    metric_id: int,
+) -> bool:
+    data = body.get("data", []) if isinstance(body, dict) else []
+    return any(
+        isinstance(item, dict)
+        and item.get("model") == "metric"
+        and item.get("id") == metric_id
+        for item in data
+    )
+
+
+def _verify_restricted_search_visibility(
+    *,
+    base_url: str,
+    restricted_session: str,
+    collection_id: int,
+    metrics: list[dict[str, Any]],
+    attempts: int = 60,
+    delay_seconds: float = 0.25,
+) -> None:
+    """Block paid cognition until the exact Metabot search surface is ready.
+
+    Metric creation is indexed asynchronously by Metabase. The NLQ Metabot
+    searches only its configured collection. Polling the same collection-scoped
+    search surface is zero-provider fixture readiness, not analytical work.
+    """
+
+    pending = {int(item["metabase_metric_id"]): item for item in metrics}
+    last: dict[int, Any] = {}
+    for _ in range(attempts):
+        for metric_id, item in tuple(pending.items()):
+            query = urllib.parse.urlencode(
+                [
+                    ("q", str(item["canonical_name"])),
+                    ("models", "metric"),
+                    ("collection", str(collection_id)),
+                    ("limit", "20"),
+                ]
+            )
+            body = _request(
+                base_url,
+                "GET",
+                "/api/search?" + query,
+                session=restricted_session,
+            )
+            last[metric_id] = body
+            if metric_search_result_contains(body, metric_id=metric_id):
+                pending.pop(metric_id, None)
+        if not pending:
+            return
+        time.sleep(delay_seconds)
+    missing = ",".join(
+        str(pending[item]["candidate_id"]) for item in sorted(pending)
+    )
+    raise RuntimeError(
+        "restricted Metabot collection search did not expose governed metrics: "
+        + missing
+    )
+
+
 def _create_metrics(
     *,
     base_url: str,
@@ -254,6 +359,7 @@ def _create_metrics(
     database_id: int,
     table_id: int,
     fields: dict[str, int],
+    collection_id: int,
 ) -> list[dict[str, Any]]:
     created: list[dict[str, Any]] = []
     for candidate_id, name, column_name, aggregation in _METRIC_SPECS:
@@ -268,6 +374,7 @@ def _create_metrics(
                 field_id=fields[column_name],
                 name=name,
                 aggregation=aggregation,
+                collection_id=collection_id,
             ),
         )
         if not isinstance(body, dict):
@@ -332,12 +439,17 @@ def main() -> int:
 
     admin = _login(args.base_url, admin_email, admin_password)
     database_id, table_id, fields = _fixture_metadata(args.base_url, admin)
+    metabot_collection_id = _internal_metabot_collection_id(
+        base_url=args.base_url,
+        admin_session=admin,
+    )
     metrics = _create_metrics(
         base_url=args.base_url,
         admin_session=admin,
         database_id=database_id,
         table_id=table_id,
         fields=fields,
+        collection_id=metabot_collection_id,
     )
     entity_values = entity_value_bindings_from_fixture(
         fixture=args.fixture,
@@ -353,12 +465,19 @@ def main() -> int:
         restricted_session=restricted,
         metrics=metrics,
     )
+    _verify_restricted_search_visibility(
+        base_url=args.base_url,
+        restricted_session=restricted,
+        collection_id=metabot_collection_id,
+        metrics=metrics,
+    )
 
     manifest = {
         "schema_version": SCHEMA_VERSION,
         "table_name": TABLE_NAME,
         "database_id": database_id,
         "table_id": table_id,
+        "metabot_collection_id": metabot_collection_id,
         "metrics": metrics,
         "entity_values": entity_values,
         "dimensions": [
@@ -394,6 +513,8 @@ def main() -> int:
                 "metric_count": len(metrics),
                 "entity_value_count": len(entity_values),
                 "restricted_visibility": "PASSED",
+                "restricted_search_visibility": "PASSED",
+                "metabot_collection_id": metabot_collection_id,
             },
             sort_keys=True,
         )
