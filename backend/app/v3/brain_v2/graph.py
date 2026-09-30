@@ -106,6 +106,10 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
             "scope_version_id": result.scope_version_id,
             "open_requirement_ids": result.open_requirement_ids,
             "material_requirement_ids": result.material_requirement_ids,
+            "investigation_requirement_ids": result.investigation_requirement_ids,
+            "follow_verified_material_goal_ids": (
+                result.follow_verified_material_goal_ids
+            ),
             # A new accepted turn points at a new canonical Research session.
             # Prior-scope Evidence/hypotheses stay durable in Dima stores but are
             # never silently reused as current graph state.
