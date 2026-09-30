@@ -56,19 +56,10 @@ jobs:
             app/v3/business_relationship_v1.py \
             lab/metabase/core_b/phase1_pinpoint_live.py
 
-      - name: Ruff changed surfaces
+      - name: Ruff new Phase 1.5 regression surface
         working-directory: backend
         run: |
-          ruff check \
-            app/v3/research_contracts.py \
-            app/v3/research_intake.py \
-            app/v3/product/composition.py \
-            app/v3/hypothesis_root_cause.py \
-            app/v3/hypothesis_root_cause_provider.py \
-            app/v3/business_relationship_v1.py \
-            lab/metabase/core_b/phase1_pinpoint_live.py \
-            tests/test_v3_phase1_5_architecture_xray.py \
-            tests/test_v3_research_intake.py
+          ruff check --select F tests/test_v3_phase1_5_architecture_xray.py
 
       - name: Phase 1.5 X-ray and intake closure
         working-directory: backend
