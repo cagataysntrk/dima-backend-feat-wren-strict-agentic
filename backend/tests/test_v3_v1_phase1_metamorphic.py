@@ -55,6 +55,7 @@ from app.v3.research_product import ResearchMaterialLimitation
 from control_plane.authorize import Principal
 from control_plane.models import NativeResourceBinding
 from app.v3.research_contracts import (
+    ComparisonRole,
     ComparisonSurface,
     RankingSurface,
     ResearchBrief,
@@ -69,6 +70,7 @@ from app.v3.research_contracts import (
     ScopeVersion,
     ScopeMutationKind,
     SemanticTargetKind,
+    TemporalRole,
     apply_scope_mutation,
 )
 from app.v3.research_manager import InvestigationIntent
@@ -797,7 +799,7 @@ def _temporal_contract_session(*, periods, comparisons):
         source_text="Compare governed explanations across accepted time scope.",
         subject_refs=(M1,),
         related_refs=(M2, D1),
-        comparisons=tuple(ComparisonSurface(text=value) for value in comparisons),
+        comparisons=tuple(comparisons),
         status=ResearchGoalStatus.RESOLVED,
     )
     scope = ResearchScope(
@@ -833,16 +835,29 @@ def test_nested_periods_with_non_temporal_competitors_project_one_bounded_window
         time_dimension_candidate_id=DT.candidate_id,
         start="2026-06-01",
         end="2026-07-01",
+        role=TemporalRole.EFFECT_PERIOD,
     )
     may_june = ResearchTimePeriod(
         source_text="May-June",
         time_dimension_candidate_id=DT.candidate_id,
         start="2026-05-01",
         end="2026-07-01",
+        role=TemporalRole.EVIDENCE_WINDOW,
     )
     session = _temporal_contract_session(
         periods=(june, may_june),
-        comparisons=("maintenance delay", "spare-part delay"),
+        comparisons=(
+            ComparisonSurface(
+                text="candidate one",
+                role=ComparisonRole.CAUSAL_CANDIDATE,
+                semantic_id=M1.candidate_id,
+            ),
+            ComparisonSurface(
+                text="candidate two",
+                role=ComparisonRole.CAUSAL_CANDIDATE,
+                semantic_id=M2.candidate_id,
+            ),
+        ),
     )
     contract = analytical_scope_contract(
         session=session,
@@ -861,16 +876,23 @@ def test_disjoint_periods_with_exact_period_comparisons_preserve_temporal_compar
         time_dimension_candidate_id=DT.candidate_id,
         start="2026-05-01",
         end="2026-06-01",
+        role=TemporalRole.BASELINE_PERIOD,
     )
     june = ResearchTimePeriod(
         source_text="June",
         time_dimension_candidate_id=DT.candidate_id,
         start="2026-06-01",
         end="2026-07-01",
+        role=TemporalRole.COMPARISON_PERIOD,
     )
     session = _temporal_contract_session(
         periods=(may, june),
-        comparisons=("May", "June"),
+        comparisons=(
+            ComparisonSurface(
+                text="May versus June",
+                role=ComparisonRole.TEMPORAL_PERIOD,
+            ),
+        ),
     )
     contract = analytical_scope_contract(
         session=session,

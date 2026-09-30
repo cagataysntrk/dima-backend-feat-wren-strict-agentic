@@ -34,6 +34,7 @@ from app.v3.research_contracts import (
     ResearchQuestion,
     ResearchSemanticRef,
     SemanticTargetKind,
+    TemporalRole,
 )
 from app.v3.substrate.metabase.native_models import (
     NativeEngineIdentity,
@@ -379,23 +380,51 @@ def analytical_scope_contract(
     if len(periods) == 1:
         period = _period(periods[0])
     elif len(periods) == 2:
-        period_source_texts = {item.source_text for item in periods}
-        comparison_texts = {item.text for item in question.comparisons}
-        is_explicit_temporal_comparison = (
-            len(question.comparisons) == 2
-            and comparison_texts == period_source_texts
+        baseline_periods = tuple(
+            item
+            for item in periods
+            if item.role == TemporalRole.BASELINE_PERIOD
         )
-        if is_explicit_temporal_comparison:
+        comparison_periods = tuple(
+            item
+            for item in periods
+            if item.role == TemporalRole.COMPARISON_PERIOD
+        )
+        has_temporal_comparison_role = bool(
+            baseline_periods or comparison_periods
+        )
+        if has_temporal_comparison_role:
+            if (
+                len(baseline_periods) != 1
+                or len(comparison_periods) != 1
+            ):
+                raise ResearchAnalyticalScopeError(
+                    "R1_TEMPORAL_COMPARISON_ROLE_INCOMPLETE",
+                    (
+                        "temporal comparison requires exactly one baseline "
+                        "and one comparison period"
+                    ),
+                )
+            baseline_period = baseline_periods[0]
+            comparison_period = comparison_periods[0]
+            if (
+                baseline_period.time_dimension_candidate_id
+                != comparison_period.time_dimension_candidate_id
+            ):
+                raise ResearchAnalyticalScopeError(
+                    "R1_TIME_DIMENSION_DRIFT",
+                    "one comparison cannot span two time dimensions",
+                )
             comparison = AnalyticalComparisonInvariant(
                 mode="explicit_periods",
-                reference_period=_period(periods[0]),
-                base_period=_period(periods[1]),
+                reference_period=_period(baseline_period),
+                base_period=_period(comparison_period),
             )
         else:
-            # ComparisonSurface is generic user/product semantics. Do not treat
-            # causal/business competitors as temporal authority merely because
-            # the accepted brief also contains two typed periods. Only exact
-            # accepted period-source identities may mint a temporal comparison.
+            # Two typed periods without baseline/comparison roles describe one
+            # bounded material window (for example EFFECT_PERIOD +
+            # EVIDENCE_WINDOW in RCA). Their wording and tuple order carry no
+            # temporal-comparison authority.
             starts = sorted(item.start for item in periods)
             ends = sorted(item.end for item in periods)
             time_dims = {item.time_dimension_candidate_id for item in periods}

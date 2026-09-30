@@ -33,8 +33,29 @@ class RankingSurface(FrozenModel):
     measure_semantic_id: str | None = Field(default=None, min_length=1)
 
 
+class ComparisonRole(StrEnum):
+    TEMPORAL_PERIOD = "temporal_period"
+    ENTITY_OR_MEASURE = "entity_or_measure"
+    CAUSAL_CANDIDATE = "causal_candidate"
+
+
 class ComparisonSurface(FrozenModel):
+    """Typed accepted comparison semantics; never inferred from wording."""
+
     text: str = Field(min_length=1)
+    role: ComparisonRole = ComparisonRole.ENTITY_OR_MEASURE
+    semantic_id: str | None = Field(default=None, min_length=1)
+
+    @model_validator(mode="after")
+    def coherent(self):
+        if (
+            self.role == ComparisonRole.CAUSAL_CANDIDATE
+            and self.semantic_id is None
+        ):
+            raise ValueError(
+                "causal candidate comparison requires a governed semantic id"
+            )
+        return self
 
 
 class SemanticTargetKind(StrEnum):
@@ -114,17 +135,26 @@ class ResearchSemanticRef(FrozenModel):
     sensitive: bool = False
 
 
-class ResearchTimePeriod(FrozenModel):
-    """Accepted semantic period with exact half-open bounds.
+class TemporalRole(StrEnum):
+    MATERIAL_WINDOW = "material_window"
+    BASELINE_PERIOD = "baseline_period"
+    COMPARISON_PERIOD = "comparison_period"
+    EFFECT_PERIOD = "effect_period"
+    EVIDENCE_WINDOW = "evidence_window"
 
-    Bounds are interpreted by Research Intake cognition and then frozen as
-    Research authority. No month-name or prompt parser exists here.
+
+class ResearchTimePeriod(FrozenModel):
+    """Accepted semantic period with exact half-open bounds and typed purpose.
+
+    Bounds and role are interpreted by Research Intake cognition and then frozen
+    as Research authority. No month-name, wording, or positional parser exists here.
     """
 
     source_text: str = Field(min_length=1)
     time_dimension_candidate_id: str = Field(min_length=1)
     start: str = Field(min_length=1)
     end: str = Field(min_length=1)
+    role: TemporalRole = TemporalRole.MATERIAL_WINDOW
 
     @model_validator(mode="after")
     def half_open_iso_range(self):

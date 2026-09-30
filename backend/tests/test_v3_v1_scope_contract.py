@@ -41,6 +41,7 @@ from app.v3.research_analytical_scope import (
     assert_attested_native_scope,
 )
 from app.v3.research_contracts import (
+    ComparisonRole,
     ComparisonSurface,
     RankingSurface,
     ResearchBrief,
@@ -56,6 +57,7 @@ from app.v3.research_contracts import (
     ScopeMutationKind,
     ScopeVersion,
     SemanticTargetKind,
+    TemporalRole,
     apply_scope_mutation,
 )
 from app.v3.research_followup import NativeResearchFollowupExecutor
@@ -192,6 +194,16 @@ def session(
     version=1,
 ):
     related=(DEPARTMENT, EVENT_DATE)
+    accepted_periods = tuple(periods)
+    if comparison and len(accepted_periods) == 2:
+        accepted_periods = (
+            accepted_periods[0].model_copy(
+                update={"role": TemporalRole.BASELINE_PERIOD}
+            ),
+            accepted_periods[1].model_copy(
+                update={"role": TemporalRole.COMPARISON_PERIOD}
+            ),
+        )
     question=ResearchQuestion(
         goal_id="g_scope",
         kind=(
@@ -215,7 +227,12 @@ def session(
             else None
         ),
         comparisons=(
-            (ComparisonSurface(text="May vs June"),)
+            (
+                ComparisonSurface(
+                    text="May vs June",
+                    role=ComparisonRole.TEMPORAL_PERIOD,
+                ),
+            )
             if comparison
             else ()
         ),
@@ -229,8 +246,8 @@ def session(
         objective="accepted scope",
         scope=ResearchScope(
             semantic_refs=refs,
-            time_surfaces=tuple(x.source_text for x in periods),
-            periods=tuple(periods),
+            time_surfaces=tuple(x.source_text for x in accepted_periods),
+            periods=accepted_periods,
             temporal_dimension_ids=(EVENT_DATE.candidate_id,),
             native_verification_bindings=tuple(
                 item
