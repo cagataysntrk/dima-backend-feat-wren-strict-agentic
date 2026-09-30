@@ -20,6 +20,7 @@ from app.v3.product.contracts import (
     ProductInvestigationRequirementKind,
 )
 from app.v3.research_contracts import (
+    CausalCompetitionSurface,
     ComparisonRole,
     ComparisonSurface,
     PresentationKind,
@@ -185,6 +186,12 @@ class DraftRanking(Frozen):
     source_text: str = Field(min_length=1)
 
 
+class ModelCausalCompetitionDraft(Frozen):
+    effect_semantic_id: str = Field(min_length=1)
+    candidate_mechanism_semantic_ids: tuple[str, ...] = ()
+    diagnostic_dimension_ids: tuple[str, ...] = ()
+
+
 class ModelComparisonDraft(Frozen):
     text: str = Field(min_length=1)
     role: ComparisonRole
@@ -214,6 +221,7 @@ class ModelGoalDraft(Frozen):
     related_semantic_ids: tuple[str, ...] = ()
     ranking: DraftRanking | None = None
     comparisons: tuple[ModelComparisonDraft, ...] = ()
+    causal_competition: ModelCausalCompetitionDraft | None = None
     # Compatibility-only for historical deterministic fixtures. This field is
     # deliberately omitted from the provider schema below; live intake cannot
     # mint new untyped comparison authority.
@@ -396,6 +404,11 @@ Authority rules:
   outcome, asks competing explanations to be tested, or asks supporting/challenging evidence to
   discriminate causal hypotheses. One such clause should normally be ONE ROOT_CAUSE goal carrying
   the governed outcome/candidate material refs needed for its initial analytical acquisition.
+  Every ROOT_CAUSE goal MUST emit causal_competition: one governed effect_semantic_id, only the
+  candidate_mechanism_semantic_ids explicitly supplied by the user (empty when none were supplied),
+  and the governed diagnostic_dimension_ids needed by the request. This typed contract is identity,
+  not causal truth. Additional accepted metrics may still be included as analytical material for
+  P17 discovery, but must not be mislabeled as user-provided candidates.
   Do NOT manufacture separate RELATIONSHIP goals merely as evidence-gathering subgoals for that
   ROOT_CAUSE investigation. P17/P19 own governed hypothesis competition and discriminating re-entry.
 - If the user independently asks both an observational relationship analysis and a causal/root-cause
@@ -536,6 +549,37 @@ def _intake_provider_schema(
                     {"type": "null"},
                 ],
             }
+    causal_definition = definitions.get("ModelCausalCompetitionDraft")
+    if isinstance(causal_definition, dict):
+        causal_properties = causal_definition.get("properties")
+        if isinstance(causal_properties, dict):
+            metric_ids = tuple(
+                sorted(
+                    item.candidate_id
+                    for item in catalog.semantic_refs
+                    if item.target_kind
+                    in {SemanticTargetKind.METRIC, SemanticTargetKind.KPI}
+                )
+            )
+            dimension_ids = tuple(
+                sorted(
+                    item.candidate_id
+                    for item in catalog.semantic_refs
+                    if item.target_kind == SemanticTargetKind.DIMENSION
+                )
+            )
+            causal_properties["effect_semantic_id"] = {
+                "type": "string",
+                "enum": list(metric_ids),
+            }
+            causal_properties["candidate_mechanism_semantic_ids"] = {
+                "type": "array",
+                "items": {"type": "string", "enum": list(metric_ids)},
+            }
+            causal_properties["diagnostic_dimension_ids"] = {
+                "type": "array",
+                "items": {"type": "string", "enum": list(dimension_ids)},
+            }
     common_names = (
         "goal_key",
         "source_text",
@@ -588,6 +632,19 @@ def _intake_provider_schema(
             }
             properties["subject_semantic_ids"] = copy.deepcopy(closed_refs)
             properties["related_semantic_ids"] = copy.deepcopy(closed_refs)
+            if kind == ResearchGoalKind.ROOT_CAUSE:
+                raw_causal = copy.deepcopy(base_properties["causal_competition"])
+                choices = raw_causal.get("anyOf") or []
+                non_null = [
+                    item for item in choices
+                    if not (isinstance(item, dict) and item.get("type") == "null")
+                ]
+                if len(non_null) != 1:
+                    raise ResearchIntakeError(
+                        "INTAKE_SCHEMA_INVALID",
+                        "ROOT_CAUSE causal competition schema is invalid",
+                    )
+                properties["causal_competition"] = non_null[0]
         variants.append(
             {
                 "type": "object",
@@ -708,6 +765,11 @@ class ResearchIntakeCompiler:
                         item.model_dump(mode="json")
                         for item in question.comparisons
                     ],
+                    "causal_competition": (
+                        question.causal_competition.model_dump(mode="json")
+                        if question.causal_competition is not None
+                        else None
+                    ),
                 }
                 for question in brief.questions
             ],
@@ -1012,6 +1074,42 @@ class ResearchIntakeCompiler:
                     for text in goal.comparison_texts
                 )
             comparisons = tuple(typed_comparisons)
+            causal_competition = None
+            if goal.kind == ResearchGoalKind.ROOT_CAUSE:
+                if goal.causal_competition is None:
+                    raise ResearchIntakeError(
+                        "INTAKE_ROOT_CAUSE_SURFACE_REQUIRED",
+                        goal.goal_key,
+                    )
+                causal = goal.causal_competition
+                goal_ref_ids = set(ids)
+                required_ids = {
+                    causal.effect_semantic_id,
+                    *causal.candidate_mechanism_semantic_ids,
+                    *causal.diagnostic_dimension_ids,
+                }
+                outside = sorted(required_ids - goal_ref_ids)
+                if outside:
+                    raise ResearchIntakeError(
+                        "INTAKE_CAUSAL_SURFACE_OUTSIDE_GOAL_SCOPE",
+                        ",".join(outside),
+                    )
+                try:
+                    causal_competition = CausalCompetitionSurface(
+                        effect_semantic_id=causal.effect_semantic_id,
+                        candidate_mechanism_semantic_ids=causal.candidate_mechanism_semantic_ids,
+                        diagnostic_dimension_ids=causal.diagnostic_dimension_ids,
+                    )
+                except ValueError as exc:
+                    raise ResearchIntakeError(
+                        "INTAKE_CAUSAL_SURFACE_INVALID",
+                        str(exc),
+                    ) from exc
+            elif goal.causal_competition is not None:
+                raise ResearchIntakeError(
+                    "INTAKE_CAUSAL_SURFACE_ON_NON_ROOT_CAUSE",
+                    goal.goal_key,
+                )
             goal_id = self._ids(
                 "g_",
                 goal.model_dump(mode="json"),
@@ -1028,6 +1126,7 @@ class ResearchIntakeCompiler:
                     related_refs=related,
                     ranking=ranking,
                     comparisons=comparisons,
+                    causal_competition=causal_competition,
                     status=ResearchGoalStatus.RESOLVED,
                 )
             )

@@ -13,6 +13,7 @@ from app.v3.product.contracts import (
 from app.v3.product.errors import ProductError
 from app.v3.product.service import HeadlessProductService, ProductSources
 from app.v3.research_contracts import (
+    CausalCompetitionSurface,
     ComparisonRole,
     ResearchBrief,
     ResearchBriefStatus,
@@ -185,6 +186,14 @@ def test_causal_competition_is_one_root_cause_goal_not_relationship_query_plan()
     )
     payload["goals"][0]["source_text"] = fragment
     payload["goals"][0]["source_fragment_text"] = fragment
+    payload["goals"][0]["causal_competition"] = {
+        "effect_semantic_id": "metric.downtime",
+        "candidate_mechanism_semantic_ids": [
+            "metric.fault_count",
+            "metric.performance",
+        ],
+        "diagnostic_dimension_ids": ["dimension.department"],
+    }
     transport = FakeTransport(payload)
 
     result = ResearchIntakeCompiler(
@@ -207,6 +216,14 @@ def test_causal_competition_is_one_root_cause_goal_not_relationship_query_plan()
     }
     assert tuple(item.candidate_id for item in goal.related_refs) == (
         "dimension.department",
+    )
+    assert goal.causal_competition == CausalCompetitionSurface(
+        effect_semantic_id="metric.downtime",
+        candidate_mechanism_semantic_ids=(
+            "metric.fault_count",
+            "metric.performance",
+        ),
+        diagnostic_dimension_ids=("dimension.department",),
     )
     system = transport.calls[0]["system"]
     assert "Do NOT manufacture separate RELATIONSHIP goals" in system
@@ -854,6 +871,28 @@ def test_request_scoped_intake_schema_closes_authority_ids_before_domain_executi
     ]
     assert "subject_semantic_ids" not in relationship["properties"]
     assert "related_semantic_ids" not in relationship["properties"]
+    assert "causal_competition" not in relationship["properties"]
+
+    root_cause = next(
+        item
+        for item in variants
+        if item["properties"]["kind"]["enum"] == ["root_cause"]
+    )
+    assert "causal_competition" in root_cause["properties"]
+    causal_ref = root_cause["properties"]["causal_competition"]["$ref"]
+    causal = schema["$defs"][causal_ref.rsplit("/", 1)[-1]]
+    assert set(causal["properties"]["effect_semantic_id"]["enum"]) == {
+        "metric.downtime",
+        "metric.fault_count",
+        "metric.performance",
+    }
+    assert set(
+        causal["properties"]["diagnostic_dimension_ids"]["items"]["enum"]
+    ) == {
+        "dimension.department",
+        "dimension.event_date",
+        "dimension.machine_id",
+    }
 
     breakdown = next(
         item
@@ -1241,6 +1280,11 @@ def test_typed_causal_candidate_comparison_requires_goal_scoped_semantic_id():
             "semantic_id": "metric.fault_count",
         }
     ]
+    payload["goals"][0]["causal_competition"] = {
+        "effect_semantic_id": "metric.downtime",
+        "candidate_mechanism_semantic_ids": ["metric.fault_count"],
+        "diagnostic_dimension_ids": ["dimension.department"],
+    }
     result = ResearchIntakeCompiler(
         transport=FakeTransport(payload)
     ).compile(
@@ -1266,6 +1310,11 @@ def test_typed_causal_candidate_outside_goal_scope_fails_closed():
             "semantic_id": "metric.fault_count",
         }
     ]
+    payload["goals"][0]["causal_competition"] = {
+        "effect_semantic_id": "metric.downtime",
+        "candidate_mechanism_semantic_ids": ["metric.fault_count"],
+        "diagnostic_dimension_ids": ["dimension.department"],
+    }
     with pytest.raises(ResearchIntakeError) as exc:
         ResearchIntakeCompiler(
             transport=FakeTransport(payload)

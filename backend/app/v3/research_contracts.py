@@ -66,6 +66,26 @@ class SemanticTargetKind(StrEnum):
     CUBE = "cube"
 
 
+class CausalCompetitionSurface(FrozenModel):
+    """Typed causal-investigation identity over already accepted semantic refs."""
+
+    effect_semantic_id: str = Field(min_length=1)
+    candidate_mechanism_semantic_ids: tuple[str, ...] = ()
+    diagnostic_dimension_ids: tuple[str, ...] = ()
+
+    @model_validator(mode="after")
+    def coherent(self):
+        candidates = self.candidate_mechanism_semantic_ids
+        diagnostics = self.diagnostic_dimension_ids
+        if len(candidates) != len(set(candidates)):
+            raise ValueError("causal candidate semantic ids must be unique")
+        if len(diagnostics) != len(set(diagnostics)):
+            raise ValueError("causal diagnostic dimension ids must be unique")
+        if self.effect_semantic_id in set(candidates):
+            raise ValueError("causal effect cannot also be a candidate mechanism")
+        return self
+
+
 class ResearchGoalKind(StrEnum):
     COMPARISON = "comparison"
     RELATIONSHIP = "relationship"
@@ -242,8 +262,39 @@ class ResearchQuestion(FrozenModel):
     related_refs: tuple[ResearchSemanticRef, ...] = ()
     ranking: RankingSurface | None = None
     comparisons: tuple[ComparisonSurface, ...] = ()
+    causal_competition: CausalCompetitionSurface | None = None
     unresolved: tuple[ResearchUnresolvedRef, ...] = ()
     status: ResearchGoalStatus
+
+    @model_validator(mode="after")
+    def coherent_causal_competition(self):
+        surface = self.causal_competition
+        if surface is None:
+            return self
+        if self.kind != ResearchGoalKind.ROOT_CAUSE:
+            raise ValueError("causal competition surface is only valid for ROOT_CAUSE")
+        refs = {
+            item.candidate_id: item
+            for item in (*self.subject_refs, *self.related_refs)
+        }
+        effect = refs.get(surface.effect_semantic_id)
+        if effect is None or effect.target_kind not in {
+            SemanticTargetKind.METRIC,
+            SemanticTargetKind.KPI,
+        }:
+            raise ValueError("causal effect must be an accepted metric/KPI ref")
+        for candidate_id in surface.candidate_mechanism_semantic_ids:
+            candidate = refs.get(candidate_id)
+            if candidate is None or candidate.target_kind not in {
+                SemanticTargetKind.METRIC,
+                SemanticTargetKind.KPI,
+            }:
+                raise ValueError("causal candidate must be an accepted metric/KPI ref")
+        for dimension_id in surface.diagnostic_dimension_ids:
+            dimension = refs.get(dimension_id)
+            if dimension is None or dimension.target_kind != SemanticTargetKind.DIMENSION:
+                raise ValueError("causal diagnostic must be an accepted dimension ref")
+        return self
 
 
 class ResearchDeliverableRequirement(FrozenModel):
