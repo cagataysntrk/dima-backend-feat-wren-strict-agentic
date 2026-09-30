@@ -1407,7 +1407,7 @@ def test_typed_causal_candidate_comparison_requires_goal_scoped_semantic_id():
     assert comparison.semantic_id == "metric.fault_count"
 
 
-def test_typed_causal_candidate_outside_goal_scope_fails_closed():
+def test_typed_causal_candidate_only_in_causal_surface_is_canonicalized_and_accepted():
     payload = ready_payload(
         kind="root_cause",
         subject=("metric.downtime",),
@@ -1425,6 +1425,35 @@ def test_typed_causal_candidate_outside_goal_scope_fails_closed():
         "candidate_mechanism_semantic_ids": ["metric.fault_count"],
         "diagnostic_dimension_ids": ["dimension.department"],
     }
+
+    result = ResearchIntakeCompiler(
+        transport=FakeTransport(payload)
+    ).compile(
+        question="Test the requested explanation.",
+        catalog=catalog(),
+    )
+
+    assert result.brief is not None
+    goal = result.brief.questions[0]
+    assert tuple(item.candidate_id for item in goal.subject_refs) == (
+        "metric.downtime",
+        "metric.fault_count",
+    )
+    assert goal.comparisons[0].semantic_id == "metric.fault_count"
+
+
+def test_typed_causal_unknown_candidate_fails_closed():
+    payload = ready_payload(
+        kind="root_cause",
+        subject=("metric.downtime",),
+        related=("dimension.department",),
+    )
+    payload["goals"][0]["causal_competition"] = {
+        "effect_semantic_id": "metric.downtime",
+        "candidate_mechanism_semantic_ids": ["metric.unknown_cause"],
+        "diagnostic_dimension_ids": ["dimension.department"],
+    }
+
     with pytest.raises(ResearchIntakeError) as exc:
         ResearchIntakeCompiler(
             transport=FakeTransport(payload)
@@ -1432,6 +1461,37 @@ def test_typed_causal_candidate_outside_goal_scope_fails_closed():
             question="Test the requested explanation.",
             catalog=catalog(),
         )
+
+    assert exc.value.code == "INTAKE_UNKNOWN_SEMANTIC_REF"
+
+
+def test_typed_causal_unrelated_comparison_expansion_fails_closed():
+    payload = ready_payload(
+        kind="root_cause",
+        subject=("metric.downtime",),
+        related=("dimension.department",),
+    )
+    payload["goals"][0]["comparisons"] = [
+        {
+            "text": "performance",
+            "role": "causal_candidate",
+            "semantic_id": "metric.performance",
+        }
+    ]
+    payload["goals"][0]["causal_competition"] = {
+        "effect_semantic_id": "metric.downtime",
+        "candidate_mechanism_semantic_ids": ["metric.fault_count"],
+        "diagnostic_dimension_ids": ["dimension.department"],
+    }
+
+    with pytest.raises(ResearchIntakeError) as exc:
+        ResearchIntakeCompiler(
+            transport=FakeTransport(payload)
+        ).compile(
+            question="Test the requested explanation.",
+            catalog=catalog(),
+        )
+
     assert exc.value.code == "INTAKE_COMPARISON_SEMANTIC_OUTSIDE_GOAL_SCOPE"
 
 
