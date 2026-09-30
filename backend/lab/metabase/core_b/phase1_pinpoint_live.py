@@ -38,7 +38,8 @@ from app.v3.root_cause_candidate_contract import (
 from control_plane.models import NativeResourceBinding
 from lab.metabase.core_b import live_sentinel as sealed
 
-MODEL = "openai/gpt-5.6-terra"
+MODEL = "openai/gpt-5.6-luna"
+METABOT_MODEL = "openrouter/openai/gpt-5.6-luna"
 CONTEXT = "phase1-final-pinpoint-v1"
 MAX_ORCHESTRATION_BOUNDARY_UNITS = 12
 
@@ -629,6 +630,102 @@ def _exception_payload(exc: Exception) -> dict[str, Any]:
             else None
         ),
     }
+
+
+_MODEL_CEILING_CODES = frozenset(
+    {
+        "COGNITION_OUTPUT_BUDGET_EXHAUSTED",
+        "PROVIDER_PROMPT_TOKEN_CEILING_REACHED",
+        "PROVIDER_COMPLETION_TOKEN_CEILING_REACHED",
+        "PROVIDER_REASONING_TOKEN_CEILING_REACHED",
+        "PROVIDER_COST_CEILING_REACHED",
+    }
+)
+
+
+def _model_ceiling_events(report: dict[str, Any]) -> list[dict[str, Any]]:
+    """Return privacy-safe model/budget ceiling telemetry only.
+
+    Never copy prompts, response text, exception detail, headers, or reasoning.
+    This is diagnostic routing metadata, not Product semantic authority.
+    """
+    events: list[dict[str, Any]] = []
+    seen: set[tuple[Any, ...]] = set()
+
+    def add(
+        code: str,
+        source: str,
+        *,
+        ordinal: int | None = None,
+        model: str | None = None,
+        max_completion_tokens: int | None = None,
+    ) -> None:
+        key = (code, source, ordinal, model, max_completion_tokens)
+        if key in seen:
+            return
+        seen.add(key)
+        item: dict[str, Any] = {"code": code, "source": source}
+        if ordinal is not None:
+            item["ordinal"] = ordinal
+        if model is not None:
+            item["model"] = model
+        if max_completion_tokens is not None:
+            item["max_completion_tokens"] = max_completion_tokens
+        events.append(item)
+
+    exception = report.get("exception")
+    if isinstance(exception, dict):
+        for field in ("error_code", "cause_code"):
+            code = exception.get(field)
+            if isinstance(code, str) and code in _MODEL_CEILING_CODES:
+                add(code, "product_exception")
+
+    provider = report.get("provider_receipt")
+    if isinstance(provider, dict):
+        raw_events = provider.get("events")
+        if isinstance(raw_events, list):
+            for event in raw_events:
+                if not isinstance(event, dict):
+                    continue
+                code = event.get("blocked_reason")
+                if not isinstance(code, str) or code not in _MODEL_CEILING_CODES:
+                    continue
+                ordinal = event.get("ordinal")
+                add(
+                    code,
+                    str(event.get("source") or "provider_proxy"),
+                    ordinal=ordinal if isinstance(ordinal, int) else None,
+                )
+
+    traces = report.get("transport_traces")
+    if isinstance(traces, dict):
+        for owner, raw_traces in traces.items():
+            if not isinstance(raw_traces, list):
+                continue
+            for trace in raw_traces:
+                if not isinstance(trace, dict):
+                    continue
+                finish = trace.get("finish_reason")
+                native = trace.get("native_finish_reason")
+                if finish != "length" and native not in {
+                    "length",
+                    "max_output_tokens",
+                    "max_completion_tokens",
+                }:
+                    continue
+                ordinal = trace.get("call_ordinal_by_role")
+                max_tokens = trace.get("max_completion_tokens")
+                model = trace.get("model")
+                add(
+                    "MODEL_OUTPUT_LENGTH_LIMIT",
+                    str(owner),
+                    ordinal=ordinal if isinstance(ordinal, int) else None,
+                    model=model if isinstance(model, str) else None,
+                    max_completion_tokens=(
+                        max_tokens if isinstance(max_tokens, int) else None
+                    ),
+                )
+    return events
 
 
 def _trace_slice(transport, start: int) -> list[dict[str, Any]]:
@@ -1288,8 +1385,8 @@ def main() -> int:
         "engine_runtime_tag": args.runtime_tag,
         "model_topology": {
             "dima_cognition": MODEL,
-            "metabot": "openrouter/openai/gpt-5.6-terra",
-            "policy": "phase1-terra-default-no-cascade",
+            "metabot": METABOT_MODEL,
+            "policy": "phase1-luna-default-no-cascade",
         },
         "max_orchestration_boundary_units": MAX_ORCHESTRATION_BOUNDARY_UNITS,
         "binding_manifest": binding_manifest,
@@ -1433,6 +1530,7 @@ def main() -> int:
                 "error_type": type(exc).__name__,
                 "error": str(exc),
             }
+        report["model_ceiling_events"] = _model_ceiling_events(report)
 
     report["mechanical_verdict"] = _mechanical_verdict(report)
     # Product quality remains human authority even when mechanics pass.
@@ -1457,6 +1555,9 @@ def main() -> int:
                     "actual_provider_request_count"
                 ),
                 "exception": (report.get("exception") or {}).get("error_code"),
+                "model_ceiling_event_count": len(
+                    report.get("model_ceiling_events") or []
+                ),
             },
             ensure_ascii=False,
         )
