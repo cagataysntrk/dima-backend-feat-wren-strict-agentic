@@ -390,6 +390,11 @@ Authority rules:
   analysis window; BASELINE_PERIOD + COMPARISON_PERIOD for a true temporal comparison;
   EFFECT_PERIOD + EVIDENCE_WINDOW for causal investigation when those distinct roles are requested.
   Never infer roles from tuple position.
+- A ROOT_CAUSE request that explicitly asks to explain an increase/decrease/change FROM one named
+  calendar period TO another is itself a temporal comparison authority. Emit the two exact periods
+  as BASELINE_PERIOD and COMPARISON_PERIOD and carry one TEMPORAL_PERIOD comparison on that same
+  ROOT_CAUSE goal. Do not collapse those two periods into one MATERIAL_WINDOW merely because the
+  causal investigation spans both. If the two compared periods cannot be resolved uniquely, CLARIFY.
 - Emit typed comparisons, never free-text comparison authority. Use TEMPORAL_PERIOD only for an
   actual period-vs-period comparison. Use CAUSAL_CANDIDATE for user-provided candidate mechanisms,
   and ENTITY_OR_MEASURE for governed entity/measure competition. Every non-temporal comparison item
