@@ -789,7 +789,7 @@ class DimaBrainV2Activities(BrainActivities):
             session_id=session.session_id,
             principal=self._principal,
         )
-        legal_hash = before.fingerprint()
+        legal_hash = before.fingerprint
         manager = _DiscoveryProposalManager(
             inner=self._investigation_manager,
             obligation_id=goal.goal_id,
@@ -1008,7 +1008,7 @@ class DimaBrainV2Activities(BrainActivities):
             owner="P17",
             purpose=CognitionPurpose.DESIGN_DISCRIMINATING_TEST,
             objective_id=request.request_id,
-            legal_profile_hash=snapshot.fingerprint(),
+            legal_profile_hash=snapshot.fingerprint,
         )
         return P17ActivityResult(
             hypothesis_revision=state.hypothesis_revision,
