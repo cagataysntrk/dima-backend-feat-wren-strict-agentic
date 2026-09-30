@@ -275,6 +275,7 @@ def test_mode_case_4_both_weak_is_governed_inconclusive_not_fake_winner():
     assert _root_cause_execution_mode(
         aggregate_outcome=assessment.aggregate_outcome,
         analytical_reentry_count=0,
+        unresolved_without_callable_test=True,
     ) == RootCauseExecutionMode.GOVERNED_INCONCLUSIVE
 
 
@@ -318,6 +319,7 @@ def test_mode_case_7_no_useful_discriminating_surface_stops_without_loop_ceremon
     assert _root_cause_execution_mode(
         aggregate_outcome=assessment.aggregate_outcome,
         analytical_reentry_count=0,
+        unresolved_without_callable_test=True,
     ) == RootCauseExecutionMode.GOVERNED_INCONCLUSIVE
 
 
@@ -340,3 +342,11 @@ def test_mode_case_8_three_candidates_remain_distinct_without_binary_reduction()
         H2.candidate_id,
         H3.candidate_id,
     }
+
+def test_terminal_no_defensible_can_be_complete_one_pass_when_no_test_was_blocked():
+    assert _root_cause_execution_mode(
+        aggregate_outcome=AggregateOutcome.NO_DEFENSIBLE_ROOT_CAUSE_ESTABLISHED,
+        analytical_reentry_count=0,
+        unresolved_without_callable_test=False,
+    ) == RootCauseExecutionMode.ONE_PASS
+

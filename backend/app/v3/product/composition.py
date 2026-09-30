@@ -412,13 +412,16 @@ def _root_cause_execution_mode(
     *,
     aggregate_outcome: Any,
     analytical_reentry_count: int,
+    unresolved_without_callable_test: bool = False,
 ) -> RootCauseExecutionMode:
     if analytical_reentry_count > 0:
         return RootCauseExecutionMode.ADAPTIVE
-    if _state_value(aggregate_outcome) in {
-        "IN_PROGRESS",
-        "NO_DEFENSIBLE_ROOT_CAUSE_ESTABLISHED",
-    }:
+    if unresolved_without_callable_test:
+        return RootCauseExecutionMode.GOVERNED_INCONCLUSIVE
+    # A terminal NO_DEFENSIBLE_ROOT_CAUSE_ESTABLISHED can still be a complete
+    # one-pass answer when real hypotheses and Evidence were evaluated. The
+    # mode describes the chosen investigation path, not whether causality won.
+    if _state_value(aggregate_outcome) == "IN_PROGRESS":
         return RootCauseExecutionMode.GOVERNED_INCONCLUSIVE
     return RootCauseExecutionMode.ONE_PASS
 
@@ -1126,7 +1129,7 @@ class HeadlessProductComposer:
             return None, snapshot, self._p17_terminal_code(
                 snapshot=snapshot,
                 last_error=last_error,
-            )
+            ), False
 
         active_mechanism_refs = self._sync_root_candidates_to_p19(
             session_id=session_id,
@@ -1144,6 +1147,7 @@ class HeadlessProductComposer:
         scope_lineage_id = source_session.lineage_id
         feedback_code = None
         assessment = None
+        unresolved_without_callable_test = False
 
         while True:
             p19_snapshot = self._epistemics.snapshot(
@@ -1180,6 +1184,22 @@ class HeadlessProductComposer:
                 request=request,
                 evidence_surface_available=bool(native_session_token),
             ):
+                unresolved_without_callable_test = True
+                # P19 still owns the terminal epistemic conclusion. Give it one
+                # deterministic fact only: Product/P17 has no legal/materially
+                # useful discriminating re-entry for the typed request.
+                terminal_draft = self._epistemic_manager.propose(
+                    p19_snapshot,
+                    policy_statuses={},
+                    deterministic_feedback_code=(
+                        "P19_NO_CALLABLE_DISCRIMINATING_TEST"
+                    ),
+                )
+                assessment = self._epistemics.assess(
+                    draft=terminal_draft,
+                    principal=principal,
+                )
+                owner_calls.append("P19")
                 break
 
             before_evidence = {
@@ -1273,7 +1293,12 @@ class HeadlessProductComposer:
             session_id=session_id,
             principal=principal,
         )
-        return assessment, latest_snapshot, None
+        return (
+            assessment,
+            latest_snapshot,
+            None,
+            unresolved_without_callable_test,
+        )
 
     def _seal_report(
         self,
@@ -1735,7 +1760,12 @@ class HeadlessProductComposer:
                 continue
 
             if goal.kind == ResearchGoalKind.ROOT_CAUSE:
-                assessment, p17_snapshot, error = self._assess_root_cause(
+                (
+                    assessment,
+                    p17_snapshot,
+                    error,
+                    unresolved_without_callable_test,
+                ) = self._assess_root_cause(
                     session_id=session.session_id,
                     goal=goal,
                     principal=principal,
@@ -1779,6 +1809,9 @@ class HeadlessProductComposer:
                             mode=_root_cause_execution_mode(
                                 aggregate_outcome=assessment.aggregate_outcome,
                                 analytical_reentry_count=analytical_reentry_count,
+                                unresolved_without_callable_test=(
+                                    unresolved_without_callable_test
+                                ),
                             ),
                             assessment_ref=assessment.assessment_id,
                             user_seeded_candidates=bool(

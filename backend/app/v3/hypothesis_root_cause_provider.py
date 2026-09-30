@@ -107,6 +107,12 @@ Architecture:
 - P18 SATISFIED means interpretation eligibility only, never causal proof.
 - A blocked required P18 policy cannot support trusted causal promotion.
 - NO_DEFENSIBLE_ROOT_CAUSE_ESTABLISHED is a successful terminal result.
+- If deterministic_feedback_code is P19_NO_CALLABLE_DISCRIMINATING_TEST, Product/P17
+  has established that no legal/materially useful next analytical test is callable.
+  Return a terminal assessment consistent with current Evidence and limitations;
+  do not return IN_PROGRESS merely to request impossible recursion.
+- If deterministic_feedback_code is P19_DISCRIMINATING_TEST_COMPLETED, reassess the
+  updated governed grounding rather than repeating the prior judgment by inertia.
 - Use only hypothesis ids and grounding ids present in the supplied packet.
 - Return one qualitative assessment draft. Deterministic Dima validates it.
 """
