@@ -6,6 +6,7 @@ Report and Decision truth remains in the existing Dima domain stores.
 from __future__ import annotations
 
 from enum import StrEnum
+from typing import TypedDict
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -108,3 +109,32 @@ class BrainGraphState(BaseModel):
         if self.discovery_required and self.hypothesis_ids:
             raise ValueError("discovery cannot remain required after hypotheses exist")
         return self
+
+
+class BrainStatePayload(TypedDict, total=False):
+    """LangGraph transport schema. BrainGraphState remains the validator."""
+
+    thread_id: str
+    tenant_binding: str
+    principal_ref: str
+    current_user_input: str | None
+    research_session_id: str | None
+    accepted_brief_ref: str | None
+    scope_version_id: str | None
+    open_requirement_ids: tuple[str, ...]
+    material_requirement_ids: tuple[str, ...]
+    evidence_revision: int
+    evidence_ids: tuple[str, ...]
+    hypothesis_revision: int
+    hypothesis_ids: tuple[str, ...]
+    discovery_required: bool
+    latest_p19_assessment_ref: str | None
+    pending_next_test_ref: str | None
+    latest_p19_route: BrainP19Route | None
+    adaptive_reentries: int
+    max_adaptive_reentries: int
+    report_ref: str | None
+    workflow_status: BrainWorkflowStatus
+    last_completed_node: str | None
+    activity_fingerprints: tuple[str, ...]
+    telemetry_ref: str | None
