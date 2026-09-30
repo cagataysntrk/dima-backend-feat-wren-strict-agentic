@@ -2,7 +2,7 @@
   "schema_version": "dima_brain_v2_live_authorization_v1",
   "enabled": false,
   "probe_id": "R_LIVE_1_ONE_PASS",
-  "candidate_product_sha": "524f3b284747fa415331d80335ffbe710fb9c3d6",
+  "candidate_product_sha": "0f21190cc61dc1cb26c0551ecae6a18b20d08d57",
   "provider_free_run_id": 0,
   "provider_free_status": "PENDING",
   "engine_sha": "0f16f2b5a1ec774ac7afee6214c726e82f9ceb3c",
@@ -10,5 +10,5 @@
   "model_policy": "LUNA_FIRST",
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
-  "authorization_receipt": "phase1-postgres-timezone-reproducer-v2"
+  "authorization_receipt": "phase1-evidence-timezone-preflight-v1"
 }
