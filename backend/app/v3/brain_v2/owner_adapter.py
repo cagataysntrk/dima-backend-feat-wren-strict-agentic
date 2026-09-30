@@ -159,12 +159,15 @@ class _NextTestProposalManager:
                 and node_by_id[step_id].root_obligation_id == self._obligation_id
             )
         )
-        if not legal:
+        if legal:
+            parent = max(legal, key=lambda value: ordered[value])
+        elif rule.allow_parentless:
+            parent = None
+        else:
             raise BrainV2OwnerError(
                 "BRAIN_V2_NEXT_TEST_PARENT_MISSING",
                 self._request.request_id,
             )
-        parent = max(legal, key=lambda value: ordered[value])
         return ManagerProposal(
             proposal_id="p17-next-" + self._request.request_id[4:],
             source_revision=snapshot.source_revision,
@@ -919,6 +922,7 @@ class DimaBrainV2Activities(BrainActivities):
             downstream_reentry_intent=(
                 InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE
             ),
+            downstream_reentry_obligation_id=goal.goal_id,
         )
         for hypothesis_id in request.hypothesis_ids:
             self._epistemics.create_grounding(
