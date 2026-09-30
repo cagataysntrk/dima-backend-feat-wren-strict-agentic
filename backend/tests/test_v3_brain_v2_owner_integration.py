@@ -196,7 +196,7 @@ class DeterministicIntake:
         return ResearchIntakeResult(
             terminal=ResearchIntakeTerminal.READY,
             brief=brief,
-            catalog_fingerprint=catalog.fingerprint(),
+            catalog_fingerprint=catalog.fingerprint,
             model_calls=1,
         )
 
