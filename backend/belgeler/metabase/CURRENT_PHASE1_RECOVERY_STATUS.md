@@ -1,3 +1,63 @@
+# FORWARD OVERRIDE — 2026-09-30 — DIMA BRAIN V2 ACTIVE
+
+This block supersedes all older "current recovery" execution language below. Historical receipts remain evidence and must not be deleted or rewritten.
+
+~~~text
+active branch
+feat/dima-brain-v2
+
+branch point
+8d1e011053b01005179ff7a31b7921bb3a7307b9
+
+legacy Product behavior
+c5069e8e4606e21bdd8ce41f4c1dc4bf7d23c789
+
+engine
+0f16f2b5a1ec774ac7afee6214c726e82f9ceb3c
+0.63.18-dima.8
+FROZEN
+
+forward decision
+DMP-DEC-0076
+
+canonical roadmap
+backend/belgeler/metabase/DIMA_BRAIN_V2_TWO_PHASE_ROADMAP.md
+
+canonical handoff
+backend/belgeler/metabase/DIMA_BRAIN_V2_CURRENT_HANDOFF.md
+
+legacy custom orchestrator
+REFERENCE / FALLBACK / NO NEW STRATEGIC FEATURES
+
+historical ~70.8 candidate
+GOLDEN CONTROL ONLY / NO ROLLBACK
+
+30-case
+FORBIDDEN UNTIL EXPLICIT USER AUTHORIZATION
+~~~
+
+Forward execution is now a strangler migration:
+
+~~~text
+PHASE 1
+LangGraph Orchestration V2
+
+→ provider-free + live mode certification
+
+PHASE 2
+Thin Dima Brain + Demo/UX
+
+→ targeted + metamorphic confidence
+
+→ 30-CASE READY
+
+→ STOP
+~~~
+
+The old R8/R5/dima.7 recovery text below is historical only and is not current authority.
+
+---
+
 # Current Phase-1 Recovery Status
 
 Latest binding authority: R8 recovery directive received 2026-09-29.
