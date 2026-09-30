@@ -42,9 +42,14 @@ from app.v3.hypothesis_root_cause import (
     HypothesisDisposition,
     HypothesisEpistemicClass,
     HypothesisRootCauseStore,
+    IdentificationLimitation,
     RootCauseAssessmentDraft,
 )
-from app.v3.report_document import ReportDocumentStore
+from app.v3.report_document import (
+    ReportDocumentStore,
+    ReportSourceKind,
+    ReportStatementKind,
+)
 from app.v3.research_contracts import (
     CausalCompetitionSurface,
     ResearchBrief,
@@ -468,6 +473,53 @@ class DeterministicP19Manager:
         )
 
 
+class UncertainP19Manager:
+    """Terminal P19 assessment with exact epistemic limitations."""
+
+    def __init__(self) -> None:
+        self.call_count = 0
+
+    def propose(
+        self,
+        snapshot,
+        *,
+        policy_statuses=None,
+        deterministic_feedback_code=None,
+    ):
+        del policy_statuses, deterministic_feedback_code
+        self.call_count += 1
+        candidates = tuple(
+            CandidateAssessment(
+                hypothesis_id=item.hypothesis.hypothesis_id,
+                grounding_link_ids=tuple(
+                    link.grounding_link_id for link in item.groundings
+                ),
+                disposition=HypothesisDisposition.RETAINED,
+                epistemic_class=HypothesisEpistemicClass.ASSOCIATION,
+                contribution_class=ContributionClass.UNKNOWN,
+                evidence_strength=EvidenceStrength.WEAK,
+                causal_qualification=CausalQualification.IDENTIFICATION_LIMITED,
+                identification_limitations=(
+                    IdentificationLimitation.ASSOCIATION_ONLY,
+                    IdentificationLimitation.TEMPORAL_ORDER_UNESTABLISHED,
+                    IdentificationLimitation.CONFOUNDING_NOT_RESOLVED,
+                ),
+            )
+            for item in snapshot.hypotheses
+        )
+        return RootCauseAssessmentDraft(
+            research_session_id=snapshot.research_session_id,
+            obligation_id=snapshot.obligation_id,
+            candidates=candidates,
+            aggregate_outcome=AggregateOutcome.NO_DEFENSIBLE_ROOT_CAUSE_ESTABLISHED,
+            root_cause_hypothesis_ids=(),
+            limitations=(
+                "Observed material is associative only.",
+                "Temporal order and confounding remain unresolved.",
+            ),
+        )
+
+
 class AdaptiveP19Manager:
     """First assessment requests discrimination; second terminates safely."""
 
@@ -618,7 +670,7 @@ class BombP17:
         raise AssertionError(f"ONE_PASS must not invoke P17: {name}")
 
 
-def _stack():
+def _stack(*, epistemic_manager=None):
     db = _engine()
     store = ResearchSessionStore(db)
     bridge = BridgeFactory()
@@ -633,7 +685,7 @@ def _stack():
         research_store=store,
         db_engine=db,
     )
-    p19_manager = DeterministicP19Manager()
+    p19_manager = epistemic_manager or DeterministicP19Manager()
     activities = DimaBrainV2Activities(
         principal=principal,
         catalog=_catalog(),
@@ -654,7 +706,7 @@ def _stack():
 
 
 def test_real_owner_one_pass_uses_one_native_and_zero_p17() -> None:
-    _, store, bridge, material, p19, p19_manager, activities = _stack()
+    db, store, bridge, material, p19, p19_manager, activities = _stack()
     service = BrainV2Service(activities=activities)
 
     result = service.run(
@@ -688,6 +740,22 @@ def test_real_owner_one_pass_uses_one_native_and_zero_p17() -> None:
         principal=_principal(),
     )
     assert assessment.aggregate_outcome == AggregateOutcome.MULTIPLE_MATERIAL_CONTRIBUTORS
+    report = ReportDocumentStore(
+        research_store=store,
+        db_engine=db,
+    ).load(
+        report_id=result.report_ref,
+        principal=_principal(),
+    )
+    contribution = tuple(
+        item
+        for item in report.statements
+        if item.statement_kind == ReportStatementKind.CONTRIBUTION
+    )
+    assert len(contribution) == 1
+    assert tuple(
+        ref.source_kind for ref in contribution[0].source_refs
+    ) == (ReportSourceKind.P19_ASSESSMENT,)
 
     # Exact current-session material is safely reusable without another native call.
     before = bridge.metabot_posts
@@ -701,6 +769,55 @@ def test_real_owner_one_pass_uses_one_native_and_zero_p17() -> None:
     replayed_assessment = activities.assess_p19(result)
     assert replayed_assessment.assessment_ref == result.latest_p19_assessment_ref
     assert p19_manager.call_count == before_p19
+
+
+
+
+
+def test_real_owner_report_preserves_p19_uncertainty_and_limitations() -> None:
+    manager = UncertainP19Manager()
+    db, store, _, _, _, _, activities = _stack(epistemic_manager=manager)
+    result = BrainV2Service(activities=activities).run(
+        BrainGraphState(
+            thread_id="real-one-pass-uncertain",
+            tenant_binding=f"id:{TENANT_ID}",
+            principal_ref=USER_ID,
+            current_user_input="Provider-free uncertain ONE_PASS RCA.",
+        )
+    )
+
+    assert result.workflow_status == BrainWorkflowStatus.COMPLETE
+    assert result.report_ref is not None
+    report = ReportDocumentStore(
+        research_store=store,
+        db_engine=db,
+    ).load(
+        report_id=result.report_ref,
+        principal=_principal(),
+    )
+
+    uncertainty = tuple(
+        item
+        for item in report.statements
+        if item.statement_kind == ReportStatementKind.UNCERTAINTY
+    )
+    limitations = tuple(
+        item
+        for item in report.statements
+        if item.statement_kind == ReportStatementKind.LIMITATION
+    )
+    assert len(uncertainty) == 1
+    assert uncertainty[0].text == "No defensible root cause established."
+    assert tuple(
+        ref.source_kind for ref in uncertainty[0].source_refs
+    ) == (ReportSourceKind.P19_ASSESSMENT,)
+    assert len(limitations) == 2
+    assert {
+        item.detail for item in report.limitations
+    } == {
+        "Observed material is associative only.",
+        "Temporal order and confounding remain unresolved.",
+    }
 
 
 def test_real_owner_scope_repair_creates_new_scope_without_stale_evidence_reuse() -> None:
