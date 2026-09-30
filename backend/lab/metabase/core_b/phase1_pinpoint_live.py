@@ -872,16 +872,30 @@ def _execute_turn(
                 item["proposal_load_error"] = type(exc).__name__
             reasoning_records.append(item)
     epistemic_payloads = []
+    p19_case_snapshots = []
+    seen_p19_cases: set[tuple[str, str]] = set()
     for ref in composition.p19_assessment_refs:
         try:
-            epistemic_payloads.append(
-                _safe_dump(
-                    composer._epistemics.load_assessment(
-                        assessment_id=ref,
-                        principal=sealed._principal(),
+            assessment = composer._epistemics.load_assessment(
+                assessment_id=ref,
+                principal=sealed._principal(),
+            )
+            epistemic_payloads.append(_safe_dump(assessment))
+            case_key = (
+                assessment.research_session_id,
+                assessment.obligation_id,
+            )
+            if case_key not in seen_p19_cases:
+                p19_case_snapshots.append(
+                    _safe_dump(
+                        composer._epistemics.snapshot(
+                            research_session_id=assessment.research_session_id,
+                            obligation_id=assessment.obligation_id,
+                            principal=sealed._principal(),
+                        )
                     )
                 )
-            )
+                seen_p19_cases.add(case_key)
         except Exception as exc:
             epistemic_payloads.append(
                 {"assessment_id": ref, "load_error": type(exc).__name__}
@@ -946,6 +960,7 @@ def _execute_turn(
         "p18_policy_use_refs": list(composition.p18_policy_use_refs),
         "p19_assessment_refs": list(composition.p19_assessment_refs),
         "epistemic_payloads": epistemic_payloads,
+        "p19_case_snapshots": p19_case_snapshots,
         "p20_report": report_payload,
         "limitations": [_safe_dump(item) for item in composition.limitations],
         "transport_traces": {
@@ -1061,6 +1076,34 @@ def _mechanical_r_live(
     p19_count = len(turn.get("p19_assessment_refs") or [])
     reasoning = turn.get("reasoning_records") or []
     brief = turn.get("brief_payload") or {}
+    causal_questions = [
+        item
+        for item in brief.get("questions") or []
+        if item.get("causal_competition")
+    ]
+    accepted_user_candidates: tuple[str, ...] = ()
+    if len(causal_questions) == 1:
+        accepted_user_candidates = tuple(
+            dict.fromkeys(
+                causal_questions[0]["causal_competition"].get(
+                    "candidate_mechanism_semantic_ids"
+                )
+                or []
+            )
+        )
+    p19_hypotheses = [
+        hypothesis
+        for case in turn.get("p19_case_snapshots") or []
+        for hypothesis in case.get("hypotheses") or []
+    ]
+    p19_evidence_grounded = [
+        hypothesis
+        for hypothesis in p19_hypotheses
+        if any(
+            (grounding.get("source_kind") == "P14_EVIDENCE")
+            for grounding in hypothesis.get("groundings") or []
+        )
+    ]
     composition = turn.get("composition_payload") or {}
     completion = composition.get("completion_ledger") or {}
     owner_calls = composition.get("owner_calls") or []
@@ -1073,8 +1116,14 @@ def _mechanical_r_live(
         "governed_evidence_exists": any(
             turn.get("evidence_by_session", {}).values()
         ),
-        "evidence_backed_candidate_count": len(evidence_backed),
-        "distinct_governed_mechanism_count": len(distinct),
+        "evidence_backed_candidate_count": max(
+            len(evidence_backed),
+            len(p19_evidence_grounded) if accepted_user_candidates else 0,
+        ),
+        "distinct_governed_mechanism_count": max(
+            len(distinct),
+            len(p19_hypotheses) if accepted_user_candidates else 0,
+        ),
         "p19_assessment_exists": p19_count > 0,
         "single_root_mode_result": mode is not None,
     }
@@ -1102,7 +1151,11 @@ def _mechanical_r_live(
                 "user_candidates_preserved": bool(
                     mode.get("user_seeded_candidates")
                 ),
-                "multiple_candidates_reach_epistemics": len(distinct) >= 2,
+                "multiple_candidates_reach_epistemics": (
+                    len(accepted_user_candidates) >= 2
+                    and len(p19_hypotheses) >= len(accepted_user_candidates)
+                    and len(p19_evidence_grounded) >= len(accepted_user_candidates)
+                ),
                 "one_analytical_obligation": len(
                     brief.get("questions") or []
                 ) == 1,
