@@ -96,7 +96,8 @@ jobs:
             tests/test_v3_v1_scope_contract.py \
             tests/test_v3_v1_scope_integration.py \
             tests/test_v3_p14_product.py \
-            tests/test_v3_p14_native_direct.py
+            tests/test_v3_p14_native_gateway.py \
+            tests/test_v3_r7_native_contract_delivery.py
 
       - name: Frozen engine identity
         shell: bash
