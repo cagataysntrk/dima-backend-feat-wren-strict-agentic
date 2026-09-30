@@ -4,6 +4,11 @@ from types import SimpleNamespace
 
 from app.v3.product.composition import HeadlessProductComposer
 from app.v3.product.process_manager import ProductProcessPurpose
+from app.v3.root_cause_candidate_contract import (
+    RootCauseCandidateRelation,
+    RootCauseCandidateSemantics,
+    embed_root_cause_candidate_semantics,
+)
 
 
 class BudgetOwnedInvestigation:
@@ -23,6 +28,21 @@ class BudgetOwnedInvestigation:
             claims=tuple(self.claims),
             terminal_stop_reason=None,
             remaining_reasoning_steps=max(0, 8 - self.calls),
+            parent_obligations=(
+                SimpleNamespace(
+                    obligation_id=self.obligation_id,
+                    state="VERIFIED",
+                ),
+            ),
+            action_profile=SimpleNamespace(
+                rules=(
+                    SimpleNamespace(
+                        legal_parent_step_ids=(),
+                        allow_parentless=True,
+                        intent="FORM_CLAIM",
+                    ),
+                ),
+            ),
         )
 
     def run_one(
@@ -32,17 +52,43 @@ class BudgetOwnedInvestigation:
         principal,
         manager,
         native_session_token,
+        downstream_reentry_intent=None,
+        downstream_reentry_obligation_id=None,
     ):
-        del session_id, principal, manager, native_session_token
+        del (
+            session_id,
+            principal,
+            manager,
+            native_session_token,
+            downstream_reentry_intent,
+            downstream_reentry_obligation_id,
+        )
         self.calls += 1
         step_id = "rrs_" + f"{self.calls:024x}"
         self.steps.append(step_id)
         if self.calls in self.claim_turns:
+            ordinal = len(self.claims) + 1
+            semantics = RootCauseCandidateSemantics(
+                explanatory_subject_ref=self.obligation_id,
+                relation_kind=RootCauseCandidateRelation.EXPLANATORY_CANDIDATE,
+                mechanism_ref=f"mechanism:{ordinal}",
+                scope_lineage_id="atl_fixture",
+                scope_version_id="scope_v1",
+            )
             self.claims.append(
                 SimpleNamespace(
-                    claim_id="clm_" + f"{len(self.claims)+1:024x}",
+                    claim_id="clm_" + f"{ordinal:024x}",
                     obligation_id=self.obligation_id,
-                    claim_text=f"governed candidate {len(self.claims)+1}",
+                    claim_text=f"governed candidate {ordinal}",
+                    proposition=embed_root_cause_candidate_semantics(
+                        {"candidate_ordinal": ordinal},
+                        semantics,
+                    ),
+                    evidence_links=(
+                        SimpleNamespace(
+                            evidence_id="evi_" + f"{ordinal:024x}",
+                        ),
+                    ),
                 )
             )
         return SimpleNamespace(step_id=step_id), None
@@ -63,6 +109,19 @@ class ReasoningView:
         )
 
 
+class ResearchView:
+    def resume_state(self, *, session_id, principal):
+        del session_id, principal
+        return SimpleNamespace(
+            lineage_id="atl_fixture",
+            accepted_brief=SimpleNamespace(
+                scope=SimpleNamespace(
+                    scope_version=SimpleNamespace(version_id="scope_v1")
+                )
+            ),
+        )
+
+
 class ScopedManager:
     call_count = 0
 
@@ -78,6 +137,7 @@ def composer_for(investigation: BudgetOwnedInvestigation):
     composer = object.__new__(HeadlessProductComposer)
     composer._investigation = investigation
     composer._reasoning = ReasoningView(investigation)
+    composer._research = ResearchView()
     composer._investigation_manager = ScopedManager(
         investigation.obligation_id
     )
