@@ -1323,6 +1323,35 @@ def test_r6_duplicate_typed_period_identity_is_rejected_even_with_new_wording():
     assert exc.value.code == "INTAKE_TIME_PERIOD_DUPLICATE"
 
 
+def test_r6_shared_surface_can_bind_distinct_typed_periods():
+    payload = ready_payload()
+    payload["time_periods"] = [
+        _r6_period("May-June window", "2026-05-01", "2026-06-01"),
+        _r6_period("May-June window", "2026-06-01", "2026-07-01"),
+    ]
+
+    result = ResearchIntakeCompiler(
+        transport=FakeTransport(payload)
+    ).compile(
+        question="Compare May and June.",
+        catalog=_r6_temporal_catalog(),
+    )
+
+    assert result.brief is not None
+    assert [
+        (
+            item.time_dimension_candidate_id,
+            item.start,
+            item.end,
+        )
+        for item in result.brief.scope.periods
+    ] == [
+        ("dimension.event_date", "2026-05-01", "2026-06-01"),
+        ("dimension.event_date", "2026-06-01", "2026-07-01"),
+    ]
+    assert result.brief.scope.time_surfaces == ("May-June window",)
+
+
 def test_r6_unauthorized_temporal_dimension_is_rejected():
     payload = ready_payload()
     payload["time_periods"] = [
