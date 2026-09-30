@@ -848,28 +848,6 @@ class DimaBrainV2Activities(BrainActivities):
                 goal.goal_id,
             )
 
-        draft = self._epistemic_manager.propose(
-            snapshot,
-            policy_statuses={},
-            deterministic_feedback_code=None,
-        )
-        assessment = self._epistemics.assess(
-            draft=draft,
-            principal=self._principal,
-        )
-        request = next_test_request(
-            snapshot=snapshot,
-            assessment=assessment,
-            scope_lineage_id=session.lineage_id,
-            scope_version_id=state.scope_version_id or "scope_v1",
-        )
-        if assessment.aggregate_outcome != AggregateOutcome.IN_PROGRESS:
-            route = BrainP19Route.SUFFICIENT
-        elif request is not None:
-            route = BrainP19Route.NEXT_TEST_REQUIRED
-        else:
-            route = BrainP19Route.INCONCLUSIVE
-
         key = self._cognition_key(
             state=state,
             owner="P19",
@@ -885,6 +863,45 @@ class DimaBrainV2Activities(BrainActivities):
                 }
             ),
         )
+
+        assessment = None
+        if (
+            key.fingerprint in set(state.activity_fingerprints)
+            and state.latest_p19_assessment_ref is not None
+        ):
+            prior = self._epistemics.load_assessment(
+                assessment_id=state.latest_p19_assessment_ref,
+                principal=self._principal,
+            )
+            if (
+                prior.research_session_id == session.session_id
+                and prior.obligation_id == goal.goal_id
+            ):
+                assessment = prior
+
+        if assessment is None:
+            draft = self._epistemic_manager.propose(
+                snapshot,
+                policy_statuses={},
+                deterministic_feedback_code=None,
+            )
+            assessment = self._epistemics.assess(
+                draft=draft,
+                principal=self._principal,
+            )
+
+        request = next_test_request(
+            snapshot=snapshot,
+            assessment=assessment,
+            scope_lineage_id=session.lineage_id,
+            scope_version_id=state.scope_version_id or "scope_v1",
+        )
+        if assessment.aggregate_outcome != AggregateOutcome.IN_PROGRESS:
+            route = BrainP19Route.SUFFICIENT
+        elif request is not None:
+            route = BrainP19Route.NEXT_TEST_REQUIRED
+        else:
+            route = BrainP19Route.INCONCLUSIVE
         return P19ActivityResult(
             assessment_ref=assessment.assessment_id,
             route=route,
