@@ -23,6 +23,7 @@ from app.v3.hypothesis_root_cause_v1 import (
     discriminating_test_is_callable,
     next_test_request,
 )
+from app.v3.product.contracts import ProductInvestigationRequirementKind
 from app.v3.report_document import (
     ReportDocumentStore,
     ReportDraft,
@@ -497,6 +498,12 @@ class DimaBrainV2Activities(BrainActivities):
             objective_id=goal.goal_id,
             legal_profile_hash=self._catalog.fingerprint,
         ).fingerprint
+        adaptive_requirements = tuple(
+            item
+            for item in result.investigation_requirements
+            if item.kind
+            == ProductInvestigationRequirementKind.FOLLOW_VERIFIED_MATERIAL
+        )
         return IntakeActivityResult(
             research_session_id=session.session_id,
             accepted_brief_ref=brief.brief_id,
@@ -505,6 +512,14 @@ class DimaBrainV2Activities(BrainActivities):
                 item.obligation_id for item in session.obligations
             ),
             material_requirement_ids=(goal.goal_id,),
+            investigation_requirement_ids=tuple(
+                item.requirement_id for item in result.investigation_requirements
+            ),
+            follow_verified_material_goal_ids=tuple(
+                dict.fromkeys(
+                    item.source_goal_id for item in adaptive_requirements
+                )
+            ),
             discovery_required=not user_seeded,
             activity_fingerprint=fp,
         )
@@ -870,8 +885,12 @@ class DimaBrainV2Activities(BrainActivities):
             and str(getattr(item.state, "value", item.state)) == "VERIFIED"
             for item in session.obligations
         )
+        typed_adaptive_intent = (
+            goal.goal_id in set(state.follow_verified_material_goal_ids)
+        )
         discrimination_capacity = (
-            state.adaptive_reentries < state.max_adaptive_reentries
+            typed_adaptive_intent
+            and state.adaptive_reentries < state.max_adaptive_reentries
             and bool(self._native_session_token)
             and parent_verified
             and bool(state.evidence_ids)
@@ -888,6 +907,7 @@ class DimaBrainV2Activities(BrainActivities):
                         for item in snapshot.hypotheses
                     ],
                     "scope": state.scope_version_id,
+                    "typed_adaptive_intent": typed_adaptive_intent,
                     "discriminating_test_capacity": discrimination_capacity,
                 }
             ),
