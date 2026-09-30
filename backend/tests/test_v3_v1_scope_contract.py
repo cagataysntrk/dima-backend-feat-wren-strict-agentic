@@ -571,6 +571,106 @@ def test_r1_p17_child_contract_rejects_filter_narrowing_plus_time_broadening():
         assert_child_request_scope(parent,child)
 
 
+def test_r1_unfiltered_entity_scope_can_narrow_to_one_governed_value():
+    current = ResearchScope(
+        semantic_refs=(DOWNTIME, DEPARTMENT, EVENT_DATE),
+        time_surfaces=("June 2026",),
+        periods=(JUNE,),
+        temporal_dimension_ids=(EVENT_DATE.candidate_id,),
+        native_verification_bindings=tuple(
+            item
+            for item in VERIFICATION_BINDINGS
+            if item.candidate_id
+            in {
+                DOWNTIME.candidate_id,
+                DEPARTMENT.candidate_id,
+                EVENT_DATE.candidate_id,
+            }
+        ),
+    )
+    narrowed = apply_scope_mutation(
+        current,
+        ScopeMutation(
+            kind=ScopeMutationKind.NARROW_ENTITY,
+            source_version_id="scope_v1",
+            target_semantic_refs=(
+                DOWNTIME,
+                DEPARTMENT,
+                EVENT_DATE,
+                ASSEMBLY,
+            ),
+            target_time_surfaces=("June 2026",),
+            target_periods=(JUNE,),
+            target_temporal_dimension_ids=(EVENT_DATE.candidate_id,),
+            target_native_verification_bindings=tuple(
+                item
+                for item in VERIFICATION_BINDINGS
+                if item.candidate_id
+                in {
+                    DOWNTIME.candidate_id,
+                    DEPARTMENT.candidate_id,
+                    EVENT_DATE.candidate_id,
+                    ASSEMBLY.candidate_id,
+                }
+            ),
+            reason="Narrow unrestricted department population to Assembly.",
+        ),
+    )
+    assert tuple(
+        item.candidate_id
+        for item in narrowed.current_scope.semantic_refs
+        if item.target_kind == SemanticTargetKind.ENTITY_VALUE
+    ) == (ASSEMBLY.candidate_id,)
+    assert narrowed.current_scope.scope_version.version_id == "scope_v2"
+
+
+def test_r1_explicit_entity_filter_can_expand_back_to_unfiltered_population():
+    current = ResearchScope(
+        semantic_refs=(DOWNTIME, DEPARTMENT, EVENT_DATE, ASSEMBLY),
+        time_surfaces=("June 2026",),
+        periods=(JUNE,),
+        temporal_dimension_ids=(EVENT_DATE.candidate_id,),
+        native_verification_bindings=tuple(
+            item
+            for item in VERIFICATION_BINDINGS
+            if item.candidate_id
+            in {
+                DOWNTIME.candidate_id,
+                DEPARTMENT.candidate_id,
+                EVENT_DATE.candidate_id,
+                ASSEMBLY.candidate_id,
+            }
+        ),
+    )
+    expanded = apply_scope_mutation(
+        current,
+        ScopeMutation(
+            kind=ScopeMutationKind.EXPAND_ENTITY,
+            source_version_id="scope_v1",
+            target_semantic_refs=(DOWNTIME, DEPARTMENT, EVENT_DATE),
+            target_time_surfaces=("June 2026",),
+            target_periods=(JUNE,),
+            target_temporal_dimension_ids=(EVENT_DATE.candidate_id,),
+            target_native_verification_bindings=tuple(
+                item
+                for item in VERIFICATION_BINDINGS
+                if item.candidate_id
+                in {
+                    DOWNTIME.candidate_id,
+                    DEPARTMENT.candidate_id,
+                    EVENT_DATE.candidate_id,
+                }
+            ),
+            reason="Expand Assembly filter back to unrestricted department population.",
+        ),
+    )
+    assert not any(
+        item.target_kind == SemanticTargetKind.ENTITY_VALUE
+        for item in expanded.current_scope.semantic_refs
+    )
+    assert expanded.current_scope.scope_version.version_id == "scope_v2"
+
+
 def test_r1_legal_entity_narrowing_preserves_period_contract():
     current=ResearchScope(
         semantic_refs=(DOWNTIME,DEPARTMENT,EVENT_DATE,ASSEMBLY,PACKAGING),
