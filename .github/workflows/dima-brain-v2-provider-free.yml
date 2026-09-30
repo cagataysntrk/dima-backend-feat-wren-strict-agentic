@@ -1,0 +1,56 @@
+name: dima-brain-v2-provider-free
+
+on:
+  push:
+    branches:
+      - feat/dima-brain-v2
+    paths:
+      - ".github/workflows/dima-brain-v2-provider-free.yml"
+      - "backend/pyproject.toml"
+      - "backend/app/v3/brain_v2/**"
+      - "backend/tests/test_v3_brain_v2_*.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  brain-v2-provider-free:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_INTERACTION_LOG: "false"
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          submodules: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install Brain V2 test environment
+        working-directory: backend
+        run: pip install -e ".[dev]"
+
+      - name: Brain V2 import smoke
+        working-directory: backend
+        run: |
+          python - <<'PY'
+          import langgraph
+          import app.v3.brain_v2
+          from app.v3.brain_v2.state import BrainGraphState
+          from app.v3.brain_v2.keys import CognitionRequestKey, NativeMaterialRequestKey
+          from app.v3.brain_v2.views import EvidenceDigest
+          print("Brain V2 contracts import OK")
+          PY
+
+      - name: Brain V2 focused provider-free contracts
+        working-directory: backend
+        run: pytest -q tests/test_v3_brain_v2_contracts.py
