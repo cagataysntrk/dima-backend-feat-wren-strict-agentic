@@ -22,6 +22,10 @@ from app.v3.claim_lineage import (
     ClaimLineageStore,
 )
 from app.v3.product.composition import HeadlessProductComposer
+from app.v3.product.contracts import (
+    ProductInvestigationRequirement,
+    ProductInvestigationRequirementKind,
+)
 from app.v3.research_manager import (
     InvestigationIntent,
     InvestigationTargetKind,
@@ -241,6 +245,37 @@ class DeterministicIntake:
             brief=brief,
             catalog_fingerprint=catalog.fingerprint,
             model_calls=1,
+        )
+
+
+class AdaptiveIntake(DeterministicIntake):
+    """Provider-free typed adaptive intent emitted by the canonical Intake contract."""
+
+    def compile(self, *, question, catalog, prior_brief=None):
+        result = super().compile(
+            question=question,
+            catalog=catalog,
+            prior_brief=prior_brief,
+        )
+        assert result.brief is not None
+        goal_id = result.brief.questions[0].goal_id
+        return result.model_copy(
+            update={
+                "investigation_requirements": (
+                    ProductInvestigationRequirement(
+                        requirement_id="pir_" + "a" * 20,
+                        kind=(
+                            ProductInvestigationRequirementKind
+                            .FOLLOW_VERIFIED_MATERIAL
+                        ),
+                        source_goal_id=goal_id,
+                        source_text=(
+                            "If verified Evidence remains ambiguous, follow one "
+                            "material discriminating direction."
+                        ),
+                    ),
+                )
+            }
         )
 
 
@@ -1089,7 +1124,7 @@ def _adaptive_stack(*, discovery: bool = False, p19_manager_override=None):
     activities = DimaBrainV2Activities(
         principal=principal,
         catalog=_catalog(),
-        intake=(DiscoveryIntake() if discovery else DeterministicIntake()),
+        intake=(DiscoveryIntake() if discovery else AdaptiveIntake()),
         research=research,
         investigation=investigation,
         investigation_manager=discovery_manager,
