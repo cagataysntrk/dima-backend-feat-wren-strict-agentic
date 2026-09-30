@@ -1342,3 +1342,44 @@ def test_v1_same_statement_distinct_durable_candidate_refs_do_not_collapse():
     assert a.statement == b.statement == statement
     assert a.hypothesis_id != b.hypothesis_id
     assert a.identity_fingerprint != b.identity_fingerprint
+
+
+def test_p19_snapshot_projects_only_exact_grounded_verified_evidence_values(db_engine):
+    state = make_state(db_engine, suffix="evidence-observation")
+    a, b = make_hypotheses(state)
+
+    ungrounded = state["p19"].snapshot(
+        research_session_id=state["session"].session_id,
+        obligation_id="g1",
+        principal=state["principal"],
+    )
+    assert ungrounded.evidence_observations == ()
+
+    for index, hypothesis in enumerate((a, b), start=1):
+        grounding(
+            state,
+            hypothesis,
+            kind=GroundingSourceKind.P14_EVIDENCE,
+            ref=state["evidence_id"],
+            receipt=state["receipt_id"],
+            relation=GroundingRelation.CONTEXT,
+            minute=20 + index,
+        )
+
+    observed = state["p19"].snapshot(
+        research_session_id=state["session"].session_id,
+        obligation_id="g1",
+        principal=state["principal"],
+    )
+    assert len(observed.evidence_observations) == 1
+    item = observed.evidence_observations[0]
+    assert item.evidence_id == state["evidence_id"]
+    assert item.receipt_id == state["receipt_id"]
+    assert item.row_count == 2
+    assert item.rows == (("Web", 34), ("Partner", 12))
+    assert item.columns == ()
+    serialized = json.dumps(item.model_dump(mode="json"), sort_keys=True)
+    assert "source-table" not in serialized
+    assert "aggregation" not in serialized
+    assert "identification" not in serialized
+    assert "decomposition" not in serialized
