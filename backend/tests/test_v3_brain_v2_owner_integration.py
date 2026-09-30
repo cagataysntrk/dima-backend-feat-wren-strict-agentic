@@ -110,7 +110,12 @@ def _postgres_engine():
     dsn = os.environ.get("DIMA_BRAIN_V2_TEST_POSTGRES_DSN", "").strip()
     if not dsn:
         pytest.skip("provider-free Postgres DSN is not configured")
-    engine = create_engine(dsn, pool_pre_ping=True)
+    sqlalchemy_dsn = (
+        "postgresql+psycopg://" + dsn.removeprefix("postgresql://")
+        if dsn.startswith("postgresql://")
+        else dsn
+    )
+    engine = create_engine(sqlalchemy_dsn, pool_pre_ping=True)
     SQLModel.metadata.create_all(engine)
     return engine
 
