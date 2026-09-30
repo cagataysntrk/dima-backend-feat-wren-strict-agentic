@@ -11,8 +11,10 @@ from typing import Any
 
 from app.v3.hypothesis_root_cause import (
     AggregateOutcome,
+    ContributionClass,
     GroundingRelation,
     GroundingSourceKind,
+    HypothesisDisposition,
     HypothesisRootCauseStore,
 )
 from app.v3.hypothesis_root_cause_v1 import (
@@ -20,7 +22,17 @@ from app.v3.hypothesis_root_cause_v1 import (
     discriminating_test_is_callable,
     next_test_request,
 )
-from app.v3.report_document import ReportDocumentStore
+from app.v3.report_document import (
+    ReportDocumentStore,
+    ReportDraft,
+    ReportLimitation,
+    ReportSourceKind,
+    ReportStatement,
+    ReportStatementKind,
+    SourceReference,
+    stable_limitation_id,
+    stable_statement_id,
+)
 from app.v3.research_contracts import (
     ResearchGoalKind,
     ResearchQuestion,
@@ -1037,15 +1049,202 @@ class DimaBrainV2Activities(BrainActivities):
             activity_fingerprint=key.fingerprint,
         )
 
+    def _report_with_epistemic_projection(
+        self,
+        *,
+        state: BrainGraphState,
+        session,
+        base: ReportDraft,
+    ) -> ReportDraft:
+        """Add exact P19-governed judgment to the existing P20 draft.
+
+        P20 remains the publication authority. This projection copies only
+        canonical P19 assessment state and lets ReportDocumentStore.validate
+        every resulting statement/source/limitation before sealing.
+        """
+
+        assessment_ref = state.latest_p19_assessment_ref
+        if assessment_ref is None:
+            raise BrainV2OwnerError(
+                "BRAIN_V2_P20_P19_ASSESSMENT_REQUIRED",
+                session.session_id,
+            )
+        goal = self._root_goal(session)
+        assessment = self._epistemics.load_assessment(
+            assessment_id=assessment_ref,
+            principal=self._principal,
+        )
+        if (
+            assessment.research_session_id != session.session_id
+            or assessment.obligation_id != goal.goal_id
+        ):
+            raise BrainV2OwnerError(
+                "BRAIN_V2_P20_P19_SCOPE_MISMATCH",
+                assessment_ref,
+            )
+
+        source = SourceReference(
+            source_kind=ReportSourceKind.P19_ASSESSMENT,
+            source_ref=assessment.assessment_id,
+            obligation_id=goal.goal_id,
+        )
+        extra_statements: list[ReportStatement] = []
+        extra_limitations: list[ReportLimitation] = []
+
+        if assessment.aggregate_outcome == AggregateOutcome.ROOT_CAUSE_ESTABLISHED:
+            for hypothesis_id in assessment.root_cause_hypothesis_ids:
+                sid = stable_statement_id(
+                    {
+                        "kind": ReportStatementKind.ROOT_CAUSE.value,
+                        "source": source.model_dump(mode="json"),
+                        "hypothesis_id": hypothesis_id,
+                    }
+                )
+                extra_statements.append(
+                    ReportStatement(
+                        statement_id=sid,
+                        statement_kind=ReportStatementKind.ROOT_CAUSE,
+                        source_refs=(source,),
+                        obligation_refs=(goal.goal_id,),
+                        upstream_epistemic_ceiling=(
+                            AggregateOutcome.ROOT_CAUSE_ESTABLISHED.value
+                        ),
+                        payload={"hypothesis_id": hypothesis_id},
+                    )
+                )
+        elif (
+            assessment.aggregate_outcome
+            == AggregateOutcome.MULTIPLE_MATERIAL_CONTRIBUTORS
+        ):
+            governed = [
+                item.hypothesis_id
+                for item in assessment.candidates
+                if (
+                    item.disposition == HypothesisDisposition.RETAINED
+                    and item.contribution_class
+                    in {ContributionClass.DOMINANT, ContributionClass.MATERIAL}
+                )
+            ]
+            if not governed:
+                raise BrainV2OwnerError(
+                    "BRAIN_V2_P20_CONTRIBUTION_SET_EMPTY",
+                    assessment.assessment_id,
+                )
+            sid = stable_statement_id(
+                {
+                    "kind": ReportStatementKind.CONTRIBUTION.value,
+                    "source": source.model_dump(mode="json"),
+                    "candidate_hypothesis_ids": governed,
+                }
+            )
+            extra_statements.append(
+                ReportStatement(
+                    statement_id=sid,
+                    statement_kind=ReportStatementKind.CONTRIBUTION,
+                    source_refs=(source,),
+                    obligation_refs=(goal.goal_id,),
+                    upstream_epistemic_ceiling=assessment.aggregate_outcome.value,
+                    payload={"candidate_hypothesis_ids": governed},
+                )
+            )
+        elif (
+            assessment.aggregate_outcome
+            == AggregateOutcome.NO_DEFENSIBLE_ROOT_CAUSE_ESTABLISHED
+        ):
+            sid = stable_statement_id(
+                {
+                    "kind": ReportStatementKind.UNCERTAINTY.value,
+                    "source": source.model_dump(mode="json"),
+                    "assessment": assessment.assessment_id,
+                }
+            )
+            extra_statements.append(
+                ReportStatement(
+                    statement_id=sid,
+                    statement_kind=ReportStatementKind.UNCERTAINTY,
+                    source_refs=(source,),
+                    obligation_refs=(goal.goal_id,),
+                    upstream_epistemic_ceiling=assessment.aggregate_outcome.value,
+                    payload={},
+                )
+            )
+        else:
+            raise BrainV2OwnerError(
+                "BRAIN_V2_P20_NONTERMINAL_P19",
+                assessment.aggregate_outcome.value,
+            )
+
+        for ordinal, detail in enumerate(assessment.limitations):
+            limitation_id = stable_limitation_id(
+                {
+                    "assessment_id": assessment.assessment_id,
+                    "obligation_id": goal.goal_id,
+                    "ordinal": ordinal,
+                    "detail": detail,
+                }
+            )
+            limitation = ReportLimitation(
+                limitation_id=limitation_id,
+                obligation_id=goal.goal_id,
+                code="P19_EPISTEMIC_LIMITATION",
+                detail=detail,
+                source_refs=(source,),
+            )
+            extra_limitations.append(limitation)
+            sid = stable_statement_id(
+                {
+                    "kind": ReportStatementKind.LIMITATION.value,
+                    "limitation_id": limitation_id,
+                    "source": source.model_dump(mode="json"),
+                }
+            )
+            extra_statements.append(
+                ReportStatement(
+                    statement_id=sid,
+                    statement_kind=ReportStatementKind.LIMITATION,
+                    source_refs=(source,),
+                    obligation_refs=(goal.goal_id,),
+                    limitation_refs=(limitation_id,),
+                    upstream_epistemic_ceiling="LIMITATION",
+                    payload={"limitation_id": limitation_id},
+                )
+            )
+
+        extra_ids = tuple(item.statement_id for item in extra_statements)
+        coverage = tuple(
+            entry.model_copy(
+                update={
+                    "statement_ids": tuple(
+                        dict.fromkeys((*entry.statement_ids, *extra_ids))
+                    )
+                }
+            )
+            if entry.obligation_id == goal.goal_id
+            else entry
+            for entry in base.coverage
+        )
+        return base.model_copy(
+            update={
+                "coverage": coverage,
+                "statements": (*base.statements, *extra_statements),
+                "limitations": (*base.limitations, *extra_limitations),
+            }
+        )
+
     def synthesize_report(self, state: BrainGraphState) -> ReportActivityResult:
         session = self._session(state)
         report_key = (
             f"brain-v2:{state.thread_id}:{state.scope_version_id or 'scope_v1'}"
         )
-        draft = self._reports.draft_from_governed_research(
+        base = self._reports.draft_from_governed_research(
             research_session_id=session.session_id,
             report_key=report_key,
             principal=self._principal,
+        )
+        draft = self._report_with_epistemic_projection(
+            state=state,
+            session=session,
+            base=base,
         )
         report = self._reports.seal(
             draft=draft,
