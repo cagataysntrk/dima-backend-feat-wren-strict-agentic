@@ -135,7 +135,7 @@ def project_relationship_result(
     if decision.resolution_status == RelationshipPolicyResolutionStatus.SATISFIED:
         business_state = RelationshipLayerState.SATISFIED
     elif (
-        not decision.required
+        not bool(getattr(decision, "required", True))
         and decision.resolution_status
         == RelationshipPolicyResolutionStatus.NOT_REQUIRED
     ):

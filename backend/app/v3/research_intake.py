@@ -1282,8 +1282,12 @@ class ResearchIntakeCompiler:
                     comparisons=comparisons,
                     causal_competition=causal_competition,
                     relationship_intent=(
-                        goal.relationship_intent
-                        or RelationshipIntent.BUSINESS_POLICY
+                        (
+                            goal.relationship_intent
+                            or RelationshipIntent.BUSINESS_POLICY
+                        )
+                        if goal.kind == ResearchGoalKind.RELATIONSHIP
+                        else None
                     ),
                     status=ResearchGoalStatus.RESOLVED,
                 )
