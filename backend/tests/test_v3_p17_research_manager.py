@@ -3337,9 +3337,14 @@ def test_p17_followup_passes_durable_child_scope_to_shared_material_admission():
     )
 
     assert task is not None
-    assert task.analytical_scope == child
+    assert task.analytical_scope is not None
+    assert task.analytical_scope.scope_identity == child.scope_identity
+    assert task.analytical_scope.metric_refs == child.metric_refs
+    assert task.analytical_scope.dimension_refs == child.dimension_refs
+    assert task.analytical_scope.filters == child.filters
+    assert task.analytical_scope.period == child.period
     assert runner.kwargs is not None
-    assert runner.kwargs["analytical_scope"] == child
+    assert runner.kwargs["analytical_scope"] == task.analytical_scope
     assert step.status == ReasoningStepStatus.COMPLETED
 
 

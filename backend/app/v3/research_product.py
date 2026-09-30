@@ -173,18 +173,20 @@ class NativeResearchOccurrenceRunner:
 
             native_query_id = link.native_query_id
             assert native_query_id is not None
-            outcome = self._materials.execute(
-                principal=principal,
-                session=session,
-                obligation_id=obligation_id,
-                bridge=bridge,
-                native_conversation_id=link.native_conversation_id,
-                native_query_id=native_query_id,
-                native_query=native_query,
-                query_fingerprint=query_fingerprint,
-                execution_link_id=link.id,
-                analytical_scope=analytical_scope,
-            )
+            material_kwargs = {
+                "principal": principal,
+                "session": session,
+                "obligation_id": obligation_id,
+                "bridge": bridge,
+                "native_conversation_id": link.native_conversation_id,
+                "native_query_id": native_query_id,
+                "native_query": native_query,
+                "query_fingerprint": query_fingerprint,
+                "execution_link_id": link.id,
+            }
+            if analytical_scope is not None:
+                material_kwargs["analytical_scope"] = analytical_scope
+            outcome = self._materials.execute(**material_kwargs)
 
         if outcome.native_conversation_id != link.native_conversation_id:
             raise ResearchProductError(
