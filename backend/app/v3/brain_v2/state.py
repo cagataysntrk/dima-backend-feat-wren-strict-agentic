@@ -50,6 +50,7 @@ class BrainGraphState(BaseModel):
 
     open_requirement_ids: tuple[str, ...] = ()
     material_requirement_ids: tuple[str, ...] = ()
+    pending_evidence_ids: tuple[str, ...] = ()
 
     evidence_revision: int = Field(default=0, ge=0)
     evidence_ids: tuple[str, ...] = ()
@@ -83,6 +84,7 @@ class BrainGraphState(BaseModel):
         unique_fields = {
             "open_requirement_ids": self.open_requirement_ids,
             "material_requirement_ids": self.material_requirement_ids,
+            "pending_evidence_ids": self.pending_evidence_ids,
             "evidence_ids": self.evidence_ids,
             "hypothesis_ids": self.hypothesis_ids,
             "activity_fingerprints": self.activity_fingerprints,
@@ -123,6 +125,7 @@ class BrainStatePayload(TypedDict, total=False):
     scope_version_id: str | None
     open_requirement_ids: tuple[str, ...]
     material_requirement_ids: tuple[str, ...]
+    pending_evidence_ids: tuple[str, ...]
     evidence_revision: int
     evidence_ids: tuple[str, ...]
     hypothesis_revision: int
