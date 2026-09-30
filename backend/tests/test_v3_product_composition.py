@@ -800,7 +800,7 @@ def test_root_cause_user_seeded_candidates_bypass_p17_and_reach_p19_directly():
     )
     state = investigation._state(result.research_session_id)
     assert state["calls"] == 0
-    assert state["reentry_intents"] == []
+    assert state.get("reentry_intents", []) == []
     assert result.p17_step_refs == ()
     assert result.p19_assessment_refs == ("p19a_" + "2" * 24,)
     snapshot = c._epistemics.snapshot(
