@@ -1287,6 +1287,84 @@ def test_r6_multi_period_comparison_preserves_two_typed_half_open_periods():
     )
 
 
+def test_typed_temporal_comparison_canonicalizes_period_roles_without_prompt_semantics():
+    payload = ready_payload(
+        kind="root_cause",
+        subject=(
+            "metric.downtime",
+            "metric.fault_count",
+            "metric.performance",
+        ),
+        related=("dimension.department",),
+    )
+    payload["goals"][0]["causal_competition"] = {
+        "effect_semantic_id": "metric.downtime",
+        "candidate_mechanism_semantic_ids": [
+            "metric.fault_count",
+            "metric.performance",
+        ],
+        "diagnostic_dimension_ids": ["dimension.department"],
+    }
+    payload["goals"][0]["comparisons"] = [
+        {
+            "text": "accepted two-period comparison",
+            "role": "temporal_period",
+            "semantic_id": None,
+        }
+    ]
+    payload["time_periods"] = [
+        _r6_period(
+            "later accepted period",
+            "2026-06-01",
+            "2026-07-01",
+            role="material_window",
+        ),
+        _r6_period(
+            "earlier accepted period",
+            "2026-05-01",
+            "2026-06-01",
+            role="material_window",
+        ),
+    ]
+
+    result = ResearchIntakeCompiler(
+        transport=FakeTransport(payload)
+    ).compile(
+        question="Investigate the governed two-period causal comparison.",
+        catalog=_r6_temporal_catalog(),
+    )
+
+    assert result.brief is not None
+    by_start = {
+        item.start: item.role for item in result.brief.scope.periods
+    }
+    assert by_start == {
+        "2026-05-01": TemporalRole.BASELINE_PERIOD,
+        "2026-06-01": TemporalRole.COMPARISON_PERIOD,
+    }
+
+
+def test_two_material_windows_without_typed_temporal_comparison_remain_windows():
+    payload = ready_payload()
+    payload["time_periods"] = [
+        _r6_period("window A", "2026-05-01", "2026-06-01"),
+        _r6_period("window B", "2026-06-01", "2026-07-01"),
+    ]
+
+    result = ResearchIntakeCompiler(
+        transport=FakeTransport(payload)
+    ).compile(
+        question="Inspect the accepted bounded evidence windows.",
+        catalog=_r6_temporal_catalog(),
+    )
+
+    assert result.brief is not None
+    assert [item.role for item in result.brief.scope.periods] == [
+        TemporalRole.MATERIAL_WINDOW,
+        TemporalRole.MATERIAL_WINDOW,
+    ]
+
+
 def test_r6_follow_up_narrowing_advances_scope_from_two_periods_to_one():
     initial_payload = ready_payload(
         kind="comparison",
