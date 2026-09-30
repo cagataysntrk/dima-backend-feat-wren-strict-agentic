@@ -193,6 +193,12 @@ class ModelCausalCompetitionDraft(Frozen):
     diagnostic_dimension_ids: tuple[str, ...] = ()
 
 
+class ModelTemporalMaterialMode(StrEnum):
+    NONE = "none"
+    WINDOW = "window"
+    COMPARISON = "comparison"
+
+
 class ModelComparisonDraft(Frozen):
     text: str = Field(min_length=1)
     role: ComparisonRole
@@ -224,6 +230,11 @@ class ModelGoalDraft(Frozen):
     ranking: DraftRanking | None = None
     comparisons: tuple[ModelComparisonDraft, ...] = ()
     causal_competition: ModelCausalCompetitionDraft | None = None
+    # Provider-facing language-understanding decision. Durable authority remains
+    # the validated ResearchTimePeriod/ComparisonSurface contract produced below.
+    temporal_material_mode: ModelTemporalMaterialMode = (
+        ModelTemporalMaterialMode.NONE
+    )
     # Compatibility-only for historical deterministic fixtures. This field is
     # deliberately omitted from the provider schema below; live intake cannot
     # mint new untyped comparison authority.
@@ -390,6 +401,11 @@ Authority rules:
   analysis window; BASELINE_PERIOD + COMPARISON_PERIOD for a true temporal comparison;
   EFFECT_PERIOD + EVIDENCE_WINDOW for causal investigation when those distinct roles are requested.
   Never infer roles from tuple position.
+- Every ROOT_CAUSE goal must classify its temporal material need with temporal_material_mode:
+  NONE when no time material is required; WINDOW when one pooled bounded interval is sufficient;
+  COMPARISON when answering the analytical question requires values from accepted periods to remain
+  distinguishable rather than pooled. COMPARISON requires exactly two same-dimension time_periods,
+  one for each contrasted interval. This field interprets intent only; it never asserts data truth.
 - Emit typed comparisons, never free-text comparison authority. Use TEMPORAL_PERIOD only for an
   actual period-vs-period comparison. Use CAUSAL_CANDIDATE for user-provided candidate mechanisms,
   and ENTITY_OR_MEASURE for governed entity/measure competition. Every non-temporal comparison item
@@ -669,6 +685,12 @@ def _intake_provider_schema(
                         "ROOT_CAUSE causal competition schema is invalid",
                     )
                 properties["causal_competition"] = non_null[0]
+                properties["temporal_material_mode"] = {
+                    "type": "string",
+                    "enum": [
+                        item.value for item in ModelTemporalMaterialMode
+                    ],
+                }
         variants.append(
             {
                 "type": "object",
@@ -1023,6 +1045,80 @@ class ResearchIntakeCompiler:
         return draft.model_copy(update={"goals": tuple(canonical)})
 
     @staticmethod
+    def _canonicalize_root_temporal_material_mode(
+        draft: ModelResearchBriefDraft,
+    ) -> ModelResearchBriefDraft:
+        """Turn the provider's closed temporal mode into validated typed authority."""
+
+        if draft.terminal != ResearchIntakeTerminal.READY:
+            return draft
+        changed = False
+        goals: list[ModelGoalDraft] = []
+        for goal in draft.goals:
+            if goal.kind != ResearchGoalKind.ROOT_CAUSE:
+                goals.append(goal)
+                continue
+            temporal = tuple(
+                item
+                for item in goal.comparisons
+                if item.role == ComparisonRole.TEMPORAL_PERIOD
+            )
+            mode = goal.temporal_material_mode
+            if mode == ModelTemporalMaterialMode.COMPARISON:
+                if len(draft.time_periods) != 2:
+                    raise ResearchIntakeError(
+                        "INTAKE_TEMPORAL_COMPARISON_PERIODS_REQUIRED",
+                        "ROOT_CAUSE comparison material requires exactly two accepted periods",
+                    )
+                dimensions = {
+                    item.time_dimension_semantic_id
+                    for item in draft.time_periods
+                }
+                if len(dimensions) != 1:
+                    raise ResearchIntakeError(
+                        "INTAKE_TEMPORAL_COMPARISON_DIMENSION_DRIFT",
+                        "ROOT_CAUSE comparison periods must share one time dimension",
+                    )
+                if len(temporal) > 1:
+                    raise ResearchIntakeError(
+                        "INTAKE_TEMPORAL_COMPARISON_AMBIGUOUS",
+                        goal.goal_key,
+                    )
+                if not temporal:
+                    label = (
+                        goal.source_fragment_text
+                        or goal.source_text
+                    )
+                    goal = goal.model_copy(
+                        update={
+                            "comparisons": (
+                                *goal.comparisons,
+                                ModelComparisonDraft(
+                                    text=label,
+                                    role=ComparisonRole.TEMPORAL_PERIOD,
+                                    semantic_id=None,
+                                ),
+                            )
+                        }
+                    )
+                    changed = True
+            elif mode == ModelTemporalMaterialMode.WINDOW:
+                if temporal:
+                    raise ResearchIntakeError(
+                        "INTAKE_TEMPORAL_MATERIAL_MODE_CONFLICT",
+                        goal.goal_key,
+                    )
+            elif temporal:
+                # Explicit typed comparison authority is stronger than the
+                # compatibility default used by historical deterministic fixtures.
+                # Live provider schema always requires the mode.
+                pass
+            goals.append(goal)
+        if not changed:
+            return draft
+        return draft.model_copy(update={"goals": tuple(goals)})
+
+    @staticmethod
     def _canonicalize_temporal_comparison_subgoals(
         draft: ModelResearchBriefDraft,
     ) -> ModelResearchBriefDraft:
@@ -1319,6 +1415,7 @@ class ResearchIntakeCompiler:
 
         draft = self._canonicalize_analytical_goals(draft)
         draft = self._canonicalize_temporal_comparison_subgoals(draft)
+        draft = self._canonicalize_root_temporal_material_mode(draft)
         draft = self._canonicalize_exact_period_repeats(draft)
         draft = self._canonicalize_typed_temporal_comparison(draft)
         duplicate_root_keys = self._duplicate_root_cause_goal_keys(draft)
@@ -1374,6 +1471,7 @@ class ResearchIntakeCompiler:
 
         draft = self._canonicalize_analytical_goals(draft)
         draft = self._canonicalize_temporal_comparison_subgoals(draft)
+        draft = self._canonicalize_root_temporal_material_mode(draft)
         draft = self._canonicalize_exact_period_repeats(draft)
         draft = self._canonicalize_typed_temporal_comparison(draft)
         duplicate_root_keys = self._duplicate_root_cause_goal_keys(draft)
