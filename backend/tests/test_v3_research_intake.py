@@ -21,6 +21,7 @@ from app.v3.research_contracts import (
     ResearchGoalStatus,
     ResearchQuestion,
     ResearchScope,
+    RelationshipIntentKind,
     ResearchSemanticRef,
     SemanticTargetKind,
     TemporalRole,
@@ -445,6 +446,7 @@ def test_authorized_relationship_compiles_and_preserves_exact_catalog_refs():
     payload["goals"][0]["allowed_relationship_id"] = (
         "rel.downtime_fault_by_department"
     )
+    payload["goals"][0]["relationship_intent"] = "OBSERVATIONAL"
     result = ResearchIntakeCompiler(
         transport=FakeTransport(payload)
     ).compile(
@@ -464,6 +466,10 @@ def test_authorized_relationship_compiles_and_preserves_exact_catalog_refs():
         "metric.fault_count",
         "dimension.department",
     }
+    assert (
+        result.brief.questions[0].relationship_intent
+        == RelationshipIntentKind.OBSERVATIONAL
+    )
 
 
 def test_unapproved_relationship_fails_closed():
@@ -978,6 +984,7 @@ def test_provider_intake_schema_is_terminal_payload_not_domain_kitchen_sink():
 
     ready = schema["$defs"]["ModelReadyResearchIntake"]
     ready_props = set(ready["properties"])
+    assert "directives" in ready_props
     assert "time_surfaces" not in ready_props
     assert "time_periods" not in ready_props
     assert "scope_mutation_kind" not in ready_props
@@ -986,6 +993,24 @@ def test_provider_intake_schema_is_terminal_payload_not_domain_kitchen_sink():
     assert "native_verification_bindings" not in json.dumps(schema)
     assert "scope_version" not in json.dumps(schema)
     assert "lineage_id" not in json.dumps(schema)
+
+
+def test_provider_goal_schema_excludes_other_and_types_relationship_intent():
+    schema = _intake_provider_schema(catalog())
+    variants = schema["$defs"]["ModelGoalDraft"]["anyOf"]
+    kinds = {
+        item["properties"]["kind"]["enum"][0]
+        for item in variants
+    }
+    assert "other" not in kinds
+    relationship = next(
+        item for item in variants
+        if item["properties"]["kind"]["enum"] == ["relationship"]
+    )
+    assert relationship["properties"]["relationship_intent"]["enum"] == [
+        "OBSERVATIONAL",
+        "BUSINESS_POLICY",
+    ]
 
 
 def test_provider_intake_schema_exposes_time_and_mutation_only_when_governed():
