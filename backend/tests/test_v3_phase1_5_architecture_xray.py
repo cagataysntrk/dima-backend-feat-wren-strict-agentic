@@ -290,7 +290,10 @@ def test_xray_h6_observational_relationship_does_not_require_business_policy():
         policy_required=False,
         scope_lineage_id="atl_phase15_h6",
         scope_version_id="scope_v1",
-        applicability_scope={"kind": "observational"},
+        applicability_scope={
+            "accepted_relationship_goal_id": "g_rel",
+            "kind": "observational",
+        },
         analytical_kind=RelationshipAnalyticalKind.CO_MOVEMENT,
         association_state=RelationshipLayerState.SUPPORTED,
         co_movement_state=RelationshipLayerState.SUPPORTED,
