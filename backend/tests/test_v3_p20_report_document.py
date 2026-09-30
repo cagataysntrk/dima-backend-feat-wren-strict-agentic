@@ -181,7 +181,14 @@ def test_no_defensible_root_cause_is_reportable_without_upgrade():
     state = make_state(db)
     item = statement(ReportStatementKind.UNCERTAINTY, sources=(source_p19(state),), payload={}, ceiling=AggregateOutcome.NO_DEFENSIBLE_ROOT_CAUSE_ESTABLISHED.value)
     report = ReportDocumentStore(research_store=state['store'], db_engine=db).seal(draft=report_draft(state, item), principal=state['principal'])
-    assert report.statements[0].text == 'No defensible root cause established.'
+    text = report.statements[0].text
+    assert text.startswith('No defensible root cause established. Retained candidates: ')
+    assert state['a'].statement in text
+    assert state['b'].statement in text
+    assert 'epistemic=ASSOCIATION' in text
+    assert 'evidence=WEAK' in text
+    assert 'epistemic=COMPETING_HYPOTHESIS' in text
+    assert 'evidence=INSUFFICIENT' in text
 
 def make_multiple_assessment(state):
     numeric = NumericProvenanceRef(source_kind=GroundingSourceKind.P15_MATERIAL, source_ref=state['material'].lead_id, source_path='observations.0.orders', analytical_kind=NumericAnalyticalKind.NATIVE_NUMERIC_RESULT)
