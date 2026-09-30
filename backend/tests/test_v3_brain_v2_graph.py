@@ -73,6 +73,7 @@ class FakeActivities:
         return MaterialActivityResult(
             material_requirement_ids=state.material_requirement_ids,
             produced_evidence_ids=("evi_" + (str(ordinal) * 24),),
+            produced_receipt_refs=("dqr_" + (str(ordinal) * 24),),
             activity_fingerprint=self._fp("material", state),
         )
 
