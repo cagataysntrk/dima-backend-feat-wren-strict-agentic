@@ -356,6 +356,18 @@ Authority rules:
 - An investigation directive never asserts that evidence is material; it only preserves the user's
   conditional instruction for later governed P17 evaluation.
 - Do not convert association into causality. ROOT_CAUSE means bounded investigation, not a cause.
+- Use RELATIONSHIP when the user's requested analytical object is observational association,
+  co-movement, relative relationship strength, or similar non-causal relationship interpretation.
+- Use ROOT_CAUSE when one user clause asks which cause/explanation/mechanism better explains an
+  outcome, asks competing explanations to be tested, or asks supporting/challenging evidence to
+  discriminate causal hypotheses. One such clause should normally be ONE ROOT_CAUSE goal carrying
+  the governed outcome/candidate material refs needed for its initial analytical acquisition.
+  Do NOT manufacture separate RELATIONSHIP goals merely as evidence-gathering subgoals for that
+  ROOT_CAUSE investigation. P17/P19 own governed hypothesis competition and discriminating re-entry.
+- If the user independently asks both an observational relationship analysis and a causal/root-cause
+  investigation, preserve them as distinct goals. Never collapse genuinely distinct user clauses.
+- Goal decomposition is semantic obligation decomposition, not a query plan. Do not create multiple
+  analytical goals solely because several governed metrics may be useful to one investigation.
 - ranking.limit is null unless the user explicitly requested a bounded top-N/result count. Never invent top-N.
 - ranking.measure_semantic_id is set only when the user explicitly identifies one governed metric/KPI
   as the ranking basis. With multiple metrics and no explicit single basis, keep it null; do not pick
