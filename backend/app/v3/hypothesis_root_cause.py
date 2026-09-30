@@ -202,6 +202,12 @@ class CandidateAssessment(Frozen):
     epistemic_class: HypothesisEpistemicClass
     contribution_class: ContributionClass
     evidence_strength: EvidenceStrength
+    # Assessment-local qualitative interpretation over already governed
+    # grounding identities. These refs do not mutate HypothesisGroundingLink
+    # relation and grant no causal-identification authority. One mixed Evidence
+    # artifact may legally appear in both sets.
+    supporting_grounding_link_ids: tuple[str, ...] = ()
+    challenging_grounding_link_ids: tuple[str, ...] = ()
     causal_qualification: CausalQualification = CausalQualification.NOT_CLAIMED
     relationship_dependent: bool = False
     relationship_policy_use_id: str | None = Field(
@@ -216,6 +222,23 @@ class CandidateAssessment(Frozen):
     def coherent(self):
         if len(self.grounding_link_ids) != len(set(self.grounding_link_ids)):
             raise ValueError("candidate grounding refs must be unique")
+        if len(self.supporting_grounding_link_ids) != len(
+            set(self.supporting_grounding_link_ids)
+        ):
+            raise ValueError("supporting grounding refs must be unique")
+        if len(self.challenging_grounding_link_ids) != len(
+            set(self.challenging_grounding_link_ids)
+        ):
+            raise ValueError("challenging grounding refs must be unique")
+        selected = set(self.grounding_link_ids)
+        if not set(self.supporting_grounding_link_ids).issubset(selected):
+            raise ValueError(
+                "supporting grounding refs must be selected candidate groundings"
+            )
+        if not set(self.challenging_grounding_link_ids).issubset(selected):
+            raise ValueError(
+                "challenging grounding refs must be selected candidate groundings"
+            )
         if len(self.identification_limitations) != len(
             set(self.identification_limitations)
         ):
@@ -1184,6 +1207,16 @@ class HypothesisRootCauseStore:
             grounding_map.update(
                 {item.grounding_link_id: item for item in selected}
             )
+            selected_ids = set(candidate.grounding_link_ids)
+            if not set(candidate.supporting_grounding_link_ids).issubset(
+                selected_ids
+            ) or not set(candidate.challenging_grounding_link_ids).issubset(
+                selected_ids
+            ):
+                raise P19EpistemicError(
+                    "P19_INTERPRETATION_GROUNDING_INVALID",
+                    candidate.hypothesis_id,
+                )
             selected_sources = {
                 (
                     item.source_kind,
