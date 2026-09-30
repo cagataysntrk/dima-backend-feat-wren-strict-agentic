@@ -103,6 +103,9 @@ def test_pinpoint_paid_workflow_is_sequential_closed_budget():
     assert "phase1-f05-trigger-20260929" in source
     assert "phase1-f08-trigger-20260929" in source
     assert "phase1-f06-trigger-20260929" in source
+    assert "phase1-f10-trigger-20260930" in source
+    assert "phase1-f07-trigger-20260930" in source
+    assert "phase1-f04-trigger-20260930" in source
     assert "git fetch --no-tags --depth=1 origin feat/dima-metabase-platform" in source
     assert 'PRODUCT_BEHAVIOR_SHA: "87020e31fc553b316d16983c561dd6f2e8b64210"' in source
     assert 'test "$ENGINE_SHA" = "0f16f2b5a1ec774ac7afee6214c726e82f9ceb3c"' in source
@@ -115,6 +118,9 @@ def test_pinpoint_paid_workflow_is_sequential_closed_budget():
     assert "RELATIONSHIP_F05_H_RECOVERY" in source
     assert "REPORT_F08_H_RECOVERY" in source
     assert "ADAPTIVE_F06_H_RETENTION" in source
+    assert "CONVERSATION_F10_H_RECOVERY" in source
+    assert "RCA_F07_H_RECOVERY" in source
+    assert "MULTI_INTENT_F04_H_RECOVERY" in source
     assert 'HARD_PROVIDER_REQUEST_CEILING: "24"' in source
     assert 'PROMPT_TOKEN_CEILING: "350000"' in source
     assert 'COMPLETION_TOKEN_CEILING: "16000"' in source
