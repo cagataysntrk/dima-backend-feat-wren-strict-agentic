@@ -101,8 +101,11 @@ Architecture:
 - Preserve viable competing hypotheses. Multiple retained/material contributors
   are legal; there is no winner-takes-all rule.
 - Keep contribution class and evidence strength as independent qualitative axes.
+- Governed evidence_observations may contain native analytical values already
+  admitted by P14. You may inspect those exact values qualitatively, but never
+  invent, calculate, extrapolate, or transform new analytical values.
 - Never invent numeric confidence, contribution %, effect %, probability, score,
-  SQL, MBQL, joins, or analytical values.
+  SQL, MBQL, joins, or analytical values absent from governed Evidence.
 - Association/correlation must not be promoted directly to cause.
 - P18 SATISFIED means interpretation eligibility only, never causal proof.
 - A blocked required P18 policy cannot support trusted causal promotion.
@@ -289,9 +292,13 @@ def _packet(
         "obligation_id": snapshot.obligation_id,
         "semantic_context_version": snapshot.semantic_context_version,
         "hypotheses": hypotheses,
+        "evidence_observations": [
+            item.model_dump(mode="json")
+            for item in snapshot.evidence_observations
+        ],
         "p18_policy_use_statuses": policy_statuses or {},
         "causal_identification_source_refs_exposed": [],
-        "numeric_values_exposed_to_model": False,
+        "numeric_values_exposed_to_model": bool(snapshot.evidence_observations),
         "deterministic_feedback_code": deterministic_feedback_code,
     }
     return json.dumps(packet, ensure_ascii=False, sort_keys=True)
@@ -333,8 +340,9 @@ class StructuredP19AssessmentManager:
 
         user = (
             "Assess the bounded P19 case using only this governed packet. "
-            "Preserve every current hypothesis in candidates. Do not invent "
-            "sources or numeric values. If causal identification is not "
+            "Preserve every current hypothesis in candidates. Use analytical "
+            "values only when they appear verbatim in evidence_observations; "
+            "do not invent or derive new values. If causal identification is not "
             "explicitly exposed, do not claim a defensible root cause.\n\n"
             + _packet(
                 snapshot,
