@@ -82,7 +82,9 @@ jobs:
           )
           assert auth["engine_sha"]=="0f16f2b5a1ec774ac7afee6214c726e82f9ceb3c"
           assert auth["engine_release"]=="0.63.18-dima.8"
-          assert auth["model_policy"]=="LUNA_FIRST"
+          assert auth["model_policy"] in {"LUNA_FIRST","TERRA_AB"}
+          if auth["model_policy"]=="TERRA_AB":
+              assert probe=="R_LIVE_1_ONE_PASS"
           assert auth["broad_paid_allowed"] is False
           assert auth["thirty_case_allowed"] is False
           print("candidate="+candidate)
@@ -93,8 +95,20 @@ jobs:
           print(json.loads(Path("backend/lab/metabase/brain_v2/live_authorization.json").read_text())["candidate_product_sha"])
           PY
           )"
+          MODEL_POLICY="$(python - <<'PY'
+          import json
+          from pathlib import Path
+          print(json.loads(Path("backend/lab/metabase/brain_v2/live_authorization.json").read_text())["model_policy"])
+          PY
+          )"
           echo "probe_id=$PROBE" >> "$GITHUB_OUTPUT"
           echo "candidate_sha=$CANDIDATE" >> "$GITHUB_OUTPUT"
+          echo "model_policy=$MODEL_POLICY" >> "$GITHUB_OUTPUT"
+          if [[ "$MODEL_POLICY" == "TERRA_AB" ]]; then
+            echo "DIMA_COGNITION_MODEL=openai/gpt-5.6-terra" >> "$GITHUB_ENV"
+          else
+            echo "DIMA_COGNITION_MODEL=openai/gpt-5.6-luna" >> "$GITHUB_ENV"
+          fi
           test -n "$DIMA_OPENROUTER_API_KEY"
 
       - uses: actions/setup-python@v5
