@@ -9,6 +9,7 @@ from lab.metabase.core_b.phase1_pinpoint_live import (
     OrchestrationBudget,
     PinpointBudgetExceeded,
     _mechanical_verdict,
+    _native_resource_binding_rows,
     build_catalog,
 )
 from lab.metabase.core_b.runtime.seed_phase1_pinpoint_metrics import (
@@ -145,6 +146,37 @@ def test_live_catalog_binds_all_metrics_to_governed_native_resources():
         if item.candidate_id == "entity_value.0123456789abcdef01234567"
     )
     assert entity_binding.column_name == "department"
+
+
+def test_entity_value_authority_has_exact_durable_native_binding():
+    manifest = {
+        "schema_version": "phase1_pinpoint_native_bindings_v1",
+        "database_id": 9,
+        "table_id": 11,
+        "metrics": [],
+        "dimensions": [],
+        "entity_values": [
+            {
+                "candidate_id": "entity_value.0123456789abcdef01234567",
+                "canonical_name": "Cell Blue",
+                "dimension_name": "department",
+                "value": "Cell Blue",
+                "column_name": "department",
+                "field_id": 17,
+            }
+        ],
+    }
+    rows = _native_resource_binding_rows(manifest)
+    assert len(rows) == 1
+    row = rows[0]
+    assert row.candidate_id == "entity_value.0123456789abcdef01234567"
+    assert row.candidate_kind == "entity_value"
+    assert row.locator_kind == "field"
+    assert row.metabase_database_id == 9
+    assert row.metabase_table_id == 11
+    assert row.metabase_field_id == 17
+    assert row.resource_entity_id == "metabase:field:17"
+    assert len(row.resource_fingerprint) == 64
 
 
 def test_fixture_entity_authority_is_derived_from_exact_fixture_values(tmp_path):
