@@ -99,6 +99,8 @@ class FakeActivities:
     def assess_p19(self, state: BrainGraphState) -> P19ActivityResult:
         self.calls["p19"] += 1
         ordinal = self.calls["p19"]
+        if self.mode == "fail_p19_once" and ordinal == 1:
+            raise RuntimeError("simulated provider interruption before durable P19 result")
         if self.mode == "inconclusive":
             route = BrainP19Route.INCONCLUSIVE
             next_ref = None
@@ -276,3 +278,37 @@ def test_foreign_principal_cannot_resume_or_trigger_activities() -> None:
         )
 
     assert activities.calls == before
+
+
+
+def test_interrupted_graph_resumes_without_repeating_completed_activities() -> None:
+    activities = FakeActivities("fail_p19_once")
+    service = BrainV2Service(activities=activities)
+    initial = BrainGraphState(
+        thread_id="thread-crash-resume",
+        tenant_binding="id:tenant",
+        principal_ref="user-1",
+        current_user_input="Investigate the accepted governed question.",
+    )
+
+    with pytest.raises(RuntimeError, match="simulated provider interruption"):
+        service.run(initial)
+
+    checkpoint = service.state(thread_id="thread-crash-resume")
+    assert checkpoint is not None
+    assert checkpoint.last_completed_node == "ADMIT_EVIDENCE"
+    before = activities.calls.copy()
+
+    resumed = service.resume_interrupted(
+        thread_id="thread-crash-resume",
+        tenant_binding="id:tenant",
+        principal_ref="user-1",
+    )
+
+    assert resumed.workflow_status == BrainWorkflowStatus.COMPLETE
+    assert activities.calls["intake"] == before["intake"] == 1
+    assert activities.calls["canonicalize"] == before["canonicalize"] == 1
+    assert activities.calls["material"] == before["material"] == 1
+    assert activities.calls["evidence"] == before["evidence"] == 1
+    assert activities.calls["p19"] == before["p19"] + 1 == 2
+    assert activities.calls["report"] == 1
