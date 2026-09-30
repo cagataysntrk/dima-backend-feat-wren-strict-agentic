@@ -630,11 +630,6 @@ class DimaBrainV2Activities(BrainActivities):
     def admit_evidence(self, state: BrainGraphState) -> EvidenceActivityResult:
         session = self._session(state)
         goal = self._root_goal(session)
-        persisted_pairs = self._durable_evidence_pairs(
-            session=session,
-            obligation_id=goal.goal_id,
-        )
-        persisted = set(persisted_pairs)
         pending = tuple(
             zip(
                 state.pending_evidence_ids,
@@ -647,7 +642,20 @@ class DimaBrainV2Activities(BrainActivities):
                 "BRAIN_V2_PENDING_EVIDENCE_REQUIRED",
                 goal.goal_id,
             )
-        if not set(pending).issubset(persisted):
+
+        # ONE_PASS initial material is already present in canonical P14 session
+        # refs; do not touch P17 merely to rediscover that fact. Only consult
+        # the P17 durable execution projection when pending refs are not in the
+        # base P14 set (the ADAPTIVE follow-up case).
+        base_pairs = self._evidence_pairs(session, goal.goal_id)
+        if set(pending).issubset(set(base_pairs)):
+            persisted_pairs = base_pairs
+        else:
+            persisted_pairs = self._durable_evidence_pairs(
+                session=session,
+                obligation_id=goal.goal_id,
+            )
+        if not set(pending).issubset(set(persisted_pairs)):
             raise BrainV2OwnerError(
                 "BRAIN_V2_EVIDENCE_PROVENANCE_MISMATCH",
                 goal.goal_id,
