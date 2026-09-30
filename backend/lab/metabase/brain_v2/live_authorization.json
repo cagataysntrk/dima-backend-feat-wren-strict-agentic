@@ -1,7 +1,7 @@
 {
   "schema_version": "dima_brain_v2_live_authorization_v1",
   "enabled": true,
-  "probe_id": "R_LIVE_1_ONE_PASS",
+  "probe_id": "R_LIVE_2_ADAPTIVE",
   "candidate_product_sha": "0eaf6055332277a26635c30f2600029ea43859a8",
   "provider_free_run_id": 36751011788,
   "provider_free_status": "GREEN",
