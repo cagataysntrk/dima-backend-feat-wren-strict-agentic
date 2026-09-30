@@ -220,21 +220,21 @@ def next_test_request(
     )
 
 
-def discriminating_test_is_callable(
+def discriminating_test_capacity_available(
     *,
     snapshot: ResearchManagerSnapshot,
-    request: NextTestRequest,
     evidence_surface_available: bool,
     target_obligation_id: str | None = None,
 ) -> bool:
+    """Whether one legal/material discriminating P17 move can still be opened.
+
+    This is a deterministic capability check, not an epistemic decision. P19
+    still decides whether the current ambiguity warrants using that capacity.
+    """
+
     if not evidence_surface_available:
         return False
     if snapshot.remaining_followup_native_turns <= 0:
-        return False
-    if any(
-        node.target_ref == request.request_id
-        for node in snapshot.investigation.nodes
-    ):
         return False
     if snapshot.investigation.max_contract_depth >= snapshot.action_profile.max_depth:
         return False
@@ -246,10 +246,9 @@ def discriminating_test_is_callable(
         return True
 
     # Direct P19 is intentionally legal for user-seeded hypotheses and may
-    # therefore have zero prior P17 nodes. A typed P19 NextTestRequest can
-    # still be callable when the exact parent obligation is VERIFIED and its
-    # governed Evidence is present. P17 run_one performs the final fail-closed
-    # re-entry projection and all scope/depth checks.
+    # therefore have zero prior P17 nodes. Capacity still exists when the exact
+    # parent obligation is VERIFIED, its governed Evidence is present, and no
+    # prior scoped P17 node has consumed that direct re-entry seam.
     if target_obligation_id is None:
         return False
     parent_verified = any(
@@ -272,3 +271,24 @@ def discriminating_test_is_callable(
         if node.root_obligation_id == target_obligation_id
     )
     return not scoped_nodes
+
+
+def discriminating_test_is_callable(
+    *,
+    snapshot: ResearchManagerSnapshot,
+    request: NextTestRequest,
+    evidence_surface_available: bool,
+    target_obligation_id: str | None = None,
+) -> bool:
+    if not discriminating_test_capacity_available(
+        snapshot=snapshot,
+        evidence_surface_available=evidence_surface_available,
+        target_obligation_id=target_obligation_id,
+    ):
+        return False
+    if any(
+        node.target_ref == request.request_id
+        for node in snapshot.investigation.nodes
+    ):
+        return False
+    return True
