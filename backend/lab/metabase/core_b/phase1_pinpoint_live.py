@@ -618,15 +618,31 @@ def _execute_turn(
 
     brief = intake_result.brief
     assert brief is not None
-    composition = composer.compose(
-        brief=brief,
-        principal=sealed._principal(),
-        request_ref=f"phase1-pinpoint:{probe_id}:{turn_no}",
-        source_message_hash=hashlib.sha256(question.encode("utf-8")).hexdigest(),
-        native_session_token=native_token,
-        investigation_requirements=intake_result.investigation_requirements,
-        prior_research_session_id=prior_session_id,
-    )
+    try:
+        composition = composer.compose(
+            brief=brief,
+            principal=sealed._principal(),
+            request_ref=f"phase1-pinpoint:{probe_id}:{turn_no}",
+            source_message_hash=hashlib.sha256(question.encode("utf-8")).hexdigest(),
+            native_session_token=native_token,
+            investigation_requirements=intake_result.investigation_requirements,
+            prior_research_session_id=prior_session_id,
+        )
+    except Exception as exc:
+        return {
+            "turn": turn_no,
+            "question": question,
+            "terminal_state": "COMPOSITION_ERROR",
+            "ready": False,
+            "intake_payload": _safe_dump(intake_result),
+            "brief_payload": _safe_dump(brief),
+            "composition_exception": _exception_payload(exc),
+            "total_latency_ms": int((time.monotonic() - started) * 1000),
+            "transport_traces": {
+                name: _trace_slice(transport, trace_starts[name])
+                for name, transport in transports.items()
+            },
+        }, brief, prior_session_id
     final = orchestrator.resume_state(
         session_id=composition.research_session_id,
         principal=sealed._principal(),
@@ -1088,6 +1104,8 @@ def main() -> int:
                 transports=transports,
             )
             report["turns"].append(record)
+            if record.get("composition_exception") is not None:
+                report["exception"] = record["composition_exception"]
             if not record.get("ready"):
                 break
 
