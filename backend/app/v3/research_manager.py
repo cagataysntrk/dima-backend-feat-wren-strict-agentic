@@ -2412,7 +2412,13 @@ class ResearchInvestigationManager:
         budgets, and adds only TEST_DISCRIMINATING_EVIDENCE legality.
         """
 
-        obligation = ResearchManager.obligation(session, obligation_id)
+        try:
+            obligation = ResearchManager.obligation(session, obligation_id)
+        except ResearchStateError as exc:
+            raise ResearchManagerMaturationError(
+                "P17_TEST_REENTRY_OBLIGATION_INVALID",
+                obligation_id,
+            ) from exc
         if obligation.state != ObligationState.VERIFIED:
             raise ResearchManagerMaturationError(
                 "P17_TEST_REENTRY_VERIFIED_OBLIGATION_REQUIRED",
@@ -2508,15 +2514,12 @@ class ResearchInvestigationManager:
         elif (
             downstream_reentry_intent
             == InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE
+            and downstream_reentry_obligation_id is not None
         ):
-            if not downstream_reentry_obligation_id:
-                raise ResearchManagerMaturationError(
-                    "P17_TEST_REENTRY_OBLIGATION_REQUIRED",
-                    (
-                        "TEST_DISCRIMINATING_EVIDENCE downstream reentry "
-                        "requires one exact obligation"
-                    ),
-                )
+            # Brain V2 direct-P19 re-entry supplies the exact obligation and may
+            # need a typed parentless projection because no prior P17 node
+            # exists. Historical P17 callers that omit the exact obligation
+            # retain the pre-existing action-profile/terminal legality below.
             snapshot = self._verified_evidence_discriminating_reentry_snapshot(
                 session=session,
                 snapshot=snapshot,
