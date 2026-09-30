@@ -16,9 +16,22 @@ from app.v3.brain_v2.service import BrainV2Service, BrainV2ThreadError
 from app.v3.brain_v2.state import BrainGraphState, BrainWorkflowStatus
 from app.v3.evidence import DimaQueryReceipt, EvidenceArtifact, EvidenceState
 from app.v3.business_relationship_policy import BusinessRelationshipPolicyStore
-from app.v3.claim_lineage import ClaimLineageStore
+from app.v3.claim_lineage import (
+    ClaimEvidenceRelation,
+    ClaimFreshness,
+    ClaimLineageStore,
+)
 from app.v3.product.composition import HeadlessProductComposer
-from app.v3.research_manager import ResearchInvestigationManager, ResearchReasoningStore
+from app.v3.research_manager import (
+    InvestigationIntent,
+    InvestigationTargetKind,
+    ManagerAction,
+    ManagerProposal,
+    ProposedClaimDraft,
+    ProposedClaimEvidenceLink,
+    ResearchInvestigationManager,
+    ResearchReasoningStore,
+)
 
 from app.v3.hypothesis_root_cause import (
     AggregateOutcome,
@@ -52,9 +65,11 @@ from app.v3.research_intake import (
     ResearchIntakeTerminal,
 )
 from app.v3.research_product import (
+    NativeResearchOccurrenceRunner,
     ResearchAskOrchestrator,
     ResearchMaterialOutcome,
 )
+from app.v3.research_followup import NativeResearchFollowupExecutor
 from app.v3.research_store import ResearchSessionStore
 from app.v3.substrate.metabase.native_engine import NativeEngineBridge
 from app.v3.substrate.metabase.native_models import NativeEngineIdentity
@@ -135,7 +150,12 @@ def _semantic_refs(*, narrowed: bool = False):
     return tuple(refs)
 
 
-def _brief(*, ordinal: int = 1, narrowed: bool = False) -> ResearchBrief:
+def _brief(
+    *,
+    ordinal: int = 1,
+    narrowed: bool = False,
+    user_seeded: bool = True,
+) -> ResearchBrief:
     refs = _semantic_refs(narrowed=narrowed)
     by_id = {item.candidate_id: item for item in refs}
     question = ResearchQuestion(
@@ -154,8 +174,12 @@ def _brief(*, ordinal: int = 1, narrowed: bool = False) -> ResearchBrief:
         causal_competition=CausalCompetitionSurface(
             effect_semantic_id="metric.downtime",
             candidate_mechanism_semantic_ids=(
-                "metric.maintenance_delay",
-                "metric.spare_part_delay",
+                (
+                    "metric.maintenance_delay",
+                    "metric.spare_part_delay",
+                )
+                if user_seeded
+                else ()
             ),
             diagnostic_dimension_ids=("dimension.department",),
         ),
@@ -341,7 +365,7 @@ class DurableMaterialExecutor:
         )
 
         suffix = hashlib.sha256(
-            f"{session.session_id}:{obligation_id}".encode()
+            f"{session.session_id}:{obligation_id}:{self.calls}".encode()
         ).hexdigest()[:24]
         receipt = DimaQueryReceipt(
             receipt_id="dqr_" + suffix,
@@ -441,6 +465,145 @@ class DeterministicP19Manager:
             aggregate_outcome=AggregateOutcome.MULTIPLE_MATERIAL_CONTRIBUTORS,
             root_cause_hypothesis_ids=(),
             limitations=(),
+        )
+
+
+class AdaptiveP19Manager:
+    """First assessment requests discrimination; second terminates safely."""
+
+    def __init__(self) -> None:
+        self.call_count = 0
+
+    def propose(
+        self,
+        snapshot,
+        *,
+        policy_statuses=None,
+        deterministic_feedback_code=None,
+    ):
+        del policy_statuses, deterministic_feedback_code
+        self.call_count += 1
+        candidates = tuple(
+            CandidateAssessment(
+                hypothesis_id=item.hypothesis.hypothesis_id,
+                grounding_link_ids=tuple(
+                    link.grounding_link_id for link in item.groundings
+                ),
+                disposition=HypothesisDisposition.RETAINED,
+                epistemic_class=HypothesisEpistemicClass.CONTRIBUTION,
+                contribution_class=ContributionClass.MATERIAL,
+                evidence_strength=EvidenceStrength.MODERATE,
+                causal_qualification=CausalQualification.NOT_CLAIMED,
+                identification_limitations=(),
+            )
+            for item in snapshot.hypotheses
+        )
+        return RootCauseAssessmentDraft(
+            research_session_id=snapshot.research_session_id,
+            obligation_id=snapshot.obligation_id,
+            candidates=candidates,
+            aggregate_outcome=(
+                AggregateOutcome.IN_PROGRESS
+                if self.call_count == 1
+                else AggregateOutcome.MULTIPLE_MATERIAL_CONTRIBUTORS
+            ),
+            root_cause_hypothesis_ids=(),
+            limitations=(),
+        )
+
+
+class DiscoveryIntake:
+    def __init__(self) -> None:
+        self.call_count = 0
+
+    def compile(self, *, question, catalog, prior_brief=None):
+        del question
+        self.call_count += 1
+        ordinal = (
+            1
+            if prior_brief is None
+            else prior_brief.scope.scope_version.ordinal + 1
+        )
+        brief = _brief(
+            ordinal=ordinal,
+            narrowed=prior_brief is not None,
+            user_seeded=False,
+        )
+        return ResearchIntakeResult(
+            terminal=ResearchIntakeTerminal.READY,
+            brief=brief,
+            catalog_fingerprint=catalog.fingerprint,
+            model_calls=1,
+        )
+
+
+class DeterministicDiscoveryManager:
+    """Provider-free stand-in for governed P17 root-candidate cognition."""
+
+    def __init__(self) -> None:
+        self.call_count = 0
+
+    def propose_root_candidate_for_obligation_with_constraints(
+        self,
+        snapshot,
+        *,
+        target_parent_obligation,
+        allowed_evidence_refs,
+        allowed_mechanism_refs,
+        allowed_intents,
+    ):
+        assert allowed_intents == (InvestigationIntent.FORM_CLAIM,)
+        assert len(allowed_mechanism_refs) >= 2
+        self.call_count += 1
+        mechanism = allowed_mechanism_refs[self.call_count - 1]
+        rule = snapshot.action_profile.rule_for(
+            InvestigationIntent.FORM_CLAIM
+        )
+        assert rule is not None
+        parent = (
+            rule.legal_parent_step_ids[-1]
+            if rule.legal_parent_step_ids
+            else None
+        )
+        assert parent is not None or rule.allow_parentless
+
+        evidence_id = allowed_evidence_refs[0]
+        return ManagerProposal(
+            proposal_id=f"discovery-{self.call_count}",
+            source_revision=snapshot.source_revision,
+            target_parent_obligation=target_parent_obligation,
+            action=ManagerAction.FORM_CLAIM,
+            intent=InvestigationIntent.FORM_CLAIM,
+            parent_step_id=parent,
+            branch_key=None,
+            target_kind=InvestigationTargetKind.EXPLANATION,
+            target_ref=mechanism,
+            objective_key=f"discover.{self.call_count}",
+            bounded_objective=(
+                "Form one governed explanatory candidate from existing "
+                "verified Evidence."
+            ),
+            rationale="Bounded governed candidate discovery.",
+            inspected_evidence_refs=(evidence_id,),
+            inspected_claim_refs=(),
+            inspected_material_refs=(),
+            expected_information_gain="Add one distinct governed alternative.",
+            claim=ProposedClaimDraft(
+                claim_text=f"Governed explanatory candidate {self.call_count}.",
+                proposition={
+                    "candidate_index": self.call_count,
+                    "mechanism_ref": mechanism,
+                },
+                scope={"scope_version_id": "scope_v1"},
+                freshness=ClaimFreshness(as_of=NOW),
+                evidence_links=(
+                    ProposedClaimEvidenceLink(
+                        evidence_id=evidence_id,
+                        relation=ClaimEvidenceRelation.CONTEXTUALIZES,
+                    ),
+                ),
+            ),
+            mechanism_semantic_ref=mechanism,
         )
 
 
@@ -713,3 +876,166 @@ def test_legacy_v2_shadow_replay_preserves_semantic_product_outcome() -> None:
         x.obligation_id for x in legacy_report.coverage
     )
     assert legacy_bridge.metabot_posts == 1
+
+
+
+def _adaptive_stack(*, discovery: bool = False):
+    db = _engine()
+    store = ResearchSessionStore(db)
+    bridge = BridgeFactory()
+    material = DurableMaterialExecutor(store)
+    research = ResearchAskOrchestrator(
+        store=store,
+        bridge_factory=bridge,
+        material_executor=material,
+    )
+    principal = _principal()
+    claims = ClaimLineageStore(
+        research_store=store,
+        db_engine=db,
+    )
+    reasoning = ResearchReasoningStore(db)
+    occurrence = NativeResearchOccurrenceRunner(
+        store=store,
+        bridge_factory=bridge,
+        material_executor=material,
+    )
+    investigation = ResearchInvestigationManager(
+        research_store=store,
+        claim_store=claims,
+        reasoning_store=reasoning,
+        followup_executor=NativeResearchFollowupExecutor(
+            store=store,
+            occurrence_runner=occurrence,
+        ),
+        db_engine=db,
+    )
+    p19 = HypothesisRootCauseStore(
+        research_store=store,
+        db_engine=db,
+    )
+    p19_manager = (
+        DeterministicP19Manager()
+        if discovery
+        else AdaptiveP19Manager()
+    )
+    discovery_manager = (
+        DeterministicDiscoveryManager()
+        if discovery
+        else BombP17()
+    )
+    activities = DimaBrainV2Activities(
+        principal=principal,
+        catalog=_catalog(),
+        intake=(DiscoveryIntake() if discovery else DeterministicIntake()),
+        research=research,
+        investigation=investigation,
+        investigation_manager=discovery_manager,
+        epistemics=p19,
+        epistemic_manager=p19_manager,
+        reports=ReportDocumentStore(
+            research_store=store,
+            db_engine=db,
+        ),
+        native_session_token="provider-free-native-session",
+        engine_identity=ENGINE_IDENTITY,
+    )
+    return (
+        db,
+        store,
+        bridge,
+        material,
+        investigation,
+        p19,
+        p19_manager,
+        discovery_manager,
+        activities,
+    )
+
+
+def test_real_owner_adaptive_runs_one_typed_followup_without_duplicate_native() -> None:
+    (
+        _,
+        _,
+        bridge,
+        material,
+        investigation,
+        _,
+        p19_manager,
+        _,
+        activities,
+    ) = _adaptive_stack()
+    service = BrainV2Service(activities=activities)
+
+    result = service.run(
+        BrainGraphState(
+            thread_id="real-adaptive",
+            tenant_binding=f"id:{TENANT_ID}",
+            principal_ref=USER_ID,
+            current_user_input="Provider-free ADAPTIVE RCA.",
+        )
+    )
+
+    assert result.workflow_status == BrainWorkflowStatus.COMPLETE
+    assert result.adaptive_reentries == 1
+    assert bridge.metabot_posts == 2
+    assert material.calls == 2
+    assert p19_manager.call_count == 2
+    assert len(result.evidence_ids) == 2
+    snapshot = investigation.snapshot(
+        session_id=result.research_session_id,
+        principal=_principal(),
+    )
+    next_test_steps = tuple(
+        node
+        for node in snapshot.investigation.nodes
+        if node.intent == InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE
+    )
+    assert len(next_test_steps) == 1
+    assert len(snapshot.evidence_results) == 2
+
+
+def test_real_owner_discovery_forms_governed_candidates_without_extra_native() -> None:
+    (
+        _,
+        _,
+        bridge,
+        material,
+        investigation,
+        p19,
+        p19_manager,
+        discovery_manager,
+        activities,
+    ) = _adaptive_stack(discovery=True)
+    service = BrainV2Service(activities=activities)
+
+    result = service.run(
+        BrainGraphState(
+            thread_id="real-discovery",
+            tenant_binding=f"id:{TENANT_ID}",
+            principal_ref=USER_ID,
+            current_user_input="Provider-free DISCOVERY RCA.",
+        )
+    )
+
+    assert result.workflow_status == BrainWorkflowStatus.COMPLETE
+    assert bridge.metabot_posts == 1
+    assert material.calls == 1
+    assert discovery_manager.call_count == 2
+    assert p19_manager.call_count == 1
+    assert result.discovery_turns == 2
+    assert len(result.hypothesis_ids) == 2
+
+    snapshot = investigation.snapshot(
+        session_id=result.research_session_id,
+        principal=_principal(),
+    )
+    assert len(snapshot.claims) == 2
+    assert all(claim.evidence_links for claim in snapshot.claims)
+    epistemic = p19.snapshot(
+        research_session_id=result.research_session_id,
+        obligation_id="g_root",
+        principal=_principal(),
+    )
+    assert len(epistemic.hypotheses) == 2
+    assert all(item.groundings for item in epistemic.hypotheses)
