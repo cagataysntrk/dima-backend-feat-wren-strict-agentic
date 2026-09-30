@@ -1,6 +1,9 @@
 name: dima-v1-phase1-pinpoint-live
 
 on:
+  push:
+    branches:
+      - phase1-rca-trigger-20260930-v3
   workflow_dispatch:
     inputs:
       probe_id:
@@ -75,6 +78,9 @@ jobs:
                 PROBE_ID="SCOPE_CURRENTNESS_HARD_V4"
                 ;;
               phase1-rca-trigger-20260929)
+                PROBE_ID="RCA_P19_HARD_V2"
+                ;;
+              phase1-rca-trigger-20260930-v3)
                 PROBE_ID="RCA_P19_HARD_V2"
                 ;;
               phase1-f05-trigger-20260929)
