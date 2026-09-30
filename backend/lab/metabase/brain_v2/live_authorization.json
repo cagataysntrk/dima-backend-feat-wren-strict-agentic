@@ -10,5 +10,5 @@
   "model_policy": "LUNA_FIRST",
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
-  "authorization_receipt": "phase1-postgres-timezone-reproducer-v1"
+  "authorization_receipt": "phase1-postgres-timezone-reproducer-v2"
 }
