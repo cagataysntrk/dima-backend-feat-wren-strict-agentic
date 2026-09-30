@@ -1,6 +1,6 @@
 {
   "schema_version": "dima_brain_v2_live_authorization_v1",
-  "enabled": true,
+  "enabled": false,
   "probe_id": "R_LIVE_1_ONE_PASS",
   "candidate_product_sha": "27adda56a5ed8369766bad879cf327511e1c5885",
   "provider_free_run_id": 36771765176,
@@ -10,5 +10,5 @@
   "model_policy": "LUNA_FIRST",
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
-  "authorization_receipt": "phase1-p19-evidence-interpretation-live-v1"
+  "authorization_receipt": "one-pass-running-36773207332"
 }
