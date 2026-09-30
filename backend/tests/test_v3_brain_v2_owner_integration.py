@@ -807,7 +807,11 @@ def test_real_owner_report_preserves_p19_uncertainty_and_limitations() -> None:
         if item.statement_kind == ReportStatementKind.LIMITATION
     )
     assert len(uncertainty) == 1
-    assert uncertainty[0].text == "No defensible root cause established."
+    assert uncertainty[0].text.startswith(
+        "No defensible root cause established. Retained candidates: "
+    )
+    assert "epistemic=ASSOCIATION" in uncertainty[0].text
+    assert "evidence=WEAK" in uncertainty[0].text
     assert tuple(
         ref.source_kind for ref in uncertainty[0].source_refs
     ) == (ReportSourceKind.P19_ASSESSMENT,)
