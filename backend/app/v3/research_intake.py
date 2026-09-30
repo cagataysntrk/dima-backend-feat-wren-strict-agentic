@@ -964,9 +964,6 @@ class ResearchIntakeCompiler:
         if scope_changed:
             draft = draft.model_copy(update={"goals": tuple(normalized_goals)})
 
-        if not draft.deliverables:
-            return draft
-
         presentation_sources = {
             item.source_text
             for item in draft.deliverables
