@@ -132,11 +132,15 @@ class FakeActivities:
 
     def design_next_test(self, state: BrainGraphState) -> P17ActivityResult:
         self.calls["p17_next_test"] += 1
+        self.calls["native_followup"] += 1
+        ordinal = self.calls["native_followup"] + self.calls["material"]
         return P17ActivityResult(
             hypothesis_revision=state.hypothesis_revision,
             hypothesis_ids=state.hypothesis_ids,
             material_requirement_ids=("goal-1:discriminating",),
             discovery_required=False,
+            produced_evidence_ids=("evi_" + (str(ordinal) * 24),),
+            produced_receipt_refs=("dqr_" + (str(ordinal) * 24),),
             activity_fingerprint=self._fp("p17-next-test", state),
         )
 
@@ -178,7 +182,8 @@ def test_adaptive_runs_exactly_one_discriminating_reentry() -> None:
     result, activities = _run("adaptive")
 
     assert result.workflow_status == BrainWorkflowStatus.COMPLETE
-    assert activities.calls["material"] == 2
+    assert activities.calls["material"] == 1
+    assert activities.calls["native_followup"] == 1
     assert activities.calls["evidence"] == 2
     assert activities.calls["p17_discovery"] == 0
     assert activities.calls["p17_next_test"] == 1
@@ -211,7 +216,8 @@ def test_reentry_bound_stops_second_next_test_instead_of_looping() -> None:
     result, activities = _run("always_next")
 
     assert result.workflow_status == BrainWorkflowStatus.INCONCLUSIVE
-    assert activities.calls["material"] == 2
+    assert activities.calls["material"] == 1
+    assert activities.calls["native_followup"] == 1
     assert activities.calls["p17_next_test"] == 1
     assert activities.calls["p19"] == 2
     assert result.adaptive_reentries == 1
