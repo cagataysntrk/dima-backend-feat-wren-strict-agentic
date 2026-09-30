@@ -1,5 +1,5 @@
 # R8 dima.8 provider-free closure trigger
-# 90+ convergence provider-free freeze: Product behavior dc4be27491d7fb41443491a93a812899e2645bb8
+# 90+ convergence final provider-free freeze v2: Product behavior dc4be27491d7fb41443491a93a812899e2645bb8
 name: dima-v1-phase1-final-provider-free
 
 on:
@@ -12,6 +12,7 @@ on:
       - "backend/tests/test_v3_r7_native_contract_delivery.py"
       - ".github/workflows/dima-metabase-p14-provider-free.yml"
       - "backend/tests/test_v3_p14_native_gateway.py"
+      - "backend/tests/test_v3_v1_capability_metamorphic.py"
   workflow_dispatch:
 
 permissions:
@@ -86,7 +87,7 @@ jobs:
       - name: P12 and Phase-1 deterministic contracts
         working-directory: backend
         run: |
-          pytest -q             tests/test_v3_v1_phase1_eval_contract.py             tests/test_v3_v1_phase1_metamorphic.py             tests/test_v3_phase1_pinpoint_live_contract.py             tests/test_v3_openrouter_counting_proxy.py
+          pytest -q             tests/test_v3_v1_phase1_eval_contract.py             tests/test_v3_v1_phase1_metamorphic.py             tests/test_v3_v1_rca_mode_matrix.py             tests/test_v3_v1_capability_metamorphic.py             tests/test_v3_phase1_pinpoint_live_contract.py             tests/test_v3_openrouter_counting_proxy.py
       - name: P17 and Core-B provider-free closure
         working-directory: backend
         run: |

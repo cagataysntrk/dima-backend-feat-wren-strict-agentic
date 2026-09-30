@@ -1,5 +1,5 @@
 # R8 dima.8 provider-free closure trigger
-# 90+ convergence provider-free freeze: Product behavior dc4be27491d7fb41443491a93a812899e2645bb8
+# 90+ convergence final provider-free freeze v2: Product behavior dc4be27491d7fb41443491a93a812899e2645bb8
 name: dima-v1-phase1-p12-provider-free
 
 on:
@@ -28,6 +28,7 @@ on:
       - "backend/tests/test_v3_phase1_pinpoint_live_contract.py"
       - "backend/tests/test_v3_openrouter_counting_proxy.py"
       - "backend/tests/test_v3_v1_phase1_metamorphic.py"
+      - "backend/tests/test_v3_v1_capability_metamorphic.py"
       - "backend/belgeler/metabase/DIMA_V1_PHASE1_EXECUTION_STATUS.md"
       - "backend/belgeler/metabase/DIMA_METABASE_DECISION_RECEIPTS.md"
   workflow_dispatch:
@@ -80,6 +81,7 @@ jobs:
         run: |
           pytest -q tests/test_v3_v1_phase1_metamorphic.py
           pytest -q tests/test_v3_v1_rca_mode_matrix.py
+          pytest -q tests/test_v3_v1_capability_metamorphic.py
 
       - name: R7 native analytical contract delivery
         working-directory: backend
