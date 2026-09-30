@@ -225,15 +225,11 @@ def discriminating_test_is_callable(
     snapshot: ResearchManagerSnapshot,
     request: NextTestRequest,
     evidence_surface_available: bool,
+    target_obligation_id: str | None = None,
 ) -> bool:
     if not evidence_surface_available:
         return False
     if snapshot.remaining_followup_native_turns <= 0:
-        return False
-    rule = snapshot.action_profile.rule_for(
-        InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE
-    )
-    if rule is None:
         return False
     if any(
         node.target_ref == request.request_id
@@ -242,4 +238,37 @@ def discriminating_test_is_callable(
         return False
     if snapshot.investigation.max_contract_depth >= snapshot.action_profile.max_depth:
         return False
-    return True
+
+    rule = snapshot.action_profile.rule_for(
+        InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE
+    )
+    if rule is not None:
+        return True
+
+    # Direct P19 is intentionally legal for user-seeded hypotheses and may
+    # therefore have zero prior P17 nodes. A typed P19 NextTestRequest can
+    # still be callable when the exact parent obligation is VERIFIED and its
+    # governed Evidence is present. P17 run_one performs the final fail-closed
+    # re-entry projection and all scope/depth checks.
+    if target_obligation_id is None:
+        return False
+    parent_verified = any(
+        item.obligation_id == target_obligation_id
+        and str(getattr(item.state, "value", item.state)) == "VERIFIED"
+        for item in snapshot.parent_obligations
+    )
+    if not parent_verified:
+        return False
+    exact_evidence = any(
+        item.obligation_id == target_obligation_id
+        and item.evidence_id in set(snapshot.evidence_refs)
+        for item in snapshot.evidence_results
+    )
+    if not exact_evidence:
+        return False
+    scoped_nodes = tuple(
+        node
+        for node in snapshot.investigation.nodes
+        if node.root_obligation_id == target_obligation_id
+    )
+    return not scoped_nodes
