@@ -116,7 +116,7 @@ jobs:
           test "$(git rev-parse HEAD:backend/app/v3/hypothesis_root_cause.py)" = "fb6c4bfe17cd4193b9584b79fa32b63dc6c85563"
           test "$(git rev-parse HEAD:backend/app/v3/report_document.py)" = "c2d1e266c4a7335bf7c62349b3229d7a55a38bee"
           test "$(git rev-parse HEAD:backend/app/v3/decision_intelligence.py)" = "1a40508048d668829344ca30aa7aadf881cebb82"
-          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "cbe313af9ac2d5960f662068e433d328d896fb06"
+          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "0f16f2b5a1ec774ac7afee6214c726e82f9ceb3c"
 
   live-p17-diagnostic:
     if: github.event_name == 'push' && contains(github.event.head_commit.message, '[core-b-p17-diagnostic-live]')
@@ -165,7 +165,7 @@ jobs:
           assert value["full_sentinel_rerun"] is False
           assert value["provider_pinning"] is False
           assert value["strict_mode_required"] is True
-          assert value["engine_sha"]=="cbe313af9ac2d5960f662068e433d328d896fb06"
+          assert value["engine_sha"]=="0f16f2b5a1ec774ac7afee6214c726e82f9ceb3c"
           assert value["source_manifest_blob_sha"]=="cf9aea5004d2bbb979015917570f32417c67017a"
           assert value["neutral_fixture_blob_sha"]=="dd6ae7d8dd19e1a38d5e3c78ea8bfb2182f1b4d7"
           def blob(path):
@@ -200,13 +200,13 @@ jobs:
           GITLINK_SHA="$(git ls-tree HEAD engine/metabase | awk '{print $3}')"
           python backend/lab/metabase/core_b/runtime/engine_runtime_lock.py             --lock backend/lab/metabase/core_b/runtime/engine_runtime_lock.json             --gitlink-sha "$GITLINK_SHA"             --github-env "$GITHUB_ENV"
 
-      - name: Pull exact certified dima.6 digest
+      - name: Pull exact certified dima.8 digest
         shell: bash
         run: |
           set -euo pipefail
-          test "$ENGINE_SHA" = "cbe313af9ac2d5960f662068e433d328d896fb06"
+          test "$ENGINE_SHA" = "0f16f2b5a1ec774ac7afee6214c726e82f9ceb3c"
           test "$CERTIFICATION_RUN_ID" = "36042062775"
-          test "$RUNTIME_TAG" = "v0.63.18-dima.6"
+          test "$RUNTIME_TAG" = "v0.63.18-dima.8"
           docker pull "$IMMUTABLE_IMAGE_REF"
           docker image inspect -f '{{range .RepoDigests}}{{println .}}{{end}}' "$IMMUTABLE_IMAGE_REF" | grep -Fx "$IMMUTABLE_IMAGE_REF"
 
@@ -245,7 +245,7 @@ jobs:
           CORE_B_READONLY_PASSWORD: ${{ env.CORE_B_READONLY_PASSWORD }}
         run: python lab/metabase/core_b/runtime/seed_fixture.py --fixture lab/metabase/core_b/fixtures/machine_operations.json
 
-      - name: Start exact dima.6 engine
+      - name: Start exact dima.8 engine
         shell: bash
         run: |
           set -euo pipefail
@@ -297,7 +297,7 @@ jobs:
           assert value["rejected_call_ordinal"] is None
           assert value["provider_error_code"] is None
           assert value["provider_error_message"] is None
-          assert value["engine_sha"]=="cbe313af9ac2d5960f662068e433d328d896fb06"
+          assert value["engine_sha"]=="0f16f2b5a1ec774ac7afee6214c726e82f9ceb3c"
           traces=value["request_traces"]
           assert len(traces)==2
           assert [trace["call_ordinal_by_role"] for trace in traces]==[1,2]
@@ -318,7 +318,7 @@ jobs:
           test -f backend/app/v3/research_manager.py
           test "$(git rev-parse HEAD:backend/eval/core_b/askv2_matched_20_cases.json)" = "cf9aea5004d2bbb979015917570f32417c67017a"
           test "$(git rev-parse HEAD:backend/lab/metabase/core_b/fixtures/machine_operations.json)" = "dd6ae7d8dd19e1a38d5e3c78ea8bfb2182f1b4d7"
-          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "cbe313af9ac2d5960f662068e433d328d896fb06"
+          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "0f16f2b5a1ec774ac7afee6214c726e82f9ceb3c"
           ! grep -R -nE 'openai/gpt-5\.6-sol|Gemini|C1' backend/lab/metabase/core_b/p17_provider_diagnostic.py
           ! grep -R -n 'action:execute' backend/app
           test ! -e backend/eval/DEV80
