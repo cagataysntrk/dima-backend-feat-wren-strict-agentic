@@ -1173,18 +1173,26 @@ def _assert_material_ranking_scope(
     bindings: Mapping[str, NativeMaterialBinding],
 ) -> None:
     ranking = contract.ranking
+    # Metabase may add deterministic ORDER BY clauses for presentation/stability.
+    # Without LIMIT they do not restrict the material row set and therefore do
+    # not mint Dima ranking authority. A native LIMIT is material: it can remove
+    # rows and must remain authorized by an accepted ranking invariant.
+    restrictive_ordering = tuple(
+        item for item in observation.ranking
+        if item.limit is not None
+    )
     if ranking is None:
-        if observation.ranking:
+        if restrictive_ordering:
             raise ResearchAnalyticalScopeError(
                 "R1_NATIVE_RANKING_SCOPE_MISMATCH",
-                "native occurrence introduced an unaccepted ranking",
+                "native occurrence introduced an unaccepted row-limiting ranking",
             )
         return
     if isinstance(ranking, AnalyticalEvidenceSynthesisRankingInvariant):
-        if observation.ranking:
+        if restrictive_ordering:
             raise ResearchAnalyticalScopeError(
                 "R1_NATIVE_RANKING_SCOPE_MISMATCH",
-                "evidence-synthesis ranking has no authorized native ranking basis",
+                "evidence-synthesis ranking has no authorized native row limit",
             )
         return
     binding = _material_binding(bindings, ranking.measure)
