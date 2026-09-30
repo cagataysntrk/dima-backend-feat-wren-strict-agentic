@@ -904,6 +904,7 @@ class DimaBrainV2Activities(BrainActivities):
             snapshot=snapshot,
             request=request,
             evidence_surface_available=bool(self._native_session_token),
+            target_obligation_id=goal.goal_id,
         ):
             raise BrainV2OwnerError(
                 "BRAIN_V2_NEXT_TEST_NOT_CALLABLE",
