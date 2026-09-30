@@ -171,8 +171,8 @@ def test_pinpoint_workflow_is_one_probe_per_run_and_no_broad_scorer():
     assert "phase1-f07-trigger-20260930" in workflow
     assert "phase1-f04-trigger-20260930" in workflow
     assert "feat/dima-metabase-platform" in workflow
-    assert 'PRODUCT_BEHAVIOR_SHA: "081b2f53c11d69d3e4ee6bfb3c27331e912c4041"' in workflow
-    assert 'assert report["candidate_product_sha"] == "081b2f53c11d69d3e4ee6bfb3c27331e912c4041"' in workflow
+    assert 'PRODUCT_BEHAVIOR_SHA: "104a13a4253bd29db53fe49f8d7377510978ce23"' in workflow
+    assert 'assert report["candidate_product_sha"] == "104a13a4253bd29db53fe49f8d7377510978ce23"' in workflow
     assert 'test "$ENGINE_SHA" = "0f16f2b5a1ec774ac7afee6214c726e82f9ceb3c"' in workflow
     assert 'test "$CERTIFICATION_RUN_ID" = "36610103287"' in workflow
     assert 'test "$RUNTIME_TAG" = "v0.63.18-dima.8"' in workflow
