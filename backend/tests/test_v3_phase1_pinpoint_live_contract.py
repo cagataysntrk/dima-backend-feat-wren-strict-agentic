@@ -22,6 +22,7 @@ from lab.metabase.core_b.phase1_pinpoint_live import (
 from lab.metabase.core_b.runtime.seed_phase1_pinpoint_metrics import (
     entity_value_bindings_from_fixture,
     metric_card_payload,
+    metric_search_result_contains,
     metric_specs,
 )
 
@@ -271,6 +272,31 @@ def test_brain_v2_live_seed_requires_restricted_collection_scoped_search_readine
     assert '"/api/search?"' in seed
     assert '"models", "metric"' in seed
     assert '"collection", str(collection_id)' in seed
+
+
+
+def test_metric_search_readiness_requires_exact_metric_identity():
+    body = {
+        "data": [
+            {"model": "metric", "id": 17, "name": "Same Name"},
+            {"model": "card", "id": 18, "name": "Same Name"},
+        ]
+    }
+    assert metric_search_result_contains(body, metric_id=17) is True
+    assert metric_search_result_contains(body, metric_id=18) is False
+    assert metric_search_result_contains(body, metric_id=99) is False
+
+
+def test_metric_fixture_rejects_invalid_discovery_collection():
+    with pytest.raises(ValueError, match="collection id"):
+        metric_card_payload(
+            database_id=7,
+            table_id=11,
+            field_id=13,
+            name="Another Governed Metric",
+            aggregation="sum",
+            collection_id=0,
+        )
 
 
 def test_metric_fixture_setup_is_closed_and_creates_metric_cards():
