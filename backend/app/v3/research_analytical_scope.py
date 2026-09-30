@@ -379,15 +379,23 @@ def analytical_scope_contract(
     if len(periods) == 1:
         period = _period(periods[0])
     elif len(periods) == 2:
-        if question.comparisons:
+        period_source_texts = {item.source_text for item in periods}
+        comparison_texts = {item.text for item in question.comparisons}
+        is_explicit_temporal_comparison = (
+            len(question.comparisons) == 2
+            and comparison_texts == period_source_texts
+        )
+        if is_explicit_temporal_comparison:
             comparison = AnalyticalComparisonInvariant(
                 mode="explicit_periods",
                 reference_period=_period(periods[0]),
                 base_period=_period(periods[1]),
             )
         else:
-            # Two accepted periods without a comparison still define one bounded
-            # material time window. No language interpretation occurs here.
+            # ComparisonSurface is generic user/product semantics. Do not treat
+            # causal/business competitors as temporal authority merely because
+            # the accepted brief also contains two typed periods. Only exact
+            # accepted period-source identities may mint a temporal comparison.
             starts = sorted(item.start for item in periods)
             ends = sorted(item.end for item in periods)
             time_dims = {item.time_dimension_candidate_id for item in periods}
