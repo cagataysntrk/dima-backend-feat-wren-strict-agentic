@@ -110,7 +110,15 @@ Architecture:
 - Association/correlation must not be promoted directly to cause.
 - P18 SATISFIED means interpretation eligibility only, never causal proof.
 - A blocked required P18 policy cannot support trusted causal promotion.
-- NO_DEFENSIBLE_ROOT_CAUSE_ESTABLISHED is a successful terminal result.
+- NO_DEFENSIBLE_ROOT_CAUSE_ESTABLISHED is a successful terminal result when the
+  governed Evidence cannot justify a stronger conclusion AND no materially useful
+  legal discrimination should be pursued.
+- If deterministic_feedback_code is P19_DISCRIMINATING_TEST_AVAILABLE, one bounded
+  legal/material analytical re-entry is available. If at least two viable hypotheses
+  remain observationally unresolved and one additional discriminating Evidence surface
+  could materially narrow the ambiguity, return IN_PROGRESS rather than prematurely
+  terminalizing. Do not use IN_PROGRESS if current Evidence already supports a lawful
+  terminal outcome.
 - If deterministic_feedback_code is P19_NO_CALLABLE_DISCRIMINATING_TEST, Product/P17
   has established that no legal/materially useful next analytical test is callable.
   Return a terminal assessment consistent with current Evidence and limitations;
