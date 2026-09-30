@@ -1758,6 +1758,7 @@ def test_distinct_fragment_temporal_comparison_remains_real_multi_intent():
             "kind": "comparison",
             "source_text": compare_fragment,
             "source_fragment_text": compare_fragment,
+            "material_parent_goal_key": None,
             "subject_semantic_ids": ["metric.downtime"],
             "related_semantic_ids": [],
             "ranking": None,
@@ -1798,6 +1799,138 @@ def test_distinct_fragment_temporal_comparison_remains_real_multi_intent():
         ResearchGoalKind.ROOT_CAUSE,
         ResearchGoalKind.COMPARISON,
     )
+
+
+
+def test_typed_temporal_material_parent_rejects_unknown_owner():
+    root_fragment = "Assess the governed causal alternatives."
+    material_fragment = "Use the bounded period comparison as material."
+    payload = ready_payload(
+        kind="root_cause",
+        subject=(
+            "metric.downtime",
+            "metric.fault_count",
+            "metric.performance",
+        ),
+        related=("dimension.department",),
+    )
+    payload["goals"][0].update(
+        {
+            "goal_key": "g-root",
+            "source_text": root_fragment,
+            "source_fragment_text": root_fragment,
+            "causal_competition": {
+                "effect_semantic_id": "metric.downtime",
+                "candidate_mechanism_semantic_ids": [
+                    "metric.fault_count",
+                    "metric.performance",
+                ],
+                "diagnostic_dimension_ids": ["dimension.department"],
+            },
+            "temporal_material": {
+                "mode": "comparison",
+                "baseline_period": _r6_period(
+                    "earlier", "2026-03-01", "2026-04-01"
+                ),
+                "comparison_period": _r6_period(
+                    "later", "2026-04-01", "2026-05-01"
+                ),
+            },
+        }
+    )
+    payload["goals"].append(
+        {
+            "goal_key": "g-material",
+            "kind": "comparison",
+            "source_text": material_fragment,
+            "source_fragment_text": material_fragment,
+            "material_parent_goal_key": "g-missing-root",
+            "subject_semantic_ids": ["metric.downtime"],
+            "related_semantic_ids": [],
+            "ranking": None,
+            "comparisons": [
+                {
+                    "text": "bounded periods",
+                    "role": "temporal_period",
+                    "semantic_id": None,
+                }
+            ],
+            "causal_competition": None,
+        }
+    )
+    payload["time_periods"] = []
+
+    with pytest.raises(ResearchIntakeError) as exc:
+        ResearchIntakeCompiler(
+            transport=FakeTransport(payload)
+        ).compile(
+            question=root_fragment + " " + material_fragment,
+            catalog=_r6_temporal_catalog(),
+        )
+
+    assert exc.value.code == "INTAKE_TEMPORAL_MATERIAL_PARENT_INVALID"
+
+
+def test_typed_temporal_material_parent_rejects_scope_escape():
+    root_fragment = "Assess the governed causal alternatives."
+    material_fragment = "Use a bounded comparison as material."
+    payload = ready_payload(
+        kind="root_cause",
+        subject=("metric.downtime", "metric.fault_count"),
+        related=("dimension.department",),
+    )
+    payload["goals"][0].update(
+        {
+            "goal_key": "g-root",
+            "source_text": root_fragment,
+            "source_fragment_text": root_fragment,
+            "causal_competition": {
+                "effect_semantic_id": "metric.downtime",
+                "candidate_mechanism_semantic_ids": ["metric.fault_count"],
+                "diagnostic_dimension_ids": ["dimension.department"],
+            },
+            "temporal_material": {
+                "mode": "comparison",
+                "baseline_period": _r6_period(
+                    "earlier", "2026-03-01", "2026-04-01"
+                ),
+                "comparison_period": _r6_period(
+                    "later", "2026-04-01", "2026-05-01"
+                ),
+            },
+        }
+    )
+    payload["goals"].append(
+        {
+            "goal_key": "g-material",
+            "kind": "comparison",
+            "source_text": material_fragment,
+            "source_fragment_text": material_fragment,
+            "material_parent_goal_key": "g-root",
+            "subject_semantic_ids": ["metric.performance"],
+            "related_semantic_ids": [],
+            "ranking": None,
+            "comparisons": [
+                {
+                    "text": "bounded periods",
+                    "role": "temporal_period",
+                    "semantic_id": None,
+                }
+            ],
+            "causal_competition": None,
+        }
+    )
+    payload["time_periods"] = []
+
+    with pytest.raises(ResearchIntakeError) as exc:
+        ResearchIntakeCompiler(
+            transport=FakeTransport(payload)
+        ).compile(
+            question=root_fragment + " " + material_fragment,
+            catalog=_r6_temporal_catalog(),
+        )
+
+    assert exc.value.code == "INTAKE_TEMPORAL_MATERIAL_PARENT_SCOPE_ESCAPE"
 
 
 def test_typed_temporal_comparison_canonicalizes_period_roles_without_prompt_semantics():
