@@ -1,3 +1,72 @@
+## FORWARD PRODUCT PLAN — 2026-09-30 — DIMA BRAIN V2
+
+This block supersedes older forward-plan language below. Historical roadmap and receipts remain evidence.
+
+Canonical Product plan:
+
+~~~text
+PHASE 1
+LANGGRAPH ORCHESTRATION V2
+
+Goal:
+replace custom workflow plumbing with a low-level durable graph
+while reusing current Dima truth stores and Metabase/Metabot analytics.
+
+PHASE 2
+THIN DIMA BRAIN + DEMO/UX
+
+Goal:
+expose governed Brain state through a thin Product/API and demo experience,
+then certify 80+/90+ readiness with targeted/manual + metamorphic proof.
+~~~
+
+Authorities:
+
+~~~text
+branch
+feat/dima-brain-v2
+
+decision
+DMP-DEC-0076
+
+roadmap
+backend/belgeler/metabase/DIMA_BRAIN_V2_TWO_PHASE_ROADMAP.md
+
+handoff
+backend/belgeler/metabase/DIMA_BRAIN_V2_CURRENT_HANDOFF.md
+
+engine
+0f16f2b5a1ec774ac7afee6214c726e82f9ceb3c / 0.63.18-dima.8
+FROZEN
+~~~
+
+Permanent Product rule:
+
+~~~text
+commodity orchestration plumbing
+is outsourced to LangGraph primitives
+
+Dima retains:
+business semantics
+scope/currentness
+Evidence
+hypotheses/epistemics
+decisions
+memory
+permissions
+
+Metabase/Metabot retains:
+analytics/query cognition/native execution
+~~~
+
+The historical ~70.8 candidate is a golden control only.
+
+The legacy custom orchestrator is reference/fallback only and must not receive new strategic features during the V2 spike.
+
+30-case remains forbidden until separately authorized by the user.
+
+---
+
 ## FORWARD AUTHORITY — 2026-09-27 — METABASE/METABOT WINNER → DIMA V1 3-PHASE ROADMAP ACTIVE
 
 ~~~text
