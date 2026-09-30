@@ -112,7 +112,7 @@ jobs:
         run: |
           set -euo pipefail
           python -m py_compile             lab/metabase/brain_v2/phase1_live.py             lab/metabase/core_b/runtime/openrouter_counting_proxy.py             lab/metabase/core_b/runtime/seed_phase1_pinpoint_metrics.py             lab/metabase/core_b/runtime/seed_round2_fixture.py
-          pytest -q             tests/test_v3_brain_v2_contracts.py             tests/test_v3_brain_v2_graph.py             tests/test_v3_brain_v2_owner_integration.py             tests/test_v3_brain_v2_postgres_checkpoint.py             tests/test_v3_openrouter_counting_proxy.py
+          pytest -q             tests/test_v3_brain_v2_contracts.py             tests/test_v3_brain_v2_graph.py             tests/test_v3_brain_v2_owner_integration.py             tests/test_v3_brain_v2_postgres_checkpoint.py             tests/test_v3_brain_v2_live_harness.py             tests/test_v3_openrouter_counting_proxy.py
 
       - name: Derive ephemeral credentials
         shell: bash
