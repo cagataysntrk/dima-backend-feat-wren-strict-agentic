@@ -98,6 +98,9 @@ def test_paid_governance_forbids_broad_execution_and_push_paid_triggers():
 def test_pinpoint_paid_workflow_is_sequential_closed_budget():
     source = PINPOINT_PAID_WORKFLOW.read_text(encoding="utf-8")
     assert "workflow_dispatch:" in source
+    assert "phase1-r-live-1-trigger-20260930" in source
+    assert "phase1-r-live-2-trigger-20260930" in source
+    assert "phase1-r-live-3-trigger-20260930" in source
     assert "phase1-v4-trigger-20260929" in source
     assert "phase1-rca-trigger-20260929" in source
     assert "phase1-f05-trigger-20260929" in source
@@ -107,12 +110,15 @@ def test_pinpoint_paid_workflow_is_sequential_closed_budget():
     assert "phase1-f07-trigger-20260930" in source
     assert "phase1-f04-trigger-20260930" in source
     assert "git fetch --no-tags --depth=1 origin feat/dima-metabase-platform" in source
-    assert 'PRODUCT_BEHAVIOR_SHA: "d2021b2157b8c36d7cf57d3e42556ddb1aa93f7d"' in source
+    assert 'PRODUCT_BEHAVIOR_SHA: "dc4be27491d7fb41443491a93a812899e2645bb8"' in source
     assert 'test "$ENGINE_SHA" = "0f16f2b5a1ec774ac7afee6214c726e82f9ceb3c"' in source
     assert 'test "$CERTIFICATION_RUN_ID" = "36610103287"' in source
     assert 'test "$RUNTIME_TAG" = "v0.63.18-dima.8"' in source
     assert "backend/eval/v1/authorizations/phase1-final-pinpoint-live-v3.json" not in source
     assert "repository_dispatch" not in source
+    assert "R_LIVE_1_ONE_PASS" in source
+    assert "R_LIVE_2_ADAPTIVE" in source
+    assert "R_LIVE_3_DISCOVERY" in source
     assert "SCOPE_CURRENTNESS_HARD_V4" in source
     assert "RCA_P19_HARD_V2" in source
     assert "RELATIONSHIP_F05_H_RECOVERY" in source
@@ -140,6 +146,9 @@ def test_pinpoint_paid_workflow_is_sequential_closed_budget():
     assert "round2_feature_benchmark.py" not in source
     assert "validate_phase1_round2.py" not in source
     assert "PINPOINT_ARTIFACT_READY_FOR_HUMAN_INSPECTION" in source
+    assert "mechanical_verdict" in source
+    assert "manual_quality_status" in source
+    assert "manual_quality_score" in source
     assert "quality_score" in source
     assert "manual_adjudication_required" in source
     assert "MANUAL_ARTIFACT_ADJUDICATION_ONLY" in source
