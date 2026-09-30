@@ -178,7 +178,7 @@ def test_root_cause_second_candidate_may_legally_arrive_on_fifth_p17_turn():
     )
     composer = composer_for(investigation)
 
-    snapshot, executed, error = composer._run_p17(
+    snapshot, next_owner, executed, error = composer._run_p17(
         session_id="rs_" + "2" * 24,
         principal=object(),
         native_session_token=None,
