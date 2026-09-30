@@ -69,6 +69,7 @@ from app.v3.research_contracts import (
     ResearchBriefStatus,
     ResearchDirectiveKind,
     ResearchGoalKind,
+    RelationshipIntentKind,
     ResearchQuestion,
     SemanticTargetKind,
 )
@@ -1108,7 +1109,10 @@ class HeadlessProductComposer:
                     ).context_version
                 ),
                 applicability_scope=scope,
-                required=True,
+                required=(
+                    original_goal.relationship_intent
+                    != RelationshipIntentKind.OBSERVATIONAL
+                ),
             ),
             principal=principal,
         )
@@ -1497,6 +1501,22 @@ class HeadlessProductComposer:
                 if relationship is not None:
                     fulfilled_by_ref = relationship.policy_use_id
                     if (
+                        question.relationship_intent
+                        == RelationshipIntentKind.OBSERVATIONAL
+                    ):
+                        association_state = _state_value(
+                            relationship.association_state
+                        )
+                        if (
+                            not relationship.policy_required
+                            and association_state
+                            in {"SUPPORTED", "CHALLENGED", "CONTESTED"}
+                            and not relationship.limitation_codes
+                        ):
+                            state = ProductRequirementState.FULFILLED
+                        else:
+                            state = ProductRequirementState.LIMITED
+                    elif (
                         _state_value(relationship.business_relationship_state)
                         == "SATISFIED"
                         and not relationship.limitation_codes
