@@ -171,6 +171,19 @@ jobs:
               sleep 2
               test "$i" -lt 90
             done
+            # pg_isready may flip before the container has remained stable long
+            # enough for the external host-port seed connection. Require three
+            # consecutive live SELECTs so pre-provider harness setup fails
+            # deterministically instead of racing Postgres startup.
+            for i in 1 2 3; do
+              test "$(docker inspect -f '{{.State.Running}}' "$n")" = "true"
+              if [ "$n" = "analytics-db" ]; then
+                docker exec "$n" psql -U brain_v2_owner -d brain_v2_live -Atqc 'SELECT 1' | grep -Fx 1
+              else
+                docker exec "$n" psql -U metabase_app -d metabase_brain_v2 -Atqc 'SELECT 1' | grep -Fx 1
+              fi
+              sleep 1
+            done
           done
 
       - name: Seed frozen neutral fixture
@@ -184,7 +197,13 @@ jobs:
           CORE_B_READONLY_USER: brain_v2_readonly
           CORE_B_READONLY_PASSWORD: ${{ env.CORE_B_READONLY_PASSWORD }}
         run: |
-          python lab/metabase/core_b/runtime/seed_round2_fixture.py             --fixture eval/round2_neutral_machine_fixture.json
+          set -euo pipefail
+          if ! python lab/metabase/core_b/runtime/seed_round2_fixture.py             --fixture eval/round2_neutral_machine_fixture.json; then
+            docker ps -a
+            docker logs analytics-db || true
+            docker inspect analytics-db || true
+            exit 1
+          fi
 
       - name: Start exact certified dima.8 engine
         shell: bash
