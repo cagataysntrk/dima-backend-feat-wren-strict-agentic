@@ -277,6 +277,8 @@ def _packet(
     *,
     policy_statuses: dict[str, str] | None,
     deterministic_feedback_code: str | None,
+    objective: str | None = None,
+    discriminating_test_available: bool | None = None,
 ) -> str:
     hypotheses = []
     for item in snapshot.hypotheses:
@@ -311,6 +313,8 @@ def _packet(
             snapshot.evidence_observations
         ),
         "deterministic_feedback_code": deterministic_feedback_code,
+        "accepted_objective": objective,
+        "discriminating_test_available": discriminating_test_available,
     }
     return json.dumps(packet, ensure_ascii=False, sort_keys=True)
 
@@ -328,12 +332,14 @@ class StructuredP19AssessmentManager:
         self._schema_name = schema_name
         self.call_count = 0
 
-    def propose(
+    def _propose(
         self,
         snapshot: P19CaseSnapshot,
         *,
-        policy_statuses: dict[str, str] | None = None,
-        deterministic_feedback_code: str | None = None,
+        policy_statuses: dict[str, str] | None,
+        deterministic_feedback_code: str | None,
+        objective: str | None,
+        discriminating_test_available: bool | None,
     ) -> RootCauseAssessmentDraft:
         known_hypotheses = {
             item.hypothesis.hypothesis_id
@@ -353,11 +359,16 @@ class StructuredP19AssessmentManager:
             "Assess the bounded P19 case using only this governed packet. "
             "Preserve every current hypothesis in candidates. Do not invent "
             "sources or numeric values. If causal identification is not "
-            "explicitly exposed, do not claim a defensible root cause.\n\n"
+            "explicitly exposed, do not claim a defensible root cause. "
+            "The accepted objective may request bounded further discrimination; "
+            "honor it only when the packet says a legal discriminating test is "
+            "available and the extra Evidence can materially change the judgment.\n\n"
             + _packet(
                 snapshot,
                 policy_statuses=policy_statuses,
                 deterministic_feedback_code=deterministic_feedback_code,
+                objective=objective,
+                discriminating_test_available=discriminating_test_available,
             )
         )
         raw = self._transport.structured_json(
@@ -426,4 +437,40 @@ class StructuredP19AssessmentManager:
             root_cause_hypothesis_ids=draft.root_cause_hypothesis_ids,
             limitations=draft.limitations,
             mediation_annotations=(),
+        )
+
+    def propose(
+        self,
+        snapshot: P19CaseSnapshot,
+        *,
+        policy_statuses: dict[str, str] | None = None,
+        deterministic_feedback_code: str | None = None,
+    ) -> RootCauseAssessmentDraft:
+        """Backward-compatible P19 owner entry used by the legacy/fallback path."""
+
+        return self._propose(
+            snapshot,
+            policy_statuses=policy_statuses,
+            deterministic_feedback_code=deterministic_feedback_code,
+            objective=None,
+            discriminating_test_available=None,
+        )
+
+    def propose_with_context(
+        self,
+        snapshot: P19CaseSnapshot,
+        *,
+        objective: str,
+        discriminating_test_available: bool,
+        policy_statuses: dict[str, str] | None = None,
+        deterministic_feedback_code: str | None = None,
+    ) -> RootCauseAssessmentDraft:
+        """Brain V2 owner-specific view: accepted objective + legal next-action capacity."""
+
+        return self._propose(
+            snapshot,
+            policy_statuses=policy_statuses,
+            deterministic_feedback_code=deterministic_feedback_code,
+            objective=objective,
+            discriminating_test_available=discriminating_test_available,
         )
