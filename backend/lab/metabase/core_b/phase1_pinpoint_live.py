@@ -1181,7 +1181,11 @@ def _mechanical_r_live(
                 "user_candidates_preserved": bool(
                     mode.get("user_seeded_candidates")
                 ),
-                "multiple_candidates_reach_epistemics": len(distinct) >= 2,
+                "multiple_candidates_reach_epistemics": (
+                    len(accepted_user_candidates) >= 2
+                    and len(p19_hypotheses) >= len(accepted_user_candidates)
+                    and len(p19_evidence_grounded) >= len(accepted_user_candidates)
+                ),
                 "one_analytical_obligation": len(
                     brief.get("questions") or []
                 ) == 1,
