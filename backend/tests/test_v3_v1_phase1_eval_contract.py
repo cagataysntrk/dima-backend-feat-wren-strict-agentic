@@ -98,7 +98,7 @@ def test_paid_governance_forbids_broad_execution_and_push_paid_triggers():
 def test_pinpoint_paid_workflow_is_sequential_closed_budget():
     source = PINPOINT_PAID_WORKFLOW.read_text(encoding="utf-8")
     assert "workflow_dispatch:" in source
-    assert "phase1-r-live-1-token-cap-trigger-20260930" in source
+    assert "phase1-r-live-1-native-binding-trigger-20260930" in source
     assert "phase1-r-live-2-trigger-20260930" in source
     assert "phase1-r-live-3-trigger-20260930" in source
     assert "phase1-v4-trigger-20260929" in source
