@@ -1,0 +1,204 @@
+from __future__ import annotations
+
+import hashlib
+from collections import Counter
+
+from app.v3.brain_v2.activities import (
+    CanonicalizeActivityResult,
+    EvidenceActivityResult,
+    IntakeActivityResult,
+    MaterialActivityResult,
+    P17ActivityResult,
+    P19ActivityResult,
+    ReportActivityResult,
+)
+from app.v3.brain_v2.service import BrainV2Service
+from app.v3.brain_v2.state import (
+    BrainGraphState,
+    BrainP19Route,
+    BrainWorkflowStatus,
+)
+
+
+class FakeActivities:
+    def __init__(self, mode: str) -> None:
+        self.mode = mode
+        self.calls: Counter[str] = Counter()
+
+    def _fp(self, name: str, state: BrainGraphState) -> str:
+        raw = "|".join(
+            (
+                name,
+                state.scope_version_id or "none",
+                str(state.evidence_revision),
+                str(state.hypothesis_revision),
+                state.pending_next_test_ref or "none",
+                str(state.adaptive_reentries),
+            )
+        )
+        return hashlib.sha256(raw.encode()).hexdigest()
+
+    def intake(self, state: BrainGraphState) -> IntakeActivityResult:
+        self.calls["intake"] += 1
+        return IntakeActivityResult(
+            accepted_brief_ref="brief:fixture",
+            scope_version_id="scope_v1",
+            open_requirement_ids=("goal-1",),
+            material_requirement_ids=("goal-1",),
+            discovery_required=self.mode == "discovery",
+            activity_fingerprint=self._fp("intake", state),
+        )
+
+    def canonicalize(self, state: BrainGraphState) -> CanonicalizeActivityResult:
+        self.calls["canonicalize"] += 1
+        hypotheses = (
+            ()
+            if self.mode == "discovery"
+            else ("p19h_" + "a" * 24, "p19h_" + "b" * 24)
+        )
+        return CanonicalizeActivityResult(
+            research_session_id="rs_" + "c" * 24,
+            scope_version_id="scope_v1",
+            open_requirement_ids=("goal-1",),
+            material_requirement_ids=("goal-1",),
+            hypothesis_ids=hypotheses,
+            discovery_required=self.mode == "discovery",
+            activity_fingerprint=self._fp("canonicalize", state),
+        )
+
+    def acquire_material(self, state: BrainGraphState) -> MaterialActivityResult:
+        self.calls["material"] += 1
+        return MaterialActivityResult(
+            material_requirement_ids=state.material_requirement_ids,
+            activity_fingerprint=self._fp("material", state),
+        )
+
+    def admit_evidence(self, state: BrainGraphState) -> EvidenceActivityResult:
+        self.calls["evidence"] += 1
+        revision = state.evidence_revision + 1
+        evidence_id = "evi_" + (str(revision) * 24)
+        return EvidenceActivityResult(
+            evidence_revision=revision,
+            evidence_ids=(*state.evidence_ids, evidence_id),
+            activity_fingerprint=self._fp("evidence", state),
+        )
+
+    def assess_p19(self, state: BrainGraphState) -> P19ActivityResult:
+        self.calls["p19"] += 1
+        ordinal = self.calls["p19"]
+        if self.mode == "inconclusive":
+            route = BrainP19Route.INCONCLUSIVE
+            next_ref = None
+        elif self.mode in {"adaptive", "always_next"} and ordinal == 1:
+            route = BrainP19Route.NEXT_TEST_REQUIRED
+            next_ref = "ntr_" + "d" * 24
+        elif self.mode == "always_next":
+            route = BrainP19Route.NEXT_TEST_REQUIRED
+            next_ref = "ntr_" + "e" * 24
+        else:
+            route = BrainP19Route.SUFFICIENT
+            next_ref = None
+        return P19ActivityResult(
+            assessment_ref="p19a_" + (str(ordinal) * 24),
+            route=route,
+            hypothesis_revision=state.hypothesis_revision + 1,
+            hypothesis_ids=state.hypothesis_ids,
+            pending_next_test_ref=next_ref,
+            activity_fingerprint=self._fp("p19", state),
+        )
+
+    def discover_hypotheses(self, state: BrainGraphState) -> P17ActivityResult:
+        self.calls["p17_discovery"] += 1
+        return P17ActivityResult(
+            hypothesis_revision=state.hypothesis_revision + 1,
+            hypothesis_ids=("p19h_" + "a" * 24, "p19h_" + "b" * 24),
+            material_requirement_ids=state.material_requirement_ids,
+            discovery_required=False,
+            activity_fingerprint=self._fp("p17-discovery", state),
+        )
+
+    def design_next_test(self, state: BrainGraphState) -> P17ActivityResult:
+        self.calls["p17_next_test"] += 1
+        return P17ActivityResult(
+            hypothesis_revision=state.hypothesis_revision,
+            hypothesis_ids=state.hypothesis_ids,
+            material_requirement_ids=("goal-1:discriminating",),
+            discovery_required=False,
+            activity_fingerprint=self._fp("p17-next-test", state),
+        )
+
+    def synthesize_report(self, state: BrainGraphState) -> ReportActivityResult:
+        self.calls["report"] += 1
+        return ReportActivityResult(
+            report_ref="p20r_" + "f" * 24,
+            activity_fingerprint=self._fp("report", state),
+        )
+
+
+def _run(mode: str) -> tuple[BrainGraphState, FakeActivities]:
+    activities = FakeActivities(mode)
+    service = BrainV2Service(activities=activities)
+    result = service.run(
+        BrainGraphState(
+            thread_id=f"thread-{mode}",
+            tenant_binding="id:tenant",
+            principal_ref="user-1",
+            current_user_input="Investigate the accepted governed question.",
+        )
+    )
+    return result, activities
+
+
+def test_one_pass_skips_p17_and_executes_one_material_acquisition() -> None:
+    result, activities = _run("one_pass")
+
+    assert result.workflow_status == BrainWorkflowStatus.COMPLETE
+    assert activities.calls["material"] == 1
+    assert activities.calls["p17_discovery"] == 0
+    assert activities.calls["p17_next_test"] == 0
+    assert activities.calls["p19"] == 1
+    assert activities.calls["report"] == 1
+    assert result.adaptive_reentries == 0
+
+
+def test_adaptive_runs_exactly_one_discriminating_reentry() -> None:
+    result, activities = _run("adaptive")
+
+    assert result.workflow_status == BrainWorkflowStatus.COMPLETE
+    assert activities.calls["material"] == 2
+    assert activities.calls["evidence"] == 2
+    assert activities.calls["p17_discovery"] == 0
+    assert activities.calls["p17_next_test"] == 1
+    assert activities.calls["p19"] == 2
+    assert result.adaptive_reentries == 1
+
+
+def test_discovery_uses_p17_only_when_candidates_are_absent() -> None:
+    result, activities = _run("discovery")
+
+    assert result.workflow_status == BrainWorkflowStatus.COMPLETE
+    assert activities.calls["material"] == 1
+    assert activities.calls["p17_discovery"] == 1
+    assert activities.calls["p17_next_test"] == 0
+    assert activities.calls["p19"] == 1
+    assert len(result.hypothesis_ids) == 2
+
+
+def test_inconclusive_is_an_honest_terminal_without_extra_work() -> None:
+    result, activities = _run("inconclusive")
+
+    assert result.workflow_status == BrainWorkflowStatus.INCONCLUSIVE
+    assert result.last_completed_node == "HONEST_STOP"
+    assert activities.calls["material"] == 1
+    assert activities.calls["p17_next_test"] == 0
+    assert activities.calls["report"] == 0
+
+
+def test_reentry_bound_stops_second_next_test_instead_of_looping() -> None:
+    result, activities = _run("always_next")
+
+    assert result.workflow_status == BrainWorkflowStatus.INCONCLUSIVE
+    assert activities.calls["material"] == 2
+    assert activities.calls["p17_next_test"] == 1
+    assert activities.calls["p19"] == 2
+    assert result.adaptive_reentries == 1
