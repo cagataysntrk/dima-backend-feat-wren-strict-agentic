@@ -60,7 +60,7 @@ PROBES = {
         "manual_contract": (
             "accepted user candidate identities are preserved exactly",
             "initial native material produces governed Evidence",
-            "P17 may synthesize existing Evidence but does not perform redundant analytical re-entry",
+            "user-seeded hypotheses reach P19 without redundant P17 synthesis or analytical re-entry",
             "P19 assessment exists",
             "root_cause_mode = ONE_PASS and analytical_reentry_count = 0",
             "support/challenge and causal limitations are useful and legally preserved",
@@ -1060,8 +1060,16 @@ def _mechanical_r_live(
     mode = _root_mode_payload(turn)
     p19_count = len(turn.get("p19_assessment_refs") or [])
     reasoning = turn.get("reasoning_records") or []
+    brief = turn.get("brief_payload") or {}
+    composition = turn.get("composition_payload") or {}
+    completion = composition.get("completion_ledger") or {}
+    owner_calls = composition.get("owner_calls") or []
     base = {
         "ready": bool(turn.get("ready")),
+        "analytical_goal_count": len(brief.get("questions") or []),
+        "native_acquisition_count": len(turn.get("native_results") or []),
+        "p17_owner_call_count": sum(1 for item in owner_calls if item == "P17"),
+        "requirement_complete": completion.get("requirement_complete") is True,
         "governed_evidence_exists": any(
             turn.get("evidence_by_session", {}).values()
         ),
@@ -1095,6 +1103,18 @@ def _mechanical_r_live(
                     mode.get("user_seeded_candidates")
                 ),
                 "multiple_candidates_reach_epistemics": len(distinct) >= 2,
+                "one_analytical_obligation": len(
+                    brief.get("questions") or []
+                ) == 1,
+                "one_initial_native_acquisition": len(
+                    turn.get("native_results") or []
+                ) == 1,
+                "no_redundant_p17_cognition": sum(
+                    1 for item in owner_calls if item == "P17"
+                ) == 0,
+                "all_user_must_requirements_complete": (
+                    completion.get("requirement_complete") is True
+                ),
             }
         )
     elif probe_id == "R_LIVE_2_ADAPTIVE":
@@ -1109,6 +1129,18 @@ def _mechanical_r_live(
                     mode.get("user_seeded_candidates")
                 ),
                 "multiple_candidates_reach_epistemics": len(distinct) >= 2,
+                "one_analytical_obligation": len(
+                    brief.get("questions") or []
+                ) == 1,
+                "initial_plus_one_discriminating_acquisition": len(
+                    turn.get("native_results") or []
+                ) == 2,
+                "one_p17_discriminating_owner_call": sum(
+                    1 for item in owner_calls if item == "P17"
+                ) == 1,
+                "all_user_must_requirements_complete": (
+                    completion.get("requirement_complete") is True
+                ),
             }
         )
     elif probe_id == "R_LIVE_3_DISCOVERY":
@@ -1173,9 +1205,11 @@ def _mechanical_verdict(report: dict[str, Any]) -> str:
     if provider:
         if int(provider.get("blocked_request_count") or 0) != 0:
             return "FAIL"
-        if int(report.get("actual_provider_request_count") or 0) > int(
-            report.get("hard_provider_request_ceiling") or 0
-        ):
+        actual = int(report.get("actual_provider_request_count") or 0)
+        ceiling = int(report.get("hard_provider_request_ceiling") or 0)
+        if actual > ceiling:
+            return "FAIL"
+        if report.get("probe_id") == "R_LIVE_1_ONE_PASS" and actual >= ceiling:
             return "FAIL"
     observations = report.get("mechanical_observations") or {}
     boolean_checks = [
