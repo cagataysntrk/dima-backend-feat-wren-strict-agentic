@@ -205,7 +205,7 @@ jobs:
         run: |
           set -euo pipefail
           test "$ENGINE_SHA" = "0f16f2b5a1ec774ac7afee6214c726e82f9ceb3c"
-          test "$CERTIFICATION_RUN_ID" = "36042062775"
+          test "$CERTIFICATION_RUN_ID" = "36610103287"
           test "$RUNTIME_TAG" = "v0.63.18-dima.8"
           docker pull "$IMMUTABLE_IMAGE_REF"
           docker image inspect -f '{{range .RepoDigests}}{{println .}}{{end}}' "$IMMUTABLE_IMAGE_REF" | grep -Fx "$IMMUTABLE_IMAGE_REF"
