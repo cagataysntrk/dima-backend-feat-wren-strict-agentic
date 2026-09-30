@@ -547,6 +547,8 @@ def candidate(
     limitations=(),
     numeric=(),
     causal_refs=(),
+    supporting=(),
+    challenging=(),
 ):
     return CandidateAssessment(
         hypothesis_id=hypothesis.hypothesis_id,
@@ -555,6 +557,12 @@ def candidate(
         epistemic_class=epistemic,
         contribution_class=contribution,
         evidence_strength=evidence,
+        supporting_grounding_link_ids=tuple(
+            x.grounding_link_id for x in supporting
+        ),
+        challenging_grounding_link_ids=tuple(
+            x.grounding_link_id for x in challenging
+        ),
         causal_qualification=causal,
         relationship_dependent=relationship_dependent,
         relationship_policy_use_id=policy_use_id,
@@ -562,6 +570,58 @@ def candidate(
         numeric_provenance=numeric,
         causal_identification_refs=causal_refs,
     )
+
+
+def test_candidate_assessment_can_classify_one_mixed_grounding_both_directions():
+    link_id = "p19g_" + "a" * 24
+    candidate = CandidateAssessment(
+        hypothesis_id="p19h_" + "b" * 24,
+        grounding_link_ids=(link_id,),
+        disposition=HypothesisDisposition.RETAINED,
+        epistemic_class=HypothesisEpistemicClass.ASSOCIATION,
+        contribution_class=ContributionClass.MATERIAL,
+        evidence_strength=EvidenceStrength.MODERATE,
+        supporting_grounding_link_ids=(link_id,),
+        challenging_grounding_link_ids=(link_id,),
+    )
+
+    assert candidate.supporting_grounding_link_ids == (link_id,)
+    assert candidate.challenging_grounding_link_ids == (link_id,)
+
+
+def test_candidate_assessment_rejects_interpretation_outside_selected_grounding():
+    with pytest.raises(ValueError, match="selected candidate groundings"):
+        CandidateAssessment(
+            hypothesis_id="p19h_" + "b" * 24,
+            grounding_link_ids=("p19g_" + "a" * 24,),
+            disposition=HypothesisDisposition.RETAINED,
+            epistemic_class=HypothesisEpistemicClass.ASSOCIATION,
+            contribution_class=ContributionClass.MATERIAL,
+            evidence_strength=EvidenceStrength.MODERATE,
+            supporting_grounding_link_ids=("p19g_" + "c" * 24,),
+        )
+
+
+def test_candidate_assessment_old_seal_shape_defaults_interpretation_refs_empty():
+    candidate = CandidateAssessment.model_validate(
+        {
+            "hypothesis_id": "p19h_" + "b" * 24,
+            "grounding_link_ids": ["p19g_" + "a" * 24],
+            "disposition": "RETAINED",
+            "epistemic_class": "ASSOCIATION",
+            "contribution_class": "MATERIAL",
+            "evidence_strength": "MODERATE",
+            "causal_qualification": "IDENTIFICATION_LIMITED",
+            "relationship_dependent": False,
+            "relationship_policy_use_id": None,
+            "identification_limitations": ["ASSOCIATION_ONLY"],
+            "numeric_provenance": [],
+            "causal_identification_refs": [],
+        }
+    )
+
+    assert candidate.supporting_grounding_link_ids == ()
+    assert candidate.challenging_grounding_link_ids == ()
 
 
 def test_p19_hypothesis_identity_is_exact_canonical_and_idempotent():
