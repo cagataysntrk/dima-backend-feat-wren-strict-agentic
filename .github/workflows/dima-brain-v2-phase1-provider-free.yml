@@ -1,0 +1,92 @@
+name: dima-brain-v2-phase1-provider-free
+
+on:
+  push:
+    branches:
+      - feat/dima-brain-v2
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  phase1-provider-free:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[brain-v2-phase1-provider-free]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: dima
+          POSTGRES_PASSWORD: dima
+          POSTGRES_DB: dima_brain_v2_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U dima -d dima_brain_v2_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    env:
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_INTERACTION_LOG: "false"
+      DIMA_BRAIN_V2_TEST_POSTGRES_DSN: "postgresql://dima:dima@127.0.0.1:5432/dima_brain_v2_test"
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          submodules: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install canonical backend
+        working-directory: backend
+        run: pip install -e ".[dev]"
+
+      - name: Brain V2 architecture invariants
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "0f16f2b5a1ec774ac7afee6214c726e82f9ceb3c"
+          test -d backend/app/v3/brain_v2
+          ! grep -R -nE 'DEV80|Validation50|Hidden50|30-case|F0[0-9]|F10|T[1-7]' backend/app/v3/brain_v2
+          ! grep -R -nE 'sqlalchemy|sqlmodel|app\.v3\.substrate\.metabase\.(compiler|execution_adapter)' backend/app/v3/brain_v2
+          python -m compileall -q backend/app/v3/brain_v2
+
+      - name: Brain V2 deterministic closure
+        working-directory: backend
+        run: |
+          pytest -q             tests/test_v3_brain_v2_contracts.py             tests/test_v3_brain_v2_graph.py             tests/test_v3_brain_v2_owner_integration.py             tests/test_v3_brain_v2_postgres_checkpoint.py
+
+      - name: Research and scope authority regressions
+        working-directory: backend
+        run: |
+          pytest -q             tests/test_v3_research_intake.py             tests/test_v3_v1_scope_contract.py             tests/test_v3_v1_scope_integration.py             tests/test_v3_p14_product.py             tests/test_v3_p14_native_gateway.py
+
+      - name: P17 investigation regressions
+        working-directory: backend
+        run: |
+          pytest -q             tests/test_v3_p17_authorization_transport.py             tests/test_v3_p17_autonomous_provider_schema.py             tests/test_v3_p17_autonomous_manager_eval.py             tests/test_v3_p17_request_differential.py             tests/test_v3_p17_research_manager.py
+
+      - name: P19 epistemic regressions
+        working-directory: backend
+        run: |
+          pytest -q             tests/test_v3_p19_hypothesis_root_cause.py             tests/test_v3_p19_provider.py             tests/test_v3_p19_autonomous_eval.py
+
+      - name: P20 report and Core-B semantic regressions
+        working-directory: backend
+        run: |
+          pytest -q             tests/test_v3_p20_report_document.py             tests/test_v3_core_b_closure_v2.py             tests/test_v3_core_b_relationship_root_regression.py
+
+      - name: Security and repository hygiene
+        working-directory: backend
+        run: |
+          pytest -q             tests/test_v3_control_plane_security.py             tests/test_repository_hygiene.py
