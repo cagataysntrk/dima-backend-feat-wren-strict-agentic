@@ -51,6 +51,7 @@ class BrainGraphState(BaseModel):
     open_requirement_ids: tuple[str, ...] = ()
     material_requirement_ids: tuple[str, ...] = ()
     pending_evidence_ids: tuple[str, ...] = ()
+    pending_receipt_refs: tuple[str, ...] = ()
 
     evidence_revision: int = Field(default=0, ge=0)
     evidence_ids: tuple[str, ...] = ()
@@ -85,6 +86,7 @@ class BrainGraphState(BaseModel):
             "open_requirement_ids": self.open_requirement_ids,
             "material_requirement_ids": self.material_requirement_ids,
             "pending_evidence_ids": self.pending_evidence_ids,
+            "pending_receipt_refs": self.pending_receipt_refs,
             "evidence_ids": self.evidence_ids,
             "hypothesis_ids": self.hypothesis_ids,
             "activity_fingerprints": self.activity_fingerprints,
@@ -97,6 +99,8 @@ class BrainGraphState(BaseModel):
             raise ValueError("open requirement refs must be non-empty")
         if any(not value for value in self.material_requirement_ids):
             raise ValueError("material requirement refs must be non-empty")
+        if len(self.pending_evidence_ids) != len(self.pending_receipt_refs):
+            raise ValueError("pending Evidence/receipt refs must be paired")
         if any(not value.startswith("evi_") for value in self.evidence_ids):
             raise ValueError("evidence refs must use canonical Evidence identity")
         if any(not value for value in self.hypothesis_ids):
@@ -126,6 +130,7 @@ class BrainStatePayload(TypedDict, total=False):
     open_requirement_ids: tuple[str, ...]
     material_requirement_ids: tuple[str, ...]
     pending_evidence_ids: tuple[str, ...]
+    pending_receipt_refs: tuple[str, ...]
     evidence_revision: int
     evidence_ids: tuple[str, ...]
     hypothesis_revision: int
