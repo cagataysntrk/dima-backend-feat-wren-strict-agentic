@@ -1,14 +1,14 @@
 {
   "schema_version": "dima_brain_v2_live_authorization_v1",
-  "enabled": false,
+  "enabled": true,
   "probe_id": "R_LIVE_1_ONE_PASS",
   "candidate_product_sha": "ade3d83a521f16ff7e37372827eb75982596ac21",
-  "provider_free_run_id": 0,
-  "provider_free_status": "PENDING",
+  "provider_free_run_id": 36762030782,
+  "provider_free_status": "GREEN",
   "engine_sha": "0f16f2b5a1ec774ac7afee6214c726e82f9ceb3c",
   "engine_release": "0.63.18-dima.8",
   "model_policy": "LUNA_FIRST",
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
-  "authorization_receipt": "phase1-intake-canonicalization-preflight-v2"
+  "authorization_receipt": "phase1-one-pass-after-typed-rca-subsumption"
 }
