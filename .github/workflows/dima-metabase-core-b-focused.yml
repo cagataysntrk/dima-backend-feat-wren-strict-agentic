@@ -154,14 +154,14 @@ jobs:
           test "$(git -C .. ls-tree HEAD engine/metabase | awk '{print $3}')" = "0f16f2b5a1ec774ac7afee6214c726e82f9ceb3c"
 
 
-      # Wave-A P2 scope authority was formally reopened and re-sealed by
+      # Phase-1.5 P14/P17 material-admission seam was re-proved provider-free; exact accepted blobs below supersede the historical seal.\n      # Wave-A P2 scope authority was formally reopened and re-sealed by
       # DMP-DEC-0064. Core-A final closure 36339715760 = SUCCESS; keep the
       # exact re-authorized owner blobs aligned with that sealed authority.
       - name: Guard sealed P14-P21 owner blobs
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD:backend/app/v3/research_product.py)" = "0370635ec046c88532c8ae70e49efc5126404489"
+          test "$(git rev-parse HEAD:backend/app/v3/research_product.py)" = "2efab531e9e5fda81c7e231ecbc086cb997a6bf2"
           # P17 root-recovery semantics remain sealed by DMP-DEC-0061.
           # Wave-B B1 typed downstream re-entry and the P19 identity extension
           # were re-proved under DMP-DEC-0066 before this exact P19 re-pin.
