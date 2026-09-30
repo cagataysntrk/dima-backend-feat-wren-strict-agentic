@@ -911,6 +911,82 @@ def test_r5_material_semantics_matching_stable_ids_are_accepted():
     assert observed.metric_refs == ("metric.downtime",)
 
 
+def test_r5_unranked_material_allows_non_limiting_presentation_ordering():
+    _, session, _, _ = session_and_link(db_engine())
+    contract = rich_material_contract().model_copy(update={"ranking": None})
+    observation = rich_material_observation(
+        ranking=[
+            {
+                "stage_number": 0,
+                "order_index": 0,
+                "target": {
+                    "kind": "field",
+                    "field_id": 30,
+                    "table_id": 10,
+                },
+                "direction": "asc",
+                "limit": None,
+            },
+            {
+                "stage_number": 0,
+                "order_index": 1,
+                "target": {
+                    "kind": "field",
+                    "field_id": 20,
+                    "table_id": 10,
+                },
+                "direction": "asc",
+                "limit": None,
+            },
+        ]
+    )
+
+    observed = scope_module.assert_material_native_scope(
+        session=session,
+        obligation_id="g1",
+        contract=contract,
+        observation=observation,
+        bindings=rich_material_bindings(),
+        expected_engine=expected_identity(),
+        expected_metabase_subject=7,
+    )
+
+    assert observed.ranking is None
+
+
+def test_r5_unranked_material_still_blocks_unaccepted_row_limiting_order():
+    _, session, _, _ = session_and_link(db_engine())
+    contract = rich_material_contract().model_copy(update={"ranking": None})
+    observation = rich_material_observation(
+        ranking=[
+            {
+                "stage_number": 0,
+                "order_index": 0,
+                "target": {
+                    "kind": "field",
+                    "field_id": 20,
+                    "table_id": 10,
+                },
+                "direction": "desc",
+                "limit": 2,
+            },
+        ]
+    )
+
+    with pytest.raises(scope_module.ResearchAnalyticalScopeError) as exc:
+        scope_module.assert_material_native_scope(
+            session=session,
+            obligation_id="g1",
+            contract=contract,
+            observation=observation,
+            bindings=rich_material_bindings(),
+            expected_engine=expected_identity(),
+            expected_metabase_subject=7,
+        )
+
+    assert exc.value.code == "R1_NATIVE_RANKING_SCOPE_MISMATCH"
+
+
 @pytest.mark.parametrize(
     ("updates", "code"),
     (
