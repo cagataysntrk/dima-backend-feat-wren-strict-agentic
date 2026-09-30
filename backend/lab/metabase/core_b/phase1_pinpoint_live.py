@@ -860,6 +860,39 @@ def _mechanical_b(turn: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _mechanical_verdict(report: dict[str, Any]) -> str:
+    if report.get("exception") is not None:
+        return "FAIL"
+    if report.get("provider_receipt_error") is not None:
+        return "FAIL"
+    if report.get("within_orchestration_boundary_budget") is not True:
+        return "FAIL"
+    turns = report.get("turns") or []
+    if (
+        report.get("turn_count_executed") != report.get("turn_count_expected")
+        or not turns
+        or not all(item.get("ready") is True for item in turns)
+    ):
+        return "FAIL"
+    provider = report.get("provider_receipt") or {}
+    if provider:
+        if int(provider.get("blocked_request_count") or 0) != 0:
+            return "FAIL"
+        if int(report.get("actual_provider_request_count") or 0) > int(
+            report.get("hard_provider_request_ceiling") or 0
+        ):
+            return "FAIL"
+    observations = report.get("mechanical_observations") or {}
+    boolean_checks = [
+        value
+        for value in observations.values()
+        if isinstance(value, bool)
+    ]
+    if boolean_checks and not all(boolean_checks):
+        return "FAIL"
+    return "PASS"
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument(
@@ -1073,6 +1106,10 @@ def main() -> int:
         "turn_count_expected": len(PROBES[args.probe_id]["turns"]),
         "turns": [],
         "manual_adjudication_required": True,
+        "mechanical_verdict": "PENDING",
+        "manual_quality_status": "PENDING",
+        "manual_quality_score": None,
+        # Historical compatibility field; never populated automatically.
         "quality_score": None,
     }
     started = time.monotonic()
@@ -1185,6 +1222,11 @@ def main() -> int:
                 "error_type": type(exc).__name__,
                 "error": str(exc),
             }
+
+    report["mechanical_verdict"] = _mechanical_verdict(report)
+    # Product quality remains human authority even when mechanics pass.
+    report["manual_quality_status"] = "PENDING"
+    report["manual_quality_score"] = None
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(

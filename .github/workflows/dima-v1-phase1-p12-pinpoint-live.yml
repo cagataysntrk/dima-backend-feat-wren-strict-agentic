@@ -399,6 +399,9 @@ jobs:
                   "MANUAL_ARTIFACT_ADJUDICATION_ONLY"
               )
 
+          assert report["mechanical_verdict"] == "PASS", report
+          assert report["manual_quality_status"] == "PENDING"
+          assert report["manual_quality_score"] is None
           assert report["quality_score"] is None
           assert report["manual_adjudication_required"] is True
           print("PINPOINT_ARTIFACT_READY_FOR_HUMAN_INSPECTION")
@@ -433,6 +436,9 @@ jobs:
               "turns": report.get("turns"),
               "currentness": report.get("currentness"),
               "mechanical_observations": report.get("mechanical_observations"),
+              "mechanical_verdict": report.get("mechanical_verdict"),
+              "manual_quality_status": report.get("manual_quality_status"),
+              "manual_quality_score": report.get("manual_quality_score"),
               "exception": report.get("exception"),
               "orchestration_boundary_units": report.get("orchestration_boundary_units"),
               "orchestration_boundary_units_by_owner": report.get("orchestration_boundary_units_by_owner"),

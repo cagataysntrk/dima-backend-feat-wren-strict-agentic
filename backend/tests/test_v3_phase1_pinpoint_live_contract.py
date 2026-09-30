@@ -8,6 +8,7 @@ from lab.metabase.core_b.phase1_pinpoint_live import (
     PROBES,
     OrchestrationBudget,
     PinpointBudgetExceeded,
+    _mechanical_verdict,
     build_catalog,
 )
 from lab.metabase.core_b.runtime.seed_phase1_pinpoint_metrics import (
@@ -198,3 +199,37 @@ def test_pinpoint_workflow_is_one_probe_per_run_and_no_broad_scorer():
     assert "MANUAL_ARTIFACT_ADJUDICATION_ONLY" in workflow
     assert '--checkout-sha "${GITHUB_SHA}"' in workflow
     assert "round2_feature_benchmark.py" not in workflow
+
+def test_mechanical_verdict_is_automated_but_manual_quality_remains_separate():
+    report = {
+        "exception": None,
+        "provider_receipt_error": None,
+        "within_orchestration_boundary_budget": True,
+        "turn_count_executed": 1,
+        "turn_count_expected": 1,
+        "turns": [{"ready": True}],
+        "provider_receipt": {
+            "blocked_request_count": 0,
+        },
+        "actual_provider_request_count": 4,
+        "hard_provider_request_ceiling": 24,
+        "mechanical_observations": {
+            "p19_called_when_required": True,
+        },
+    }
+    assert _mechanical_verdict(report) == "PASS"
+    report["mechanical_observations"]["p19_called_when_required"] = False
+    assert _mechanical_verdict(report) == "FAIL"
+
+
+def test_pinpoint_workflow_persists_manual_quality_as_pending_not_auto_score():
+    workflow = (
+        Path(__file__).parents[2]
+        / ".github"
+        / "workflows"
+        / "dima-v1-phase1-p12-pinpoint-live.yml"
+    ).read_text(encoding="utf-8")
+    assert 'report["mechanical_verdict"] == "PASS"' in workflow
+    assert 'report["manual_quality_status"] == "PENDING"' in workflow
+    assert 'report["manual_quality_score"] is None' in workflow
+
