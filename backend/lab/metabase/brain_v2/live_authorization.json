@@ -9,5 +9,6 @@
   "engine_release": "0.63.18-dima.8",
   "model_policy": "LUNA_FIRST",
   "broad_paid_allowed": false,
-  "thirty_case_allowed": false
+  "thirty_case_allowed": false,
+  "authorization_receipt": "adaptive-bounded-material-v1"
 }
