@@ -1,4 +1,4 @@
-# PHASE1.5 PROVIDER-FREE FREEZE: cb89bc94acf0d88b5b37a94b1160ad77daa1bb86
+# PHASE1.5 P14/P17 MATERIAL-ADMISSION OWNER RE-PROVED: c5069e8e4606e21bdd8ce41f4c1dc4bf7d23c789\n# PHASE1.5 PROVIDER-FREE FREEZE: cb89bc94acf0d88b5b37a94b1160ad77daa1bb86
 # R8 dima.8 provider-free closure trigger
 # FINAL STRICT-SCHEMA RECOVERY SEAL: cb89bc94acf0d88b5b37a94b1160ad77daa1bb86
 # 90+ convergence final provider-free freeze v2: Product behavior cb89bc94acf0d88b5b37a94b1160ad77daa1bb86
@@ -195,7 +195,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD:backend/app/v3/research_product.py)" = "0370635ec046c88532c8ae70e49efc5126404489"
+          test "$(git rev-parse HEAD:backend/app/v3/research_product.py)" = "2efab531e9e5fda81c7e231ecbc086cb997a6bf2"
           test "$(git rev-parse HEAD:backend/app/v3/research.py)" = "fff345ee965ccbe3676f49e02d44dbcd8217379e"
           # P17 is intentionally mutable under the certified active root-recovery fix.
           # Its current semantics are certified by the Sealed P17 regression above;
