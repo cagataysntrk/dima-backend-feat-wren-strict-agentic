@@ -53,4 +53,7 @@ jobs:
 
       - name: Brain V2 focused provider-free contracts
         working-directory: backend
-        run: pytest -q tests/test_v3_brain_v2_contracts.py
+        run: |
+          pytest -q \
+            tests/test_v3_brain_v2_contracts.py \
+            tests/test_v3_brain_v2_graph.py
