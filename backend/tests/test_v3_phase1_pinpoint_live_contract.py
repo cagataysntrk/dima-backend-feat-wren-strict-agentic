@@ -9,6 +9,7 @@ from lab.metabase.core_b.phase1_pinpoint_live import (
     OrchestrationBudget,
     PinpointBudgetExceeded,
     _mechanical_verdict,
+    _model_ceiling_events,
     _native_resource_binding_rows,
     build_catalog,
 )
@@ -62,8 +63,11 @@ def test_final_pinpoint_probes_are_closed_and_not_benchmark_cases():
         "MULTI_INTENT_F04_H_RECOVERY",
     )
     assert MAX_ORCHESTRATION_BOUNDARY_UNITS == 12
-    from lab.metabase.core_b.phase1_pinpoint_live import MODEL
-    assert MODEL == "openai/gpt-5.6-terra"
+    from lab.metabase.core_b.phase1_pinpoint_live import METABOT_MODEL, MODEL
+    assert MODEL == "openai/gpt-5.6-luna"
+    assert METABOT_MODEL == "openrouter/openai/gpt-5.6-luna"
+    assert "terra" not in MODEL.casefold()
+    assert "terra" not in METABOT_MODEL.casefold()
     serialized = json.dumps(PROBES, ensure_ascii=False)
     assert "F02_M" not in serialized
     assert "F07_M" not in serialized
@@ -267,7 +271,7 @@ def test_pinpoint_workflow_is_one_probe_per_run_and_no_broad_scorer():
     assert "validate_phase1_round2.py" not in workflow
     assert "--manifest eval/dima_neutral_feature_benchmark_round2.json" not in workflow
     assert "backend/eval/v1/authorizations/phase1-final-pinpoint-live-v3.json" not in workflow
-    assert "phase1-r-live-1-native-binding-trigger-20260930" in workflow
+    assert "phase1-r-live-1-luna-trigger-20260930" in workflow
     assert "phase1-r-live-2-trigger-20260930" in workflow
     assert "phase1-r-live-3-trigger-20260930" in workflow
     assert "phase1-v4-trigger-20260929" in workflow
@@ -307,6 +311,46 @@ def test_pinpoint_workflow_is_one_probe_per_run_and_no_broad_scorer():
     assert "MANUAL_ARTIFACT_ADJUDICATION_ONLY" in workflow
     assert '--checkout-sha "${GITHUB_SHA}"' in workflow
     assert "round2_feature_benchmark.py" not in workflow
+
+def test_model_ceiling_events_are_separate_privacy_safe_telemetry():
+    report = {
+        "exception": {
+            "error_code": "UNAVAILABLE",
+            "cause_code": "COGNITION_OUTPUT_BUDGET_EXHAUSTED",
+            "cause_detail": "do-not-persist-this-detail",
+        },
+        "provider_receipt": {
+            "events": [
+                {
+                    "ordinal": 2,
+                    "source": "p17_manager",
+                    "forwarded": False,
+                    "blocked_reason": "PROVIDER_COMPLETION_TOKEN_CEILING_REACHED",
+                }
+            ]
+        },
+        "transport_traces": {
+            "research_intake": [
+                {
+                    "call_ordinal_by_role": 1,
+                    "model": "openai/gpt-5.6-luna",
+                    "finish_reason": "length",
+                    "native_finish_reason": "max_output_tokens",
+                    "max_completion_tokens": 4096,
+                }
+            ]
+        },
+    }
+    events = _model_ceiling_events(report)
+    codes = {item["code"] for item in events}
+    assert "COGNITION_OUTPUT_BUDGET_EXHAUSTED" in codes
+    assert "PROVIDER_COMPLETION_TOKEN_CEILING_REACHED" in codes
+    assert "MODEL_OUTPUT_LENGTH_LIMIT" in codes
+    serialized = json.dumps(events, sort_keys=True)
+    assert "do-not-persist-this-detail" not in serialized
+    assert "prompt" not in serialized.casefold()
+    assert "reasoning_text" not in serialized.casefold()
+
 
 def test_mechanical_verdict_is_automated_but_manual_quality_remains_separate():
     report = {
