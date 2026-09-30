@@ -14,6 +14,7 @@ dependencies = [
   "argon2-cffi>=23.1",
   "pyjwt>=2.9",
   "psycopg[binary]>=3.2",
+  "langgraph==1.2.12",
   "cryptography>=43",
   # Bounded final cognition canaries use typed provider transports. Neither package
   # is an analytical engine or a runtime dependency of deterministic authorities.
