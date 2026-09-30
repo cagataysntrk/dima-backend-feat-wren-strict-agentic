@@ -1,0 +1,100 @@
+from __future__ import annotations
+
+from types import SimpleNamespace
+from uuid import UUID
+
+from app.v3.brain_v2.state import BrainGraphState, BrainWorkflowStatus
+from lab.metabase.brain_v2.phase1_live import (
+    _mechanical,
+    _native_occurrence_projection,
+)
+
+
+def _link(*, fingerprint: str = "a" * 64):
+    return SimpleNamespace(
+        id=UUID("00000000-0000-4000-8000-000000000001"),
+        obligation_id="g_root",
+        status="VERIFIED",
+        native_query_id="query-1",
+        native_query_fingerprint=fingerprint,
+        receipt_id="dqr_" + "1" * 24,
+        evidence_id="evi_" + "2" * 24,
+        execution_kind="P14_BASE",
+    )
+
+
+def _grounded_hypothesis():
+    return SimpleNamespace(
+        groundings=(
+            SimpleNamespace(
+                source_kind="P14_EVIDENCE",
+            ),
+        ),
+    )
+
+
+def test_live_receipt_uses_canonical_native_query_fingerprint() -> None:
+    projected = _native_occurrence_projection((_link(),))
+
+    assert projected == [
+        {
+            "execution_link_id": "00000000-0000-4000-8000-000000000001",
+            "obligation_id": "g_root",
+            "status": "VERIFIED",
+            "native_query_id": "query-1",
+            "query_fingerprint": "a" * 64,
+            "receipt_id": "dqr_" + "1" * 24,
+            "evidence_id": "evi_" + "2" * 24,
+            "execution_kind": "P14_BASE",
+        }
+    ]
+
+
+def test_one_pass_mechanical_gate_reads_canonical_native_fingerprint() -> None:
+    state = BrainGraphState(
+        thread_id="live:test",
+        tenant_binding="id:tenant",
+        principal_ref="user-1",
+        research_session_id="rs_" + "1" * 24,
+        accepted_brief_ref="rb_fixture",
+        scope_version_id="scope_v1",
+        evidence_revision=1,
+        evidence_ids=("evi_" + "2" * 24,),
+        hypothesis_ids=("p19h_" + "3" * 24, "p19h_" + "4" * 24),
+        latest_p19_assessment_ref="p19a_" + "5" * 24,
+        report_ref="p20r_" + "6" * 24,
+        workflow_status=BrainWorkflowStatus.COMPLETE,
+        last_completed_node="REPORT",
+    )
+    provider = {
+        "provider_requests_by_source": {
+            "research_intake": 1,
+            "metabase": 1,
+            "p17_manager": 0,
+            "p19_manager": 1,
+        },
+        "actual_provider_request_count": 3,
+        "prompt_tokens": 1000,
+        "blocked_request_count": 0,
+    }
+    p17_snapshot = SimpleNamespace(
+        investigation=SimpleNamespace(nodes=()),
+        claims=(),
+    )
+    p19_snapshot = SimpleNamespace(
+        hypotheses=(_grounded_hypothesis(), _grounded_hypothesis()),
+    )
+
+    result = _mechanical(
+        probe_id="R_LIVE_1_ONE_PASS",
+        state=state,
+        provider=provider,
+        links=(_link(),),
+        p17_snapshot=p17_snapshot,
+        p19_snapshot=p19_snapshot,
+        report_doc=object(),
+    )
+
+    assert result["mechanical_green"] is True
+    assert result["duplicate_native_execution_zero"] is True
+    assert result["native_acquisitions"] == 1
