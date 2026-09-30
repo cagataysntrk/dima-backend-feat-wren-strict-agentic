@@ -1,6 +1,6 @@
 {
   "schema_version": "dima_brain_v2_live_authorization_v1",
-  "enabled": true,
+  "enabled": false,
   "probe_id": "R_LIVE_1_ONE_PASS",
   "candidate_product_sha": "7189cbab2cc6ddcbd0f225f39f73d49c232fd2da",
   "provider_free_run_id": 36766883034,
@@ -10,5 +10,5 @@
   "model_policy": "LUNA_FIRST",
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
-  "authorization_receipt": "phase1-one-pass-material-coverage-v1"
+  "authorization_receipt": "disarmed-after-intake-split-36767085372"
 }
