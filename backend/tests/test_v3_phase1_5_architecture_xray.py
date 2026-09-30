@@ -9,6 +9,7 @@ from app.v3.product.composition import (
     ProductRequirementState,
 )
 from app.v3.research_contracts import (
+    CausalCompetitionSurface,
     PresentationKind,
     ResearchBrief,
     ResearchBriefStatus,
@@ -17,6 +18,7 @@ from app.v3.research_contracts import (
     ResearchGoalStatus,
     ResearchQuestion,
     ResearchScope,
+    SemanticTargetKind,
 )
 from app.v3.research_intake import (
     ResearchIntakeCompiler,
@@ -24,13 +26,9 @@ from app.v3.research_intake import (
     ResearchIntakeTerminal,
 )
 
-from test_v3_research_intake import FakeTransport, catalog, ready_payload
+from test_v3_research_intake import FakeTransport, catalog, principal, ready_payload
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="PHASE1.5 H1: provider workflow graph still lacks typed epistemic/stop atoms",
-)
 def test_xray_h1_rca_directives_do_not_become_second_analytical_goal():
     payload = ready_payload(
         kind="root_cause",
@@ -101,10 +99,6 @@ def test_xray_h1_rca_directives_do_not_become_second_analytical_goal():
     assert len(result.brief.must_requirement_ids) == 4
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="PHASE1.5 H5: EXPLAIN deliverable is currently projected PENDING/UNSUPPORTED",
-)
 def test_xray_h5_explain_is_fulfilled_by_governed_p20_report():
     question = ResearchQuestion(
         goal_id="g_root",
@@ -156,3 +150,113 @@ def test_xray_h3_h4_remain_conditional_until_current_material_admission_proves_l
     # This sentinel is intentionally architectural: the current contracts keep
     # native material ownership outside Product and no new evidence family exists.
     assert not hasattr(HeadlessProductComposer, "EvidenceBundle")
+
+
+class _EpistemicsRecorder:
+    def __init__(self):
+        self.hypotheses = []
+        self.groundings = []
+
+    def create_hypothesis(
+        self,
+        *,
+        research_session_id,
+        obligation_id,
+        statement,
+        principal,
+        candidate_identity_ref=None,
+    ):
+        hypothesis_id = "p19h_" + str(len(self.hypotheses) + 1) * 24
+        self.hypotheses.append(
+            {
+                "research_session_id": research_session_id,
+                "obligation_id": obligation_id,
+                "statement": statement,
+                "candidate_identity_ref": candidate_identity_ref,
+            }
+        )
+        return SimpleNamespace(hypothesis_id=hypothesis_id)
+
+    def create_grounding(self, **kwargs):
+        self.groundings.append(kwargs)
+        return SimpleNamespace()
+
+
+def test_xray_h8_user_seeded_hypotheses_bind_directly_to_evidence_without_p17():
+    refs = {item.candidate_id: item for item in catalog().semantic_refs}
+    goal = ResearchQuestion(
+        goal_id="g_root",
+        kind=ResearchGoalKind.ROOT_CAUSE,
+        source_text="Evaluate governed candidate mechanisms.",
+        subject_refs=(
+            refs["metric.downtime"],
+            refs["metric.fault_count"],
+            refs["metric.performance"],
+        ),
+        related_refs=(refs["dimension.department"],),
+        causal_competition=CausalCompetitionSurface(
+            effect_semantic_id="metric.downtime",
+            candidate_mechanism_semantic_ids=(
+                "metric.fault_count",
+                "metric.performance",
+            ),
+            diagnostic_dimension_ids=("dimension.department",),
+        ),
+        status=ResearchGoalStatus.RESOLVED,
+    )
+    brief = ResearchBrief(
+        brief_id="rb-phase15-h8",
+        objective="Evaluate user-seeded competing explanations.",
+        scope=ResearchScope(
+            semantic_refs=(
+                refs["metric.downtime"],
+                refs["metric.fault_count"],
+                refs["metric.performance"],
+                refs["dimension.department"],
+            )
+        ),
+        questions=(goal,),
+        must_requirement_ids=("g_root",),
+        context_version="ctx-phase15-h8",
+        status=ResearchBriefStatus.READY_FOR_RESEARCH,
+    )
+    source_session = SimpleNamespace(
+        accepted_brief=brief,
+        evidence_refs=(
+            SimpleNamespace(
+                evidence_id="evi_" + "1" * 24,
+                receipt_id="dqr_" + "2" * 24,
+                obligation_id="g_root",
+            ),
+        ),
+    )
+    recorder = _EpistemicsRecorder()
+    composer = object.__new__(HeadlessProductComposer)
+    composer._epistemics = recorder
+
+    hypothesis_ids = composer._seed_user_hypotheses(
+        session_id="rs_" + "3" * 24,
+        goal=goal,
+        principal=principal(),
+        source_session=source_session,
+        mechanism_refs=(
+            "metric.fault_count",
+            "metric.performance",
+        ),
+        evidence_refs=("evi_" + "1" * 24,),
+    )
+
+    assert len(hypothesis_ids) == 2
+    assert [item["candidate_identity_ref"] for item in recorder.hypotheses] == [
+        "metric.fault_count",
+        "metric.performance",
+    ]
+    assert len(recorder.groundings) == 2
+    assert all(
+        item["source_kind"].value == "P14_EVIDENCE"
+        for item in recorder.groundings
+    )
+    assert all(
+        item["relation"].value == "CONTEXT"
+        for item in recorder.groundings
+    )
