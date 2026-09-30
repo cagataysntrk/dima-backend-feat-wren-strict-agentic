@@ -620,6 +620,73 @@ class HeadlessProductComposer:
             False,
         )
 
+    def _seed_user_hypotheses(
+        self,
+        *,
+        session_id: str,
+        goal: ResearchQuestion,
+        principal: Principal,
+        source_session,
+        mechanism_refs: tuple[str, ...],
+        evidence_refs: tuple[str, ...],
+    ) -> tuple[str, ...]:
+        """Bind accepted user candidates directly to governed Evidence.
+
+        Candidate identity is deterministic Product authority. Evidence relation
+        remains CONTEXT until P19 judges it; Product never fabricates SUPPORTS or
+        CHALLENGES. No P17 cognition is used in the user-seeded path.
+        """
+        brief = source_session.accepted_brief
+        if brief is None:
+            raise ProductProcessError(
+                "PRODUCT_ROOT_CANDIDATE_CONTEXT_MISSING",
+                goal.goal_id,
+            )
+        semantic_by_id = {
+            item.candidate_id: item for item in brief.scope.semantic_refs
+        }
+        evidence_by_id = {
+            item.evidence_id: item
+            for item in source_session.evidence_refs
+            if (
+                item.obligation_id == goal.goal_id
+                and item.evidence_id in set(evidence_refs)
+            )
+        }
+        if len(evidence_by_id) != len(set(evidence_refs)):
+            raise ProductProcessError(
+                "PRODUCT_ROOT_EVIDENCE_SCOPE_MISMATCH",
+                goal.goal_id,
+            )
+
+        hypothesis_ids: list[str] = []
+        for mechanism_ref in tuple(dict.fromkeys(mechanism_refs)):
+            semantic = semantic_by_id.get(mechanism_ref)
+            if semantic is None:
+                raise ProductProcessError(
+                    "PRODUCT_ROOT_MECHANISM_SCOPE_MISMATCH",
+                    mechanism_ref,
+                )
+            hypothesis = self._epistemics.create_hypothesis(
+                research_session_id=session_id,
+                obligation_id=goal.goal_id,
+                statement=semantic.canonical_name,
+                principal=principal,
+                candidate_identity_ref=mechanism_ref,
+            )
+            hypothesis_ids.append(hypothesis.hypothesis_id)
+            for evidence in evidence_by_id.values():
+                self._epistemics.create_grounding(
+                    hypothesis_id=hypothesis.hypothesis_id,
+                    source_kind=GroundingSourceKind.P14_EVIDENCE,
+                    source_ref=evidence.evidence_id,
+                    source_receipt_id=evidence.receipt_id,
+                    relation=GroundingRelation.CONTEXT,
+                    principal=principal,
+                )
+        return tuple(hypothesis_ids)
+
+
     def _synthesize_root_candidates(
         self,
         *,
@@ -1086,25 +1153,42 @@ class HeadlessProductComposer:
         )
         last_error = None
         if user_seeded:
-            snapshot = self._synthesize_root_candidates(
+            if len(tuple(dict.fromkeys(allowed_mechanism_refs))) < 2:
+                snapshot = self._investigation.snapshot(
+                    session_id=session_id,
+                    principal=principal,
+                )
+                return (
+                    None,
+                    snapshot,
+                    "PRODUCT_ROOT_CANDIDATES_INSUFFICIENT",
+                    False,
+                )
+            if not allowed_evidence_refs:
+                snapshot = self._investigation.snapshot(
+                    session_id=session_id,
+                    principal=principal,
+                )
+                return (
+                    None,
+                    snapshot,
+                    "PRODUCT_ROOT_EVIDENCE_REQUIRED",
+                    False,
+                )
+            self._seed_user_hypotheses(
                 session_id=session_id,
                 goal=goal,
                 principal=principal,
-                native_session_token=native_session_token,
-                owner_calls=owner_calls,
+                source_session=source_session,
                 mechanism_refs=allowed_mechanism_refs,
                 evidence_refs=allowed_evidence_refs,
             )
-            observation, claims, _ = self._observe_p17_process(
-                snapshot=snapshot,
+            snapshot = self._investigation.snapshot(
                 session_id=session_id,
-                target_obligation_id=goal.goal_id,
                 principal=principal,
             )
-            next_owner = decide_next_owner(
-                ProductProcessPurpose.ROOT_CAUSE,
-                observation,
-            )
+            claims = ()
+            next_owner = ProductProcessNext.P19
         else:
             scoped_manager = _ObligationScopedProposalManager(
                 inner=self._investigation_manager,
@@ -1134,12 +1218,16 @@ class HeadlessProductComposer:
                 last_error=last_error,
             ), False
 
-        active_mechanism_refs = self._sync_root_candidates_to_p19(
-            session_id=session_id,
-            goal=goal,
-            principal=principal,
-            source_session=source_session,
-            claims=claims,
+        active_mechanism_refs = (
+            tuple(dict.fromkeys(allowed_mechanism_refs))
+            if user_seeded
+            else self._sync_root_candidates_to_p19(
+                session_id=session_id,
+                goal=goal,
+                principal=principal,
+                source_session=source_session,
+                claims=claims,
+            )
         )
 
         scope_version_id = (
@@ -1252,7 +1340,7 @@ class HeadlessProductComposer:
                     and item.evidence_id not in before_evidence
                 )
             )
-            if new_evidence and active_mechanism_refs:
+            if new_evidence and active_mechanism_refs and not user_seeded:
                 synthesis_snapshot = self._synthesize_root_candidates(
                     session_id=session_id,
                     goal=goal,
