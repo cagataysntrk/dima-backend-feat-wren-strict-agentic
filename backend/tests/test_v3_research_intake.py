@@ -167,6 +167,50 @@ def ready_payload(
     }
 
 
+def test_causal_competition_is_one_root_cause_goal_not_relationship_query_plan():
+    payload = ready_payload(
+        kind="root_cause",
+        subject=(
+            "metric.downtime",
+            "metric.fault_count",
+            "metric.performance",
+        ),
+        related=("dimension.department",),
+    )
+    fragment = (
+        "Determine which governed explanation better accounts for the outcome "
+        "and preserve supporting and challenging evidence."
+    )
+    payload["goals"][0]["source_text"] = fragment
+    payload["goals"][0]["source_fragment_text"] = fragment
+    transport = FakeTransport(payload)
+
+    result = ResearchIntakeCompiler(
+        transport=transport,
+        calendar_reference_date="2026-09-30",
+    ).compile(
+        question=fragment,
+        catalog=catalog(),
+    )
+
+    assert result.terminal == ResearchIntakeTerminal.READY
+    assert result.brief is not None
+    assert len(result.brief.questions) == 1
+    goal = result.brief.questions[0]
+    assert goal.kind == ResearchGoalKind.ROOT_CAUSE
+    assert {item.candidate_id for item in goal.subject_refs} == {
+        "metric.downtime",
+        "metric.fault_count",
+        "metric.performance",
+    }
+    assert tuple(item.candidate_id for item in goal.related_refs) == (
+        "dimension.department",
+    )
+    system = transport.calls[0]["system"]
+    assert "Do NOT manufacture separate RELATIONSHIP goals" in system
+    assert "P17/P19 own governed hypothesis competition" in system
+
+
 def test_ready_breakdown_compiles_to_typed_research_brief():
     transport = FakeTransport(ready_payload())
     compiler = ResearchIntakeCompiler(transport=transport)
