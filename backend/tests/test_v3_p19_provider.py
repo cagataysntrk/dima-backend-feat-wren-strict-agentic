@@ -149,6 +149,10 @@ def valid_payload():
                 "epistemic_class": "CONTRIBUTION",
                 "contribution_class": "MATERIAL",
                 "evidence_strength": "MODERATE",
+                "supporting_grounding_link_ids": [
+                    a.groundings[0].grounding_link_id
+                ],
+                "challenging_grounding_link_ids": [],
                 "causal_qualification": "IDENTIFICATION_LIMITED",
                 "relationship_dependent": True,
                 "relationship_policy_use_id": "bru_" + "1" * 24,
@@ -163,6 +167,12 @@ def valid_payload():
                 "epistemic_class": "COMPETING_HYPOTHESIS",
                 "contribution_class": "MATERIAL",
                 "evidence_strength": "WEAK",
+                "supporting_grounding_link_ids": [
+                    b.groundings[0].grounding_link_id
+                ],
+                "challenging_grounding_link_ids": [
+                    b.groundings[1].grounding_link_id
+                ],
                 "causal_qualification": "IDENTIFICATION_LIMITED",
                 "relationship_dependent": False,
                 "relationship_policy_use_id": None,
@@ -206,7 +216,49 @@ def test_typed_provider_maps_qualitative_complete_assessment():
     assert draft.aggregate_outcome.value == "MULTIPLE_MATERIAL_CONTRIBUTORS"
     assert all(not x.numeric_provenance for x in draft.candidates)
     assert all(not x.causal_identification_refs for x in draft.candidates)
+    assert draft.candidates[0].supporting_grounding_link_ids
+    assert draft.candidates[1].challenging_grounding_link_ids
     assert "numeric_values_exposed_to_model" in transport.calls[0]["user"]
+
+
+def test_provider_allows_same_governed_evidence_as_support_and_challenge_interpretation():
+    payload = valid_payload()
+    grounding_id = payload["candidates"][0]["grounding_link_ids"][0]
+    payload["candidates"][0]["supporting_grounding_link_ids"] = [
+        grounding_id
+    ]
+    payload["candidates"][0]["challenging_grounding_link_ids"] = [
+        grounding_id
+    ]
+    manager = StructuredP19AssessmentManager(
+        transport=FakeTransport(payload)
+    )
+
+    draft = manager.propose(
+        snapshot(),
+        policy_statuses={"bru_" + "1" * 24: "SATISFIED"},
+    )
+
+    first = draft.candidates[0]
+    assert first.supporting_grounding_link_ids == (grounding_id,)
+    assert first.challenging_grounding_link_ids == (grounding_id,)
+
+
+def test_provider_rejects_interpretation_of_unselected_candidate_grounding():
+    payload = valid_payload()
+    second_grounding = payload["candidates"][0]["grounding_link_ids"][1]
+    payload["candidates"][0]["grounding_link_ids"] = [
+        payload["candidates"][0]["grounding_link_ids"][0]
+    ]
+    payload["candidates"][0]["supporting_grounding_link_ids"] = [
+        second_grounding
+    ]
+    manager = StructuredP19AssessmentManager(
+        transport=FakeTransport(payload)
+    )
+
+    with pytest.raises(ValidationError):
+        manager.propose(snapshot())
 
 
 def test_provider_rejects_missing_competing_hypothesis():
@@ -304,11 +356,18 @@ def test_p19_request_scoped_schema_closes_hypothesis_grounding_root_and_policy_i
         assert variant["properties"]["hypothesis_id"]["enum"] == [
             hypothesis.hypothesis.hypothesis_id
         ]
-        assert set(
-            variant["properties"]["grounding_link_ids"]["items"]["enum"]
-        ) == {
+        governed_groundings = {
             link.grounding_link_id for link in hypothesis.groundings
         }
+        assert set(
+            variant["properties"]["grounding_link_ids"]["items"]["enum"]
+        ) == governed_groundings
+        assert set(
+            variant["properties"]["supporting_grounding_link_ids"]["items"]["enum"]
+        ) == governed_groundings
+        assert set(
+            variant["properties"]["challenging_grounding_link_ids"]["items"]["enum"]
+        ) == governed_groundings
         policy_schema = variant["properties"]["relationship_policy_use_id"]
         assert {"type": "string", "enum": [policy_id]} in policy_schema["anyOf"]
 
