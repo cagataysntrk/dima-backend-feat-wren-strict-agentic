@@ -244,6 +244,35 @@ def test_fixture_entity_authority_is_derived_from_exact_fixture_values(tmp_path)
     assert len({item["candidate_id"] for item in first}) == len(first)
 
 
+
+def test_metric_fixture_card_is_scoped_to_metabot_discovery_collection():
+    payload = metric_card_payload(
+        database_id=7,
+        table_id=11,
+        field_id=13,
+        name="Independent Governed Metric",
+        aggregation="sum",
+        collection_id=41,
+    )
+    assert payload["collection_id"] == 41
+
+
+def test_brain_v2_live_seed_requires_restricted_collection_scoped_search_readiness():
+    seed = (
+        Path(__file__).parents[1]
+        / "lab"
+        / "metabase"
+        / "core_b"
+        / "runtime"
+        / "seed_phase1_pinpoint_metrics.py"
+    ).read_text(encoding="utf-8")
+    assert "_internal_metabot_collection_id" in seed
+    assert "_verify_restricted_search_visibility" in seed
+    assert '"/api/search?"' in seed
+    assert '"models", "metric"' in seed
+    assert '"collection", str(collection_id)' in seed
+
+
 def test_metric_fixture_setup_is_closed_and_creates_metric_cards():
     specs = metric_specs()
     assert len(specs) == 8
