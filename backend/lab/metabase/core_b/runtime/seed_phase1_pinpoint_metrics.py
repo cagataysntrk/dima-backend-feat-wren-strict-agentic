@@ -7,6 +7,7 @@ Every metric definition is a closed mapping over the frozen neutral fixture.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import urllib.error
@@ -16,6 +17,11 @@ from typing import Any
 
 SCHEMA_VERSION = "phase1_pinpoint_native_bindings_v1"
 TABLE_NAME = "machine_operations"
+
+_ENTITY_DIMENSION_SPECS = (
+    ("dimension.department", "Department", "department"),
+    ("dimension.machine_id", "Machine", "machine_id"),
+)
 
 _METRIC_SPECS = (
     ("metric.machine_downtime_minutes", "Machine Downtime Minutes", "machine_downtime_minutes", "sum"),
@@ -31,6 +37,83 @@ _METRIC_SPECS = (
 
 def metric_specs() -> tuple[tuple[str, str, str, str], ...]:
     return _METRIC_SPECS
+
+
+def entity_value_bindings_from_fixture(
+    *,
+    fixture: Path,
+    fields: dict[str, int],
+) -> list[dict[str, Any]]:
+    """Mint closed fixture entity identities from exact observed values.
+
+    This is lab authority construction, not language inference: no fuzzy,
+    regex, morphology, or prompt-specific mapping participates.
+    """
+    body = json.loads(fixture.read_text(encoding="utf-8"))
+    columns = body.get("columns")
+    rows = body.get("rows")
+    if not isinstance(columns, list) or not isinstance(rows, list):
+        raise RuntimeError("pinpoint fixture columns/rows missing")
+    names = [
+        str(item[0])
+        for item in columns
+        if isinstance(item, list) and len(item) >= 1
+    ]
+    if len(names) != len(columns) or len(names) != len(set(names)):
+        raise RuntimeError("pinpoint fixture columns invalid")
+    positions = {name: index for index, name in enumerate(names)}
+
+    output: list[dict[str, Any]] = []
+    for dimension_candidate_id, _dimension_name, column_name in _ENTITY_DIMENSION_SPECS:
+        if column_name not in positions or column_name not in fields:
+            raise RuntimeError(
+                f"pinpoint entity dimension unavailable: {column_name}"
+            )
+        index = positions[column_name]
+        values: set[str] = set()
+        for row in rows:
+            if not isinstance(row, list) or len(row) != len(columns):
+                raise RuntimeError("pinpoint fixture row shape invalid")
+            value = row[index]
+            if value is None:
+                continue
+            if not isinstance(value, str) or not value:
+                raise RuntimeError(
+                    f"pinpoint entity value invalid: {column_name}"
+                )
+            values.add(value)
+        if not values:
+            raise RuntimeError(
+                f"pinpoint entity dimension has no values: {column_name}"
+            )
+        for value in sorted(values):
+            identity = json.dumps(
+                {
+                    "dimension_candidate_id": dimension_candidate_id,
+                    "value": value,
+                },
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            )
+            candidate_id = (
+                "entity_value."
+                + hashlib.sha256(identity.encode("utf-8")).hexdigest()[:24]
+            )
+            output.append(
+                {
+                    "candidate_id": candidate_id,
+                    "canonical_name": value,
+                    "source_mention": value,
+                    "dimension_candidate_id": dimension_candidate_id,
+                    "dimension_name": column_name,
+                    "value": value,
+                    "table_name": TABLE_NAME,
+                    "column_name": column_name,
+                    "field_id": int(fields[column_name]),
+                }
+            )
+    return output
 
 
 def metric_card_payload(
@@ -238,6 +321,7 @@ def _verify_restricted_visibility(
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--base-url", required=True)
+    ap.add_argument("--fixture", type=Path, required=True)
     ap.add_argument("--output", type=Path, required=True)
     args = ap.parse_args()
 
@@ -253,6 +337,10 @@ def main() -> int:
         admin_session=admin,
         database_id=database_id,
         table_id=table_id,
+        fields=fields,
+    )
+    entity_values = entity_value_bindings_from_fixture(
+        fixture=args.fixture,
         fields=fields,
     )
     restricted = _login(
@@ -272,6 +360,7 @@ def main() -> int:
         "database_id": database_id,
         "table_id": table_id,
         "metrics": metrics,
+        "entity_values": entity_values,
         "dimensions": [
             {
                 "candidate_id": "dimension.department",
@@ -303,6 +392,7 @@ def main() -> int:
             {
                 "native_binding_manifest": str(args.output),
                 "metric_count": len(metrics),
+                "entity_value_count": len(entity_values),
                 "restricted_visibility": "PASSED",
             },
             sort_keys=True,

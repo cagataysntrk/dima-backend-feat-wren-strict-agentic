@@ -312,6 +312,9 @@ def load_binding_manifest(path: Path) -> dict[str, Any]:
     metrics = body.get("metrics")
     if not isinstance(metrics, list):
         raise RuntimeError("pinpoint metric bindings missing")
+    entity_values = body.get("entity_values")
+    if not isinstance(entity_values, list):
+        raise RuntimeError("pinpoint governed entity-value bindings missing")
     return body
 
 def _native_resource_fingerprint(payload: dict[str, Any]) -> str:
@@ -402,7 +405,7 @@ def seed_native_resource_bindings(
 
 
 def build_catalog(binding_manifest: dict[str, Any]) -> ResearchIntakeCatalog:
-    refs = (
+    base_refs = (
         _metric(
             "metric.machine_downtime_minutes",
             "Machine Downtime Minutes",
@@ -439,6 +442,19 @@ def build_catalog(binding_manifest: dict[str, Any]) -> ResearchIntakeCatalog:
         _dim("dimension.event_date", "Event Date", "tarih / date / Mayıs / Haziran"),
         _dim("dimension.machine_id", "Machine", "makine / machine"),
     )
+    entity_refs = tuple(
+        ResearchSemanticRef(
+            source_mention=str(item["source_mention"]),
+            candidate_id=str(item["candidate_id"]),
+            target_kind=SemanticTargetKind.ENTITY_VALUE,
+            canonical_name=str(item["canonical_name"]),
+            dimension_name=str(item["dimension_name"]),
+            value=str(item["value"]),
+            cube_names=("machine_operations",),
+        )
+        for item in binding_manifest["entity_values"]
+    )
+    refs = (*base_refs, *entity_refs)
     relationships = (
         AllowedRelationship(
             relationship_id="rel.downtime_fault.department",
@@ -500,6 +516,20 @@ def build_catalog(binding_manifest: dict[str, Any]) -> ResearchIntakeCatalog:
         ("dimension.event_date", "event_date"),
         ("dimension.machine_id", "machine_id"),
     ):
+        bindings.append(
+            ResearchNativeVerificationBinding(
+                candidate_id=candidate_id,
+                table_name="machine_operations",
+                column_name=column,
+            )
+        )
+    for item in binding_manifest["entity_values"]:
+        candidate_id = str(item.get("candidate_id") or "").strip()
+        column = str(item.get("column_name") or "").strip()
+        value = item.get("value")
+        dimension_name = str(item.get("dimension_name") or "").strip()
+        if not candidate_id or not column or not dimension_name or not isinstance(value, str):
+            raise RuntimeError("invalid governed entity-value binding")
         bindings.append(
             ResearchNativeVerificationBinding(
                 candidate_id=candidate_id,
