@@ -101,15 +101,64 @@ class AnalyticalRequestContract(FrozenModel):
     requested_output_surfaces: tuple[str, ...] = ()
 
     @property
-    def fingerprint(self) -> str:
+    def material_fingerprint(self) -> str:
+        """Stable material need identity, independent of session/version provenance."""
+        payload = {
+            "semantic_context_version": self.semantic_context_version,
+            "scope_fingerprint": self.scope_fingerprint,
+            "metric_refs": sorted(self.metric_refs),
+            "dimension_refs": sorted(self.dimension_refs),
+            "filters": sorted(
+                (
+                    item.model_dump(mode="json")
+                    for item in self.filters
+                ),
+                key=lambda item: (
+                    item["semantic_ref"],
+                    item["source_candidate_id"],
+                    item["dimension_name"],
+                    item["value"],
+                ),
+            ),
+            "period": (
+                self.period.model_dump(mode="json")
+                if self.period is not None
+                else None
+            ),
+            "comparison": (
+                self.comparison.model_dump(mode="json")
+                if self.comparison is not None
+                else None
+            ),
+            "temporal_observation": (
+                self.temporal_observation.model_dump(mode="json")
+                if self.temporal_observation is not None
+                else None
+            ),
+            "ranking": (
+                self.ranking.model_dump(mode="json")
+                if self.ranking is not None
+                else None
+            ),
+            "grain_constraints": sorted(self.grain_constraints),
+            "requested_output_surfaces": sorted(
+                self.requested_output_surfaces
+            ),
+        }
         raw = json.dumps(
-            self.model_dump(mode="json"),
+            payload,
             ensure_ascii=False,
             sort_keys=True,
             separators=(",", ":"),
             allow_nan=False,
         )
         return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+    @property
+    def fingerprint(self) -> str:
+        # Backward-compatible alias for call sites that already treat this as
+        # material identity. Authority/request provenance lives in separate fields.
+        return self.material_fingerprint
 
     @model_validator(mode="after")
     def coherent_temporal_observation(self):
