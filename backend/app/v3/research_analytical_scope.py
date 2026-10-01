@@ -1332,6 +1332,17 @@ def _assert_material_dimension_scope(
         for item in observation.dimensions
         if item.role == "breakout"
     }
+    # Exact accepted equality filters already constrain their governed fields.
+    # Repeating one of those same fields as a breakout changes only physical
+    # result shape; it cannot broaden the accepted row set or mint new semantic
+    # dimension authority. Such breakouts are therefore allowed but never
+    # required. Unfiltered extra dimensions remain unauthorized.
+    fixed_filter_dimensions = {
+        _material_field_identity(
+            _material_binding(bindings, item.source_candidate_id)
+        )
+        for item in contract.filters
+    }
     if (
         contract.comparison is not None
         or contract.temporal_observation is not None
@@ -1340,13 +1351,13 @@ def _assert_material_dimension_scope(
         # governed temporal grain. This is semantic material authority, not a
         # physical query-plan prescription.
         required.add(time_identity)
-        allowed = set(required)
+        allowed = set(required) | fixed_filter_dimensions
     else:
         # Within an already accepted bounded period, Metabase may expose the
         # same governed temporal field as an additional breakout so cognition
         # can inspect change inside that period. This adds no new scope or data
         # source; any other extra breakout remains unauthorized.
-        allowed = set(required)
+        allowed = set(required) | fixed_filter_dimensions
         if contract.period is not None and time_identity is not None:
             allowed.add(time_identity)
     if not required.issubset(observed) or not observed.issubset(allowed):
