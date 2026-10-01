@@ -136,6 +136,9 @@ class ArtifactHeader(Frozen):
 
 class ResearchDTO(Frozen):
     header: ArtifactHeader
+    scope_lineage_id: str | None = None
+    scope_version_id: str | None = None
+    parent_scope_version_id: str | None = None
     objective: str
     stopping_status: str
     stopping_reason: str | None = None
@@ -169,6 +172,9 @@ class SignalDTO(Frozen):
 class InvestigationDTO(Frozen):
     header: ArtifactHeader
     research_session_id: str
+    scope_lineage_id: str | None = None
+    scope_version_id: str | None = None
+    parent_scope_version_id: str | None = None
     reasoning_step_ids: tuple[str, ...]
     task_ids: tuple[str, ...]
     active_task_ids: tuple[str, ...]
@@ -177,6 +183,9 @@ class InvestigationDTO(Frozen):
 
 class EvidenceDTO(Frozen):
     header: ArtifactHeader
+    scope_lineage_id: str | None = None
+    scope_version_id: str | None = None
+    parent_scope_version_id: str | None = None
     authority_id: str
     obligation_ids: tuple[str, ...]
     evidence_kind: str
@@ -287,6 +296,26 @@ class TimelineItem(Frozen):
     occurred_at: datetime | None = None
     terminal_state: str | None = None
     lineage_refs: tuple[ArtifactRef, ...] = ()
+    scope_lineage_id: str | None = None
+    scope_version_id: str | None = None
+    parent_scope_version_id: str | None = None
+
+
+class ProductProgressEvent(Frozen):
+    ordinal: int = Field(ge=1)
+    ref: ArtifactRef
+    currentness: ProductCurrentness
+    occurred_at: datetime | None = None
+    terminal_state: str | None = None
+    scope_lineage_id: str | None = None
+    scope_version_id: str | None = None
+    parent_scope_version_id: str | None = None
+
+
+class ProductProgressFeed(Frozen):
+    context_id: str = Field(pattern=r"^ctx_[a-f0-9]{24}$")
+    events: tuple[ProductProgressEvent, ...]
+    next_cursor: str | None = None
 
 
 class ArtifactTimeline(Frozen):
