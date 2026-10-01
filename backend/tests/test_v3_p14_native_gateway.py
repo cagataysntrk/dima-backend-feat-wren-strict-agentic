@@ -954,6 +954,86 @@ def test_r5_unranked_material_allows_non_limiting_presentation_ordering():
     assert observed.ranking is None
 
 
+
+def _change_material_contract():
+    return rich_material_contract().model_copy(
+        update={
+            "ranking": None,
+            "temporal_observation": (
+                scope_module.AnalyticalTemporalObservationInvariant(
+                    kind="change",
+                    time_dimension="time.event_date",
+                    minimum_distinct_values=2,
+                )
+            ),
+        }
+    )
+
+
+def test_change_material_requires_governed_time_breakout() -> None:
+    _, session, _, _ = session_and_link(db_engine())
+
+    with pytest.raises(scope_module.ResearchAnalyticalScopeError) as exc:
+        scope_module.assert_material_native_scope(
+            session=session,
+            obligation_id="g1",
+            contract=_change_material_contract(),
+            observation=rich_material_observation(ranking=[]),
+            bindings=rich_material_bindings(),
+            expected_engine=expected_identity(),
+            expected_metabase_subject=7,
+        )
+
+    assert exc.value.code == "R1_NATIVE_DIMENSION_SCOPE_MISMATCH"
+
+
+def test_change_material_accepts_governed_time_breakout() -> None:
+    _, session, _, _ = session_and_link(db_engine())
+    observation = rich_material_observation(
+        ranking=[],
+        dimensions=[
+            {
+                "stage_number": 0,
+                "role": "breakout",
+                "field_id": 20,
+                "table_id": 10,
+            },
+            {
+                "stage_number": 0,
+                "role": "breakout",
+                "field_id": 30,
+                "table_id": 10,
+                "temporal_grain": "month",
+            },
+            {
+                "stage_number": 0,
+                "role": "filter",
+                "field_id": 20,
+                "table_id": 10,
+            },
+            {
+                "stage_number": 0,
+                "role": "temporal",
+                "field_id": 30,
+                "table_id": 10,
+            },
+        ],
+    )
+
+    observed = scope_module.assert_material_native_scope(
+        session=session,
+        obligation_id="g1",
+        contract=_change_material_contract(),
+        observation=observation,
+        bindings=rich_material_bindings(),
+        expected_engine=expected_identity(),
+        expected_metabase_subject=7,
+    )
+
+    assert observed.temporal_observation is not None
+    assert observed.temporal_observation.kind == "change"
+
+
 def test_r5_bounded_period_allows_same_governed_time_field_as_optional_breakout():
     _, session, _, _ = session_and_link(db_engine())
     observation = rich_material_observation(
