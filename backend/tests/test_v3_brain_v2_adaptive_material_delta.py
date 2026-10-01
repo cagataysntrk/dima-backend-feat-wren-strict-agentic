@@ -195,3 +195,30 @@ def test_same_scope_can_have_distinct_material_fingerprints_without_scope_mutati
     assert parent.scope_identity == delta.child_contract.scope_identity
     assert parent.material_fingerprint != delta.child_contract.material_fingerprint
 
+def test_typed_child_material_delta_rejects_scope_lineage_drift():
+    parent = _base()
+    request = _request().model_copy(
+        update={"scope_lineage_id": "atl_other"}
+    )
+
+    with pytest.raises(AdaptiveTestDesignError, match="scope"):
+        typed_child_material_delta_for_next_test(
+            parent=parent,
+            request=request,
+            governed_semantic_refs=_governed_refs(),
+        )
+
+
+def test_typed_child_material_delta_rejects_scope_version_drift():
+    parent = _base()
+    request = _request().model_copy(
+        update={"scope_version_id": "scope_v2"}
+    )
+
+    with pytest.raises(AdaptiveTestDesignError, match="scope"):
+        typed_child_material_delta_for_next_test(
+            parent=parent,
+            request=request,
+            governed_semantic_refs=_governed_refs(),
+        )
+
