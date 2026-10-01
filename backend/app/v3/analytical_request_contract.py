@@ -80,6 +80,10 @@ class AnalyticalRequestContract(FrozenModel):
     request_ref: str = Field(min_length=1)
     semantic_context_version: str = Field(min_length=1)
     scope_identity: AnalyticalScopeIdentity
+    scope_fingerprint: str | None = Field(
+        default=None,
+        pattern=r"^[a-f0-9]{64}$",
+    )
     metric_refs: tuple[str, ...] = Field(min_length=1)
     dimension_refs: tuple[str, ...] = ()
     filters: tuple[AnalyticalFilterInvariant, ...] = ()
