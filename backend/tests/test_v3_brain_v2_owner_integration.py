@@ -299,6 +299,7 @@ class AdaptiveIntake(DeterministicIntake):
 class BridgeFactory:
     def __init__(self) -> None:
         self.metabot_posts = 0
+        self.metabot_requests: list[dict] = []
 
     def open(
         self,
@@ -320,6 +321,8 @@ class BridgeFactory:
                 request.method == "POST"
                 and request.url.path == "/api/metabot/agent-streaming"
             ):
+                payload = json.loads(request.content.decode("utf-8"))
+                self.metabot_requests.append(payload)
                 self.metabot_posts += 1
                 native_query = {
                     "database": 1,
@@ -339,11 +342,23 @@ class BridgeFactory:
                         }
                     },
                 }
+                native_state = {
+                    "queries": {query_id: native_query},
+                    "charts": {},
+                    "todos": [],
+                    "transforms": {},
+                    "link-registry": {},
+                }
                 return httpx.Response(
                     202,
                     text=(
                         "2:"
                         + json.dumps(generated, separators=(",", ":"))
+                        + "\n2:"
+                        + json.dumps(
+                            {"type": "state", "value": native_state},
+                            separators=(",", ":"),
+                        )
                         + "\n"
                         + 'd:{"finishReason":"stop"}\n'
                     ),
@@ -1300,6 +1315,14 @@ def test_real_owner_adaptive_runs_one_typed_followup_without_duplicate_native() 
     assert result.adaptive_reentries == 1
     assert bridge.metabot_posts == 2
     assert material.calls == 2
+    assert len(bridge.metabot_requests) == 2
+    first_state = bridge.metabot_requests[0]["state"]
+    second_state = bridge.metabot_requests[1]["state"]
+    assert first_state == {}
+    assert second_state != {}
+    assert set(second_state.get("queries") or ()) == {
+        f"native-{result.research_session_id}-1"
+    }
     assert p19_manager.call_count == 2
     assert next_test_manager.call_count == 1
     assert next_test_manager.calls[0]["allowed_intents"] == (
