@@ -1155,6 +1155,22 @@ def test_real_owner_scope_repair_creates_new_scope_without_stale_evidence_reuse(
     assert first_session.lineage_id == second_session.lineage_id
     assert first_session.accepted_brief.scope.scope_version.version_id == "scope_v1"
     assert second_session.accepted_brief.scope.scope_version.version_id == "scope_v2"
+    # Canonical analytical truth stays in the accepted brief, while the native
+    # business-question surface reflects only the CURRENT follow-up turn. A
+    # follow-up delta must not send stale broad natural language beside a
+    # narrowed authoritative material contract.
+    assert first_session.obligations[0].objective == (
+        "Duruş artışını bakım gecikmesi mi yedek parça gecikmesi mi "
+        "daha iyi açıklıyor?"
+    )
+    assert second_session.obligations[0].objective == "Boyahane ile sınırla."
+    followup_message = bridge.metabot_requests[1]["message"]
+    assert "[USER OBLIGATION]\nBoyahane ile sınırla.\n" in followup_message
+    assert (
+        "[USER OBLIGATION]\nDuruş artışını bakım gecikmesi mi "
+        "yedek parça gecikmesi mi daha iyi açıklıyor?\n"
+        not in followup_message
+    )
     assert store.assert_lineage_head(second_session) == second_session
     with pytest.raises(Exception):
         store.assert_lineage_head(first_session)
