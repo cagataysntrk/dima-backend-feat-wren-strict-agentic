@@ -220,6 +220,24 @@ def verify_without_evidence(store, session):
     return store.save(updated, expected_revision=session.revision)
 
 
+def test_entity_narrowing_without_repeated_time_keeps_prior_period():
+    payload = narrowed_payload()
+    payload["time_periods"] = []
+
+    result = ResearchIntakeCompiler(
+        transport=FakeTransport(payload)
+    ).compile(
+        question="Assembly only; same accepted scope otherwise.",
+        catalog=catalog(),
+        prior_brief=initial_brief(),
+    )
+
+    assert result.brief is not None
+    assert result.scope_contract is not None
+    assert result.brief.scope.periods == (H1,)
+    assert result.brief.scope.scope_version.version_id == "scope_v2"
+
+
 def test_real_follow_up_path_mints_new_scope_authority_and_preserves_lineage():
     db = db_engine()
     store, research, brief_v1, session_v1 = start_v1(db)
