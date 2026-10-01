@@ -105,6 +105,92 @@ def statement(kind, *, sources=(), payload=None, ceiling, text=None, seed=None):
 def report_draft(state, statement_item, *, key='report-main', limitations=()):
     return ReportDraft(research_session_id=state['session'].session_id, report_key=key, coverage=(CoverageEntry(obligation_id='g1', coverage_status=CoverageStatus.REPRESENTED, statement_ids=(statement_item.statement_id,)),), statements=(statement_item,), limitations=tuple(limitations))
 
+def test_auto_draft_projects_governed_claim_policy_provenance_and_limitations():
+    db = db_engine()
+    state = make_state(db)
+    claims = state["claims"]
+    limited = claims.create_claim(
+        session_id=state["session"].session_id,
+        obligation_id="g1",
+        principal=state["principal"],
+        claim_text="Partner kanalı için örneklem sınırlı olsa da gözlemsel fark korunur.",
+        proposition={
+            "subject": "channel:Partner",
+            "predicate": "observed_order_difference",
+            "object": "channel:Web",
+        },
+        scope={"period": "2026-06", "population": "sales_orders"},
+        freshness=ClaimFreshness(
+            as_of=STAMP,
+            stale_after=STAMP + timedelta(days=30),
+        ),
+        origin_material_refs=(state["material"].lead_id,),
+        limitations=("Örneklem yalnız mevcut governed dönemle sınırlıdır.",),
+    )
+    limited = claims.link_evidence(
+        session_id=state["session"].session_id,
+        claim_id=limited.claim_id,
+        evidence_id=state["evidence_id"],
+        relation=ClaimEvidenceRelation.SUPPORTS,
+        principal=state["principal"],
+    )
+
+    store = ReportDocumentStore(research_store=state["store"], db_engine=db)
+    draft = store.draft_from_governed_research(
+        research_session_id=state["session"].session_id,
+        report_key="auto-contextual",
+        principal=state["principal"],
+    )
+
+    analytical = [
+        item
+        for item in draft.statements
+        if item.statement_kind == ReportStatementKind.ANALYTICAL_FACT
+    ]
+    assert {item.payload["claim_id"] for item in analytical} >= {
+        state["claim"].claim_id,
+        limited.claim_id,
+    }
+    governed = next(
+        item for item in analytical
+        if item.payload["claim_id"] == state["claim"].claim_id
+    )
+    assert any(
+        ref.source_kind == ReportSourceKind.P16_CLAIM
+        and ref.source_ref == state["claim"].claim_id
+        for ref in governed.source_refs
+    )
+    assert any(
+        ref.source_kind == ReportSourceKind.P18_POLICY_USE
+        and ref.source_ref == state["policy_use"].policy_use_id
+        for ref in governed.source_refs
+    )
+
+    limited_statement = next(
+        item for item in analytical
+        if item.payload["claim_id"] == limited.claim_id
+    )
+    assert len(limited_statement.limitation_refs) == 1
+    limitation = next(
+        item for item in draft.limitations
+        if item.limitation_id == limited_statement.limitation_refs[0]
+    )
+    assert limitation.detail == "Örneklem yalnız mevcut governed dönemle sınırlıdır."
+    assert any(
+        item.statement_kind == ReportStatementKind.NUMERIC
+        for item in draft.statements
+    )
+
+    report = store.seal(
+        draft=draft,
+        principal=state["principal"],
+        now=STAMP + timedelta(minutes=30),
+    )
+    texts = {item.text for item in report.statements}
+    assert state["claim"].claim_text in texts
+    assert limited.claim_text in texts
+
+
 def test_user_must_is_100_percent_accounted_and_seals_one_report():
     db = db_engine()
     state = make_state(db)
