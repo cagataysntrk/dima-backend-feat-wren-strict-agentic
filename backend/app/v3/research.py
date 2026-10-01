@@ -405,6 +405,14 @@ class ResearchManager:
         )
         return "\n".join(lines)
 
+    @staticmethod
+    def _native_material_message(item, analytical_scope):
+        """Compatibility alias for sealed Research contract tests/callers."""
+        return ResearchManager.native_material_message(
+            objective=item.objective,
+            analytical_scope=analytical_scope,
+        )
+
     @classmethod
     def prepare_native_delegation(cls,session,*,obligation_id,profile_id="nlq",metabot_id=None,now=None):
         if session.stopping.status!=StoppingStatus.ACTIVE: raise ResearchStateError("P14_RESEARCH_NOT_ACTIVE",session.stopping.status)
