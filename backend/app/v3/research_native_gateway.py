@@ -495,6 +495,10 @@ class NativeResearchMaterialExecutor:
                 first_invalid_boundary=exc.first_invalid_boundary,
                 expected_fingerprint=exc.expected_fingerprint,
                 observed_fingerprint=exc.observed_fingerprint,
+                scope_fingerprint=exc.scope_fingerprint,
+                material_fingerprint=exc.material_fingerprint,
+                expected_semantic_shape=exc.expected_semantic_shape,
+                observed_semantic_shape=exc.observed_semantic_shape,
             ) from exc
         return request, observation
 
