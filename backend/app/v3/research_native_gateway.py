@@ -51,7 +51,10 @@ from app.v3.substrate.metabase.native_engine import (
     NativeEngineBridge,
     NativeEngineBridgeError,
 )
-from app.v3.substrate.metabase.native_models import NativeEngineIdentity
+from app.v3.substrate.metabase.native_models import (
+    NativeEngineIdentity,
+    NativeEngineRequest,
+)
 from control_plane.authorize import Principal
 from control_plane.db import engine as control_plane_engine
 from control_plane.models import NativeResourceBinding, NativeSubjectBinding
@@ -311,6 +314,63 @@ class NativeResearchMaterialExecutor:
                     ),
                 )
         return output
+
+    def enrich_native_request(
+        self,
+        *,
+        principal: Principal,
+        session: ResearchSession,
+        obligation_id: str,
+        request: NativeEngineRequest,
+        analytical_scope: AnalyticalRequestContract | None = None,
+    ) -> NativeEngineRequest:
+        """Preload accepted governed metric resources through Metabot context.
+
+        This is native resource correlation, not analytical planning. Only exact
+        metric ids already required by the accepted AnalyticalRequestContract are
+        projected to Metabot's supported user_is_viewing context. SQL, MBQL,
+        filters, joins, grouping and query-repair strategy remain entirely native.
+        """
+
+        contract = analytical_scope or analytical_scope_contract(
+            session=session,
+            obligation_id=obligation_id,
+        )
+        bindings = self._material_bindings(
+            principal=principal,
+            session=session,
+            contract=contract,
+        )
+        context = dict(request.context)
+        raw_viewing = context.get("user_is_viewing")
+        if raw_viewing is None:
+            viewing: list[dict[str, Any]] = []
+        elif isinstance(raw_viewing, list):
+            viewing = [dict(item) for item in raw_viewing if isinstance(item, dict)]
+        else:
+            raise ResearchMaterialLimitation(
+                "P14_NATIVE_VIEWING_CONTEXT_INVALID",
+                "native viewing context must be a list",
+            )
+
+        seen = {
+            (str(item.get("type") or ""), str(item.get("id") or ""))
+            for item in viewing
+        }
+        for candidate_id in contract.metric_refs:
+            binding = bindings[candidate_id]
+            if binding.metric_id is None:
+                continue
+            identity = ("metric", str(binding.metric_id))
+            if identity in seen:
+                continue
+            viewing.append({"type": "metric", "id": binding.metric_id})
+            seen.add(identity)
+
+        if viewing:
+            context["user_is_viewing"] = viewing
+        return request.model_copy(update={"context": context})
+
 
     def _observe_scope(
         self,
