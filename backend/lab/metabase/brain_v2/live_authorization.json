@@ -1,6 +1,6 @@
 {
   "schema_version": "dima_brain_v2_live_authorization_v1",
-  "enabled": true,
+  "enabled": false,
   "probe_id": "R_LIVE_1_ONE_PASS",
   "candidate_product_sha": "9de0cc6668689f2fc4fc303b7392043ee715049c",
   "provider_free_run_id": 36907439396,
@@ -10,5 +10,5 @@
   "model_policy": "LUNA_FIRST",
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
-  "authorization_receipt": "t2-final-current-scope-live-v1"
+  "authorization_receipt": "t2-current-scope-running-36908926530"
 }
