@@ -936,11 +936,15 @@ class DimaBrainV2Activities(BrainActivities):
                 ],
             }
         )
+        candidate_semantic_ids = tuple(
+            item.semantic_id for item in projection.candidates
+        )
         return CandidateProjectionActivityResult(
             hypothesis_revision=(
                 state.hypothesis_revision + (1 if ids else 0)
             ),
             hypothesis_ids=ids,
+            candidate_semantic_ids=candidate_semantic_ids,
             candidate_count=len(ids),
             activity_fingerprint=key,
         )
