@@ -12,7 +12,9 @@ import pytest
 from sqlalchemy.pool import StaticPool
 from sqlmodel import SQLModel, create_engine
 
-from app.v3.brain_v2.owner_adapter import DimaBrainV2Activities
+from app.v3.brain_v2.adaptive_owner_adapter import (
+    AdaptiveDimaBrainV2Activities as DimaBrainV2Activities,
+)
 from app.v3.brain_v2.service import BrainV2Service, BrainV2ThreadError
 from app.v3.brain_v2.state import BrainGraphState, BrainWorkflowStatus
 from app.v3.evidence import DimaQueryReceipt, EvidenceArtifact, EvidenceState
