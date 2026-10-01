@@ -28,14 +28,22 @@ from app.v3.research_native_gateway import (
     NativeSubjectSessionProvider,
 )
 from app.v3.research_product import ResearchAskOrchestrator, ResearchMaterialLimitation
-from app.v3.research_store import ResearchSessionStore
+from app.v3.research_store import (
+    ResearchPersistenceError,
+    ResearchSessionStore,
+)
 from app.v3.substrate.metabase.native_engine import NativeDatasetExecutionError
 from app.v3.substrate.metabase.native_models import (
     NativeDatasetExecutionObservation,
     NativeEngineIdentity,
 )
 from control_plane.authorize import Principal
-from control_plane.models import NativeSubjectBinding, Tenant, User
+from control_plane.models import (
+    NativeSubjectBinding,
+    ResearchExecutionLink,
+    Tenant,
+    User,
+)
 from lab.metabase.p14.native_direct_research_canary import (
     FROZEN_BOYAHANE_CHANNEL_COUNTS,
     channel_counts,
@@ -232,6 +240,121 @@ def session_and_link(engine):
         query_fingerprint=h(query),
     )
     return store, session, link, query
+
+
+def test_native_agent_continuation_state_roundtrips_with_fingerprint():
+    engine = db_engine()
+    store, session, link, query = session_and_link(engine)
+    state = {
+        "queries": {"native-query-1": query},
+        "charts": {},
+        "todos": [],
+        "transforms": {},
+        "link-registry": {},
+    }
+    link = store.mark_candidate(
+        link.id,
+        native_query_id="native-query-1",
+        native_query=query,
+        query_fingerprint=h(query),
+        native_agent_state=state,
+    )
+    link = store.mark_verified(
+        link.id,
+        receipt_id="dqr_" + "1" * 24,
+        evidence_id="evi_" + "2" * 24,
+    )
+
+    restored, fingerprint = store.latest_verified_agent_state(
+        session_id=session.session_id,
+        obligation_id="g1",
+        native_conversation_id=link.native_conversation_id,
+    )
+
+    assert restored == state
+    assert fingerprint == hashlib.sha256(
+        json.dumps(
+            state,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+            allow_nan=False,
+        ).encode("utf-8")
+    ).hexdigest()
+
+
+def test_native_agent_continuation_state_missing_fails_closed():
+    engine = db_engine()
+    store, session, link, _ = session_and_link(engine)
+    link = store.mark_verified(
+        link.id,
+        receipt_id="dqr_" + "3" * 24,
+        evidence_id="evi_" + "4" * 24,
+    )
+
+    with pytest.raises(ResearchPersistenceError) as exc:
+        store.latest_verified_agent_state(
+            session_id=session.session_id,
+            obligation_id="g1",
+            native_conversation_id=link.native_conversation_id,
+        )
+
+    assert exc.value.code == "P17_NATIVE_CONTINUATION_STATE_REQUIRED"
+
+
+def test_native_agent_continuation_state_tamper_fails_closed():
+    engine = db_engine()
+    store, session, link, query = session_and_link(engine)
+    state = {
+        "queries": {"native-query-1": query},
+        "charts": {},
+    }
+    link = store.mark_candidate(
+        link.id,
+        native_query_id="native-query-1",
+        native_query=query,
+        query_fingerprint=h(query),
+        native_agent_state=state,
+    )
+    link = store.mark_verified(
+        link.id,
+        receipt_id="dqr_" + "5" * 24,
+        evidence_id="evi_" + "6" * 24,
+    )
+    with Session(engine) as db:
+        row = db.get(ResearchExecutionLink, link.id)
+        assert row is not None
+        row.native_agent_state_json = '{"queries":{"tampered":{}}}'
+        db.add(row)
+        db.commit()
+
+    with pytest.raises(ResearchPersistenceError) as exc:
+        store.latest_verified_agent_state(
+            session_id=session.session_id,
+            obligation_id="g1",
+            native_conversation_id=link.native_conversation_id,
+        )
+
+    assert exc.value.code == "P14_NATIVE_AGENT_STATE_FINGERPRINT_MISMATCH"
+
+
+def test_native_agent_continuation_state_rejects_unknown_engine_keys():
+    engine = db_engine()
+    store, _, link, query = session_and_link(engine)
+
+    with pytest.raises(ResearchPersistenceError) as exc:
+        store.mark_candidate(
+            link.id,
+            native_query_id="native-query-1",
+            native_query=query,
+            query_fingerprint=h(query),
+            native_agent_state={
+                "queries": {"native-query-1": query},
+                "reasoning": {"secret": "must not persist"},
+            },
+        )
+
+    assert exc.value.code == "P14_NATIVE_AGENT_STATE_KEY_UNSUPPORTED"
 
 
 def attestation_payload(query):
