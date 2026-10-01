@@ -1222,16 +1222,38 @@ def _mechanical_observational_relationship(
         item for item in brief.get("questions") or []
         if item.get("kind") == "relationship"
     ]
+    composition = turn.get("composition_payload") or {}
+    relationship_results = composition.get("relationship_results") or []
+    observational_resolutions = [
+        item
+        for item in relationship_results
+        if (
+            item.get("policy_required") is False
+            and item.get("policy_id") is None
+            and item.get("business_relationship_state")
+            == "NOT_ESTABLISHED"
+            and item.get("contribution_state") == "NOT_ESTABLISHED"
+            and item.get("causality_state") == "NOT_ESTABLISHED"
+        )
+    ]
     return {
         "ready": bool(turn.get("ready")),
         "single_observational_relationship": (
             len(relationship_questions) == 1
             and relationship_questions[0].get("relationship_intent")
-            == "OBSERVATIONAL"
+            == "observational"
+            and len(relationship_results) == 1
         ),
-        "no_business_policy_use": not bool(turn.get("p18_policy_use_refs")),
-        "no_causal_assessment_for_observation": not bool(
-            turn.get("p19_assessment_refs")
+        # P18 intentionally persists a NOT_REQUIRED resolution receipt even
+        # when no BUSINESS_POLICY authority is consulted.  The mechanical
+        # contract must inspect the typed resolution, not receipt cardinality.
+        "no_business_policy_use": (
+            len(relationship_results) == 1
+            and len(observational_resolutions) == 1
+        ),
+        "no_causal_assessment_for_observation": (
+            not bool(turn.get("p19_assessment_refs"))
+            and len(observational_resolutions) == 1
         ),
         "native_material_exists": bool(turn.get("native_results")),
         "governed_evidence_exists": any(
