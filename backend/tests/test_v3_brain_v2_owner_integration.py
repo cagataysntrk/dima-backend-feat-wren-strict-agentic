@@ -17,6 +17,7 @@ from app.v3.brain_v2.adaptive_owner_adapter import (
 )
 from app.v3.brain_v2.service import BrainV2Service, BrainV2ThreadError
 from app.v3.brain_v2.state import BrainGraphState, BrainWorkflowStatus
+from app.v3.brain_v2.owner_adapter import BrainV2OwnerError
 from app.v3.evidence import DimaQueryReceipt, EvidenceArtifact, EvidenceState
 from app.v3.business_relationship_policy import BusinessRelationshipPolicyStore
 from app.v3.claim_lineage import (
@@ -464,9 +465,15 @@ class BridgeFactory:
 
 
 class DurableMaterialExecutor:
-    def __init__(self, store: ResearchSessionStore) -> None:
+    def __init__(
+        self,
+        store: ResearchSessionStore,
+        *,
+        repeat_followup_result: bool = False,
+    ) -> None:
         self.store = store
         self.calls = 0
+        self.repeat_followup_result = repeat_followup_result
 
     def execute(
         self,
@@ -500,14 +507,24 @@ class DurableMaterialExecutor:
             "data": {
                 "rows": (
                     [
-                        ["2026-05-15", "maintenance_delay", 18],
-                        ["2026-06-15", "spare_part_delay", 29],
-                    ]
-                    if temporal_discrimination
-                    else [
                         ["maintenance_delay", 41],
                         ["spare_part_delay", 33],
                     ]
+                    if (
+                        temporal_discrimination
+                        and self.repeat_followup_result
+                    )
+                    else (
+                        [
+                            ["2026-05-15", "maintenance_delay", 18],
+                            ["2026-06-15", "spare_part_delay", 29],
+                        ]
+                        if temporal_discrimination
+                        else [
+                            ["maintenance_delay", 41],
+                            ["spare_part_delay", 33],
+                        ]
+                    )
                 )
             },
         }
@@ -1408,11 +1425,19 @@ def test_legacy_v2_shadow_replay_preserves_semantic_product_outcome() -> None:
 
 
 
-def _adaptive_stack(*, discovery: bool = False, p19_manager_override=None):
+def _adaptive_stack(
+    *,
+    discovery: bool = False,
+    p19_manager_override=None,
+    repeat_followup_result: bool = False,
+):
     db = _engine()
     store = ResearchSessionStore(db)
     bridge = BridgeFactory()
-    material = DurableMaterialExecutor(store)
+    material = DurableMaterialExecutor(
+        store,
+        repeat_followup_result=repeat_followup_result,
+    )
     research = ResearchAskOrchestrator(
         store=store,
         bridge_factory=bridge,
@@ -1612,6 +1637,47 @@ def test_real_owner_adaptive_runs_one_typed_followup_without_duplicate_native() 
     assert p19_manager.context_calls[1][
         "deterministic_feedback_code"
     ] == "P19_NO_CALLABLE_DISCRIMINATING_TEST"
+
+
+
+
+def test_adaptive_same_result_hash_never_becomes_fake_information_gain() -> None:
+    (
+        _,
+        _,
+        bridge,
+        material,
+        investigation,
+        _,
+        p19_manager,
+        next_test_manager,
+        activities,
+    ) = _adaptive_stack(repeat_followup_result=True)
+    service = BrainV2Service(activities=activities)
+
+    with pytest.raises(BrainV2OwnerError) as exc:
+        service.run(
+            BrainGraphState(
+                thread_id="adaptive-no-gain",
+                tenant_binding=f"id:{TENANT_ID}",
+                principal_ref=USER_ID,
+                current_user_input="Provider-free ADAPTIVE RCA.",
+            )
+        )
+
+    assert exc.value.code == "BRAIN_V2_NEXT_TEST_NO_INFORMATION_GAIN"
+    assert bridge.metabot_posts == 2
+    assert material.calls == 2
+    assert p19_manager.call_count == 1
+    assert next_test_manager.call_count == 1
+    snapshot = investigation.snapshot(
+        session_id=next(
+            item.research_session_id
+            for item in investigation.snapshot_store_items()
+        ) if hasattr(investigation, "snapshot_store_items") else "",
+        principal=_principal(),
+    ) if False else None
+    del snapshot
 
 
 def test_real_owner_discovery_forms_governed_candidates_without_extra_native() -> None:
