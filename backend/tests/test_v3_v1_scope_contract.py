@@ -1114,6 +1114,35 @@ def test_r1_native_ranking_blocks_direction_drift():
         )
 
 
+def test_r1_same_semantic_scope_keeps_material_fingerprint_across_versions():
+    v1 = analytical_scope_contract(
+        session=session(version=1),
+        obligation_id="g_scope",
+    )
+    v2 = analytical_scope_contract(
+        session=session(version=2),
+        obligation_id="g_scope",
+    )
+
+    assert v1.scope_identity.version_id != v2.scope_identity.version_id
+    assert v1.scope_fingerprint == v2.scope_fingerprint
+    assert v1.material_fingerprint == v2.material_fingerprint
+
+
+def test_r1_material_fingerprint_changes_when_semantic_scope_changes():
+    base = analytical_scope_contract(
+        session=session(version=1),
+        obligation_id="g_scope",
+    )
+    narrowed = analytical_scope_contract(
+        session=session(version=1, entities=(ASSEMBLY,)),
+        obligation_id="g_scope",
+    )
+
+    assert base.scope_fingerprint != narrowed.scope_fingerprint
+    assert base.material_fingerprint != narrowed.material_fingerprint
+
+
 def test_r1_scope_v1_material_cannot_satisfy_scope_v2_contract():
     v1=analytical_scope_contract(session=session(version=1),obligation_id="g_scope")
     v2=analytical_scope_contract(session=session(version=2),obligation_id="g_scope")
