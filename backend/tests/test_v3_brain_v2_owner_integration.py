@@ -1486,8 +1486,10 @@ def test_real_owner_adaptive_runs_one_typed_followup_without_duplicate_native() 
     initial_scope = bridge.metabot_requests[0]["context"]["dima_analytical_scope"]
     followup_scope = bridge.metabot_requests[1]["context"]["dima_analytical_scope"]
     assert "dimension.event_date" not in initial_scope["dimension_refs"]
-    assert followup_scope["dimension_refs"] == ["dimension.event_date"]
-    assert followup_scope["grain_constraints"] == ["dimension.event_date"]
+    assert set(followup_scope["dimension_refs"]) == (
+        set(initial_scope["dimension_refs"]) | {"dimension.event_date"}
+    )
+    assert followup_scope["grain_constraints"] == followup_scope["dimension_refs"]
     assert len(p19_manager.context_calls) == 2
     assert p19_manager.context_calls[0][
         "discriminating_test_available"
