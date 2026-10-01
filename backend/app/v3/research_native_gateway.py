@@ -488,7 +488,14 @@ class NativeResearchMaterialExecutor:
                 expected_metabase_subject=metabase_user_id,
             )
         except ResearchAnalyticalScopeError as exc:
-            raise ResearchMaterialLimitation(exc.code, exc.detail) from exc
+            raise ResearchMaterialLimitation(
+                exc.code,
+                exc.detail,
+                last_valid_boundary=exc.last_valid_boundary,
+                first_invalid_boundary=exc.first_invalid_boundary,
+                expected_fingerprint=exc.expected_fingerprint,
+                observed_fingerprint=exc.observed_fingerprint,
+            ) from exc
         return request, observation
 
     @staticmethod
