@@ -7,6 +7,8 @@ query optimality are outside this module's authority.
 """
 from __future__ import annotations
 
+import hashlib
+import json
 from typing import Literal
 from uuid import UUID
 
@@ -97,6 +99,17 @@ class AnalyticalRequestContract(FrozenModel):
     ) = None
     grain_constraints: tuple[str, ...] = ()
     requested_output_surfaces: tuple[str, ...] = ()
+
+    @property
+    def fingerprint(self) -> str:
+        raw = json.dumps(
+            self.model_dump(mode="json"),
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+            allow_nan=False,
+        )
+        return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
     @model_validator(mode="after")
     def coherent_temporal_observation(self):
