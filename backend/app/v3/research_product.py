@@ -189,7 +189,10 @@ class NativeResearchOccurrenceRunner:
                         }
                     )
                 observation = bridge.invoke(request)
-                produced = bridge.capture_produced_query(observation)
+                produced = bridge.capture_produced_query(
+                    observation,
+                    prior_state=request.state,
+                )
                 link = self._store.mark_candidate(
                     link.id,
                     native_query_id=produced.native_query_id,
