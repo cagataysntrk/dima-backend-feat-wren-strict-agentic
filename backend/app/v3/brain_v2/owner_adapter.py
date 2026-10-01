@@ -60,6 +60,7 @@ from app.v3.root_cause_candidate_contract import (
 )
 from control_plane.authorize import Principal
 
+from .discovery_candidate_design import remaining_discovery_mechanism_refs
 from .activities import (
     BrainActivities,
     CanonicalizeActivityResult,
@@ -154,6 +155,11 @@ class _DiscoveryProposalManager:
                 proposal.target_parent_obligation,
             )
         if proposal.action == ManagerAction.FORM_CLAIM:
+            if proposal.mechanism_semantic_ref not in set(self._mechanism_refs):
+                raise BrainV2OwnerError(
+                    "BRAIN_V2_P17_DISCOVERY_CANDIDATE_ESCAPE",
+                    str(proposal.mechanism_semantic_ref),
+                )
             proposal = proposal.model_copy(
                 update={
                     "claim_semantic_contract": (
@@ -883,12 +889,21 @@ class DimaBrainV2Activities(BrainActivities):
             session_id=session.session_id,
             principal=self._principal,
         )
+        brief = session.accepted_brief
+        assert brief is not None
+        remaining_mechanism_refs = remaining_discovery_mechanism_refs(
+            snapshot=before,
+            obligation_id=goal.goal_id,
+            scope_lineage_id=session.lineage_id,
+            scope_version_id=brief.scope.scope_version.version_id,
+            governed_mechanism_refs=mechanism_refs,
+        )
         legal_hash = before.fingerprint
         manager = _DiscoveryProposalManager(
             inner=self._investigation_manager,
             obligation_id=goal.goal_id,
             evidence_refs=tuple(item[0] for item in evidence_pairs),
-            mechanism_refs=mechanism_refs,
+            mechanism_refs=remaining_mechanism_refs,
         )
         # Discovery prepares the verified-Evidence FORM_CLAIM re-entry
         # surface but permits either typed provider outcome: a governed claim
