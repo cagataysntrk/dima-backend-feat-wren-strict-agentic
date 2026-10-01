@@ -1079,6 +1079,181 @@ def test_r5_bounded_period_allows_same_governed_time_field_as_optional_breakout(
     assert observed.dimension_refs == ("dimension.department",)
 
 
+def _entity_filtered_material_contract():
+    return rich_material_contract().model_copy(
+        update={
+            "dimension_refs": (),
+            "grain_constraints": (),
+            "ranking": None,
+        }
+    )
+
+
+def test_entity_equality_filter_allows_same_governed_field_as_redundant_breakout():
+    """Exact accepted equality fixes scope; repeating that field cannot broaden it."""
+    _, session, _, _ = session_and_link(db_engine())
+    observation = rich_material_observation(ranking=[])
+
+    observed = scope_module.assert_material_native_scope(
+        session=session,
+        obligation_id="g1",
+        contract=_entity_filtered_material_contract(),
+        observation=observation,
+        bindings=rich_material_bindings(),
+        expected_engine=expected_identity(),
+        expected_metabase_subject=7,
+    )
+
+    assert observed.dimension_refs == ()
+    assert observed.filters[0].value == "Assembly"
+
+
+def test_entity_equality_filter_does_not_require_redundant_breakout():
+    _, session, _, _ = session_and_link(db_engine())
+    observation = rich_material_observation(
+        ranking=[],
+        dimensions=[
+            {
+                "stage_number": 0,
+                "role": "filter",
+                "field_id": 20,
+                "table_id": 10,
+            },
+            {
+                "stage_number": 0,
+                "role": "temporal",
+                "field_id": 30,
+                "table_id": 10,
+            },
+        ],
+    )
+
+    observed = scope_module.assert_material_native_scope(
+        session=session,
+        obligation_id="g1",
+        contract=_entity_filtered_material_contract(),
+        observation=observation,
+        bindings=rich_material_bindings(),
+        expected_engine=expected_identity(),
+        expected_metabase_subject=7,
+    )
+
+    assert observed.dimension_refs == ()
+
+
+def test_entity_equality_filter_still_rejects_unaccepted_extra_breakout():
+    _, session, _, _ = session_and_link(db_engine())
+    bindings = {
+        **rich_material_bindings(),
+        "dimension.machine": scope_module.NativeMaterialBinding(
+            candidate_id="dimension.machine",
+            candidate_kind="dimension",
+            database_id=1,
+            table_id=10,
+            field_id=40,
+        ),
+    }
+    observation = rich_material_observation(
+        ranking=[],
+        dimensions=[
+            {
+                "stage_number": 0,
+                "role": "breakout",
+                "field_id": 20,
+                "table_id": 10,
+            },
+            {
+                "stage_number": 0,
+                "role": "breakout",
+                "field_id": 40,
+                "table_id": 10,
+            },
+            {
+                "stage_number": 0,
+                "role": "filter",
+                "field_id": 20,
+                "table_id": 10,
+            },
+            {
+                "stage_number": 0,
+                "role": "temporal",
+                "field_id": 30,
+                "table_id": 10,
+            },
+        ],
+    )
+
+    with pytest.raises(scope_module.ResearchAnalyticalScopeError) as exc:
+        scope_module.assert_material_native_scope(
+            session=session,
+            obligation_id="g1",
+            contract=_entity_filtered_material_contract(),
+            observation=observation,
+            bindings=bindings,
+            expected_engine=expected_identity(),
+            expected_metabase_subject=7,
+        )
+
+    assert exc.value.code == "R1_NATIVE_DIMENSION_SCOPE_MISMATCH"
+
+
+def test_change_material_allows_filtered_field_but_still_requires_time_breakout():
+    _, session, _, _ = session_and_link(db_engine())
+    contract = _entity_filtered_material_contract().model_copy(
+        update={
+            "temporal_observation": (
+                scope_module.AnalyticalTemporalObservationInvariant(
+                    kind="change",
+                    time_dimension="time.event_date",
+                    minimum_distinct_values=2,
+                )
+            ),
+        }
+    )
+    observation = rich_material_observation(
+        ranking=[],
+        dimensions=[
+            {
+                "stage_number": 0,
+                "role": "breakout",
+                "field_id": 20,
+                "table_id": 10,
+            },
+            {
+                "stage_number": 0,
+                "role": "breakout",
+                "field_id": 30,
+                "table_id": 10,
+                "temporal_grain": "month",
+            },
+            {
+                "stage_number": 0,
+                "role": "filter",
+                "field_id": 20,
+                "table_id": 10,
+            },
+            {
+                "stage_number": 0,
+                "role": "temporal",
+                "field_id": 30,
+                "table_id": 10,
+            },
+        ],
+    )
+
+    observed = scope_module.assert_material_native_scope(
+        session=session,
+        obligation_id="g1",
+        contract=contract,
+        observation=observation,
+        bindings=rich_material_bindings(),
+        expected_engine=expected_identity(),
+        expected_metabase_subject=7,
+    )
+
+    assert observed.temporal_observation is not None
+
+
 def test_r5_unranked_material_still_blocks_unaccepted_row_limiting_order():
     _, session, _, _ = session_and_link(db_engine())
     contract = rich_material_contract().model_copy(update={"ranking": None})
