@@ -4,6 +4,7 @@ import hashlib
 import inspect
 import json
 from datetime import datetime, timedelta, timezone
+from types import SimpleNamespace
 from uuid import UUID
 
 import pytest
