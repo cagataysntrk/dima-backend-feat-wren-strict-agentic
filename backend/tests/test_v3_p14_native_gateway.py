@@ -293,6 +293,55 @@ def test_native_request_context_preloads_only_required_governed_metrics():
     assert enriched.history == prepared.request.history
 
 
+
+def test_native_request_rejects_scope_fingerprint_drift_before_native_work():
+    engine = db_engine()
+    seed(engine)
+    store = ResearchSessionStore(engine)
+    product = ResearchAskOrchestrator(store=store)
+    session = product.start_from_brief(
+        brief=brief(),
+        request_ref="p14-native-scope-fp-test",
+        source_message_hash=hashlib.sha256(b"native scope fp").hexdigest(),
+        principal=principal(),
+    )
+    prepared = ResearchManager.prepare_native_delegation(
+        session,
+        obligation_id="g1",
+    )
+    subjects = NativeSubjectSessionProvider(
+        base_url="http://metabase.test",
+        expected_identity=expected_identity(),
+        db_engine=engine,
+    )
+    executor = NativeResearchMaterialExecutor(
+        subject_provider=subjects,
+        store=store,
+        expected_identity=expected_identity(),
+    )
+    contract = scope_module.analytical_scope_contract(
+        session=session,
+        obligation_id="g1",
+    )
+    assert session.accepted_brief is not None
+    assert contract.scope_fingerprint == session.accepted_brief.scope_fingerprint
+    bad = contract.model_copy(
+        update={"scope_fingerprint": "f" * 64}
+    )
+
+    with pytest.raises(ResearchMaterialLimitation) as exc:
+        executor.enrich_native_request(
+            principal=principal(),
+            session=session,
+            obligation_id="g1",
+            request=prepared.request,
+            analytical_scope=bad,
+        )
+
+    assert exc.value.code == "R1_MATERIAL_SCOPE_FINGERPRINT_MISMATCH"
+
+
+
 def session_and_link(engine):
     store = ResearchSessionStore(engine)
     product = ResearchAskOrchestrator(store=store)
