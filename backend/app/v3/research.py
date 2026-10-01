@@ -317,6 +317,22 @@ class ResearchManager:
         else:
             lines.append("- none")
 
+        temporal_observation = analytical_scope.temporal_observation
+        lines.append("temporal_observation:")
+        if temporal_observation is None:
+            lines.append("- none")
+        else:
+            lines.extend(
+                (
+                    f"- kind: {temporal_observation.kind}",
+                    f"- time_dimension: {temporal_observation.time_dimension}",
+                    (
+                        "- minimum_distinct_values: "
+                        f"{temporal_observation.minimum_distinct_values}"
+                    ),
+                )
+            )
+
         ranking = analytical_scope.ranking
         lines.append("ranking:")
         if ranking is None:
@@ -352,6 +368,7 @@ class ResearchManager:
                 "- preserve the accepted metric identities exactly",
                 "- preserve the accepted filters and temporal bounds exactly",
                 "- do not broaden the accepted scope",
+                "- preserve the governed temporal observation material exactly",
             )
         )
         if ranking is not None and ranking.kind == "evidence_synthesis":
