@@ -61,5 +61,6 @@ jobs:
           pytest -q \
             tests/test_v3_brain_v2_contracts.py \
             tests/test_v3_brain_v2_graph.py \
+            tests/test_v3_brain_v2_discovery_stateful.py \
             tests/test_v3_brain_v2_owner_integration.py \
             tests/test_v3_brain_v2_telemetry.py
