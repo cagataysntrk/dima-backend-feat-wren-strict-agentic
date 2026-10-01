@@ -1458,6 +1458,7 @@ def _assert_material_dimension_scope(
         )
         for item in contract.filters
     }
+    required.difference_update(fixed_filter_dimensions)
     if (
         contract.comparison is not None
         or contract.temporal_observation is not None
