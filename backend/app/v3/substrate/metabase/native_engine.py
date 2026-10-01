@@ -165,6 +165,26 @@ class NativeEngineBridge:
         return body
 
     @staticmethod
+    def _generated_query_candidate(
+        part: Any,
+    ) -> tuple[str, dict[str, Any]] | None:
+        if not isinstance(part, dict) or part.get("type") != "generated_entity":
+            return None
+        value = part.get("value")
+        query_ref = value.get("query") if isinstance(value, dict) else None
+        if not isinstance(query_ref, dict):
+            return None
+        query_id = query_ref.get("id")
+        query = query_ref.get("query")
+        if (
+            isinstance(query_id, str)
+            and query_id.strip()
+            and isinstance(query, dict)
+        ):
+            return query_id, query
+        return None
+
+    @staticmethod
     def _query_fingerprint(query: dict[str, Any]) -> str:
         try:
             raw = json.dumps(
@@ -194,16 +214,9 @@ class NativeEngineBridge:
 
         generated: list[tuple[str, dict[str, Any]]] = []
         for part in observation.data_parts:
-            if not isinstance(part, dict) or part.get("type") != "generated_entity":
-                continue
-            value = part.get("value")
-            query_ref = value.get("query") if isinstance(value, dict) else None
-            if not isinstance(query_ref, dict):
-                continue
-            query_id = query_ref.get("id")
-            query = query_ref.get("query")
-            if isinstance(query_id, str) and query_id.strip() and isinstance(query, dict):
-                generated.append((query_id, query))
+            candidate = cls._generated_query_candidate(part)
+            if candidate is not None:
+                generated.append(candidate)
 
         if generated:
             by_id: dict[str, dict[str, Any]] = {}
@@ -499,11 +512,24 @@ class NativeEngineBridge:
                     raise NativeEngineBridgeError(
                         f"native Metabot returned HTTP {status_code}: {body}"
                     )
-                events = [
-                    self._decode_line(index, line)
-                    for index, line in enumerate(response.iter_lines())
-                    if line
-                ]
+                events: list[NativeStreamEvent] = []
+                for index, line in enumerate(response.iter_lines()):
+                    if not line:
+                        continue
+                    event = self._decode_line(index, line)
+                    events.append(event)
+                    if (
+                        event.prefix == "2"
+                        and self._generated_query_candidate(event.value)
+                        is not None
+                    ):
+                        # P14 material acquisition is complete once Metabot has
+                        # emitted one exact executable query artifact. Dima does
+                        # not need a later conversational/prose turn to execute,
+                        # attest, receipt, or admit that occurrence as Evidence.
+                        # Closing the stream also prevents post-query agent
+                        # ceremony from consuming another provider turn.
+                        break
         except httpx.TimeoutException as exc:
             raise NativeEngineBridgeError("native Metabot request timed out") from exc
         except httpx.RequestError as exc:
