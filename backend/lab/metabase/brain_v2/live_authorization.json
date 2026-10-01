@@ -1,6 +1,6 @@
 {
   "schema_version": "dima_brain_v2_live_authorization_v1",
-  "enabled": true,
+  "enabled": false,
   "probe_id": "R_LIVE_2_ADAPTIVE",
   "candidate_product_sha": "4bbd6d811ab83ca8251a29cbfde0e4cae9f9e9dc",
   "provider_free_run_id": 36836566365,
@@ -10,5 +10,5 @@
   "model_policy": "LUNA_FIRST",
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
-  "authorization_receipt": "adaptive-current-exact-live-v1"
+  "authorization_receipt": "adaptive-running-36836882718"
 }
