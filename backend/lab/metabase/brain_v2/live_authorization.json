@@ -2,7 +2,7 @@
   "schema_version": "dima_brain_v2_live_authorization_v1",
   "enabled": false,
   "probe_id": "R_LIVE_4_SCOPE_RESUME",
-  "candidate_product_sha": "b489f5af39c3a23e6d990fd38739fc2fa18a403a",
+  "candidate_product_sha": "b1aa522128ed69c51c4d854427045d74aaa1be45",
   "provider_free_run_id": 0,
   "provider_free_status": "PENDING",
   "engine_sha": "d5c60dc9f37a9ec9c5b0117f178146bbcb8dca88",
@@ -10,5 +10,5 @@
   "model_policy": "LUNA_FIRST",
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
-  "authorization_receipt": "t1-calendar-boundary-reproducer-v1"
+  "authorization_receipt": "t1-calendar-boundary-fix-pf-v1"
 }
