@@ -11,7 +11,10 @@ from app.v3.analytical_request_contract import (
     assert_child_request_scope,
 )
 from app.v3.research import ObligationState, ResearchManager, ResearchSession
-from app.v3.research_analytical_scope import analytical_scope_contract
+from app.v3.research_analytical_scope import (
+    analytical_scope_contract,
+    native_request_context,
+)
 from app.v3.research_exploration import NativeResearchExploration
 from app.v3.research_manager import (
     FollowupResult,
@@ -76,11 +79,7 @@ class NativeResearchFollowupExecutor:
             profile_id=conversation.profile_id,
             metabot_id=conversation.metabot_id,
             message=task.bounded_objective,
-            context={
-                "dima_analytical_scope": analytical_scope.model_dump(
-                    mode="json"
-                )
-            },
+            context=native_request_context(analytical_scope),
             conversation_id=conversation.conversation_id,
             history=None,
             state={},
