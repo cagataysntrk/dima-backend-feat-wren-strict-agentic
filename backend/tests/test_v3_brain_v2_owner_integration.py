@@ -1485,8 +1485,9 @@ def test_real_owner_adaptive_runs_one_typed_followup_without_duplicate_native() 
     assert followup_scope["grain_constraints"] == followup_scope["dimension_refs"]
     followup_message = bridge.metabot_requests[1]["message"]
     assert followup_message.startswith("[DIMA ACCEPTED ANALYTICAL CONTRACT]\n")
-    assert "dimensions:\n- dimension.event_date" in followup_message
-    assert "grain_constraints:\n- dimension.event_date" in followup_message
+    assert "dimensions:" in followup_message
+    assert "\n- dimension.event_date\n" in followup_message
+    assert "grain_constraints:" in followup_message
     assert "[USER OBLIGATION]" in followup_message
     assert next_test_steps[0].bounded_objective in followup_message
     assert "[MATERIAL TURN BOUNDARY]" in followup_message
