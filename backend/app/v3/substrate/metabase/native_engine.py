@@ -518,18 +518,6 @@ class NativeEngineBridge:
                         continue
                     event = self._decode_line(index, line)
                     events.append(event)
-                    if (
-                        event.prefix == "2"
-                        and self._generated_query_candidate(event.value)
-                        is not None
-                    ):
-                        # P14 material acquisition is complete once Metabot has
-                        # emitted one exact executable query artifact. Dima does
-                        # not need a later conversational/prose turn to execute,
-                        # attest, receipt, or admit that occurrence as Evidence.
-                        # Closing the stream also prevents post-query agent
-                        # ceremony from consuming another provider turn.
-                        break
         except httpx.TimeoutException as exc:
             raise NativeEngineBridgeError("native Metabot request timed out") from exc
         except httpx.RequestError as exc:
