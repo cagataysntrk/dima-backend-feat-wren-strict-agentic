@@ -293,7 +293,7 @@ class AdaptiveIntake(DeterministicIntake):
             update={
                 "causal_competition": causal.model_copy(
                     update={
-                        "effect_observation": CausalEffectObservation.CHANGE,
+                        "effect_observation": CausalEffectObservation.LEVEL,
                     }
                 )
             }
@@ -301,21 +301,14 @@ class AdaptiveIntake(DeterministicIntake):
         scope = brief.scope.model_copy(
             update={
                 "semantic_refs": (*brief.scope.semantic_refs, time_ref),
-                "time_surfaces": ("baseline", "comparison"),
+                "time_surfaces": ("accepted May-June window",),
                 "periods": (
                     ResearchTimePeriod(
-                        source_text="baseline",
+                        source_text="accepted May-June window",
                         time_dimension_candidate_id="dimension.event_date",
                         start="2026-05-01",
-                        end="2026-06-01",
-                        role=TemporalRole.BASELINE_PERIOD,
-                    ),
-                    ResearchTimePeriod(
-                        source_text="comparison",
-                        time_dimension_candidate_id="dimension.event_date",
-                        start="2026-06-01",
                         end="2026-07-01",
-                        role=TemporalRole.COMPARISON_PERIOD,
+                        role=TemporalRole.MATERIAL_WINDOW,
                     ),
                 ),
                 "temporal_dimension_ids": ("dimension.event_date",),
