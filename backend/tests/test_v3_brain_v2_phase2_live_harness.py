@@ -24,16 +24,29 @@ def test_phase2_relationship_report_mechanical_requires_reuse_not_requery():
                 "questions": [
                     {
                         "kind": "relationship",
-                        "relationship_intent": "OBSERVATIONAL",
+                        "relationship_intent": "observational",
                     }
                 ]
             },
-            "p18_policy_use_refs": [],
+            "p18_policy_use_refs": ["bru_" + "1" * 24],
             "p19_assessment_refs": [],
             "native_results": [{"query": "q1"}],
             "evidence_by_session": {"rs1": [{"evidence_id": "e1"}]},
             "scope_lineage_id": "atl1",
-            "composition_payload": _completion(),
+            "composition_payload": {
+                **_completion(),
+                "relationship_results": [
+                    {
+                        "policy_use_id": "bru_" + "1" * 24,
+                        "policy_id": None,
+                        "policy_required": False,
+                        "association_state": "SUPPORTED",
+                        "business_relationship_state": "NOT_ESTABLISHED",
+                        "contribution_state": "NOT_ESTABLISHED",
+                        "causality_state": "NOT_ESTABLISHED",
+                    }
+                ],
+            },
         },
         {
             "ready": True,
