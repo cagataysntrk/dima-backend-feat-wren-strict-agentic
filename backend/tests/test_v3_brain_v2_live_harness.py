@@ -108,6 +108,111 @@ def test_one_pass_mechanical_gate_reads_canonical_native_fingerprint() -> None:
 
 
 
+def test_discovery_mechanical_gate_accepts_governed_candidate_path() -> None:
+    state = BrainGraphState(
+        thread_id="live:discovery-candidates",
+        tenant_binding="id:tenant",
+        principal_ref="user-1",
+        research_session_id="rs_" + "7" * 24,
+        accepted_brief_ref="rb_discovery",
+        scope_version_id="scope_v1",
+        evidence_revision=1,
+        evidence_ids=("evi_" + "2" * 24,),
+        hypothesis_ids=("p19h_" + "3" * 24, "p19h_" + "4" * 24),
+        latest_p19_assessment_ref="p19a_" + "5" * 24,
+        report_ref="p20r_" + "6" * 24,
+        workflow_status=BrainWorkflowStatus.COMPLETE,
+        last_completed_node="REPORT",
+        discovery_required=False,
+        discovery_turns=2,
+    )
+    provider = {
+        "provider_requests_by_source": {
+            "research_intake": 1,
+            "metabase": 2,
+            "p17_manager": 2,
+            "p19_manager": 1,
+        },
+        "actual_provider_request_count": 6,
+        "prompt_tokens": 2000,
+        "blocked_request_count": 0,
+    }
+    p17_snapshot = SimpleNamespace(
+        investigation=SimpleNamespace(nodes=()),
+        claims=(object(), object()),
+        terminal_stop_reason=None,
+    )
+    p19_snapshot = SimpleNamespace(
+        hypotheses=(_grounded_hypothesis(), _grounded_hypothesis()),
+    )
+
+    result = _mechanical(
+        probe_id="R_LIVE_3_DISCOVERY",
+        state=state,
+        provider=provider,
+        links=(_link(),),
+        p17_snapshot=p17_snapshot,
+        p19_snapshot=p19_snapshot,
+        report_doc=object(),
+    )
+
+    assert result["mechanical_green"] is True
+    assert result["discovery_candidate_path"] is True
+    assert result["discovery_honest_stop"] is False
+
+
+def test_discovery_mechanical_gate_accepts_typed_honest_insufficient_stop() -> None:
+    state = BrainGraphState(
+        thread_id="live:discovery-stop",
+        tenant_binding="id:tenant",
+        principal_ref="user-1",
+        research_session_id="rs_" + "8" * 24,
+        accepted_brief_ref="rb_discovery",
+        scope_version_id="scope_v1",
+        evidence_revision=1,
+        evidence_ids=("evi_" + "2" * 24,),
+        hypothesis_ids=(),
+        workflow_status=BrainWorkflowStatus.INCONCLUSIVE,
+        last_completed_node="HONEST_STOP",
+        discovery_required=False,
+        discovery_turns=1,
+    )
+    provider = {
+        "provider_requests_by_source": {
+            "research_intake": 1,
+            "metabase": 2,
+            "p17_manager": 1,
+            "p19_manager": 0,
+        },
+        "actual_provider_request_count": 4,
+        "prompt_tokens": 1500,
+        "blocked_request_count": 0,
+    }
+    p17_snapshot = SimpleNamespace(
+        investigation=SimpleNamespace(nodes=()),
+        claims=(),
+        terminal_stop_reason=SimpleNamespace(value="NO_MEANINGFUL_GAIN"),
+    )
+    p19_snapshot = SimpleNamespace(hypotheses=())
+
+    result = _mechanical(
+        probe_id="R_LIVE_3_DISCOVERY",
+        state=state,
+        provider=provider,
+        links=(_link(),),
+        p17_snapshot=p17_snapshot,
+        p19_snapshot=p19_snapshot,
+        report_doc=None,
+    )
+
+    assert result["mechanical_green"] is True
+    assert result["discovery_candidate_path"] is False
+    assert result["discovery_honest_stop"] is True
+    assert result["p19_assessment_exists"] is False
+    assert result["report_exists"] is False
+
+
+
 def test_scope_resume_mechanical_gate_requires_new_scope_and_disjoint_evidence() -> None:
     state = BrainGraphState(
         thread_id="live:scope",
