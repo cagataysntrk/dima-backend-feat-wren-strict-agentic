@@ -45,6 +45,7 @@ from app.v3.research_intake import (
     ResearchIntakeCompiler,
     ResearchIntakeTerminal,
 )
+from app.v3.research_analytical_scope import analytical_scope_contract
 from app.v3.research_manager import (
     ClaimSemanticContract,
     InvestigationIntent,
@@ -620,15 +621,29 @@ class DimaBrainV2Activities(BrainActivities):
                     f"brief={brief.scope.scope_version.version_id}"
                 ),
             )
+        material_contract = analytical_scope_contract(
+            session=session,
+            obligation_id=goal.goal_id,
+        )
+        if material_contract.scope_fingerprint != brief.scope_fingerprint:
+            raise BrainV2OwnerError(
+                "BRAIN_V2_MATERIAL_SCOPE_FINGERPRINT_MISMATCH",
+                (
+                    f"expected={brief.scope_fingerprint} "
+                    f"observed={material_contract.scope_fingerprint}"
+                ),
+                last_valid_boundary="dima.scope.resolve",
+                first_invalid_boundary="dima.material.compile",
+                expected_fingerprint=brief.scope_fingerprint,
+                observed_fingerprint=material_contract.scope_fingerprint,
+            )
         existing = self._evidence_pairs(session, goal.goal_id)
         request_key = NativeMaterialRequestKey(
             tenant=self._tenant(),
             principal=self._subject(),
             scope_version_id=state_scope_version,
             scope_fingerprint=brief.scope_fingerprint,
-            material_requirement_fingerprint=self._question_fingerprint(
-                session, goal
-            ),
+            material_requirement_fingerprint=material_contract.fingerprint,
             engine_identity=self._engine_identity,
         )
         if existing:
