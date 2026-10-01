@@ -1,3 +1,51 @@
+# FORWARD OVERRIDE — 2026-10-02 — BRAIN V2.1 CONVERGENCE ACTIVE
+
+This block supersedes all older CURRENT AUTHORITY blocks below on this branch.
+
+~~~text
+active branch
+feat/dima-brain-v2-1-convergence
+
+branch point
+f910f705da5840b30ea776a85ff61aa545ced9f2
+
+decision
+backend/belgeler/metabase/DMP-DEC-0077_DIMA_BRAIN_V2_1_CONVERGENCE.md
+
+roadmap
+backend/belgeler/metabase/DIMA_BRAIN_V2_1_CONVERGENCE_ROADMAP.md
+
+current handoff
+backend/belgeler/metabase/DIMA_BRAIN_V2_1_CURRENT_HANDOFF.md
+
+engine
+d5c60dc9f37a9ec9c5b0117f178146bbcb8dca88
+0.63.18-dima.9
+FROZEN
+
+frontend
+FORBIDDEN
+
+30-case
+FORBIDDEN WITHOUT EXPLICIT USER AUTHORIZATION
+~~~
+
+Forward architecture law:
+
+~~~text
+Metabot = single analytical cognition engine
+LangGraph = orchestration
+Dima = meaning / Evidence / completion
+P19 = epistemic judge
+P18 = relationship judge
+P20 = report
+P17 = investigation controller, not second analyst
+~~~
+
+The historical receipts below remain evidence only.
+
+---
+
 # DIMA BRAIN V2 — CURRENT HANDOFF
 
 > **CURRENT AUTHORITY — 2026-10-01 / ROOT-CLOSURE FINAL RECERTIFICATION**
