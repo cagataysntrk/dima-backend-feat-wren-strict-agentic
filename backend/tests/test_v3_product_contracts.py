@@ -355,6 +355,61 @@ def test_native_context_promotes_research_capability_only():
     assert by_id["cash_forecast"]==CapabilityStatus.SPECIAL_ENGINE_DEFERRED
 
 
+def test_phase2_headless_t1_t7_capability_panel_is_explicit():
+    unavailable=capability_discovery(
+        principal=principal(),
+        analytical_context_available=False,
+    )
+    available=capability_discovery(
+        principal=principal(),
+        analytical_context_available=True,
+    )
+    cold={x.capability_id:x.status for x in unavailable.capabilities}
+    hot={x.capability_id:x.status for x in available.capabilities}
+
+    expected={
+        "brain.t1.scope_repair",
+        "brain.t2.rca_one_pass",
+        "brain.t3.rca_adaptive",
+        "brain.t4.rca_discovery",
+        "brain.t5.relationship_observational",
+        "brain.t6.report_contextual",
+        "brain.t7.multi_intent",
+    }
+    assert expected.issubset(cold)
+    assert expected.issubset(hot)
+
+    assert cold["brain.t1.scope_repair"]==CapabilityStatus.SUPPORTED
+    assert cold["brain.t6.report_contextual"]==CapabilityStatus.SUPPORTED
+
+    data_dependent=expected-{
+        "brain.t1.scope_repair",
+        "brain.t6.report_contextual",
+    }
+    assert {
+        capability_id
+        for capability_id in data_dependent
+        if cold[capability_id]==CapabilityStatus.DATA_DEPENDENT
+    }==data_dependent
+    assert {
+        capability_id
+        for capability_id in data_dependent
+        if hot[capability_id]==CapabilityStatus.SUPPORTED
+    }==data_dependent
+
+
+def test_phase2_capability_panel_does_not_claim_frontend_or_30_case():
+    c=capability_discovery(
+        principal=principal(),
+        analytical_context_available=True,
+    )
+    ids={item.capability_id for item in c.capabilities}
+    assert "frontend" not in ids
+    assert "ui" not in ids
+    assert "30_case" not in ids
+    assert "benchmark.30_case" not in ids
+
+
 def test_resume_reauthorizes_current_principal():
     src=sources()
     service=HeadlessProductService(sources=src)
