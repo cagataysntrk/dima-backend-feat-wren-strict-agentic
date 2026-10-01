@@ -4,7 +4,7 @@ CURRENT GATE
 G1
 
 Platform HEAD
-ebbd63ef717f010e978e9a5dc31a453a7a94d635
+270e3a4c13ffdeb887fd20001de8179d7e7ead4e
 
 semantic Product SHA
 9de0cc6668689f2fc4fc303b7392043ee715049c
@@ -44,8 +44,11 @@ FILES CHANGED
 - backend/belgeler/metabase/DIMA_BRAIN_V2_FINAL_CLOSURE_STATUS.md
 
 PROVIDER-FREE
-run: PENDING
-result: PENDING
+run: 36912454275
+result: RED — diagnostic projection only; field-identity alias exposed entity_value as breakout label.
+root: telemetry normalization, not Product/material acceptance.
+fix: 270e3a4c13ffdeb887fd20001de8179d7e7ead4e
+current rerun: PENDING
 
 METAMORPHIC
 result:
@@ -94,7 +97,8 @@ T1 SCOPE RESUME = 36908273500 = GREEN = 4/4
 T2 ONE_PASS = 36908926530 = GREEN = 4/4
 
 NEXT EXACT ACTION
-Run full current provider-free closure for G1 telemetry/reproducer.
+Rerun full current provider-free closure for G1 telemetry/reproducer on 270e3a4c.
+
 If GREEN, freeze the diagnostic candidate and run exactly one fresh T3 ADAPTIVE live to classify the native dimension boundary with structured semantic shapes.
 Do not patch acceptance until that classification exists.
 
