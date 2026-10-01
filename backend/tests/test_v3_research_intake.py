@@ -945,6 +945,55 @@ def prior_brief() -> ResearchBrief:
     )
 
 
+def test_followup_scope_patch_rejects_ungrounded_current_turn_fragment():
+    payload = {
+        "terminal": "READY",
+        "operations": [
+            {
+                "facet": "METRIC",
+                "operation": "SET",
+                "semantic_ids": ["metric.downtime"],
+                "source_fragment": "use downtime from some other message",
+            }
+        ],
+    }
+    with pytest.raises(ResearchIntakeError) as exc:
+        ResearchIntakeCompiler(
+            transport=FakeTransport(payload)
+        ).compile(
+            question="Keep this investigation otherwise unchanged.",
+            catalog=catalog(),
+            prior_brief=prior_brief(),
+        )
+
+    assert exc.value.code == "INTAKE_SCOPE_PATCH_SOURCE_UNGROUNDED"
+
+
+def test_followup_scope_patch_noop_inherits_prior_scope_without_new_version():
+    prior = prior_brief()
+    result = ResearchIntakeCompiler(
+        transport=FakeTransport(
+            {
+                "terminal": "READY",
+                "operations": [],
+            }
+        )
+    ).compile(
+        question="Report this without changing the analytical scope.",
+        catalog=catalog(),
+        prior_brief=prior,
+    )
+
+    assert result.brief is not None
+    assert result.scope_contract is None
+    assert result.brief.scope == prior.scope
+    assert (
+        result.brief.scope.scope_version.version_id
+        == prior.scope.scope_version.version_id
+    )
+    assert result.brief.scope_fingerprint == prior.scope_fingerprint
+
+
 def test_explicit_repair_does_not_restore_removed_prior_obligation():
     payload = {
         "terminal": "READY",
