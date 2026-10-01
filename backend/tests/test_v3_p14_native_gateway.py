@@ -1043,6 +1043,77 @@ def test_r5_material_date_scope_accepts_semantically_equivalent_half_open_bounds
     assert observed.scope_identity.version_id == "scope_v2"
 
 
+def assert_rich_material_with_period(
+    observation,
+    *,
+    start: str,
+    end: str,
+):
+    _, session, _, _ = session_and_link(db_engine())
+    contract = rich_material_contract().model_copy(
+        update={
+            "period": scope_module.AnalyticalPeriodInvariant(
+                kind="explicit_half_open",
+                time_dimension="time.event_date",
+                start=start,
+                end=end,
+            )
+        }
+    )
+    return scope_module.assert_material_native_scope(
+        session=session,
+        obligation_id="g1",
+        contract=contract,
+        observation=observation,
+        bindings=rich_material_bindings(),
+        expected_engine=expected_identity(),
+        expected_metabase_subject=7,
+    )
+
+
+@pytest.mark.parametrize(
+    ("start", "end"),
+    (
+        ("2026-06-01T00:00:00", "2026-07-01T00:00:00"),
+        ("2026-06-01T00:00:00Z", "2026-07-01T00:00:00Z"),
+    ),
+)
+def test_r5_material_date_scope_accepts_midnight_datetime_calendar_boundaries(
+    start,
+    end,
+):
+    observed = assert_rich_material_with_period(
+        rich_material_observation(),
+        start=start,
+        end=end,
+    )
+
+    assert observed.scope_identity.version_id == "scope_v2"
+
+
+@pytest.mark.parametrize(
+    ("start", "end"),
+    (
+        ("2026-06-01T00:00:01", "2026-07-01T00:00:00"),
+        ("2026-06-01T00:00:00+03:00", "2026-07-01T00:00:00+03:00"),
+    ),
+)
+def test_r5_material_date_scope_rejects_non_calendar_datetime_boundaries(
+    start,
+    end,
+):
+    with pytest.raises(scope_module.ResearchAnalyticalScopeError) as exc:
+        assert_rich_material_with_period(
+            rich_material_observation(),
+            start=start,
+            end=end,
+        )
+
+    assert exc.value.code == "R1_NATIVE_TIME_SCOPE_MISMATCH"
+    assert exc.value.last_valid_boundary == "dima.material.compile"
+    assert exc.value.first_invalid_boundary == "dima.native.observe"
+
+
 @pytest.mark.parametrize(
     ("lower_bound", "lower_inclusive", "upper_bound", "upper_inclusive"),
     (
