@@ -193,6 +193,20 @@ def test_r1_entity_fixed_diagnostic_dimension_is_filter_not_required_breakout():
     assert contract.filters[0].source_candidate_id == packaging.candidate_id
     assert contract.filters[0].value == "Packaging"
 
+    prepared = ResearchManager.prepare_native_delegation(
+        session,
+        obligation_id=question.goal_id,
+        now=NOW,
+    )
+    assert "- metric.downtime :: Downtime" in prepared.request.message
+    assert (
+        "- metric.maintenance_delay :: Maintenance Delay"
+        in prepared.request.message
+    )
+    assert "entity.department.packaging :: Packaging" not in prepared.request.message
+    assert "SQL" not in prepared.request.message
+    assert "MBQL" not in prepared.request.message
+
 
 def _receipt(obligation_id: str) -> DimaQueryReceipt:
     return DimaQueryReceipt(
