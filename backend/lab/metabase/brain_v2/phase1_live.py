@@ -122,6 +122,10 @@ def _exception(exc: Exception) -> dict[str, Any]:
         "detail": str(exc),
         "cause_type": type(cause).__name__ if cause is not None else None,
         "cause_code": getattr(cause, "code", None) if cause is not None else None,
+        "last_valid_boundary": getattr(exc, "last_valid_boundary", None),
+        "first_invalid_boundary": getattr(exc, "first_invalid_boundary", None),
+        "expected_fingerprint": getattr(exc, "expected_fingerprint", None),
+        "observed_fingerprint": getattr(exc, "observed_fingerprint", None),
     }
 
 
