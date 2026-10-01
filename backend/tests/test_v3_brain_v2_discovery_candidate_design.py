@@ -1,6 +1,7 @@
 from types import SimpleNamespace
 
 from app.v3.brain_v2.discovery_candidate_design import (
+    project_candidate_set,
     remaining_discovery_mechanism_refs,
 )
 from app.v3.root_cause_candidate_contract import (
@@ -80,4 +81,69 @@ def test_untyped_or_ungrounded_claims_do_not_consume_current_vocabulary():
         "metric.a",
         "metric.b",
         "metric.c",
+    )
+
+
+
+def _project(
+    *,
+    allowed=("metric.effect", "metric.a", "metric.b", "metric.c"),
+    current=("metric.effect", "metric.a", "metric.b", "metric.c"),
+    observed=("metric.effect", "metric.a", "metric.b", "metric.c"),
+    eligible=("metric.effect", "metric.a", "metric.b", "metric.c"),
+    effect="metric.effect",
+):
+    return project_candidate_set(
+        allowed_discovery_surface=allowed,
+        current_scope_semantic_refs=current,
+        observed_material_semantic_refs=observed,
+        candidate_eligible_semantic_refs=eligible,
+        effect_semantic_id=effect,
+        scope_version_id="scope_v1",
+        evidence_refs=("evi_" + "1" * 24,),
+        material_requirement_ref="g_root",
+    )
+
+
+def test_candidate_projection_is_exact_typed_intersection_and_excludes_effect():
+    projected = _project(
+        current=("metric.effect", "metric.a", "metric.b"),
+        observed=("metric.effect", "metric.a", "metric.c"),
+        eligible=("metric.effect", "metric.a", "metric.b", "metric.c"),
+    )
+
+    assert tuple(item.semantic_id for item in projected.candidates) == ("metric.a",)
+    candidate = projected.candidates[0]
+    assert candidate.source == "OBSERVED_GOVERNED_MATERIAL"
+    assert candidate.scope_version_id == "scope_v1"
+    assert candidate.evidence_refs == ("evi_" + "1" * 24,)
+    assert candidate.material_requirement_ref == "g_root"
+
+
+def test_candidate_projection_preserves_all_legal_candidates_without_forcing_two():
+    projected = _project()
+    assert tuple(item.semantic_id for item in projected.candidates) == (
+        "metric.a",
+        "metric.b",
+        "metric.c",
+    )
+
+
+def test_candidate_projection_allows_zero_or_one_without_fabricating_competitor():
+    zero = _project(observed=("metric.effect",))
+    one = _project(observed=("metric.effect", "metric.b"))
+    assert zero.candidates == ()
+    assert tuple(item.semantic_id for item in one.candidates) == ("metric.b",)
+
+
+def test_candidate_projection_deduplicates_identity_without_text_matching():
+    projected = _project(
+        allowed=("metric.effect", "metric.a", "metric.a", "metric.b"),
+        current=("metric.effect", "metric.a", "metric.b", "metric.a"),
+        observed=("metric.effect", "metric.a", "metric.a", "metric.b"),
+        eligible=("metric.effect", "metric.a", "metric.b"),
+    )
+    assert tuple(item.semantic_id for item in projected.candidates) == (
+        "metric.a",
+        "metric.b",
     )
