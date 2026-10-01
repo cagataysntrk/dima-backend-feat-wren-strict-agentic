@@ -13,6 +13,8 @@ from sqlalchemy.pool import StaticPool
 from sqlmodel import SQLModel, create_engine
 
 from app.v3.research_contracts import (
+    CausalCompetitionSurface,
+    CausalEffectObservation,
     ResearchBrief,
     ResearchBriefStatus,
     ResearchGoalKind,
@@ -467,6 +469,84 @@ def test_evidence_synthesis_ranking_delegates_unranked_governed_material():
         "- produce exactly one executable native analytical query satisfying that contract"
         in delegation.request.message
     )
+
+
+
+def test_causal_change_authority_projects_to_native_material_contract():
+    engine = _db_engine()
+    product = _product(engine)
+    base = _brief(two=False)
+    effect = base.questions[0].subject_refs[0]
+    time_ref = next(
+        item
+        for item in base.scope.semantic_refs
+        if item.candidate_id == "cand_sales_order_date"
+    )
+    candidate = ResearchSemanticRef(
+        source_mention="iadeler",
+        candidate_id="cand_return_count",
+        target_kind=SemanticTargetKind.METRIC,
+        canonical_name="Return Count",
+        cube_names=("satis_siparisleri",),
+    )
+    question = ResearchQuestion(
+        goal_id="g-change",
+        kind=ResearchGoalKind.ROOT_CAUSE,
+        source_text="Accepted window içindeki satış siparişi değişimini iadelerle değerlendir.",
+        subject_refs=(effect, candidate),
+        related_refs=(),
+        causal_competition=CausalCompetitionSurface(
+            effect_semantic_id=effect.candidate_id,
+            effect_observation=CausalEffectObservation.CHANGE,
+            candidate_mechanism_semantic_ids=(candidate.candidate_id,),
+        ),
+        status=ResearchGoalStatus.RESOLVED,
+    )
+    brief = base.model_copy(
+        update={
+            "scope": base.scope.model_copy(
+                update={
+                    "semantic_refs": (
+                        effect,
+                        candidate,
+                        time_ref,
+                    ),
+                    "time_surfaces": ("accepted two-month window",),
+                    "periods": (
+                        ResearchTimePeriod(
+                            source_text="accepted two-month window",
+                            time_dimension_candidate_id=time_ref.candidate_id,
+                            start="2026-05-01",
+                            end="2026-07-01",
+                        ),
+                    ),
+                }
+            ),
+            "questions": (question,),
+            "must_requirement_ids": ("g-change",),
+        }
+    )
+    session = product.start_from_brief(
+        brief=brief,
+        request_ref="r-p14-change-authority",
+        source_message_hash=hashlib.sha256(b"change authority").hexdigest(),
+        principal=_principal(),
+    )
+
+    delegation = ResearchManager.prepare_native_delegation(
+        session,
+        obligation_id="g-change",
+    )
+    scope = delegation.request.context["dima_analytical_scope"]
+
+    assert scope["comparison"] is None
+    assert scope["period"]["start"] == "2026-05-01"
+    assert scope["period"]["end"] == "2026-07-01"
+    assert scope["temporal_observation"] == {
+        "kind": "change",
+        "time_dimension": "cand_sales_order_date",
+        "minimum_distinct_values": 2,
+    }
 
 
 def test_product_research_entry_persists_session_and_requires_native_runtime():
