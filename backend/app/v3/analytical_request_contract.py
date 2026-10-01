@@ -183,6 +183,125 @@ class AnalyticalRequestContract(FrozenModel):
         return self
 
 
+
+class MaterialCoverageContract(FrozenModel):
+    """Deterministic material need projected from accepted analytical authority.
+
+    This is not a second truth store and never describes SQL/MBQL. It separates
+    what one analytical operation must make observable from material that is
+    semantically legal but not required. The user-authorized scope identity stays
+    on AnalyticalRequestContract; this projection is execution-local.
+    """
+
+    scope_fingerprint: str | None = Field(
+        default=None,
+        pattern=r"^[a-f0-9]{64}$",
+    )
+    material_fingerprint: str = Field(pattern=r"^[a-f0-9]{64}$")
+    required_metric_refs: tuple[str, ...] = Field(min_length=1)
+    allowed_metric_refs: tuple[str, ...] = Field(min_length=1)
+    required_breakout_refs: tuple[str, ...] = ()
+    allowed_breakout_refs: tuple[str, ...] = ()
+    exact_filter_source_refs: tuple[str, ...] = ()
+    time_dimension_ref: str | None = None
+    time_breakout_requirement: Literal["none", "allowed", "required"] = "none"
+    ranking_rowset_constraint: bool = False
+
+    @model_validator(mode="after")
+    def required_is_subset_of_allowed(self):
+        if not set(self.required_metric_refs).issubset(
+            set(self.allowed_metric_refs)
+        ):
+            raise ValueError("required metrics must be allowed material")
+        if not set(self.required_breakout_refs).issubset(
+            set(self.allowed_breakout_refs)
+        ):
+            raise ValueError("required breakouts must be allowed material")
+        if (
+            self.time_breakout_requirement != "none"
+            and self.time_dimension_ref is None
+        ):
+            raise ValueError("time breakout policy requires a governed time ref")
+        return self
+
+
+def _contract_time_dimension(
+    contract: AnalyticalRequestContract,
+) -> str | None:
+    if contract.comparison is not None:
+        values = {
+            contract.comparison.base_period.time_dimension,
+            contract.comparison.reference_period.time_dimension,
+        }
+        if len(values) != 1:
+            raise ValueError("comparison material spans multiple time dimensions")
+        return next(iter(values))
+    if contract.temporal_observation is not None:
+        return contract.temporal_observation.time_dimension
+    if contract.period is not None:
+        return contract.period.time_dimension
+    return None
+
+
+def material_coverage_contract(
+    contract: AnalyticalRequestContract,
+) -> MaterialCoverageContract:
+    """Project required/allowed material algebra without changing authority.
+
+    Current metric semantics are intentionally closed: every requested governed
+    metric is required and no additional metric is legal unless a future typed
+    authority explicitly expands allowed_metric_refs.
+
+    Dimension semantics distinguish required analytical breakouts from an
+    accepted temporal field that Metabase may expose as useful grain inside a
+    bounded period. Exact equality-filter redundancy is handled at the native
+    binding boundary because the filter's entity-value ref and its dimension ref
+    can legally map to the same stable field identity.
+    """
+
+    required_breakouts = tuple(dict.fromkeys(contract.dimension_refs))
+    allowed_breakouts = list(required_breakouts)
+    time_ref = _contract_time_dimension(contract)
+    time_policy: Literal["none", "allowed", "required"] = "none"
+    if time_ref is not None:
+        if (
+            contract.comparison is not None
+            or contract.temporal_observation is not None
+        ):
+            time_policy = "required"
+            if time_ref not in required_breakouts:
+                required_breakouts = tuple(
+                    (*required_breakouts, time_ref)
+                )
+            if time_ref not in allowed_breakouts:
+                allowed_breakouts.append(time_ref)
+        elif contract.period is not None:
+            time_policy = "allowed"
+            if time_ref not in allowed_breakouts:
+                allowed_breakouts.append(time_ref)
+
+    ranking_rowset_constraint = bool(
+        isinstance(contract.ranking, AnalyticalRankingInvariant)
+        and contract.ranking.limit is not None
+    )
+    return MaterialCoverageContract(
+        scope_fingerprint=contract.scope_fingerprint,
+        material_fingerprint=contract.material_fingerprint,
+        required_metric_refs=tuple(dict.fromkeys(contract.metric_refs)),
+        allowed_metric_refs=tuple(dict.fromkeys(contract.metric_refs)),
+        required_breakout_refs=required_breakouts,
+        allowed_breakout_refs=tuple(allowed_breakouts),
+        exact_filter_source_refs=tuple(
+            dict.fromkeys(
+                item.source_candidate_id for item in contract.filters
+            )
+        ),
+        time_dimension_ref=time_ref,
+        time_breakout_requirement=time_policy,
+        ranking_rowset_constraint=ranking_rowset_constraint,
+    )
+
+
 class AnalyticalRequestObservation(FrozenModel):
     """Engine-reported material semantics, never physical query implementation."""
 
