@@ -73,6 +73,141 @@ def test_c2_request_normalizes_native_conversation_id_to_uuid():
     assert str(request.conversation_id) == "00000000-0000-4000-8000-000000000001"
 
 
+
+@pytest.mark.parametrize(
+    ("chat_messages", "expected"),
+    [
+        (
+            [
+                {"id": "u1", "role": "user", "type": "text", "message": "Compare downtime."},
+                {"id": "a1", "role": "agent", "type": "text", "message": "I will inspect it."},
+                {
+                    "id": "tool-1",
+                    "role": "agent",
+                    "type": "tool_call",
+                    "name": "search",
+                    "args": "{\"query\":\"downtime\"}",
+                    "result": "{\"output\":\"found\"}",
+                    "status": "ended",
+                    "is_error": False,
+                },
+                {
+                    "id": "d1",
+                    "role": "agent",
+                    "type": "data_part",
+                    "part": {"type": "navigate_to", "version": 1, "value": "/question/1"},
+                },
+            ],
+            [
+                {"role": "user", "content": "Compare downtime."},
+                {"role": "assistant", "content": "I will inspect it."},
+                {
+                    "role": "assistant",
+                    "tool_calls": [
+                        {
+                            "id": "tool-1",
+                            "name": "search",
+                            "arguments": "{\"query\":\"downtime\"}",
+                        }
+                    ],
+                },
+                {"role": "tool", "tool_call_id": "tool-1", "content": "{\"output\":\"found\"}"},
+            ],
+        ),
+        (
+            [
+                {"id": "u2", "role": "user", "type": "text", "message": "Use prior query."},
+                {
+                    "id": "tool-2",
+                    "role": "agent",
+                    "type": "tool_call",
+                    "name": "construct_notebook_query",
+                    "args": "{}",
+                    "result": "{\"query-id\":\"q2\"}",
+                    "status": "ended",
+                    "is_error": False,
+                },
+            ],
+            [
+                {"role": "user", "content": "Use prior query."},
+                {
+                    "role": "assistant",
+                    "tool_calls": [
+                        {
+                            "id": "tool-2",
+                            "name": "construct_notebook_query",
+                            "arguments": "{}",
+                        }
+                    ],
+                },
+                {"role": "tool", "tool_call_id": "tool-2", "content": "{\"query-id\":\"q2\"}"},
+            ],
+        ),
+    ],
+)
+def test_c2_source_backed_conversation_history_projects_losslessly(chat_messages, expected):
+    conversation_id = "00000000-0000-4000-8000-000000000001"
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.headers["X-Metabase-Session"] == "fixture-session"
+        if request.url.path == "/api/session/properties":
+            return httpx.Response(200, json={"version": {"tag": IDENTITY.runtime_tag}})
+        if request.url.path == f"/api/metabot/conversations/{conversation_id}":
+            return httpx.Response(
+                200,
+                json={
+                    "conversation_id": conversation_id,
+                    "chat_messages": chat_messages,
+                },
+            )
+        return httpx.Response(599)
+
+    with NativeEngineBridge(
+        base_url="http://metabase",
+        session_token="fixture-session",
+        expected_identity=IDENTITY,
+        transport=httpx.MockTransport(handler),
+    ) as bridge:
+        history = bridge.conversation_history(UUID(conversation_id))
+
+    assert history == expected
+
+
+def test_c2_source_backed_conversation_history_fails_closed_on_tool_error():
+    conversation_id = "00000000-0000-4000-8000-000000000001"
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == f"/api/metabot/conversations/{conversation_id}":
+            return httpx.Response(
+                200,
+                json={
+                    "conversation_id": conversation_id,
+                    "chat_messages": [
+                        {
+                            "id": "tool-err",
+                            "role": "agent",
+                            "type": "tool_call",
+                            "name": "search",
+                            "args": "{}",
+                            "result": "{\"message\":\"boom\"}",
+                            "status": "ended",
+                            "is_error": True,
+                        }
+                    ],
+                },
+            )
+        return httpx.Response(599)
+
+    with NativeEngineBridge(
+        base_url="http://metabase",
+        session_token="fixture-session",
+        expected_identity=IDENTITY,
+        transport=httpx.MockTransport(handler),
+    ) as bridge:
+        with pytest.raises(Exception, match="errored tool"):
+            bridge.conversation_history(UUID(conversation_id))
+
+
 def test_c2_bridge_preserves_ordered_native_stream_and_final_state():
     lines = [
         'f:{"messageId":"m1"}',
