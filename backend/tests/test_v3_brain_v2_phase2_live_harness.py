@@ -1,4 +1,4 @@
-from backend.lab.metabase.core_b.phase1_pinpoint_live import (
+from lab.metabase.core_b.phase1_pinpoint_live import (
     PROBES,
     _mechanical_multi_intent,
     _mechanical_relationship_report_phase2,
