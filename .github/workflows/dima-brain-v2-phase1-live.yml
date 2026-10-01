@@ -80,8 +80,8 @@ jobs:
                "backend/app","backend/pyproject.toml","engine/metabase"],
               check=True,
           )
-          assert auth["engine_sha"]=="0f16f2b5a1ec774ac7afee6214c726e82f9ceb3c"
-          assert auth["engine_release"]=="0.63.18-dima.8"
+          assert auth["engine_sha"]=="d5c60dc9f37a9ec9c5b0117f178146bbcb8dca88"
+          assert auth["engine_release"]=="0.63.18-dima.9"
           assert auth["model_policy"] in {"LUNA_FIRST","TERRA_AB"}
           if auth["model_policy"]=="TERRA_AB":
               assert probe=="R_LIVE_1_ONE_PASS"
@@ -148,13 +148,13 @@ jobs:
           GITLINK_SHA="$(git ls-tree HEAD engine/metabase | awk '{print $3}')"
           python backend/lab/metabase/core_b/runtime/engine_runtime_lock.py             --lock backend/lab/metabase/core_b/runtime/engine_runtime_lock.json             --gitlink-sha "$GITLINK_SHA"             --github-env "$GITHUB_ENV"
 
-      - name: Pull exact certified dima.8 digest
+      - name: Pull exact certified dima.9 digest
         shell: bash
         run: |
           set -euo pipefail
-          test "$ENGINE_SHA" = "0f16f2b5a1ec774ac7afee6214c726e82f9ceb3c"
-          test "$CERTIFICATION_RUN_ID" = "36610103287"
-          test "$RUNTIME_TAG" = "v0.63.18-dima.8"
+          test "$ENGINE_SHA" = "d5c60dc9f37a9ec9c5b0117f178146bbcb8dca88"
+          test "$CERTIFICATION_RUN_ID" = "36812902584"
+          test "$RUNTIME_TAG" = "v0.63.18-dima.9"
           docker pull "$IMMUTABLE_IMAGE_REF"
           docker image inspect -f '{{range .RepoDigests}}{{println .}}{{end}}'             "$IMMUTABLE_IMAGE_REF" | grep -Fx "$IMMUTABLE_IMAGE_REF"
 
@@ -219,7 +219,7 @@ jobs:
             exit 1
           fi
 
-      - name: Start exact certified dima.8 engine
+      - name: Start exact certified dima.9 engine
         shell: bash
         run: |
           set -euo pipefail
@@ -301,8 +301,8 @@ jobs:
           r=json.loads(Path(f"eval/brain_v2_live/{probe}.json").read_text())
           assert r["schema_version"]=="dima_brain_v2_phase1_live_v1"
           assert r["candidate_product_sha"]==os.environ["CANDIDATE_SHA"]
-          assert r["engine_sha"]=="0f16f2b5a1ec774ac7afee6214c726e82f9ceb3c"
-          assert r["engine_release"]=="v0.63.18-dima.8"
+          assert r["engine_sha"]=="d5c60dc9f37a9ec9c5b0117f178146bbcb8dca88"
+          assert r["engine_release"]=="v0.63.18-dima.9"
           assert r.get("exception") is None, r.get("exception")
           assert r["checkpoint_roundtrip_equal"] is True
           assert r["mechanical_verdict"]=="GREEN", r.get("mechanical")
