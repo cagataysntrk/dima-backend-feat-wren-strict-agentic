@@ -631,3 +631,79 @@ NOT RUN
 ~~~
 
 until the user separately authorizes it.
+
+## 2026-10-01 ADAPTIVE native-continuation family
+
+Current ADAPTIVE circuit-breaker family:
+
+~~~text
+live RED
+36824251158
+
+provider receipt
+10 forwarded
+3 blocked
+
+by source
+research_intake 1
+metabase        7
+p19_manager     1
+p17_manager     1
+
+blocked
+metabase 3 x PROVIDER_SOURCE_CEILING_EXHAUSTED
+~~~
+
+Architecture-owner review found the earliest wrong transition before another paid run:
+
+~~~text
+P14 native acquisition
+-> engine emits exact agent state
+-> Dima captured query/result but discarded final_state
+-> P17 follow-up reused conversation_id with state={}
+-> Metabot had to rediscover native context
+-> source ceiling exhausted before one discriminating query
+~~~
+
+This is a transport-continuation defect, not permission to increase provider ceilings.
+
+Provider-free reproducer:
+
+~~~text
+5af1178a
+RED
+second P17 Metabot request state == {}
+~~~
+
+Generic invariant:
+
+~~~text
+one completed native occurrence
+-> persist exact source-backed Metabot agent state as opaque transport provenance
+-> fingerprint it
+-> same session/obligation/conversation P17 follow-up reuses that exact state
+
+Dima does not interpret the state.
+Unknown engine-state keys fail closed.
+Missing/tampered state fails closed.
+~~~
+
+Implementation family:
+
+~~~text
+171272f0  schema + migration
+e8aa6b3f  canonical state provenance
+c2cf0e59  capture engine final_state
+7c8523f5  bind verified continuation state to P17
+0fbee346  negative/tamper/metamorphic coverage
+~~~
+
+Semantic/native execution owner remains Metabase. No SQL/MBQL/query reconstruction was added.
+Engine remains frozen dima.9. A second engine build is forbidden.
+
+Next legal action:
+
+~~~text
+full affected provider-free
+then, only if GREEN, ONE fresh ADAPTIVE live
+~~~
