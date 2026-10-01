@@ -74,10 +74,23 @@ from .state import BrainGraphState, BrainP19Route
 
 
 class BrainV2OwnerError(RuntimeError):
-    def __init__(self, code: str, detail: str) -> None:
+    def __init__(
+        self,
+        code: str,
+        detail: str,
+        *,
+        last_valid_boundary: str | None = None,
+        first_invalid_boundary: str | None = None,
+        expected_fingerprint: str | None = None,
+        observed_fingerprint: str | None = None,
+    ) -> None:
         super().__init__(f"{code}: {detail}")
         self.code = code
         self.detail = detail
+        self.last_valid_boundary = last_valid_boundary
+        self.first_invalid_boundary = first_invalid_boundary
+        self.expected_fingerprint = expected_fingerprint
+        self.observed_fingerprint = observed_fingerprint
 
 
 def _canonical(value: Any) -> str:
@@ -636,6 +649,10 @@ class DimaBrainV2Activities(BrainActivities):
             raise BrainV2OwnerError(
                 response.limitation_code or "BRAIN_V2_NATIVE_EVIDENCE_REQUIRED",
                 response.limitation_detail or goal.goal_id,
+                last_valid_boundary=response.last_valid_boundary,
+                first_invalid_boundary=response.first_invalid_boundary,
+                expected_fingerprint=response.expected_fingerprint,
+                observed_fingerprint=response.observed_fingerprint,
             )
         return MaterialActivityResult(
             material_requirement_ids=(goal.goal_id,),
