@@ -1,12 +1,17 @@
 from __future__ import annotations
 
+import json
 from types import SimpleNamespace
+
+import pytest
 from uuid import UUID
 
 from app.v3.brain_v2.state import BrainGraphState, BrainWorkflowStatus
+from lab.metabase.brain_v2 import phase1_live
 from lab.metabase.brain_v2.phase1_live import (
     _mechanical,
     _native_occurrence_projection,
+    _require_locked_engine_runtime,
 )
 
 
@@ -98,3 +103,34 @@ def test_one_pass_mechanical_gate_reads_canonical_native_fingerprint() -> None:
     assert result["mechanical_green"] is True
     assert result["duplicate_native_execution_zero"] is True
     assert result["native_acquisitions"] == 1
+
+
+def test_live_runtime_guard_uses_certified_lock_instead_of_release_literal(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    lock = {
+        "engine_sha": "a" * 40,
+        "upstream_sha": "b" * 40,
+        "runtime_tag": "v0.63.18-dima.99",
+        "registry_digest": "sha256:" + "c" * 64,
+        "build_identity": "github-actions:123:" + "a" * 40,
+    }
+    lock_path = tmp_path / "engine_runtime_lock.json"
+    lock_path.write_text(json.dumps(lock), encoding="utf-8")
+    monkeypatch.setattr(phase1_live, "ENGINE_RUNTIME_LOCK", lock_path)
+
+    args = SimpleNamespace(
+        engine_sha=lock["engine_sha"],
+        upstream_sha=lock["upstream_sha"],
+        runtime_tag=lock["runtime_tag"],
+        runtime_image_digest=lock["registry_digest"],
+        build_identity=lock["build_identity"],
+        image_identity=lock["registry_digest"],
+    )
+
+    _require_locked_engine_runtime(args)
+
+    args.engine_sha = "d" * 40
+    with pytest.raises(RuntimeError, match="certified runtime lock"):
+        _require_locked_engine_runtime(args)
