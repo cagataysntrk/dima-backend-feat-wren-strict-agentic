@@ -15,12 +15,14 @@ from app.v3.hypothesis_root_cause import (
 from app.v3.hypothesis_root_cause_v1 import (
     discriminating_test_is_callable,
 )
+from app.v3.research_analytical_scope import analytical_scope_contract
 from app.v3.research_manager import InvestigationIntent
 
 from .activities import P17ActivityResult
 from .adaptive_test_design import (
     AdaptiveTestDesignError,
     TypedNextTestProposalManager,
+    typed_child_scope_for_next_test,
 )
 from .keys import CognitionPurpose
 from .owner_adapter import BrainV2OwnerError, DimaBrainV2Activities
@@ -55,6 +57,14 @@ class AdaptiveDimaBrainV2Activities(DimaBrainV2Activities):
         )
         before_pairs = set(before_evidence_pairs)
         try:
+            parent_scope = analytical_scope_contract(
+                session=session,
+                obligation_id=goal.goal_id,
+            )
+            child_scope = typed_child_scope_for_next_test(
+                parent=parent_scope,
+                request=request,
+            )
             manager = TypedNextTestProposalManager(
                 inner=self._investigation_manager,
                 request=request,
@@ -72,6 +82,7 @@ class AdaptiveDimaBrainV2Activities(DimaBrainV2Activities):
                     InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE
                 ),
                 downstream_reentry_obligation_id=goal.goal_id,
+                child_analytical_scope=child_scope,
             )
         except AdaptiveTestDesignError as exc:
             raise BrainV2OwnerError(
