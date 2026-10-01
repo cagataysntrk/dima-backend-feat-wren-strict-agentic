@@ -592,11 +592,27 @@ class DimaBrainV2Activities(BrainActivities):
     def acquire_material(self, state: BrainGraphState) -> MaterialActivityResult:
         session = self._session(state)
         goal = self._root_goal(session)
+        brief = session.accepted_brief
+        if brief is None:
+            raise BrainV2OwnerError(
+                "BRAIN_V2_ACCEPTED_BRIEF_REQUIRED",
+                session.session_id,
+            )
+        state_scope_version = state.scope_version_id or "scope_v1"
+        if state_scope_version != brief.scope.scope_version.version_id:
+            raise BrainV2OwnerError(
+                "BRAIN_V2_SCOPE_VERSION_MISMATCH",
+                (
+                    f"state={state_scope_version} "
+                    f"brief={brief.scope.scope_version.version_id}"
+                ),
+            )
         existing = self._evidence_pairs(session, goal.goal_id)
         request_key = NativeMaterialRequestKey(
             tenant=self._tenant(),
             principal=self._subject(),
-            scope_version_id=state.scope_version_id or "scope_v1",
+            scope_version_id=state_scope_version,
+            scope_fingerprint=brief.scope_fingerprint,
             material_requirement_fingerprint=self._question_fingerprint(
                 session, goal
             ),
