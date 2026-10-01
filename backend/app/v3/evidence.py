@@ -63,6 +63,10 @@ class DimaQueryReceipt(FrozenModel):
     execution_access_fingerprint: str | None = None
     access_attestation_refs: tuple[str, ...] = ()
     semantic_context_version: str = Field(min_length=1)
+    scope_fingerprint: str | None = Field(
+        default=None,
+        pattern=r"^[a-f0-9]{64}$",
+    )
     resource_entity_ids: tuple[str, ...] = ()
     resource_fingerprints: tuple[str, ...] = ()
     substrate: str = Field(min_length=1)
