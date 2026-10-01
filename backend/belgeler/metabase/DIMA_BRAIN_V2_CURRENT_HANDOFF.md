@@ -1,3 +1,54 @@
+# FORWARD OVERRIDE — 2026-10-02 — BRAIN V2.1 DISCOVERY SIMPLIFICATION ACTIVE
+
+This branch-local block supersedes older readiness/current-authority language below.
+
+~~~text
+active branch
+feat/dima-brain-v2-1-discovery-simplification
+
+branch point
+ed60bc1e5fc868deaead0cc321fdf58785cd5d8b
+
+decision
+backend/belgeler/metabase/DMP-DEC-0077_DIMA_BRAIN_V2_1_DISCOVERY_SIMPLIFICATION.md
+
+roadmap
+backend/belgeler/metabase/DIMA_BRAIN_V2_1_DISCOVERY_SIMPLIFICATION_ROADMAP.md
+
+handoff
+backend/belgeler/metabase/DIMA_BRAIN_V2_1_CURRENT_HANDOFF.md
+
+engine
+d5c60dc9f37a9ec9c5b0117f178146bbcb8dca88
+0.63.18-dima.9
+FROZEN
+
+frontend
+FORBIDDEN
+
+30-case
+FORBIDDEN UNTIL EXPLICIT USER AUTHORIZATION
+~~~
+
+V2.1 does not create Brain V3.
+
+It preserves Brain V2 and evaluates one bounded simplification:
+
+~~~text
+provider-backed P17 DISCOVERY
+→ RETIRE from normal Product path IF proof gates pass
+
+VERIFIED Metabot Evidence
+→ deterministic CandidateSetProjector
+→ P19
+~~~
+
+Historical 30-CASE READY blocks below are references only because the current codebase contains semantic changes after older readiness seals.
+
+V2.1 must freshly seal affected capabilities before it may declare READY.
+
+---
+
 # DIMA BRAIN V2 — CURRENT HANDOFF
 
 > **CURRENT AUTHORITY — 2026-10-01 / ROOT-CLOSURE FINAL RECERTIFICATION**
