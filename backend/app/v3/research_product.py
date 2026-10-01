@@ -155,6 +155,19 @@ class NativeResearchOccurrenceRunner:
                             "was captured; unknown prior cognition is not replayed"
                         ),
                     )
+                enrich_request = getattr(
+                    self._materials,
+                    "enrich_native_request",
+                    None,
+                )
+                if callable(enrich_request):
+                    request = enrich_request(
+                        principal=principal,
+                        session=session,
+                        obligation_id=obligation_id,
+                        request=request,
+                        analytical_scope=analytical_scope,
+                    )
                 if link.execution_kind == "P17_FOLLOWUP":
                     if request.state or request.history is not None:
                         raise ResearchPersistenceError(
