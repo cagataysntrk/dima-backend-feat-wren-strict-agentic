@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+from contextlib import contextmanager
 from collections import Counter
 
 from app.v3.brain_v2.activities import (
@@ -344,3 +345,58 @@ def test_interrupted_graph_resumes_without_repeating_completed_activities() -> N
     assert activities.calls["evidence"] == before["evidence"] == 1
     assert activities.calls["p19"] == before["p19"] + 1 == 2
     assert activities.calls["report"] == 1
+
+
+class _CapturedBoundarySpan:
+    def __init__(self, record):
+        self._record = record
+
+    def set_attributes(self, **values):
+        self._record["attributes"].update(
+            {key: value for key, value in values.items() if value is not None}
+        )
+
+
+class _CapturedBoundaryBridge:
+    def __init__(self):
+        self.records = []
+
+    @contextmanager
+    def operation(self, boundary, *, state=None, **attributes):
+        name = getattr(boundary, "value", str(boundary))
+        record = {"name": name, "attributes": dict(attributes)}
+        self.records.append(record)
+        yield _CapturedBoundarySpan(record)
+
+
+def test_discovery_graph_emits_governed_boundary_span_sequence() -> None:
+    activities = FakeActivities("discovery")
+    bridge = _CapturedBoundaryBridge()
+    activities.otel_bridge = bridge
+    service = BrainV2Service(activities=activities)
+
+    result = service.run(
+        BrainGraphState(
+            thread_id="thread-discovery-otel",
+            tenant_binding="id:tenant",
+            principal_ref="user-1",
+            current_user_input="Governed discovery.",
+        )
+    )
+
+    assert result.workflow_status == BrainWorkflowStatus.COMPLETE
+    assert [item["name"] for item in bridge.records] == [
+        "dima.intent.interpret",
+        "dima.scope.resolve",
+        "dima.material.compile",
+        "dima.evidence.admit",
+        "dima.discovery.project_candidates",
+        "dima.p19.assess",
+        "dima.p20.report",
+    ]
+    projection = next(
+        item
+        for item in bridge.records
+        if item["name"] == "dima.discovery.project_candidates"
+    )
+    assert projection["attributes"]["candidate_count"] == 2
