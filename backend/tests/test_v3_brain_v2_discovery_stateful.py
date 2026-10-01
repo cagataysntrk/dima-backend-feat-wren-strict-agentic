@@ -375,7 +375,6 @@ class DiscoverySequenceStateMachine(RuleBasedStateMachine):
                 + hashlib.sha256(item.semantic_id.encode("utf-8")).hexdigest()[:24]
                 for item in self.candidate_projection.candidates
             ),
-            native_acquisition_count=self.native_acquisition_count,
         )
         resumed = BrainGraphState.model_validate(state.model_dump(mode="json"))
         assert resumed == state
