@@ -318,6 +318,44 @@ class BridgeFactory:
             ):
                 return httpx.Response(200, json={"version": {"tag": RUNTIME_TAG}})
             if (
+                request.method == "GET"
+                and request.url.path.startswith("/api/metabot/conversations/")
+            ):
+                assert self.metabot_requests, (
+                    "conversation history is legal only after a native turn"
+                )
+                first = self.metabot_requests[0]
+                parent_query_id = (
+                    f"native-{session.session_id}-1"
+                )
+                return httpx.Response(
+                    200,
+                    json={
+                        "conversation_id": first["conversation_id"],
+                        "chat_messages": [
+                            {
+                                "id": "pf-user-1",
+                                "role": "user",
+                                "type": "text",
+                                "message": first["message"],
+                            },
+                            {
+                                "id": "pf-tool-1",
+                                "role": "agent",
+                                "type": "tool_call",
+                                "name": "construct_notebook_query",
+                                "args": "{}",
+                                "result": json.dumps(
+                                    {"query-id": parent_query_id},
+                                    separators=(",", ":"),
+                                ),
+                                "status": "ended",
+                                "is_error": False,
+                            },
+                        ],
+                    },
+                )
+            if (
                 request.method == "POST"
                 and request.url.path == "/api/metabot/agent-streaming"
             ):
@@ -1318,8 +1356,39 @@ def test_real_owner_adaptive_runs_one_typed_followup_without_duplicate_native() 
     assert len(bridge.metabot_requests) == 2
     first_state = bridge.metabot_requests[0]["state"]
     second_state = bridge.metabot_requests[1]["state"]
+    first_history = bridge.metabot_requests[0]["history"]
+    second_history = bridge.metabot_requests[1]["history"]
     assert first_state == {}
+    assert first_history is None
     assert second_state != {}
+    assert second_history == [
+        {
+            "role": "user",
+            "content": bridge.metabot_requests[0]["message"],
+        },
+        {
+            "role": "assistant",
+            "tool_calls": [
+                {
+                    "id": "pf-tool-1",
+                    "name": "construct_notebook_query",
+                    "arguments": "{}",
+                }
+            ],
+        },
+        {
+            "role": "tool",
+            "tool_call_id": "pf-tool-1",
+            "content": json.dumps(
+                {
+                    "query-id": (
+                        f"native-{result.research_session_id}-1"
+                    )
+                },
+                separators=(",", ":"),
+            ),
+        },
+    ]
     assert set(second_state.get("queries") or ()) == {
         f"native-{result.research_session_id}-1"
     }
