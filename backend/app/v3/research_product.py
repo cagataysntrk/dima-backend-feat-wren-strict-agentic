@@ -156,12 +156,12 @@ class NativeResearchOccurrenceRunner:
                         ),
                     )
                 if link.execution_kind == "P17_FOLLOWUP":
-                    if request.state:
+                    if request.state or request.history is not None:
                         raise ResearchPersistenceError(
-                            "P17_NATIVE_CONTINUATION_STATE_CALLER_FORBIDDEN",
+                            "P17_NATIVE_CONTINUATION_CALLER_FORBIDDEN",
                             (
-                                "P17 follow-up state is Dima-owned source-backed "
-                                "continuation provenance"
+                                "P17 follow-up state/history are Dima-owned "
+                                "source-backed continuation provenance"
                             ),
                         )
                     continuation_state, _ = (
@@ -171,8 +171,22 @@ class NativeResearchOccurrenceRunner:
                             native_conversation_id=link.native_conversation_id,
                         )
                     )
+                    continuation_history = bridge.conversation_history(
+                        link.native_conversation_id
+                    )
+                    if not continuation_history:
+                        raise ResearchPersistenceError(
+                            "P17_NATIVE_CONTINUATION_HISTORY_REQUIRED",
+                            (
+                                "verified parent native conversation has no "
+                                "source-backed cognition history"
+                            ),
+                        )
                     request = request.model_copy(
-                        update={"state": continuation_state}
+                        update={
+                            "state": continuation_state,
+                            "history": continuation_history,
+                        }
                     )
                 observation = bridge.invoke(request)
                 produced = bridge.capture_produced_query(observation)
