@@ -46,6 +46,10 @@ class ResearchProductError(RuntimeError):
         first_invalid_boundary: str | None = None,
         expected_fingerprint: str | None = None,
         observed_fingerprint: str | None = None,
+        scope_fingerprint: str | None = None,
+        material_fingerprint: str | None = None,
+        expected_semantic_shape: dict[str, Any] | None = None,
+        observed_semantic_shape: dict[str, Any] | None = None,
     ) -> None:
         super().__init__(f"{code}: {detail}")
         self.code = code
@@ -54,6 +58,10 @@ class ResearchProductError(RuntimeError):
         self.first_invalid_boundary = first_invalid_boundary
         self.expected_fingerprint = expected_fingerprint
         self.observed_fingerprint = observed_fingerprint
+        self.scope_fingerprint = scope_fingerprint
+        self.material_fingerprint = material_fingerprint
+        self.expected_semantic_shape = expected_semantic_shape
+        self.observed_semantic_shape = observed_semantic_shape
 
 
 class ResearchProductRuntimeUnavailable(ResearchProductError):
@@ -122,6 +130,10 @@ class ResearchAskResponse(Frozen):
     first_invalid_boundary: str | None = None
     expected_fingerprint: str | None = None
     observed_fingerprint: str | None = None
+    scope_fingerprint: str | None = None
+    material_fingerprint: str | None = None
+    expected_semantic_shape: dict[str, Any] | None = None
+    observed_semantic_shape: dict[str, Any] | None = None
     resumed_exact_occurrence: bool = False
 
 
@@ -524,6 +536,10 @@ class ResearchAskOrchestrator:
         first_invalid_boundary: str | None = None,
         expected_fingerprint: str | None = None,
         observed_fingerprint: str | None = None,
+        scope_fingerprint: str | None = None,
+        material_fingerprint: str | None = None,
+        expected_semantic_shape: dict[str, Any] | None = None,
+        observed_semantic_shape: dict[str, Any] | None = None,
         resumed_exact_occurrence: bool = False,
     ) -> ResearchAskResponse:
         obligation = (
@@ -550,6 +566,10 @@ class ResearchAskOrchestrator:
             first_invalid_boundary=first_invalid_boundary,
             expected_fingerprint=expected_fingerprint,
             observed_fingerprint=observed_fingerprint,
+            scope_fingerprint=scope_fingerprint,
+            material_fingerprint=material_fingerprint,
+            expected_semantic_shape=expected_semantic_shape,
+            observed_semantic_shape=observed_semantic_shape,
             resumed_exact_occurrence=resumed_exact_occurrence,
         )
 
@@ -623,6 +643,10 @@ class ResearchAskOrchestrator:
         first_invalid_boundary: str | None = None,
         expected_fingerprint: str | None = None,
         observed_fingerprint: str | None = None,
+        scope_fingerprint: str | None = None,
+        material_fingerprint: str | None = None,
+        expected_semantic_shape: dict[str, Any] | None = None,
+        observed_semantic_shape: dict[str, Any] | None = None,
     ) -> ResearchAskResponse:
         prior_revision = session.revision
         updated = ResearchManager.record_limitation(
@@ -643,6 +667,10 @@ class ResearchAskOrchestrator:
             first_invalid_boundary=first_invalid_boundary,
             expected_fingerprint=expected_fingerprint,
             observed_fingerprint=observed_fingerprint,
+            scope_fingerprint=scope_fingerprint,
+            material_fingerprint=material_fingerprint,
+            expected_semantic_shape=expected_semantic_shape,
+            observed_semantic_shape=observed_semantic_shape,
         )
 
     def _retryable_observation_limit(
@@ -770,6 +798,10 @@ class ResearchAskOrchestrator:
                 first_invalid_boundary=exc.first_invalid_boundary,
                 expected_fingerprint=exc.expected_fingerprint,
                 observed_fingerprint=exc.observed_fingerprint,
+                scope_fingerprint=exc.scope_fingerprint,
+                material_fingerprint=exc.material_fingerprint,
+                expected_semantic_shape=exc.expected_semantic_shape,
+                observed_semantic_shape=exc.observed_semantic_shape,
             )
         except NativeEngineBridgeError as exc:
             return self._limit(
