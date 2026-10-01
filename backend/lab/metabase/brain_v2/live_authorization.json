@@ -1,6 +1,6 @@
 {
   "schema_version": "dima_brain_v2_live_authorization_v1",
-  "enabled": true,
+  "enabled": false,
   "probe_id": "R_LIVE_2_ADAPTIVE",
   "candidate_product_sha": "4b4f694e5e25efb8b38e31e25cdc55359633a04b",
   "provider_free_run_id": 36834531108,
@@ -10,5 +10,5 @@
   "model_policy": "LUNA_FIRST",
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
-  "authorization_receipt": "adaptive-typed-temporal-material-live-v1"
+  "authorization_receipt": "adaptive-running-36834861978-disarmed"
 }
