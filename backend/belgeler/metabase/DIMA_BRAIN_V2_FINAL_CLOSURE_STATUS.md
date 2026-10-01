@@ -1,6 +1,123 @@
 # DIMA BRAIN V2 — FINAL CLOSURE STATUS
 
 CURRENT GATE
+G6 — T5/T6 contextual relationship/report recovery
+
+Platform HEAD
+ab8fd045cea9b5ae4494efd44e5abbf68aa3eb8f
+
+semantic Product SHA
+ab8fd045cea9b5ae4494efd44e5abbf68aa3eb8f
+
+engine SHA/release
+d5c60dc9f37a9ec9c5b0117f178146bbcb8dca88
+0.63.18-dima.9
+FROZEN
+second build forbidden
+
+WHAT CHANGED
+- Added a thin HeadlessProductService.contextual_report action.
+- Report-only continuation now reuses the current Research session/scope.
+- Surgical T5/T6 live turn 2 routes directly to P20 projection instead of minting a new P14 Research authority.
+- No Research scope reducer, P18 truth, P20 truth, Metabase, LangGraph, or engine semantics changed.
+
+ROOT CAUSE / INVARIANT
+Report-only/presentation-only follow-up is not a Research scope mutation.
+Absent scope operations mean unchanged scope. The current governed Research authority is reused.
+P20 may project a ReportDocument from existing governed state and must open zero new native analytical acquisition.
+
+FIRST INVALID BOUNDARY
+last_valid_boundary = dima.scope.resolve.noop
+first_invalid_boundary = dima.product.followup.compose
+error = P14_SCOPE_VERSION_MISMATCH
+
+REFERENCE PATTERN
+Google AIP-134/AIP-161 partial update semantics + RFC 7396 merge-patch semantics:
+absent fields remain unchanged; no-op patch must not be treated as full replacement.
+
+FILES CHANGED
+- backend/tests/test_v3_product_contracts.py
+- backend/app/v3/product/service.py
+- backend/lab/metabase/core_b/phase1_pinpoint_live.py
+
+PROVIDER-FREE
+run: PENDING
+result: PENDING
+
+METAMORPHIC
+result: existing no-op scope patch/stateful family retained; contextual-report specific closure pending provider-free
+
+LIVE
+latest failed run: 36923255003
+mechanical: RED
+manual: NOT SCORED
+failure: P14_SCOPE_VERSION_MISMATCH before P20
+
+PROVIDER REQUESTS
+6 total on failed live
+research_intake=2
+metabase=3
+p17=1
+p19=0
+
+TOKENS
+prompt=63456
+completion=2029
+reasoning=399
+
+LATENCY
+22903 ms
+
+COST
+$0.01000111
+
+EXCEPTIONS
+1 (P14_SCOPE_VERSION_MISMATCH)
+
+DUPLICATE NATIVE
+0 observed before failure
+
+STALE EVIDENCE
+0 observed before failure
+
+KNOWN BLOCKERS
+- provider-free closure for contextual-report continuation
+- one fresh T5/T6 live after closure
+- T7 live
+- G8 final closure
+- G9 readiness adjudication
+
+SEALED CAPABILITIES
+T1=4/4
+T2=4/4
+T3=4/4
+T4=3/4
+Phase 1=ACCEPTED
+
+NEXT EXACT ACTION
+Run Phase-2 provider-free closure for the contextual-report no-op continuation family.
+If GREEN, freeze candidate and run exactly one fresh T5/T6 live.
+
+90+ HIGH-CONFIDENCE READINESS
+PENDING
+
+30-CASE READY
+PENDING
+
+90+ PROVEN
+NO
+
+30-case
+NOT RUN
+
+frontend
+NOT IMPLEMENTED
+
+---
+
+# DIMA BRAIN V2 — FINAL CLOSURE STATUS
+
+CURRENT GATE
 G6 — PHASE 1 ACCEPTED / Phase-2 T5+T6 backend-headless certification
 
 Platform HEAD
