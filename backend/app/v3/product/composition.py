@@ -38,6 +38,7 @@ from app.v3.business_relationship_policy import (
     BusinessRelationshipPolicyStore,
     RelationshipPolicyRequirement,
 )
+from app.v3.brain_v2.telemetry import BoundaryName, OpenTelemetryBridge
 from app.v3.business_relationship_v1 import (
     RelationshipResultProjection,
     project_relationship_result,
@@ -449,6 +450,7 @@ class HeadlessProductComposer:
         investigation_requirements: (
             ProductInvestigationRequirementStoreProtocol | None
         ) = None,
+        otel_bridge: OpenTelemetryBridge | None = None,
     ) -> None:
         self._research = research
         self._investigation = investigation
@@ -459,6 +461,7 @@ class HeadlessProductComposer:
         self._epistemic_manager = epistemic_manager
         self._reports = reports
         self._investigation_requirements = investigation_requirements
+        self._otel_bridge = otel_bridge or OpenTelemetryBridge()
 
     @staticmethod
     def _run_p14(
@@ -1100,26 +1103,36 @@ class HeadlessProductComposer:
                 }
             ).encode("utf-8")
         ).hexdigest()[:24]
-        decision = self._relationships.resolve(
-            requirement=RelationshipPolicyRequirement(
-                research_session_id=material_session_id,
-                obligation_id=material_goal.goal_id,
-                claim_id=claims[-1].claim_id,
-                reasoning_step_id=steps[-1].step_id,
-                policy_key=key,
-                source_business_ref=source_ref,
-                target_business_ref=target_ref,
-                semantic_context_version=(
-                    self._research.resume_state(
-                        session_id=material_session_id,
-                        principal=principal,
-                    ).context_version
-                ),
-                applicability_scope=scope,
-                required=self._relationship_policy_required(original_goal),
+        relationship_requirement = RelationshipPolicyRequirement(
+            research_session_id=material_session_id,
+            obligation_id=material_goal.goal_id,
+            claim_id=claims[-1].claim_id,
+            reasoning_step_id=steps[-1].step_id,
+            policy_key=key,
+            source_business_ref=source_ref,
+            target_business_ref=target_ref,
+            semantic_context_version=(
+                self._research.resume_state(
+                    session_id=material_session_id,
+                    principal=principal,
+                ).context_version
             ),
-            principal=principal,
+            applicability_scope=scope,
+            required=self._relationship_policy_required(original_goal),
         )
+        scope_version_id = (
+            material_session.accepted_brief.scope.scope_version.version_id
+            if material_session.accepted_brief is not None
+            else None
+        )
+        with self._otel_bridge.operation(
+            BoundaryName.P18_ADJUDICATE,
+            scope_version_id=scope_version_id,
+        ):
+            decision = self._relationships.resolve(
+                requirement=relationship_requirement,
+                principal=principal,
+            )
         owner_calls.append("P18")
         current_material = self._research.resume_state(
             session_id=material_session_id,
