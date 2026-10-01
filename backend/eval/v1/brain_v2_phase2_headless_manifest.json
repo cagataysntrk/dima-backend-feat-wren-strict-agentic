@@ -42,10 +42,12 @@
     {
       "id": "T4",
       "capability_id": "brain.t4.rca_discovery",
-      "owner": "P17 discovery + governed candidates + P19",
-      "proof_class": "PHASE1_LIVE_CARRY_FORWARD_PLUS_PROVIDER_FREE",
+      "owner": "Metabase/Metabot + deterministic CandidateSetProjector + P19",
+      "proof_class": "V2_1_PROVIDER_FREE_PLUS_FRESH_LIVE_REQUIRED",
       "proofs": [
-        "backend/tests/test_v3_brain_v2_owner_integration.py::test_real_owner_discovery_forms_governed_candidates_without_extra_native"
+        "backend/tests/test_v3_brain_v2_discovery_candidate_design.py::test_candidate_projection_bounds_large_observed_surface_to_authority",
+        "backend/tests/test_v3_brain_v2_owner_integration.py::test_real_owner_discovery_projects_without_p17_or_extra_native",
+        "backend/tests/test_v3_brain_v2_discovery_stateful.py::TestDiscoverySequenceStateMachine"
       ]
     },
     {
