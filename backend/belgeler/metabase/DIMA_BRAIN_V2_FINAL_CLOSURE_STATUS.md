@@ -1,3 +1,31 @@
+# G6 T6 — P20 AUTO-DRAFT RUNTIME CLOSURE
+
+CURRENT GATE
+G6 — P20 contextual synthesis provider-free revalidation
+
+Platform HEAD before trigger
+48e474024c9b05a140de5994199a4f89909a7d12
+
+semantic Product SHA
+48e474024c9b05a140de5994199a4f89909a7d12
+
+WHAT CHANGED
+Added the missing ResearchClaimRecord import required by the already-reviewed P20 auto-draft implementation.
+No semantic contract changed.
+
+FIRST INVALID BOUNDARY
+p20.auto_draft.claim_scan import binding
+
+PROVIDER-FREE
+run: PENDING
+result: PENDING
+
+NEXT EXACT ACTION
+Run Phase-2 full affected provider-free closure.
+No paid live until GREEN.
+
+---
+
 # G6 T6 — P20 OWNER-SCOPE CI ALIGNMENT
 
 WHAT CHANGED
