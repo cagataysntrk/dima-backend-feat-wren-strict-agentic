@@ -1721,14 +1721,25 @@ class ResearchIntakeCompiler:
             )
         )
         changed = set(changed_facets)
+        metric_question_count = sum(
+            1
+            for question in prior_brief.questions
+            if any(
+                item.target_kind
+                in {SemanticTargetKind.METRIC, SemanticTargetKind.KPI}
+                for item in (*question.subject_refs, *question.related_refs)
+            )
+        )
         output: list[ResearchQuestion] = []
         for question in prior_brief.questions:
             original = tuple((*question.subject_refs, *question.related_refs))
-            had_metrics = any(
-                item.target_kind
-                in {SemanticTargetKind.METRIC, SemanticTargetKind.KPI}
+            original_metric_ids = {
+                item.candidate_id
                 for item in original
-            )
+                if item.target_kind
+                in {SemanticTargetKind.METRIC, SemanticTargetKind.KPI}
+            }
+            had_metrics = bool(original_metric_ids)
             had_entities = any(
                 item.target_kind == SemanticTargetKind.ENTITY_VALUE
                 for item in original
@@ -1765,15 +1776,51 @@ class ResearchIntakeCompiler:
                     if item.target_kind
                     not in {SemanticTargetKind.METRIC, SemanticTargetKind.KPI}
                 ]
-                append_unique(subject, accepted_metrics)
+                related = [
+                    item
+                    for item in related
+                    if item.target_kind
+                    not in {SemanticTargetKind.METRIC, SemanticTargetKind.KPI}
+                ]
+                if metric_question_count == 1:
+                    append_unique(subject, accepted_metrics)
+                else:
+                    retained = tuple(
+                        accepted[candidate_id]
+                        for candidate_id in sorted(
+                            original_metric_ids & set(accepted)
+                        )
+                    )
+                    if not retained:
+                        # Explicit scope removal retires the obligation whose
+                        # only governed measure left the accepted scope.  Do not
+                        # silently rewrite it into another metric goal.
+                        continue
+                    append_unique(subject, retained)
+
             if ScopePatchFacet.ENTITY in changed and had_entities:
                 subject = [
                     item
                     for item in subject
                     if item.target_kind != SemanticTargetKind.ENTITY_VALUE
                 ]
+                related = [
+                    item
+                    for item in related
+                    if item.target_kind != SemanticTargetKind.ENTITY_VALUE
+                ]
                 append_unique(subject, accepted_entities)
+
             if ScopePatchFacet.BREAKDOWN in changed and had_breakdowns:
+                subject = [
+                    item
+                    for item in subject
+                    if not (
+                        item.target_kind == SemanticTargetKind.DIMENSION
+                        and item.candidate_id
+                        not in set(accepted_scope.temporal_dimension_ids)
+                    )
+                ]
                 related = [
                     item
                     for item in related
@@ -1808,6 +1855,12 @@ class ResearchIntakeCompiler:
                         "related_refs": tuple(related),
                     }
                 )
+            )
+
+        if not output:
+            raise ResearchIntakeError(
+                "INTAKE_SCOPE_PATCH_REMOVED_ALL_GOALS",
+                "scope patch removed every accepted analytical obligation",
             )
         return tuple(output)
 
@@ -2009,6 +2062,10 @@ class ResearchIntakeCompiler:
             "patch": patch.model_dump(mode="json"),
             "scope_fingerprint": resolved.scope_fingerprint,
         }
+        active_goal_ids = {item.goal_id for item in questions}
+        deliverable_ids = {
+            item.requirement_id for item in prior_brief.deliverables
+        }
         brief = prior_brief.model_copy(
             update={
                 "brief_id": "rb_" + hashlib.sha256(
@@ -2016,6 +2073,16 @@ class ResearchIntakeCompiler:
                 ).hexdigest()[:24],
                 "scope": resolved.current_scope,
                 "questions": questions,
+                "must_requirement_ids": tuple(
+                    item
+                    for item in prior_brief.must_requirement_ids
+                    if item in active_goal_ids or item in deliverable_ids
+                ),
+                "blocking_goal_ids": tuple(
+                    item
+                    for item in prior_brief.blocking_goal_ids
+                    if item in active_goal_ids
+                ),
             }
         )
         return ResearchIntakeResult(
