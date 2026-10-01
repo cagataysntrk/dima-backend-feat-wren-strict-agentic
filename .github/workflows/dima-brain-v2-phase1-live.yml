@@ -185,12 +185,21 @@ jobs:
               sleep 2
               test "$i" -lt 90
             done
-            # pg_isready may flip before the container has remained stable long
-            # enough for the external host-port seed connection. Require three
-            # consecutive live SELECTs so pre-provider harness setup fails
-            # deterministically instead of racing Postgres startup.
-            for i in 1 2 3; do
+            # pg_isready only proves the server socket is accepting connections;
+            # initdb may still be creating the requested POSTGRES_DB. Wait until
+            # the exact database/user SELECT succeeds, then require three
+            # consecutive successes before exposing host-port seeding.
+            for i in $(seq 1 90); do
               test "$(docker inspect -f '{{.State.Running}}' "$n")" = "true"
+              if [ "$n" = "analytics-db" ]; then
+                docker exec "$n" psql -U brain_v2_owner -d brain_v2_live -Atqc 'SELECT 1' 2>/dev/null | grep -Fx 1 && break
+              else
+                docker exec "$n" psql -U metabase_app -d metabase_brain_v2 -Atqc 'SELECT 1' 2>/dev/null | grep -Fx 1 && break
+              fi
+              sleep 1
+              test "$i" -lt 90
+            done
+            for i in 1 2 3; do
               if [ "$n" = "analytics-db" ]; then
                 docker exec "$n" psql -U brain_v2_owner -d brain_v2_live -Atqc 'SELECT 1' | grep -Fx 1
               else
