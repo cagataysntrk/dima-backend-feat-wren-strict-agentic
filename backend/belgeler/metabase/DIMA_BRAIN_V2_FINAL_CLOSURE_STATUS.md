@@ -4,7 +4,7 @@ CURRENT GATE
 G5
 
 Platform HEAD
-3071cca8a7197ee16a424292a87d95aadf5339f0
+fdd0d41222dbbc1d8eb9698093c6fe6cc9c43e76
 
 semantic Product SHA
 bf7dd7b0a39418471141327994ac3e2a773aa749
@@ -121,7 +121,11 @@ STALE EVIDENCE
 0 known
 
 KNOWN BLOCKERS
-- T4 DISCOVERY fresh live pending.
+- T4 DISCOVERY live 36916272244 = RED.
+- error = P17_DOWNSTREAM_REENTRY_INTENT_MISMATCH.
+- first wrong transition: Brain V2 discovery adapter authorizes {FORM_CLAIM, STOP_INVESTIGATION} to P17, then pins run_one downstream result to FORM_CLAIM only.
+- STOP_INVESTIGATION is already a legal P17 global-control terminal intent; graph already routes discovery terminal without hypotheses to HONEST_STOP.
+- exact provider-free reproducer commit fdd0d412... fails only the new honest-stop case: 1 failed / 25 passed / 1 skipped.
 - T5 RELATIONSHIP fresh live pending.
 - T6 CONTEXTUAL REPORT fresh live pending.
 - T7 MULTI-INTENT fresh live pending.
@@ -132,11 +136,14 @@ T2 ONE_PASS = 36908926530 = GREEN = 4/4
 T3 ADAPTIVE = 36915701021 = GREEN = 4/4
 
 NEXT EXACT ACTION
-G5: certify T4 DISCOVERY.
-Provider-free carry-forward authority: 36914969117 = GREEN on final semantic Product bf7dd7b0...
-The full suite includes the real-owner discovery path with one native acquisition, governed candidate refs and P19 grounding.
-Run exactly one fresh R_LIVE_3_DISCOVERY.
-If mechanical GREEN and manual >=3, seal T4 and continue G6 T5/T6.
+T4 circuit breaker is active.
+Remove the contradictory FORM_CLAIM-only downstream pin from discovery owner composition.
+Do not change P17 action-profile semantics, graph semantics, P19, prompts, engine, provider ceilings or candidate identity rules.
+Run focused provider-free with both:
+- governed FORM_CLAIM discovery sibling
+- legal STOP_INVESTIGATION honest-stop sibling
+Then run full affected provider-free closure.
+Only after GREEN freeze the new semantic SHA and run one fresh T4 live.
 
 90+ HIGH-CONFIDENCE READINESS
 NO
