@@ -187,6 +187,7 @@ def test_request_contract_module_has_no_query_planner_dependency_boundary():
         "filters",
         "period",
         "comparison",
+        "temporal_observation",
         "ranking",
         "grain_constraints",
         "requested_output_surfaces",
