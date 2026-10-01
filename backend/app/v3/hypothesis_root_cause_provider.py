@@ -126,6 +126,9 @@ Architecture:
   already bound to supplied grounding identities. You may compare those observed values
   qualitatively, but must not invent missing values, recompute a new analytical result, or treat
   co-movement as causal identification. These observations never waive the causal-promotion gate.
+- When authoritative_current_scope is present, it is the ONLY current scope authority. Historical
+  or descriptive objective prose must never be used to infer, broaden, narrow, validate, or
+  contradict current entity/period/metric/dimension scope.
 - Association/correlation must not be promoted directly to cause.
 - P18 SATISFIED means interpretation eligibility only, never causal proof.
 - A blocked required P18 policy cannot support trusted causal promotion.
@@ -315,6 +318,7 @@ def _packet(
     policy_statuses: dict[str, str] | None,
     deterministic_feedback_code: str | None,
     objective: str | None = None,
+    scope_authority: dict[str, Any] | None = None,
     discriminating_test_available: bool | None = None,
 ) -> str:
     hypotheses = []
@@ -351,6 +355,7 @@ def _packet(
         ),
         "deterministic_feedback_code": deterministic_feedback_code,
         "accepted_objective": objective,
+        "authoritative_current_scope": scope_authority,
         "discriminating_test_available": discriminating_test_available,
     }
     return json.dumps(packet, ensure_ascii=False, sort_keys=True)
@@ -376,6 +381,7 @@ class StructuredP19AssessmentManager:
         policy_statuses: dict[str, str] | None,
         deterministic_feedback_code: str | None,
         objective: str | None,
+        scope_authority: dict[str, Any] | None,
         discriminating_test_available: bool | None,
     ) -> RootCauseAssessmentDraft:
         known_hypotheses = {
@@ -405,6 +411,7 @@ class StructuredP19AssessmentManager:
                 policy_statuses=policy_statuses,
                 deterministic_feedback_code=deterministic_feedback_code,
                 objective=objective,
+                scope_authority=scope_authority,
                 discriminating_test_available=discriminating_test_available,
             )
         )
@@ -504,6 +511,7 @@ class StructuredP19AssessmentManager:
             policy_statuses=policy_statuses,
             deterministic_feedback_code=deterministic_feedback_code,
             objective=None,
+            scope_authority=None,
             discriminating_test_available=None,
         )
 
@@ -511,7 +519,8 @@ class StructuredP19AssessmentManager:
         self,
         snapshot: P19CaseSnapshot,
         *,
-        objective: str,
+        objective: str | None,
+        scope_authority: dict[str, Any] | None = None,
         discriminating_test_available: bool,
         policy_statuses: dict[str, str] | None = None,
         deterministic_feedback_code: str | None = None,
@@ -523,5 +532,6 @@ class StructuredP19AssessmentManager:
             policy_statuses=policy_statuses,
             deterministic_feedback_code=deterministic_feedback_code,
             objective=objective,
+            scope_authority=scope_authority,
             discriminating_test_available=discriminating_test_available,
         )
