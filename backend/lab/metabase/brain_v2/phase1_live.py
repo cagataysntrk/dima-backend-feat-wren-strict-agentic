@@ -2,7 +2,7 @@
 """Surgical paid/live certification harness for Dima Brain V2 Phase 1.
 
 Exactly one RCA mode is executed per invocation. This harness owns no Product
-semantics and reuses the frozen dima.8 substrate, current Dima domain owners,
+semantics and reuses the exact certified engine runtime lock, current Dima domain owners,
 and the privacy-safe OpenRouter counting proxy.
 """
 from __future__ import annotations
@@ -33,6 +33,39 @@ from app.v3.hypothesis_root_cause import HypothesisRootCauseStore
 from app.v3.claim_lineage import ClaimLineageStore
 
 from lab.metabase.core_b import live_sentinel as sealed
+
+ENGINE_RUNTIME_LOCK = (
+    Path(__file__).resolve().parents[1]
+    / "core_b"
+    / "runtime"
+    / "engine_runtime_lock.json"
+)
+
+
+def _require_locked_engine_runtime(args: Any) -> None:
+    lock = json.loads(ENGINE_RUNTIME_LOCK.read_text(encoding="utf-8"))
+    expected = {
+        "engine_sha": str(lock["engine_sha"]),
+        "upstream_sha": str(lock["upstream_sha"]),
+        "runtime_tag": str(lock["runtime_tag"]),
+        "runtime_image_digest": str(lock["registry_digest"]),
+        "build_identity": str(lock["build_identity"]),
+        "image_identity": str(lock["registry_digest"]),
+    }
+    actual = {
+        "engine_sha": str(args.engine_sha),
+        "upstream_sha": str(args.upstream_sha),
+        "runtime_tag": str(args.runtime_tag),
+        "runtime_image_digest": str(args.runtime_image_digest),
+        "build_identity": str(args.build_identity),
+        "image_identity": str(args.image_identity),
+    }
+    if actual != expected:
+        raise RuntimeError(
+            "Brain V2 live engine arguments do not match certified runtime lock"
+        )
+
+
 from lab.metabase.core_b.phase1_pinpoint_live import (
     BoundedMaterialExecutor,
     BoundedStructuredTransport,
@@ -233,8 +266,7 @@ def main() -> int:
     api_key = os.environ.get("DIMA_OPENROUTER_API_KEY", "").strip()
     if not api_key:
         raise RuntimeError("DIMA_OPENROUTER_API_KEY required")
-    if args.engine_sha != "0f16f2b5a1ec774ac7afee6214c726e82f9ceb3c":
-        raise RuntimeError("Brain V2 live requires frozen dima.8 engine")
+    _require_locked_engine_runtime(args)
 
     question = str(PROBES[args.probe_id]["turns"][0])
     binding_manifest = load_binding_manifest(args.binding_manifest)
