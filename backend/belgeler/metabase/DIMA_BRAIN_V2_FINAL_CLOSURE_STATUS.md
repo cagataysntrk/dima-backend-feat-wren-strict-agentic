@@ -4,7 +4,7 @@ CURRENT GATE
 G2
 
 Platform HEAD
-fb2ee8ffb0946fa2a33a6d0ec75a75452670271c
+89bb9d68d4ee7adf5fd24e87e9f8cde66ceb3804
 
 semantic Product SHA
 9de0cc6668689f2fc4fc303b7392043ee715049c
@@ -17,10 +17,13 @@ FROZEN
 second build forbidden
 
 WHAT CHANGED
-- Added provider-free T3 DIMENSION_SCOPE family reproducer.
-- Added structured material-boundary diagnostics.
-- Propagated scope/material fingerprints and expected/observed semantic shapes through Research -> Brain V2 -> live receipt.
-- No SQL/MBQL, prompt, regex, fuzzy, morphology, provider-ceiling or benchmark-specific logic added.
+- G1 boundary telemetry is provider-free GREEN.
+- T3 diagnostic live 36912879070 is mechanical GREEN and provisional manual 4/4.
+- Added deterministic MaterialCoverageContract projection over existing AnalyticalRequestContract.
+- Native metric/dimension validation now consumes explicit required/allowed material algebra without changing user scope authority.
+- Added typed ChildMaterialDelta for ADAPTIVE; governed semantic universe is explicit.
+- Adaptive re-entry keeps scope fingerprint unchanged while material fingerprint changes.
+- No SQL/MBQL, prompt, regex/fuzzy/morph, new truth store, engine change, or owner_adapter domain expansion.
 
 ROOT CAUSE / INVARIANT
 Current live family: R1_NATIVE_DIMENSION_SCOPE_MISMATCH.
@@ -44,9 +47,10 @@ FILES CHANGED
 - backend/belgeler/metabase/DIMA_BRAIN_V2_FINAL_CLOSURE_STATUS.md
 
 PROVIDER-FREE
-run: 36912627188
-result: GREEN
-all Brain V2 / Research+Scope / P17 / P19 / P20+Core-B / security-hygiene gates passed.
+G1 run: 36912627188
+G1 result: GREEN
+G2 run: PENDING
+G2 result: PENDING
 
 METAMORPHIC
 result:
@@ -108,11 +112,9 @@ T1 SCOPE RESUME = 36908273500 = GREEN = 4/4
 T2 ONE_PASS = 36908926530 = GREEN = 4/4
 
 NEXT EXACT ACTION
-G2: make the existing material authority explicit as a deterministic projection, not a new truth store.
-Preserve scope_fingerprint while child material_fingerprint changes.
-Seal required/allowed breakout algebra and typed ChildMaterialDelta with metamorphic siblings.
-Then G3 full affected provider-free + analytical-material state-machine.
-Only if shared semantics change, recertify T3 once.
+Run full current provider-free on G2 projection/child-delta implementation.
+If GREEN, add/close the remaining G3 material metamorphic + analytical-material state-machine invariants.
+Then run final full provider-free and freeze the shared T3 seam before any recertification.
 
 90+ HIGH-CONFIDENCE READINESS
 NO
