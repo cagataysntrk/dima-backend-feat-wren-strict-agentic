@@ -147,3 +147,64 @@ def test_candidate_projection_deduplicates_identity_without_text_matching():
         "metric.a",
         "metric.b",
     )
+
+
+def test_candidate_projection_rejects_observed_metric_outside_allowed_surface():
+    projected = _project(
+        allowed=("metric.effect", "metric.a"),
+        observed=("metric.effect", "metric.a", "metric.b", "metric.c"),
+    )
+    assert tuple(item.semantic_id for item in projected.candidates) == ("metric.a",)
+
+
+def test_candidate_projection_does_not_promote_unrelated_dimension():
+    projected = project_candidate_set(
+        allowed_discovery_surface=(
+            "metric.effect",
+            "metric.a",
+            "dimension.department",
+        ),
+        current_scope_semantic_refs=(
+            "metric.effect",
+            "metric.a",
+            "dimension.department",
+        ),
+        observed_material_semantic_refs=(
+            "metric.effect",
+            "metric.a",
+            "dimension.department",
+        ),
+        candidate_eligible_semantic_refs=("metric.effect", "metric.a"),
+        effect_semantic_id="metric.effect",
+        scope_version_id="scope_v1",
+        evidence_refs=("evi_" + "2" * 24,),
+        material_requirement_ref="g_root",
+    )
+    assert tuple(item.semantic_id for item in projected.candidates) == ("metric.a",)
+
+
+def test_candidate_projection_bounds_large_observed_surface_to_authority():
+    observed = ("metric.effect",) + tuple(
+        f"metric.observed_{index}" for index in range(30)
+    )
+    allowed = (
+        "metric.effect",
+        "metric.observed_3",
+        "metric.observed_11",
+        "metric.observed_27",
+    )
+    projected = project_candidate_set(
+        allowed_discovery_surface=allowed,
+        current_scope_semantic_refs=observed,
+        observed_material_semantic_refs=observed,
+        candidate_eligible_semantic_refs=observed,
+        effect_semantic_id="metric.effect",
+        scope_version_id="scope_v1",
+        evidence_refs=("evi_" + "3" * 24,),
+        material_requirement_ref="g_root",
+    )
+    assert tuple(item.semantic_id for item in projected.candidates) == (
+        "metric.observed_3",
+        "metric.observed_11",
+        "metric.observed_27",
+    )

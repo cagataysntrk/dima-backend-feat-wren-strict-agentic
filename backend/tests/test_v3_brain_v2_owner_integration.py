@@ -1926,3 +1926,41 @@ def test_real_owner_discovery_projects_without_p17_or_extra_native() -> None:
         for item in epistemic.hypotheses
     )
 
+
+
+def test_discovery_projection_rejects_wrong_scope_version() -> None:
+    *_, activities = _adaptive_stack(discovery=True)
+    result = BrainV2Service(activities=activities).run(
+        BrainGraphState(
+            thread_id="discovery-wrong-scope",
+            tenant_binding=f"id:{TENANT_ID}",
+            principal_ref=USER_ID,
+            current_user_input="Provider-free governed discovery.",
+        )
+    )
+    wrong_scope = result.model_copy(update={"scope_version_id": "scope_v2"})
+
+    with pytest.raises(BrainV2OwnerError) as exc:
+        activities.project_candidates(wrong_scope)
+
+    assert exc.value.code == "BRAIN_V2_SCOPE_REF_MISMATCH"
+
+
+def test_discovery_projection_rejects_noncurrent_evidence_identity() -> None:
+    *_, activities = _adaptive_stack(discovery=True)
+    result = BrainV2Service(activities=activities).run(
+        BrainGraphState(
+            thread_id="discovery-stale-evidence",
+            tenant_binding=f"id:{TENANT_ID}",
+            principal_ref=USER_ID,
+            current_user_input="Provider-free governed discovery.",
+        )
+    )
+    stale = result.model_copy(
+        update={"evidence_ids": ("evi_" + "f" * 24,)}
+    )
+
+    with pytest.raises(BrainV2OwnerError) as exc:
+        activities.project_candidates(stale)
+
+    assert exc.value.code == "BRAIN_V2_DISCOVERY_EVIDENCE_NOT_CURRENT"
