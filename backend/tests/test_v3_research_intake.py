@@ -998,7 +998,8 @@ def test_explicit_repair_does_not_restore_removed_prior_obligation():
         "budget",
     ):
         assert machine_owned not in serialized_prior
-    assert "CURRENT intent only" in sent["instruction"]
+    assert "CURRENT-turn scope delta" in sent["instruction"]
+    assert "Absent facets inherit from prior scope" in sent["instruction"]
 
 
 def test_provider_catalog_contains_semantic_choices_not_runtime_binding_state():
