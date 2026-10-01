@@ -164,34 +164,17 @@ class FakeTransport:
         return json.dumps({"result": self.payload})
 
 
-def narrowed_payload():
+def narrowed_payload(*, source_fragment="Assembly"):
     return {
         "terminal": "READY",
-        "objective": "Inspect Assembly downtime only.",
-        "goals": [
+        "operations": [
             {
-                "goal_key": "assembly-current",
-                "kind": "breakdown",
-                "source_text": "Inspect Assembly downtime by machine.",
-                "allowed_relationship_id": None,
-                "subject_semantic_ids": ["metric.downtime", "entity.assembly"],
-                "related_semantic_ids": ["dimension.machine"],
-                "ranking": None,
-                "comparison_texts": [],
+                "facet": "ENTITY",
+                "operation": "SET",
+                "semantic_ids": ["entity.assembly"],
+                "source_fragment": source_fragment,
             }
         ],
-        "deliverables": [],
-        "investigation_directives": [],
-        "time_periods": [
-            {
-                "source_text": "2026-H1",
-                "time_dimension_semantic_id": EVENT_DATE.candidate_id,
-                "start": "2026-01-01",
-                "end": "2026-07-01",
-            }
-        ],
-        "required_domains": ["operations"],
-        "scope_mutation_kind": "NARROW_ENTITY",
     }
 
 
@@ -222,7 +205,6 @@ def verify_without_evidence(store, session):
 
 def test_entity_narrowing_without_repeated_time_keeps_prior_period():
     payload = narrowed_payload()
-    payload["time_periods"] = []
 
     result = ResearchIntakeCompiler(
         transport=FakeTransport(payload)
@@ -253,14 +235,20 @@ def test_entity_expand_without_repeated_time_keeps_prior_period():
             ),
         }
     )
-    payload = narrowed_payload()
-    payload["goals"][0]["subject_semantic_ids"] = [
-        "metric.downtime",
-        "entity.assembly",
-        "entity.paint",
-    ]
-    payload["scope_mutation_kind"] = "EXPAND_ENTITY"
-    payload["time_periods"] = []
+    payload = {
+        "terminal": "READY",
+        "operations": [
+            {
+                "facet": "ENTITY",
+                "operation": "SET",
+                "semantic_ids": [
+                    "entity.assembly",
+                    "entity.paint",
+                ],
+                "source_fragment": "Expand the entity scope only",
+            }
+        ],
+    }
 
     result = ResearchIntakeCompiler(
         transport=FakeTransport(payload)
