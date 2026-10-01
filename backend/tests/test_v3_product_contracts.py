@@ -46,6 +46,15 @@ def research_session():
         session_id="rs_"+"1"*24,
         tenant_binding=f"id:{TENANT}",
         revision=4,
+        lineage_id="atl_product_scope",
+        accepted_brief=SimpleNamespace(
+            scope=SimpleNamespace(
+                scope_version=SimpleNamespace(
+                    version_id="scope_v2",
+                    parent_version_id="scope_v1",
+                )
+            )
+        ),
         objective="Explain margin deterioration and decide what to do.",
         stopping=SimpleNamespace(status=enum("COMPLETE"),reason="all obligations VERIFIED"),
         obligations=(SimpleNamespace(obligation_id="must-1",state=enum("VERIFIED")),),
@@ -488,6 +497,62 @@ def test_current_research_evidence_remain_current():
     assert service.resume(
         ref=refs()[4],principal=principal()
     ).header.currentness==ProductCurrentness.CURRENT
+
+
+def test_phase2_scope_projection_exposes_exact_lineage_and_version():
+    service=HeadlessProductService(sources=sources())
+    research_dto=service.resume(ref=refs()[2],principal=principal())
+    investigation_dto=service.resume(ref=refs()[3],principal=principal())
+
+    assert research_dto.scope_lineage_id=="atl_product_scope"
+    assert research_dto.scope_version_id=="scope_v2"
+    assert research_dto.parent_scope_version_id=="scope_v1"
+    assert investigation_dto.scope_lineage_id=="atl_product_scope"
+    assert investigation_dto.scope_version_id=="scope_v2"
+    assert investigation_dto.parent_scope_version_id=="scope_v1"
+
+
+def test_phase2_progress_feed_is_a_read_only_timeline_projection():
+    service=HeadlessProductService(sources=sources())
+    context=service.company_context(
+        principal=principal(),
+        analytical_context_available=True,
+    )
+    feed=service.progress(
+        context_id=context.context_id,
+        refs=refs()[:7],
+        principal=principal(),
+    )
+    assert feed.context_id==context.context_id
+    assert [item.ordinal for item in feed.events]==list(range(1,8))
+    assert [item.ref.kind for item in feed.events]==[
+        ArtifactKind.WATCH,
+        ArtifactKind.SIGNAL,
+        ArtifactKind.RESEARCH,
+        ArtifactKind.INVESTIGATION,
+        ArtifactKind.EVIDENCE,
+        ArtifactKind.EPISTEMIC_ASSESSMENT,
+        ArtifactKind.REPORT,
+    ]
+    assert feed.events[2].scope_version_id=="scope_v2"
+    assert feed.events[4].scope_version_id=="scope_v2"
+    assert feed.events[-1].terminal_state is None
+
+
+def test_phase2_progress_feed_preserves_historical_scope_state():
+    service=HeadlessProductService(sources=sources(research_state="SUPERSEDED"))
+    context=service.company_context(
+        principal=principal(),
+        analytical_context_available=True,
+    )
+    feed=service.progress(
+        context_id=context.context_id,
+        refs=(refs()[2],refs()[4]),
+        principal=principal(),
+    )
+    assert feed.events[0].currentness==ProductCurrentness.SUPERSEDED
+    assert feed.events[1].currentness==ProductCurrentness.HISTORICAL
+    assert {item.scope_version_id for item in feed.events}=={"scope_v2"}
 
 
 @pytest.mark.parametrize(
