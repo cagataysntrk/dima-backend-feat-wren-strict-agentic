@@ -1188,7 +1188,7 @@ def test_p19_followup_context_uses_resolved_scope_not_stale_goal_text() -> None:
             "value": "Boyahane",
         }
     ]
-    assert scope["periods"] == ()
+    assert scope["periods"] == []
     assert "all" not in json.dumps(scope).lower()
 
     second_session = store.load(
