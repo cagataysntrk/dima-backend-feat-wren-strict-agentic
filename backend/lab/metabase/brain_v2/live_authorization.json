@@ -2,13 +2,13 @@
   "schema_version": "dima_brain_v2_live_authorization_v1",
   "enabled": false,
   "probe_id": "R_LIVE_2_ADAPTIVE",
-  "candidate_product_sha": "e5af892df2052e95d3e93c4917075e47d74d25d0",
-  "provider_free_run_id": 36853550759,
-  "provider_free_status": "GREEN",
+  "candidate_product_sha": "d7676f59a51ed7375984a505bfb81e7ca92befa6",
+  "provider_free_run_id": 0,
+  "provider_free_status": "PENDING",
   "engine_sha": "d5c60dc9f37a9ec9c5b0117f178146bbcb8dca88",
   "engine_release": "0.63.18-dima.9",
   "model_policy": "LUNA_FIRST",
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
-  "authorization_receipt": "adaptive-running-36853774322-disarmed"
+  "authorization_receipt": "adaptive-material-envelope-preflight-v1"
 }
