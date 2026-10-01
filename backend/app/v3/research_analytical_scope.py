@@ -633,10 +633,54 @@ def analytical_scope_contract(
     )
 
 
+def material_coverage_period(
+    contract: AnalyticalRequestContract,
+) -> AnalyticalPeriodInvariant | None:
+    """Canonical minimum temporal window one native material acquisition must cover.
+
+    This is a semantic projection of accepted period authority only. It does not
+    prescribe filters, MBQL, SQL, bucketing, or physical query shape.
+    """
+
+    if contract.period is not None:
+        return contract.period
+    comparison = contract.comparison
+    if comparison is None:
+        return None
+    periods = (
+        comparison.reference_period,
+        comparison.base_period,
+    )
+    time_dimensions = {item.time_dimension for item in periods}
+    if len(time_dimensions) != 1:
+        raise ResearchAnalyticalScopeError(
+            "R1_TIME_DIMENSION_DRIFT",
+            "comparison periods use different time dimensions",
+        )
+    ends = tuple(item.end for item in periods)
+    if any(value is None for value in ends):
+        raise ResearchAnalyticalScopeError(
+            "R1_OPEN_ENDED_TIME_SCOPE_UNSUPPORTED",
+            "comparison material coverage requires bounded periods",
+        )
+    return AnalyticalPeriodInvariant(
+        kind="comparison_coverage",
+        time_dimension=next(iter(time_dimensions)),
+        start=min(item.start for item in periods),
+        end=max(str(value) for value in ends),
+    )
+
+
 def native_request_context(contract: AnalyticalRequestContract) -> dict[str, Any]:
     """Semantic-only context given to Metabot; physical verifier bindings stay out."""
 
     scope = contract.model_dump(mode="json")
+    coverage_period = material_coverage_period(contract)
+    scope["material_coverage_period"] = (
+        coverage_period.model_dump(mode="json")
+        if coverage_period is not None
+        else None
+    )
     if contract.temporal_observation is None:
         # Preserve the sealed context shape for capabilities that do not carry
         # the new CHANGE authority. Only the affected family gets a new field.
@@ -953,22 +997,8 @@ def _assert_time_scope(
             "R1_TIME_DIMENSION_OUTSIDE_SCOPE",
             time_ref,
         )
-    expected = (
-        contract.period
-        if contract.period is not None
-        else AnalyticalPeriodInvariant(
-            kind="comparison_coverage",
-            time_dimension=time_ref,
-            start=min(
-                contract.comparison.reference_period.start,
-                contract.comparison.base_period.start,
-            ),
-            end=max(
-                contract.comparison.reference_period.end or "",
-                contract.comparison.base_period.end or "",
-            ),
-        )
-    )
+    expected = material_coverage_period(contract)
+    assert expected is not None
     if expected.end is None:
         raise ResearchAnalyticalScopeError(
             "R1_OPEN_ENDED_TIME_SCOPE_UNSUPPORTED",
@@ -1370,23 +1400,9 @@ def _material_expected_period(
     time_ref = _time_field_ref(contract)
     if time_ref is None:
         return None, None, None
-    if contract.period is not None:
-        return time_ref, contract.period.start, contract.period.end
-    assert contract.comparison is not None
-    starts = (
-        contract.comparison.reference_period.start,
-        contract.comparison.base_period.start,
-    )
-    ends = (
-        contract.comparison.reference_period.end,
-        contract.comparison.base_period.end,
-    )
-    if any(value is None for value in ends):
-        raise ResearchAnalyticalScopeError(
-            "R1_OPEN_ENDED_TIME_SCOPE_UNSUPPORTED",
-            "material comparison requires bounded periods",
-        )
-    return time_ref, min(starts), max(str(value) for value in ends)
+    coverage_period = material_coverage_period(contract)
+    assert coverage_period is not None
+    return time_ref, coverage_period.start, coverage_period.end
 
 
 def _assert_material_time_scope(
