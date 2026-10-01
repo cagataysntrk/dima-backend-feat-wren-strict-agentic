@@ -15,7 +15,9 @@ from pathlib import Path
 from typing import Any
 
 from app.v3.brain_v2.checkpoint import postgres_checkpoint_saver
-from app.v3.brain_v2.owner_adapter import DimaBrainV2Activities
+from app.v3.brain_v2.adaptive_owner_adapter import (
+    AdaptiveDimaBrainV2Activities as DimaBrainV2Activities,
+)
 from app.v3.brain_v2.service import BrainV2Service
 from app.v3.brain_v2.state import BrainGraphState, BrainWorkflowStatus
 from app.v3.hypothesis_root_cause_provider import StructuredP19AssessmentManager
