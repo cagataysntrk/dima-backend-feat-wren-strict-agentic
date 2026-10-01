@@ -1,6 +1,6 @@
 {
   "schema_version": "dima_brain_v2_live_authorization_v1",
-  "enabled": true,
+  "enabled": false,
   "probe_id": "R_LIVE_2_ADAPTIVE",
   "candidate_product_sha": "0f710a3b64cb4b114bc0877b6e8535c8e47d6333",
   "provider_free_run_id": 36845523318,
@@ -10,5 +10,5 @@
   "model_policy": "LUNA_FIRST",
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
-  "authorization_receipt": "adaptive-temporal-child-scope-live-v1"
+  "authorization_receipt": "adaptive-running-36845762477"
 }
