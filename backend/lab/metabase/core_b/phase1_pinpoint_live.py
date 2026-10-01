@@ -124,6 +124,23 @@ PROBES = {
             "no fabricated competitor, fake winner, unsupported root cause, or causal overclaim",
         ),
     },
+    "RELATIONSHIP_REPORT_PHASE2_V1": {
+        "historical_round2_case_id": None,
+        "turns": (
+            "Mayıs-Haziran 2026'da bölüm bazında machine downtime ile fault count birlikte hareket ediyor mu? Yalnız gözlemsel association/co-movement olarak değerlendir; supporting/challenging veya yetersiz Evidence'ı ayır, BUSINESS_POLICY veya causality kurma.",
+            "Bu mevcut governed ilişki araştırmasını yönetim için kanıta bağlı kısa bir rapora dönüştür. Yeni analitik acquisition açma; mevcut Evidence, gözlemsel ilişki durumu, sınırlılıklar ve karar açısından önemli noktaları provenance ile koru.",
+        ),
+        "manual_contract": (
+            "turn 1 preserves OBSERVATIONAL relationship intent",
+            "turn 1 has governed native material and Evidence",
+            "turn 1 creates no business-policy use and no causal promotion",
+            "turn 2 reuses the same governed lineage",
+            "turn 2 opens zero new native analytical acquisition",
+            "turn 2 produces a current P20 ReportDocument",
+            "report preserves relationship Evidence/provenance and limitations",
+            "exception=0, silent wrong=0, causal overclaim=0",
+        ),
+    },
     "RELATIONSHIP_F05_H_RECOVERY": {
         "historical_round2_case_id": "F05_H",
         "turns": (
@@ -202,6 +219,22 @@ PROBES = {
             "no fabricated winner, unsupported dominant cause, or causal overclaim",
             "stepwise investigation trace and governed inconclusive behavior are preserved",
             "exception=0, silent wrong=0, and blocked provider requests=0",
+        ),
+    },
+    "MULTI_INTENT_PHASE2_V1": {
+        "historical_round2_case_id": None,
+        "turns": (
+            "Mayıs-Haziran 2026'da bölüm bazında machine downtime'ı sıralayıp en çok dikkat isteyen bölümleri göster; aynı governed material içinde machine downtime ile fault count gözlemsel olarak birlikte hareket ediyor mu değerlendir. İki ihtiyacı da koru ve sonunda kısa yönetim raporu üret. BUSINESS_POLICY veya causality iddiası kurma.",
+        ),
+        "manual_contract": (
+            "multiple accepted user requirements remain durable",
+            "ranking and observational relationship intents are both retained",
+            "compatible analytical requirements reuse minimum sufficient native material",
+            "presentation/report requirement creates no duplicate analytical job",
+            "all USER_MUST requirements reach an explicit terminal disposition",
+            "P20 synthesis preserves Evidence/provenance and conflicting limitations",
+            "no business-policy invention, causal overclaim, or silent intent loss",
+            "exception=0 and duplicate native=0",
         ),
     },
     "MULTI_INTENT_F04_H_RECOVERY": {
@@ -1131,6 +1164,19 @@ def _mechanical_observational_relationship(
     }
 
 
+def _mechanical_relationship_report_phase2(
+    turns: list[dict[str, Any]],
+) -> dict[str, bool]:
+    if len(turns) != 2:
+        return {"two_turns_executed": False}
+    relationship = _mechanical_observational_relationship(turns[0])
+    report = _mechanical_contextual_report(turns)
+    return {
+        **{f"relationship_{key}": value for key, value in relationship.items()},
+        **{f"report_{key}": value for key, value in report.items()},
+    }
+
+
 def _mechanical_contextual_report(
     turns: list[dict[str, Any]],
 ) -> dict[str, bool]:
@@ -1165,14 +1211,34 @@ def _mechanical_contextual_report(
 
 def _mechanical_multi_intent(turn: dict[str, Any]) -> dict[str, bool]:
     report_payload = turn.get("p20_report") or {}
+    brief = turn.get("brief_payload") or {}
+    questions = brief.get("questions") or []
+    deliverables = brief.get("deliverables") or []
+    question_kinds = {item.get("kind") for item in questions}
+    composition = turn.get("composition_payload") or {}
+    fulfillment = composition.get("user_must_fulfillment") or []
     return {
         "ready": bool(turn.get("ready")),
-        "native_material_exists": bool(turn.get("native_results")),
+        "multiple_analytical_intents_retained": (
+            len(questions) >= 2
+            and {"ranking", "relationship"}.issubset(question_kinds)
+        ),
+        "report_requirement_retained": any(
+            item.get("kind") == "report" for item in deliverables
+        ),
+        "single_shared_native_material": (
+            len(turn.get("native_results") or []) == 1
+        ),
         "governed_evidence_exists": any(
             turn.get("evidence_by_session", {}).values()
         ),
         "p20_report_exists": bool(report_payload.get("document")),
         "p20_report_load_clean": not bool(report_payload.get("load_error")),
+        "all_user_must_projected": (
+            bool(fulfillment)
+            and len(fulfillment)
+            == len(brief.get("must_requirement_ids") or [])
+        ),
         "requirement_complete": _requirement_complete(turn),
     }
 
@@ -1726,6 +1792,13 @@ def main() -> int:
                 snapshots,
             )
         elif (
+            args.probe_id == "RELATIONSHIP_REPORT_PHASE2_V1"
+            and len(report["turns"]) == 2
+        ):
+            report["mechanical_observations"] = (
+                _mechanical_relationship_report_phase2(report["turns"])
+            )
+        elif (
             args.probe_id == "RELATIONSHIP_F05_H_RECOVERY"
             and report["turns"]
         ):
@@ -1740,7 +1813,10 @@ def main() -> int:
                 report["turns"]
             )
         elif (
-            args.probe_id == "MULTI_INTENT_F04_H_RECOVERY"
+            args.probe_id in {
+                "MULTI_INTENT_F04_H_RECOVERY",
+                "MULTI_INTENT_PHASE2_V1",
+            }
             and report["turns"]
         ):
             report["mechanical_observations"] = _mechanical_multi_intent(
