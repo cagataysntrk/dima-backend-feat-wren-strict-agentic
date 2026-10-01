@@ -1,6 +1,6 @@
 {
   "schema_version": "dima_brain_v2_live_authorization_v1",
-  "enabled": true,
+  "enabled": false,
   "probe_id": "RELATIONSHIP_REPORT_PHASE2_V1",
   "candidate_product_sha": "2637df4144c7187d88ae0a41ca45ae5339d65195",
   "provider_free_run_id": 36925234971,
@@ -10,5 +10,5 @@
   "model_policy": "LUNA_FIRST",
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
-  "authorization_receipt": "phase2-contextual-report-reuse-live-v1"
+  "authorization_receipt": "t5-t6-running-36925407237-disarmed"
 }
