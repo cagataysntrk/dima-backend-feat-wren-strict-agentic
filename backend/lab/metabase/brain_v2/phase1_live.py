@@ -131,6 +131,14 @@ def _exception(exc: Exception) -> dict[str, Any]:
         "first_invalid_boundary": getattr(exc, "first_invalid_boundary", None),
         "expected_fingerprint": getattr(exc, "expected_fingerprint", None),
         "observed_fingerprint": getattr(exc, "observed_fingerprint", None),
+        "scope_fingerprint": getattr(exc, "scope_fingerprint", None),
+        "material_fingerprint": getattr(exc, "material_fingerprint", None),
+        "expected_semantic_shape": getattr(
+            exc, "expected_semantic_shape", None
+        ),
+        "observed_semantic_shape": getattr(
+            exc, "observed_semantic_shape", None
+        ),
     }
 
 
