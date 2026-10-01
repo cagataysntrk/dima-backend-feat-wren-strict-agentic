@@ -128,8 +128,8 @@ G8 final PF/state-machine/metamorphic/security
 G9 readiness adjudication
 
 NEXT EXACT ACTION
-1. Bind Phase-2 provider-free workflow to final Phase-1 semantic Product d6a8eddf...
-2. Run one Phase-2 headless provider-free closure.
+1. Phase-2 workflow is bound to final Phase-1 semantic Product d6a8eddf...
+2. Run one Phase-2 headless provider-free closure (triggered by this receipt).
 3. Build/reuse the thinnest canonical-owner live harness for T5+T6.
 4. One fresh T5+T6 live after provider-free family closure.
 5. T7 provider-free family X-ray, then one fresh T7 live.
