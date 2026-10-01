@@ -162,6 +162,7 @@ class NativeResearchOccurrenceRunner:
                     native_query_id=produced.native_query_id,
                     native_query=produced.query,
                     query_fingerprint=produced.query_fingerprint,
+                    native_agent_state=observation.final_state,
                 )
                 native_query = produced.query
                 query_fingerprint = produced.query_fingerprint
