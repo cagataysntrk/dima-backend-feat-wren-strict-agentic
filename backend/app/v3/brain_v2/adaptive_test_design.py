@@ -8,7 +8,15 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.v3.hypothesis_root_cause_v1 import NextTestRequest
+from app.v3.analytical_request_contract import (
+    AnalyticalRequestContract,
+    AnalyticalRequestMismatch,
+    assert_child_request_scope,
+)
+from app.v3.hypothesis_root_cause_v1 import (
+    NextTestEvidenceSurface,
+    NextTestRequest,
+)
 from app.v3.research_manager import (
     InvestigationIntent,
     ManagerAction,
@@ -18,6 +26,54 @@ from app.v3.research_manager import (
 
 class AdaptiveTestDesignError(RuntimeError):
     """The P17 design result escaped the typed adaptive boundary."""
+
+
+def typed_child_scope_for_next_test(
+    *,
+    parent: AnalyticalRequestContract,
+    request: NextTestRequest,
+) -> AnalyticalRequestContract:
+    """Project only the typed material delta authorized by a P19 next-test surface.
+
+    This is not a query plan. It can only reuse already accepted semantic refs
+    and the child-scope mutation law enforced by assert_child_request_scope().
+    """
+
+    if request.required_evidence_surface != NextTestEvidenceSurface.TEMPORAL_ORDER:
+        raise AdaptiveTestDesignError(
+            "no deterministic child material delta exists for "
+            + request.required_evidence_surface.value
+        )
+
+    temporal = parent.temporal_observation
+    if temporal is None:
+        raise AdaptiveTestDesignError(
+            "TEMPORAL_ORDER requires accepted temporal-observation authority"
+        )
+    time_ref = temporal.time_dimension
+    dimensions = tuple(dict.fromkeys((*parent.dimension_refs, time_ref)))
+    grains = tuple(dict.fromkeys((*parent.grain_constraints, time_ref)))
+    if (
+        dimensions == parent.dimension_refs
+        and grains == parent.grain_constraints
+    ):
+        raise AdaptiveTestDesignError(
+            "TEMPORAL_ORDER child scope would repeat parent material"
+        )
+
+    child = parent.model_copy(
+        update={
+            "dimension_refs": dimensions,
+            "grain_constraints": grains,
+        }
+    )
+    try:
+        assert_child_request_scope(parent, child)
+    except AnalyticalRequestMismatch as exc:
+        raise AdaptiveTestDesignError(
+            "typed next-test child scope is not legal: " + exc.code
+        ) from exc
+    return child
 
 
 class TypedNextTestProposalManager:
