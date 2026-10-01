@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import inspect
+from contextlib import contextmanager
 
 import pytest
 from types import SimpleNamespace
@@ -544,6 +545,7 @@ def composer(
     relationship_blocked=True,
     limited_goal_ids=(),
     claim_on_calls=None,
+    otel_bridge=None,
 ):
     research = FakeResearch(limited_goal_ids=limited_goal_ids)
     investigation = FakeInvestigation(
@@ -561,6 +563,7 @@ def composer(
             epistemics=FakeP19(),
             epistemic_manager=FakeP19Manager(),
             reports=FakeReports(research),
+            otel_bridge=otel_bridge,
         ),
         research,
         investigation,
@@ -1365,3 +1368,57 @@ def test_relationship_scoped_provider_is_claim_only_when_shared_material_is_comp
     result = manager.propose(SimpleNamespace())
     assert result.target_parent_obligation == "g_rank"
     assert manager.call_count == 1
+
+
+class _RelationshipOtelSpan:
+    def set_attributes(self, **values):
+        del values
+
+
+class _RelationshipOtelCapture:
+    def __init__(self):
+        self.names = []
+        self.attributes = []
+
+    @contextmanager
+    def operation(self, boundary, *, state=None, **attributes):
+        del state
+        self.names.append(getattr(boundary, "value", str(boundary)))
+        self.attributes.append(dict(attributes))
+        yield _RelationshipOtelSpan()
+
+
+def test_relationship_p18_adjudication_emits_observation_only_span() -> None:
+    bridge = _RelationshipOtelCapture()
+    c, _, _, reasoning = composer(
+        relationship_blocked=False,
+        otel_bridge=bridge,
+    )
+    b = brief(
+        question(
+            "g_relationship",
+            ResearchGoalKind.RELATIONSHIP,
+            subjects=(DOWNTIME, FAULTS),
+            related=(DEPT,),
+        ),
+    )
+    original = c._resolve_relationship
+
+    def wrapped(**kwargs):
+        reasoning.current_obligation_by_session[kwargs["material_session_id"]] = (
+            kwargs["material_goal"].goal_id
+        )
+        return original(**kwargs)
+
+    c._resolve_relationship = wrapped
+    result = c.compose(
+        brief=b,
+        principal=principal(),
+        request_ref="relationship-otel",
+        source_message_hash="7" * 64,
+        native_session_token=None,
+    )
+
+    assert result.p18_policy_use_refs
+    assert bridge.names == ["dima.p18.adjudicate"]
+    assert bridge.attributes[0]["scope_version_id"] == "scope_v1"
