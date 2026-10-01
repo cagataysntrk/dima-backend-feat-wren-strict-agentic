@@ -245,6 +245,54 @@ class HeadlessProductService:
             prior_brief=prior.accepted_brief,
         )
 
+    def contextual_report(
+        self,
+        *,
+        research_session_id: str,
+        principal: Principal,
+        report_key: str = "product-contextual-report",
+    ) -> ProductArtifact:
+        """Seal one P20 report over the current governed Research state.
+
+        This is a presentation continuation, not a Research scope mutation.
+        It never creates a new Research authority/session and has no analytical
+        runtime capability of its own.
+        """
+        _tenant(principal)
+        _subject(principal)
+        _owner_call(
+            lambda: self._s.research.current_scope_state(
+                session_id=research_session_id,
+                principal=principal,
+            ),
+            owner="P14_RESEARCH",
+        )
+        reports = _require(self._s.reports, "report")
+        draft = _owner_call(
+            lambda: reports.draft_from_governed_research(
+                research_session_id=research_session_id,
+                report_key=report_key,
+                principal=principal,
+                explicit_limitations=(),
+            ),
+            owner="P20",
+        )
+        item = _owner_call(
+            lambda: reports.seal(
+                draft=draft,
+                principal=principal,
+            ),
+            owner="P20",
+        )
+        state = _owner_call(
+            lambda: reports.currentness(
+                report_id=item.report_id,
+                principal=principal,
+            ),
+            owner="P20",
+        )
+        return projections.report(item, state)
+
     def company_context(
         self,
         *,
