@@ -635,9 +635,12 @@ def analytical_scope_contract(
 def native_request_context(contract: AnalyticalRequestContract) -> dict[str, Any]:
     """Semantic-only context given to Metabot; physical verifier bindings stay out."""
 
-    return {
-        "dima_analytical_scope": contract.model_dump(mode="json"),
-    }
+    scope = contract.model_dump(mode="json")
+    if contract.temporal_observation is None:
+        # Preserve the sealed context shape for capabilities that do not carry
+        # the new CHANGE authority. Only the affected family gets a new field.
+        scope.pop("temporal_observation", None)
+    return {"dima_analytical_scope": scope}
 
 
 def _refs(session: ResearchSession) -> dict[str, ResearchSemanticRef]:
