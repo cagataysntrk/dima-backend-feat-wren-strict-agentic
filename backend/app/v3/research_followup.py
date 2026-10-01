@@ -15,6 +15,7 @@ from app.v3.research_analytical_scope import analytical_scope_contract
 from app.v3.research_exploration import NativeResearchExploration
 from app.v3.research_manager import (
     FollowupResult,
+    InvestigationIntent,
     ResearchInvestigationTask,
     ResearchManagerMaturationError,
     ResearchReasoningStep,
@@ -94,8 +95,17 @@ class NativeResearchFollowupExecutor:
         link_id,
         principal: Principal,
         native_session_token: str | None,
+        intent: InvestigationIntent,
     ) -> tuple[str, ...]:
-        if self._exploration is None:
+        # A typed discriminating re-entry already produces the only new
+        # governed analytical authority required here: VERIFIED Evidence from
+        # the exact P17 native occurrence. P15 automagic exploration is an
+        # optional material sidecar for other investigation intents, not part
+        # of the P19 -> P17 -> Evidence -> P19 adaptive contract.
+        if (
+            intent == InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE
+            or self._exploration is None
+        ):
             return ()
         lead = self._exploration.explore_followup(
             session_id=session.session_id,
@@ -160,6 +170,7 @@ class NativeResearchFollowupExecutor:
                 link_id=link.id,
                 principal=principal,
                 native_session_token=native_session_token,
+                intent=step.intent,
             )
             return FollowupResult(
                 native_execution_refs=(str(link.id),),
@@ -212,6 +223,7 @@ class NativeResearchFollowupExecutor:
             link_id=link.id,
             principal=principal,
             native_session_token=native_session_token,
+            intent=step.intent,
         )
         return FollowupResult(
             native_execution_refs=(str(link.id),),
