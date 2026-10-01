@@ -9,6 +9,7 @@ No SQL/MBQL parser, query planner, fuzzy matcher or prompt classifier lives here
 from __future__ import annotations
 
 import hashlib
+from datetime import date, datetime, timedelta, timezone
 from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any
 
@@ -829,6 +830,106 @@ def _time_field_ref(
     return None
 
 
+
+def _date_only(value: Any) -> date | None:
+    if isinstance(value, datetime):
+        return None
+    if isinstance(value, date):
+        return value
+    if not isinstance(value, str) or "T" in value:
+        return None
+    try:
+        return date.fromisoformat(value)
+    except ValueError:
+        return None
+
+
+def _canonical_datetime_bound(value: Any) -> datetime | None:
+    if isinstance(value, datetime):
+        result = value
+    elif isinstance(value, str) and "T" in value:
+        raw = value[:-1] + "+00:00" if value.endswith("Z") else value
+        try:
+            result = datetime.fromisoformat(raw)
+        except ValueError:
+            return None
+    else:
+        return None
+    if result.tzinfo is None:
+        result = result.replace(tzinfo=timezone.utc)
+    return result.astimezone(timezone.utc)
+
+
+def _matches_half_open_temporal_interval(
+    *,
+    expected_start: str,
+    expected_end: str,
+    observed_lower: Any,
+    lower_inclusive: bool | None,
+    observed_upper: Any,
+    upper_inclusive: bool | None,
+) -> bool:
+    """Compare semantic intervals, not an equivalent physical predicate spelling.
+
+    Calendar DATE domains are discrete. Therefore > prior-day and >= start are
+    equivalent, as are <= last-day and < next-day. Timestamp domains remain
+    continuous: inclusivity stays exactly half-open, while equivalent ISO-8601
+    timezone spellings compare by instant.
+    """
+
+    expected_start_date = _date_only(expected_start)
+    expected_end_date = _date_only(expected_end)
+    observed_lower_date = _date_only(observed_lower)
+    observed_upper_date = _date_only(observed_upper)
+    if (
+        expected_start_date is not None
+        and expected_end_date is not None
+        and observed_lower_date is not None
+        and observed_upper_date is not None
+    ):
+        if lower_inclusive is True:
+            normalized_start = observed_lower_date
+        elif lower_inclusive is False:
+            normalized_start = observed_lower_date + timedelta(days=1)
+        else:
+            return False
+
+        if upper_inclusive is False:
+            normalized_end = observed_upper_date
+        elif upper_inclusive is True:
+            normalized_end = observed_upper_date + timedelta(days=1)
+        else:
+            return False
+
+        return (
+            normalized_start == expected_start_date
+            and normalized_end == expected_end_date
+        )
+
+    if lower_inclusive is not True or upper_inclusive is not False:
+        return False
+
+    expected_start_dt = _canonical_datetime_bound(expected_start)
+    expected_end_dt = _canonical_datetime_bound(expected_end)
+    observed_lower_dt = _canonical_datetime_bound(observed_lower)
+    observed_upper_dt = _canonical_datetime_bound(observed_upper)
+    if (
+        expected_start_dt is not None
+        and expected_end_dt is not None
+        and observed_lower_dt is not None
+        and observed_upper_dt is not None
+    ):
+        return (
+            observed_lower_dt == expected_start_dt
+            and observed_upper_dt == expected_end_dt
+        )
+
+    return (
+        observed_lower == expected_start
+        and observed_upper == expected_end
+    )
+
+
 def _assert_time_scope(
     *,
     contract: AnalyticalRequestContract,
@@ -913,9 +1014,20 @@ def _assert_time_scope(
         for item in predicates
         if item.upper_bound is not None
     }
-    if (
-        lower_bounds != {(expected.start, True)}
-        or upper_bounds != {(expected.end, False)}
+    if len(lower_bounds) != 1 or len(upper_bounds) != 1:
+        raise ResearchAnalyticalScopeError(
+            "R1_NATIVE_TIME_SCOPE_MISMATCH",
+            "observed temporal bounds are ambiguous",
+        )
+    observed_lower, lower_inclusive = next(iter(lower_bounds))
+    observed_upper, upper_inclusive = next(iter(upper_bounds))
+    if not _matches_half_open_temporal_interval(
+        expected_start=expected.start,
+        expected_end=expected.end,
+        observed_lower=observed_lower,
+        lower_inclusive=lower_inclusive,
+        observed_upper=observed_upper,
+        upper_inclusive=upper_inclusive,
     ):
         raise ResearchAnalyticalScopeError(
             "R1_NATIVE_TIME_SCOPE_MISMATCH",
@@ -1303,11 +1415,14 @@ def _assert_material_time_scope(
             "material temporal scope targets another field or is ambiguous",
         )
     item = matches[0]
-    if (
-        item.lower_bound != start
-        or item.lower_inclusive is not True
-        or item.upper_bound != end
-        or item.upper_inclusive is not False
+    assert start is not None and end is not None
+    if not _matches_half_open_temporal_interval(
+        expected_start=start,
+        expected_end=end,
+        observed_lower=item.lower_bound,
+        lower_inclusive=item.lower_inclusive,
+        observed_upper=item.upper_bound,
+        upper_inclusive=item.upper_inclusive,
     ):
         raise ResearchAnalyticalScopeError(
             "R1_NATIVE_TIME_SCOPE_MISMATCH",
