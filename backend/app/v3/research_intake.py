@@ -21,6 +21,7 @@ from app.v3.product.contracts import (
 )
 from app.v3.research_contracts import (
     CausalCompetitionSurface,
+    CausalEffectObservation,
     ComparisonRole,
     ComparisonSurface,
     PresentationKind,
@@ -189,6 +190,7 @@ class DraftRanking(Frozen):
 
 class ModelCausalCompetitionDraft(Frozen):
     effect_semantic_id: str = Field(min_length=1)
+    effect_observation: CausalEffectObservation = CausalEffectObservation.LEVEL
     candidate_mechanism_semantic_ids: tuple[str, ...] = ()
     diagnostic_dimension_ids: tuple[str, ...] = ()
 
@@ -487,11 +489,14 @@ Authority rules:
   support/challenge, reporting, causal-boundary, or stopping instructions; those remain
   deliverable/investigation semantics unless the user actually supplied a distinct governed
   outcome, candidate set, diagnostic scope, or analytical material need.
-  Every ROOT_CAUSE goal MUST emit causal_competition: one governed effect_semantic_id, only the
-  candidate_mechanism_semantic_ids explicitly supplied by the user (empty when none were supplied),
-  and the governed diagnostic_dimension_ids needed by the request. This typed contract is identity,
-  not causal truth. Additional accepted metrics may still be included as analytical material for
-  P17 discovery, but must not be mislabeled as user-provided candidates.
+  Every ROOT_CAUSE goal MUST emit causal_competition: one governed effect_semantic_id, one
+  effect_observation, only the candidate_mechanism_semantic_ids explicitly supplied by the user
+  (empty when none were supplied), and the governed diagnostic_dimension_ids needed by the request.
+  Use effect_observation=LEVEL when the explanatory target is a bounded state/level; use CHANGE when
+  the explanatory target is variation/change over accepted time. This typed field records user
+  intent only; it never asserts that a change or causal effect actually exists. Additional accepted
+  metrics may still be included as analytical material for P17 discovery, but must not be mislabeled
+  as user-provided candidates.
   Do NOT manufacture separate RELATIONSHIP goals merely as evidence-gathering subgoals for that
   ROOT_CAUSE investigation. P17/P19 own governed hypothesis competition and discriminating re-entry.
 - If the user independently asks both an observational relationship analysis and a causal/root-cause
@@ -658,6 +663,10 @@ def _intake_provider_schema(
             causal_properties["effect_semantic_id"] = {
                 "type": "string",
                 "enum": list(metric_ids),
+            }
+            causal_properties["effect_observation"] = {
+                "type": "string",
+                "enum": [item.value for item in CausalEffectObservation],
             }
             causal_properties["candidate_mechanism_semantic_ids"] = {
                 "type": "array",
@@ -971,6 +980,7 @@ class ResearchIntakeCompiler:
                 continue
             identity = (
                 causal.effect_semantic_id,
+                causal.effect_observation.value,
                 tuple(sorted(causal.candidate_mechanism_semantic_ids)),
                 tuple(sorted(causal.diagnostic_dimension_ids)),
                 tuple(sorted(goal.subject_semantic_ids)),
@@ -1148,6 +1158,15 @@ class ResearchIntakeCompiler:
                 if item.role == ComparisonRole.TEMPORAL_PERIOD
             )
             if temporal.mode == "none":
+                if (
+                    goal.causal_competition is not None
+                    and goal.causal_competition.effect_observation
+                    == CausalEffectObservation.CHANGE
+                ):
+                    raise ResearchIntakeError(
+                        "INTAKE_CAUSAL_CHANGE_TEMPORAL_MATERIAL_REQUIRED",
+                        goal.goal_key,
+                    )
                 if temporal_comparisons:
                     raise ResearchIntakeError(
                         "INTAKE_TEMPORAL_MATERIAL_MODE_CONFLICT",
@@ -1799,6 +1818,7 @@ class ResearchIntakeCompiler:
                 try:
                     causal_competition = CausalCompetitionSurface(
                         effect_semantic_id=causal.effect_semantic_id,
+                        effect_observation=causal.effect_observation,
                         candidate_mechanism_semantic_ids=causal.candidate_mechanism_semantic_ids,
                         diagnostic_dimension_ids=causal.diagnostic_dimension_ids,
                     )
@@ -1813,6 +1833,12 @@ class ResearchIntakeCompiler:
                     goal.goal_key,
                 )
             goal_seed = goal.model_dump(mode="json")
+            if (
+                goal.causal_competition is not None
+                and "effect_observation"
+                not in goal.causal_competition.model_fields_set
+            ):
+                goal_seed["causal_competition"].pop("effect_observation", None)
             if goal_seed.get("relationship_intent") is None:
                 # Preserve historical/non-relationship stable identity. The new
                 # optional field becomes authority only when it is explicitly set.
