@@ -78,7 +78,10 @@ class NativeResearchFollowupExecutor:
         return NativeEngineRequest(
             profile_id=conversation.profile_id,
             metabot_id=conversation.metabot_id,
-            message=task.bounded_objective,
+            message=ResearchManager.native_material_message(
+                objective=task.bounded_objective,
+                analytical_scope=analytical_scope,
+            ),
             context=native_request_context(analytical_scope),
             conversation_id=conversation.conversation_id,
             history=None,
