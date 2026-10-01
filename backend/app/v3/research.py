@@ -260,7 +260,12 @@ class ResearchManager:
         return cls.advance(session,now=now,hypotheses=(*session.hypotheses,h))
 
     @staticmethod
-    def native_material_message(*, objective: str, analytical_scope):
+    def native_material_message(
+        *,
+        objective: str,
+        analytical_scope,
+        semantic_labels: dict[str, str] | None = None,
+    ):
         """Deliver the accepted material contract on Metabot's visible message surface.
 
         The block is a deterministic projection of AnalyticalRequestContract only.
@@ -268,10 +273,19 @@ class ResearchManager:
         benchmark knowledge, or inferred semantics.
         """
 
-        def section(name, values):
+        labels = semantic_labels or {}
+
+        def semantic_display(value: str) -> str:
+            label = str(labels.get(value) or "").strip()
+            return f"{value} :: {label}" if label else value
+
+        def section(name, values, *, semantic: bool = False):
             lines = [f"{name}:"]
             values = tuple(values)
-            lines.extend(f"- {value}" for value in values)
+            lines.extend(
+                f"- {semantic_display(value) if semantic else value}"
+                for value in values
+            )
             if not values:
                 lines.append("- none")
             return lines
@@ -286,8 +300,16 @@ class ResearchManager:
         lines = [
             "[DIMA ACCEPTED ANALYTICAL CONTRACT]",
             f"scope_version: {analytical_scope.scope_identity.version_id}",
-            *section("metrics", analytical_scope.metric_refs),
-            *section("dimensions", analytical_scope.dimension_refs),
+            *section(
+                "metrics",
+                analytical_scope.metric_refs,
+                semantic=True,
+            ),
+            *section(
+                "dimensions",
+                analytical_scope.dimension_refs,
+                semantic=True,
+            ),
             "filters:",
         ]
         if analytical_scope.filters:
@@ -426,12 +448,23 @@ class ResearchManager:
             session=session,
             obligation_id=obligation_id,
         )
+        brief = session.accepted_brief
+        semantic_labels = {}
+        if brief is not None:
+            required_semantic_ids = set(analytical_scope.metric_refs)
+            required_semantic_ids.update(analytical_scope.dimension_refs)
+            semantic_labels = {
+                ref.candidate_id: ref.canonical_name
+                for ref in brief.scope.semantic_refs
+                if ref.candidate_id in required_semantic_ids
+            }
         req=NativeEngineRequest(
             profile_id=conv.profile_id,
             metabot_id=conv.metabot_id,
             message=cls.native_material_message(
                 objective=item.objective,
                 analytical_scope=analytical_scope,
+                semantic_labels=semantic_labels,
             ),
             context=native_request_context(analytical_scope),
             conversation_id=conv.conversation_id,
