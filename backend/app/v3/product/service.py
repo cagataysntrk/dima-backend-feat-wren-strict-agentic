@@ -40,6 +40,8 @@ from .contracts import (
     ProductArtifact,
     ProductCurrentness,
     ProductErrorCode,
+    ProductProgressEvent,
+    ProductProgressFeed,
     TimelineItem,
 )
 from .errors import (
@@ -365,12 +367,16 @@ class HeadlessProductService:
                 if research_state == ProductCurrentness.CURRENT
                 else ProductCurrentness.HISTORICAL
             )
+            scope=session.accepted_brief.scope.scope_version
             return projections.evidence_from_ref(
                 ref=matches[0],
                 tenant_binding=session.tenant_binding,
                 research_session_id=session.session_id,
                 created_at=session.updated_at,
                 state=evidence_state,
+                scope_lineage_id=getattr(session,"lineage_id",None),
+                scope_version_id=getattr(scope,"version_id",None),
+                parent_scope_version_id=getattr(scope,"parent_version_id",None),
             )
 
         if kind == ArtifactKind.WATCH:
@@ -472,6 +478,9 @@ class HeadlessProductService:
                 occurred_at=item.header.created_at,
                 terminal_state=item.header.terminal_state,
                 lineage_refs=item.header.lineage_refs,
+                scope_lineage_id=getattr(item,"scope_lineage_id",None),
+                scope_version_id=getattr(item,"scope_version_id",None),
+                parent_scope_version_id=getattr(item,"parent_scope_version_id",None),
             )
             for index,item in enumerate(artifacts)
         )
@@ -482,6 +491,41 @@ class HeadlessProductService:
             context_id=context_id,
             items=page,
             next_cursor=_cursor_encode(next_offset) if next_offset<len(items) else None,
+        )
+
+    def progress(
+        self,
+        *,
+        context_id: str,
+        refs: tuple[ArtifactRef, ...],
+        principal: Principal,
+        limit: int = 100,
+        cursor: str | None = None,
+    ) -> ProductProgressFeed:
+        """Project the authorized artifact timeline as read-only progress events."""
+        timeline=self.timeline(
+            context_id=context_id,
+            refs=refs,
+            principal=principal,
+            limit=limit,
+            cursor=cursor,
+        )
+        return ProductProgressFeed(
+            context_id=timeline.context_id,
+            events=tuple(
+                ProductProgressEvent(
+                    ordinal=item.ordinal,
+                    ref=item.ref,
+                    currentness=item.currentness,
+                    occurred_at=item.occurred_at,
+                    terminal_state=item.terminal_state,
+                    scope_lineage_id=item.scope_lineage_id,
+                    scope_version_id=item.scope_version_id,
+                    parent_scope_version_id=item.parent_scope_version_id,
+                )
+                for item in timeline.items
+            ),
+            next_cursor=timeline.next_cursor,
         )
 
     def trace(
