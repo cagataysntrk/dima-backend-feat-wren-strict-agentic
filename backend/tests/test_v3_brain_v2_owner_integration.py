@@ -1483,6 +1483,17 @@ def test_real_owner_adaptive_runs_one_typed_followup_without_duplicate_native() 
         set(initial_scope["dimension_refs"]) | {"dimension.event_date"}
     )
     assert followup_scope["grain_constraints"] == followup_scope["dimension_refs"]
+    followup_message = bridge.metabot_requests[1]["message"]
+    assert followup_message.startswith("[DIMA ACCEPTED ANALYTICAL CONTRACT]\n")
+    assert "dimensions:\n- dimension.event_date" in followup_message
+    assert "grain_constraints:\n- dimension.event_date" in followup_message
+    assert "[USER OBLIGATION]" in followup_message
+    assert next_test_steps[0].bounded_objective in followup_message
+    assert "[MATERIAL TURN BOUNDARY]" in followup_message
+    assert (
+        "- produce exactly one executable native analytical query satisfying that contract"
+        in followup_message
+    )
     assert len(p19_manager.context_calls) == 2
     assert p19_manager.context_calls[0][
         "discriminating_test_available"
