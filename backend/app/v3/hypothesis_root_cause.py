@@ -348,6 +348,7 @@ class P19CaseSnapshot(Frozen):
     obligation_id: str
     tenant_binding: str
     semantic_context_version: str
+    scope_fingerprint: str = Field(pattern=r"^[a-f0-9]{64}$")
     hypotheses: tuple[HypothesisSnapshot, ...]
     evidence_observations: tuple[P19EvidenceObservation, ...] = ()
 
@@ -967,11 +968,18 @@ class HypothesisRootCauseStore:
                     )
                 evidence_by_id[observation.evidence_id] = observation
 
+        brief = session.accepted_brief
+        if brief is None:
+            raise P19EpistemicError(
+                "P19_ACCEPTED_BRIEF_REQUIRED",
+                session.session_id,
+            )
         return P19CaseSnapshot(
             research_session_id=session.session_id,
             obligation_id=obligation_id,
             tenant_binding=session.tenant_binding,
             semantic_context_version=session.context_version,
+            scope_fingerprint=brief.scope_fingerprint,
             hypotheses=hypothesis_snapshots,
             evidence_observations=tuple(
                 evidence_by_id[key] for key in sorted(evidence_by_id)
