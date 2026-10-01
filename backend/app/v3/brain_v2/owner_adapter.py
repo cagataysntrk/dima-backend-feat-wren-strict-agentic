@@ -78,6 +78,7 @@ from .activities import (
 from .keys import CognitionPurpose, CognitionRequestKey, NativeMaterialRequestKey
 from .p19_context import project_p19_scope_authority
 from .state import BrainGraphState, BrainP19Route
+from .telemetry import BoundaryName, OpenTelemetryBridge
 
 
 class BrainV2OwnerError(RuntimeError):
@@ -259,6 +260,7 @@ class DimaBrainV2Activities(BrainActivities):
         engine_identity: str,
         model_profile: str = "openai/gpt-5.6-luna",
         request_ref_prefix: str = "brain-v2",
+        otel_bridge: OpenTelemetryBridge | None = None,
     ) -> None:
         self._principal = principal
         self._catalog = catalog
@@ -273,10 +275,15 @@ class DimaBrainV2Activities(BrainActivities):
         self._engine_identity = str(engine_identity or "").strip()
         self._model_profile = str(model_profile or "").strip()
         self._request_ref_prefix = str(request_ref_prefix or "").strip()
+        self._otel_bridge = otel_bridge or OpenTelemetryBridge()
         if not self._engine_identity:
             raise ValueError("Brain V2 engine identity is required")
         if not self._model_profile:
             raise ValueError("Brain V2 model profile is required")
+
+    @property
+    def otel_bridge(self) -> OpenTelemetryBridge:
+        return self._otel_bridge
         if not self._request_ref_prefix:
             raise ValueError("Brain V2 request-ref prefix is required")
 
@@ -678,12 +685,20 @@ class DimaBrainV2Activities(BrainActivities):
                 activity_fingerprint=request_key.fingerprint,
             )
 
-        response = self._research.run_next(
-            session_id=session.session_id,
-            principal=self._principal,
-            obligation_id=goal.goal_id,
-            native_session_token=self._native_session_token,
-        )
+        with self._otel_bridge.operation(
+            BoundaryName.NATIVE_EXECUTE,
+            state=state,
+            scope_fingerprint=brief.scope_fingerprint,
+            material_fingerprint=material_contract.fingerprint,
+            native_acquisition_count=1,
+            dedup_hit=False,
+        ):
+            response = self._research.run_next(
+                session_id=session.session_id,
+                principal=self._principal,
+                obligation_id=goal.goal_id,
+                native_session_token=self._native_session_token,
+            )
         if not response.evidence_id or not response.receipt_id:
             raise BrainV2OwnerError(
                 response.limitation_code or "BRAIN_V2_NATIVE_EVIDENCE_REQUIRED",
