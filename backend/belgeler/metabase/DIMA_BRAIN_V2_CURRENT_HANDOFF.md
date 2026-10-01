@@ -2,12 +2,15 @@
 
 > **CURRENT AUTHORITY — 2026-10-01 / DIMA.9 POST-ENGINE CLOSURE**
 >
-> **Status:** PHASE 1 ACCEPTANCE CLOSURE — ADAPTIVE PROVIDER-FREE RECERTIFICATION
+> **Status:** PHASE 1 ACCEPTANCE CLOSURE — MATERIAL ADMISSION REPRODUCER
 > **Branch:** `feat/dima-brain-v2`
 > **Platform HEAD before this handoff refresh:** `bc27d3ef7f3f8544c04835778b43e485cbe32c10`
 > **Current semantic Product:** `10ccd691953e1c989feb92d1520a64e49760f35f`
 > **Product freeze proof:** `10ccd691... → bc27d3ef... / backend/app/** = ZERO DIFF`
 > **Focused Brain V2 provider-free:** `36822043624 = SUCCESS`
+> **Full PF before latest live:** `36823042392 = SUCCESS`
+> **Fresh ADAPTIVE live:** `36823192136 = RED / R1_NATIVE_DIMENSION_SCOPE_MISMATCH`
+> Fresh RED occurred before P17/P19: provider receipt = 1 Intake + 5 Metabase, 0 P17, 0 P19; dima.9 terminality and material-observation endpoint were GREEN. Current reproducer tests exact accepted entity equality with same governed field as redundant breakout; that must be allowed-but-not-required while unrelated breakouts remain forbidden.
 >
 > **Engine:** `d5c60dc9f37a9ec9c5b0117f178146bbcb8dca88 / 0.63.18-dima.9`
 > **Immutable digest:** `sha256:22c384198740274bbbba78fb6d41aa63a6d204dfe708b19a6ca9bc322b458ba7`
