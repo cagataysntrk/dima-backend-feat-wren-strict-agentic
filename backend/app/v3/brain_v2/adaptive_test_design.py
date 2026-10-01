@@ -45,12 +45,16 @@ def typed_child_scope_for_next_test(
             + request.required_evidence_surface.value
         )
 
-    temporal = parent.temporal_observation
-    if temporal is None:
+    if parent.comparison is not None or parent.temporal_observation is not None:
         raise AdaptiveTestDesignError(
-            "TEMPORAL_ORDER requires accepted temporal-observation authority"
+            "TEMPORAL_ORDER is already observable in parent material; "
+            "no materially new child scope exists"
         )
-    time_ref = temporal.time_dimension
+    if parent.period is None:
+        raise AdaptiveTestDesignError(
+            "TEMPORAL_ORDER requires accepted bounded time authority"
+        )
+    time_ref = parent.period.time_dimension
     dimensions = tuple(dict.fromkeys((*parent.dimension_refs, time_ref)))
     grains = tuple(dict.fromkeys((*parent.grain_constraints, time_ref)))
     if (
