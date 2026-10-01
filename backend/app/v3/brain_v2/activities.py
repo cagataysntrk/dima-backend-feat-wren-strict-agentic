@@ -67,14 +67,21 @@ class CandidateProjectionActivityResult(ActivityResult):
 
     hypothesis_revision: int = Field(ge=0)
     hypothesis_ids: tuple[str, ...] = ()
+    candidate_semantic_ids: tuple[str, ...] = ()
     candidate_count: int = Field(ge=0)
 
     @model_validator(mode="after")
     def count_matches_identity_set(self):
         if len(self.hypothesis_ids) != len(set(self.hypothesis_ids)):
             raise ValueError("projected hypothesis refs must be unique")
+        if len(self.candidate_semantic_ids) != len(set(self.candidate_semantic_ids)):
+            raise ValueError("projected candidate semantic refs must be unique")
+        if any(not value for value in self.candidate_semantic_ids):
+            raise ValueError("projected candidate semantic refs must be non-empty")
         if self.candidate_count != len(self.hypothesis_ids):
             raise ValueError("candidate count must match projected hypothesis refs")
+        if self.candidate_count != len(self.candidate_semantic_ids):
+            raise ValueError("candidate count must match projected semantic refs")
         return self
 
 
