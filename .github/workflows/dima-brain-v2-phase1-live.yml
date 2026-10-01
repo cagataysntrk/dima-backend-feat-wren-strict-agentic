@@ -33,7 +33,9 @@ jobs:
       contains(github.event.head_commit.message, '[brain-v2-live-one-pass]') ||
       contains(github.event.head_commit.message, '[brain-v2-live-adaptive]') ||
       contains(github.event.head_commit.message, '[brain-v2-live-discovery]') ||
-      contains(github.event.head_commit.message, '[brain-v2-live-scope-resume]')
+      contains(github.event.head_commit.message, '[brain-v2-live-scope-resume]') ||
+      contains(github.event.head_commit.message, '[brain-v2-live-t5-t6]') ||
+      contains(github.event.head_commit.message, '[brain-v2-live-t7]')
     runs-on: ubuntu-latest
     timeout-minutes: 90
     environment: DIMA_OPENROUTER_API_KEY
@@ -60,6 +62,10 @@ jobs:
             PROBE="R_LIVE_3_DISCOVERY"
           elif [[ "$MSG" == *"[brain-v2-live-scope-resume]"* ]]; then
             PROBE="R_LIVE_4_SCOPE_RESUME"
+          elif [[ "$MSG" == *"[brain-v2-live-t5-t6]"* ]]; then
+            PROBE="RELATIONSHIP_REPORT_PHASE2_V1"
+          elif [[ "$MSG" == *"[brain-v2-live-t7]"* ]]; then
+            PROBE="MULTI_INTENT_PHASE2_V1"
           else
             exit 2
           fi
@@ -128,8 +134,8 @@ jobs:
         working-directory: backend
         run: |
           set -euo pipefail
-          python -m py_compile             lab/metabase/brain_v2/phase1_live.py             lab/metabase/core_b/runtime/openrouter_counting_proxy.py             lab/metabase/core_b/runtime/seed_phase1_pinpoint_metrics.py             lab/metabase/core_b/runtime/seed_round2_fixture.py
-          pytest -q             tests/test_v3_brain_v2_contracts.py             tests/test_v3_brain_v2_graph.py             tests/test_v3_brain_v2_owner_integration.py             tests/test_v3_brain_v2_postgres_checkpoint.py             tests/test_v3_brain_v2_live_harness.py             tests/test_v3_openrouter_counting_proxy.py
+          python -m py_compile             lab/metabase/brain_v2/phase1_live.py             lab/metabase/core_b/phase1_pinpoint_live.py             lab/metabase/core_b/runtime/openrouter_counting_proxy.py             lab/metabase/core_b/runtime/seed_phase1_pinpoint_metrics.py             lab/metabase/core_b/runtime/seed_round2_fixture.py
+          pytest -q             tests/test_v3_brain_v2_contracts.py             tests/test_v3_brain_v2_graph.py             tests/test_v3_brain_v2_owner_integration.py             tests/test_v3_brain_v2_postgres_checkpoint.py             tests/test_v3_brain_v2_live_harness.py             tests/test_v3_brain_v2_phase2_live_harness.py             tests/test_v3_openrouter_counting_proxy.py
 
       - name: Derive ephemeral credentials
         shell: bash
@@ -283,7 +289,7 @@ jobs:
           kill "$PROVIDER_PROXY_PID"
           wait "$PROVIDER_PROXY_PID" 2>/dev/null || true
           INTAKE_SOURCE_CEILING=1
-          if [[ "${{ steps.auth.outputs.probe_id }}" == "R_LIVE_4_SCOPE_RESUME" ]]; then
+          if [[ "${{ steps.auth.outputs.probe_id }}" == "R_LIVE_4_SCOPE_RESUME" || "${{ steps.auth.outputs.probe_id }}" == "RELATIONSHIP_REPORT_PHASE2_V1" ]]; then
             INTAKE_SOURCE_CEILING=2
           fi
           nohup python backend/lab/metabase/core_b/runtime/openrouter_counting_proxy.py             --listen-host 0.0.0.0             --listen-port "$PROVIDER_PROXY_PORT"             --ceiling "$HARD_PROVIDER_REQUEST_CEILING"             --source-ceiling research_intake="$INTAKE_SOURCE_CEILING"             --source-ceiling metabase=7             --source-ceiling p17_manager=3             --source-ceiling p19_manager=2             --prompt-token-ceiling "$PROMPT_TOKEN_CEILING"             --completion-token-ceiling "$COMPLETION_TOKEN_CEILING"             --reasoning-token-ceiling "$REASONING_TOKEN_CEILING"             --provider-cost-ceiling "$PROVIDER_COST_CEILING"             --receipt backend/eval/brain_v2_live/provider_probe.json             >backend/eval/brain_v2_live/provider_probe_proxy.log 2>&1 &
@@ -302,7 +308,11 @@ jobs:
           CHECKPOINT_DSN: postgresql://metabase_app:${{ env.MB_APP_PASSWORD }}@127.0.0.1:55462/metabase_brain_v2
         run: |
           set -euo pipefail
-          python lab/metabase/brain_v2/phase1_live.py             --probe-id "$PROBE_ID"             --base-url http://127.0.0.1:3361             --email "$MB_RESTRICTED_EMAIL"             --password "$MB_RESTRICTED_PASSWORD"             --binding-manifest eval/brain_v2_live/native_bindings.json             --output "eval/brain_v2_live/${PROBE_ID}.json"             --control-db "eval/brain_v2_live/${PROBE_ID}.db"             --checkpoint-dsn "$CHECKPOINT_DSN"             --provider-proxy-base-url "http://127.0.0.1:${PROVIDER_PROXY_PORT}"             --provider-receipt eval/brain_v2_live/provider_probe.json             --engine-sha "$ENGINE_SHA"             --upstream-sha "$UPSTREAM_BASE_SHA"             --runtime-tag "$RUNTIME_TAG"             --runtime-image-digest "$REGISTRY_DIGEST"             --build-identity "$BUILD_IDENTITY"             --image-identity "$REGISTRY_DIGEST"             --candidate-product-sha "${{ steps.auth.outputs.candidate_sha }}"             --checkout-sha "$GITHUB_SHA"
+          if [[ "$PROBE_ID" == "RELATIONSHIP_REPORT_PHASE2_V1" || "$PROBE_ID" == "MULTI_INTENT_PHASE2_V1" ]]; then
+            python lab/metabase/core_b/phase1_pinpoint_live.py               --probe-id "$PROBE_ID"               --base-url http://127.0.0.1:3361               --email "$MB_RESTRICTED_EMAIL"               --password "$MB_RESTRICTED_PASSWORD"               --binding-manifest eval/brain_v2_live/native_bindings.json               --output "eval/brain_v2_live/${PROBE_ID}.json"               --control-db "eval/brain_v2_live/${PROBE_ID}.db"               --provider-proxy-base-url "http://127.0.0.1:${PROVIDER_PROXY_PORT}"               --provider-receipt eval/brain_v2_live/provider_probe.json               --engine-sha "$ENGINE_SHA"               --upstream-sha "$UPSTREAM_BASE_SHA"               --runtime-tag "$RUNTIME_TAG"               --runtime-image-digest "$REGISTRY_DIGEST"               --build-identity "$BUILD_IDENTITY"               --image-identity "$REGISTRY_DIGEST"               --candidate-product-sha "${{ steps.auth.outputs.candidate_sha }}"               --checkout-sha "$GITHUB_SHA"
+          else
+            python lab/metabase/brain_v2/phase1_live.py               --probe-id "$PROBE_ID"               --base-url http://127.0.0.1:3361               --email "$MB_RESTRICTED_EMAIL"               --password "$MB_RESTRICTED_PASSWORD"               --binding-manifest eval/brain_v2_live/native_bindings.json               --output "eval/brain_v2_live/${PROBE_ID}.json"               --control-db "eval/brain_v2_live/${PROBE_ID}.db"               --checkpoint-dsn "$CHECKPOINT_DSN"               --provider-proxy-base-url "http://127.0.0.1:${PROVIDER_PROXY_PORT}"               --provider-receipt eval/brain_v2_live/provider_probe.json               --engine-sha "$ENGINE_SHA"               --upstream-sha "$UPSTREAM_BASE_SHA"               --runtime-tag "$RUNTIME_TAG"               --runtime-image-digest "$REGISTRY_DIGEST"               --build-identity "$BUILD_IDENTITY"               --image-identity "$REGISTRY_DIGEST"               --candidate-product-sha "${{ steps.auth.outputs.candidate_sha }}"               --checkout-sha "$GITHUB_SHA"
+          fi
 
       - name: Enforce mechanical gate
         working-directory: backend
@@ -315,6 +325,27 @@ jobs:
           from pathlib import Path
           probe=os.environ["PROBE_ID"]
           r=json.loads(Path(f"eval/brain_v2_live/{probe}.json").read_text())
+          if probe in {"RELATIONSHIP_REPORT_PHASE2_V1","MULTI_INTENT_PHASE2_V1"}:
+              assert r["schema_version"]=="dima_v1_phase1_final_pinpoint_live_v1"
+              assert r["candidate_product_sha"]==os.environ["CANDIDATE_SHA"]
+              assert r["engine_sha"]=="d5c60dc9f37a9ec9c5b0117f178146bbcb8dca88"
+              assert r["engine_runtime_tag"]=="v0.63.18-dima.9"
+              assert r.get("exception") is None, r.get("exception")
+              assert r["mechanical_verdict"]=="PASS", r.get("mechanical_observations")
+              provider=r["provider_receipt"]
+              assert provider["actual_provider_request_count"] <= 12, provider
+              assert provider["blocked_request_count"] == 0, provider
+              sources=provider["provider_requests_by_source"]
+              assert sources.get("research_intake",0) <= (2 if probe=="RELATIONSHIP_REPORT_PHASE2_V1" else 1)
+              assert sources.get("metabase",0) <= 7
+              assert sources.get("p17_manager",0) <= 3
+              assert sources.get("p19_manager",0) <= 2
+              assert provider["privacy_contract"]["api_keys_persisted"] is False
+              assert provider["privacy_contract"]["reasoning_text_persisted"] is False
+              assert r["manual_quality_score"] is None
+              assert r["manual_quality_status"]=="PENDING"
+              print("BRAIN_V2_PHASE2_LIVE_ARTIFACT_READY")
+              raise SystemExit(0)
           assert r["schema_version"]=="dima_brain_v2_phase1_live_v1"
           assert r["candidate_product_sha"]==os.environ["CANDIDATE_SHA"]
           assert r["engine_sha"]=="d5c60dc9f37a9ec9c5b0117f178146bbcb8dca88"
@@ -358,6 +389,22 @@ jobs:
               print('DIMA_BRAIN_V2_ADJUDICATION={"artifact_missing":true}')
               raise SystemExit(0)
           r=json.loads(p.read_text())
+          if probe in {"RELATIONSHIP_REPORT_PHASE2_V1","MULTI_INTENT_PHASE2_V1"}:
+              projection={
+                "probe_id":r.get("probe_id"),
+                "candidate_product_sha":r.get("candidate_product_sha"),
+                "engine_sha":r.get("engine_sha"),
+                "engine_runtime_tag":r.get("engine_runtime_tag"),
+                "turns":r.get("turns"),
+                "mechanical_observations":r.get("mechanical_observations"),
+                "mechanical_verdict":r.get("mechanical_verdict"),
+                "provider_receipt":r.get("provider_receipt"),
+                "total_latency_ms":r.get("total_latency_ms"),
+                "probe_contract":r.get("probe_contract"),
+                "exception":r.get("exception"),
+              }
+              print("DIMA_BRAIN_V2_PHASE2_ADJUDICATION="+json.dumps(projection,ensure_ascii=False,sort_keys=True))
+              raise SystemExit(0)
           projection={
             "probe_id":r.get("probe_id"),
             "candidate_product_sha":r.get("candidate_product_sha"),
