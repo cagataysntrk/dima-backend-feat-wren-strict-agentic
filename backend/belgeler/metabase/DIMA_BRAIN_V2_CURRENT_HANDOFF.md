@@ -1,5 +1,36 @@
 # DIMA BRAIN V2 — CURRENT HANDOFF
 
+> **CURRENT AUTHORITY — 2026-10-01 / DIMA.9 POST-ENGINE CLOSURE**
+>
+> **Status:** PHASE 1 ACCEPTANCE CLOSURE — ADAPTIVE PROVIDER-FREE RECERTIFICATION
+> **Branch:** `feat/dima-brain-v2`
+> **Platform HEAD before this handoff refresh:** `bc27d3ef7f3f8544c04835778b43e485cbe32c10`
+> **Current semantic Product:** `10ccd691953e1c989feb92d1520a64e49760f35f`
+> **Product freeze proof:** `10ccd691... → bc27d3ef... / backend/app/** = ZERO DIFF`
+> **Focused Brain V2 provider-free:** `36822043624 = SUCCESS`
+>
+> **Engine:** `d5c60dc9f37a9ec9c5b0117f178146bbcb8dca88 / 0.63.18-dima.9`
+> **Immutable digest:** `sha256:22c384198740274bbbba78fb6d41aa63a6d204dfe708b19a6ca9bc322b458ba7`
+> **Certification:** `36812902584 = SUCCESS`
+> **Engine builds during terminality recovery:** `1` coherent final build; **second build forbidden**.
+>
+> **ONE_PASS:** `36816294463 = SUCCESS`, mechanical GREEN; current acceptance receipt records manual `3/4`.
+> **ADAPTIVE historical live:** `36816579433 = RED` at `BRAIN_V2_NEXT_TEST_NO_NEW_EVIDENCE`.
+> dima.9 terminality itself was GREEN in that run; the earliest wrong authority transition was the
+> Brain adapter directly converting P19's generic NextTestRequest into the analytical bounded
+> objective, bypassing P17's responsibility to design the one high-information discriminating test.
+>
+> Current generic fix is owner-correct: P19 still owns the typed gap, P17 provider cognition designs
+> exactly one `TEST_DISCRIMINATING_EVIDENCE` proposal inside the exact obligation/current Evidence
+> vocabulary, and sealed P17/native execution remains the only analytical path. No SQL/MBQL planner,
+> prompt-morph/fuzzy/regex semantic authority, provider-ceiling increase, or engine change was added.
+>
+> Next legal step: full affected Phase-1 provider-free closure on this exact semantic Product. Only
+> after GREEN may a fresh ADAPTIVE paid live be armed. Same-SHA retry of the historical RED is forbidden.
+>
+> Frontend/UI/UX remains forbidden. 30-case remains forbidden.
+
+
 > **CURRENT AUTHORITY — 2026-10-01**
 >
 > **Status:** ARCHITECTURAL STOP — ENGINE OWNER REVIEW REQUIRED  
