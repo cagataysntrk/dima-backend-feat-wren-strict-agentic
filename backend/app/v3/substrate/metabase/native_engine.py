@@ -485,6 +485,130 @@ class NativeEngineBridge:
             attestation=body.get("attestation"),
         )
 
+    @staticmethod
+    def _project_conversation_history(
+        chat_messages: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
+        """Project Metabase source-backed chat history to native agent messages.
+
+        The conversation endpoint is the authority. Dima does not persist or
+        synthesize analytical reasoning here; it only converts the engine's
+        own participant-scoped projection into the exact public history schema
+        accepted by /api/metabot/agent-streaming.
+        """
+
+        history: list[dict[str, Any]] = []
+        for item in chat_messages:
+            if not isinstance(item, dict):
+                raise NativeEngineBridgeError(
+                    "native Metabot conversation history item is not an object"
+                )
+            role = item.get("role")
+            kind = item.get("type")
+
+            if role == "user" and kind == "text":
+                message = item.get("message")
+                if not isinstance(message, str):
+                    raise NativeEngineBridgeError(
+                        "native Metabot user history text is invalid"
+                    )
+                history.append({"role": "user", "content": message})
+                continue
+
+            if role == "agent" and kind == "text":
+                message = item.get("message")
+                if not isinstance(message, str):
+                    raise NativeEngineBridgeError(
+                        "native Metabot assistant history text is invalid"
+                    )
+                history.append({"role": "assistant", "content": message})
+                continue
+
+            if role == "agent" and kind == "tool_call":
+                if item.get("is_error") is True:
+                    raise NativeEngineBridgeError(
+                        "native Metabot conversation contains an errored tool call"
+                    )
+                tool_id = item.get("id")
+                name = item.get("name")
+                arguments = item.get("args")
+                result = item.get("result")
+                if (
+                    not isinstance(tool_id, str)
+                    or not tool_id
+                    or not isinstance(name, str)
+                    or not name
+                    or not isinstance(arguments, str)
+                    or not isinstance(result, str)
+                ):
+                    raise NativeEngineBridgeError(
+                        "native Metabot tool history is incomplete"
+                    )
+                history.append(
+                    {
+                        "role": "assistant",
+                        "tool_calls": [
+                            {
+                                "id": tool_id,
+                                "name": name,
+                                "arguments": arguments,
+                            }
+                        ],
+                    }
+                )
+                history.append(
+                    {
+                        "role": "tool",
+                        "tool_call_id": tool_id,
+                        "content": result,
+                    }
+                )
+                continue
+
+            # Frontend-only data parts are intentionally absent from the
+            # native LLM history schema and from agent.messages step history.
+            if role == "agent" and kind == "data_part":
+                continue
+
+            raise NativeEngineBridgeError(
+                "native Metabot conversation history shape is unsupported"
+            )
+        return history
+
+    def conversation_history(
+        self,
+        conversation_id: UUID,
+    ) -> list[dict[str, Any]]:
+        try:
+            response = self._client.get(
+                f"/api/metabot/conversations/{conversation_id}"
+            )
+        except httpx.TimeoutException as exc:
+            raise NativeEngineBridgeError(
+                "native Metabot conversation history request timed out"
+            ) from exc
+        except httpx.RequestError as exc:
+            raise NativeEngineBridgeError(
+                f"native Metabot conversation history transport failed: {exc}"
+            ) from exc
+
+        if response.status_code != 200:
+            raise NativeEngineBridgeError(
+                "native Metabot conversation history returned "
+                f"HTTP {response.status_code}"
+            )
+        body = response.json()
+        if (
+            not isinstance(body, dict)
+            or str(body.get("conversation_id") or "") != str(conversation_id)
+            or not isinstance(body.get("chat_messages"), list)
+        ):
+            raise NativeEngineBridgeError(
+                "native Metabot conversation history response is invalid"
+            )
+        return self._project_conversation_history(body["chat_messages"])
+
+
     def invoke(self, request: NativeEngineRequest) -> NativeEngineObservation:
         runtime = self._verify_runtime()
         payload: dict[str, Any] = {
