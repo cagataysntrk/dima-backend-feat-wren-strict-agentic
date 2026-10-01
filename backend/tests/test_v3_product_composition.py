@@ -1422,3 +1422,55 @@ def test_relationship_p18_adjudication_emits_observation_only_span() -> None:
     assert result.p18_policy_use_refs
     assert bridge.names == ["dima.p18.adjudicate"]
     assert bridge.attributes[0]["scope_version_id"] == "scope_v1"
+
+
+def test_explain_deliverable_reuses_terminal_p18_without_new_report_or_material() -> None:
+    c, research, _, reasoning = composer(relationship_blocked=False)
+    base = brief(
+        question(
+            "g_relationship",
+            ResearchGoalKind.RELATIONSHIP,
+            subjects=(DOWNTIME, FAULTS),
+            related=(DEPT,),
+        ),
+    )
+    explain = ResearchDeliverableRequirement(
+        requirement_id="d_explain",
+        kind=PresentationKind.EXPLAIN,
+        source_text="Explain the governed relationship result.",
+    )
+    b = base.model_copy(
+        update={
+            "deliverables": (explain,),
+            "must_requirement_ids": ("g_relationship", "d_explain"),
+        }
+    )
+    original = c._resolve_relationship
+
+    def wrapped(**kwargs):
+        reasoning.current_obligation_by_session[kwargs["material_session_id"]] = (
+            kwargs["material_goal"].goal_id
+        )
+        return original(**kwargs)
+
+    c._resolve_relationship = wrapped
+    result = c.compose(
+        brief=b,
+        principal=principal(),
+        request_ref="relationship-explain",
+        source_message_hash="8" * 64,
+        native_session_token=None,
+    )
+
+    assert result.p18_policy_use_refs == ("bru_" + "1" * 24,)
+    assert result.p20_report_ref is None
+    assert research.run_calls == [
+        (result.research_session_id, "g_relationship"),
+    ]
+    explain_state = next(
+        item
+        for item in result.user_must_fulfillment
+        if item.requirement_id == "d_explain"
+    )
+    assert explain_state.state.value == "FULFILLED"
+    assert explain_state.fulfilled_by_ref == "bru_" + "1" * 24
