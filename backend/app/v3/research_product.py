@@ -37,10 +37,23 @@ class Frozen(BaseModel):
 
 
 class ResearchProductError(RuntimeError):
-    def __init__(self, code: str, detail: str) -> None:
+    def __init__(
+        self,
+        code: str,
+        detail: str,
+        *,
+        last_valid_boundary: str | None = None,
+        first_invalid_boundary: str | None = None,
+        expected_fingerprint: str | None = None,
+        observed_fingerprint: str | None = None,
+    ) -> None:
         super().__init__(f"{code}: {detail}")
         self.code = code
         self.detail = detail
+        self.last_valid_boundary = last_valid_boundary
+        self.first_invalid_boundary = first_invalid_boundary
+        self.expected_fingerprint = expected_fingerprint
+        self.observed_fingerprint = observed_fingerprint
 
 
 class ResearchProductRuntimeUnavailable(ResearchProductError):
@@ -105,6 +118,10 @@ class ResearchAskResponse(Frozen):
     evidence_id: str | None = None
     limitation_code: str | None = None
     limitation_detail: str | None = None
+    last_valid_boundary: str | None = None
+    first_invalid_boundary: str | None = None
+    expected_fingerprint: str | None = None
+    observed_fingerprint: str | None = None
     resumed_exact_occurrence: bool = False
 
 
@@ -494,6 +511,10 @@ class ResearchAskOrchestrator:
         evidence_id: str | None = None,
         limitation_code: str | None = None,
         limitation_detail: str | None = None,
+        last_valid_boundary: str | None = None,
+        first_invalid_boundary: str | None = None,
+        expected_fingerprint: str | None = None,
+        observed_fingerprint: str | None = None,
         resumed_exact_occurrence: bool = False,
     ) -> ResearchAskResponse:
         obligation = (
@@ -516,6 +537,10 @@ class ResearchAskOrchestrator:
             evidence_id=evidence_id,
             limitation_code=limitation_code,
             limitation_detail=limitation_detail,
+            last_valid_boundary=last_valid_boundary,
+            first_invalid_boundary=first_invalid_boundary,
+            expected_fingerprint=expected_fingerprint,
+            observed_fingerprint=observed_fingerprint,
             resumed_exact_occurrence=resumed_exact_occurrence,
         )
 
@@ -585,6 +610,10 @@ class ResearchAskOrchestrator:
         code: str,
         detail: str,
         link_id=None,
+        last_valid_boundary: str | None = None,
+        first_invalid_boundary: str | None = None,
+        expected_fingerprint: str | None = None,
+        observed_fingerprint: str | None = None,
     ) -> ResearchAskResponse:
         prior_revision = session.revision
         updated = ResearchManager.record_limitation(
@@ -601,6 +630,10 @@ class ResearchAskOrchestrator:
             obligation_id=obligation_id,
             limitation_code=code,
             limitation_detail=detail,
+            last_valid_boundary=last_valid_boundary,
+            first_invalid_boundary=first_invalid_boundary,
+            expected_fingerprint=expected_fingerprint,
+            observed_fingerprint=observed_fingerprint,
         )
 
     def _retryable_observation_limit(
@@ -724,6 +757,10 @@ class ResearchAskOrchestrator:
                 code=exc.code,
                 detail=exc.detail,
                 link_id=pending.id,
+                last_valid_boundary=exc.last_valid_boundary,
+                first_invalid_boundary=exc.first_invalid_boundary,
+                expected_fingerprint=exc.expected_fingerprint,
+                observed_fingerprint=exc.observed_fingerprint,
             )
         except NativeEngineBridgeError as exc:
             return self._limit(
