@@ -4,6 +4,7 @@ import hashlib
 from collections import Counter
 
 from app.v3.brain_v2.activities import (
+    CandidateProjectionActivityResult,
     CanonicalizeActivityResult,
     EvidenceActivityResult,
     IntakeActivityResult,
@@ -49,7 +50,7 @@ class FakeActivities:
             scope_version_id=("scope_v2" if continuing else "scope_v1"),
             open_requirement_ids=("goal-1",),
             material_requirement_ids=("goal-1",),
-            discovery_required=self.mode == "discovery",
+            discovery_required=self.mode.startswith("discovery"),
             activity_fingerprint=self._fp("intake", state),
         )
 
@@ -57,7 +58,7 @@ class FakeActivities:
         self.calls["canonicalize"] += 1
         hypotheses = (
             ()
-            if self.mode == "discovery"
+            if self.mode.startswith("discovery")
             else ("p19h_" + "a" * 24, "p19h_" + "b" * 24)
         )
         assert state.research_session_id is not None
@@ -68,7 +69,7 @@ class FakeActivities:
             open_requirement_ids=("goal-1",),
             material_requirement_ids=("goal-1",),
             hypothesis_ids=hypotheses,
-            discovery_required=self.mode == "discovery",
+            discovery_required=self.mode.startswith("discovery"),
             activity_fingerprint=self._fp("canonicalize", state),
         )
 
@@ -120,6 +121,23 @@ class FakeActivities:
             hypothesis_ids=state.hypothesis_ids,
             pending_next_test_ref=next_ref,
             activity_fingerprint=self._fp("p19", state),
+        )
+
+    def project_candidates(
+        self, state: BrainGraphState
+    ) -> CandidateProjectionActivityResult:
+        self.calls["project_candidates"] += 1
+        if self.mode == "discovery_zero":
+            hypotheses = ()
+        elif self.mode == "discovery_one":
+            hypotheses = ("p19h_" + "a" * 24,)
+        else:
+            hypotheses = ("p19h_" + "a" * 24, "p19h_" + "b" * 24)
+        return CandidateProjectionActivityResult(
+            hypothesis_revision=state.hypothesis_revision + (1 if hypotheses else 0),
+            hypothesis_ids=hypotheses,
+            candidate_count=len(hypotheses),
+            activity_fingerprint=self._fp("project-candidates", state),
         )
 
     def discover_hypotheses(self, state: BrainGraphState) -> P17ActivityResult:
@@ -193,15 +211,29 @@ def test_adaptive_runs_exactly_one_discriminating_reentry() -> None:
     assert result.adaptive_reentries == 1
 
 
-def test_discovery_uses_p17_only_when_candidates_are_absent() -> None:
+def test_discovery_projects_candidates_without_p17_provider() -> None:
     result, activities = _run("discovery")
 
     assert result.workflow_status == BrainWorkflowStatus.COMPLETE
     assert activities.calls["material"] == 1
-    assert activities.calls["p17_discovery"] == 1
+    assert activities.calls["project_candidates"] == 1
+    assert activities.calls["p17_discovery"] == 0
     assert activities.calls["p17_next_test"] == 0
     assert activities.calls["p19"] == 1
     assert len(result.hypothesis_ids) == 2
+
+
+@pytest.mark.parametrize("mode", ["discovery_zero", "discovery_one"])
+def test_discovery_without_competing_candidate_set_stops_honestly(mode: str) -> None:
+    result, activities = _run(mode)
+
+    assert result.workflow_status == BrainWorkflowStatus.INCONCLUSIVE
+    assert result.last_completed_node == "HONEST_STOP"
+    assert activities.calls["material"] == 1
+    assert activities.calls["project_candidates"] == 1
+    assert activities.calls["p17_discovery"] == 0
+    assert activities.calls["p19"] == 0
+    assert activities.calls["report"] == 0
 
 
 def test_inconclusive_is_an_honest_terminal_without_extra_work() -> None:
