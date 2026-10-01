@@ -1,7 +1,7 @@
 {
   "schema_version": "dima_brain_v2_live_authorization_v1",
   "enabled": true,
-  "probe_id": "R_LIVE_1_ONE_PASS",
+  "probe_id": "R_LIVE_2_ADAPTIVE",
   "candidate_product_sha": "cf395d3cfc47fc5e5e2164d0654c51f750ef446f",
   "provider_free_run_id": 36816148211,
   "provider_free_status": "GREEN",
@@ -10,5 +10,5 @@
   "model_policy": "LUNA_FIRST",
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
-  "authorization_receipt": "one-pass-dima9-runtime-lock-green"
+  "authorization_receipt": "adaptive-after-one-pass-36816294463-manual-3"
 }
