@@ -1,6 +1,6 @@
 {
   "schema_version": "dima_brain_v2_live_authorization_v1",
-  "enabled": true,
+  "enabled": false,
   "probe_id": "R_LIVE_2_ADAPTIVE",
   "candidate_product_sha": "270e3a4c13ffdeb887fd20001de8179d7e7ead4e",
   "provider_free_run_id": 36912627188,
@@ -10,5 +10,5 @@
   "model_policy": "LUNA_FIRST",
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
-  "authorization_receipt": "t3-dimension-boundary-diagnostic-v1"
+  "authorization_receipt": "t3-diagnostic-running-36912879070"
 }
