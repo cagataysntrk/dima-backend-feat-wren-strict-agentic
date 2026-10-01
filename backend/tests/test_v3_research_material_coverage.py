@@ -241,6 +241,103 @@ def test_datetime_comparison_compares_equivalent_instants_across_offsets() -> No
     assert coverage.status == "FULL"
 
 
+
+def _change_window_contract() -> AnalyticalRequestContract:
+    import app.v3.analytical_request_contract as request_module
+
+    return _contract().model_copy(
+        update={
+            "comparison": None,
+            "period": AnalyticalPeriodInvariant(
+                kind="explicit_half_open_window",
+                time_dimension="dimension.time",
+                start="2026-03-01",
+                end="2026-05-01",
+            ),
+            "temporal_observation": (
+                request_module.AnalyticalTemporalObservationInvariant(
+                    kind="change",
+                    time_dimension="dimension.time",
+                    minimum_distinct_values=2,
+                )
+            ),
+        }
+    )
+
+
+def test_change_observation_aggregate_without_time_column_fails_closed() -> None:
+    payload = {
+        "data": {
+            "cols": [
+                {"display_name": "Effect"},
+                {"display_name": "Candidate A"},
+                {"display_name": "Candidate B"},
+            ],
+            "rows": [[220, 15, 9]],
+        }
+    }
+
+    with pytest.raises(ResearchMaterialCoverageError) as exc:
+        assert_material_result_coverage(
+            contract=_change_window_contract(),
+            result_payload=payload,
+            bindings=_bindings(),
+        )
+
+    assert exc.value.code == "R1_RESULT_CHANGE_TEMPORAL_COLUMN_REQUIRED"
+
+
+def test_change_observation_one_temporal_value_is_not_full() -> None:
+    payload = {
+        "data": {
+            "cols": [
+                _col(44, "Accepted Time"),
+                {"display_name": "Effect"},
+                {"display_name": "Candidate A"},
+            ],
+            "rows": [
+                ["2026-03-01", 100, 6],
+                ["2026-03-01", 120, 7],
+            ],
+        }
+    }
+
+    with pytest.raises(ResearchMaterialCoverageError) as exc:
+        assert_material_result_coverage(
+            contract=_change_window_contract(),
+            result_payload=payload,
+            bindings=_bindings(),
+        )
+
+    assert exc.value.code == "R1_RESULT_CHANGE_COVERAGE_INCOMPLETE"
+
+
+def test_change_observation_two_temporal_values_is_full() -> None:
+    payload = {
+        "data": {
+            "cols": [
+                _col(44, "Accepted Time"),
+                {"display_name": "Effect"},
+                {"display_name": "Candidate A"},
+            ],
+            "rows": [
+                ["2026-03-01", 100, 6],
+                ["2026-04-01", 120, 9],
+            ],
+        }
+    }
+
+    coverage = assert_material_result_coverage(
+        contract=_change_window_contract(),
+        result_payload=payload,
+        bindings=_bindings(),
+    )
+
+    assert coverage.status == "FULL"
+    assert coverage.time_field_id == 44
+    assert coverage.observed_temporal_value_count == 2
+
+
 def test_non_comparison_material_does_not_invent_temporal_coverage_requirement() -> None:
     contract = _contract().model_copy(update={"comparison": None})
     payload = {
