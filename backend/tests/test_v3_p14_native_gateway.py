@@ -1586,6 +1586,103 @@ def test_entity_equality_filter_still_rejects_unaccepted_extra_breakout():
     assert exc.value.code == "R1_NATIVE_DIMENSION_SCOPE_MISMATCH"
 
 
+
+def test_t3_dimension_mismatch_receipt_exposes_required_allowed_and_observed_breakouts():
+    """Provider-free family reproducer for live 36909399128.
+
+    The live artifact proved the DIMENSION_SCOPE family but did not preserve the
+    observed semantic shape. This fixture recreates the same governed surface:
+    exact department equality + bounded time, while native material introduces
+    an unrelated machine breakout. The boundary receipt must make the first
+    wrong transition diagnosable without prompt/query text.
+    """
+    _, session, _, _ = session_and_link(db_engine())
+    bindings = {
+        **rich_material_bindings(),
+        "dimension.machine": scope_module.NativeMaterialBinding(
+            candidate_id="dimension.machine",
+            candidate_kind="dimension",
+            database_id=1,
+            table_id=10,
+            field_id=40,
+        ),
+    }
+    contract = _entity_filtered_material_contract()
+    observation = rich_material_observation(
+        ranking=[],
+        dimensions=[
+            {
+                "stage_number": 0,
+                "role": "breakout",
+                "field_id": 20,
+                "table_id": 10,
+            },
+            {
+                "stage_number": 0,
+                "role": "breakout",
+                "field_id": 40,
+                "table_id": 10,
+            },
+            {
+                "stage_number": 0,
+                "role": "breakout",
+                "field_id": 30,
+                "table_id": 10,
+                "temporal_grain": "month",
+            },
+            {
+                "stage_number": 0,
+                "role": "filter",
+                "field_id": 20,
+                "table_id": 10,
+            },
+            {
+                "stage_number": 0,
+                "role": "temporal",
+                "field_id": 30,
+                "table_id": 10,
+            },
+        ],
+    )
+
+    with pytest.raises(scope_module.ResearchAnalyticalScopeError) as exc:
+        scope_module.assert_material_native_scope(
+            session=session,
+            obligation_id="g1",
+            contract=contract,
+            observation=observation,
+            bindings=bindings,
+            expected_engine=expected_identity(),
+            expected_metabase_subject=7,
+        )
+
+    error = exc.value
+    assert error.code == "R1_NATIVE_DIMENSION_SCOPE_MISMATCH"
+    assert error.last_valid_boundary == "dima.material.compile"
+    assert error.first_invalid_boundary == "dima.native.observe"
+    assert error.scope_fingerprint == contract.scope_fingerprint
+    assert error.material_fingerprint == contract.material_fingerprint
+    assert error.expected_semantic_shape == {
+        "axis": "DIMENSION",
+        "required_breakouts": [],
+        "allowed_breakouts": [
+            "dimension.department",
+            "time.event_date",
+        ],
+    }
+    assert error.observed_semantic_shape == {
+        "axis": "DIMENSION",
+        "observed_breakouts": [
+            "dimension.department",
+            "dimension.machine",
+            "time.event_date",
+        ],
+    }
+    assert error.expected_fingerprint
+    assert error.observed_fingerprint
+    assert error.expected_fingerprint != error.observed_fingerprint
+
+
 def test_change_material_allows_filtered_field_but_still_requires_time_breakout():
     _, session, _, _ = session_and_link(db_engine())
     contract = _entity_filtered_material_contract().model_copy(
