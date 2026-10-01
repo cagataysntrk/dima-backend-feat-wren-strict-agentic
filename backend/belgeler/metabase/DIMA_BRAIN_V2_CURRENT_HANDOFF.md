@@ -1,5 +1,39 @@
 # DIMA BRAIN V2 — CURRENT HANDOFF
 
+> **CURRENT AUTHORITY — 2026-10-01 / ROOT-CLOSURE FINAL RECERTIFICATION**
+>
+> **Status:** T1 SEALED 4/4 — FINAL T2/T3/T4 + PHASE-2 TARGETED RECERTIFICATION ACTIVE  
+> **Branch:** `feat/dima-brain-v2`  
+> **T1 receipt:** `DIMA_BRAIN_V2_T1_ROOT_CLOSURE_RECEIPT.md`  
+> **T1 live:** `36908273500 = SUCCESS / manual 4/4`  
+> **Current semantic Product:** `9de0cc6668689f2fc4fc303b7392043ee715049c`  
+> **Current full Phase-1 PF:** `36907439396 = SUCCESS`  
+> **Engine:** `d5c60dc9f37a9ec9c5b0117f178146bbcb8dca88 / 0.63.18-dima.9`  
+> **Engine digest:** `sha256:22c384198740274bbbba78fb6d41aa63a6d204dfe708b19a6ca9bc322b458ba7`  
+> **dima.9 builds:** 1 coherent certified build; **second build = 0 and forbidden**.
+>
+> The previous top-level `30-CASE READY` receipt is historical and was superseded by the later
+> ROOT-CLOSURE directive. Do not use it as current readiness authority.
+>
+> T1 root family is now sealed. The fresh artifact proves patch/reducer semantics, current-scope
+> P19 authority, checkpoint/resume, stale-Evidence exclusion and duplicate-native=0.
+>
+> Next exact order:
+>
+> ```text
+> fresh T2 ONE_PASS (required because P19 first-turn context changed)
+> -> fresh T3 ADAPTIVE
+> -> fresh T4 DISCOVERY
+> -> contextual T5/T6 live
+> -> T7 multi-intent live
+> -> final provider-free/metamorphic panel
+> -> readiness calculation
+> -> stop at 30-CASE READY if gates pass
+> ```
+>
+> Frontend remains forbidden. Actual 30-case remains forbidden.
+
+
 > **CURRENT AUTHORITY — 2026-10-01 / PHASE 2 FINAL**
 >
 > **Status:** `30-CASE READY — STOP`  
