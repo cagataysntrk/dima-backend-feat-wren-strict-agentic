@@ -4,7 +4,7 @@ CURRENT GATE
 G5
 
 Platform HEAD
-3b8f3c44d3a23a41f2ce55b9b8031f3a3d024e4a
+3b1afa97994315dbb7dc174899847f818d295a08
 
 semantic Product SHA
 3b8f3c44d3a23a41f2ce55b9b8031f3a3d024e4a
@@ -128,6 +128,8 @@ KNOWN BLOCKERS
 - exact provider-free reproducer commit fdd0d412... failed only the new honest-stop case: 1 failed / 25 passed / 1 skipped.
 - typed allowed-outcome fix: 8c792990... + 3b8f3c44...
 - focused Brain V2 PF 36917795650 = GREEN with both FORM_CLAIM and honest STOP discovery siblings.
+- full Phase-1 PF 36917925669 = GREEN across Brain V2, Research/Scope, P17, P19, P20, security and hygiene.
+- Product freeze = 3b8f3c44d3a23a41f2ce55b9b8031f3a3d024e4a; later status/CI-only commit has backend/app/** zero diff.
 - T5 RELATIONSHIP fresh live pending.
 - T6 CONTEXTUAL REPORT fresh live pending.
 - T7 MULTI-INTENT fresh live pending.
@@ -138,10 +140,11 @@ T2 ONE_PASS = 36908926530 = GREEN = 4/4
 T3 ADAPTIVE = 36915701021 = GREEN = 4/4
 
 NEXT EXACT ACTION
-Run full affected Phase-1 provider-free closure on semantic Product 3b8f3c44...
-If GREEN, freeze 3b8f3c44... and run exactly one fresh R_LIVE_3_DISCOVERY.
+Freeze semantic Product 3b8f3c44d3a23a41f2ce55b9b8031f3a3d024e4a with full PF 36917925669.
+Run exactly one fresh R_LIVE_3_DISCOVERY.
+Mechanics must preserve either governed candidate formation or a typed honest insufficient-candidate terminal; Product acceptance still requires manual usefulness >=3.
 No same-candidate retry.
-If T4 is accepted, close Phase 1 and move to G6/G7 backend/headless certification.
+If T4 is accepted, close Phase 1 and continue G6/G7 backend/headless certification.
 
 90+ HIGH-CONFIDENCE READINESS
 NO
