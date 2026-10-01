@@ -1,10 +1,10 @@
 # DIMA BRAIN V2 — FINAL CLOSURE STATUS
 
 CURRENT GATE
-G1
+G2
 
 Platform HEAD
-270e3a4c13ffdeb887fd20001de8179d7e7ead4e
+fb2ee8ffb0946fa2a33a6d0ec75a75452670271c
 
 semantic Product SHA
 9de0cc6668689f2fc4fc303b7392043ee715049c
@@ -44,11 +44,9 @@ FILES CHANGED
 - backend/belgeler/metabase/DIMA_BRAIN_V2_FINAL_CLOSURE_STATUS.md
 
 PROVIDER-FREE
-run: 36912454275
-result: RED — diagnostic projection only; field-identity alias exposed entity_value as breakout label.
-root: telemetry normalization, not Product/material acceptance.
-fix: 270e3a4c13ffdeb887fd20001de8179d7e7ead4e
-current rerun: PENDING
+run: 36912627188
+result: GREEN
+all Brain V2 / Research+Scope / P17 / P19 / P20+Core-B / security-hygiene gates passed.
 
 METAMORPHIC
 result:
@@ -56,31 +54,42 @@ existing equality-filter / optional-time / unrelated-extra-breakout family retai
 G2 expansion pending after exact classification.
 
 LIVE
-run: 36909399128 (historical RED)
-mechanical: RED / R1_NATIVE_DIMENSION_SCOPE_MISMATCH
-manual: N/A
+run: 36912879070
+artifact: dima-brain-v2-live-R_LIVE_2_ADAPTIVE-36912879070
+mechanical: GREEN
+manual: 4/4 provisional pending G2/G3 shared material-seam closure
+
+Manual basis:
+- accepted user candidate identities preserved exactly
+- initial aggregate Evidence was insufficient for discrimination
+- exactly one typed P17 temporal-order re-entry
+- follow-up Evidence materially changed from 1 aggregate row to 8 governed daily observations
+- two native acquisitions total, no third acquisition
+- P19 reassessed after new Evidence and terminated honestly
+- both candidates remain observationally plausible; no causal direction or candidate discrimination fabricated
+- P20 preserves limitations instead of inventing counter-Evidence
 
 PROVIDER REQUESTS
-historical T3 RED: 4 total
+T3 diagnostic GREEN: 8 total
 research_intake=1
-metabase=3
-p17=0
-p19=0
+metabase=4
+p17=1
+p19=2
 
 TOKENS
-historical T3 RED:
-prompt=62148
-completion=1789
-reasoning=656
+T3 diagnostic GREEN:
+prompt=95913
+completion=3618
+reasoning=605
 
 LATENCY
-22778 ms
+42838 ms
 
 COST
-$0.00884729
+$0.01892568
 
 EXCEPTIONS
-1 historical T3 exception at current frontier
+0 in run 36912879070
 
 DUPLICATE NATIVE
 0 known
@@ -89,18 +98,21 @@ STALE EVIDENCE
 0 known
 
 KNOWN BLOCKERS
-- exact T3 observed dimension shape must be captured before Product acceptance logic changes
-- T3/T4/T5/T6/T7 not yet final-sealed
+- G2 explicit material-authority projection / ChildMaterialDelta closure is still pending.
+- G3 required adaptive material metamorphic family + analytical-material state-machine is not yet sealed.
+- T3 4/4 is therefore provisional, not immutable.
+- T4/T5/T6/T7 final lives remain pending.
 
 SEALED CAPABILITIES
 T1 SCOPE RESUME = 36908273500 = GREEN = 4/4
 T2 ONE_PASS = 36908926530 = GREEN = 4/4
 
 NEXT EXACT ACTION
-Rerun full current provider-free closure for G1 telemetry/reproducer on 270e3a4c.
-
-If GREEN, freeze the diagnostic candidate and run exactly one fresh T3 ADAPTIVE live to classify the native dimension boundary with structured semantic shapes.
-Do not patch acceptance until that classification exists.
+G2: make the existing material authority explicit as a deterministic projection, not a new truth store.
+Preserve scope_fingerprint while child material_fingerprint changes.
+Seal required/allowed breakout algebra and typed ChildMaterialDelta with metamorphic siblings.
+Then G3 full affected provider-free + analytical-material state-machine.
+Only if shared semantics change, recertify T3 once.
 
 90+ HIGH-CONFIDENCE READINESS
 NO
