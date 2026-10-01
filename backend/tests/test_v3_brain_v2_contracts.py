@@ -57,12 +57,15 @@ def test_native_material_key_is_scope_and_engine_sensitive() -> None:
         tenant="id:tenant",
         principal="user-1",
         scope_version_id="scope_v1",
+        scope_fingerprint="c" * 64,
         material_requirement_fingerprint="b" * 64,
-        engine_identity="0.63.18-dima.8@0f16f2b5",
+        engine_identity="0.63.18-dima.9@d5c60dc9",
     )
-    changed = base.model_copy(update={"scope_version_id": "scope_v2"})
+    changed_version = base.model_copy(update={"scope_version_id": "scope_v2"})
+    changed_scope = base.model_copy(update={"scope_fingerprint": "d" * 64})
 
-    assert base.fingerprint != changed.fingerprint
+    assert base.fingerprint != changed_version.fingerprint
+    assert base.fingerprint != changed_scope.fingerprint
 
 
 def test_evidence_digest_is_deterministic_and_reference_only_when_large() -> None:
