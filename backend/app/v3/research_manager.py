@@ -2492,6 +2492,7 @@ class ResearchInvestigationManager:
         manager: ResearchProposalManager,
         native_session_token: str | None = None,
         downstream_reentry_intent: InvestigationIntent | None = None,
+        downstream_reentry_intents: tuple[InvestigationIntent, ...] | None = None,
         downstream_reentry_obligation_id: str | None = None,
         child_analytical_scope: AnalyticalRequestContract | None = None,
     ) -> tuple[ResearchReasoningStep, ResearchInvestigationTask | None]:
@@ -2500,7 +2501,47 @@ class ResearchInvestigationManager:
             session_id=session_id,
             principal=principal,
         )
-        if downstream_reentry_intent == InvestigationIntent.FORM_CLAIM:
+        if (
+            downstream_reentry_intent is not None
+            and downstream_reentry_intents is not None
+        ):
+            raise ResearchManagerMaturationError(
+                "P17_DOWNSTREAM_REENTRY_CONTRACT_CONFLICT",
+                "use either one strict reentry intent or one typed allowed-intent set",
+            )
+        if downstream_reentry_intents is not None:
+            authorized_reentry_intents = tuple(
+                dict.fromkeys(downstream_reentry_intents)
+            )
+            if not authorized_reentry_intents:
+                raise ResearchManagerMaturationError(
+                    "P17_DOWNSTREAM_REENTRY_INTENTS_EMPTY",
+                    "typed allowed-intent set cannot be empty",
+                )
+        elif downstream_reentry_intent is not None:
+            authorized_reentry_intents = (downstream_reentry_intent,)
+        else:
+            authorized_reentry_intents = ()
+
+        projection_intents = tuple(
+            intent
+            for intent in authorized_reentry_intents
+            if intent
+            in {
+                InvestigationIntent.FORM_CLAIM,
+                InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE,
+            }
+        )
+        if len(projection_intents) > 1:
+            raise ResearchManagerMaturationError(
+                "P17_DOWNSTREAM_REENTRY_PROJECTION_AMBIGUOUS",
+                ",".join(intent.value for intent in projection_intents),
+            )
+        projection_intent = (
+            projection_intents[0] if projection_intents else None
+        )
+
+        if projection_intent == InvestigationIntent.FORM_CLAIM:
             if not downstream_reentry_obligation_id:
                 raise ResearchManagerMaturationError(
                     "P17_CLAIM_REENTRY_OBLIGATION_REQUIRED",
@@ -2512,7 +2553,7 @@ class ResearchInvestigationManager:
                 obligation_id=downstream_reentry_obligation_id,
             )
         elif (
-            downstream_reentry_intent
+            projection_intent
             == InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE
             and downstream_reentry_obligation_id is not None
         ):
@@ -2535,13 +2576,9 @@ class ResearchInvestigationManager:
             legal_reentry = (
                 snapshot.terminal_stop_reason
                 == ManagerStopReason.OBJECTIVE_SATISFIED
-                and downstream_reentry_intent
-                in {
-                    InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE,
-                    InvestigationIntent.FORM_CLAIM,
-                }
+                and projection_intent is not None
                 and snapshot.action_profile.rule_for(
-                    downstream_reentry_intent
+                    projection_intent
                 )
                 is not None
             )
@@ -2608,14 +2645,17 @@ class ResearchInvestigationManager:
                 }
             )
         if (
-            downstream_reentry_intent is not None
-            and proposal.effective_intent != downstream_reentry_intent
+            authorized_reentry_intents
+            and proposal.effective_intent not in authorized_reentry_intents
         ):
             raise ResearchManagerMaturationError(
                 "P17_DOWNSTREAM_REENTRY_INTENT_MISMATCH",
                 (
-                    f"authorized {downstream_reentry_intent.value}, "
-                    f"received {proposal.effective_intent.value}"
+                    "authorized "
+                    + ",".join(
+                        intent.value for intent in authorized_reentry_intents
+                    )
+                    + f", received {proposal.effective_intent.value}"
                 ),
             )
         topology = resolve_investigation_topology(
