@@ -1075,6 +1075,11 @@ def test_r5_material_date_scope_rejects_non_equivalent_bounds(
         assert_rich_material(observation)
 
     assert exc.value.code == "R1_NATIVE_TIME_SCOPE_MISMATCH"
+    assert exc.value.last_valid_boundary == "dima.material.compile"
+    assert exc.value.first_invalid_boundary == "dima.native.observe"
+    assert exc.value.expected_fingerprint
+    assert exc.value.observed_fingerprint
+    assert exc.value.expected_fingerprint != exc.value.observed_fingerprint
 
 
 def test_r5_material_semantics_matching_stable_ids_are_accepted():
