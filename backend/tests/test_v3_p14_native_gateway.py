@@ -905,6 +905,72 @@ def assert_rich_material(observation):
     )
 
 
+
+@pytest.mark.parametrize(
+    ("lower_bound", "lower_inclusive", "upper_bound", "upper_inclusive"),
+    (
+        ("2026-06-01", True, "2026-06-30", True),
+        ("2026-05-31", False, "2026-07-01", False),
+    ),
+)
+def test_r5_material_date_scope_accepts_semantically_equivalent_half_open_bounds(
+    lower_bound,
+    lower_inclusive,
+    upper_bound,
+    upper_inclusive,
+):
+    observation = rich_material_observation(
+        temporal_scopes=[
+            {
+                "time_field_id": 30,
+                "table_id": 10,
+                "lower_bound": lower_bound,
+                "lower_inclusive": lower_inclusive,
+                "upper_bound": upper_bound,
+                "upper_inclusive": upper_inclusive,
+            }
+        ]
+    )
+
+    observed = assert_rich_material(observation)
+
+    assert observed.scope_identity.version_id == "scope_v2"
+
+
+@pytest.mark.parametrize(
+    ("lower_bound", "lower_inclusive", "upper_bound", "upper_inclusive"),
+    (
+        ("2026-06-02", True, "2026-07-01", False),
+        ("2026-06-01", True, "2026-06-29", True),
+        ("2026-05-31", True, "2026-07-01", False),
+        ("2026-06-01", True, "2026-07-01", True),
+    ),
+)
+def test_r5_material_date_scope_rejects_non_equivalent_bounds(
+    lower_bound,
+    lower_inclusive,
+    upper_bound,
+    upper_inclusive,
+):
+    observation = rich_material_observation(
+        temporal_scopes=[
+            {
+                "time_field_id": 30,
+                "table_id": 10,
+                "lower_bound": lower_bound,
+                "lower_inclusive": lower_inclusive,
+                "upper_bound": upper_bound,
+                "upper_inclusive": upper_inclusive,
+            }
+        ]
+    )
+
+    with pytest.raises(scope_module.ResearchAnalyticalScopeError) as exc:
+        assert_rich_material(observation)
+
+    assert exc.value.code == "R1_NATIVE_TIME_SCOPE_MISMATCH"
+
+
 def test_r5_material_semantics_matching_stable_ids_are_accepted():
     observed = assert_rich_material(rich_material_observation())
     assert observed.scope_identity.version_id == "scope_v2"
