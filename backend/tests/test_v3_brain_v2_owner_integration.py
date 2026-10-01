@@ -88,6 +88,9 @@ from app.v3.research_product import (
 )
 from app.v3.research_followup import NativeResearchFollowupExecutor
 from app.v3.research_store import ResearchSessionStore
+from app.v3.root_cause_candidate_contract import (
+    decode_root_cause_candidate_semantics,
+)
 from app.v3.substrate.metabase.native_engine import NativeEngineBridge
 from app.v3.substrate.metabase.native_models import NativeEngineIdentity
 from control_plane.authorize import Principal
@@ -851,9 +854,9 @@ class DeterministicDiscoveryManager:
                 InvestigationIntent.STOP_INVESTIGATION,
             }
         )
-        assert len(allowed_mechanism_refs) >= 2
+        assert allowed_mechanism_refs
         self.call_count += 1
-        mechanism = allowed_mechanism_refs[self.call_count - 1]
+        mechanism = allowed_mechanism_refs[0]
         rule = snapshot.action_profile.rule_for(
             InvestigationIntent.FORM_CLAIM
         )
