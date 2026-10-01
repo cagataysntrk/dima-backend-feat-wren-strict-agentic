@@ -23,11 +23,13 @@ from app.v3.analytical_request_contract import (
     AnalyticalRequestContract,
     AnalyticalRequestObservation,
     AnalyticalScopeIdentity,
+    AnalyticalTemporalObservationInvariant,
     NativeAnalyticalRequestObservation,
     assert_request_invariants,
 )
 from app.v3.native_standard.contracts import NativeAttestationEnvelope
 from app.v3.research_contracts import (
+    CausalEffectObservation,
     PresentationKind,
     ResearchGoalKind,
     ResearchNativeVerificationBinding,
@@ -542,6 +544,31 @@ def analytical_scope_contract(
                 end=ends[-1],
             )
 
+    temporal_observation = None
+    if (
+        question.causal_competition is not None
+        and question.causal_competition.effect_observation
+        == CausalEffectObservation.CHANGE
+    ):
+        if not periods:
+            raise ResearchAnalyticalScopeError(
+                "R1_EFFECT_CHANGE_TIME_REQUIRED",
+                "causal change observation requires accepted bounded time authority",
+            )
+        time_dimensions = {
+            item.time_dimension_candidate_id for item in periods
+        }
+        if len(time_dimensions) != 1:
+            raise ResearchAnalyticalScopeError(
+                "R1_EFFECT_CHANGE_TIME_DIMENSION_AMBIGUOUS",
+                "causal change observation requires one governed time dimension",
+            )
+        temporal_observation = AnalyticalTemporalObservationInvariant(
+            kind="change",
+            time_dimension=next(iter(time_dimensions)),
+            minimum_distinct_values=2,
+        )
+
     ranking = None
     if question.ranking is not None:
         value = question.ranking
@@ -598,6 +625,7 @@ def analytical_scope_contract(
         filters=tuple(filter_invariants),
         period=period,
         comparison=comparison,
+        temporal_observation=temporal_observation,
         ranking=ranking,
         grain_constraints=tuple(item.candidate_id for item in dimensions),
         requested_output_surfaces=tuple(dict.fromkeys(outputs)),
@@ -918,7 +946,10 @@ def _assert_breakout_and_ranking(
                 binding.column_name,
             )
         )
-    if contract.comparison is not None and time_field_id is not None:
+    if (
+        contract.comparison is not None
+        or contract.temporal_observation is not None
+    ) and time_field_id is not None:
         time_locator = _locator(locators, time_field_id)
         expected_field_keys.add(
             (
@@ -1086,6 +1117,7 @@ def assert_attested_native_scope(
         filters=contract.filters,
         period=contract.period,
         comparison=contract.comparison,
+        temporal_observation=contract.temporal_observation,
         ranking=contract.ranking,
         grain_constraints=contract.grain_constraints,
         requested_output_surfaces=contract.requested_output_surfaces,
@@ -1297,8 +1329,13 @@ def _assert_material_dimension_scope(
         for item in observation.dimensions
         if item.role == "breakout"
     }
-    if contract.comparison is not None and time_identity is not None:
-        # A typed period comparison requires the governed temporal grain.
+    if (
+        contract.comparison is not None
+        or contract.temporal_observation is not None
+    ) and time_identity is not None:
+        # A typed period comparison or causal CHANGE observation requires the
+        # governed temporal grain. This is semantic material authority, not a
+        # physical query-plan prescription.
         required.add(time_identity)
         allowed = set(required)
     else:
@@ -1415,6 +1452,7 @@ def assert_material_native_scope(
         filters=contract.filters,
         period=contract.period,
         comparison=contract.comparison,
+        temporal_observation=contract.temporal_observation,
         ranking=contract.ranking,
         grain_constraints=contract.grain_constraints,
         requested_output_surfaces=contract.requested_output_surfaces,
