@@ -1431,7 +1431,7 @@ def _semantic_breakout_ids(
 ) -> list[str]:
     reverse: dict[tuple[int, int | None], list[str]] = {}
     for candidate_id, binding in bindings.items():
-        if binding.field_id is None:
+        if binding.field_id is None or binding.candidate_kind != "dimension":
             continue
         reverse.setdefault(
             (int(binding.field_id), binding.table_id),
