@@ -1223,6 +1223,46 @@ def test_followup_lineage_preserves_p15_base_and_can_challenge_claim_via_p16():
     assert restored.stopping.status.value == "COMPLETE"
 
 
+
+def test_discriminating_followup_skips_p15_sidecar_but_gap_followup_preserves_it():
+    class RecordingExploration:
+        def __init__(self):
+            self.calls = []
+
+        def explore_followup(self, **kwargs):
+            self.calls.append(kwargs)
+            return SimpleNamespace(lead_id="lead_generic_followup")
+
+    exploration = RecordingExploration()
+    executor = NativeResearchFollowupExecutor(
+        store=object(),
+        occurrence_runner=object(),
+        exploration=exploration,
+    )
+    session = SimpleNamespace(session_id="research-session-adaptive")
+
+    discriminating = executor._material_ref(
+        session=session,
+        link_id="link-adaptive",
+        principal=principal(),
+        native_session_token="provider-free",
+        intent=InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE,
+    )
+    assert discriminating == ()
+    assert exploration.calls == []
+
+    ordinary = executor._material_ref(
+        session=session,
+        link_id="link-gap",
+        principal=principal(),
+        native_session_token="provider-free",
+        intent=InvestigationIntent.INVESTIGATE_GAP,
+    )
+    assert ordinary == ("lead_generic_followup",)
+    assert len(exploration.calls) == 1
+    assert exploration.calls[0]["execution_link_id"] == "link-gap"
+
+
 def test_followup_adapter_delegates_to_shared_occurrence_runner_only():
     import app.v3.research_followup as followup_module
 
