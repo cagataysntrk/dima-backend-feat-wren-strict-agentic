@@ -69,7 +69,7 @@ jobs:
       - name: T1-T7 headless Product contracts and composition
         working-directory: backend
         run: |
-          pytest -q             tests/test_v3_product_contracts.py             tests/test_v3_product_composition.py             tests/test_v3_product_process_manager.py             tests/test_v3_brain_v2_phase2_headless.py
+          pytest -q             tests/test_v3_product_contracts.py             tests/test_v3_product_composition.py             tests/test_v3_product_process_manager.py             tests/test_v3_brain_v2_phase2_headless.py             tests/test_v3_brain_v2_phase2_live_harness.py
 
       - name: Carry-forward T1-T4 owner proofs on unchanged owner seam
         working-directory: backend
