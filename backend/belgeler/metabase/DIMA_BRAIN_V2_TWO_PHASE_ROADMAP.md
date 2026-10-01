@@ -1,3 +1,26 @@
+# FORWARD OVERRIDE — 2026-10-02 — BRAIN V2.1 CONVERGENCE
+
+The original Brain V2 two-phase roadmap below is historical architecture context on this branch.
+
+Current forward authority:
+
+~~~text
+backend/belgeler/metabase/
+DIMA_BRAIN_V2_1_CONVERGENCE_ROADMAP.md
+
+backend/belgeler/metabase/
+DIMA_BRAIN_V2_1_CURRENT_HANDOFF.md
+
+backend/belgeler/metabase/
+DMP-DEC-0077_DIMA_BRAIN_V2_1_CONVERGENCE.md
+~~~
+
+V2.1 does not create Brain V3. It preserves Brain V2 and simplifies the chronic duplicated cognition seams.
+
+Frontend/UI/UX remains forbidden. The 30-case remains forbidden until separate explicit user authorization.
+
+---
+
 # DIMA BRAIN V2 — TWO-PHASE ROADMAP
 
 **Status:** ACTIVE / FORWARD AUTHORITY  
