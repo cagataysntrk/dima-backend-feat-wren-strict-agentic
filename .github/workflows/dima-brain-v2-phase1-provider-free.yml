@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feat/dima-brain-v2
+      - feat/dima-brain-v2-1-discovery-simplification
   workflow_dispatch:
 
 permissions:
