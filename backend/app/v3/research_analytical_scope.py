@@ -63,6 +63,10 @@ class ResearchAnalyticalScopeError(RuntimeError):
         first_invalid_boundary: str | None = None,
         expected_fingerprint: str | None = None,
         observed_fingerprint: str | None = None,
+        scope_fingerprint: str | None = None,
+        material_fingerprint: str | None = None,
+        expected_semantic_shape: Mapping[str, Any] | None = None,
+        observed_semantic_shape: Mapping[str, Any] | None = None,
     ) -> None:
         super().__init__(f"{code}: {detail}")
         self.code = code
@@ -71,6 +75,18 @@ class ResearchAnalyticalScopeError(RuntimeError):
         self.first_invalid_boundary = first_invalid_boundary
         self.expected_fingerprint = expected_fingerprint
         self.observed_fingerprint = observed_fingerprint
+        self.scope_fingerprint = scope_fingerprint
+        self.material_fingerprint = material_fingerprint
+        self.expected_semantic_shape = (
+            dict(expected_semantic_shape)
+            if expected_semantic_shape is not None
+            else None
+        )
+        self.observed_semantic_shape = (
+            dict(observed_semantic_shape)
+            if observed_semantic_shape is not None
+            else None
+        )
 
 
 def _boundary_fingerprint(value: Any) -> str:
@@ -1409,6 +1425,64 @@ def _observed_field_identity(value) -> tuple[int, int | None]:
     )
 
 
+def _semantic_breakout_ids(
+    identities: set[tuple[int, int | None]],
+    bindings: Mapping[str, NativeMaterialBinding],
+) -> list[str]:
+    reverse: dict[tuple[int, int | None], list[str]] = {}
+    for candidate_id, binding in bindings.items():
+        if binding.field_id is None:
+            continue
+        reverse.setdefault(
+            (int(binding.field_id), binding.table_id),
+            [],
+        ).append(candidate_id)
+
+    values: list[str] = []
+    for field_id, table_id in sorted(
+        identities,
+        key=lambda item: (item[1] if item[1] is not None else -1, item[0]),
+    ):
+        candidates = reverse.get((field_id, table_id))
+        if candidates:
+            values.extend(sorted(candidates))
+        else:
+            table = str(table_id) if table_id is not None else "unknown"
+            values.append(f"metabase:field:{field_id}@table:{table}")
+    return sorted(dict.fromkeys(values))
+
+
+def _native_dimension_scope_error(
+    *,
+    contract: AnalyticalRequestContract,
+    bindings: Mapping[str, NativeMaterialBinding],
+    required: set[tuple[int, int | None]],
+    allowed: set[tuple[int, int | None]],
+    observed: set[tuple[int, int | None]],
+) -> ResearchAnalyticalScopeError:
+    expected_shape = {
+        "axis": "DIMENSION",
+        "required_breakouts": _semantic_breakout_ids(required, bindings),
+        "allowed_breakouts": _semantic_breakout_ids(allowed, bindings),
+    }
+    observed_shape = {
+        "axis": "DIMENSION",
+        "observed_breakouts": _semantic_breakout_ids(observed, bindings),
+    }
+    return ResearchAnalyticalScopeError(
+        "R1_NATIVE_DIMENSION_SCOPE_MISMATCH",
+        "material breakout identities differ from accepted material authority",
+        last_valid_boundary="dima.material.compile",
+        first_invalid_boundary="dima.native.observe",
+        expected_fingerprint=_boundary_fingerprint(expected_shape),
+        observed_fingerprint=_boundary_fingerprint(observed_shape),
+        scope_fingerprint=contract.scope_fingerprint,
+        material_fingerprint=contract.material_fingerprint,
+        expected_semantic_shape=expected_shape,
+        observed_semantic_shape=observed_shape,
+    )
+
+
 def _assert_material_runtime_identity(
     observation: NativeMaterialObservation,
     *,
@@ -1631,9 +1705,12 @@ def _assert_material_dimension_scope(
         if contract.period is not None and time_identity is not None:
             allowed.add(time_identity)
     if not required.issubset(observed) or not observed.issubset(allowed):
-        raise ResearchAnalyticalScopeError(
-            "R1_NATIVE_DIMENSION_SCOPE_MISMATCH",
-            "material breakout identities differ from accepted dimension scope",
+        raise _native_dimension_scope_error(
+            contract=contract,
+            bindings=bindings,
+            required=required,
+            allowed=allowed,
+            observed=observed,
         )
 
 
