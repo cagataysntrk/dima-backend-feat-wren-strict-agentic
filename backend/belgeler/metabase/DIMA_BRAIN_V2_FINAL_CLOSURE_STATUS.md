@@ -1,3 +1,41 @@
+# G6 T6 — CONTEXTUAL SYNTHESIS QUALITY CLOSURE
+
+CURRENT GATE
+G6 — P20 contextual synthesis provider-free closure
+
+Platform HEAD
+2b212739f303093365c559f87582069498f4a841
+
+semantic Product SHA
+2b212739f303093365c559f87582069498f4a841
+
+ROOT CAUSE / INVARIANT
+P20 validation already supported governed analytical claims, P18/P19 provenance and limitations,
+but auto-draft projected only numeric P14 Evidence. A contextual management report must project
+existing governed analytical facts without creating new analytics or strengthening epistemic state.
+
+FIX
+- auto-draft supported/non-proposed P16 claims as ANALYTICAL_FACT
+- preserve claim epistemic ceiling exactly
+- attach P18 resolution receipt as provenance only
+- bind claim limitations to their statement
+- retain exact numeric P14 Evidence
+- zero new analytical acquisition / provider cognition
+
+REFERENCE PATTERN
+Metabase treats queries/results as analytical units and reporting/sharing as presentation over results.
+Wren separates governed context/planning from execution.
+P20 remains a projection/publication owner, not an analytics owner.
+
+LATEST T5/T6 LIVE
+36925407237 remains useful for T5 and the report-reuse transport invariant.
+T6 semantic owner changed after that artifact, therefore T6 requires exactly one recertification after PF GREEN.
+
+NEXT EXACT ACTION
+Run Phase-2 provider-free closure. If GREEN, freeze Product SHA and run one fresh T6-containing surgical live.
+
+---
+
 # G6 T5/T6 — PROVIDER-FREE FIXTURE CLOSURE
 
 CURRENT GATE
