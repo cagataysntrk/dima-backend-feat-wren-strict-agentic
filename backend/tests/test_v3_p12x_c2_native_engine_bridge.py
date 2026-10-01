@@ -121,6 +121,42 @@ def test_c2_bridge_fails_closed_on_native_stream_error_and_keeps_observation():
     assert exc.value.observation.errors == ({"message": "provider failed"},)
 
 
+
+def test_c2_bridge_stops_after_first_exact_generated_query_artifact():
+    query = {
+        "database": 1,
+        "type": "query",
+        "query": {
+            "source-table": 10,
+            "aggregation": [["count"]],
+        },
+    }
+    generated = {
+        "type": "generated_entity",
+        "value": {"query": {"id": "q-stop", "query": query}},
+    }
+    lines = [
+        "2:" + json.dumps(generated, separators=(",", ":")),
+        '3:{"message":"post-query provider failure must not reopen acquisition"}',
+    ]
+
+    with NativeEngineBridge(
+        base_url="http://metabase",
+        session_token="restricted-session",
+        expected_identity=IDENTITY,
+        transport=transport(lines),
+    ) as bridge:
+        observation = bridge.invoke(req())
+        produced = bridge.capture_produced_query(observation)
+
+    assert produced.native_query_id == "q-stop"
+    assert produced.query == query
+    assert produced.source == "generated_entity"
+    assert observation.errors == ()
+    assert len(observation.events) == 1
+    assert observation.events[0].prefix == "2"
+
+
 def test_c2_bridge_has_no_agent_api_wren_or_raw_sql_fallback():
     requested = []
 
