@@ -245,6 +245,54 @@ def seed(engine):
         db.commit()
 
 
+def test_native_request_context_preloads_only_required_governed_metrics():
+    engine = db_engine()
+    seed(engine)
+    store = ResearchSessionStore(engine)
+    product = ResearchAskOrchestrator(store=store)
+    session = product.start_from_brief(
+        brief=brief(),
+        request_ref="p14-native-preload-test",
+        source_message_hash=hashlib.sha256(b"native preload").hexdigest(),
+        principal=principal(),
+    )
+    prepared = ResearchManager.prepare_native_delegation(
+        session,
+        obligation_id="g1",
+    )
+    subjects = NativeSubjectSessionProvider(
+        base_url="http://metabase.test",
+        expected_identity=expected_identity(),
+        db_engine=engine,
+    )
+    executor = NativeResearchMaterialExecutor(
+        subject_provider=subjects,
+        store=store,
+        expected_identity=expected_identity(),
+    )
+
+    enriched = executor.enrich_native_request(
+        principal=principal(),
+        session=session,
+        obligation_id="g1",
+        request=prepared.request,
+    )
+
+    assert enriched.context["dima_analytical_scope"] == (
+        prepared.request.context["dima_analytical_scope"]
+    )
+    assert enriched.context["user_is_viewing"] == [
+        {"type": "metric", "id": 501}
+    ]
+    assert 20 not in {
+        item.get("id")
+        for item in enriched.context["user_is_viewing"]
+    }
+    assert enriched.message == prepared.request.message
+    assert enriched.state == prepared.request.state
+    assert enriched.history == prepared.request.history
+
+
 def session_and_link(engine):
     store = ResearchSessionStore(engine)
     product = ResearchAskOrchestrator(store=store)
