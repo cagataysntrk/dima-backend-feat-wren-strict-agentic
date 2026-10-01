@@ -285,26 +285,13 @@ class ModelGoalDraft(Frozen):
     comparison_texts: tuple[str, ...] = ()
 
     @model_validator(mode="after")
-    def coherent_goal_authority(self):
+    def material_parent_is_comparison_only(self):
         if (
             self.material_parent_goal_key is not None
             and self.kind != ResearchGoalKind.COMPARISON
         ):
             raise ValueError(
                 "material_parent_goal_key is legal only on COMPARISON goals"
-            )
-        if (
-            self.kind == ResearchGoalKind.ROOT_CAUSE
-            and self.causal_competition is not None
-            and self.causal_competition.effect_observation
-            == CausalEffectObservation.CHANGE
-            and (
-                self.temporal_material is None
-                or self.temporal_material.mode != "comparison"
-            )
-        ):
-            raise ValueError(
-                "ROOT_CAUSE CHANGE requires distinguishable comparison material"
             )
         return self
 
@@ -700,32 +687,6 @@ def _intake_provider_schema(
         "type": "string",
         "minLength": 1,
     }
-    def inline_definition(node: dict[str, Any]) -> dict[str, Any]:
-        ref = node.get("$ref")
-        if isinstance(ref, str) and ref.startswith("#/$defs/"):
-            name = ref.rsplit("/", 1)[-1]
-            resolved = definitions.get(name)
-            if not isinstance(resolved, dict):
-                raise ResearchIntakeError(
-                    "INTAKE_SCHEMA_INVALID",
-                    f"provider schema ref is unresolved: {name}",
-                )
-            return copy.deepcopy(resolved)
-        return copy.deepcopy(node)
-
-    def temporal_mode(node: dict[str, Any]) -> str | None:
-        resolved = inline_definition(node)
-        props = resolved.get("properties")
-        if not isinstance(props, dict):
-            return None
-        mode = props.get("mode")
-        if not isinstance(mode, dict):
-            return None
-        values = mode.get("enum")
-        if not isinstance(values, list) or len(values) != 1:
-            return None
-        return str(values[0])
-
     variants: list[dict[str, Any]] = []
     for kind in ResearchGoalKind:
         if kind == ResearchGoalKind.RELATIONSHIP:
@@ -787,14 +748,7 @@ def _intake_provider_schema(
                         "INTAKE_SCHEMA_INVALID",
                         "ROOT_CAUSE causal competition schema is invalid",
                     )
-                causal_schema = inline_definition(non_null[0])
-                causal_props = causal_schema.get("properties")
-                if not isinstance(causal_props, dict):
-                    raise ResearchIntakeError(
-                        "INTAKE_SCHEMA_INVALID",
-                        "ROOT_CAUSE causal competition is not an object",
-                    )
-
+                properties["causal_competition"] = non_null[0]
                 raw_temporal = copy.deepcopy(
                     base_properties["temporal_material"]
                 )
@@ -807,61 +761,16 @@ def _intake_provider_schema(
                         and item.get("type") == "null"
                     )
                 ]
-                temporal_by_mode = {
-                    temporal_mode(item): inline_definition(item)
-                    for item in temporal_non_null
-                    if temporal_mode(item) is not None
-                }
-                comparison_temporal = temporal_by_mode.get("comparison")
-                if comparison_temporal is None:
+                if not temporal_non_null:
                     raise ResearchIntakeError(
                         "INTAKE_SCHEMA_INVALID",
-                        "ROOT_CAUSE comparison temporal material is absent",
+                        "ROOT_CAUSE temporal material schema is invalid",
                     )
-
-                # Provider strict schema encodes the cross-field invariant rather
-                # than asking downstream code to infer temporal semantics from
-                # wording. CHANGE can only be emitted with distinguishable
-                # comparison material. Non-CHANGE retains the existing closed
-                # temporal-material choices.
-                for effect_observation, temporal_schema in (
-                    (
-                        CausalEffectObservation.CHANGE.value,
-                        comparison_temporal,
-                    ),
-                    (
-                        CausalEffectObservation.LEVEL.value,
-                        (
-                            temporal_non_null[0]
-                            if len(temporal_non_null) == 1
-                            else {
-                                "anyOf": [
-                                    inline_definition(item)
-                                    for item in temporal_non_null
-                                ]
-                            }
-                        ),
-                    ),
-                ):
-                    root_properties = copy.deepcopy(properties)
-                    root_causal = copy.deepcopy(causal_schema)
-                    root_causal["properties"]["effect_observation"] = {
-                        "type": "string",
-                        "enum": [effect_observation],
-                    }
-                    root_properties["causal_competition"] = root_causal
-                    root_properties["temporal_material"] = copy.deepcopy(
-                        temporal_schema
-                    )
-                    variants.append(
-                        {
-                            "type": "object",
-                            "properties": root_properties,
-                            "required": list(root_properties),
-                            "additionalProperties": False,
-                        }
-                    )
-                continue
+                properties["temporal_material"] = (
+                    temporal_non_null[0]
+                    if len(temporal_non_null) == 1
+                    else {"anyOf": temporal_non_null}
+                )
         variants.append(
             {
                 "type": "object",
