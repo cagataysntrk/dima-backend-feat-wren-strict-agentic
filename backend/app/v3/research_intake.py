@@ -44,6 +44,13 @@ from app.v3.research_contracts import (
     TurnScopeContract,
     apply_scope_mutation,
 )
+from app.v3.research_scope_patch import (
+    ScopePatchFacet,
+    ScopePatchOperation,
+    ScopePatchOperationKind,
+    TurnScopePatch,
+    resolve_scope_patch,
+)
 from app.v3.structured_transport import (
     strict_json_schema,
     validate_provider_strict_schema,
@@ -228,6 +235,32 @@ class ModelTimePeriodDraft(Frozen):
     role: TemporalRole = TemporalRole.MATERIAL_WINDOW
 
 
+class ModelScopePatchOperationDraft(Frozen):
+    facet: ScopePatchFacet
+    operation: ScopePatchOperationKind
+    semantic_ids: tuple[str, ...] = ()
+    periods: tuple[ModelTimePeriodDraft, ...] = ()
+    source_fragment: str = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def coherent(self):
+        if self.operation == ScopePatchOperationKind.CLEAR:
+            if self.semantic_ids or self.periods:
+                raise ValueError("scope patch CLEAR must not carry values")
+            return self
+        if self.facet == ScopePatchFacet.PERIOD:
+            if not self.periods or self.semantic_ids:
+                raise ValueError(
+                    "PERIOD patch requires periods and no free semantic ids"
+                )
+        else:
+            if not self.semantic_ids or self.periods:
+                raise ValueError(
+                    "non-PERIOD patch requires semantic ids and no periods"
+                )
+        return self
+
+
 class ModelNoTemporalMaterialDraft(Frozen):
     mode: Literal["none"]
 
@@ -385,6 +418,19 @@ class ModelResearchIntakeEnvelope(Frozen):
     )
 
 
+class ModelReadyFollowupScopePatch(Frozen):
+    terminal: Literal["READY"]
+    operations: tuple[ModelScopePatchOperationDraft, ...] = ()
+
+
+class ModelFollowupScopeEnvelope(Frozen):
+    result: (
+        ModelReadyFollowupScopePatch
+        | ModelClarifyResearchIntake
+        | ModelUnsupportedResearchIntake
+    )
+
+
 class ResearchIntakeResult(Frozen):
     terminal: ResearchIntakeTerminal
     brief: ResearchBrief | None = None
@@ -430,8 +476,6 @@ Authority rules:
 - If the user's actual intent cannot be determined without one bounded question, return CLARIFY.
 - For explicit corrections, the CURRENT message is authoritative: do not silently merge removed
   obligations back from prior context.
-- If prior_brief is present and the CURRENT request materially changes semantic/time scope,
-  emit exactly one typed scope_mutation_kind from the closed enum. If scope is unchanged, emit null.
 - Never emit a scope version or lineage id. Dima deterministically binds those after validation.
 - For every explicit calendar/time surface in READY, emit exactly one time_periods entry.
   Select time_dimension_semantic_id only from the grounded catalog, and resolve exact ISO-8601
@@ -514,6 +558,29 @@ Authority rules:
 - If a native single-metric ranking needs direction and the user's direction is genuinely ambiguous,
   return CLARIFY rather than guessing direction from words, morphology, regex, or a default.
 - Do not emit implementation-specific Wren/SQL/lane/token concepts.
+"""
+
+
+_FOLLOWUP_SCOPE_SYSTEM = """You are Dima's bounded follow-up scope interpreter.
+The current user message is a DELTA over one already accepted Research scope.
+
+Authority rules:
+- Return ONLY typed scope patch operations. Do not reconstruct a new ResearchBrief.
+- A facet absent from operations means INHERIT EXACTLY from the prior accepted scope.
+- Clearing a facet requires operation=CLEAR. Never encode clear as omission.
+- Use only semantic IDs present in the supplied grounded catalog.
+- ENTITY values must be governed entity-value IDs.
+- METRIC values must be governed metric/KPI IDs.
+- BREAKDOWN values must be governed non-temporal dimension IDs.
+- PERIOD values must use governed temporal dimensions and exact ISO-8601 half-open bounds.
+- Every operation must carry source_fragment as an exact verbatim substring of the CURRENT
+  user message that directly supports that operation.
+- Do not emit a mutation kind, scope version, lineage id, fingerprint, SQL, MBQL, JOIN,
+  GROUP BY, query plan, factual result, Evidence, or causal truth.
+- If the current turn makes no material scope change (for example report-only/presentation-only),
+  return READY with operations=[].
+- If an explicit requested mutation cannot be grounded to the catalog, return UNSUPPORTED.
+- If the requested patch is genuinely ambiguous, return one bounded CLARIFY question.
 """
 
 
@@ -782,6 +849,92 @@ def _intake_provider_schema(
 
     goal_definition.clear()
     goal_definition["anyOf"] = variants
+    validate_provider_strict_schema(schema)
+    return schema
+
+
+def _followup_scope_provider_schema(
+    catalog: ResearchIntakeCatalog,
+) -> dict[str, Any]:
+    schema = strict_json_schema(ModelFollowupScopeEnvelope)
+    definitions = schema.get("$defs") or {}
+    operation = definitions.get("ModelScopePatchOperationDraft")
+    if not isinstance(operation, dict):
+        raise ResearchIntakeError(
+            "INTAKE_SCOPE_PATCH_SCHEMA_INVALID",
+            "scope patch operation definition is absent",
+        )
+    base = operation.get("properties")
+    if not isinstance(base, dict):
+        raise ResearchIntakeError(
+            "INTAKE_SCOPE_PATCH_SCHEMA_INVALID",
+            "scope patch operation properties are absent",
+        )
+
+    by_facet = {
+        ScopePatchFacet.ENTITY: tuple(
+            sorted(
+                item.candidate_id
+                for item in catalog.semantic_refs
+                if item.target_kind == SemanticTargetKind.ENTITY_VALUE
+            )
+        ),
+        ScopePatchFacet.METRIC: tuple(
+            sorted(
+                item.candidate_id
+                for item in catalog.semantic_refs
+                if item.target_kind
+                in {SemanticTargetKind.METRIC, SemanticTargetKind.KPI}
+            )
+        ),
+        ScopePatchFacet.BREAKDOWN: tuple(
+            sorted(
+                item.candidate_id
+                for item in catalog.semantic_refs
+                if (
+                    item.target_kind == SemanticTargetKind.DIMENSION
+                    and item.candidate_id
+                    not in set(catalog.temporal_dimension_ids)
+                )
+            )
+        ),
+    }
+    period_definition = definitions.get("ModelTimePeriodDraft")
+    if isinstance(period_definition, dict):
+        period_properties = period_definition.get("properties")
+        if isinstance(period_properties, dict):
+            period_properties["time_dimension_semantic_id"] = {
+                "type": "string",
+                "enum": list(sorted(catalog.temporal_dimension_ids)),
+            }
+
+    variants: list[dict[str, Any]] = []
+    for facet in ScopePatchFacet:
+        properties = {
+            "facet": {"type": "string", "enum": [facet.value]},
+            "operation": copy.deepcopy(base["operation"]),
+            "source_fragment": copy.deepcopy(base["source_fragment"]),
+        }
+        if facet == ScopePatchFacet.PERIOD:
+            properties["periods"] = copy.deepcopy(base["periods"])
+        else:
+            properties["semantic_ids"] = {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "enum": list(by_facet[facet]),
+                },
+            }
+        variants.append(
+            {
+                "type": "object",
+                "properties": properties,
+                "required": list(properties),
+                "additionalProperties": False,
+            }
+        )
+    operation.clear()
+    operation["anyOf"] = variants
     validate_provider_strict_schema(schema)
     return schema
 
@@ -1533,6 +1686,347 @@ class ResearchIntakeCompiler:
         raw = _canonical({"seed": seed, "ordinal": ordinal})
         return prefix + hashlib.sha256(raw.encode("utf-8")).hexdigest()[:20]
 
+    @staticmethod
+    def _followup_questions(
+        *,
+        prior_brief: ResearchBrief,
+        accepted_scope: ResearchScope,
+        changed_facets: tuple[ScopePatchFacet, ...],
+    ) -> tuple[ResearchQuestion, ...]:
+        if not changed_facets:
+            return prior_brief.questions
+
+        accepted = {
+            item.candidate_id: item
+            for item in accepted_scope.semantic_refs
+        }
+        accepted_metrics = tuple(
+            item
+            for item in accepted_scope.semantic_refs
+            if item.target_kind
+            in {SemanticTargetKind.METRIC, SemanticTargetKind.KPI}
+        )
+        accepted_entities = tuple(
+            item
+            for item in accepted_scope.semantic_refs
+            if item.target_kind == SemanticTargetKind.ENTITY_VALUE
+        )
+        accepted_breakdowns = tuple(
+            item
+            for item in accepted_scope.semantic_refs
+            if (
+                item.target_kind == SemanticTargetKind.DIMENSION
+                and item.candidate_id
+                not in set(accepted_scope.temporal_dimension_ids)
+            )
+        )
+        changed = set(changed_facets)
+        output: list[ResearchQuestion] = []
+        for question in prior_brief.questions:
+            original = tuple((*question.subject_refs, *question.related_refs))
+            had_metrics = any(
+                item.target_kind
+                in {SemanticTargetKind.METRIC, SemanticTargetKind.KPI}
+                for item in original
+            )
+            had_entities = any(
+                item.target_kind == SemanticTargetKind.ENTITY_VALUE
+                for item in original
+            )
+            had_breakdowns = any(
+                item.target_kind == SemanticTargetKind.DIMENSION
+                and item.candidate_id
+                not in set(prior_brief.scope.temporal_dimension_ids)
+                for item in original
+            )
+
+            subject = [
+                item
+                for item in question.subject_refs
+                if item.candidate_id in accepted
+            ]
+            related = [
+                item
+                for item in question.related_refs
+                if item.candidate_id in accepted
+            ]
+
+            def append_unique(target, values):
+                seen = {item.candidate_id for item in (*subject, *related)}
+                for value in values:
+                    if value.candidate_id not in seen:
+                        target.append(value)
+                        seen.add(value.candidate_id)
+
+            if ScopePatchFacet.METRIC in changed and had_metrics:
+                subject = [
+                    item
+                    for item in subject
+                    if item.target_kind
+                    not in {SemanticTargetKind.METRIC, SemanticTargetKind.KPI}
+                ]
+                append_unique(subject, accepted_metrics)
+            if ScopePatchFacet.ENTITY in changed and had_entities:
+                subject = [
+                    item
+                    for item in subject
+                    if item.target_kind != SemanticTargetKind.ENTITY_VALUE
+                ]
+                append_unique(subject, accepted_entities)
+            if ScopePatchFacet.BREAKDOWN in changed and had_breakdowns:
+                related = [
+                    item
+                    for item in related
+                    if not (
+                        item.target_kind == SemanticTargetKind.DIMENSION
+                        and item.candidate_id
+                        not in set(accepted_scope.temporal_dimension_ids)
+                    )
+                ]
+                append_unique(related, accepted_breakdowns)
+
+            causal = question.causal_competition
+            if causal is not None:
+                refs = {
+                    item.candidate_id for item in (*subject, *related)
+                }
+                required = {
+                    causal.effect_semantic_id,
+                    *causal.candidate_mechanism_semantic_ids,
+                    *causal.diagnostic_dimension_ids,
+                }
+                if not required.issubset(refs):
+                    raise ResearchIntakeError(
+                        "INTAKE_SCOPE_PATCH_CAUSAL_IDENTITY_CONFLICT",
+                        question.goal_id,
+                    )
+
+            output.append(
+                question.model_copy(
+                    update={
+                        "subject_refs": tuple(subject),
+                        "related_refs": tuple(related),
+                    }
+                )
+            )
+        return tuple(output)
+
+    def _compile_followup_scope_patch(
+        self,
+        *,
+        current: str,
+        catalog: ResearchIntakeCatalog,
+        prior_brief: ResearchBrief,
+    ) -> ResearchIntakeResult:
+        if prior_brief.context_version != catalog.context_version:
+            raise ResearchIntakeError(
+                "INTAKE_SCOPE_CONTEXT_MISMATCH",
+                "follow-up scope must remain inside the accepted semantic context",
+            )
+        raw = self._transport.structured_json(
+            _FOLLOWUP_SCOPE_SYSTEM,
+            _canonical(
+                {
+                    "current_user_message": current,
+                    "grounded_catalog": self._catalog_payload(catalog),
+                    "prior_brief": self._provider_prior_brief_payload(
+                        prior_brief
+                    ),
+                    "calendar_reference_date": self._calendar_reference_date,
+                    "instruction": (
+                        "Return only the grounded CURRENT-turn scope delta. "
+                        "Absent facets inherit from prior scope."
+                    ),
+                }
+            ),
+            schema=_followup_scope_provider_schema(catalog),
+            schema_name=self._schema_name + "_scope_patch",
+        )
+        try:
+            envelope = ModelFollowupScopeEnvelope.model_validate_json(raw)
+        except Exception as exc:
+            raise ResearchIntakeError(
+                "INTAKE_SCOPE_PATCH_MODEL_OUTPUT_INVALID",
+                "structured follow-up output failed the typed patch contract",
+            ) from exc
+        provider_result = envelope.result
+        if isinstance(provider_result, ModelClarifyResearchIntake):
+            return ResearchIntakeResult(
+                terminal=ResearchIntakeTerminal.CLARIFY,
+                clarification_question=provider_result.clarification_question,
+                catalog_fingerprint=catalog.fingerprint,
+                model_calls=self.call_count,
+            )
+        if isinstance(provider_result, ModelUnsupportedResearchIntake):
+            return ResearchIntakeResult(
+                terminal=ResearchIntakeTerminal.UNSUPPORTED,
+                unsupported_reason=provider_result.unsupported_reason,
+                catalog_fingerprint=catalog.fingerprint,
+                model_calls=self.call_count,
+            )
+
+        by_id = {item.candidate_id: item for item in catalog.semantic_refs}
+        binding_by_id = {
+            item.candidate_id: item
+            for item in catalog.native_verification_bindings
+        }
+        operations: list[ScopePatchOperation] = []
+        for item in provider_result.operations:
+            fragment = item.source_fragment
+            if fragment != fragment.strip() or fragment not in current:
+                raise ResearchIntakeError(
+                    "INTAKE_SCOPE_PATCH_SOURCE_UNGROUNDED",
+                    fragment,
+                )
+
+            if item.facet == ScopePatchFacet.PERIOD:
+                periods: list[ResearchTimePeriod] = []
+                temporal_refs: dict[str, ResearchSemanticRef] = {}
+                for period in item.periods:
+                    if (
+                        period.time_dimension_semantic_id
+                        not in set(catalog.temporal_dimension_ids)
+                    ):
+                        raise ResearchIntakeError(
+                            "INTAKE_TIME_DIMENSION_UNAUTHORIZED",
+                            period.time_dimension_semantic_id,
+                        )
+                    ref = by_id.get(period.time_dimension_semantic_id)
+                    if (
+                        ref is None
+                        or ref.target_kind != SemanticTargetKind.DIMENSION
+                    ):
+                        raise ResearchIntakeError(
+                            "INTAKE_TIME_DIMENSION_UNAUTHORIZED",
+                            period.time_dimension_semantic_id,
+                        )
+                    temporal_refs[ref.candidate_id] = ref
+                    try:
+                        periods.append(
+                            ResearchTimePeriod(
+                                source_text=period.source_text,
+                                time_dimension_candidate_id=(
+                                    period.time_dimension_semantic_id
+                                ),
+                                start=period.start,
+                                end=period.end,
+                                role=period.role,
+                            )
+                        )
+                    except ValueError as exc:
+                        raise ResearchIntakeError(
+                            "INTAKE_TIME_PERIOD_INVALID",
+                            str(exc),
+                        ) from exc
+                refs = tuple(temporal_refs.values())
+            else:
+                refs_list: list[ResearchSemanticRef] = []
+                for candidate_id in item.semantic_ids:
+                    ref = by_id.get(candidate_id)
+                    if ref is None:
+                        raise ResearchIntakeError(
+                            "INTAKE_SCOPE_PATCH_REF_UNAUTHORIZED",
+                            candidate_id,
+                        )
+                    if (
+                        item.facet == ScopePatchFacet.ENTITY
+                        and ref.target_kind
+                        != SemanticTargetKind.ENTITY_VALUE
+                    ):
+                        raise ResearchIntakeError(
+                            "INTAKE_SCOPE_PATCH_REF_KIND_INVALID",
+                            candidate_id,
+                        )
+                    if (
+                        item.facet == ScopePatchFacet.METRIC
+                        and ref.target_kind
+                        not in {
+                            SemanticTargetKind.METRIC,
+                            SemanticTargetKind.KPI,
+                        }
+                    ):
+                        raise ResearchIntakeError(
+                            "INTAKE_SCOPE_PATCH_REF_KIND_INVALID",
+                            candidate_id,
+                        )
+                    if (
+                        item.facet == ScopePatchFacet.BREAKDOWN
+                        and (
+                            ref.target_kind != SemanticTargetKind.DIMENSION
+                            or ref.candidate_id
+                            in set(catalog.temporal_dimension_ids)
+                        )
+                    ):
+                        raise ResearchIntakeError(
+                            "INTAKE_SCOPE_PATCH_REF_KIND_INVALID",
+                            candidate_id,
+                        )
+                    refs_list.append(ref)
+                refs = tuple(refs_list)
+                periods = []
+
+            operations.append(
+                ScopePatchOperation(
+                    facet=item.facet,
+                    operation=item.operation,
+                    semantic_refs=refs,
+                    periods=tuple(periods),
+                    native_verification_bindings=tuple(
+                        binding_by_id[ref.candidate_id]
+                        for ref in refs
+                        if ref.candidate_id in binding_by_id
+                    ),
+                    source_fragment=fragment,
+                )
+            )
+
+        try:
+            patch = TurnScopePatch(
+                source_scope_version_id=(
+                    prior_brief.scope.scope_version.version_id
+                ),
+                operations=tuple(operations),
+            )
+            resolved = resolve_scope_patch(
+                prior_brief.scope,
+                patch,
+                context_version=catalog.context_version,
+            )
+        except ValueError as exc:
+            raise ResearchIntakeError(
+                "INTAKE_SCOPE_PATCH_INVALID",
+                str(exc),
+            ) from exc
+
+        questions = self._followup_questions(
+            prior_brief=prior_brief,
+            accepted_scope=resolved.current_scope,
+            changed_facets=resolved.changed_facets,
+        )
+        identity = {
+            "prior_brief_id": prior_brief.brief_id,
+            "current_user_message": current,
+            "patch": patch.model_dump(mode="json"),
+            "scope_fingerprint": resolved.scope_fingerprint,
+        }
+        brief = prior_brief.model_copy(
+            update={
+                "brief_id": "rb_" + hashlib.sha256(
+                    _canonical(identity).encode("utf-8")
+                ).hexdigest()[:24],
+                "scope": resolved.current_scope,
+                "questions": questions,
+            }
+        )
+        return ResearchIntakeResult(
+            terminal=ResearchIntakeTerminal.READY,
+            brief=brief,
+            investigation_requirements=(),
+            scope_contract=resolved.scope_contract,
+            catalog_fingerprint=catalog.fingerprint,
+            model_calls=self.call_count,
+        )
+
     def compile(
         self,
         *,
@@ -1545,6 +2039,12 @@ class ResearchIntakeCompiler:
             raise ResearchIntakeError(
                 "INTAKE_QUESTION_REQUIRED",
                 "current user question is required",
+            )
+        if prior_brief is not None:
+            return self._compile_followup_scope_patch(
+                current=current,
+                catalog=catalog,
+                prior_brief=prior_brief,
             )
 
         def invoke_provider(
@@ -1619,32 +2119,6 @@ class ResearchIntakeCompiler:
         draft = self._canonicalize_analytical_goals(draft)
         draft = self._canonicalize_temporal_comparison_subgoals(draft)
         draft = self._canonicalize_root_temporal_material(draft)
-        if (
-            prior_brief is not None
-            and draft.scope_mutation_kind
-            in {
-                ScopeMutationKind.NARROW_ENTITY,
-                ScopeMutationKind.EXPAND_ENTITY,
-            }
-            and not draft.time_periods
-            and prior_brief.scope.periods
-        ):
-            draft = draft.model_copy(
-                update={
-                    "time_periods": tuple(
-                        ModelTimePeriodDraft(
-                            source_text=item.source_text,
-                            time_dimension_semantic_id=(
-                                item.time_dimension_candidate_id
-                            ),
-                            start=item.start,
-                            end=item.end,
-                            role=item.role,
-                        )
-                        for item in prior_brief.scope.periods
-                    )
-                }
-            )
         draft = self._canonicalize_exact_period_repeats(draft)
         draft = self._canonicalize_typed_temporal_comparison(draft)
         duplicate_root_keys = self._duplicate_root_cause_goal_keys(draft)
