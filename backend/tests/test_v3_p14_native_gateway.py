@@ -1080,6 +1080,10 @@ def test_r5_material_date_scope_rejects_non_equivalent_bounds(
     assert exc.value.expected_fingerprint
     assert exc.value.observed_fingerprint
     assert exc.value.expected_fingerprint != exc.value.observed_fingerprint
+    assert "expected_temporal_scope=" in exc.value.detail
+    assert "observed_temporal_scope=" in exc.value.detail
+    assert lower_bound in exc.value.detail
+    assert upper_bound in exc.value.detail
 
 
 def test_r5_material_semantics_matching_stable_ids_are_accepted():
