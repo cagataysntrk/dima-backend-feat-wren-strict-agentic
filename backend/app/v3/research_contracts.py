@@ -66,10 +66,18 @@ class SemanticTargetKind(StrEnum):
     CUBE = "cube"
 
 
+class CausalEffectObservation(StrEnum):
+    """Accepted observation shape of the causal effect, not causal truth."""
+
+    LEVEL = "level"
+    CHANGE = "change"
+
+
 class CausalCompetitionSurface(FrozenModel):
     """Typed causal-investigation identity over already accepted semantic refs."""
 
     effect_semantic_id: str = Field(min_length=1)
+    effect_observation: CausalEffectObservation = CausalEffectObservation.LEVEL
     candidate_mechanism_semantic_ids: tuple[str, ...] = ()
     diagnostic_dimension_ids: tuple[str, ...] = ()
 
