@@ -490,6 +490,11 @@ class DimaBrainV2Activities(BrainActivities):
             prior_session_id=(
                 prior_session.session_id if prior_session is not None else None
             ),
+            business_question=(
+                state.current_user_input
+                if prior_session is not None
+                else None
+            ),
         )
         goal = self._root_goal(session)
         _, user_seeded = self._mechanism_refs(goal=goal, session=session)
