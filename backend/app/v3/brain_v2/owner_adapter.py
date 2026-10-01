@@ -71,6 +71,7 @@ from .activities import (
     ReportActivityResult,
 )
 from .keys import CognitionPurpose, CognitionRequestKey, NativeMaterialRequestKey
+from .p19_context import project_p19_scope_authority
 from .state import BrainGraphState, BrainP19Route
 
 
@@ -993,9 +994,15 @@ class DimaBrainV2Activities(BrainActivities):
                 None,
             )
             if callable(propose_with_context):
+                scope_authority = project_p19_scope_authority(
+                    brief=session.accepted_brief,
+                    scope_lineage_id=session.lineage_id,
+                    expected_scope_fingerprint=snapshot.scope_fingerprint,
+                )
                 draft = propose_with_context(
                     snapshot,
-                    objective=goal.source_text,
+                    objective=None,
+                    scope_authority=scope_authority.model_dump(mode="json"),
                     discriminating_test_available=discrimination_capacity,
                     policy_statuses={},
                     deterministic_feedback_code=feedback_code,
@@ -1037,9 +1044,15 @@ class DimaBrainV2Activities(BrainActivities):
                 None,
             )
             if callable(propose_with_context):
+                scope_authority = project_p19_scope_authority(
+                    brief=session.accepted_brief,
+                    scope_lineage_id=session.lineage_id,
+                    expected_scope_fingerprint=snapshot.scope_fingerprint,
+                )
                 terminal_draft = propose_with_context(
                     snapshot,
-                    objective=goal.source_text,
+                    objective=None,
+                    scope_authority=scope_authority.model_dump(mode="json"),
                     discriminating_test_available=False,
                     policy_statuses={},
                     deterministic_feedback_code=(
