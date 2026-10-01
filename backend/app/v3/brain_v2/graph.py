@@ -8,6 +8,7 @@ from langgraph.graph import END, START, StateGraph
 
 from .activities import (
     BrainActivities,
+    CandidateProjectionActivityResult,
     CanonicalizeActivityResult,
     EvidenceActivityResult,
     IntakeActivityResult,
@@ -66,6 +67,12 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
     @task(name="brain_v2_evidence_activity")
     def evidence_activity(payload: dict[str, Any]) -> dict[str, Any]:
         return activities.admit_evidence(
+            BrainGraphState.model_validate(payload)
+        ).model_dump(mode="json")
+
+    @task(name="brain_v2_project_candidates_activity")
+    def project_candidates_activity(payload: dict[str, Any]) -> dict[str, Any]:
+        return activities.project_candidates(
             BrainGraphState.model_validate(payload)
         ).model_dump(mode="json")
 
@@ -193,6 +200,21 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
             ),
         }
 
+    def project_candidates_node(state: BrainStatePayload):
+        current = _snapshot(state)
+        result = CandidateProjectionActivityResult.model_validate(
+            project_candidates_activity(current.model_dump(mode="json")).result()
+        )
+        return {
+            "hypothesis_revision": result.hypothesis_revision,
+            "hypothesis_ids": result.hypothesis_ids,
+            "discovery_required": False,
+            "last_completed_node": "PROJECT_CANDIDATES",
+            "activity_fingerprints": _append_fingerprint(
+                current, result.activity_fingerprint
+            ),
+        }
+
     def discovery_node(state: BrainStatePayload):
         current = _snapshot(state)
         result = P17ActivityResult.model_validate(
@@ -282,8 +304,17 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
         if current.discovery_required:
             if current.hypothesis_ids:
                 raise ValueError("discovery route cannot coexist with hypotheses")
-            return "p17_discover"
+            return "project_candidates"
         return "p19_assess"
+
+    def after_projection(state: BrainStatePayload) -> str:
+        current = _snapshot(state)
+        # Current P19 requires competing hypotheses. Preserve a single real
+        # candidate without manufacturing a rival; the legal terminal is an
+        # honest inconclusive stop until the epistemic contract says otherwise.
+        if len(current.hypothesis_ids) >= 2:
+            return "p19_assess"
+        return "honest_stop"
 
     def after_discovery(state: BrainStatePayload) -> str:
         current = _snapshot(state)
@@ -311,7 +342,7 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
     builder.add_node("canonicalize", canonicalize_node)
     builder.add_node("acquire_material", material_node)
     builder.add_node("admit_evidence", evidence_node)
-    builder.add_node("p17_discover", discovery_node)
+    builder.add_node("project_candidates", project_candidates_node)
     builder.add_node("p19_assess", p19_node)
     builder.add_node("p17_next_test", next_test_node)
     builder.add_node("report", report_node)
@@ -325,15 +356,14 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
         "admit_evidence",
         after_evidence,
         {
-            "p17_discover": "p17_discover",
+            "project_candidates": "project_candidates",
             "p19_assess": "p19_assess",
         },
     )
     builder.add_conditional_edges(
-        "p17_discover",
-        after_discovery,
+        "project_candidates",
+        after_projection,
         {
-            "p17_discover": "p17_discover",
             "p19_assess": "p19_assess",
             "honest_stop": "honest_stop",
         },

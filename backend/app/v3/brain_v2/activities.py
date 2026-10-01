@@ -62,6 +62,22 @@ class EvidenceActivityResult(ActivityResult):
 
 
 
+class CandidateProjectionActivityResult(ActivityResult):
+    """Deterministic candidate identities materialized into canonical P19 hypotheses."""
+
+    hypothesis_revision: int = Field(ge=0)
+    hypothesis_ids: tuple[str, ...] = ()
+    candidate_count: int = Field(ge=0)
+
+    @model_validator(mode="after")
+    def count_matches_identity_set(self):
+        if len(self.hypothesis_ids) != len(set(self.hypothesis_ids)):
+            raise ValueError("projected hypothesis refs must be unique")
+        if self.candidate_count != len(self.hypothesis_ids):
+            raise ValueError("candidate count must match projected hypothesis refs")
+        return self
+
+
 class P19ActivityResult(ActivityResult):
     assessment_ref: str = Field(pattern=r"^p19a_[a-f0-9]{24}$")
     route: BrainP19Route
@@ -110,6 +126,10 @@ class BrainActivities(Protocol):
     def acquire_material(self, state: BrainGraphState) -> MaterialActivityResult: ...
 
     def admit_evidence(self, state: BrainGraphState) -> EvidenceActivityResult: ...
+
+    def project_candidates(
+        self, state: BrainGraphState
+    ) -> CandidateProjectionActivityResult: ...
 
     def assess_p19(self, state: BrainGraphState) -> P19ActivityResult: ...
 
