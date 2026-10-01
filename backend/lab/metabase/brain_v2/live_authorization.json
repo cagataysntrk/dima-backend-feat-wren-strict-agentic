@@ -1,14 +1,14 @@
 {
   "schema_version": "dima_brain_v2_live_authorization_v1",
-  "enabled": true,
+  "enabled": false,
   "probe_id": "R_LIVE_1_ONE_PASS",
   "candidate_product_sha": "cf395d3cfc47fc5e5e2164d0654c51f750ef446f",
   "provider_free_run_id": 36815694386,
-  "provider_free_status": "GREEN",
+  "provider_free_status": "PENDING",
   "engine_sha": "d5c60dc9f37a9ec9c5b0117f178146bbcb8dca88",
   "engine_release": "0.63.18-dima.9",
   "model_policy": "LUNA_FIRST",
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
-  "authorization_receipt": "one-pass-dima9-authorized"
+  "authorization_receipt": "runtime-lock-harness-reclosure"
 }
