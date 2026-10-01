@@ -52,6 +52,46 @@ def _query_payload(query: dict) -> tuple[str, str]:
     return raw, hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
+_NATIVE_AGENT_STATE_KEYS = frozenset(
+    {
+        "queries",
+        "charts",
+        "chart-configs",
+        "todos",
+        "transforms",
+        "link-registry",
+    }
+)
+
+
+def _agent_state_payload(state: dict) -> tuple[str, str]:
+    if not isinstance(state, dict):
+        raise ResearchPersistenceError(
+            "P14_NATIVE_AGENT_STATE_INVALID",
+            "native agent continuation state must be an object",
+        )
+    unknown = set(state) - _NATIVE_AGENT_STATE_KEYS
+    if unknown:
+        raise ResearchPersistenceError(
+            "P14_NATIVE_AGENT_STATE_KEY_UNSUPPORTED",
+            ",".join(sorted(str(item) for item in unknown)),
+        )
+    try:
+        raw = json.dumps(
+            state,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+            allow_nan=False,
+        )
+    except (TypeError, ValueError) as exc:
+        raise ResearchPersistenceError(
+            "P14_NATIVE_AGENT_STATE_NOT_CANONICAL_JSON",
+            "native agent continuation state is not deterministic JSON",
+        ) from exc
+    return raw, hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
 class ResearchSessionStore:
     """Single durable store for P14 state and native correlation."""
 
@@ -434,6 +474,7 @@ class ResearchSessionStore:
         native_query_id: str,
         native_query: dict,
         query_fingerprint: str,
+        native_agent_state: dict | None = None,
     ) -> ResearchExecutionLink:
         raw, observed = _query_payload(native_query)
         if observed != query_fingerprint:
@@ -441,13 +482,85 @@ class ResearchSessionStore:
                 "P14_NATIVE_QUERY_FINGERPRINT_MISMATCH",
                 "captured query payload differs from its claimed fingerprint",
             )
+        state_values = {}
+        if native_agent_state is not None:
+            state_raw, state_fingerprint = _agent_state_payload(
+                native_agent_state
+            )
+            state_values = {
+                "native_agent_state_json": state_raw,
+                "native_agent_state_fingerprint": state_fingerprint,
+            }
         return self._update_link(
             link_id,
             native_query_id=native_query_id,
             native_query_json=raw,
             native_query_fingerprint=query_fingerprint,
             status="CANDIDATE_CAPTURED",
+            **state_values,
         )
+
+    @staticmethod
+    def captured_agent_state(
+        link: ResearchExecutionLink,
+    ) -> tuple[dict, str] | None:
+        raw = link.native_agent_state_json
+        fingerprint = link.native_agent_state_fingerprint
+        if raw is None and fingerprint is None:
+            return None
+        if not raw or not fingerprint:
+            raise ResearchPersistenceError(
+                "P14_NATIVE_AGENT_STATE_PROVENANCE_INCOMPLETE",
+                "native agent continuation state lacks payload or fingerprint",
+            )
+        try:
+            state = json.loads(raw)
+        except json.JSONDecodeError as exc:
+            raise ResearchPersistenceError(
+                "P14_NATIVE_AGENT_STATE_INVALID",
+                "persisted native agent continuation state is invalid JSON",
+            ) from exc
+        canonical, observed = _agent_state_payload(state)
+        if canonical != raw or observed != fingerprint:
+            raise ResearchPersistenceError(
+                "P14_NATIVE_AGENT_STATE_FINGERPRINT_MISMATCH",
+                "persisted native agent continuation state changed after capture",
+            )
+        return state, observed
+
+    def latest_verified_agent_state(
+        self,
+        *,
+        session_id: str,
+        obligation_id: str,
+        native_conversation_id: uuid.UUID,
+    ) -> tuple[dict, str]:
+        with Session(self._engine) as db:
+            rows = db.exec(
+                select(ResearchExecutionLink)
+                .where(ResearchExecutionLink.session_id == session_id)
+                .where(ResearchExecutionLink.obligation_id == obligation_id)
+                .where(
+                    ResearchExecutionLink.native_conversation_id
+                    == native_conversation_id
+                )
+                .where(ResearchExecutionLink.status == "VERIFIED")
+                .where(
+                    ResearchExecutionLink.native_agent_state_json.is_not(None)
+                )
+                .order_by(
+                    ResearchExecutionLink.created_at.desc(),
+                    ResearchExecutionLink.id.desc(),
+                )
+            ).all()
+        if not rows:
+            raise ResearchPersistenceError(
+                "P17_NATIVE_CONTINUATION_STATE_REQUIRED",
+                "verified parent native occurrence has no durable agent state",
+            )
+        captured = self.captured_agent_state(rows[0])
+        assert captured is not None
+        return captured
 
     @staticmethod
     def captured_query(link: ResearchExecutionLink) -> tuple[dict, str]:
