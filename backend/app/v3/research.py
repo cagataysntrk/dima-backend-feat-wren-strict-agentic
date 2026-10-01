@@ -9,7 +9,11 @@ from uuid import UUID, uuid4
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.v3.research_contracts import ResearchBrief, ResearchBriefStatus
-from app.v3.research_analytical_scope import analytical_scope_contract
+from app.v3.research_analytical_scope import (
+    analytical_scope_contract,
+    material_coverage_period,
+    native_request_context,
+)
 from app.v3.authority import AcceptedResearchAuthority
 from app.v3.evidence import DimaQueryReceipt, EvidenceArtifact, EvidenceState
 from app.v3.substrate.metabase.native_engine import NativeEngineBridge
@@ -317,6 +321,13 @@ class ResearchManager:
         else:
             lines.append("- none")
 
+        coverage_period = material_coverage_period(analytical_scope)
+        lines.append("material_coverage_period:")
+        if coverage_period is None:
+            lines.append("- none")
+        else:
+            lines.append(period_line("required", coverage_period))
+
         temporal_observation = analytical_scope.temporal_observation
         lines.append("temporal_observation:")
         if temporal_observation is None:
@@ -411,11 +422,7 @@ class ResearchManager:
             profile_id=conv.profile_id,
             metabot_id=conv.metabot_id,
             message=cls._native_material_message(item, analytical_scope),
-            context={
-                "dima_analytical_scope": analytical_scope.model_dump(
-                    mode="json"
-                )
-            },
+            context=native_request_context(analytical_scope),
             conversation_id=conv.conversation_id,
             history=None,
             state={},
