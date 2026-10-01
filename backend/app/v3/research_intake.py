@@ -1619,6 +1619,32 @@ class ResearchIntakeCompiler:
         draft = self._canonicalize_analytical_goals(draft)
         draft = self._canonicalize_temporal_comparison_subgoals(draft)
         draft = self._canonicalize_root_temporal_material(draft)
+        if (
+            prior_brief is not None
+            and draft.scope_mutation_kind
+            in {
+                ScopeMutationKind.NARROW_ENTITY,
+                ScopeMutationKind.EXPAND_ENTITY,
+            }
+            and not draft.time_periods
+            and prior_brief.scope.periods
+        ):
+            draft = draft.model_copy(
+                update={
+                    "time_periods": tuple(
+                        ModelTimePeriodDraft(
+                            source_text=item.source_text,
+                            time_dimension_semantic_id=(
+                                item.time_dimension_candidate_id
+                            ),
+                            start=item.start,
+                            end=item.end,
+                            role=item.role,
+                        )
+                        for item in prior_brief.scope.periods
+                    )
+                }
+            )
         draft = self._canonicalize_exact_period_repeats(draft)
         draft = self._canonicalize_typed_temporal_comparison(draft)
         duplicate_root_keys = self._duplicate_root_cause_goal_keys(draft)
