@@ -1784,7 +1784,7 @@ def test_adaptive_same_result_hash_never_becomes_fake_information_gain() -> None
     assert p19_manager.call_count == 1
     assert next_test_manager.call_count == 1
 
-def test_discovery_honest_stop_is_governed_terminal_not_intent_mismatch() -> None:
+def test_discovery_projection_does_not_consult_p17_provider_stop() -> None:
     stop_manager = DeterministicDiscoveryStopManager()
     (
         _,
@@ -1800,39 +1800,36 @@ def test_discovery_honest_stop_is_governed_terminal_not_intent_mismatch() -> Non
         discovery=True,
         discovery_manager_override=stop_manager,
     )
-    service = BrainV2Service(activities=activities)
-
-    result = service.run(
+    result = BrainV2Service(activities=activities).run(
         BrainGraphState(
-            thread_id="real-discovery-honest-stop",
+            thread_id="real-discovery-no-p17-stop",
             tenant_binding=f"id:{TENANT_ID}",
             principal_ref=USER_ID,
-            current_user_input="Provider-free discovery with no justified candidate.",
+            current_user_input="Provider-free governed discovery.",
         )
     )
 
-    assert result.workflow_status == BrainWorkflowStatus.INCONCLUSIVE
-    assert result.last_completed_node == "HONEST_STOP"
-    assert result.hypothesis_ids == ()
-    assert result.discovery_required is False
-    assert result.discovery_turns == 1
-    assert discovery_manager.call_count == 1
+    assert result.workflow_status == BrainWorkflowStatus.COMPLETE
+    assert discovery_manager.call_count == 0
     assert bridge.metabot_posts == 1
     assert material.calls == 1
-    assert p19_manager.call_count == 0
-    assert investigation.snapshot(
+    assert p19_manager.call_count == 1
+    assert result.discovery_turns == 0
+    assert len(result.hypothesis_ids) == 2
+    snapshot = investigation.snapshot(
         session_id=result.research_session_id,
         principal=_principal(),
-    ).terminal_stop_reason == ManagerStopReason.NO_MEANINGFUL_GAIN
-    assert p19.snapshot(
+    )
+    assert snapshot.claims == ()
+    assert snapshot.terminal_stop_reason is None
+    epistemic = p19.snapshot(
         research_session_id=result.research_session_id,
         obligation_id="g_root",
         principal=_principal(),
-    ).hypotheses == ()
+    )
+    assert len(epistemic.hypotheses) == 2
 
-
-
-def test_discovery_candidate_vocabulary_consumes_durable_candidate_identity() -> None:
+def test_discovery_projection_materializes_governed_identities_once() -> None:
     manager = GreedyFirstDiscoveryManager()
     (
         _,
@@ -1848,11 +1845,9 @@ def test_discovery_candidate_vocabulary_consumes_durable_candidate_identity() ->
         discovery=True,
         discovery_manager_override=manager,
     )
-    service = BrainV2Service(activities=activities)
-
-    result = service.run(
+    result = BrainV2Service(activities=activities).run(
         BrainGraphState(
-            thread_id="real-discovery-consumes-candidate",
+            thread_id="real-discovery-projects-identities",
             tenant_binding=f"id:{TENANT_ID}",
             principal_ref=USER_ID,
             current_user_input="Provider-free governed discovery.",
@@ -1860,40 +1855,32 @@ def test_discovery_candidate_vocabulary_consumes_durable_candidate_identity() ->
     )
 
     assert result.workflow_status == BrainWorkflowStatus.COMPLETE
-    assert manager.call_count == 2
-    assert len(manager.allowed_history) == 2
-    first, second = manager.allowed_history
-    assert len(first) >= 2
-    assert first[0] not in second
-    assert set(second).issubset(set(first))
-    assert len(result.hypothesis_ids) == 2
+    assert manager.call_count == 0
+    assert manager.allowed_history == []
     assert bridge.metabot_posts == 1
     assert material.calls == 1
     assert p19_manager.call_count == 1
-
-    snapshot = investigation.snapshot(
+    assert investigation.snapshot(
         session_id=result.research_session_id,
         principal=_principal(),
-    )
-    mechanism_refs = []
-    for claim in snapshot.claims:
-        semantics = decode_root_cause_candidate_semantics(
-            claim.proposition or {}
-        )
-        assert semantics is not None
-        mechanism_refs.append(semantics.mechanism_ref)
-    assert len(mechanism_refs) == 2
-    assert len(set(mechanism_refs)) == 2
+    ).claims == ()
 
     epistemic = p19.snapshot(
         research_session_id=result.research_session_id,
         obligation_id="g_root",
         principal=_principal(),
     )
+    assert {item.hypothesis.statement for item in epistemic.hypotheses} == {
+        "Maintenance Delay",
+        "Spare Part Delay",
+    }
     assert len(epistemic.hypotheses) == 2
+    for item in epistemic.hypotheses:
+        assert len(item.groundings) == 1
+        assert item.groundings[0].source_kind.value == "P14_EVIDENCE"
+        assert item.groundings[0].relation.value == "CONTEXT"
 
-
-def test_real_owner_discovery_forms_governed_candidates_without_extra_native() -> None:
+def test_real_owner_discovery_projects_without_p17_or_extra_native() -> None:
     (
         _,
         _,
@@ -1905,9 +1892,7 @@ def test_real_owner_discovery_forms_governed_candidates_without_extra_native() -
         discovery_manager,
         activities,
     ) = _adaptive_stack(discovery=True)
-    service = BrainV2Service(activities=activities)
-
-    result = service.run(
+    result = BrainV2Service(activities=activities).run(
         BrainGraphState(
             thread_id="real-discovery",
             tenant_binding=f"id:{TENANT_ID}",
@@ -1919,17 +1904,16 @@ def test_real_owner_discovery_forms_governed_candidates_without_extra_native() -
     assert result.workflow_status == BrainWorkflowStatus.COMPLETE
     assert bridge.metabot_posts == 1
     assert material.calls == 1
-    assert discovery_manager.call_count == 2
+    assert discovery_manager.call_count == 0
     assert p19_manager.call_count == 1
-    assert result.discovery_turns == 2
+    assert result.discovery_turns == 0
     assert len(result.hypothesis_ids) == 2
 
     snapshot = investigation.snapshot(
         session_id=result.research_session_id,
         principal=_principal(),
     )
-    assert len(snapshot.claims) == 2
-    assert all(claim.evidence_links for claim in snapshot.claims)
+    assert snapshot.claims == ()
     epistemic = p19.snapshot(
         research_session_id=result.research_session_id,
         obligation_id="g_root",
@@ -1937,3 +1921,8 @@ def test_real_owner_discovery_forms_governed_candidates_without_extra_native() -
     )
     assert len(epistemic.hypotheses) == 2
     assert all(item.groundings for item in epistemic.hypotheses)
+    assert all(
+        all(link.relation.value == "CONTEXT" for link in item.groundings)
+        for item in epistemic.hypotheses
+    )
+

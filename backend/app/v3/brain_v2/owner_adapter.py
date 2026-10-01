@@ -60,9 +60,13 @@ from app.v3.root_cause_candidate_contract import (
 )
 from control_plane.authorize import Principal
 
-from .discovery_candidate_design import remaining_discovery_mechanism_refs
+from .discovery_candidate_design import (
+    project_candidate_set,
+    remaining_discovery_mechanism_refs,
+)
 from .activities import (
     BrainActivities,
+    CandidateProjectionActivityResult,
     CanonicalizeActivityResult,
     EvidenceActivityResult,
     IntakeActivityResult,
@@ -781,6 +785,149 @@ class DimaBrainV2Activities(BrainActivities):
                     "pairs": list(pending),
                 }
             ),
+        )
+
+    def project_candidates(
+        self,
+        state: BrainGraphState,
+    ) -> CandidateProjectionActivityResult:
+        """Project current VERIFIED analytical material into P19 candidate identity.
+
+        This boundary is deliberately non-cognitive. P14 has already verified
+        that the native occurrence satisfies the accepted analytical contract.
+        We therefore intersect that verified material vocabulary with the
+        accepted discovery surface/current scope and create only P19 identities
+        grounded as CONTEXT. P19 remains the sole epistemic judge.
+        """
+
+        session = self._session(state)
+        goal = self._root_goal(session)
+        brief = session.accepted_brief
+        assert brief is not None
+        surface = goal.causal_competition
+        if surface is None:
+            raise BrainV2OwnerError(
+                "BRAIN_V2_DISCOVERY_SURFACE_REQUIRED",
+                goal.goal_id,
+            )
+
+        allowed_mechanisms, user_seeded = self._mechanism_refs(
+            goal=goal,
+            session=session,
+        )
+        if user_seeded:
+            raise BrainV2OwnerError(
+                "BRAIN_V2_DISCOVERY_NOT_REQUIRED",
+                goal.goal_id,
+            )
+
+        evidence_pairs = self._durable_evidence_pairs(
+            session=session,
+            obligation_id=goal.goal_id,
+        )
+        pair_by_evidence = dict(evidence_pairs)
+        current_evidence = tuple(dict.fromkeys(state.evidence_ids))
+        if not current_evidence:
+            raise BrainV2OwnerError(
+                "BRAIN_V2_DISCOVERY_EVIDENCE_REQUIRED",
+                goal.goal_id,
+            )
+        if not set(current_evidence).issubset(set(pair_by_evidence)):
+            raise BrainV2OwnerError(
+                "BRAIN_V2_DISCOVERY_EVIDENCE_NOT_CURRENT",
+                goal.goal_id,
+                last_valid_boundary="dima.evidence.admit",
+                first_invalid_boundary="dima.discovery.project_candidates",
+            )
+
+        material = analytical_scope_contract(
+            session=session,
+            obligation_id=goal.goal_id,
+        )
+        if material.scope_identity.version_id != brief.scope.scope_version.version_id:
+            raise BrainV2OwnerError(
+                "BRAIN_V2_DISCOVERY_MATERIAL_SCOPE_MISMATCH",
+                goal.goal_id,
+                last_valid_boundary="dima.material.compile",
+                first_invalid_boundary="dima.discovery.project_candidates",
+                expected_fingerprint=brief.scope_fingerprint,
+                observed_fingerprint=material.scope_fingerprint,
+            )
+
+        current_scope_refs = tuple(
+            item.candidate_id for item in brief.scope.semantic_refs
+        )
+        candidate_eligible_refs = tuple(
+            item.candidate_id
+            for item in brief.scope.semantic_refs
+            if item.target_kind
+            in {SemanticTargetKind.METRIC, SemanticTargetKind.KPI}
+        )
+        projection = project_candidate_set(
+            allowed_discovery_surface=allowed_mechanisms,
+            current_scope_semantic_refs=current_scope_refs,
+            # P14 VERIFIED Evidence can exist only after the native material
+            # occurrence has been checked against this exact contract. These
+            # metric refs are therefore governed observed-material bindings,
+            # not a guess from prompt/result text.
+            observed_material_semantic_refs=material.metric_refs,
+            candidate_eligible_semantic_refs=candidate_eligible_refs,
+            effect_semantic_id=surface.effect_semantic_id,
+            scope_version_id=brief.scope.scope_version.version_id,
+            evidence_refs=current_evidence,
+            material_requirement_ref=goal.goal_id,
+        )
+
+        semantic_by_id = {
+            item.candidate_id: item for item in brief.scope.semantic_refs
+        }
+        hypothesis_ids: list[str] = []
+        for candidate in projection.candidates:
+            semantic = semantic_by_id.get(candidate.semantic_id)
+            if semantic is None:
+                raise BrainV2OwnerError(
+                    "BRAIN_V2_DISCOVERY_CANDIDATE_OUTSIDE_SCOPE",
+                    candidate.semantic_id,
+                )
+            hypothesis = self._epistemics.create_hypothesis(
+                research_session_id=session.session_id,
+                obligation_id=goal.goal_id,
+                statement=semantic.canonical_name,
+                principal=self._principal,
+                candidate_identity_ref=candidate.semantic_id,
+            )
+            for evidence_id in candidate.evidence_refs:
+                receipt_id = pair_by_evidence[evidence_id]
+                self._epistemics.create_grounding(
+                    hypothesis_id=hypothesis.hypothesis_id,
+                    source_kind=GroundingSourceKind.P14_EVIDENCE,
+                    source_ref=evidence_id,
+                    source_receipt_id=receipt_id,
+                    relation=GroundingRelation.CONTEXT,
+                    principal=self._principal,
+                )
+            hypothesis_ids.append(hypothesis.hypothesis_id)
+
+        ids = tuple(dict.fromkeys(hypothesis_ids))
+        key = _fingerprint(
+            {
+                "activity": "PROJECT_CANDIDATES",
+                "session": session.session_id,
+                "scope": state.scope_version_id,
+                "material": material.fingerprint,
+                "evidence": list(current_evidence),
+                "candidate_semantic_ids": [
+                    item.semantic_id for item in projection.candidates
+                ],
+            }
+        )
+        return CandidateProjectionActivityResult(
+            hypothesis_revision=(
+                state.hypothesis_revision + (1 if ids else 0)
+            ),
+            hypothesis_ids=ids,
+            candidate_count=len(ids),
+            activity_fingerprint=key,
         )
 
     def _sync_discovered_hypotheses(
