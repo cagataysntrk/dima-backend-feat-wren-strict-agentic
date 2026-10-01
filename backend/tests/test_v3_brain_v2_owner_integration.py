@@ -35,6 +35,7 @@ from app.v3.research_manager import (
     InvestigationTargetKind,
     ManagerAction,
     ManagerProposal,
+    ManagerStopReason,
     ProposedClaimDraft,
     ProposedClaimEvidenceLink,
     ResearchInvestigationManager,
@@ -904,6 +905,44 @@ class DeterministicDiscoveryManager:
         )
 
 
+class DeterministicDiscoveryStopManager:
+    """Provider-free P17 stand-in for honest discovery exhaustion."""
+
+    def __init__(self) -> None:
+        self.call_count = 0
+
+    def propose_root_candidate_for_obligation_with_constraints(
+        self,
+        snapshot,
+        *,
+        target_parent_obligation,
+        allowed_evidence_refs,
+        allowed_mechanism_refs,
+        allowed_intents,
+    ):
+        assert InvestigationIntent.FORM_CLAIM in allowed_intents
+        assert InvestigationIntent.STOP_INVESTIGATION in allowed_intents
+        assert allowed_evidence_refs
+        assert allowed_mechanism_refs
+        self.call_count += 1
+        return ManagerProposal(
+            proposal_id=f"discovery-stop-{self.call_count}",
+            source_revision=snapshot.source_revision,
+            target_parent_obligation=target_parent_obligation,
+            action=ManagerAction.STOP,
+            intent=InvestigationIntent.STOP_INVESTIGATION,
+            parent_step_id=None,
+            target_kind=InvestigationTargetKind.EXPLANATION,
+            target_ref=None,
+            objective_key=f"discover.stop.{self.call_count}",
+            rationale="No additional governed candidate can be justified.",
+            inspected_evidence_refs=(allowed_evidence_refs[0],),
+            inspected_claim_refs=(),
+            inspected_material_refs=(),
+            stop_reason=ManagerStopReason.NO_MEANINGFUL_GAIN,
+        )
+
+
 class DeterministicNextTestManager:
     """Provider-free P17 stand-in that must design the ADAPTIVE test."""
 
@@ -1429,6 +1468,7 @@ def _adaptive_stack(
     *,
     discovery: bool = False,
     p19_manager_override=None,
+    discovery_manager_override=None,
     repeat_followup_result: bool = False,
 ):
     db = _engine()
@@ -1478,9 +1518,13 @@ def _adaptive_stack(
         )
     )
     discovery_manager = (
-        DeterministicDiscoveryManager()
-        if discovery
-        else DeterministicNextTestManager()
+        discovery_manager_override
+        if discovery_manager_override is not None
+        else (
+            DeterministicDiscoveryManager()
+            if discovery
+            else DeterministicNextTestManager()
+        )
     )
     activities = DimaBrainV2Activities(
         principal=principal,
@@ -1670,6 +1714,54 @@ def test_adaptive_same_result_hash_never_becomes_fake_information_gain() -> None
     assert material.calls == 2
     assert p19_manager.call_count == 1
     assert next_test_manager.call_count == 1
+
+def test_discovery_honest_stop_is_governed_terminal_not_intent_mismatch() -> None:
+    stop_manager = DeterministicDiscoveryStopManager()
+    (
+        _,
+        _,
+        bridge,
+        material,
+        investigation,
+        p19,
+        p19_manager,
+        discovery_manager,
+        activities,
+    ) = _adaptive_stack(
+        discovery=True,
+        discovery_manager_override=stop_manager,
+    )
+    service = BrainV2Service(activities=activities)
+
+    result = service.run(
+        BrainGraphState(
+            thread_id="real-discovery-honest-stop",
+            tenant_binding=f"id:{TENANT_ID}",
+            principal_ref=USER_ID,
+            current_user_input="Provider-free discovery with no justified candidate.",
+        )
+    )
+
+    assert result.workflow_status == BrainWorkflowStatus.INCONCLUSIVE
+    assert result.last_completed_node == "HONEST_STOP"
+    assert result.hypothesis_ids == ()
+    assert result.discovery_required is False
+    assert result.discovery_turns == 1
+    assert discovery_manager.call_count == 1
+    assert bridge.metabot_posts == 1
+    assert material.calls == 1
+    assert p19_manager.call_count == 0
+    assert investigation.snapshot(
+        session_id=result.research_session_id,
+        principal=_principal(),
+    ).terminal_stop_reason == ManagerStopReason.NO_MEANINGFUL_GAIN
+    assert p19.snapshot(
+        research_session_id=result.research_session_id,
+        obligation_id="g_root",
+        principal=_principal(),
+    ).hypotheses == ()
+
+
 def test_real_owner_discovery_forms_governed_candidates_without_extra_native() -> None:
     (
         _,
