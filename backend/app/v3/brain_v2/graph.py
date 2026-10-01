@@ -154,6 +154,7 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
             "evidence_ids": (),
             "hypothesis_revision": 0,
             "hypothesis_ids": (),
+            "candidate_semantic_ids": (),
             "discovery_required": result.discovery_required,
             "discovery_turns": 0,
             "latest_p19_assessment_ref": None,
@@ -236,6 +237,7 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
         return {
             "hypothesis_revision": result.hypothesis_revision,
             "hypothesis_ids": result.hypothesis_ids,
+            "candidate_semantic_ids": result.candidate_semantic_ids,
             "discovery_required": False,
             "last_completed_node": "PROJECT_CANDIDATES",
             "activity_fingerprints": _append_fingerprint(
