@@ -400,6 +400,79 @@ def test_non_executable_other_subgoal_fully_covered_by_one_root_cause_is_absorbe
     assert result.brief.questions[0].kind == ResearchGoalKind.ROOT_CAUSE
 
 
+
+def test_zero_ref_other_instruction_is_not_a_second_analytical_goal_beside_one_root():
+    root_clause = "Assess which governed mechanism better explains the accepted effect."
+    routing_clause = "If evidence stays ambiguous, preserve the bounded follow-up instruction."
+    question = root_clause + " " + routing_clause
+    payload = ready_payload(
+        kind="root_cause",
+        subject=(
+            "metric.fault_count",
+            "metric.downtime",
+            "metric.performance",
+        ),
+        related=("dimension.department",),
+    )
+    payload["goals"][0].update(
+        {
+            "goal_key": "g-root",
+            "source_text": root_clause,
+            "source_fragment_text": root_clause,
+            "causal_competition": {
+                "effect_semantic_id": "metric.fault_count",
+                "candidate_mechanism_semantic_ids": [
+                    "metric.downtime",
+                    "metric.performance",
+                ],
+                "diagnostic_dimension_ids": ["dimension.department"],
+            },
+        }
+    )
+    payload["goals"].append(
+        {
+            "goal_key": "g-routing-only",
+            "kind": "other",
+            "source_text": routing_clause,
+            "source_fragment_text": routing_clause,
+            "subject_semantic_ids": [],
+            "related_semantic_ids": [],
+            "ranking": None,
+            "comparisons": [],
+            "causal_competition": None,
+        }
+    )
+    payload["investigation_directives"] = [
+        {
+            "key": "follow-if-needed",
+            "kind": "FOLLOW_VERIFIED_MATERIAL",
+            "source_goal_key": "g-root",
+            "source_text": routing_clause,
+        }
+    ]
+
+    result = ResearchIntakeCompiler(
+        transport=FakeTransport(payload),
+        calendar_reference_date="2026-09-30",
+    ).compile(
+        question=question,
+        catalog=catalog(),
+    )
+
+    assert result.brief is not None
+    assert len(result.brief.questions) == 1
+    assert result.brief.questions[0].kind == ResearchGoalKind.ROOT_CAUSE
+    assert len(result.investigation_requirements) == 1
+    assert (
+        result.investigation_requirements[0].kind
+        == ProductInvestigationRequirementKind.FOLLOW_VERIFIED_MATERIAL
+    )
+    assert (
+        result.investigation_requirements[0].source_goal_id
+        == result.brief.questions[0].goal_id
+    )
+
+
 def test_other_goal_with_distinct_governed_scope_is_not_absorbed_into_root_cause():
     clause = "Determine which governed explanation better accounts for downtime."
     separate_clause = "Also inspect machine-level context."
