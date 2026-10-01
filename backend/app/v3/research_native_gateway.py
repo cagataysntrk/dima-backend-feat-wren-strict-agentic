@@ -209,6 +209,43 @@ class NativeResearchMaterialExecutor:
         self._expected = expected_identity
 
     @staticmethod
+    def _assert_scope_fingerprint(
+        *,
+        session: ResearchSession,
+        contract: AnalyticalRequestContract,
+    ) -> str:
+        brief = session.accepted_brief
+        if brief is None:
+            raise ResearchMaterialLimitation(
+                "R1_ACCEPTED_BRIEF_REQUIRED",
+                "scope fingerprint requires immutable accepted ResearchBrief",
+            )
+        expected = brief.scope_fingerprint
+        observed = contract.scope_fingerprint
+        if observed is None:
+            raise ResearchMaterialLimitation(
+                "R1_MATERIAL_SCOPE_FINGERPRINT_REQUIRED",
+                expected,
+            )
+        if observed != expected:
+            raise ResearchMaterialLimitation(
+                "R1_MATERIAL_SCOPE_FINGERPRINT_MISMATCH",
+                f"expected={expected} observed={observed}",
+            )
+        if (
+            contract.scope_identity.version_id
+            != brief.scope.scope_version.version_id
+        ):
+            raise ResearchMaterialLimitation(
+                "R1_MATERIAL_SCOPE_VERSION_MISMATCH",
+                (
+                    f"expected={brief.scope.scope_version.version_id} "
+                    f"observed={contract.scope_identity.version_id}"
+                ),
+            )
+        return expected
+
+    @staticmethod
     def _contract_candidate_ids(contract) -> set[str]:
         candidate_ids = set(contract.metric_refs)
         candidate_ids.update(contract.dimension_refs)
@@ -336,6 +373,10 @@ class NativeResearchMaterialExecutor:
             session=session,
             obligation_id=obligation_id,
         )
+        self._assert_scope_fingerprint(
+            session=session,
+            contract=contract,
+        )
         bindings = self._material_bindings(
             principal=principal,
             session=session,
@@ -388,6 +429,10 @@ class NativeResearchMaterialExecutor:
         contract = analytical_scope or analytical_scope_contract(
             session=session,
             obligation_id=obligation_id,
+        )
+        self._assert_scope_fingerprint(
+            session=session,
+            contract=contract,
         )
         bindings = self._material_bindings(
             principal=principal,
@@ -585,6 +630,10 @@ class NativeResearchMaterialExecutor:
             session=session,
             obligation_id=obligation_id,
         )
+        self._assert_scope_fingerprint(
+            session=session,
+            contract=contract,
+        )
         scope_observation, material_observation = self._observe_scope(
             principal=principal,
             bridge=bridge,
@@ -629,6 +678,7 @@ class NativeResearchMaterialExecutor:
             native_result_provenance_ref=provenance_base + ":result",
             query_fingerprint=query_fingerprint,
             semantic_context_version=session.context_version,
+            scope_fingerprint=contract.scope_fingerprint,
             runtime=runtime,
             result=result,
             event=event,
@@ -643,6 +693,7 @@ class NativeResearchMaterialExecutor:
             evidence_kind="p14_native_research_material",
             state=EvidenceState.VERIFIED,
             payload={
+                "scope_fingerprint": contract.scope_fingerprint,
                 "native_conversation_id": str(native_conversation_id),
                 "native_query_id": native_query_id,
                 "query_fingerprint": query_fingerprint,
