@@ -60,6 +60,7 @@ class BrainGraphState(BaseModel):
 
     hypothesis_revision: int = Field(default=0, ge=0)
     hypothesis_ids: tuple[str, ...] = ()
+    candidate_semantic_ids: tuple[str, ...] = ()
     discovery_required: bool = False
     discovery_turns: int = Field(default=0, ge=0)
     max_discovery_turns: int = Field(default=3, ge=1, le=6)
@@ -97,6 +98,7 @@ class BrainGraphState(BaseModel):
             "pending_receipt_refs": self.pending_receipt_refs,
             "evidence_ids": self.evidence_ids,
             "hypothesis_ids": self.hypothesis_ids,
+            "candidate_semantic_ids": self.candidate_semantic_ids,
             "activity_fingerprints": self.activity_fingerprints,
         }
         for name, values in unique_fields.items():
@@ -113,6 +115,8 @@ class BrainGraphState(BaseModel):
             raise ValueError("evidence refs must use canonical Evidence identity")
         if any(not value for value in self.hypothesis_ids):
             raise ValueError("hypothesis refs must be non-empty")
+        if any(not value for value in self.candidate_semantic_ids):
+            raise ValueError("candidate semantic refs must be non-empty")
         if any(
             len(value) != 64 or any(ch not in "0123456789abcdef" for ch in value)
             for value in self.activity_fingerprints
@@ -145,6 +149,7 @@ class BrainStatePayload(TypedDict, total=False):
     evidence_ids: tuple[str, ...]
     hypothesis_revision: int
     hypothesis_ids: tuple[str, ...]
+    candidate_semantic_ids: tuple[str, ...]
     discovery_required: bool
     discovery_turns: int
     max_discovery_turns: int
