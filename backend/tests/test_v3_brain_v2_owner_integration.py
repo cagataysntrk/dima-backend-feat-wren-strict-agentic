@@ -729,6 +729,7 @@ class AdaptiveP19Manager:
         snapshot,
         *,
         objective,
+        scope_authority=None,
         discriminating_test_available,
         policy_statuses=None,
         deterministic_feedback_code=None,
@@ -736,6 +737,7 @@ class AdaptiveP19Manager:
         self.context_calls.append(
             {
                 "objective": objective,
+                "scope_authority": scope_authority,
                 "discriminating_test_available": discriminating_test_available,
                 "deterministic_feedback_code": deterministic_feedback_code,
             }
