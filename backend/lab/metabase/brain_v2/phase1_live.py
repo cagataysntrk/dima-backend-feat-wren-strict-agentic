@@ -221,7 +221,11 @@ def _mechanical(
         "report_exists": bool(common["report_exists"]),
         "blocked_provider_requests_zero": bool(common["blocked_provider_requests_zero"]),
         "duplicate_native_execution_zero": bool(common["duplicate_native_execution_zero"]),
-        "single_intake_call": common["intake_provider_requests"] <= 1,
+        "intake_cardinality": (
+            common["intake_provider_requests"] == 2
+            if probe_id == SCOPE_RESUME_PROBE
+            else common["intake_provider_requests"] <= 1
+        ),
     }
 
     if probe_id == "R_LIVE_1_ONE_PASS":
