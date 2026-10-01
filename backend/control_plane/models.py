@@ -680,6 +680,11 @@ class ResearchExecutionLink(SQLModel, table=True):
         sa_column=Column(Text, nullable=True),
     )
     native_query_fingerprint: str | None = Field(default=None, index=True)
+    native_agent_state_json: str | None = Field(
+        default=None,
+        sa_column=Column(Text, nullable=True),
+    )
+    native_agent_state_fingerprint: str | None = Field(default=None, index=True)
     native_subject_ref: str | None = None
     runtime_identity_json: str | None = Field(
         default=None,
