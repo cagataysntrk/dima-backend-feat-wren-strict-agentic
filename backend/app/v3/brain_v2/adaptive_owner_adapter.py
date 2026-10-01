@@ -22,7 +22,7 @@ from .activities import P17ActivityResult
 from .adaptive_test_design import (
     AdaptiveTestDesignError,
     TypedNextTestProposalManager,
-    typed_child_scope_for_next_test,
+    typed_child_material_delta_for_next_test,
 )
 from .keys import CognitionPurpose
 from .owner_adapter import BrainV2OwnerError, DimaBrainV2Activities
@@ -61,10 +61,19 @@ class AdaptiveDimaBrainV2Activities(DimaBrainV2Activities):
                 session=session,
                 obligation_id=goal.goal_id,
             )
-            child_scope = typed_child_scope_for_next_test(
+            brief = session.accepted_brief
+            if brief is None:
+                raise AdaptiveTestDesignError(
+                    "adaptive child material requires accepted ResearchBrief"
+                )
+            delta = typed_child_material_delta_for_next_test(
                 parent=parent_scope,
                 request=request,
+                governed_semantic_refs=tuple(
+                    item.candidate_id for item in brief.scope.semantic_refs
+                ),
             )
+            child_scope = delta.child_contract
             manager = TypedNextTestProposalManager(
                 inner=self._investigation_manager,
                 request=request,
