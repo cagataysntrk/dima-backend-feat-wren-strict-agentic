@@ -1207,6 +1207,143 @@ def test_entity_equality_filter_does_not_require_redundant_breakout():
     assert observed.dimension_refs == ()
 
 
+
+def test_filtered_dimension_in_contract_is_not_required_as_redundant_breakout():
+    _, session, _, _ = session_and_link(db_engine())
+    contract = rich_material_contract().model_copy(
+        update={
+            "dimension_refs": (
+                "dimension.department",
+                "time.event_date",
+            ),
+            "grain_constraints": (
+                "dimension.department",
+                "time.event_date",
+            ),
+            "ranking": None,
+            "temporal_observation": (
+                scope_module.AnalyticalTemporalObservationInvariant(
+                    kind="change",
+                    time_dimension="time.event_date",
+                    minimum_distinct_values=2,
+                )
+            ),
+        }
+    )
+    observation = rich_material_observation(
+        ranking=[],
+        dimensions=[
+            {
+                "stage_number": 0,
+                "role": "breakout",
+                "field_id": 30,
+                "table_id": 10,
+                "temporal_grain": "month",
+            },
+            {
+                "stage_number": 0,
+                "role": "filter",
+                "field_id": 20,
+                "table_id": 10,
+            },
+            {
+                "stage_number": 0,
+                "role": "temporal",
+                "field_id": 30,
+                "table_id": 10,
+            },
+        ],
+    )
+
+    observed = scope_module.assert_material_native_scope(
+        session=session,
+        obligation_id="g1",
+        contract=contract,
+        observation=observation,
+        bindings=rich_material_bindings(),
+        expected_engine=expected_identity(),
+        expected_metabase_subject=7,
+    )
+
+    assert observed.dimension_refs == (
+        "dimension.department",
+        "time.event_date",
+    )
+
+
+def test_filtered_dimension_does_not_hide_an_unfiltered_required_breakout():
+    _, session, _, _ = session_and_link(db_engine())
+    bindings = {
+        **rich_material_bindings(),
+        "dimension.machine": scope_module.NativeMaterialBinding(
+            candidate_id="dimension.machine",
+            candidate_kind="dimension",
+            database_id=1,
+            table_id=10,
+            field_id=40,
+        ),
+    }
+    contract = rich_material_contract().model_copy(
+        update={
+            "dimension_refs": (
+                "dimension.department",
+                "dimension.machine",
+                "time.event_date",
+            ),
+            "grain_constraints": (
+                "dimension.department",
+                "dimension.machine",
+                "time.event_date",
+            ),
+            "ranking": None,
+            "temporal_observation": (
+                scope_module.AnalyticalTemporalObservationInvariant(
+                    kind="change",
+                    time_dimension="time.event_date",
+                    minimum_distinct_values=2,
+                )
+            ),
+        }
+    )
+    observation = rich_material_observation(
+        ranking=[],
+        dimensions=[
+            {
+                "stage_number": 0,
+                "role": "breakout",
+                "field_id": 30,
+                "table_id": 10,
+                "temporal_grain": "month",
+            },
+            {
+                "stage_number": 0,
+                "role": "filter",
+                "field_id": 20,
+                "table_id": 10,
+            },
+            {
+                "stage_number": 0,
+                "role": "temporal",
+                "field_id": 30,
+                "table_id": 10,
+            },
+        ],
+    )
+
+    with pytest.raises(scope_module.ResearchAnalyticalScopeError) as exc:
+        scope_module.assert_material_native_scope(
+            session=session,
+            obligation_id="g1",
+            contract=contract,
+            observation=observation,
+            bindings=bindings,
+            expected_engine=expected_identity(),
+            expected_metabase_subject=7,
+        )
+
+    assert exc.value.code == "R1_NATIVE_DIMENSION_SCOPE_MISMATCH"
+
+
 def test_entity_equality_filter_still_rejects_unaccepted_extra_breakout():
     _, session, _, _ = session_and_link(db_engine())
     bindings = {
