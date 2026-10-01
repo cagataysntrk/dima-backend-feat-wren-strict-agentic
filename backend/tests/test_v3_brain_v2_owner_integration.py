@@ -637,6 +637,38 @@ class DeterministicP19Manager:
         )
 
 
+class ScopeAwareP19Manager(DeterministicP19Manager):
+    """Capture the typed current-scope authority presented to P19."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.context_calls = []
+
+    def propose_with_context(
+        self,
+        snapshot,
+        *,
+        objective,
+        scope_authority,
+        discriminating_test_available,
+        policy_statuses=None,
+        deterministic_feedback_code=None,
+    ):
+        self.context_calls.append(
+            {
+                "objective": objective,
+                "scope_authority": scope_authority,
+                "discriminating_test_available": discriminating_test_available,
+                "deterministic_feedback_code": deterministic_feedback_code,
+            }
+        )
+        return self.propose(
+            snapshot,
+            policy_statuses=policy_statuses,
+            deterministic_feedback_code=deterministic_feedback_code,
+        )
+
+
 class UncertainP19Manager:
     """Terminal P19 assessment with exact epistemic limitations."""
 
@@ -1116,6 +1148,57 @@ def test_real_owner_report_preserves_p19_uncertainty_and_limitations() -> None:
         "Observed material is associative only.",
         "Temporal order and confounding remain unresolved.",
     }
+
+
+def test_p19_followup_context_uses_resolved_scope_not_stale_goal_text() -> None:
+    manager = ScopeAwareP19Manager()
+    _, store, _, _, _, _, activities = _stack(epistemic_manager=manager)
+    service = BrainV2Service(activities=activities)
+
+    first = service.run(
+        BrainGraphState(
+            thread_id="p19-current-scope-authority",
+            tenant_binding=f"id:{TENANT_ID}",
+            principal_ref=USER_ID,
+            current_user_input="Initial governed RCA across the accepted broad scope.",
+        )
+    )
+    second = service.continue_turn(
+        thread_id="p19-current-scope-authority",
+        tenant_binding=f"id:{TENANT_ID}",
+        principal_ref=USER_ID,
+        user_input="Boyahane ile sınırla.",
+    )
+
+    assert first.scope_version_id == "scope_v1"
+    assert second.scope_version_id == "scope_v2"
+    assert len(manager.context_calls) == 2
+
+    current = manager.context_calls[-1]
+    assert current["objective"] is None
+    scope = current["scope_authority"]
+    assert scope["scope_version_id"] == "scope_v2"
+    assert scope["scope_fingerprint"]
+    assert scope["entity_filters"] == (
+        {
+            "candidate_id": "entity.paint",
+            "dimension_name": "Department",
+            "value": "Paint",
+        },
+    )
+    assert scope["periods"] == ()
+    assert "all" not in json.dumps(scope).lower()
+
+    second_session = store.load(
+        second.research_session_id,
+        tenant=f"id:{TENANT_ID}",
+        principal=USER_ID,
+    )
+    # The historical/broad goal prose may remain immutable for provenance, but
+    # it must not be the current P19 scope authority.
+    assert second_session.accepted_brief.questions[0].source_text.startswith(
+        "Duruş artışını"
+    )
 
 
 def test_real_owner_scope_repair_creates_new_scope_without_stale_evidence_reuse() -> None:
