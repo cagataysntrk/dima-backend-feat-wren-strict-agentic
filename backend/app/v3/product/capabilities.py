@@ -29,6 +29,13 @@ def _canonical(value: object) -> tuple[str, str]:
 
 _BASE_CAPABILITIES: tuple[tuple[str, CapabilityStatus, str, tuple[str, ...], tuple[str, ...]], ...] = (
     ("research.ask", CapabilityStatus.DATA_DEPENDENT, "Research is available when native governed analytical context is connected.", ("governed analytical context",), ("Metabase/Metabot",)),
+    ("brain.t1.scope_repair", CapabilityStatus.SUPPORTED, "Typed follow-up interpretation and current/historical scope projection are available over persisted Research state.", (), ("Research/Scope","Brain V2 checkpoint/resume")),
+    ("brain.t2.rca_one_pass", CapabilityStatus.DATA_DEPENDENT, "ONE_PASS RCA is available when governed native analytical context is connected.", ("governed analytical context",), ("Research","Metabase/Metabot","P19")),
+    ("brain.t3.rca_adaptive", CapabilityStatus.DATA_DEPENDENT, "ADAPTIVE RCA is available when governed native analytical context can supply one discriminating follow-up acquisition.", ("governed analytical context",), ("Research","P17","Metabase/Metabot","P19")),
+    ("brain.t4.rca_discovery", CapabilityStatus.DATA_DEPENDENT, "DISCOVERY RCA is available when governed native analytical context can support P17 candidate discovery.", ("governed analytical context",), ("Research","P17","Metabase/Metabot","P19")),
+    ("brain.t5.relationship_observational", CapabilityStatus.DATA_DEPENDENT, "Observational association/co-movement is available from governed material without requiring business-policy or causal promotion.", ("governed analytical context",), ("Research","P17","P18 projection")),
+    ("brain.t6.report_contextual", CapabilityStatus.SUPPORTED, "Contextual ReportDocument projection reuses governed Research/Evidence/P19 state and does not open a new analytical acquisition.", (), ("P20","Research/Evidence/P19 state")),
+    ("brain.t7.multi_intent", CapabilityStatus.DATA_DEPENDENT, "Compatible multi-intent requirements are compressed to minimum sufficient governed material before headless synthesis.", ("governed analytical context",), ("Research material contract","Headless Product composition")),
     ("watch.signal", CapabilityStatus.SUPPORTED, "Governed Watch and Signal lifecycle is sealed.", (), ("Core A Watch/Signal",)),
     ("investigation", CapabilityStatus.SUPPORTED, "Bounded Investigation projection is sealed over Research reasoning.", (), ("P17",)),
     ("evidence", CapabilityStatus.SUPPORTED, "Evidence and claim lineage are sealed authorities.", (), ("P14","P16")),
@@ -69,9 +76,20 @@ def capability_discovery(
     for capability_id,status,reason,required_data,dependencies in _BASE_CAPABILITIES:
         effective=status
         effective_reason=reason
-        if capability_id=="research.ask" and analytical_context_available:
+        if (
+            capability_id=="research.ask"
+            or capability_id in {
+                "brain.t2.rca_one_pass",
+                "brain.t3.rca_adaptive",
+                "brain.t4.rca_discovery",
+                "brain.t5.relationship_observational",
+                "brain.t7.multi_intent",
+            }
+        ) and analytical_context_available:
             effective=CapabilityStatus.SUPPORTED
-            effective_reason="Native governed Metabase/Metabot analytical context is available."
+            effective_reason=(
+                "Native governed Metabase/Metabot analytical context is available."
+            )
         rows.append(
             CapabilityDescriptor(
                 capability_id=capability_id,
