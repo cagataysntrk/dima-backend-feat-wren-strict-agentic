@@ -56,6 +56,9 @@ class AdaptiveDimaBrainV2Activities(DimaBrainV2Activities):
             )
         )
         before_pairs = set(before_evidence_pairs)
+        before_result_hashes = {
+            item.result_hash for item in snapshot.evidence_results
+        }
         try:
             parent_scope = analytical_scope_contract(
                 session=session,
@@ -125,6 +128,28 @@ class AdaptiveDimaBrainV2Activities(DimaBrainV2Activities):
                 "BRAIN_V2_NEXT_TEST_NO_NEW_EVIDENCE",
                 request.request_id,
             )
+
+        after_snapshot = self._investigation.snapshot(
+            session_id=current.session_id,
+            principal=self._principal,
+        )
+        new_pair_set = set(new_pairs)
+        new_result_hashes = {
+            item.result_hash
+            for item in after_snapshot.evidence_results
+            if (item.evidence_id, item.receipt_id) in new_pair_set
+        }
+        if (
+            not new_result_hashes
+            or new_result_hashes.issubset(before_result_hashes)
+        ):
+            raise BrainV2OwnerError(
+                "BRAIN_V2_NEXT_TEST_NO_INFORMATION_GAIN",
+                request.request_id,
+                last_valid_boundary="dima.p17.next_test",
+                first_invalid_boundary="dima.evidence.admit",
+            )
+
         self._ground_evidence(
             state=state,
             evidence_pairs=new_pairs,
