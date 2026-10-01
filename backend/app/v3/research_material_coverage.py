@@ -36,6 +36,7 @@ class MaterialResultCoverage(Frozen):
     status: Literal["FULL"] = "FULL"
     result_row_count: int = Field(ge=0)
     time_field_id: int | None = Field(default=None, gt=0)
+    observed_temporal_value_count: int = Field(default=0, ge=0)
     covered_comparison_roles: tuple[
         Literal["reference_period", "base_period"], ...
     ] = ()
@@ -176,22 +177,39 @@ def assert_material_result_coverage(
     """Fail closed when VERIFIED Evidence would overstate result coverage."""
 
     rows, cols = _rows_and_cols(result_payload)
-    if contract.comparison is None:
+    comparison = contract.comparison
+    temporal_observation = contract.temporal_observation
+    if comparison is None and temporal_observation is None:
         return MaterialResultCoverage(result_row_count=len(rows))
 
-    comparison = contract.comparison
-    reference_ref = comparison.reference_period.time_dimension
-    base_ref = comparison.base_period.time_dimension
-    if reference_ref != base_ref:
-        raise ResearchMaterialCoverageError(
-            "R1_RESULT_COMPARISON_DIMENSION_DRIFT",
-            "comparison periods use different governed time dimensions",
+    if comparison is not None:
+        reference_ref = comparison.reference_period.time_dimension
+        base_ref = comparison.base_period.time_dimension
+        if reference_ref != base_ref:
+            raise ResearchMaterialCoverageError(
+                "R1_RESULT_COMPARISON_DIMENSION_DRIFT",
+                "comparison periods use different governed time dimensions",
+            )
+        time_ref = reference_ref
+        missing_column_code = "R1_RESULT_TEMPORAL_COLUMN_MISMATCH"
+        missing_column_detail = (
+            "comparison Evidence requires exactly one result column bound "
+            "to the governed time field"
         )
-    binding = bindings.get(reference_ref)
+    else:
+        assert temporal_observation is not None
+        time_ref = temporal_observation.time_dimension
+        missing_column_code = "R1_RESULT_CHANGE_TEMPORAL_COLUMN_REQUIRED"
+        missing_column_detail = (
+            "change Evidence requires exactly one result column bound "
+            "to the governed time field"
+        )
+
+    binding = bindings.get(time_ref)
     if binding is None or binding.field_id is None:
         raise ResearchMaterialCoverageError(
             "R1_RESULT_TEMPORAL_BINDING_REQUIRED",
-            reference_ref,
+            time_ref,
         )
     matches = [
         index
@@ -200,11 +218,8 @@ def assert_material_result_coverage(
     ]
     if len(matches) != 1:
         raise ResearchMaterialCoverageError(
-            "R1_RESULT_TEMPORAL_COLUMN_MISMATCH",
-            (
-                "comparison Evidence requires exactly one result column bound "
-                "to the governed time field"
-            ),
+            missing_column_code,
+            missing_column_detail,
         )
     time_index = matches[0]
     temporal_values: list[object] = []
@@ -212,31 +227,63 @@ def assert_material_result_coverage(
         if not isinstance(row, (list, tuple)) or time_index >= len(row):
             raise ResearchMaterialCoverageError(
                 "R1_RESULT_ROW_SHAPE_INVALID",
-                "comparison result row does not carry the governed time column",
+                "temporal result row does not carry the governed time column",
             )
         temporal_values.append(row[time_index])
 
-    reference_covered = any(
-        _contains(value, comparison.reference_period)
-        for value in temporal_values
-    )
-    base_covered = any(
-        _contains(value, comparison.base_period)
-        for value in temporal_values
-    )
-    if not reference_covered or not base_covered:
-        missing = []
-        if not reference_covered:
-            missing.append("reference_period")
-        if not base_covered:
-            missing.append("base_period")
-        raise ResearchMaterialCoverageError(
-            "R1_RESULT_COMPARISON_COVERAGE_INCOMPLETE",
-            ",".join(missing),
+    if comparison is not None:
+        reference_covered = any(
+            _contains(value, comparison.reference_period)
+            for value in temporal_values
+        )
+        base_covered = any(
+            _contains(value, comparison.base_period)
+            for value in temporal_values
+        )
+        if not reference_covered or not base_covered:
+            missing = []
+            if not reference_covered:
+                missing.append("reference_period")
+            if not base_covered:
+                missing.append("base_period")
+            raise ResearchMaterialCoverageError(
+                "R1_RESULT_COMPARISON_COVERAGE_INCOMPLETE",
+                ",".join(missing),
+            )
+        normalized_values = {
+            _period_value(value, comparison.reference_period)
+            for value in temporal_values
+        }
+        return MaterialResultCoverage(
+            result_row_count=len(rows),
+            time_field_id=binding.field_id,
+            observed_temporal_value_count=len(normalized_values),
+            covered_comparison_roles=("reference_period", "base_period"),
         )
 
+    assert temporal_observation is not None
+    period = contract.period
+    if period is None:
+        raise ResearchMaterialCoverageError(
+            "R1_RESULT_CHANGE_PERIOD_REQUIRED",
+            "change result coverage requires accepted bounded time authority",
+        )
+    normalized_values = {
+        _period_value(value, period)
+        for value in temporal_values
+        if _contains(value, period)
+    }
+    if len(normalized_values) < temporal_observation.minimum_distinct_values:
+        raise ResearchMaterialCoverageError(
+            "R1_RESULT_CHANGE_COVERAGE_INCOMPLETE",
+            (
+                f"observed {len(normalized_values)} distinct governed time "
+                f"values; requires {temporal_observation.minimum_distinct_values}"
+            ),
+        )
     return MaterialResultCoverage(
         result_row_count=len(rows),
         time_field_id=binding.field_id,
-        covered_comparison_roles=("reference_period", "base_period"),
+        observed_temporal_value_count=len(normalized_values),
     )
+
