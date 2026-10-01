@@ -43,6 +43,7 @@ def _base(**updates) -> AnalyticalRequestContract:
             lineage_id="atl_test",
             version_id="scope_v1",
         ),
+        scope_fingerprint="a" * 64,
         metric_refs=("metric.effect", "metric.h1", "metric.h2"),
         dimension_refs=(),
         filters=(),
