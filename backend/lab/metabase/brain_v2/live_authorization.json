@@ -10,5 +10,5 @@
   "model_policy": "LUNA_FIRST",
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
-  "authorization_receipt": "discovery-semantic-label-family-preflight-v1"
+  "authorization_receipt": "discovery-semantic-label-family-preflight-v2"
 }
