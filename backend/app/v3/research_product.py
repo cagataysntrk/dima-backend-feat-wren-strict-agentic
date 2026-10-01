@@ -439,6 +439,7 @@ class ResearchAskOrchestrator:
         source_message_hash: str,
         principal: Principal,
         prior_session_id: str | None = None,
+        business_question: str | None = None,
     ) -> ResearchSession:
         tenant = self.tenant_binding_for(principal)
         subject = self._principal_subject(principal)
@@ -462,7 +463,15 @@ class ResearchAskOrchestrator:
         # P14 executes analytical Research questions only. Presentation deliverables
         # remain in the immutable accepted ResearchBrief and total USER_MUST authority
         # for product-level fulfillment after the relevant owner (for example P20) seals.
-        objectives = {item.goal_id: item.source_text for item in brief.questions}
+        descriptive_question = (business_question or "").strip()
+        objectives = {
+            item.goal_id: (
+                descriptive_question
+                if descriptive_question
+                else item.source_text
+            )
+            for item in brief.questions
+        }
         session = ResearchManager.start(
             authority=authority,
             objective=brief.objective,
