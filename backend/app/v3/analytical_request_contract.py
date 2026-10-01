@@ -10,7 +10,7 @@ from __future__ import annotations
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.v3.analytics_contract import (
     ResolvedAnalyticsIntent,
@@ -50,6 +50,14 @@ class AnalyticalComparisonInvariant(FrozenModel):
     reference_period: AnalyticalPeriodInvariant
 
 
+class AnalyticalTemporalObservationInvariant(FrozenModel):
+    """Typed requirement that change over governed time remain observable."""
+
+    kind: Literal["change"] = "change"
+    time_dimension: str = Field(min_length=1)
+    minimum_distinct_values: int = Field(default=2, ge=2)
+
+
 class AnalyticalRankingInvariant(FrozenModel):
     """Native material ranking only when one governed metric basis is authorized."""
 
@@ -77,6 +85,7 @@ class AnalyticalRequestContract(FrozenModel):
     filters: tuple[AnalyticalFilterInvariant, ...] = ()
     period: AnalyticalPeriodInvariant | None = None
     comparison: AnalyticalComparisonInvariant | None = None
+    temporal_observation: AnalyticalTemporalObservationInvariant | None = None
     ranking: (
         AnalyticalRankingInvariant
         | AnalyticalEvidenceSynthesisRankingInvariant
@@ -84,6 +93,28 @@ class AnalyticalRequestContract(FrozenModel):
     ) = None
     grain_constraints: tuple[str, ...] = ()
     requested_output_surfaces: tuple[str, ...] = ()
+
+    @model_validator(mode="after")
+    def coherent_temporal_observation(self):
+        requirement = self.temporal_observation
+        if requirement is None:
+            return self
+        if self.comparison is not None:
+            time_dimensions = {
+                self.comparison.base_period.time_dimension,
+                self.comparison.reference_period.time_dimension,
+            }
+        elif self.period is not None:
+            time_dimensions = {self.period.time_dimension}
+        else:
+            raise ValueError(
+                "temporal change observation requires accepted time authority"
+            )
+        if time_dimensions != {requirement.time_dimension}:
+            raise ValueError(
+                "temporal change observation dimension must match accepted time"
+            )
+        return self
 
 
 class AnalyticalRequestObservation(FrozenModel):
@@ -95,6 +126,7 @@ class AnalyticalRequestObservation(FrozenModel):
     filters: tuple[AnalyticalFilterInvariant, ...] = ()
     period: AnalyticalPeriodInvariant | None = None
     comparison: AnalyticalComparisonInvariant | None = None
+    temporal_observation: AnalyticalTemporalObservationInvariant | None = None
     ranking: (
         AnalyticalRankingInvariant
         | AnalyticalEvidenceSynthesisRankingInvariant
@@ -206,6 +238,7 @@ def observation_from_contract(
         filters=contract.filters,
         period=contract.period,
         comparison=contract.comparison,
+        temporal_observation=contract.temporal_observation,
         ranking=contract.ranking,
         grain_constraints=contract.grain_constraints,
         requested_output_surfaces=contract.requested_output_surfaces,
@@ -293,6 +326,11 @@ def assert_child_request_scope(
             "ANALYTICAL_CHILD_COMPARISON_MUTATION_FORBIDDEN",
             "P17 child cannot change accepted comparison intent",
         )
+    if parent.temporal_observation != child.temporal_observation:
+        raise AnalyticalRequestMismatch(
+            "ANALYTICAL_CHILD_TEMPORAL_OBSERVATION_MUTATION_FORBIDDEN",
+            "P17 child cannot change accepted effect-observation intent",
+        )
     if parent.ranking != child.ranking:
         raise AnalyticalRequestMismatch(
             "ANALYTICAL_CHILD_RANKING_MUTATION_FORBIDDEN",
@@ -365,6 +403,11 @@ def assert_request_invariants(
         ("FILTER", contract.filters, observation.filters),
         ("TIME", contract.period, observation.period),
         ("COMPARISON", contract.comparison, observation.comparison),
+        (
+            "TEMPORAL_OBSERVATION",
+            contract.temporal_observation,
+            observation.temporal_observation,
+        ),
         ("RANKING", contract.ranking, observation.ranking),
         ("GRAIN", contract.grain_constraints, observation.grain_constraints),
         (
