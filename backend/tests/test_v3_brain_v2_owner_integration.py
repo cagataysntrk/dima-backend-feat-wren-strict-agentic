@@ -905,6 +905,72 @@ class DeterministicDiscoveryManager:
         )
 
 
+
+class GreedyFirstDiscoveryManager(DeterministicDiscoveryManager):
+    """Always choose the first currently authorized governed mechanism."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.allowed_history: list[tuple[str, ...]] = []
+
+    def propose_root_candidate_for_obligation_with_constraints(
+        self,
+        snapshot,
+        *,
+        target_parent_obligation,
+        allowed_evidence_refs,
+        allowed_mechanism_refs,
+        allowed_intents,
+    ):
+        self.allowed_history.append(tuple(allowed_mechanism_refs))
+        assert allowed_mechanism_refs
+        assert InvestigationIntent.FORM_CLAIM in allowed_intents
+        self.call_count += 1
+        mechanism = allowed_mechanism_refs[0]
+        rule = snapshot.action_profile.rule_for(
+            InvestigationIntent.FORM_CLAIM
+        )
+        assert rule is not None
+        parent = (
+            rule.legal_parent_step_ids[-1]
+            if rule.legal_parent_step_ids
+            else None
+        )
+        assert parent is not None or rule.allow_parentless
+        evidence_id = allowed_evidence_refs[0]
+        return ManagerProposal(
+            proposal_id=f"greedy-discovery-{self.call_count}",
+            source_revision=snapshot.source_revision,
+            target_parent_obligation=target_parent_obligation,
+            action=ManagerAction.FORM_CLAIM,
+            intent=InvestigationIntent.FORM_CLAIM,
+            parent_step_id=parent,
+            branch_key=None,
+            target_kind=InvestigationTargetKind.EXPLANATION,
+            target_ref=mechanism,
+            objective_key=f"greedy.discover.{self.call_count}",
+            bounded_objective="Form one governed explanatory candidate.",
+            rationale="Choose one currently authorized governed candidate.",
+            inspected_evidence_refs=(evidence_id,),
+            inspected_claim_refs=(),
+            inspected_material_refs=(),
+            expected_information_gain="Add one distinct governed alternative.",
+            claim=ProposedClaimDraft(
+                claim_text=f"Greedy governed candidate {self.call_count}.",
+                proposition={"mechanism_ref": mechanism},
+                scope={"scope_version_id": "scope_v1"},
+                freshness=ClaimFreshness(as_of=NOW),
+                evidence_links=(
+                    ProposedClaimEvidenceLink(
+                        evidence_id=evidence_id,
+                        relation=ClaimEvidenceRelation.CONTEXTUALIZES,
+                    ),
+                ),
+            ),
+            mechanism_semantic_ref=mechanism,
+        )
+
+
 class DeterministicDiscoveryStopManager:
     """Provider-free P17 stand-in for honest discovery exhaustion."""
 
@@ -1760,6 +1826,68 @@ def test_discovery_honest_stop_is_governed_terminal_not_intent_mismatch() -> Non
         obligation_id="g_root",
         principal=_principal(),
     ).hypotheses == ()
+
+
+
+def test_discovery_candidate_vocabulary_consumes_durable_candidate_identity() -> None:
+    manager = GreedyFirstDiscoveryManager()
+    (
+        _,
+        _,
+        bridge,
+        material,
+        investigation,
+        p19,
+        p19_manager,
+        _,
+        activities,
+    ) = _adaptive_stack(
+        discovery=True,
+        discovery_manager_override=manager,
+    )
+    service = BrainV2Service(activities=activities)
+
+    result = service.run(
+        BrainGraphState(
+            thread_id="real-discovery-consumes-candidate",
+            tenant_binding=f"id:{TENANT_ID}",
+            principal_ref=USER_ID,
+            current_user_input="Provider-free governed discovery.",
+        )
+    )
+
+    assert result.workflow_status == BrainWorkflowStatus.COMPLETE
+    assert manager.call_count == 2
+    assert len(manager.allowed_history) == 2
+    first, second = manager.allowed_history
+    assert len(first) >= 2
+    assert first[0] not in second
+    assert set(second).issubset(set(first))
+    assert len(result.hypothesis_ids) == 2
+    assert bridge.metabot_posts == 1
+    assert material.calls == 1
+    assert p19_manager.call_count == 1
+
+    snapshot = investigation.snapshot(
+        session_id=result.research_session_id,
+        principal=_principal(),
+    )
+    mechanism_refs = []
+    for claim in snapshot.claims:
+        semantics = decode_root_cause_candidate_semantics(
+            claim.proposition or {}
+        )
+        assert semantics is not None
+        mechanism_refs.append(semantics.mechanism_ref)
+    assert len(mechanism_refs) == 2
+    assert len(set(mechanism_refs)) == 2
+
+    epistemic = p19.snapshot(
+        research_session_id=result.research_session_id,
+        obligation_id="g_root",
+        principal=_principal(),
+    )
+    assert len(epistemic.hypotheses) == 2
 
 
 def test_real_owner_discovery_forms_governed_candidates_without_extra_native() -> None:
