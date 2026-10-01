@@ -3,12 +3,12 @@
   "enabled": false,
   "probe_id": "R_LIVE_2_ADAPTIVE",
   "candidate_product_sha": "0f710a3b64cb4b114bc0877b6e8535c8e47d6333",
-  "provider_free_run_id": 36845523318,
-  "provider_free_status": "GREEN",
+  "provider_free_run_id": 0,
+  "provider_free_status": "PENDING",
   "engine_sha": "d5c60dc9f37a9ec9c5b0117f178146bbcb8dca88",
   "engine_release": "0.63.18-dima.9",
   "model_policy": "LUNA_FIRST",
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
-  "authorization_receipt": "adaptive-running-36845762477"
+  "authorization_receipt": "filtered-dimension-breakout-reproducer-v1"
 }
