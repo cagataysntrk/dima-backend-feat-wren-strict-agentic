@@ -94,6 +94,15 @@ SCOPE_RESUME_TURNS = (
     ),
     "Aynı araştırmayı yalnız Assembly bölümüyle sınırla.",
 )
+DISCOVERY_MANUAL_CONTRACT = (
+    "user supplies no candidate mechanism identities",
+    "P17 returns only governed candidate IDs or an honest insufficient-candidate terminal",
+    "no fabricated semantic identity or free-text mechanism authority",
+    "when candidates are formed they are Evidence-grounded before P19 assessment",
+    "candidate set is decision-useful or insufficiency is stated honestly",
+    "no redundant native acquisition or causal overclaim",
+)
+
 SCOPE_RESUME_MANUAL_CONTRACT = (
     "scope_v1 advances to scope_v2 on the same logical lineage",
     "prior Research/Evidence is historical and not reused as current",
@@ -208,6 +217,28 @@ def _mechanical(
             for link in item.groundings
         )
     )
+    p17_terminal_stop = getattr(
+        p17_snapshot,
+        "terminal_stop_reason",
+        None,
+    )
+    discovery_candidate_path = (
+        state.workflow_status == BrainWorkflowStatus.COMPLETE
+        and len(p17_claims) >= 2
+        and len(hypotheses) >= 2
+        and len(evidence_grounded) >= 2
+        and state.latest_p19_assessment_ref is not None
+        and report_doc is not None
+    )
+    discovery_honest_stop = (
+        state.workflow_status == BrainWorkflowStatus.INCONCLUSIVE
+        and state.last_completed_node == "HONEST_STOP"
+        and p17_terminal_stop is not None
+        and not p17_claims
+        and not hypotheses
+        and state.latest_p19_assessment_ref is None
+        and report_doc is None
+    )
     common = {
         "terminal_complete": state.workflow_status == BrainWorkflowStatus.COMPLETE,
         "scope_current": state.scope_version_id == (
@@ -229,13 +260,12 @@ def _mechanical(
         "evidence_grounded_hypothesis_count": len(evidence_grounded),
         "p17_claim_count": len(p17_claims),
         "p17_discriminating_test_count": len(p17_test_steps),
+        "discovery_candidate_path": discovery_candidate_path,
+        "discovery_honest_stop": discovery_honest_stop,
     }
     checks: dict[str, bool] = {
-        "terminal_complete": bool(common["terminal_complete"]),
         "scope_current": bool(common["scope_current"]),
         "governed_evidence_present": bool(common["governed_evidence_present"]),
-        "p19_assessment_exists": bool(common["p19_assessment_exists"]),
-        "report_exists": bool(common["report_exists"]),
         "blocked_provider_requests_zero": bool(common["blocked_provider_requests_zero"]),
         "duplicate_native_execution_zero": bool(common["duplicate_native_execution_zero"]),
         "intake_cardinality": (
@@ -244,6 +274,14 @@ def _mechanical(
             else common["intake_provider_requests"] <= 1
         ),
     }
+    if probe_id != "R_LIVE_3_DISCOVERY":
+        checks.update(
+            {
+                "terminal_complete": bool(common["terminal_complete"]),
+                "p19_assessment_exists": bool(common["p19_assessment_exists"]),
+                "report_exists": bool(common["report_exists"]),
+            }
+        )
 
     if probe_id == "R_LIVE_1_ONE_PASS":
         checks.update(
@@ -271,9 +309,10 @@ def _mechanical(
         checks.update(
             {
                 "one_initial_native_acquisition": common["native_acquisitions"] == 1,
-                "multiple_governed_candidate_claims": common["p17_claim_count"] >= 2,
-                "multiple_hypotheses": common["hypothesis_count"] >= 2,
-                "hypotheses_grounded": common["evidence_grounded_hypothesis_count"] >= 2,
+                "typed_discovery_terminal": (
+                    common["discovery_candidate_path"]
+                    or common["discovery_honest_stop"]
+                ),
                 "provider_slo": common["provider_requests"] <= 12,
             }
         )
@@ -340,7 +379,11 @@ def main() -> int:
     manual_contract = (
         SCOPE_RESUME_MANUAL_CONTRACT
         if is_scope_resume
-        else tuple(PROBES[args.probe_id]["manual_contract"])
+        else (
+            DISCOVERY_MANUAL_CONTRACT
+            if args.probe_id == "R_LIVE_3_DISCOVERY"
+            else tuple(PROBES[args.probe_id]["manual_contract"])
+        )
     )
     binding_manifest = load_binding_manifest(args.binding_manifest)
     catalog = build_catalog(binding_manifest)
