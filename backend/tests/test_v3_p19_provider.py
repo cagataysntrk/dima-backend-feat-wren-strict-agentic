@@ -98,6 +98,7 @@ def snapshot() -> P19CaseSnapshot:
         obligation_id="g1",
         tenant_binding=a.tenant_binding,
         semantic_context_version=a.semantic_context_version,
+        scope_fingerprint="9" * 64,
         hypotheses=(
             HypothesisSnapshot(hypothesis=a, groundings=(ae, ap)),
             HypothesisSnapshot(hypothesis=b, groundings=(bm, bc)),
