@@ -1,14 +1,14 @@
 {
   "schema_version": "dima_brain_v2_live_authorization_v1",
-  "enabled": false,
-  "probe_id": "R_LIVE_3_DISCOVERY",
-  "candidate_product_sha": "baf6c21e804a92dd1255f9a23475dbe6af07070b",
-  "provider_free_run_id": 0,
-  "provider_free_status": "PENDING",
+  "enabled": true,
+  "probe_id": "R_LIVE_1_ONE_PASS",
+  "candidate_product_sha": "dae87dac41fd651b50b26c258556cb6a2fbe20c4",
+  "provider_free_run_id": 36872846696,
+  "provider_free_status": "GREEN",
   "engine_sha": "d5c60dc9f37a9ec9c5b0117f178146bbcb8dca88",
   "engine_release": "0.63.18-dima.9",
   "model_policy": "LUNA_FIRST",
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
-  "authorization_receipt": "discovery-native-context-preload-preflight-v1"
+  "authorization_receipt": "phase2-t2-onepass-quality-recert-v1"
 }
