@@ -260,7 +260,7 @@ class ResearchManager:
         return cls.advance(session,now=now,hypotheses=(*session.hypotheses,h))
 
     @staticmethod
-    def _native_material_message(item, analytical_scope):
+    def native_material_message(*, objective: str, analytical_scope):
         """Deliver the accepted material contract on Metabot's visible message surface.
 
         The block is a deterministic projection of AnalyticalRequestContract only.
@@ -395,7 +395,7 @@ class ResearchManager:
         lines.extend(
             (
                 "[USER OBLIGATION]",
-                item.objective,
+                objective,
                 "[MATERIAL TURN BOUNDARY]",
                 "- this native turn acquires only the analytical material defined by the accepted contract above",
                 "- produce exactly one executable native analytical query satisfying that contract",
@@ -421,7 +421,10 @@ class ResearchManager:
         req=NativeEngineRequest(
             profile_id=conv.profile_id,
             metabot_id=conv.metabot_id,
-            message=cls._native_material_message(item, analytical_scope),
+            message=cls.native_material_message(
+                objective=item.objective,
+                analytical_scope=analytical_scope,
+            ),
             context=native_request_context(analytical_scope),
             conversation_id=conv.conversation_id,
             history=None,
