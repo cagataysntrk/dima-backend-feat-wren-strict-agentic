@@ -1,16 +1,16 @@
 # DIMA BRAIN V2 — FINAL CLOSURE STATUS
 
 CURRENT GATE
-G5 — T4 DISCOVERY candidate-vocabulary family closure
+G5 — T4 DISCOVERY legal partial-candidate honest-stop adjudication
 
 Platform HEAD
-48d1abd8fc41c4b469badcbd2e53fb1543115165
+6885493d56ffdf7cb402d901710145e4b90d9664
 
 semantic Product SHA
 d6a8eddf46a6ec83f0339cf3368df4dbc87350cb
 
-Proof:
-d6a8eddf... -> 48d1abd8...
+Product proof
+d6a8eddf... -> 6885493d...
 backend/app/** = ZERO DIFF
 
 engine SHA/release
@@ -19,148 +19,145 @@ d5c60dc9f37a9ec9c5b0117f178146bbcb8dca88
 FROZEN
 second build forbidden
 
-WHAT CHANGED
-- T1 SCOPE RESUME remains SEALED at 36908273500 = GREEN = 4/4.
-- T2 ONE_PASS remains SEALED at 36908926530 = GREEN = 4/4.
-- T3 ADAPTIVE remains SEALED at 36915701021 = GREEN = 4/4.
-- T4 recertification 36918861962 produced three Evidence-linked P17 claims but all three normalized to the same governed mechanism identity metric.fault_count.
-- Added a deterministic remaining-candidate vocabulary projection from durable current-scope P17 claim state.
-- Each discovery turn now offers only governed mechanism refs not already represented by an admissible typed Evidence-linked candidate claim.
-- Foreign obligation, historical scope, untyped and no-Evidence claims do not consume the current vocabulary.
-- Provider output that escapes the remaining governed vocabulary fails closed.
-- No prompt/regex/fuzzy/morph/benchmark-specific logic, no new analytics engine, no LangGraph semantic expansion.
-
-ROOT CAUSE / INVARIANT
-T4 live family:
-repeated governed candidate identity across discovery turns.
-
-Earliest invariant:
-durable admitted candidate identity
-must be removed from the next legal P17 discovery vocabulary.
-
-Formally:
-remaining_t = governed_candidates - admissible_current_scope_candidate_claims_t
-
-P17 still owns candidate cognition.
-Dima only projects the closed governed vocabulary from durable authority.
-
-FIRST INVALID BOUNDARY
-last_valid_boundary:
-dima.p17.discovery.snapshot
-
-first_invalid_boundary:
-dima.p17.discovery.allowed_candidate_vocabulary
-
-The old adapter re-opened the full governed candidate set on every discovery turn.
-
-FILES CHANGED
-- backend/app/v3/brain_v2/discovery_candidate_design.py
-- backend/app/v3/brain_v2/owner_adapter.py
-- backend/tests/test_v3_brain_v2_owner_integration.py
-- backend/tests/test_v3_brain_v2_discovery_candidate_design.py
-- backend/belgeler/metabase/DIMA_BRAIN_V2_FINAL_CLOSURE_STATUS.md
-
-PROVIDER-FREE
-exact reproducer:
-36919863363 = RED
-1 failed / 26 passed / 1 skipped
-failure = repeated candidate family remained INCONCLUSIVE
-
-focused fix:
-36920356170 = GREEN
-
-metamorphic sibling closure:
-36920558912 = GREEN
-
-full Phase-1 closure:
-PENDING — triggered by this status commit
-
-METAMORPHIC
-result:
-focused GREEN
-
-covered:
-1 durable current-scope typed Evidence-linked candidate -> consumed
-2 foreign obligation claim -> not consumed
-3 historical lineage/scope claim -> not consumed
-4 untyped claim -> not consumed
-5 no-Evidence claim -> not consumed
-6 governed order/dedup preserved
-7 existing honest-stop discovery path remains covered by owner integration suite
-
-LIVE
-latest T4:
-run: 36918861962
-artifact: dima-brain-v2-live-R_LIVE_3_DISCOVERY-36918861962
-artifact id: 11190972486
-artifact digest: sha256:322c450a58aacdaa2a4a2036f412ac9b0068333b7c15e7bf0f72030bdd6cbc4d
-mechanical: RED
-manual: NOT SCORED — mechanical terminal contract failed
-candidate: 3b8f3c44d3a23a41f2ce55b9b8031f3a3d024e4a
-
-Observed:
-- one initial native acquisition
-- governed Evidence present
-- 3 P17 claims
-- 1 unique hypothesis identity
-- P19 assessment absent
-- no duplicate native execution
-- no blocked provider request
-- exception = 0
-
-PROVIDER REQUESTS
-latest T4:
-7 total
-research_intake=1
-metabase=3
-p17=3
-p19=0
-
-TOKENS
-latest T4:
-prompt=87006
-completion=5224
-reasoning=539
-
-LATENCY
-53238 ms
-
-COST
-$0.01611813
-
-EXCEPTIONS
-0 in 36918861962
-
-DUPLICATE NATIVE
-0 known
-
-STALE EVIDENCE
-0 known
-
-KNOWN BLOCKERS
-- Full Phase-1 provider-free closure for semantic Product d6a8eddf... is pending.
-- No paid T4 retry is authorized until that full closure is GREEN.
-- T5 RELATIONSHIP fresh proof pending.
-- T6 CONTEXTUAL REPORT fresh proof pending.
-- T7 MULTI-INTENT fresh proof pending.
-
 SEALED CAPABILITIES
 T1 SCOPE RESUME = 36908273500 = GREEN = 4/4
 T2 ONE_PASS = 36908926530 = GREEN = 4/4
 T3 ADAPTIVE = 36915701021 = GREEN = 4/4
 
+T4 DISCOVERY LIVE
+run: 36921042293
+trigger SHA: cf9fffe0ddbc0672760651f5e238415d9c6a3e5e
+semantic Product: d6a8eddf46a6ec83f0339cf3368df4dbc87350cb
+artifact: dima-brain-v2-live-R_LIVE_3_DISCOVERY-36921042293
+artifact id: 11191962039
+artifact digest: sha256:64bc12173096f058c505fc45ccc83aba79e5bbcff91dc2c4298975a6bf728ea4
+original workflow verdict: RED
+exception: 0
+
+WHAT THE LIVE PROVED
+- initial native acquisition = 1
+- duplicate native execution = 0
+- blocked provider requests = 0
+- governed Evidence present
+- P17 provider calls = 2
+- one durable typed Evidence-grounded governed candidate was formed
+- the second P17 turn returned typed STOP_INVESTIGATION
+- stop reason = CAUSAL_IDENTIFICATION_LIMIT
+- no P19 causal assessment was fabricated
+- no report was fabricated
+- workflow ended INCONCLUSIVE / HONEST_STOP
+- provider requests fell from prior 7-request failed discovery to 5
+
+ROOT CAUSE / INVARIANT
+The earlier repeated-candidate family is CLOSED by semantic Product d6a8eddf.
+
+The remaining RED was a live-harness contract defect:
+BrainGraph legally routes
+  fewer than two hypotheses
+  + discovery_required=false
+  -> HONEST_STOP.
+
+The live harness had modeled honest stop more narrowly as:
+  zero claims
+  + zero hypotheses.
+
+Permanent mechanical invariant:
+a DISCOVERY honest terminal may contain zero or one admissible current-scope candidate,
+provided:
+- workflow is INCONCLUSIVE / HONEST_STOP,
+- P17 has a typed terminal stop,
+- discovery_required=false,
+- hypothesis count < 2,
+- every retained hypothesis is Evidence-grounded,
+- claims cannot exist without a typed hypothesis,
+- no P19 assessment/report is fabricated.
+
+FIRST INVALID BOUNDARY
+last_valid_boundary:
+brain_v2.graph.after_discovery
+
+first_invalid_boundary:
+brain_v2.live.mechanical.discovery_honest_stop
+
+FILES CHANGED FOR GATE ALIGNMENT
+- backend/tests/test_v3_brain_v2_live_harness.py
+- backend/lab/metabase/brain_v2/phase1_live.py
+- backend/belgeler/metabase/DIMA_BRAIN_V2_FINAL_CLOSURE_STATUS.md
+
+PRODUCT SEMANTICS
+UNCHANGED
+
+MANUAL T4 ADJUDICATION
+score: 3/4
+status: ACCEPTABLE IF corrected mechanical gate closes provider-free
+
+Why not 4/4:
+- user requested discovery of multiple candidate mechanisms;
+- live produced one typed governed candidate and then honestly stopped;
+- this is safe and useful but not FULL breadth.
+
+Why >=3:
+- no invented semantic identity,
+- candidate is governed and Evidence-grounded,
+- insufficiency is explicit and honest,
+- no redundant native acquisition,
+- no unsupported causal promotion.
+
+PROVIDER REQUESTS
+5 total
+research_intake=1
+metabase=2
+p17=2
+p19=0
+
+TOKENS
+prompt=59348
+completion=2934
+reasoning=305
+
+LATENCY
+32137 ms
+
+COST
+$0.0118538
+
+METAMORPHIC / PROVIDER-FREE
+repeated-candidate exact reproducer:
+36919863363 = RED
+
+candidate-vocabulary focused fix:
+36920356170 = GREEN
+
+candidate-vocabulary siblings:
+36920558912 = GREEN
+
+pre-live full Phase-1 closure:
+36920763747 = GREEN
+
+corrected honest-stop mechanical closure:
+PENDING — triggered by this commit
+
+KNOWN BLOCKERS
+- corrected discovery honest-stop gate must pass full Phase-1 provider-free.
+- T5 relationship fresh proof pending.
+- T6 contextual report fresh proof pending.
+- T7 multi-intent fresh proof pending.
+- final G8/G9 closure pending.
+
 NEXT EXACT ACTION
-1. Complete one full current-head Phase-1 provider-free closure.
-2. If GREEN, freeze semantic Product d6a8eddf...
-3. Arm exactly one fresh R_LIVE_3_DISCOVERY.
-4. Disarm immediately after trigger.
-5. Manually adjudicate actual artifact.
-6. If accepted, seal T4 and move to T5/T6.
+1. Complete current full Phase-1 provider-free closure.
+2. If GREEN, seal T4 at live 36921042293 with corrected mechanical adjudication and manual 3/4.
+3. Declare Phase 1 ACCEPTED with T1=4, T2=4, T3=4, T4=3.
+4. Update Phase-2 headless base to final Phase-1 semantic Product d6a8eddf...
+5. Continue G6 T5/T6, G7 T7, G8, G9.
 
 90+ HIGH-CONFIDENCE READINESS
 NO
 
 30-CASE READY
+NO
+
+90+ PROVEN
 NO
 
 30-case
