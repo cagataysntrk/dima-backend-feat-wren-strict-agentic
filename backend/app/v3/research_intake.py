@@ -1114,8 +1114,20 @@ class ResearchIntakeCompiler:
             )
             subsumed_by_one_root = (
                 not has_distinct_analytical_surface
-                and bool(refs)
-                and sum(refs.issubset(root_refs) for root_refs in root_ref_sets) == 1
+                and (
+                    (
+                        not refs
+                        and len(root_ref_sets) == 1
+                    )
+                    or (
+                        bool(refs)
+                        and sum(
+                            refs.issubset(root_refs)
+                            for root_refs in root_ref_sets
+                        )
+                        == 1
+                    )
+                )
             )
             if represented_by_deliverable or subsumed_by_one_root:
                 continue
