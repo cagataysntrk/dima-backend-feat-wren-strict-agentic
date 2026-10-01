@@ -1,5 +1,29 @@
 # DIMA BRAIN V2 — CURRENT HANDOFF
 
+> **CURRENT AUTHORITY — 2026-10-01**
+>
+> **Status:** ARCHITECTURAL STOP — ENGINE OWNER REVIEW REQUIRED  
+> **Stop receipt:** `DIMA_BRAIN_V2_ENGINE_STOP_RECEIPT.md`  
+> **Platform HEAD before this handoff refresh:** `fc6ca0a5e21d199d9f8d94bff0f4ad8ae87a60a2`  
+> **Current semantic Product:** `0ed82ef7341fae9ef00057a4f0fa8d0fadf45de6`  
+> **Current full provider-free authority:** `36795446842 = SUCCESS`  
+> **Latest surgical live:** `36808793721 = RED`  
+> **Engine:** `0f16f2b5a1ec774ac7afee6214c726e82f9ceb3c / 0.63.18-dima.8`  
+> **Engine builds during Brain V2:** `0`
+>
+> Latest failure is **not** an Intake/P19/LangGraph defect. The exact native query is generated,
+> but dima.8 NLQ opens a post-query LLM iteration. Full stream therefore hits the bounded provider
+> ceiling; early disconnect prevents a finalized `finished=true` producer occurrence, making
+> native material observation return `NATIVE_QUERY_OCCURRENCE_NOT_FOUND`.
+>
+> Do not run another paid Brain V2 probe and do not start Phase 2 until engine-owner review resolves
+> the lifecycle boundary. The minimal owner-correct candidate is the engine's existing
+> `terminal-tools` mechanism with successful `construct_notebook_query` terminal for `:nlq`.
+> No engine change/build has been authorized or performed here.
+>
+> Frontend remains forbidden. 30-case remains forbidden.
+
+
 **Status:** ACTIVE — PHASE 1 ACCEPTANCE CLOSURE  
 **Branch:** `feat/dima-brain-v2`  
 **Decision:** DMP-DEC-0076  
