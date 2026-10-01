@@ -18,7 +18,7 @@ from app.v3.research import ObligationState, StoppingStatus
 from app.v3.research_store import ResearchPersistenceError, ResearchSessionStore
 from control_plane.authorize import Principal
 from control_plane.db import engine as control_plane_engine
-from control_plane.models import BusinessRelationshipPolicyUseRecord, HypothesisRecord, ReportDocumentRecord, ResearchExecutionLink, ResearchExplorationMaterial, ResearchReasoningStepRecord
+from control_plane.models import BusinessRelationshipPolicyUseRecord, HypothesisRecord, ReportDocumentRecord, ResearchClaimRecord, ResearchExecutionLink, ResearchExplorationMaterial, ResearchReasoningStepRecord
 
 class Frozen(BaseModel):
     model_config = ConfigDict(frozen=True, extra='forbid')
