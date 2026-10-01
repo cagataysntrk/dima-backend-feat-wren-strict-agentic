@@ -4,10 +4,10 @@ CURRENT GATE
 G5
 
 Platform HEAD
-fdd0d41222dbbc1d8eb9698093c6fe6cc9c43e76
+3b8f3c44d3a23a41f2ce55b9b8031f3a3d024e4a
 
 semantic Product SHA
-bf7dd7b0a39418471141327994ac3e2a773aa749
+3b8f3c44d3a23a41f2ce55b9b8031f3a3d024e4a
 
 Proof:
 bf7dd7b0... -> 6e5430df...
@@ -125,7 +125,9 @@ KNOWN BLOCKERS
 - error = P17_DOWNSTREAM_REENTRY_INTENT_MISMATCH.
 - first wrong transition: Brain V2 discovery adapter authorizes {FORM_CLAIM, STOP_INVESTIGATION} to P17, then pins run_one downstream result to FORM_CLAIM only.
 - STOP_INVESTIGATION is already a legal P17 global-control terminal intent; graph already routes discovery terminal without hypotheses to HONEST_STOP.
-- exact provider-free reproducer commit fdd0d412... fails only the new honest-stop case: 1 failed / 25 passed / 1 skipped.
+- exact provider-free reproducer commit fdd0d412... failed only the new honest-stop case: 1 failed / 25 passed / 1 skipped.
+- typed allowed-outcome fix: 8c792990... + 3b8f3c44...
+- focused Brain V2 PF 36917795650 = GREEN with both FORM_CLAIM and honest STOP discovery siblings.
 - T5 RELATIONSHIP fresh live pending.
 - T6 CONTEXTUAL REPORT fresh live pending.
 - T7 MULTI-INTENT fresh live pending.
@@ -136,14 +138,10 @@ T2 ONE_PASS = 36908926530 = GREEN = 4/4
 T3 ADAPTIVE = 36915701021 = GREEN = 4/4
 
 NEXT EXACT ACTION
-T4 circuit breaker is active.
-Remove the contradictory FORM_CLAIM-only downstream pin from discovery owner composition.
-Do not change P17 action-profile semantics, graph semantics, P19, prompts, engine, provider ceilings or candidate identity rules.
-Run focused provider-free with both:
-- governed FORM_CLAIM discovery sibling
-- legal STOP_INVESTIGATION honest-stop sibling
-Then run full affected provider-free closure.
-Only after GREEN freeze the new semantic SHA and run one fresh T4 live.
+Run full affected Phase-1 provider-free closure on semantic Product 3b8f3c44...
+If GREEN, freeze 3b8f3c44... and run exactly one fresh R_LIVE_3_DISCOVERY.
+No same-candidate retry.
+If T4 is accepted, close Phase 1 and move to G6/G7 backend/headless certification.
 
 90+ HIGH-CONFIDENCE READINESS
 NO
