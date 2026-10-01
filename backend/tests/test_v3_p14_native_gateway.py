@@ -704,6 +704,15 @@ def test_r5_p13_rejection_does_not_block_legal_native_execution(p13_detail):
     )
 
     assert outcome.evidence.verified
+    assert session.accepted_brief is not None
+    assert (
+        outcome.receipt.scope_fingerprint
+        == session.accepted_brief.scope_fingerprint
+    )
+    assert (
+        outcome.evidence.payload["scope_fingerprint"]
+        == session.accepted_brief.scope_fingerprint
+    )
     assert bridge.attestation_calls == []
     assert bridge.calls == [query]
     assert bridge.material_observation_calls == [
