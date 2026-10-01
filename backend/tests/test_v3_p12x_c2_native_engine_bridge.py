@@ -9,6 +9,7 @@ from pydantic import ValidationError
 
 from app.v3.substrate.metabase.native_engine import (
     NativeEngineBridge,
+    NativeEngineBridgeError,
     NativeEngineIdentityMismatch,
     NativeEngineStreamError,
 )
@@ -291,6 +292,122 @@ def test_c2_bridge_consumes_natural_terminal_stream_after_generated_query_artifa
     assert observation.errors == ()
     assert [event.prefix for event in observation.events] == ["2", "d"]
     assert observation.finish_parts == (finish,)
+
+
+def test_c2_continued_turn_rejects_prior_state_query_as_new_acquisition():
+    prior_query = {
+        "database": 1,
+        "type": "query",
+        "query": {"source-table": 10, "aggregation": [["count"]]},
+    }
+    prior_state = {"queries": {"q-prior": prior_query}}
+    state_part = {
+        "type": "state",
+        "value": {"queries": {"q-prior": prior_query}},
+    }
+    request = req().model_copy(update={"state": prior_state})
+    with NativeEngineBridge(
+        base_url="http://metabase",
+        session_token="fixture-session",
+        expected_identity=IDENTITY,
+        transport=transport(
+            [
+                "2:" + json.dumps(state_part, separators=(",", ":")),
+                'd:{"finishReason":"stop"}',
+            ]
+        ),
+    ) as bridge:
+        observation = bridge.invoke(request)
+        with pytest.raises(
+            NativeEngineBridgeError,
+            match="new executable query",
+        ):
+            bridge.capture_produced_query(
+                observation,
+                prior_state=request.state,
+            )
+
+
+def test_c2_continued_turn_state_fallback_accepts_exactly_one_new_query_id():
+    prior_query = {
+        "database": 1,
+        "type": "query",
+        "query": {"source-table": 10, "aggregation": [["count"]]},
+    }
+    new_query = {
+        "database": 1,
+        "type": "query",
+        "query": {
+            "source-table": 10,
+            "aggregation": [["sum", ["field", 7, None]]],
+        },
+    }
+    prior_state = {"queries": {"q-prior": prior_query}}
+    final_state = {
+        "queries": {
+            "q-prior": prior_query,
+            "q-new": new_query,
+        }
+    }
+    request = req().model_copy(update={"state": prior_state})
+    with NativeEngineBridge(
+        base_url="http://metabase",
+        session_token="fixture-session",
+        expected_identity=IDENTITY,
+        transport=transport(
+            [
+                "2:"
+                + json.dumps(
+                    {"type": "state", "value": final_state},
+                    separators=(",", ":"),
+                ),
+                'd:{"finishReason":"stop"}',
+            ]
+        ),
+    ) as bridge:
+        observation = bridge.invoke(request)
+        produced = bridge.capture_produced_query(
+            observation,
+            prior_state=request.state,
+        )
+
+    assert produced.native_query_id == "q-new"
+    assert produced.query == new_query
+    assert produced.source == "state"
+
+
+def test_c2_fresh_turn_state_fallback_preserves_single_query_capture():
+    query = {
+        "database": 1,
+        "type": "query",
+        "query": {"source-table": 10, "aggregation": [["count"]]},
+    }
+    final_state = {"queries": {"q-fresh": query}}
+    with NativeEngineBridge(
+        base_url="http://metabase",
+        session_token="fixture-session",
+        expected_identity=IDENTITY,
+        transport=transport(
+            [
+                "2:"
+                + json.dumps(
+                    {"type": "state", "value": final_state},
+                    separators=(",", ":"),
+                ),
+                'd:{"finishReason":"stop"}',
+            ]
+        ),
+    ) as bridge:
+        observation = bridge.invoke(req())
+        produced = bridge.capture_produced_query(
+            observation,
+            prior_state={},
+        )
+
+    assert produced.native_query_id == "q-fresh"
+    assert produced.query == query
+    assert produced.source == "state"
+
 
 def test_c2_bridge_has_no_agent_api_wren_or_raw_sql_fallback():
     requested = []
