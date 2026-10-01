@@ -33,7 +33,7 @@ def req() -> NativeEngineRequest:
 
 def transport(stream_lines: list[str], *, runtime_tag: str = "v0.63.18-dima.0"):
     def handler(request: httpx.Request) -> httpx.Response:
-        assert request.headers["X-Metabase-Session"] == "restricted-session"
+        assert request.headers["X-Metabase-Session"] == "fixture-session"
         if request.url.path == "/api/session/properties":
             return httpx.Response(200, json={"version": {"tag": runtime_tag, "hash": "?"}})
         assert request.url.path == "/api/metabot/agent-streaming"
@@ -84,7 +84,7 @@ def test_c2_bridge_preserves_ordered_native_stream_and_final_state():
     ]
     with NativeEngineBridge(
         base_url="http://metabase",
-        session_token="restricted-session",
+        session_token="fixture-session",
         expected_identity=IDENTITY,
         transport=transport(lines),
     ) as bridge:
@@ -100,7 +100,7 @@ def test_c2_bridge_preserves_ordered_native_stream_and_final_state():
 def test_c2_bridge_fails_closed_on_runtime_identity_mismatch():
     with NativeEngineBridge(
         base_url="http://metabase",
-        session_token="restricted-session",
+        session_token="fixture-session",
         expected_identity=IDENTITY,
         transport=transport([], runtime_tag="v0.63.18"),
     ) as bridge:
@@ -112,7 +112,7 @@ def test_c2_bridge_fails_closed_on_native_stream_error_and_keeps_observation():
     lines = ['3:{"message":"provider failed"}']
     with NativeEngineBridge(
         base_url="http://metabase",
-        session_token="restricted-session",
+        session_token="fixture-session",
         expected_identity=IDENTITY,
         transport=transport(lines),
     ) as bridge:
@@ -122,7 +122,7 @@ def test_c2_bridge_fails_closed_on_native_stream_error_and_keeps_observation():
 
 
 
-def test_c2_bridge_stops_after_first_exact_generated_query_artifact():
+def test_c2_bridge_consumes_natural_terminal_stream_after_generated_query_artifact():
     query = {
         "database": 1,
         "type": "query",
@@ -135,14 +135,15 @@ def test_c2_bridge_stops_after_first_exact_generated_query_artifact():
         "type": "generated_entity",
         "value": {"query": {"id": "q-stop", "query": query}},
     }
+    finish = {"finishReason": "terminal-tool"}
     lines = [
         "2:" + json.dumps(generated, separators=(",", ":")),
-        '3:{"message":"post-query provider failure must not reopen acquisition"}',
+        "d:" + json.dumps(finish, separators=(",", ":")),
     ]
 
     with NativeEngineBridge(
         base_url="http://metabase",
-        session_token="restricted-session",
+        session_token="fixture-session",
         expected_identity=IDENTITY,
         transport=transport(lines),
     ) as bridge:
@@ -153,9 +154,8 @@ def test_c2_bridge_stops_after_first_exact_generated_query_artifact():
     assert produced.query == query
     assert produced.source == "generated_entity"
     assert observation.errors == ()
-    assert len(observation.events) == 1
-    assert observation.events[0].prefix == "2"
-
+    assert [event.prefix for event in observation.events] == ["2", "d"]
+    assert observation.finish_parts == (finish,)
 
 def test_c2_bridge_has_no_agent_api_wren_or_raw_sql_fallback():
     requested = []
@@ -170,7 +170,7 @@ def test_c2_bridge_has_no_agent_api_wren_or_raw_sql_fallback():
 
     with NativeEngineBridge(
         base_url="http://metabase",
-        session_token="restricted-session",
+        session_token="fixture-session",
         expected_identity=IDENTITY,
         transport=httpx.MockTransport(handler),
     ) as bridge:
@@ -201,7 +201,7 @@ def test_p13d_transport_executes_only_server_side_occurrence_identity():
     requested = []
 
     def handler(request: httpx.Request) -> httpx.Response:
-        assert request.headers["X-Metabase-Session"] == "restricted-session"
+        assert request.headers["X-Metabase-Session"] == "fixture-session"
         body = json.loads(request.content) if request.content else None
         requested.append((request.url.path, body))
         if request.url.path == "/api/dima/engine/v1/identity":
@@ -259,7 +259,7 @@ def test_p13d_transport_executes_only_server_side_occurrence_identity():
     )
     with NativeEngineBridge(
         base_url="http://metabase",
-        session_token="restricted-session",
+        session_token="fixture-session",
         expected_identity=expected,
         transport=httpx.MockTransport(handler),
     ) as client:
@@ -306,7 +306,7 @@ def test_native_direct_metabot_query_reaches_dataset_unchanged():
     requested = []
 
     def handler(request: httpx.Request) -> httpx.Response:
-        assert request.headers["X-Metabase-Session"] == "restricted-session"
+        assert request.headers["X-Metabase-Session"] == "fixture-session"
         requested.append(request.url.path)
         if request.url.path == "/api/session/properties":
             return httpx.Response(
@@ -338,7 +338,7 @@ def test_native_direct_metabot_query_reaches_dataset_unchanged():
 
     with NativeEngineBridge(
         base_url="http://metabase",
-        session_token="restricted-session",
+        session_token="fixture-session",
         expected_identity=IDENTITY,
         transport=httpx.MockTransport(handler),
     ) as bridge:
@@ -362,7 +362,7 @@ def test_native_direct_dataset_permission_failure_stays_native_http_failure():
     from app.v3.substrate.metabase.native_engine import NativeDatasetExecutionError
 
     def handler(request: httpx.Request) -> httpx.Response:
-        assert request.headers["X-Metabase-Session"] == "restricted-session"
+        assert request.headers["X-Metabase-Session"] == "fixture-session"
         assert request.url.path == "/api/dataset"
         return httpx.Response(
             403,
@@ -371,7 +371,7 @@ def test_native_direct_dataset_permission_failure_stays_native_http_failure():
 
     with NativeEngineBridge(
         base_url="http://metabase",
-        session_token="restricted-session",
+        session_token="fixture-session",
         expected_identity=IDENTITY,
         transport=httpx.MockTransport(handler),
     ) as bridge:
