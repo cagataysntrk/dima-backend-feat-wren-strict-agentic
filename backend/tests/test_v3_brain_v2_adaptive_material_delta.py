@@ -8,9 +8,11 @@ from app.v3.analytical_request_contract import (
     AnalyticalRequestContract,
     AnalyticalScopeIdentity,
     AnalyticalTemporalObservationInvariant,
+    material_coverage_contract,
 )
 from app.v3.brain_v2.adaptive_test_design import (
     AdaptiveTestDesignError,
+    typed_child_material_delta_for_next_test,
     typed_child_scope_for_next_test,
 )
 from app.v3.hypothesis_root_cause_v1 import (
@@ -121,3 +123,74 @@ def test_temporal_order_child_rejects_change_surface_already_observed():
             parent=parent,
             request=_request(),
         )
+
+def _governed_refs() -> tuple[str, ...]:
+    return (
+        "metric.effect",
+        "metric.h1",
+        "metric.h2",
+        "dimension.event_date",
+    )
+
+
+def test_material_coverage_projection_separates_required_from_allowed_time_breakout():
+    contract = _base()
+
+    coverage = material_coverage_contract(contract)
+
+    assert coverage.scope_fingerprint == contract.scope_fingerprint
+    assert coverage.material_fingerprint == contract.material_fingerprint
+    assert coverage.required_metric_refs == contract.metric_refs
+    assert coverage.allowed_metric_refs == contract.metric_refs
+    assert coverage.required_breakout_refs == ()
+    assert coverage.allowed_breakout_refs == ("dimension.event_date",)
+    assert coverage.exact_filter_source_refs == ()
+    assert coverage.time_breakout_requirement == "allowed"
+
+
+def test_typed_child_material_delta_preserves_scope_and_changes_material_fingerprint():
+    parent = _base()
+
+    delta = typed_child_material_delta_for_next_test(
+        parent=parent,
+        request=_request(),
+        governed_semantic_refs=_governed_refs(),
+    )
+
+    assert delta.scope_fingerprint == parent.scope_fingerprint
+    assert delta.parent_material_fingerprint == parent.material_fingerprint
+    assert delta.child_material_fingerprint == delta.child_contract.material_fingerprint
+    assert delta.child_material_fingerprint != delta.parent_material_fingerprint
+    assert delta.added_required_breakout_refs == ("dimension.event_date",)
+    assert delta.added_allowed_breakout_refs == ()
+    assert delta.child_contract.dimension_refs == ("dimension.event_date",)
+    assert delta.child_contract.scope_identity == parent.scope_identity
+
+
+def test_typed_child_material_delta_rejects_ungoverned_semantic_ref():
+    parent = _base()
+
+    with pytest.raises(AdaptiveTestDesignError, match="governed"):
+        typed_child_material_delta_for_next_test(
+            parent=parent,
+            request=_request(),
+            governed_semantic_refs=(
+                "metric.effect",
+                "metric.h1",
+                "metric.h2",
+            ),
+        )
+
+
+def test_same_scope_can_have_distinct_material_fingerprints_without_scope_mutation():
+    parent = _base()
+    delta = typed_child_material_delta_for_next_test(
+        parent=parent,
+        request=_request(),
+        governed_semantic_refs=_governed_refs(),
+    )
+
+    assert parent.scope_fingerprint == delta.child_contract.scope_fingerprint
+    assert parent.scope_identity == delta.child_contract.scope_identity
+    assert parent.material_fingerprint != delta.child_contract.material_fingerprint
+
