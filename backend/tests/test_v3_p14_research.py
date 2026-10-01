@@ -22,6 +22,9 @@ from app.v3.research_contracts import (
     ResearchSemanticRef,
     SemanticTargetKind,
 )
+from app.v3.analytical_request_contract import (
+    AnalyticalTemporalObservationInvariant,
+)
 from app.v3.research_analytical_scope import analytical_scope_contract
 from app.v3.research import (
     EvidenceRelation,
@@ -240,6 +243,52 @@ def _evidence(obligation_id: str, *, state: EvidenceState = EvidenceState.VERIFI
         state=state,
         payload={"claim": "native receipted result"},
     )
+
+
+
+@pytest.mark.parametrize(
+    ("time_dimension", "minimum_distinct_values"),
+    (
+        ("dimension.event_date", 2),
+        ("dimension.production_day", 3),
+    ),
+)
+def test_native_material_message_projects_typed_temporal_observation(
+    time_dimension,
+    minimum_distinct_values,
+):
+    session = _session("obl-temporal-projection")
+    item = session.obligations[0]
+    base = analytical_scope_contract(
+        session=session,
+        obligation_id="obl-temporal-projection",
+    )
+    contract = base.model_copy(
+        update={
+            "temporal_observation": AnalyticalTemporalObservationInvariant(
+                kind="change",
+                time_dimension=time_dimension,
+                minimum_distinct_values=minimum_distinct_values,
+            )
+        }
+    )
+
+    message = ResearchManager._native_material_message(item, contract)
+
+    assert "temporal_observation:" in message
+    assert "- kind: change" in message
+    assert f"- time_dimension: {time_dimension}" in message
+    assert (
+        f"- minimum_distinct_values: {minimum_distinct_values}"
+        in message
+    )
+    assert (
+        "- preserve the governed temporal observation material exactly"
+        in message
+    )
+    assert "GROUP BY" not in message
+    assert "SQL" not in message
+    assert "MBQL" not in message
 
 
 def test_p14_durable_state_delegates_objective_to_real_native_bridge_without_query_planner():
