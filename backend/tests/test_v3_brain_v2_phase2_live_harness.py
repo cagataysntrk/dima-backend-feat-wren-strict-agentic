@@ -52,6 +52,49 @@ def test_phase2_relationship_report_mechanical_requires_reuse_not_requery():
     assert all(result.values())
 
 
+def test_phase2_observational_relationship_accepts_not_required_p18_receipt():
+    turn = {
+        "ready": True,
+        "brief_payload": {
+            "questions": [
+                {
+                    "kind": "relationship",
+                    "relationship_intent": "observational",
+                }
+            ]
+        },
+        # P18 persists a NOT_REQUIRED resolution receipt for auditability.
+        # Its presence is not BUSINESS_POLICY use.
+        "p18_policy_use_refs": ["bru_" + "1" * 24],
+        "p19_assessment_refs": [],
+        "native_results": [{"query": "q1"}],
+        "evidence_by_session": {"rs1": [{"evidence_id": "e1"}]},
+        "composition_payload": {
+            **_completion(),
+            "relationship_results": [
+                {
+                    "policy_use_id": "bru_" + "1" * 24,
+                    "policy_id": None,
+                    "policy_required": False,
+                    "association_state": "SUPPORTED",
+                    "business_relationship_state": "NOT_ESTABLISHED",
+                    "contribution_state": "NOT_ESTABLISHED",
+                    "causality_state": "NOT_ESTABLISHED",
+                }
+            ],
+        },
+    }
+
+    from lab.metabase.core_b.phase1_pinpoint_live import (
+        _mechanical_observational_relationship,
+    )
+
+    result = _mechanical_observational_relationship(turn)
+    assert result["single_observational_relationship"] is True
+    assert result["no_business_policy_use"] is True
+    assert result["no_causal_assessment_for_observation"] is True
+
+
 def test_phase2_multi_intent_mechanical_requires_shared_single_material():
     turn = {
         "ready": True,
