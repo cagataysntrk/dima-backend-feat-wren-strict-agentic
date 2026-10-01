@@ -59,6 +59,7 @@ from app.v3.report_document import (
 )
 from app.v3.research_contracts import (
     CausalCompetitionSurface,
+    CausalEffectObservation,
     ResearchBrief,
     ResearchBriefStatus,
     ResearchGoalKind,
@@ -67,7 +68,9 @@ from app.v3.research_contracts import (
     ResearchDeliverableRequirement,
     ResearchScope,
     ResearchSemanticRef,
+    ResearchTimePeriod,
     ScopeVersion,
+    TemporalRole,
     SemanticTargetKind,
     PresentationKind,
 )
@@ -275,9 +278,59 @@ class AdaptiveIntake(DeterministicIntake):
             prior_brief=prior_brief,
         )
         assert result.brief is not None
-        goal_id = result.brief.questions[0].goal_id
+        brief = result.brief
+        goal = brief.questions[0]
+        time_ref = ResearchSemanticRef(
+            source_mention="accepted event time",
+            candidate_id="dimension.event_date",
+            target_kind=SemanticTargetKind.DIMENSION,
+            canonical_name="Event Date",
+            cube_names=("machine_operations",),
+        )
+        causal = goal.causal_competition
+        assert causal is not None
+        goal = goal.model_copy(
+            update={
+                "causal_competition": causal.model_copy(
+                    update={
+                        "effect_observation": CausalEffectObservation.CHANGE,
+                    }
+                )
+            }
+        )
+        scope = brief.scope.model_copy(
+            update={
+                "semantic_refs": (*brief.scope.semantic_refs, time_ref),
+                "time_surfaces": ("baseline", "comparison"),
+                "periods": (
+                    ResearchTimePeriod(
+                        source_text="baseline",
+                        time_dimension_candidate_id="dimension.event_date",
+                        start="2026-05-01",
+                        end="2026-06-01",
+                        role=TemporalRole.BASELINE_PERIOD,
+                    ),
+                    ResearchTimePeriod(
+                        source_text="comparison",
+                        time_dimension_candidate_id="dimension.event_date",
+                        start="2026-06-01",
+                        end="2026-07-01",
+                        role=TemporalRole.COMPARISON_PERIOD,
+                    ),
+                ),
+                "temporal_dimension_ids": ("dimension.event_date",),
+            }
+        )
+        brief = brief.model_copy(
+            update={
+                "questions": (goal,),
+                "scope": scope,
+            }
+        )
+        goal_id = goal.goal_id
         return result.model_copy(
             update={
+                "brief": brief,
                 "investigation_requirements": (
                     ProductInvestigationRequirement(
                         requirement_id="pir_" + "a" * 20,
@@ -436,20 +489,33 @@ class DurableMaterialExecutor:
         execution_link_id,
         **kwargs,
     ) -> ResearchMaterialOutcome:
-        del principal, bridge, native_query, kwargs
+        del principal, bridge, native_query
         self.calls += 1
         self.store.mark_execution_started(
             execution_link_id,
             native_subject_ref="metabase-user:82",
         )
+        analytical_scope = kwargs.get("analytical_scope")
+        temporal_discrimination = (
+            analytical_scope is not None
+            and "dimension.event_date"
+            in set(analytical_scope.dimension_refs)
+        )
         result = {
             "database_id": 1,
             "row_count": 2,
             "data": {
-                "rows": [
-                    ["maintenance_delay", 41],
-                    ["spare_part_delay", 33],
-                ]
+                "rows": (
+                    [
+                        ["2026-05-15", "maintenance_delay", 18],
+                        ["2026-06-15", "spare_part_delay", 29],
+                    ]
+                    if temporal_discrimination
+                    else [
+                        ["maintenance_delay", 41],
+                        ["spare_part_delay", 33],
+                    ]
+                )
             },
         }
         raw = json.dumps(
@@ -1413,6 +1479,15 @@ def test_real_owner_adaptive_runs_one_typed_followup_without_duplicate_native() 
         "competing hypotheses inside the accepted analytical scope."
     )
     assert len(snapshot.evidence_results) == 2
+    assert (
+        snapshot.evidence_results[0].result_hash
+        != snapshot.evidence_results[1].result_hash
+    )
+    initial_scope = bridge.metabot_requests[0]["context"]["dima_analytical_scope"]
+    followup_scope = bridge.metabot_requests[1]["context"]["dima_analytical_scope"]
+    assert "dimension.event_date" not in initial_scope["dimension_refs"]
+    assert followup_scope["dimension_refs"] == ["dimension.event_date"]
+    assert followup_scope["grain_constraints"] == ["dimension.event_date"]
     assert len(p19_manager.context_calls) == 2
     assert p19_manager.context_calls[0][
         "discriminating_test_available"
