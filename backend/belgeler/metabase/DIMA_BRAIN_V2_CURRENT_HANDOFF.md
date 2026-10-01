@@ -1,5 +1,50 @@
 # DIMA BRAIN V2 — CURRENT HANDOFF
 
+> **CURRENT AUTHORITY — 2026-10-01 / PHASE 2 FINAL**
+>
+> **Status:** `30-CASE READY — STOP`  
+> **Final readiness receipt:** `DIMA_BRAIN_V2_PHASE2_FINAL_READINESS_RECEIPT.md`  
+> **Receipt commit:** `9b2fe86c2f63cdc2d894a3bf3568cfc15a5b3ca7`  
+> **Final semantic Product:** `dae87dac41fd651b50b26c258556cb6a2fbe20c4`  
+> **Phase-2 provider-free:** `36872846696 = SUCCESS`  
+> **Generic Brain V2 provider-free:** `36872846939 = SUCCESS`  
+> **Fresh T2 ONE_PASS recertification:** `36873280013 = SUCCESS / manual 4/4`  
+> **Engine:** `d5c60dc9f37a9ec9c5b0117f178146bbcb8dca88 / 0.63.18-dima.9`  
+> **Immutable digest:** `sha256:22c384198740274bbbba78fb6d41aa63a6d204dfe708b19a6ca9bc322b458ba7`  
+> **Engine certification:** `36812902584 = SUCCESS`  
+> **dima.9 recovery builds:** `1`; **additional/second builds:** `0`.
+>
+> Phase 1 is ACCEPTED and frozen. Phase 2 backend/headless is COMPLETE.
+>
+> Final targeted panel:
+>
+> ```text
+> T1 Scope Repair                4/4
+> T2 ONE_PASS RCA                4/4
+> T3 ADAPTIVE RCA                3/4 accepted carry-forward
+> T4 DISCOVERY RCA               3/4 accepted carry-forward
+> T5 Observational Relationship  4/4
+> T6 Contextual Report           4/4
+> T7 Multi-intent                4/4
+>
+> average                        3.714/4
+> FULL                           5/7
+> ```
+>
+> `80+ HIGH-CONFIDENCE READINESS = YES`  
+> `90+ HIGH-CONFIDENCE READINESS = YES`  
+> `90+ PROVEN = NO`  
+> `30-CASE READY = YES`  
+> `30-case = NOT RUN`  
+> `frontend = NOT IMPLEMENTED`
+>
+> Do not continue development under this directive. The next legal step is a separately
+> user-authorized frozen 30-case benchmark. Frontend remains unauthorized until that
+> benchmark reaches Product Quality Score >= 90.0 and the user separately authorizes UI/UX.
+>
+> Everything below this block is historical provenance and is superseded as current authority.
+
+
 > **CURRENT AUTHORITY — 2026-10-01 / DIMA.9 POST-ENGINE CLOSURE**
 >
 > **Status:** PHASE 1 ACCEPTANCE CLOSURE — MATERIAL ADMISSION RECERTIFICATION
