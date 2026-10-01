@@ -1,10 +1,10 @@
 # DIMA BRAIN V2 — FINAL CLOSURE STATUS
 
 CURRENT GATE
-G2
+G3
 
 Platform HEAD
-89bb9d68d4ee7adf5fd24e87e9f8cde66ceb3804
+7e1c48531ff2c5833efccd66577ac232e4c9ef1c
 
 semantic Product SHA
 9de0cc6668689f2fc4fc303b7392043ee715049c
@@ -47,15 +47,24 @@ FILES CHANGED
 - backend/belgeler/metabase/DIMA_BRAIN_V2_FINAL_CLOSURE_STATUS.md
 
 PROVIDER-FREE
-G1 run: 36912627188
-G1 result: GREEN
-G2 run: PENDING
-G2 result: PENDING
+G1 run: 36912627188 = GREEN
+G2 run: 36914380205 = GREEN
+G3 full run: PENDING
 
 METAMORPHIC
-result:
-existing equality-filter / optional-time / unrelated-extra-breakout family retained;
-G2 expansion pending after exact classification.
+result: PENDING full workflow closure
+covered family:
+1 required diagnostic breakout present -> GREEN
+2 required diagnostic breakout missing -> RED
+3 fixed equality dimension repeated as breakout -> GREEN
+4 accepted temporal grain breakout -> GREEN where allowed
+5 governed P17 child breakout -> GREEN
+6 unknown child semantic ref -> RED
+7 unrelated native breakout -> RED
+8 same scope + child material -> same scope_fp / different material_fp
+9 duplicate material fingerprint -> effectively once
+10 same result hash -> BRAIN_V2_NEXT_TEST_NO_INFORMATION_GAIN; no P19 reassess
+Hypothesis analytical-material state-machine added with production material/delta projectors.
 
 LIVE
 run: 36912879070
@@ -102,19 +111,18 @@ STALE EVIDENCE
 0 known
 
 KNOWN BLOCKERS
-- G2 explicit material-authority projection / ChildMaterialDelta closure is still pending.
-- G3 required adaptive material metamorphic family + analytical-material state-machine is not yet sealed.
-- T3 4/4 is therefore provisional, not immutable.
-- T4/T5/T6/T7 final lives remain pending.
+- G3 full PF/state-machine/metamorphic closure pending.
+- T3 4/4 run 36912879070 is provisional because G2/G3 changed shared adaptive material semantics after that run.
+- T4/T5/T6/T7 final lives pending.
 
 SEALED CAPABILITIES
 T1 SCOPE RESUME = 36908273500 = GREEN = 4/4
 T2 ONE_PASS = 36908926530 = GREEN = 4/4
 
 NEXT EXACT ACTION
-Run full current provider-free on G2 projection/child-delta implementation.
-If GREEN, add/close the remaining G3 material metamorphic + analytical-material state-machine invariants.
-Then run final full provider-free and freeze the shared T3 seam before any recertification.
+Run G3 full provider-free closure with adaptive material unit/metamorphic/state-machine tests included in CI.
+If GREEN, freeze final T3 semantic candidate and recertify T3 exactly once because shared adaptive material seam changed after provisional run 36912879070.
+Then seal T3 and move to G5 T4.
 
 90+ HIGH-CONFIDENCE READINESS
 NO
