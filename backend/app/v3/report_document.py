@@ -672,6 +672,117 @@ class ReportDocumentStore:
                 continue
 
             approved_ids: list[str] = []
+
+            # P16 already owns durable analytical claims and their epistemic
+            # state. P20 projects those governed claims; it never recomputes
+            # or strengthens them. P18 resolution receipts are provenance
+            # only and do not upgrade the claim ceiling.
+            with Session(self._engine) as db:
+                claim_rows = tuple(
+                    db.exec(
+                        select(ResearchClaimRecord)
+                        .where(
+                            ResearchClaimRecord.session_id
+                            == session.session_id
+                        )
+                        .where(
+                            ResearchClaimRecord.obligation_id
+                            == obligation_id
+                        )
+                        .order_by(ResearchClaimRecord.claim_id)
+                    ).all()
+                )
+            for claim_row in claim_rows:
+                claim = self._gate._claims.load_claim(
+                    session_id=session.session_id,
+                    claim_id=claim_row.claim_id,
+                    principal=principal,
+                )
+                if claim.epistemic_state == ClaimEpistemicState.PROPOSED:
+                    continue
+                claim_source = SourceReference(
+                    source_kind=ReportSourceKind.P16_CLAIM,
+                    source_ref=claim.claim_id,
+                    obligation_id=obligation_id,
+                )
+                with Session(self._engine) as db:
+                    policy_rows = tuple(
+                        db.exec(
+                            select(BusinessRelationshipPolicyUseRecord)
+                            .where(
+                                BusinessRelationshipPolicyUseRecord.research_session_id
+                                == session.session_id
+                            )
+                            .where(
+                                BusinessRelationshipPolicyUseRecord.obligation_id
+                                == obligation_id
+                            )
+                            .where(
+                                BusinessRelationshipPolicyUseRecord.claim_id
+                                == claim.claim_id
+                            )
+                            .order_by(
+                                BusinessRelationshipPolicyUseRecord.policy_use_id
+                            )
+                        ).all()
+                    )
+                provenance = [claim_source]
+                provenance.extend(
+                    SourceReference(
+                        source_kind=ReportSourceKind.P18_POLICY_USE,
+                        source_ref=row.policy_use_id,
+                        obligation_id=obligation_id,
+                    )
+                    for row in policy_rows
+                )
+                claim_limitation_ids: list[str] = []
+                for detail in claim.limitations:
+                    limitation_id = stable_limitation_id(
+                        {
+                            "session_id": session.session_id,
+                            "obligation_id": obligation_id,
+                            "claim_id": claim.claim_id,
+                            "detail": detail,
+                        }
+                    )
+                    limitations.append(
+                        ReportLimitation(
+                            limitation_id=limitation_id,
+                            obligation_id=obligation_id,
+                            code="P16_CLAIM_LIMITATION",
+                            detail=detail,
+                            source_refs=(claim_source,),
+                        )
+                    )
+                    claim_limitation_ids.append(limitation_id)
+                statement_id = stable_statement_id(
+                    {
+                        "kind": ReportStatementKind.ANALYTICAL_FACT.value,
+                        "claim_id": claim.claim_id,
+                        "epistemic_state": claim.epistemic_state.value,
+                        "source_refs": [
+                            item.model_dump(mode="json")
+                            for item in provenance
+                        ],
+                        "limitation_refs": claim_limitation_ids,
+                    }
+                )
+                statements.append(
+                    ReportStatement(
+                        statement_id=statement_id,
+                        statement_kind=ReportStatementKind.ANALYTICAL_FACT,
+                        source_refs=tuple(provenance),
+                        obligation_refs=(obligation_id,),
+                        limitation_refs=tuple(claim_limitation_ids),
+                        upstream_epistemic_ceiling=claim.epistemic_state.value,
+                        payload={
+                            "claim_id": claim.claim_id,
+                            "epistemic_state": claim.epistemic_state.value,
+                        },
+                    )
+                )
+                approved_ids.append(statement_id)
+
             for evidence in (
                 item for item in session.evidence_refs
                 if item.obligation_id == obligation_id
