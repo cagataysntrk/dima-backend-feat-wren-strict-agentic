@@ -863,6 +863,47 @@ def test_comparison_material_coverage_projection_is_generic_across_dates():
     )
 
 
+
+def test_p17_followup_uses_same_canonical_comparison_coverage_context_as_p14():
+    original=session(
+        metrics=(DOWNTIME,FAULTS),
+        periods=(MAY,JUNE),
+        comparison=True,
+    )
+    delegation=ResearchManager.prepare_native_delegation(
+        original,
+        obligation_id="g_scope",
+    )
+    parent=analytical_scope_contract(
+        session=delegation.session,
+        obligation_id="g_scope",
+    )
+    child=parent.model_copy(update={"request_ref":"p17-comparison-child"})
+    step=SimpleNamespace(step_id="rrs_"+"7"*24)
+    task=SimpleNamespace(
+        task_id="rit_"+"8"*24,
+        parent_obligation_id="g_scope",
+        bounded_objective="Test one governed comparison discriminator.",
+        analytical_scope=child,
+    )
+
+    p14=delegation.request.context["dima_analytical_scope"]
+    p17=NativeResearchFollowupExecutor._request(
+        session=delegation.session,
+        step=step,
+        task=task,
+    ).context["dima_analytical_scope"]
+
+    assert p14["material_coverage_period"]=={
+        "kind":"comparison_coverage",
+        "time_dimension":"dimension.event_date",
+        "start":"2026-05-01",
+        "end":"2026-07-01",
+    }
+    assert p17["material_coverage_period"]==p14["material_coverage_period"]
+    assert p17["comparison"]==p14["comparison"]
+
+
 def test_r1_native_ranking_allows_no_user_top_n_without_inventing_limit():
     current=session(
         ranking=True,
