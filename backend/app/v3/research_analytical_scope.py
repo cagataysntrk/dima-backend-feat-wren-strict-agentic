@@ -9,6 +9,7 @@ No SQL/MBQL parser, query planner, fuzzy matcher or prompt classifier lives here
 from __future__ import annotations
 
 import hashlib
+import json
 from datetime import date, datetime, timedelta, timezone
 from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any
@@ -53,10 +54,50 @@ class Frozen(BaseModel):
 
 
 class ResearchAnalyticalScopeError(RuntimeError):
-    def __init__(self, code: str, detail: str) -> None:
+    def __init__(
+        self,
+        code: str,
+        detail: str,
+        *,
+        last_valid_boundary: str | None = None,
+        first_invalid_boundary: str | None = None,
+        expected_fingerprint: str | None = None,
+        observed_fingerprint: str | None = None,
+    ) -> None:
         super().__init__(f"{code}: {detail}")
         self.code = code
         self.detail = detail
+        self.last_valid_boundary = last_valid_boundary
+        self.first_invalid_boundary = first_invalid_boundary
+        self.expected_fingerprint = expected_fingerprint
+        self.observed_fingerprint = observed_fingerprint
+
+
+def _boundary_fingerprint(value: Any) -> str:
+    raw = json.dumps(
+        value,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+        default=str,
+    )
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
+def _native_temporal_scope_error(
+    *,
+    detail: str,
+    expected: Mapping[str, Any],
+    observed: Mapping[str, Any],
+) -> ResearchAnalyticalScopeError:
+    return ResearchAnalyticalScopeError(
+        "R1_NATIVE_TIME_SCOPE_MISMATCH",
+        detail,
+        last_valid_boundary="dima.material.compile",
+        first_invalid_boundary="dima.native.observe",
+        expected_fingerprint=_boundary_fingerprint(expected),
+        observed_fingerprint=_boundary_fingerprint(observed),
+    )
 
 
 class NativeFieldLocator(Frozen):
@@ -1414,9 +1455,18 @@ def _assert_material_time_scope(
     time_ref, start, end = _material_expected_period(contract)
     if time_ref is None:
         if observation.temporal_scopes:
-            raise ResearchAnalyticalScopeError(
-                "R1_NATIVE_TIME_SCOPE_MISMATCH",
-                "native occurrence introduced unaccepted temporal scope",
+            raise _native_temporal_scope_error(
+                detail="native occurrence introduced unaccepted temporal scope",
+                expected={
+                    "time_ref": None,
+                    "period": None,
+                },
+                observed={
+                    "temporal_scopes": [
+                        item.model_dump(mode="json")
+                        for item in observation.temporal_scopes
+                    ],
+                },
             )
         return None
     binding = _material_binding(bindings, time_ref)
@@ -1427,9 +1477,20 @@ def _assert_material_time_scope(
         if (item.time_field_id, item.table_id) == expected_identity
     ]
     if len(matches) != 1 or len(observation.temporal_scopes) != 1:
-        raise ResearchAnalyticalScopeError(
-            "R1_NATIVE_TIME_SCOPE_MISMATCH",
-            "material temporal scope targets another field or is ambiguous",
+        raise _native_temporal_scope_error(
+            detail="material temporal scope targets another field or is ambiguous",
+            expected={
+                "time_ref": time_ref,
+                "start": start,
+                "end": end,
+                "field_identity": expected_identity,
+            },
+            observed={
+                "temporal_scopes": [
+                    item.model_dump(mode="json")
+                    for item in observation.temporal_scopes
+                ],
+            },
         )
     item = matches[0]
     assert start is not None and end is not None
@@ -1441,9 +1502,22 @@ def _assert_material_time_scope(
         observed_upper=item.upper_bound,
         upper_inclusive=item.upper_inclusive,
     ):
-        raise ResearchAnalyticalScopeError(
-            "R1_NATIVE_TIME_SCOPE_MISMATCH",
-            "observed temporal bounds differ from accepted half-open period",
+        raise _native_temporal_scope_error(
+            detail="observed temporal bounds differ from accepted half-open period",
+            expected={
+                "time_ref": time_ref,
+                "start": start,
+                "end": end,
+                "field_identity": expected_identity,
+            },
+            observed={
+                "time_field_id": item.time_field_id,
+                "table_id": item.table_id,
+                "lower_bound": item.lower_bound,
+                "lower_inclusive": item.lower_inclusive,
+                "upper_bound": item.upper_bound,
+                "upper_inclusive": item.upper_inclusive,
+            },
         )
     return expected_identity
 
