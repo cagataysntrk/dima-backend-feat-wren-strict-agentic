@@ -1,3 +1,75 @@
+# G6 T5/T6 — OBSERVATIONAL GATE CLASSIFICATION
+
+CURRENT GATE
+G6 — immutable T5/T6 artifact deterministic re-adjudication
+
+Platform HEAD
+63949c7ea69f96826d1aff61c8f1893c115b53c6
+
+semantic Product SHA
+2637df4144c7187d88ae0a41ca45ae5339d65195
+
+engine SHA/release
+d5c60dc9f37a9ec9c5b0117f178146bbcb8dca88
+0.63.18-dima.9
+FROZEN
+second build forbidden
+
+LATEST LIVE
+run: 36925407237
+artifact: 11193856676
+artifact digest: sha256:f5ea8c02447424908384a3a6e083c0062c68d1a2e89c56c5c3bdbd0a2a22660f
+exception: 0
+provider requests: 5
+research_intake=1
+metabase=3
+p17_manager=1
+p19_manager=0
+prompt tokens=59339
+completion tokens=1996
+reasoning tokens=341
+latency=24857 ms
+cost=$0.00841031
+blocked provider requests=0
+
+T6 RESULT
+The contextual report continuation root fix succeeded:
+- same Research session and scope lineage
+- zero second-turn native acquisition
+- current P20 ReportDocument
+- report requirement complete
+- no composition exception
+- report turn latency 42 ms
+- report turn provider calls 0
+
+T5 MECHANICAL RED CLASSIFICATION
+The live Product artifact is observational and non-causal, but the old harness used two stale proxies:
+1. compared serialized relationship_intent against uppercase OBSERVATIONAL while canonical JSON emits observational
+2. treated any p18_policy_use_ref as BUSINESS_POLICY use
+
+P18 owner contract proves this proxy is wrong:
+required=False persists a NOT_REQUIRED resolution receipt for auditability while policy_id remains null and no policy lookup occurs.
+
+GENERIC INVARIANT
+Observational relationship legality is determined by typed resolution:
+policy_required=false
+policy_id=null
+business_relationship_state=NOT_ESTABLISHED
+contribution_state=NOT_ESTABLISHED
+causality_state=NOT_ESTABLISHED
+
+Receipt existence is not policy authority.
+
+PRODUCT SEMANTICS
+UNCHANGED by the mechanical-gate fix.
+No new P18/P20/Metabase/engine semantics.
+
+NEXT EXACT ACTION
+Run Phase-2 provider-free closure for the corrected mechanical contract.
+If GREEN, deterministically re-adjudicate immutable run 36925407237; do not pay for the same cognition again.
+
+---
+
 # DIMA BRAIN V2 — FINAL CLOSURE STATUS
 
 CURRENT GATE
