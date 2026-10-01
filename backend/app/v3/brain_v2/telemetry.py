@@ -5,8 +5,11 @@ Provider prompts, hidden reasoning and native raw payload bodies are excluded.
 """
 from __future__ import annotations
 
+from contextlib import contextmanager
 from enum import StrEnum
+from typing import Any, Iterator
 
+from opentelemetry import trace
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
@@ -22,8 +25,10 @@ class BoundaryName(StrEnum):
     NATIVE_EXECUTE = "dima.native.execute"
     NATIVE_OBSERVE = "dima.native.observe"
     EVIDENCE_ADMIT = "dima.evidence.admit"
+    DISCOVERY_PROJECT_CANDIDATES = "dima.discovery.project_candidates"
     P17_DISCOVER = "dima.p17.discover"
     P17_NEXT_TEST = "dima.p17.next_test"
+    P18_ADJUDICATE = "dima.p18.adjudicate"
     P19_ASSESS = "dima.p19.assess"
     P20_REPORT = "dima.p20.report"
 
@@ -46,6 +51,7 @@ class BoundaryTraceEvent(Frozen):
     )
     evidence_revision: int | None = Field(default=None, ge=0)
     hypothesis_revision: int | None = Field(default=None, ge=0)
+    candidate_count: int | None = Field(default=None, ge=0)
     provider_call_count: int | None = Field(default=None, ge=0)
     native_acquisition_count: int | None = Field(default=None, ge=0)
     dedup_hit: bool | None = None
@@ -200,3 +206,83 @@ class BrainRunTelemetry(Frozen):
             "quality_per_provider_call": self.quality_per_provider_call,
             "quality_per_dollar": self.quality_per_dollar,
         }
+
+
+_OTEL_SAFE_ATTRIBUTES = frozenset(
+    {
+        "scope_version_id",
+        "scope_fingerprint",
+        "material_fingerprint",
+        "evidence_revision",
+        "hypothesis_revision",
+        "candidate_count",
+        "native_acquisition_count",
+        "provider_call_count",
+        "dedup_hit",
+        "terminal_state",
+        "error.type",
+    }
+)
+
+
+class _SafeSpan:
+    def __init__(self, span) -> None:
+        self._span = span
+
+    def set_attributes(self, **values: Any) -> None:
+        for key, value in values.items():
+            if key in _OTEL_SAFE_ATTRIBUTES and value is not None:
+                self._span.set_attribute(key, value)
+
+
+class OpenTelemetryBridge:
+    """Observation-only OpenTelemetry bridge for governed Dima boundaries."""
+
+    def __init__(self, *, tracer=None) -> None:
+        self._tracer = tracer or trace.get_tracer("dima.brain_v2")
+
+    @staticmethod
+    def _state_attributes(state) -> dict[str, Any]:
+        if state is None:
+            return {}
+        terminal = getattr(state, "workflow_status", None)
+        terminal_value = getattr(terminal, "value", terminal)
+        return {
+            "scope_version_id": getattr(state, "scope_version_id", None),
+            "evidence_revision": getattr(state, "evidence_revision", None),
+            "hypothesis_revision": getattr(state, "hypothesis_revision", None),
+            "terminal_state": (
+                str(terminal_value) if terminal_value is not None else None
+            ),
+        }
+
+    @staticmethod
+    def _error_type(exc: BaseException) -> str:
+        code = getattr(exc, "code", None)
+        if isinstance(code, str) and code.strip():
+            return code.strip()
+        return exc.__class__.__name__
+
+    @contextmanager
+    def operation(
+        self,
+        boundary: BoundaryName | str,
+        *,
+        state=None,
+        **attributes: Any,
+    ) -> Iterator[_SafeSpan]:
+        name = boundary.value if isinstance(boundary, BoundaryName) else str(boundary)
+        safe = self._state_attributes(state)
+        safe.update(attributes)
+        safe = {
+            key: value
+            for key, value in safe.items()
+            if key in _OTEL_SAFE_ATTRIBUTES and value is not None
+        }
+        with self._tracer.start_as_current_span(name, attributes=safe) as raw_span:
+            span = _SafeSpan(raw_span)
+            try:
+                yield span
+            except BaseException as exc:
+                span.set_attributes(**{"error.type": self._error_type(exc)})
+                raise
