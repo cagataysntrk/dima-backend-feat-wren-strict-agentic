@@ -1,6 +1,6 @@
 {
   "schema_version": "dima_brain_v2_live_authorization_v1",
-  "enabled": true,
+  "enabled": false,
   "probe_id": "R_LIVE_2_ADAPTIVE",
   "candidate_product_sha": "1e9f3ca15c21de5c891e91556171429020a4d23d",
   "provider_free_run_id": 36851163326,
@@ -10,5 +10,5 @@
   "model_policy": "LUNA_FIRST",
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
-  "authorization_receipt": "adaptive-material-delta-live-v1"
+  "authorization_receipt": "adaptive-material-delta-running-36851346077-disarmed"
 }
