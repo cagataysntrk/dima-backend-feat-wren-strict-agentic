@@ -1,3 +1,18 @@
+# G6 T6 — P20 OWNER-SCOPE CI ALIGNMENT
+
+WHAT CHANGED
+Phase-2 freeze guard now keeps Research/P18/P19/Brain/engine frozen while allowing P20 report_document.py,
+which is explicitly the T6 headless synthesis owner. No semantic owner outside P20 was opened.
+
+PROVIDER-FREE
+run: PENDING
+result: PENDING
+
+NEXT EXACT ACTION
+Execute Phase-2 PF including new P20 auto-draft claim/provenance test.
+
+---
+
 # G6 T6 — CONTEXTUAL SYNTHESIS QUALITY CLOSURE
 
 CURRENT GATE
