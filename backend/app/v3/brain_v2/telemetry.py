@@ -5,11 +5,105 @@ Provider prompts, hidden reasoning and native raw payload bodies are excluded.
 """
 from __future__ import annotations
 
+from enum import StrEnum
+
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class Frozen(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
+
+
+class BoundaryName(StrEnum):
+    INTENT_INTERPRET = "dima.intent.interpret"
+    SCOPE_PATCH = "dima.scope.patch"
+    SCOPE_RESOLVE = "dima.scope.resolve"
+    MATERIAL_COMPILE = "dima.material.compile"
+    NATIVE_EXECUTE = "dima.native.execute"
+    NATIVE_OBSERVE = "dima.native.observe"
+    EVIDENCE_ADMIT = "dima.evidence.admit"
+    P17_DISCOVER = "dima.p17.discover"
+    P17_NEXT_TEST = "dima.p17.next_test"
+    P19_ASSESS = "dima.p19.assess"
+    P20_REPORT = "dima.p20.report"
+
+
+class BoundaryTraceEvent(Frozen):
+    boundary: BoundaryName
+    owner: str = Field(min_length=1)
+    thread_id: str | None = None
+    scope_version_id: str | None = Field(
+        default=None,
+        pattern=r"^scope_v[1-9][0-9]*$",
+    )
+    scope_fingerprint: str | None = Field(
+        default=None,
+        pattern=r"^[a-f0-9]{64}$",
+    )
+    material_fingerprint: str | None = Field(
+        default=None,
+        pattern=r"^[a-f0-9]{64}$",
+    )
+    evidence_revision: int | None = Field(default=None, ge=0)
+    hypothesis_revision: int | None = Field(default=None, ge=0)
+    provider_call_count: int | None = Field(default=None, ge=0)
+    native_acquisition_count: int | None = Field(default=None, ge=0)
+    dedup_hit: bool | None = None
+    terminal_state: str | None = None
+    error_code: str | None = None
+    expected_fingerprint: str | None = Field(
+        default=None,
+        pattern=r"^[a-f0-9]{64}$",
+    )
+    observed_fingerprint: str | None = Field(
+        default=None,
+        pattern=r"^[a-f0-9]{64}$",
+    )
+
+
+class BoundaryTrace(Frozen):
+    events: tuple[BoundaryTraceEvent, ...] = ()
+
+    @property
+    def first_invalid_event(self) -> BoundaryTraceEvent | None:
+        return next(
+            (item for item in self.events if item.error_code is not None),
+            None,
+        )
+
+    @property
+    def first_invalid_boundary(self) -> str | None:
+        item = self.first_invalid_event
+        return item.boundary.value if item is not None else None
+
+    @property
+    def last_valid_boundary(self) -> str | None:
+        invalid = self.first_invalid_event
+        if invalid is None:
+            return self.events[-1].boundary.value if self.events else None
+        index = self.events.index(invalid)
+        return (
+            self.events[index - 1].boundary.value
+            if index > 0
+            else None
+        )
+
+    def public_receipt(self) -> dict:
+        invalid = self.first_invalid_event
+        return {
+            "last_valid_boundary": self.last_valid_boundary,
+            "first_invalid_boundary": self.first_invalid_boundary,
+            "expected_fingerprint": (
+                invalid.expected_fingerprint if invalid is not None else None
+            ),
+            "observed_fingerprint": (
+                invalid.observed_fingerprint if invalid is not None else None
+            ),
+            "events": [
+                item.model_dump(mode="json")
+                for item in self.events
+            ],
+        }
 
 
 class OwnerProviderUsage(Frozen):
