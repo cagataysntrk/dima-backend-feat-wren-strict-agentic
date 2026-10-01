@@ -17,6 +17,7 @@ from .activities import (
     P19ActivityResult,
     ReportActivityResult,
 )
+from .telemetry import BoundaryName, OpenTelemetryBridge
 from .state import (
     BrainGraphState,
     BrainP19Route,
@@ -42,63 +43,90 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
     """Build the explicit Phase-1 graph over injected canonical-owner activities."""
 
     builder = StateGraph(BrainStatePayload)
+    otel = getattr(activities, "otel_bridge", None) or OpenTelemetryBridge()
+
+    def run_activity(boundary: BoundaryName, payload: dict[str, Any], call):
+        state = BrainGraphState.model_validate(payload)
+        with otel.operation(boundary, state=state) as span:
+            result = call(state)
+            if isinstance(result, CandidateProjectionActivityResult):
+                span.set_attributes(candidate_count=result.candidate_count)
+            return result.model_dump(mode="json")
 
     # Every owner/provider/native boundary is a LangGraph task. Completed task
     # results live in orchestration persistence and are replayed instead of
     # blindly repeating paid/non-deterministic work.
     @task(name="brain_v2_intake_activity")
     def intake_activity(payload: dict[str, Any]) -> dict[str, Any]:
-        return activities.intake(
-            BrainGraphState.model_validate(payload)
-        ).model_dump(mode="json")
+        return run_activity(
+            BoundaryName.INTENT_INTERPRET,
+            payload,
+            activities.intake,
+        )
 
     @task(name="brain_v2_canonicalize_activity")
     def canonicalize_activity(payload: dict[str, Any]) -> dict[str, Any]:
-        return activities.canonicalize(
-            BrainGraphState.model_validate(payload)
-        ).model_dump(mode="json")
+        return run_activity(
+            BoundaryName.SCOPE_RESOLVE,
+            payload,
+            activities.canonicalize,
+        )
 
     @task(name="brain_v2_material_activity")
     def material_activity(payload: dict[str, Any]) -> dict[str, Any]:
-        return activities.acquire_material(
-            BrainGraphState.model_validate(payload)
-        ).model_dump(mode="json")
+        return run_activity(
+            BoundaryName.MATERIAL_COMPILE,
+            payload,
+            activities.acquire_material,
+        )
 
     @task(name="brain_v2_evidence_activity")
     def evidence_activity(payload: dict[str, Any]) -> dict[str, Any]:
-        return activities.admit_evidence(
-            BrainGraphState.model_validate(payload)
-        ).model_dump(mode="json")
+        return run_activity(
+            BoundaryName.EVIDENCE_ADMIT,
+            payload,
+            activities.admit_evidence,
+        )
 
     @task(name="brain_v2_project_candidates_activity")
     def project_candidates_activity(payload: dict[str, Any]) -> dict[str, Any]:
-        return activities.project_candidates(
-            BrainGraphState.model_validate(payload)
-        ).model_dump(mode="json")
+        return run_activity(
+            BoundaryName.DISCOVERY_PROJECT_CANDIDATES,
+            payload,
+            activities.project_candidates,
+        )
 
     @task(name="brain_v2_p19_activity")
     def p19_activity(payload: dict[str, Any]) -> dict[str, Any]:
-        return activities.assess_p19(
-            BrainGraphState.model_validate(payload)
-        ).model_dump(mode="json")
+        return run_activity(
+            BoundaryName.P19_ASSESS,
+            payload,
+            activities.assess_p19,
+        )
 
     @task(name="brain_v2_discovery_activity")
     def discovery_activity(payload: dict[str, Any]) -> dict[str, Any]:
-        return activities.discover_hypotheses(
-            BrainGraphState.model_validate(payload)
-        ).model_dump(mode="json")
+        return run_activity(
+            BoundaryName.P17_DISCOVER,
+            payload,
+            activities.discover_hypotheses,
+        )
 
     @task(name="brain_v2_next_test_activity")
     def next_test_activity(payload: dict[str, Any]) -> dict[str, Any]:
-        return activities.design_next_test(
-            BrainGraphState.model_validate(payload)
-        ).model_dump(mode="json")
+        return run_activity(
+            BoundaryName.P17_NEXT_TEST,
+            payload,
+            activities.design_next_test,
+        )
 
     @task(name="brain_v2_report_activity")
     def report_activity(payload: dict[str, Any]) -> dict[str, Any]:
-        return activities.synthesize_report(
-            BrainGraphState.model_validate(payload)
-        ).model_dump(mode="json")
+        return run_activity(
+            BoundaryName.P20_REPORT,
+            payload,
+            activities.synthesize_report,
+        )
 
     def intake_node(state: BrainStatePayload):
         current = _snapshot(state)
