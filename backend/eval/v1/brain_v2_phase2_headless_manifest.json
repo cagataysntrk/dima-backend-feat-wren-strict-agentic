@@ -1,0 +1,93 @@
+{
+  "schema_version": "dima_brain_v2_phase2_headless_v1",
+  "authority": "EVAL_ONLY",
+  "purpose": "Phase-2 backend/headless T1-T7 certification over existing Brain V2 and canonical Dima owners.",
+  "phase1_status": "ACCEPTED_CARRY_FORWARD",
+  "frontend": "NOT_IMPLEMENTED",
+  "thirty_case": "NOT_RUN",
+  "paid_policy": "Reuse accepted Phase-1 live proof when owning semantics are unchanged; otherwise one surgical live only after provider-free closure.",
+  "capabilities": [
+    {
+      "id": "T1",
+      "capability_id": "brain.t1.scope_repair",
+      "owner": "Research/Scope + Brain V2 checkpoint/resume",
+      "proof_class": "PROVIDER_FREE_AND_PHASE1_CARRY_FORWARD",
+      "proofs": [
+        "backend/tests/test_v3_product_contracts.py::test_phase2_scope_projection_exposes_exact_lineage_and_version",
+        "backend/tests/test_v3_product_contracts.py::test_phase2_progress_feed_preserves_historical_scope_state",
+        "backend/tests/test_v3_brain_v2_owner_integration.py::test_real_owner_scope_repair_creates_new_scope_without_stale_evidence_reuse",
+        "backend/tests/test_v3_v1_capability_metamorphic.py::test_alt_scope_currentness_mutates_entity_then_date_without_stale_scope_reuse"
+      ]
+    },
+    {
+      "id": "T2",
+      "capability_id": "brain.t2.rca_one_pass",
+      "owner": "Research + Metabase/Metabot + P19",
+      "proof_class": "PHASE1_LIVE_CARRY_FORWARD_PLUS_PROVIDER_FREE",
+      "proofs": [
+        "backend/tests/test_v3_brain_v2_owner_integration.py::test_real_owner_one_pass_uses_one_native_and_zero_p17",
+        "backend/tests/test_v3_v1_capability_metamorphic.py::test_alt_one_pass_rca_uses_new_effect_candidates_dimension_and_dates"
+      ]
+    },
+    {
+      "id": "T3",
+      "capability_id": "brain.t3.rca_adaptive",
+      "owner": "P19 -> P17 -> Metabase/Metabot -> P19",
+      "proof_class": "PHASE1_LIVE_CARRY_FORWARD_PLUS_PROVIDER_FREE",
+      "proofs": [
+        "backend/tests/test_v3_brain_v2_owner_integration.py::test_real_owner_adaptive_runs_one_typed_followup_without_duplicate_native",
+        "backend/tests/test_v3_v1_capability_metamorphic.py::test_alt_adaptive_rca_requests_only_a_callable_discriminating_surface"
+      ]
+    },
+    {
+      "id": "T4",
+      "capability_id": "brain.t4.rca_discovery",
+      "owner": "P17 discovery + governed candidates + P19",
+      "proof_class": "PHASE1_LIVE_CARRY_FORWARD_PLUS_PROVIDER_FREE",
+      "proofs": [
+        "backend/tests/test_v3_brain_v2_owner_integration.py::test_real_owner_discovery_forms_governed_candidates_without_extra_native"
+      ]
+    },
+    {
+      "id": "T5",
+      "capability_id": "brain.t5.relationship_observational",
+      "owner": "Research/P17 + observational P18 projection",
+      "proof_class": "PROVIDER_FREE_OWNER_PROOF",
+      "proofs": [
+        "backend/tests/test_v3_product_composition.py::test_relationship_composes_p14_material_p17_and_p18_without_creating_policy",
+        "backend/tests/test_v3_product_composition.py::test_r8_a_coorigin_relationship_reuses_verified_sibling_material_without_second_p14_turn",
+        "backend/tests/test_v3_v1_capability_metamorphic.py::test_alt_relationship_preserves_two_metrics_and_new_dimension"
+      ]
+    },
+    {
+      "id": "T6",
+      "capability_id": "brain.t6.report_contextual",
+      "owner": "P20 ReportDocument projection",
+      "proof_class": "PROVIDER_FREE_OWNER_PROOF",
+      "proofs": [
+        "backend/tests/test_v3_product_composition.py::test_report_is_written_only_through_p20_seal_and_covers_every_user_must",
+        "backend/tests/test_v3_p20_report_document.py::test_p14_to_p19_authorities_are_unchanged_by_report_seal",
+        "backend/tests/test_v3_v1_capability_metamorphic.py::test_alt_reporting_separates_process_and_requirement_completion"
+      ]
+    },
+    {
+      "id": "T7",
+      "capability_id": "brain.t7.multi_intent",
+      "owner": "Research material contract + Headless Product composition",
+      "proof_class": "PROVIDER_FREE_OWNER_PROOF",
+      "proofs": [
+        "backend/tests/test_v3_product_composition.py::test_r8_a_coorigin_relationship_reuses_verified_sibling_material_without_second_p14_turn",
+        "backend/tests/test_v3_v1_capability_metamorphic.py::test_alt_multi_intent_compresses_shared_material_without_losing_ranking"
+      ]
+    }
+  ],
+  "metamorphic_required": [
+    "T1",
+    "T2",
+    "T3",
+    "T5",
+    "T6",
+    "T7"
+  ],
+  "genericity_rule": "No regex/fuzzy/morph routing, benchmark-specific branches, month/department/metric literals, provider-limit inflation, second analytics engine, or frontend work."
+}
