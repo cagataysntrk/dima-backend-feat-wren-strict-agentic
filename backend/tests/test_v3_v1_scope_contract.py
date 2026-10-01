@@ -786,6 +786,26 @@ def test_r1_ranking_comparison_and_multi_metric_survive_projection():
     assert compared.comparison.base_period.end == "2026-07-01"
 
 
+
+def test_comparison_native_material_contract_exposes_one_typed_coverage_window():
+    compared=analytical_scope_contract(
+        session=session(
+            metrics=(DOWNTIME,FAULTS),
+            periods=(MAY,JUNE),
+            comparison=True,
+        ),
+        obligation_id="g_scope",
+    )
+    item=SimpleNamespace(objective="Explain the governed change.")
+    message=ResearchManager._native_material_message(item,compared)
+
+    assert "material_coverage_period:" in message
+    assert (
+        "- required: dimension.event_date [2026-05-01, 2026-07-01)"
+        in message
+    )
+
+
 def test_r1_native_ranking_allows_no_user_top_n_without_inventing_limit():
     current=session(
         ranking=True,
