@@ -2,13 +2,13 @@
   "schema_version": "dima_brain_v2_live_authorization_v1",
   "enabled": false,
   "probe_id": "R_LIVE_1_ONE_PASS",
-  "candidate_product_sha": "dcf6aa70016d57e17440f6a9ce1f15965f0c6637",
-  "provider_free_run_id": 36794712387,
-  "provider_free_status": "GREEN",
+  "candidate_product_sha": "0ed82ef7341fae9ef00057a4f0fa8d0fadf45de6",
+  "provider_free_run_id": 0,
+  "provider_free_status": "PENDING",
   "engine_sha": "0f16f2b5a1ec774ac7afee6214c726e82f9ceb3c",
   "engine_release": "0.63.18-dima.8",
   "model_policy": "LUNA_FIRST",
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
-  "authorization_receipt": "causal-change-one-pass-running-36794892540"
+  "authorization_receipt": "phase1-native-stream-completion-preflight-v1"
 }
