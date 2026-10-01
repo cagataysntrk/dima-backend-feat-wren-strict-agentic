@@ -1181,13 +1181,13 @@ def test_p19_followup_context_uses_resolved_scope_not_stale_goal_text() -> None:
     scope = current["scope_authority"]
     assert scope["scope_version_id"] == "scope_v2"
     assert scope["scope_fingerprint"]
-    assert scope["entity_filters"] == (
+    assert scope["entity_filters"] == [
         {
-            "candidate_id": "entity.paint",
+            "candidate_id": "entity.department.paint",
             "dimension_name": "Department",
-            "value": "Paint",
-        },
-    )
+            "value": "Boyahane",
+        }
+    ]
     assert scope["periods"] == ()
     assert "all" not in json.dumps(scope).lower()
 
@@ -1603,7 +1603,9 @@ def test_real_owner_adaptive_runs_one_typed_followup_without_duplicate_native() 
     assert p19_manager.context_calls[0][
         "deterministic_feedback_code"
     ] == "P19_DISCRIMINATING_TEST_AVAILABLE"
-    assert "Duruş artışını" in p19_manager.context_calls[0]["objective"]
+    assert p19_manager.context_calls[0]["objective"] is None
+    assert p19_manager.context_calls[0]["scope_authority"]["scope_version_id"] == "scope_v1"
+    assert p19_manager.context_calls[0]["scope_authority"]["scope_fingerprint"]
     assert p19_manager.context_calls[1][
         "discriminating_test_available"
     ] is False
