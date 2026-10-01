@@ -1,14 +1,17 @@
 # DIMA BRAIN V2 — FINAL CLOSURE STATUS
 
 CURRENT GATE
-G3
+G4
 
 Platform HEAD
 7e1c48531ff2c5833efccd66577ac232e4c9ef1c
 
 semantic Product SHA
-9de0cc6668689f2fc4fc303b7392043ee715049c
-(telemetry-only commits after this SHA do not intentionally change Product semantics)
+bf7dd7b0a39418471141327994ac3e2a773aa749
+
+Proof:
+bf7dd7b0... -> 6e5430df...
+backend/app/** = ZERO DIFF
 
 engine SHA/release
 d5c60dc9f37a9ec9c5b0117f178146bbcb8dca88
@@ -49,10 +52,10 @@ FILES CHANGED
 PROVIDER-FREE
 G1 run: 36912627188 = GREEN
 G2 run: 36914380205 = GREEN
-G3 full run: PENDING
+G3 full run: 36914969117 = GREEN
 
 METAMORPHIC
-result: PENDING full workflow closure
+result: GREEN in G3 full workflow 36914969117
 covered family:
 1 required diagnostic breakout present -> GREEN
 2 required diagnostic breakout missing -> RED
@@ -111,8 +114,8 @@ STALE EVIDENCE
 0 known
 
 KNOWN BLOCKERS
-- G3 full PF/state-machine/metamorphic closure pending.
 - T3 4/4 run 36912879070 is provisional because G2/G3 changed shared adaptive material semantics after that run.
+- Exactly one fresh T3 recertification is required on bf7dd7b0... with G3 PF 36914969117.
 - T4/T5/T6/T7 final lives pending.
 
 SEALED CAPABILITIES
@@ -120,9 +123,10 @@ T1 SCOPE RESUME = 36908273500 = GREEN = 4/4
 T2 ONE_PASS = 36908926530 = GREEN = 4/4
 
 NEXT EXACT ACTION
-Run G3 full provider-free closure with adaptive material unit/metamorphic/state-machine tests included in CI.
-If GREEN, freeze final T3 semantic candidate and recertify T3 exactly once because shared adaptive material seam changed after provisional run 36912879070.
-Then seal T3 and move to G5 T4.
+Freeze bf7dd7b0a39418471141327994ac3e2a773aa749 with G3 PF 36914969117.
+Run exactly one fresh R_LIVE_2_ADAPTIVE recertification.
+If mechanical GREEN and manual >=3, seal T3 and move immediately to G5 T4 DISCOVERY.
+No same-candidate retry.
 
 90+ HIGH-CONFIDENCE READINESS
 NO
