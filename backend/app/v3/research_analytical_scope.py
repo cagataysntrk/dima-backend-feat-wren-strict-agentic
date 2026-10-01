@@ -28,6 +28,7 @@ from app.v3.analytical_request_contract import (
     AnalyticalTemporalObservationInvariant,
     NativeAnalyticalRequestObservation,
     assert_request_invariants,
+    material_coverage_contract,
 )
 from app.v3.native_standard.contracts import NativeAttestationEnvelope
 from app.v3.research_contracts import (
@@ -1521,25 +1522,31 @@ def _assert_material_metric_scope(
     observation: NativeMaterialObservation,
     bindings: Mapping[str, NativeMaterialBinding],
 ) -> None:
-    expected: set[tuple[int, str]] = set()
-    for candidate_id in contract.metric_refs:
-        binding = _material_binding(bindings, candidate_id)
-        if binding.metric_id is None or not binding.metric_entity_id:
-            raise ResearchAnalyticalScopeError(
-                "R1_NATIVE_METRIC_RESOURCE_BINDING_REQUIRED",
-                candidate_id,
-            )
-        expected.add((binding.metric_id, binding.metric_entity_id))
+    coverage = material_coverage_contract(contract)
+
+    def native_metric_ids(candidate_ids: tuple[str, ...]) -> set[tuple[int, str]]:
+        values: set[tuple[int, str]] = set()
+        for candidate_id in candidate_ids:
+            binding = _material_binding(bindings, candidate_id)
+            if binding.metric_id is None or not binding.metric_entity_id:
+                raise ResearchAnalyticalScopeError(
+                    "R1_NATIVE_METRIC_RESOURCE_BINDING_REQUIRED",
+                    candidate_id,
+                )
+            values.add((binding.metric_id, binding.metric_entity_id))
+        return values
+
+    required = native_metric_ids(coverage.required_metric_refs)
+    allowed = native_metric_ids(coverage.allowed_metric_refs)
     observed = {
         (item.metabase_metric_id, item.metabase_metric_entity_id)
         for item in observation.native_metrics
     }
-    if observed != expected:
+    if not required.issubset(observed) or not observed.issubset(allowed):
         raise ResearchAnalyticalScopeError(
             "R1_NATIVE_METRIC_IDENTITY_MISMATCH",
-            "observed governed Metabase metric identities differ from accepted scope",
+            "observed governed metric identities violate material coverage",
         )
-
 
 def _assert_material_filter_scope(
     contract: AnalyticalRequestContract,
@@ -1666,20 +1673,24 @@ def _assert_material_dimension_scope(
     *,
     time_identity: tuple[int, int | None] | None,
 ) -> None:
+    coverage = material_coverage_contract(contract)
     required = {
         _material_field_identity(_material_binding(bindings, candidate_id))
-        for candidate_id in contract.dimension_refs
+        for candidate_id in coverage.required_breakout_refs
+    }
+    allowed = {
+        _material_field_identity(_material_binding(bindings, candidate_id))
+        for candidate_id in coverage.allowed_breakout_refs
     }
     observed = {
         _observed_field_identity(item)
         for item in observation.dimensions
         if item.role == "breakout"
     }
-    # Exact accepted equality filters already constrain their governed fields.
-    # Repeating one of those same fields as a breakout changes only physical
-    # result shape; it cannot broaden the accepted row set or mint new semantic
-    # dimension authority. Such breakouts are therefore allowed but never
-    # required. Unfiltered extra dimensions remain unauthorized.
+
+    # Exact accepted equality filters constrain the row set. Their stable field
+    # may be repeated by Metabase as a physical breakout without broadening user
+    # scope; it is legal but never required solely because of the filter.
     fixed_filter_dimensions = {
         _material_field_identity(
             _material_binding(bindings, item.source_candidate_id)
@@ -1687,23 +1698,22 @@ def _assert_material_dimension_scope(
         for item in contract.filters
     }
     required.difference_update(fixed_filter_dimensions)
-    if (
-        contract.comparison is not None
-        or contract.temporal_observation is not None
-    ) and time_identity is not None:
-        # A typed period comparison or causal CHANGE observation requires the
-        # governed temporal grain. This is semantic material authority, not a
-        # physical query-plan prescription.
-        required.add(time_identity)
-        allowed = set(required) | fixed_filter_dimensions
-    else:
-        # Within an already accepted bounded period, Metabase may expose the
-        # same governed temporal field as an additional breakout so cognition
-        # can inspect change inside that period. This adds no new scope or data
-        # source; any other extra breakout remains unauthorized.
-        allowed = set(required) | fixed_filter_dimensions
-        if contract.period is not None and time_identity is not None:
-            allowed.add(time_identity)
+    allowed.update(fixed_filter_dimensions)
+
+    # Keep the native time identity check explicit at the binding boundary. The
+    # semantic projection already owns required-vs-allowed time policy; this
+    # assertion prevents a projection/native binding disagreement from silently
+    # entering Evidence.
+    if coverage.time_dimension_ref is not None and time_identity is not None:
+        projected = _material_field_identity(
+            _material_binding(bindings, coverage.time_dimension_ref)
+        )
+        if projected != time_identity:
+            raise ResearchAnalyticalScopeError(
+                "R1_NATIVE_TIME_FIELD_MISMATCH",
+                "material coverage time binding differs from observed time scope",
+            )
+
     if not required.issubset(observed) or not observed.issubset(allowed):
         raise _native_dimension_scope_error(
             contract=contract,
@@ -1712,7 +1722,6 @@ def _assert_material_dimension_scope(
             allowed=allowed,
             observed=observed,
         )
-
 
 def _assert_material_ranking_scope(
     contract: AnalyticalRequestContract,
