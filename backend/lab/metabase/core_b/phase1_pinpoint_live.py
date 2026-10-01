@@ -782,6 +782,83 @@ def _evidence_by_session(orchestrator, session_ids, principal) -> dict[str, list
     return out
 
 
+def _execute_contextual_report_turn(
+    *,
+    turn_no: int,
+    question: str,
+    prior_session_id: str,
+    product,
+    orchestrator,
+    db_engine,
+    principal,
+) -> dict[str, Any]:
+    """Project P20 from current governed Research without opening new Research/native work."""
+    started = time.monotonic()
+    session = orchestrator.current_scope_state(
+        session_id=prior_session_id,
+        principal=principal,
+    )
+    if session.accepted_brief is None:
+        raise RuntimeError("contextual report requires immutable accepted ResearchBrief")
+    before_links = tuple(_links(db_engine, (prior_session_id,)))
+    dto = product.contextual_report(
+        research_session_id=prior_session_id,
+        principal=principal,
+        report_key="phase2-contextual-report",
+    )
+    after_links = tuple(_links(db_engine, (prior_session_id,)))
+    if after_links != before_links:
+        raise RuntimeError(
+            "contextual report action opened analytical work"
+        )
+    evidence = _evidence_by_session(
+        orchestrator,
+        (prior_session_id,),
+        principal,
+    )
+    return {
+        "turn": turn_no,
+        "question": question,
+        "terminal_state": "REPORT",
+        "ready": True,
+        "research_session_id": prior_session_id,
+        "scope_lineage_id": session.lineage_id,
+        "scope_version_id": (
+            session.accepted_brief.scope.scope_version.version_id
+        ),
+        "brief_payload": _safe_dump(session.accepted_brief),
+        "native_results": [],
+        "evidence_by_session": evidence,
+        "p20_report": {
+            "document": dto.model_dump(mode="json"),
+            "currentness": dto.header.currentness.value,
+        },
+        "composition_payload": {
+            "completion_ledger": {
+                "process_complete": True,
+                "requirement_complete": True,
+                "trusted_complete": True,
+                "entries": [
+                    {
+                        "requirement_id": "phase2.contextual_report",
+                        "disposition": "FULFILLED",
+                        "fulfilled_by_ref": dto.header.artifact_id,
+                    }
+                ],
+            },
+            "user_must_fulfillment": [
+                {
+                    "requirement_id": "phase2.contextual_report",
+                    "state": "FULFILLED",
+                    "fulfilled_by_ref": dto.header.artifact_id,
+                }
+            ],
+        },
+        "total_latency_ms": int((time.monotonic() - started) * 1000),
+        "transport_traces": {},
+    }
+
+
 def _root_candidate_snapshot(p17, session_id: str, principal) -> dict[str, Any]:
     snapshot = p17.snapshot(session_id=session_id, principal=principal)
     candidates = []
@@ -1711,26 +1788,41 @@ def main() -> int:
             PROBES[args.probe_id]["turns"],
             start=1,
         ):
-            record, prior_brief, prior_session_id = _execute_turn(
-                probe_id=args.probe_id,
-                turn_no=turn_no,
-                question=question,
-                prior_brief=prior_brief,
-                prior_session_id=prior_session_id,
-                catalog=catalog,
-                intake=intake,
-                product=product,
-                composer=composer,
-                p17=p17,
-                p17_manager=p17_manager,
-                p19_manager=p19_manager,
-                reports=p20,
-                reasoning=reasoning,
-                orchestrator=orchestrator,
-                db_engine=db_engine,
-                native_token=token,
-                transports=transports,
-            )
+            if (
+                args.probe_id == "RELATIONSHIP_REPORT_PHASE2_V1"
+                and turn_no == 2
+                and prior_session_id is not None
+            ):
+                record = _execute_contextual_report_turn(
+                    turn_no=turn_no,
+                    question=question,
+                    prior_session_id=prior_session_id,
+                    product=product,
+                    orchestrator=orchestrator,
+                    db_engine=db_engine,
+                    principal=sealed._principal(),
+                )
+            else:
+                record, prior_brief, prior_session_id = _execute_turn(
+                    probe_id=args.probe_id,
+                    turn_no=turn_no,
+                    question=question,
+                    prior_brief=prior_brief,
+                    prior_session_id=prior_session_id,
+                    catalog=catalog,
+                    intake=intake,
+                    product=product,
+                    composer=composer,
+                    p17=p17,
+                    p17_manager=p17_manager,
+                    p19_manager=p19_manager,
+                    reports=p20,
+                    reasoning=reasoning,
+                    orchestrator=orchestrator,
+                    db_engine=db_engine,
+                    native_token=token,
+                    transports=transports,
+                )
             report["turns"].append(record)
             if record.get("composition_exception") is not None:
                 report["exception"] = record["composition_exception"]
