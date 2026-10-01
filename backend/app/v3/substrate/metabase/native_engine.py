@@ -204,6 +204,8 @@ class NativeEngineBridge:
     def capture_produced_query(
         cls,
         observation: NativeEngineObservation,
+        *,
+        prior_state: dict[str, Any] | None = None,
     ) -> NativeProducedQuery:
         """Capture the query Metabot actually emitted; never reconstruct it.
 
@@ -247,6 +249,21 @@ class NativeEngineBridge:
                 for query_id, query in queries.items()
                 if str(query_id).strip() and isinstance(query, dict)
             ]
+            prior_queries = (
+                prior_state.get("queries")
+                if isinstance(prior_state, dict)
+                else None
+            )
+            if isinstance(prior_queries, dict) and prior_queries:
+                candidates = [
+                    (query_id, query)
+                    for query_id, query in candidates
+                    if query_id not in prior_queries
+                ]
+                if not candidates:
+                    raise NativeEngineBridgeError(
+                        "continued native Metabot turn did not expose a new executable query"
+                    )
             if len(candidates) == 1:
                 query_id, query = candidates[0]
                 return NativeProducedQuery(
