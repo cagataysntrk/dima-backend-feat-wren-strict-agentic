@@ -1,7 +1,7 @@
 {
   "schema_version": "dima_brain_v2_live_authorization_v1",
-  "enabled": false,
-  "probe_id": "R_LIVE_1_ONE_PASS",
+  "enabled": true,
+  "probe_id": "R_LIVE_4_SCOPE_RESUME",
   "candidate_product_sha": "dae87dac41fd651b50b26c258556cb6a2fbe20c4",
   "provider_free_run_id": 36872846696,
   "provider_free_status": "GREEN",
@@ -10,5 +10,5 @@
   "model_policy": "LUNA_FIRST",
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
-  "authorization_receipt": "phase2-t2-onepass-running-36873280013"
+  "authorization_receipt": "final-cert-c1-t1-scope-resume-v1"
 }
