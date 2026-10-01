@@ -155,6 +155,25 @@ class NativeResearchOccurrenceRunner:
                             "was captured; unknown prior cognition is not replayed"
                         ),
                     )
+                if link.execution_kind == "P17_FOLLOWUP":
+                    if request.state:
+                        raise ResearchPersistenceError(
+                            "P17_NATIVE_CONTINUATION_STATE_CALLER_FORBIDDEN",
+                            (
+                                "P17 follow-up state is Dima-owned source-backed "
+                                "continuation provenance"
+                            ),
+                        )
+                    continuation_state, _ = (
+                        self._store.latest_verified_agent_state(
+                            session_id=session.session_id,
+                            obligation_id=obligation_id,
+                            native_conversation_id=link.native_conversation_id,
+                        )
+                    )
+                    request = request.model_copy(
+                        update={"state": continuation_state}
+                    )
                 observation = bridge.invoke(request)
                 produced = bridge.capture_produced_query(observation)
                 link = self._store.mark_candidate(
