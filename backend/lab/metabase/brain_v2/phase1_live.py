@@ -23,6 +23,7 @@ from app.v3.report_document import ReportDocumentStore
 from app.v3.research_exploration import NativeResearchExploration
 from app.v3.research_followup import NativeResearchFollowupExecutor
 from app.v3.research_intake import ResearchIntakeCompiler
+from app.v3.research_analytical_scope import analytical_scope_contract
 from app.v3.research_manager import ResearchInvestigationManager, ResearchReasoningStore
 from app.v3.research_manager_provider import StructuredResearchProposalManager
 from app.v3.research_product import NativeResearchOccurrenceRunner, ResearchAskOrchestrator
@@ -394,6 +395,15 @@ def main() -> int:
             item for item in session.accepted_brief.questions
             if item.kind.value == "root_cause"
         )
+        material_contract = analytical_scope_contract(
+            session=session,
+            obligation_id=goal.goal_id,
+        )
+        report["accepted_intent"] = {
+            "goal": _safe(goal),
+            "scope": _safe(session.accepted_brief.scope),
+            "material_contract": _safe(material_contract),
+        }
         p17_snapshot = investigation.snapshot(
             session_id=session.session_id,
             principal=principal,
