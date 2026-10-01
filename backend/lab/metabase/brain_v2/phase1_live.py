@@ -81,10 +81,28 @@ from lab.metabase.core_b.phase1_pinpoint_live import (
     seed_native_resource_bindings,
 )
 
+SCOPE_RESUME_PROBE = "R_LIVE_4_SCOPE_RESUME"
+SCOPE_RESUME_TURNS = (
+    (
+        "Mayıs-Haziran 2026 dönemi genelinde tüm bölümlerde machine downtime "
+        "seviyesini maintenance delay ile spare-part delay adayları arasında araştır."
+    ),
+    "Aynı araştırmayı yalnız Assembly bölümüyle sınırla.",
+)
+SCOPE_RESUME_MANUAL_CONTRACT = (
+    "scope_v1 advances to scope_v2 on the same logical lineage",
+    "prior Research/Evidence is historical and not reused as current",
+    "the narrowed turn produces new current governed Evidence",
+    "checkpoint continuation preserves thread identity",
+    "completed provider/native work is not duplicated",
+    "new reasoning uses only the current narrowed scope",
+)
+
 LIVE_PROBES = (
     "R_LIVE_1_ONE_PASS",
     "R_LIVE_2_ADAPTIVE",
     "R_LIVE_3_DISCOVERY",
+    SCOPE_RESUME_PROBE,
 )
 
 
@@ -145,6 +163,7 @@ def _mechanical(
     p17_snapshot,
     p19_snapshot,
     report_doc,
+    scope_resume: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     sources = provider.get("provider_requests_by_source") or {}
     verified_links = tuple(
@@ -174,7 +193,9 @@ def _mechanical(
     )
     common = {
         "terminal_complete": state.workflow_status == BrainWorkflowStatus.COMPLETE,
-        "scope_current": state.scope_version_id == "scope_v1",
+        "scope_current": state.scope_version_id == (
+            "scope_v2" if probe_id == SCOPE_RESUME_PROBE else "scope_v1"
+        ),
         "governed_evidence_present": bool(state.evidence_ids),
         "p19_assessment_exists": state.latest_p19_assessment_ref is not None,
         "report_exists": report_doc is not None,
@@ -225,13 +246,32 @@ def _mechanical(
                 "provider_slo": common["provider_requests"] <= 12,
             }
         )
-    else:
+    elif probe_id == "R_LIVE_3_DISCOVERY":
         checks.update(
             {
                 "one_initial_native_acquisition": common["native_acquisitions"] == 1,
                 "multiple_governed_candidate_claims": common["p17_claim_count"] >= 2,
                 "multiple_hypotheses": common["hypothesis_count"] >= 2,
                 "hypotheses_grounded": common["evidence_grounded_hypothesis_count"] >= 2,
+                "provider_slo": common["provider_requests"] <= 12,
+            }
+        )
+    else:
+        scope = scope_resume or {}
+        checks.update(
+            {
+                "scope_version_advanced": (
+                    scope.get("first_scope_version_id") == "scope_v1"
+                    and scope.get("second_scope_version_id") == "scope_v2"
+                ),
+                "same_logical_lineage": bool(scope.get("same_lineage")),
+                "prior_session_historical": bool(scope.get("prior_historical")),
+                "evidence_disjoint": bool(scope.get("evidence_disjoint")),
+                "checkpoint_resume": bool(scope.get("checkpoint_resume")),
+                "two_native_acquisitions": common["native_acquisitions"] == 2,
+                "two_intake_calls": common["intake_provider_requests"] == 2,
+                "p17_provider_calls_zero": common["p17_provider_requests"] == 0,
+                "no_discriminating_reentry": common["p17_discriminating_test_count"] == 0,
                 "provider_slo": common["provider_requests"] <= 12,
             }
         )
@@ -270,7 +310,17 @@ def main() -> int:
         raise RuntimeError("DIMA_OPENROUTER_API_KEY required")
     _require_locked_engine_runtime(args)
 
-    question = str(PROBES[args.probe_id]["turns"][0])
+    is_scope_resume = args.probe_id == SCOPE_RESUME_PROBE
+    question = (
+        SCOPE_RESUME_TURNS[0]
+        if is_scope_resume
+        else str(PROBES[args.probe_id]["turns"][0])
+    )
+    manual_contract = (
+        SCOPE_RESUME_MANUAL_CONTRACT
+        if is_scope_resume
+        else tuple(PROBES[args.probe_id]["manual_contract"])
+    )
     binding_manifest = load_binding_manifest(args.binding_manifest)
     catalog = build_catalog(binding_manifest)
     token, current = sealed._login(args.base_url, args.email, args.password)
@@ -390,7 +440,7 @@ def main() -> int:
         "langgraph_model_policy": MODEL,
         "metabot_model": METABOT_MODEL,
         "question": question,
-        "manual_contract": list(PROBES[args.probe_id]["manual_contract"]),
+        "manual_contract": list(manual_contract),
         "manual_quality_score": None,
         "manual_quality_status": "PENDING",
     }
@@ -411,14 +461,34 @@ def main() -> int:
                 principal_ref=str(principal.user_id),
                 current_user_input=question,
             )
-            state = service.run(initial)
-            report["brain_state"] = state.model_dump(mode="json")
-            checkpointed = service.state(thread_id=state.thread_id)
-            report["checkpoint_roundtrip_equal"] = (
-                checkpointed is not None
-                and checkpointed.model_dump(mode="json")
-                == state.model_dump(mode="json")
+            first_state = service.run(initial)
+            first_checkpointed = service.state(thread_id=first_state.thread_id)
+            first_checkpoint_roundtrip = (
+                first_checkpointed is not None
+                and first_checkpointed.model_dump(mode="json")
+                == first_state.model_dump(mode="json")
             )
+            if is_scope_resume:
+                state = service.continue_turn(
+                    thread_id=first_state.thread_id,
+                    tenant_binding=first_state.tenant_binding,
+                    principal_ref=first_state.principal_ref,
+                    user_input=SCOPE_RESUME_TURNS[1],
+                )
+                second_checkpointed = service.state(thread_id=state.thread_id)
+                second_checkpoint_roundtrip = (
+                    second_checkpointed is not None
+                    and second_checkpointed.model_dump(mode="json")
+                    == state.model_dump(mode="json")
+                )
+                report["checkpoint_roundtrip_equal"] = (
+                    first_checkpoint_roundtrip and second_checkpoint_roundtrip
+                )
+                report["first_brain_state"] = first_state.model_dump(mode="json")
+            else:
+                state = first_state
+                report["checkpoint_roundtrip_equal"] = first_checkpoint_roundtrip
+            report["brain_state"] = state.model_dump(mode="json")
 
         assert state is not None
         session = research.resume_state(
@@ -460,7 +530,44 @@ def main() -> int:
             if state.report_ref
             else None
         )
-        links = _links(db_engine, session.session_id)
+        scope_resume = None
+        if is_scope_resume:
+            assert first_state is not None
+            first_session = research.resume_state(
+                session_id=first_state.research_session_id,
+                principal=principal,
+            )
+            prior_historical = False
+            try:
+                store.assert_lineage_head(first_session)
+            except Exception:
+                prior_historical = True
+            first_links = _links(db_engine, first_session.session_id)
+            current_links = _links(db_engine, session.session_id)
+            links = tuple((*first_links, *current_links))
+            first_evidence_ids = tuple(first_state.evidence_ids)
+            current_evidence_ids = tuple(state.evidence_ids)
+            scope_resume = {
+                "first_session_id": first_session.session_id,
+                "second_session_id": session.session_id,
+                "first_scope_version_id": first_state.scope_version_id,
+                "second_scope_version_id": state.scope_version_id,
+                "first_lineage_id": first_session.lineage_id,
+                "second_lineage_id": session.lineage_id,
+                "same_lineage": first_session.lineage_id == session.lineage_id,
+                "prior_historical": prior_historical,
+                "first_evidence_ids": list(first_evidence_ids),
+                "second_evidence_ids": list(current_evidence_ids),
+                "evidence_disjoint": set(first_evidence_ids).isdisjoint(
+                    current_evidence_ids
+                ),
+                "checkpoint_resume": bool(
+                    report.get("checkpoint_roundtrip_equal")
+                ),
+            }
+            report["scope_resume"] = scope_resume
+        else:
+            links = _links(db_engine, session.session_id)
         provider = _provider_receipt(args.provider_receipt)
 
         report["research"] = {
@@ -492,6 +599,7 @@ def main() -> int:
             p17_snapshot=p17_snapshot,
             p19_snapshot=p19_snapshot,
             report_doc=report_doc,
+            scope_resume=scope_resume,
         )
         report["mechanical_verdict"] = (
             "GREEN" if report["mechanical"]["mechanical_green"] else "RED"
