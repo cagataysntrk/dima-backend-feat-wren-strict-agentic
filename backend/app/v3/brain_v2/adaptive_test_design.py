@@ -94,6 +94,14 @@ def typed_child_material_delta_for_next_test(
 ) -> ChildMaterialDelta:
     """Project one typed information-gain delta without mutating user scope."""
 
+    if (
+        request.scope_lineage_id != parent.scope_identity.lineage_id
+        or request.scope_version_id != parent.scope_identity.version_id
+    ):
+        raise AdaptiveTestDesignError(
+            "typed child material must remain on the current accepted scope"
+        )
+
     if request.required_evidence_surface != NextTestEvidenceSurface.TEMPORAL_ORDER:
         raise AdaptiveTestDesignError(
             "no deterministic child material delta exists for "
