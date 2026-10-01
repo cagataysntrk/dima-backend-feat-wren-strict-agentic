@@ -2,13 +2,13 @@
   "schema_version": "dima_brain_v2_live_authorization_v1",
   "enabled": false,
   "probe_id": "R_LIVE_3_DISCOVERY",
-  "candidate_product_sha": "5390b05654fb0d6ea92636c122216d6b82291aae",
-  "provider_free_run_id": 36855194967,
-  "provider_free_status": "GREEN",
+  "candidate_product_sha": "4cbc2b29e89878d073f21b877c3a3ddb67932634",
+  "provider_free_run_id": 0,
+  "provider_free_status": "PENDING",
   "engine_sha": "d5c60dc9f37a9ec9c5b0117f178146bbcb8dca88",
   "engine_release": "0.63.18-dima.9",
   "model_policy": "LUNA_FIRST",
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
-  "authorization_receipt": "discovery-running-36856900890-disarmed"
+  "authorization_receipt": "discovery-semantic-label-family-preflight-v1"
 }
