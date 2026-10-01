@@ -1,16 +1,16 @@
 # DIMA BRAIN V2 — FINAL CLOSURE STATUS
 
 CURRENT GATE
-G5
+G5 — T4 DISCOVERY candidate-vocabulary family closure
 
 Platform HEAD
-8f2fabf63f1a803981632079dfb60d8f4abcc16a
+48d1abd8fc41c4b469badcbd2e53fb1543115165
 
 semantic Product SHA
-3b8f3c44d3a23a41f2ce55b9b8031f3a3d024e4a
+d6a8eddf46a6ec83f0339cf3368df4dbc87350cb
 
 Proof:
-bf7dd7b0... -> 6e5430df...
+d6a8eddf... -> 48d1abd8...
 backend/app/** = ZERO DIFF
 
 engine SHA/release
@@ -20,99 +20,116 @@ FROZEN
 second build forbidden
 
 WHAT CHANGED
-- G1 boundary telemetry is provider-free GREEN.
-- T3 diagnostic live 36912879070 is mechanical GREEN and provisional manual 4/4.
-- Added deterministic MaterialCoverageContract projection over existing AnalyticalRequestContract.
-- Native metric/dimension validation now consumes explicit required/allowed material algebra without changing user scope authority.
-- Added typed ChildMaterialDelta for ADAPTIVE; governed semantic universe is explicit.
-- Adaptive re-entry keeps scope fingerprint unchanged while material fingerprint changes.
-- No SQL/MBQL, prompt, regex/fuzzy/morph, new truth store, engine change, or owner_adapter domain expansion.
+- T1 SCOPE RESUME remains SEALED at 36908273500 = GREEN = 4/4.
+- T2 ONE_PASS remains SEALED at 36908926530 = GREEN = 4/4.
+- T3 ADAPTIVE remains SEALED at 36915701021 = GREEN = 4/4.
+- T4 recertification 36918861962 produced three Evidence-linked P17 claims but all three normalized to the same governed mechanism identity metric.fault_count.
+- Added a deterministic remaining-candidate vocabulary projection from durable current-scope P17 claim state.
+- Each discovery turn now offers only governed mechanism refs not already represented by an admissible typed Evidence-linked candidate claim.
+- Foreign obligation, historical scope, untyped and no-Evidence claims do not consume the current vocabulary.
+- Provider output that escapes the remaining governed vocabulary fails closed.
+- No prompt/regex/fuzzy/morph/benchmark-specific logic, no new analytics engine, no LangGraph semantic expansion.
 
 ROOT CAUSE / INVARIANT
-Current live family: R1_NATIVE_DIMENSION_SCOPE_MISMATCH.
-Invariant under test:
-required_breakouts ⊆ observed_breakouts ⊆ allowed_breakouts.
-Accepted equality-filter fields may be redundant breakouts; unrelated breakouts remain RED.
-Old live artifact did not retain observed semantic shape, so A/B/C/D classification is not yet asserted as fact.
+T4 live family:
+repeated governed candidate identity across discovery turns.
+
+Earliest invariant:
+durable admitted candidate identity
+must be removed from the next legal P17 discovery vocabulary.
+
+Formally:
+remaining_t = governed_candidates - admissible_current_scope_candidate_claims_t
+
+P17 still owns candidate cognition.
+Dima only projects the closed governed vocabulary from durable authority.
 
 FIRST INVALID BOUNDARY
-Expected from the family:
-dima.material.compile -> dima.native.observe
-Exact semantic shape from the old live is unavailable by design; new boundary receipt closes this diagnostic gap.
+last_valid_boundary:
+dima.p17.discovery.snapshot
+
+first_invalid_boundary:
+dima.p17.discovery.allowed_candidate_vocabulary
+
+The old adapter re-opened the full governed candidate set on every discovery turn.
 
 FILES CHANGED
-- backend/tests/test_v3_p14_native_gateway.py
-- backend/app/v3/research_analytical_scope.py
-- backend/app/v3/research_product.py
-- backend/app/v3/research_native_gateway.py
+- backend/app/v3/brain_v2/discovery_candidate_design.py
 - backend/app/v3/brain_v2/owner_adapter.py
-- backend/lab/metabase/brain_v2/phase1_live.py
+- backend/tests/test_v3_brain_v2_owner_integration.py
+- backend/tests/test_v3_brain_v2_discovery_candidate_design.py
 - backend/belgeler/metabase/DIMA_BRAIN_V2_FINAL_CLOSURE_STATUS.md
 
 PROVIDER-FREE
-G1 run: 36912627188 = GREEN
-G2 run: 36914380205 = GREEN
-G3 full run: 36914969117 = GREEN
+exact reproducer:
+36919863363 = RED
+1 failed / 26 passed / 1 skipped
+failure = repeated candidate family remained INCONCLUSIVE
+
+focused fix:
+36920356170 = GREEN
+
+metamorphic sibling closure:
+36920558912 = GREEN
+
+full Phase-1 closure:
+PENDING — triggered by this status commit
 
 METAMORPHIC
-result: GREEN in G3 full workflow 36914969117
-covered family:
-1 required diagnostic breakout present -> GREEN
-2 required diagnostic breakout missing -> RED
-3 fixed equality dimension repeated as breakout -> GREEN
-4 accepted temporal grain breakout -> GREEN where allowed
-5 governed P17 child breakout -> GREEN
-6 unknown child semantic ref -> RED
-7 unrelated native breakout -> RED
-8 same scope + child material -> same scope_fp / different material_fp
-9 duplicate material fingerprint -> effectively once
-10 same result hash -> BRAIN_V2_NEXT_TEST_NO_INFORMATION_GAIN; no P19 reassess
-Hypothesis analytical-material state-machine added with production material/delta projectors.
+result:
+focused GREEN
+
+covered:
+1 durable current-scope typed Evidence-linked candidate -> consumed
+2 foreign obligation claim -> not consumed
+3 historical lineage/scope claim -> not consumed
+4 untyped claim -> not consumed
+5 no-Evidence claim -> not consumed
+6 governed order/dedup preserved
+7 existing honest-stop discovery path remains covered by owner integration suite
 
 LIVE
-T3 final recertification:
-run: 36915701021
-artifact: dima-brain-v2-live-R_LIVE_2_ADAPTIVE-36915701021
-artifact id: 11189563441
-artifact digest: sha256:7f0bb6773368c5fea0837a3123c8a680bca8b1a1b91eba6f29bc4e60e5d8862d
-mechanical: GREEN
-manual: 4/4
-candidate: bf7dd7b0a39418471141327994ac3e2a773aa749
+latest T4:
+run: 36918861962
+artifact: dima-brain-v2-live-R_LIVE_3_DISCOVERY-36918861962
+artifact id: 11190972486
+artifact digest: sha256:322c450a58aacdaa2a4a2036f412ac9b0068333b7c15e7bf0f72030bdd6cbc4d
+mechanical: RED
+manual: NOT SCORED — mechanical terminal contract failed
+candidate: 3b8f3c44d3a23a41f2ce55b9b8031f3a3d024e4a
 
-Manual basis:
-- accepted user candidate identities preserved exactly
-- initial aggregate Evidence was insufficient for discrimination
-- exactly one typed P17 adaptive child material re-entry
-- follow-up Evidence changed from 1 aggregate row to 8 governed daily observations
-- evidence revision advanced before P19 reassessment
-- two native acquisitions total; no third acquisition
-- P19 retained both candidates as observationally plausible and did not invent causal direction
-- P20 carried limitations forward without fabricated challenge/counter-Evidence
-- duplicate native = 0
-- stale Evidence = 0
+Observed:
+- one initial native acquisition
+- governed Evidence present
+- 3 P17 claims
+- 1 unique hypothesis identity
+- P19 assessment absent
+- no duplicate native execution
+- no blocked provider request
 - exception = 0
 
 PROVIDER REQUESTS
-T3 final: 8 total
+latest T4:
+7 total
 research_intake=1
-metabase=4
-p17=1
-p19=2
+metabase=3
+p17=3
+p19=0
 
 TOKENS
-T3 final:
-prompt=91635
-completion=3170
-reasoning=483
+latest T4:
+prompt=87006
+completion=5224
+reasoning=539
 
 LATENCY
-37286 ms
+53238 ms
 
 COST
-$0.0173724
+$0.01611813
 
 EXCEPTIONS
-0 in run 36915701021
+0 in 36918861962
 
 DUPLICATE NATIVE
 0 known
@@ -121,20 +138,11 @@ STALE EVIDENCE
 0 known
 
 KNOWN BLOCKERS
-- T4 DISCOVERY live 36916272244 = RED.
-- error = P17_DOWNSTREAM_REENTRY_INTENT_MISMATCH.
-- first wrong transition: Brain V2 discovery adapter authorizes {FORM_CLAIM, STOP_INVESTIGATION} to P17, then pins run_one downstream result to FORM_CLAIM only.
-- STOP_INVESTIGATION is already a legal P17 global-control terminal intent; graph already routes discovery terminal without hypotheses to HONEST_STOP.
-- exact provider-free reproducer commit fdd0d412... failed only the new honest-stop case: 1 failed / 25 passed / 1 skipped.
-- typed allowed-outcome fix: 8c792990... + 3b8f3c44...
-- focused Brain V2 PF 36917795650 = GREEN with both FORM_CLAIM and honest STOP discovery siblings.
-- full Phase-1 PF 36917925669 = GREEN across Brain V2, Research/Scope, P17, P19, P20, security and hygiene.
-- T4 mechanical contract now separates structural mechanics from Product quality: governed candidate path OR typed honest insufficient terminal.
-- harness tests at 9c884d8c... = provider-free GREEN in 36918446124.
-- Product freeze = 3b8f3c44d3a23a41f2ce55b9b8031f3a3d024e4a; later status/CI-only commit has backend/app/** zero diff.
-- T5 RELATIONSHIP fresh live pending.
-- T6 CONTEXTUAL REPORT fresh live pending.
-- T7 MULTI-INTENT fresh live pending.
+- Full Phase-1 provider-free closure for semantic Product d6a8eddf... is pending.
+- No paid T4 retry is authorized until that full closure is GREEN.
+- T5 RELATIONSHIP fresh proof pending.
+- T6 CONTEXTUAL REPORT fresh proof pending.
+- T7 MULTI-INTENT fresh proof pending.
 
 SEALED CAPABILITIES
 T1 SCOPE RESUME = 36908273500 = GREEN = 4/4
@@ -142,10 +150,12 @@ T2 ONE_PASS = 36908926530 = GREEN = 4/4
 T3 ADAPTIVE = 36915701021 = GREEN = 4/4
 
 NEXT EXACT ACTION
-Run one current-head full Phase-1 provider-free closure after T4 harness correction.
-If GREEN, preserve semantic Product 3b8f3c44... and use that new PF run as T4 live authority.
-Then run exactly one fresh R_LIVE_3_DISCOVERY.
-Manual Product score remains separate from mechanical outcome.
+1. Complete one full current-head Phase-1 provider-free closure.
+2. If GREEN, freeze semantic Product d6a8eddf...
+3. Arm exactly one fresh R_LIVE_3_DISCOVERY.
+4. Disarm immediately after trigger.
+5. Manually adjudicate actual artifact.
+6. If accepted, seal T4 and move to T5/T6.
 
 90+ HIGH-CONFIDENCE READINESS
 NO
