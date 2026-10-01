@@ -238,6 +238,43 @@ def test_entity_narrowing_without_repeated_time_keeps_prior_period():
     assert result.brief.scope.scope_version.version_id == "scope_v2"
 
 
+def test_entity_expand_without_repeated_time_keeps_prior_period():
+    prior = initial_brief()
+    prior_question = prior.questions[0].model_copy(
+        update={"subject_refs": (METRIC, ASSEMBLY)}
+    )
+    prior = prior.model_copy(
+        update={
+            "questions": (prior_question,),
+            "scope": prior.scope.model_copy(
+                update={
+                    "semantic_refs": (METRIC, ASSEMBLY, DIM, EVENT_DATE),
+                }
+            ),
+        }
+    )
+    payload = narrowed_payload()
+    payload["goals"][0]["subject_semantic_ids"] = [
+        "metric.downtime",
+        "entity.assembly",
+        "entity.paint",
+    ]
+    payload["scope_mutation_kind"] = "EXPAND_ENTITY"
+    payload["time_periods"] = []
+
+    result = ResearchIntakeCompiler(
+        transport=FakeTransport(payload)
+    ).compile(
+        question="Expand the entity scope only; keep accepted time.",
+        catalog=catalog(),
+        prior_brief=prior,
+    )
+
+    assert result.brief is not None
+    assert result.scope_contract is not None
+    assert result.brief.scope.periods == (H1,)
+
+
 def test_real_follow_up_path_mints_new_scope_authority_and_preserves_lineage():
     db = db_engine()
     store, research, brief_v1, session_v1 = start_v1(db)
