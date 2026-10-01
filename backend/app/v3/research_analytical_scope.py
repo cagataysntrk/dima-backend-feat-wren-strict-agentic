@@ -621,6 +621,7 @@ def analytical_scope_contract(
             lineage_id=session.lineage_id,
             version_id=brief.scope.scope_version.version_id,
         ),
+        scope_fingerprint=brief.scope_fingerprint,
         metric_refs=tuple(item.candidate_id for item in material_metrics),
         dimension_refs=tuple(item.candidate_id for item in dimensions),
         filters=tuple(filter_invariants),
