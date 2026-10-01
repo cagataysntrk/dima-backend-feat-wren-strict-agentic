@@ -947,6 +947,42 @@ def _date_only(value: Any) -> date | None:
         return None
 
 
+def _calendar_date_boundary(value: Any) -> date | None:
+    """Normalize only unambiguous calendar-midnight boundary spellings.
+
+    A date-only native literal is evidence that Metabase expressed this bound
+    in the discrete calendar-date domain. Accepted Research bounds may carry
+    the same calendar boundary as a naive/UTC midnight datetime. Non-midnight
+    or non-UTC offset datetimes remain timestamp semantics and fail closed.
+    """
+
+    exact = _date_only(value)
+    if exact is not None:
+        return exact
+
+    if isinstance(value, datetime):
+        result = value
+    elif isinstance(value, str) and "T" in value:
+        raw = value[:-1] + "+00:00" if value.endswith("Z") else value
+        try:
+            result = datetime.fromisoformat(raw)
+        except ValueError:
+            return None
+    else:
+        return None
+
+    if (result.hour, result.minute, result.second, result.microsecond) != (
+        0,
+        0,
+        0,
+        0,
+    ):
+        return None
+    if result.tzinfo is not None and result.utcoffset() != timedelta(0):
+        return None
+    return result.date()
+
+
 def _canonical_datetime_bound(value: Any) -> datetime | None:
     if isinstance(value, datetime):
         result = value
@@ -980,10 +1016,20 @@ def _matches_half_open_temporal_interval(
     timezone spellings compare by instant.
     """
 
-    expected_start_date = _date_only(expected_start)
-    expected_end_date = _date_only(expected_end)
     observed_lower_date = _date_only(observed_lower)
     observed_upper_date = _date_only(observed_upper)
+    expected_start_date = (
+        _calendar_date_boundary(expected_start)
+        if observed_lower_date is not None
+        and observed_upper_date is not None
+        else None
+    )
+    expected_end_date = (
+        _calendar_date_boundary(expected_end)
+        if observed_lower_date is not None
+        and observed_upper_date is not None
+        else None
+    )
     if (
         expected_start_date is not None
         and expected_end_date is not None
