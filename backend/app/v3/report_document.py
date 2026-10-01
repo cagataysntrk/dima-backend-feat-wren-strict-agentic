@@ -563,7 +563,19 @@ class ReportClaimGate:
                 source_by_key[self._source_key(ref)] = ref
         sources = tuple((source_by_key[key] for key in sorted(source_by_key)))
         snapshots = tuple((self._source_snapshot(session=session, ref=ref, principal=principal) for ref in sources))
-        source_set_identity = {'research_authority_id': session.authority_id, 'research_session_id': session.session_id, 'semantic_context_version': session.context_version, 'mandatory_obligation_ids': list(mandatory), 'sources': list(snapshots)}
+        if session.accepted_brief is None:
+            raise P20ReportError(
+                'P20_ACCEPTED_BRIEF_REQUIRED',
+                session.session_id,
+            )
+        source_set_identity = {
+            'research_authority_id': session.authority_id,
+            'research_session_id': session.session_id,
+            'semantic_context_version': session.context_version,
+            'scope_fingerprint': session.accepted_brief.scope_fingerprint,
+            'mandatory_obligation_ids': list(mandatory),
+            'sources': list(snapshots),
+        }
         source_set_fingerprint = _canonical_json(source_set_identity, code='P20_SOURCE_SET_NOT_CANONICAL')[1]
         return (session, mandatory, approved, sources, source_set_fingerprint)
 
@@ -767,7 +779,22 @@ class ReportDocumentStore:
 
     def seal(self, *, draft: ReportDraft, principal: Principal, now: datetime | None=None) -> ReportDocument:
         session, mandatory, statements, sources, source_set_fingerprint = self._gate.validate(draft=draft, principal=principal)
-        identity = {'research_authority_id': session.authority_id, 'research_session_id': session.session_id, 'tenant_binding': session.tenant_binding, 'semantic_context_version': session.context_version, 'report_key': draft.report_key, 'mandatory_obligation_ids': list(mandatory), 'coverage': [item.model_dump(mode='json') for item in draft.coverage], 'statements': [item.model_dump(mode='json') for item in statements], 'source_refs': [item.model_dump(mode='json') for item in sources], 'limitations': [item.model_dump(mode='json') for item in draft.limitations], 'source_set_fingerprint': source_set_fingerprint}
+        if session.accepted_brief is None:
+            raise P20ReportError('P20_ACCEPTED_BRIEF_REQUIRED', session.session_id)
+        identity = {
+            'research_authority_id': session.authority_id,
+            'research_session_id': session.session_id,
+            'tenant_binding': session.tenant_binding,
+            'semantic_context_version': session.context_version,
+            'scope_fingerprint': session.accepted_brief.scope_fingerprint,
+            'report_key': draft.report_key,
+            'mandatory_obligation_ids': list(mandatory),
+            'coverage': [item.model_dump(mode='json') for item in draft.coverage],
+            'statements': [item.model_dump(mode='json') for item in statements],
+            'source_refs': [item.model_dump(mode='json') for item in sources],
+            'limitations': [item.model_dump(mode='json') for item in draft.limitations],
+            'source_set_fingerprint': source_set_fingerprint,
+        }
         _, report_fingerprint = _canonical_json(identity, code='P20_REPORT_NOT_CANONICAL')
         report_id = 'p20r_' + report_fingerprint[:24]
         coverage_json = _canonical_json([item.model_dump(mode='json') for item in draft.coverage], code='P20_COVERAGE_NOT_CANONICAL')[0]
@@ -809,7 +836,16 @@ class ReportDocumentStore:
             session, mandatory = self._gate._session(report.research_session_id, principal)
             self._research.assert_lineage_head(session)
             snapshots = tuple((self._gate._source_snapshot(session=session, ref=ref, principal=principal) for ref in report.source_refs))
-            current = _canonical_json({'research_authority_id': session.authority_id, 'research_session_id': session.session_id, 'semantic_context_version': session.context_version, 'mandatory_obligation_ids': list(mandatory), 'sources': list(snapshots)}, code='P20_SOURCE_SET_NOT_CANONICAL')[1]
+            if session.accepted_brief is None:
+                raise P20ReportError('P20_ACCEPTED_BRIEF_REQUIRED', session.session_id)
+            current = _canonical_json({
+                'research_authority_id': session.authority_id,
+                'research_session_id': session.session_id,
+                'semantic_context_version': session.context_version,
+                'scope_fingerprint': session.accepted_brief.scope_fingerprint,
+                'mandatory_obligation_ids': list(mandatory),
+                'sources': list(snapshots),
+            }, code='P20_SOURCE_SET_NOT_CANONICAL')[1]
         except (P20ReportError, ResearchPersistenceError):
             return ReportCurrentness.STALE_SOURCE_SET
         if current == report.source_set_fingerprint:
