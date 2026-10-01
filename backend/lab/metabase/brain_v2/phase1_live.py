@@ -234,8 +234,13 @@ def _mechanical(
         state.workflow_status == BrainWorkflowStatus.INCONCLUSIVE
         and state.last_completed_node == "HONEST_STOP"
         and p17_terminal_stop is not None
-        and not p17_claims
-        and not hypotheses
+        and not state.discovery_required
+        and len(hypotheses) < 2
+        and len(evidence_grounded) == len(hypotheses)
+        and (
+            not p17_claims
+            or bool(hypotheses)
+        )
         and state.latest_p19_assessment_ref is None
         and report_doc is None
     )
