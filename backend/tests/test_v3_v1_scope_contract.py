@@ -39,6 +39,8 @@ from app.v3.research_analytical_scope import (
     ResearchAnalyticalScopeError,
     analytical_scope_contract,
     assert_attested_native_scope,
+    material_coverage_period,
+    native_request_context,
 )
 from app.v3.research_contracts import (
     ComparisonRole,
@@ -802,6 +804,61 @@ def test_comparison_native_material_contract_exposes_one_typed_coverage_window()
     assert "material_coverage_period:" in message
     assert (
         "- required: dimension.event_date [2026-05-01, 2026-07-01)"
+        in message
+    )
+
+
+
+def test_comparison_material_coverage_projection_is_generic_across_dates():
+    compared=analytical_scope_contract(
+        session=session(
+            metrics=(DOWNTIME,FAULTS),
+            periods=(MAY,JUNE),
+            comparison=True,
+        ),
+        obligation_id="g_scope",
+    )
+    assert compared.comparison is not None
+    shifted=compared.model_copy(
+        update={
+            "comparison": compared.comparison.model_copy(
+                update={
+                    "reference_period": (
+                        compared.comparison.reference_period.model_copy(
+                            update={
+                                "start":"2026-07-01",
+                                "end":"2026-08-01",
+                            }
+                        )
+                    ),
+                    "base_period": compared.comparison.base_period.model_copy(
+                        update={
+                            "start":"2026-08-01",
+                            "end":"2026-09-01",
+                        }
+                    ),
+                }
+            )
+        }
+    )
+    coverage=material_coverage_period(shifted)
+    assert coverage is not None
+    assert coverage.time_dimension=="dimension.event_date"
+    assert coverage.start=="2026-07-01"
+    assert coverage.end=="2026-09-01"
+
+    context=native_request_context(shifted)
+    assert context["dima_analytical_scope"]["material_coverage_period"]=={
+        "kind":"comparison_coverage",
+        "time_dimension":"dimension.event_date",
+        "start":"2026-07-01",
+        "end":"2026-09-01",
+    }
+
+    item=SimpleNamespace(objective="Explain another governed change.")
+    message=ResearchManager._native_material_message(item,shifted)
+    assert (
+        "- required: dimension.event_date [2026-07-01, 2026-09-01)"
         in message
     )
 
