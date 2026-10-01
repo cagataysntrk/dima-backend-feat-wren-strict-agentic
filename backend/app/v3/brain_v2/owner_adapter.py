@@ -890,16 +890,19 @@ class DimaBrainV2Activities(BrainActivities):
             evidence_refs=tuple(item[0] for item in evidence_pairs),
             mechanism_refs=mechanism_refs,
         )
-        # Discovery authorizes two typed P17 outcomes: FORM_CLAIM or an
-        # honest STOP_INVESTIGATION. The current ResearchManager action profile
-        # already exposes FORM_CLAIM whenever verified Evidence exists, so do
-        # not narrow the downstream result to FORM_CLAIM here; doing so would
-        # reject the legal governed-stop branch after provider cognition.
+        # Discovery prepares the verified-Evidence FORM_CLAIM re-entry
+        # surface but permits either typed provider outcome: a governed claim
+        # or an honest global stop. ResearchManager validates the exact set.
         self._investigation.run_one(
             session_id=session.session_id,
             principal=self._principal,
             manager=manager,
             native_session_token=self._native_session_token,
+            downstream_reentry_intents=(
+                InvestigationIntent.FORM_CLAIM,
+                InvestigationIntent.STOP_INVESTIGATION,
+            ),
+            downstream_reentry_obligation_id=goal.goal_id,
         )
         after = self._investigation.snapshot(
             session_id=session.session_id,
