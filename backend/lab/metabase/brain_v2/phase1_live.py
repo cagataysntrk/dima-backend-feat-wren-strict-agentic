@@ -20,6 +20,11 @@ from app.v3.brain_v2.adaptive_owner_adapter import (
 )
 from app.v3.brain_v2.service import BrainV2Service
 from app.v3.brain_v2.state import BrainGraphState, BrainWorkflowStatus
+from app.v3.brain_v2.telemetry import (
+    BoundaryName,
+    BoundaryTrace,
+    BoundaryTraceEvent,
+)
 from app.v3.hypothesis_root_cause_provider import StructuredP19AssessmentManager
 from app.v3.report_document import ReportDocumentStore
 from app.v3.research_exploration import NativeResearchExploration
@@ -595,6 +600,106 @@ def main() -> int:
             "snapshot": _safe(p19_snapshot),
         }
         report["p20"] = _safe(report_doc)
+        scope_fingerprint = (
+            session.accepted_brief.scope_fingerprint
+            if session.accepted_brief is not None
+            else None
+        )
+        material_fingerprint = material_contract.fingerprint
+        trace_events = [
+            BoundaryTraceEvent(
+                boundary=BoundaryName.INTENT_INTERPRET,
+                owner="ResearchIntake",
+                thread_id=state.thread_id,
+                scope_version_id=state.scope_version_id,
+                scope_fingerprint=scope_fingerprint,
+                provider_call_count=int(
+                    (provider.get("by_owner") or {})
+                    .get("research_intake", {})
+                    .get("requests", 0)
+                ),
+            ),
+        ]
+        if state.scope_version_id != "scope_v1":
+            trace_events.append(
+                BoundaryTraceEvent(
+                    boundary=BoundaryName.SCOPE_PATCH,
+                    owner="ResearchScope",
+                    thread_id=state.thread_id,
+                    scope_version_id=state.scope_version_id,
+                    scope_fingerprint=scope_fingerprint,
+                )
+            )
+        trace_events.extend(
+            (
+                BoundaryTraceEvent(
+                    boundary=BoundaryName.SCOPE_RESOLVE,
+                    owner="ResearchScope",
+                    thread_id=state.thread_id,
+                    scope_version_id=state.scope_version_id,
+                    scope_fingerprint=scope_fingerprint,
+                ),
+                BoundaryTraceEvent(
+                    boundary=BoundaryName.MATERIAL_COMPILE,
+                    owner="ResearchAnalyticalScope",
+                    thread_id=state.thread_id,
+                    scope_version_id=state.scope_version_id,
+                    scope_fingerprint=scope_fingerprint,
+                    material_fingerprint=material_fingerprint,
+                ),
+                BoundaryTraceEvent(
+                    boundary=BoundaryName.NATIVE_EXECUTE,
+                    owner="Metabase",
+                    thread_id=state.thread_id,
+                    scope_version_id=state.scope_version_id,
+                    scope_fingerprint=scope_fingerprint,
+                    material_fingerprint=material_fingerprint,
+                    native_acquisition_count=len(links),
+                ),
+                BoundaryTraceEvent(
+                    boundary=BoundaryName.NATIVE_OBSERVE,
+                    owner="Metabase",
+                    thread_id=state.thread_id,
+                    scope_version_id=state.scope_version_id,
+                    scope_fingerprint=scope_fingerprint,
+                    material_fingerprint=material_fingerprint,
+                ),
+                BoundaryTraceEvent(
+                    boundary=BoundaryName.EVIDENCE_ADMIT,
+                    owner="Evidence",
+                    thread_id=state.thread_id,
+                    scope_version_id=state.scope_version_id,
+                    scope_fingerprint=scope_fingerprint,
+                    material_fingerprint=material_fingerprint,
+                    evidence_revision=state.evidence_revision,
+                ),
+                BoundaryTraceEvent(
+                    boundary=BoundaryName.P19_ASSESS,
+                    owner="P19",
+                    thread_id=state.thread_id,
+                    scope_version_id=state.scope_version_id,
+                    scope_fingerprint=scope_fingerprint,
+                    evidence_revision=state.evidence_revision,
+                    hypothesis_revision=state.hypothesis_revision,
+                ),
+            )
+        )
+        if report_doc is not None:
+            trace_events.append(
+                BoundaryTraceEvent(
+                    boundary=BoundaryName.P20_REPORT,
+                    owner="P20",
+                    thread_id=state.thread_id,
+                    scope_version_id=state.scope_version_id,
+                    scope_fingerprint=scope_fingerprint,
+                    evidence_revision=state.evidence_revision,
+                    hypothesis_revision=state.hypothesis_revision,
+                )
+            )
+        report["boundary_trace"] = BoundaryTrace(
+            events=tuple(trace_events)
+        ).public_receipt()
+
         report["native_occurrences"] = _native_occurrence_projection(links)
         report["provider_receipt"] = provider
         report["orchestration_boundary_units"] = budget.used
@@ -614,6 +719,25 @@ def main() -> int:
         )
     except Exception as exc:
         report["exception"] = _exception(exc)
+        if (
+            report["exception"].get("first_invalid_boundary") is not None
+            or report["exception"].get("last_valid_boundary") is not None
+        ):
+            report["boundary_trace"] = {
+                "last_valid_boundary": report["exception"].get(
+                    "last_valid_boundary"
+                ),
+                "first_invalid_boundary": report["exception"].get(
+                    "first_invalid_boundary"
+                ),
+                "expected_fingerprint": report["exception"].get(
+                    "expected_fingerprint"
+                ),
+                "observed_fingerprint": report["exception"].get(
+                    "observed_fingerprint"
+                ),
+                "events": [],
+            }
         report["mechanical_verdict"] = "RED"
     finally:
         report["latency_ms"] = int((time.monotonic() - started) * 1000)
