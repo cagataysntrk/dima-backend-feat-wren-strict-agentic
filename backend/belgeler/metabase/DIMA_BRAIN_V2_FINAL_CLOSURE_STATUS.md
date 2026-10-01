@@ -1,3 +1,26 @@
+# G6 T5/T6 — PROVIDER-FREE FIXTURE CLOSURE
+
+CURRENT GATE
+G6 provider-free revalidation after typed P18 mechanical fixture repair
+
+semantic Product SHA
+2637df4144c7187d88ae0a41ca45ae5339d65195
+
+WHAT CHANGED
+- No Product semantic change.
+- Mechanical gate now judges observational P18 by typed NOT_REQUIRED resolution.
+- Provider-free happy-path fixture now matches canonical serialized live shape.
+
+LATEST LIVE AUTHORITY
+36925407237 / artifact 11193856676 remains immutable.
+No paid rerun authorized for the same cognition.
+
+NEXT EXACT ACTION
+Run Phase-2 provider-free closure.
+If GREEN, carry forward immutable live artifact through deterministic re-adjudication.
+
+---
+
 # G6 T5/T6 — OBSERVATIONAL GATE CLASSIFICATION
 
 CURRENT GATE
