@@ -85,6 +85,10 @@ class BrainV2OwnerError(RuntimeError):
         first_invalid_boundary: str | None = None,
         expected_fingerprint: str | None = None,
         observed_fingerprint: str | None = None,
+        scope_fingerprint: str | None = None,
+        material_fingerprint: str | None = None,
+        expected_semantic_shape: dict[str, Any] | None = None,
+        observed_semantic_shape: dict[str, Any] | None = None,
     ) -> None:
         super().__init__(f"{code}: {detail}")
         self.code = code
@@ -93,6 +97,10 @@ class BrainV2OwnerError(RuntimeError):
         self.first_invalid_boundary = first_invalid_boundary
         self.expected_fingerprint = expected_fingerprint
         self.observed_fingerprint = observed_fingerprint
+        self.scope_fingerprint = scope_fingerprint
+        self.material_fingerprint = material_fingerprint
+        self.expected_semantic_shape = expected_semantic_shape
+        self.observed_semantic_shape = observed_semantic_shape
 
 
 def _canonical(value: Any) -> str:
@@ -674,6 +682,10 @@ class DimaBrainV2Activities(BrainActivities):
                 first_invalid_boundary=response.first_invalid_boundary,
                 expected_fingerprint=response.expected_fingerprint,
                 observed_fingerprint=response.observed_fingerprint,
+                scope_fingerprint=response.scope_fingerprint,
+                material_fingerprint=response.material_fingerprint,
+                expected_semantic_shape=response.expected_semantic_shape,
+                observed_semantic_shape=response.observed_semantic_shape,
             )
         return MaterialActivityResult(
             material_requirement_ids=(goal.goal_id,),
