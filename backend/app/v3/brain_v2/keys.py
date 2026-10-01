@@ -52,6 +52,10 @@ class NativeMaterialRequestKey(Frozen):
     tenant: str = Field(min_length=1)
     principal: str = Field(min_length=1)
     scope_version_id: str = Field(pattern=r"^scope_v[1-9][0-9]*$")
+    scope_fingerprint: str | None = Field(
+        default=None,
+        pattern=r"^[a-f0-9]{64}$",
+    )
     material_requirement_fingerprint: str = Field(pattern=r"^[a-f0-9]{64}$")
     engine_identity: str = Field(min_length=1)
 
