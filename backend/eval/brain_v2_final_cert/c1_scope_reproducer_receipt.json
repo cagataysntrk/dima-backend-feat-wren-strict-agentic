@@ -1,0 +1,8 @@
+{
+  "schema_version": "dima_brain_v2_final_cert_reproducer_v1",
+  "capability": "T1_SCOPE_RESUME",
+  "live_run": 36890834178,
+  "first_wrong_transition": "typed_scope_mutation",
+  "reproducer_commit": "2931524d6c534682989c1fd24774b88beea2da02",
+  "expected_provider_free": "RED_before_fix"
+}
