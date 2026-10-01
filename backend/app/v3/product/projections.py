@@ -58,6 +58,17 @@ def _ref(kind: ArtifactKind, artifact_id: str, scope_id: str | None = None) -> A
     return ArtifactRef(kind=kind, artifact_id=artifact_id, scope_id=scope_id)
 
 
+def _scope_identity(session) -> tuple[str | None, str | None, str | None]:
+    brief=getattr(session,"accepted_brief",None)
+    scope=getattr(brief,"scope",None) if brief is not None else None
+    version=getattr(scope,"scope_version",None) if scope is not None else None
+    return (
+        getattr(session,"lineage_id",None),
+        getattr(version,"version_id",None),
+        getattr(version,"parent_version_id",None),
+    )
+
+
 def _header(
     *,
     kind: ArtifactKind,
@@ -88,6 +99,7 @@ def research(
     session: ResearchSession,
     state: object | None = None,
 ) -> ResearchDTO:
+    scope_lineage_id,scope_version_id,parent_scope_version_id=_scope_identity(session)
     return ResearchDTO(
         header=_header(
             kind=ArtifactKind.RESEARCH,
@@ -99,6 +111,9 @@ def research(
             terminal_state=session.stopping.status.value,
             fingerprint=session.fingerprint,
         ),
+        scope_lineage_id=scope_lineage_id,
+        scope_version_id=scope_version_id,
+        parent_scope_version_id=parent_scope_version_id,
         objective=session.objective,
         stopping_status=session.stopping.status.value,
         stopping_reason=session.stopping.reason,
@@ -166,6 +181,7 @@ def investigation(
     tasks: tuple[ResearchInvestigationTask, ...],
     state: object | None = None,
 ) -> InvestigationDTO:
+    scope_lineage_id,scope_version_id,parent_scope_version_id=_scope_identity(session)
     active = tuple(
         item.task_id
         for item in tasks
@@ -188,6 +204,9 @@ def investigation(
             terminal_state=session.stopping.status.value,
         ),
         research_session_id=session.session_id,
+        scope_lineage_id=scope_lineage_id,
+        scope_version_id=scope_version_id,
+        parent_scope_version_id=parent_scope_version_id,
         reasoning_step_ids=tuple(item.step_id for item in steps),
         task_ids=tuple(item.task_id for item in tasks),
         active_task_ids=active,
@@ -202,6 +221,9 @@ def evidence_from_ref(
     research_session_id: str,
     created_at: datetime | None = None,
     state: object | None = None,
+    scope_lineage_id: str | None = None,
+    scope_version_id: str | None = None,
+    parent_scope_version_id: str | None = None,
 ) -> EvidenceDTO:
     return EvidenceDTO(
         header=_header(
@@ -215,6 +237,9 @@ def evidence_from_ref(
             ),
             terminal_state="VERIFIED",
         ),
+        scope_lineage_id=scope_lineage_id,
+        scope_version_id=scope_version_id,
+        parent_scope_version_id=parent_scope_version_id,
         authority_id=ref.authority_id,
         obligation_ids=(ref.obligation_id,),
         evidence_kind="VERIFIED_RESEARCH_EVIDENCE",
@@ -230,6 +255,9 @@ def evidence_artifact(
     tenant_binding: str,
     research_session_id: str | None = None,
     created_at: datetime | None = None,
+    scope_lineage_id: str | None = None,
+    scope_version_id: str | None = None,
+    parent_scope_version_id: str | None = None,
 ) -> EvidenceDTO:
     lineage = (
         (_ref(ArtifactKind.RESEARCH, research_session_id),)
@@ -245,6 +273,9 @@ def evidence_artifact(
             lineage_refs=lineage,
             terminal_state=item.state.value,
         ),
+        scope_lineage_id=scope_lineage_id,
+        scope_version_id=scope_version_id,
+        parent_scope_version_id=parent_scope_version_id,
         authority_id=item.authority_id,
         obligation_ids=item.obligation_ids,
         evidence_kind=item.evidence_kind,
