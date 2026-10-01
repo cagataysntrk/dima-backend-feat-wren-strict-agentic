@@ -1,0 +1,10 @@
+{
+  "schema_version": "dima_brain_v2_final_cert_fix_v1",
+  "capability": "T1_SCOPE_RESUME",
+  "live_red_run": 36890834178,
+  "reproducer_run": 36892086929,
+  "reproducer_commit": "2931524d6c534682989c1fd24774b88beea2da02",
+  "metamorphic_sibling_commit": "78133df92ef7e3e7b8d0684206bba05e36960de2",
+  "semantic_fix_commit": "04f203285fc1c1fac4a507cfc7960a72cbe359bc",
+  "invariant": "entity-only typed scope mutation preserves prior typed time authority when no new time authority is emitted"
+}
