@@ -574,3 +574,14 @@ class ResearchBrief(FrozenModel):
     budget: ResearchBudget = Field(default_factory=ResearchBudget)
     context_version: str
     status: ResearchBriefStatus
+
+    @property
+    def scope_fingerprint(self) -> str:
+        # Local import avoids making the canonical contract module depend on
+        # reducer implementation at import time while keeping one fingerprint law.
+        from app.v3.research_scope_patch import scope_fingerprint
+
+        return scope_fingerprint(
+            self.scope,
+            context_version=self.context_version,
+        )
