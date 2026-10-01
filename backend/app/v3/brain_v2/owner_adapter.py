@@ -48,7 +48,9 @@ from app.v3.research_intake import (
 from app.v3.research_manager import (
     ClaimSemanticContract,
     InvestigationIntent,
+    InvestigationTargetKind,
     ManagerAction,
+    ManagerProposal,
     ResearchInvestigationManager,
 )
 from app.v3.research_product import ResearchAskOrchestrator
@@ -57,7 +59,6 @@ from app.v3.root_cause_candidate_contract import (
 )
 from control_plane.authorize import Principal
 
-from .adaptive_test_design import TypedNextTestProposalManager
 from .activities import (
     BrainActivities,
     CanonicalizeActivityResult,
@@ -138,6 +139,72 @@ class _DiscoveryProposalManager:
                 }
             )
         return proposal
+
+
+class _NextTestProposalManager:
+    """Typed P19 NextTestRequest -> one legal P17 analytical transition."""
+
+    def __init__(self, *, request: NextTestRequest, obligation_id: str) -> None:
+        self._request = request
+        self._obligation_id = obligation_id
+
+    def propose(self, snapshot):
+        rule = snapshot.action_profile.rule_for(
+            InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE
+        )
+        if rule is None:
+            raise BrainV2OwnerError(
+                "BRAIN_V2_NEXT_TEST_NOT_STATE_LEGAL",
+                self._request.request_id,
+            )
+        node_by_id = {
+            node.step_id: node
+            for node in snapshot.investigation.nodes
+        }
+        ordered = {
+            node.step_id: index
+            for index, node in enumerate(snapshot.investigation.nodes)
+        }
+        legal = tuple(
+            step_id
+            for step_id in rule.legal_parent_step_ids
+            if (
+                step_id in node_by_id
+                and node_by_id[step_id].root_obligation_id == self._obligation_id
+            )
+        )
+        if legal:
+            parent = max(legal, key=lambda value: ordered[value])
+        elif rule.allow_parentless:
+            parent = None
+        else:
+            raise BrainV2OwnerError(
+                "BRAIN_V2_NEXT_TEST_PARENT_MISSING",
+                self._request.request_id,
+            )
+        return ManagerProposal(
+            proposal_id="p17-next-" + self._request.request_id[4:],
+            source_revision=snapshot.source_revision,
+            target_parent_obligation=self._obligation_id,
+            action=ManagerAction.EXPLORE_NATIVE,
+            intent=InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE,
+            parent_step_id=parent,
+            branch_key=None,
+            target_kind=InvestigationTargetKind.EXPLANATION,
+            target_ref=self._request.request_id,
+            objective_key="next_test." + self._request.request_id[4:],
+            bounded_objective=self._request.bounded_objective(),
+            rationale=(
+                "P19 exposed one typed unresolved discrimination; execute only "
+                "the governed high-information follow-up."
+            ),
+            inspected_evidence_refs=(),
+            inspected_claim_refs=(),
+            inspected_material_refs=(),
+            expected_information_gain=(
+                self._request.expected_discriminatory_value.value
+            ),
+        )
 
 
 class DimaBrainV2Activities(BrainActivities):
