@@ -1,6 +1,6 @@
 {
   "schema_version": "dima_brain_v2_live_authorization_v1",
-  "enabled": true,
+  "enabled": false,
   "probe_id": "R_LIVE_2_ADAPTIVE",
   "candidate_product_sha": "bf7dd7b0a39418471141327994ac3e2a773aa749",
   "provider_free_run_id": 36914969117,
@@ -10,5 +10,5 @@
   "model_policy": "LUNA_FIRST",
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
-  "authorization_receipt": "g4-t3-adaptive-recertification-v1"
+  "authorization_receipt": "t3-recertification-running-36915701021"
 }
