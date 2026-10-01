@@ -226,11 +226,19 @@ class NativeResearchMaterialExecutor:
             raise ResearchMaterialLimitation(
                 "R1_MATERIAL_SCOPE_FINGERPRINT_REQUIRED",
                 expected,
+                last_valid_boundary="dima.scope.resolve",
+                first_invalid_boundary="dima.material.compile",
+                expected_fingerprint=expected,
+                observed_fingerprint=None,
             )
         if observed != expected:
             raise ResearchMaterialLimitation(
                 "R1_MATERIAL_SCOPE_FINGERPRINT_MISMATCH",
                 f"expected={expected} observed={observed}",
+                last_valid_boundary="dima.scope.resolve",
+                first_invalid_boundary="dima.material.compile",
+                expected_fingerprint=expected,
+                observed_fingerprint=observed,
             )
         if (
             contract.scope_identity.version_id
@@ -242,6 +250,10 @@ class NativeResearchMaterialExecutor:
                     f"expected={brief.scope.scope_version.version_id} "
                     f"observed={contract.scope_identity.version_id}"
                 ),
+                last_valid_boundary="dima.scope.resolve",
+                first_invalid_boundary="dima.material.compile",
+                expected_fingerprint=expected,
+                observed_fingerprint=observed,
             )
         return expected
 
