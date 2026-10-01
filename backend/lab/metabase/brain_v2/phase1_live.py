@@ -744,6 +744,18 @@ def main() -> int:
                 "observed_fingerprint": report["exception"].get(
                     "observed_fingerprint"
                 ),
+                "scope_fingerprint": report["exception"].get(
+                    "scope_fingerprint"
+                ),
+                "material_fingerprint": report["exception"].get(
+                    "material_fingerprint"
+                ),
+                "expected_semantic_shape": report["exception"].get(
+                    "expected_semantic_shape"
+                ),
+                "observed_semantic_shape": report["exception"].get(
+                    "observed_semantic_shape"
+                ),
                 "events": [],
             }
         report["mechanical_verdict"] = "RED"
