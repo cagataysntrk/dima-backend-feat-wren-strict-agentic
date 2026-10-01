@@ -1309,6 +1309,103 @@ def test_r6_multi_period_comparison_preserves_two_typed_half_open_periods():
     )
 
 
+
+@pytest.mark.parametrize(
+    ("effect_id", "candidate_ids", "start", "end"),
+    [
+        (
+            "metric.downtime",
+            ("metric.fault_count", "metric.performance"),
+            "2026-03-01",
+            "2026-05-01",
+        ),
+        (
+            "metric.fault_count",
+            ("metric.downtime", "metric.performance"),
+            "2026-07-01",
+            "2026-09-01",
+        ),
+    ],
+)
+def test_root_causal_change_observation_is_durable_typed_authority(
+    effect_id,
+    candidate_ids,
+    start,
+    end,
+):
+    payload = ready_payload(
+        kind="root_cause",
+        subject=(effect_id, *candidate_ids),
+        related=("dimension.department",),
+    )
+    payload["goals"][0]["causal_competition"] = {
+        "effect_semantic_id": effect_id,
+        "effect_observation": "change",
+        "candidate_mechanism_semantic_ids": list(candidate_ids),
+        "diagnostic_dimension_ids": ["dimension.department"],
+    }
+    payload["goals"][0]["temporal_material"] = {
+        "mode": "window",
+        "window": _r6_period(
+            "accepted bounded analysis window",
+            start,
+            end,
+        ),
+    }
+    payload["time_periods"] = []
+
+    result = ResearchIntakeCompiler(
+        transport=FakeTransport(payload)
+    ).compile(
+        question="Explain the governed change over the accepted bounded window.",
+        catalog=_r6_temporal_catalog(),
+    )
+
+    assert result.brief is not None
+    goal = result.brief.questions[0]
+    assert goal.kind == ResearchGoalKind.ROOT_CAUSE
+    assert goal.causal_competition is not None
+    assert goal.causal_competition.effect_observation.value == "change"
+    assert [(item.start, item.end) for item in result.brief.scope.periods] == [
+        (start, end)
+    ]
+
+
+def test_root_causal_level_observation_does_not_invent_change_authority():
+    payload = ready_payload(
+        kind="root_cause",
+        subject=("metric.downtime", "metric.fault_count"),
+        related=("dimension.department",),
+    )
+    payload["goals"][0]["causal_competition"] = {
+        "effect_semantic_id": "metric.downtime",
+        "effect_observation": "level",
+        "candidate_mechanism_semantic_ids": ["metric.fault_count"],
+        "diagnostic_dimension_ids": ["dimension.department"],
+    }
+    payload["goals"][0]["temporal_material"] = {
+        "mode": "window",
+        "window": _r6_period(
+            "accepted bounded level window",
+            "2026-08-01",
+            "2026-09-01",
+        ),
+    }
+    payload["time_periods"] = []
+
+    result = ResearchIntakeCompiler(
+        transport=FakeTransport(payload)
+    ).compile(
+        question="Explain the governed level in the accepted bounded window.",
+        catalog=_r6_temporal_catalog(),
+    )
+
+    assert result.brief is not None
+    causal = result.brief.questions[0].causal_competition
+    assert causal is not None
+    assert causal.effect_observation.value == "level"
+
+
 def test_root_temporal_material_lifts_comparison_periods_into_scope():
     payload = ready_payload(
         kind="root_cause",
