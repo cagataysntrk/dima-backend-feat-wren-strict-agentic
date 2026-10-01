@@ -4,7 +4,7 @@ CURRENT GATE
 G5
 
 Platform HEAD
-3b1afa97994315dbb7dc174899847f818d295a08
+8f2fabf63f1a803981632079dfb60d8f4abcc16a
 
 semantic Product SHA
 3b8f3c44d3a23a41f2ce55b9b8031f3a3d024e4a
@@ -129,6 +129,8 @@ KNOWN BLOCKERS
 - typed allowed-outcome fix: 8c792990... + 3b8f3c44...
 - focused Brain V2 PF 36917795650 = GREEN with both FORM_CLAIM and honest STOP discovery siblings.
 - full Phase-1 PF 36917925669 = GREEN across Brain V2, Research/Scope, P17, P19, P20, security and hygiene.
+- T4 mechanical contract now separates structural mechanics from Product quality: governed candidate path OR typed honest insufficient terminal.
+- harness tests at 9c884d8c... = provider-free GREEN in 36918446124.
 - Product freeze = 3b8f3c44d3a23a41f2ce55b9b8031f3a3d024e4a; later status/CI-only commit has backend/app/** zero diff.
 - T5 RELATIONSHIP fresh live pending.
 - T6 CONTEXTUAL REPORT fresh live pending.
@@ -140,11 +142,10 @@ T2 ONE_PASS = 36908926530 = GREEN = 4/4
 T3 ADAPTIVE = 36915701021 = GREEN = 4/4
 
 NEXT EXACT ACTION
-Freeze semantic Product 3b8f3c44d3a23a41f2ce55b9b8031f3a3d024e4a with full PF 36917925669.
-Run exactly one fresh R_LIVE_3_DISCOVERY.
-Mechanics must preserve either governed candidate formation or a typed honest insufficient-candidate terminal; Product acceptance still requires manual usefulness >=3.
-No same-candidate retry.
-If T4 is accepted, close Phase 1 and continue G6/G7 backend/headless certification.
+Run one current-head full Phase-1 provider-free closure after T4 harness correction.
+If GREEN, preserve semantic Product 3b8f3c44... and use that new PF run as T4 live authority.
+Then run exactly one fresh R_LIVE_3_DISCOVERY.
+Manual Product score remains separate from mechanical outcome.
 
 90+ HIGH-CONFIDENCE READINESS
 NO
