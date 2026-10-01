@@ -299,7 +299,7 @@ def sources(*,research_state="CURRENT",signal_state="CURRENT",report_state="CURR
         research=FakeResearch(research_state),
         reasoning=FakeReasoning(),
         epistemics=FakeSingleOwner(epistemic(),"assessment_id"),
-        reports=FakeSingleOwner(report(),"report_id",report_state),
+        reports=FakeReportOwner(report_state),
         decisions=FakeSingleOwner(decision(),"decision_brief_id",decision_state),
         adoptions=FakeSingleOwner(adoption(),"adoption_id"),
         action_work=FakeSingleOwner(work(),"action_work_id",work_state),
@@ -307,6 +307,41 @@ def sources(*,research_state="CURRENT",signal_state="CURRENT",report_state="CURR
         memory=FakeSingleOwner(memory(),"memory_id",memory_state),
         watch_signal=CombinedWatchSignal(signal_state),
     )
+
+
+class FakeReportOwner(FakeSingleOwner):
+    def __init__(self, state="CURRENT"):
+        super().__init__(report(), "report_id", state)
+        self.draft_calls = []
+        self.seal_calls = []
+
+    def draft_from_governed_research(
+        self,
+        *,
+        research_session_id,
+        report_key,
+        principal,
+        explicit_limitations=(),
+    ):
+        assert research_session_id == research_session().session_id
+        assert str(principal.tenant_id) == TENANT
+        self.draft_calls.append(
+            (
+                research_session_id,
+                report_key,
+                tuple(explicit_limitations),
+            )
+        )
+        return SimpleNamespace(
+            research_session_id=research_session_id,
+            report_key=report_key,
+        )
+
+    def seal(self, *, draft, principal):
+        assert draft.research_session_id == research_session().session_id
+        assert str(principal.tenant_id) == TENANT
+        self.seal_calls.append((draft.research_session_id, draft.report_key))
+        return report()
 
 
 class CombinedWatchSignal:
@@ -417,6 +452,32 @@ def test_phase2_capability_panel_does_not_claim_frontend_or_30_case():
     assert "ui" not in ids
     assert "30_case" not in ids
     assert "benchmark.30_case" not in ids
+
+
+def test_contextual_report_reuses_current_research_without_scope_mutation():
+    src = sources()
+    service = HeadlessProductService(sources=src)
+
+    dto = service.contextual_report(
+        research_session_id=research_session().session_id,
+        principal=principal(),
+        report_key="management-context",
+    )
+
+    assert dto.header.kind == ArtifactKind.REPORT
+    assert dto.research_session_id == research_session().session_id
+    assert src.research.calls[0][0] == "currentness"
+    assert src.reports.draft_calls == [
+        (
+            research_session().session_id,
+            "management-context",
+            (),
+        )
+    ]
+    assert src.reports.seal_calls == [
+        (research_session().session_id, "management-context")
+    ]
+    assert not any(call[0] == "start" for call in src.research.calls)
 
 
 def test_resume_reauthorizes_current_principal():
