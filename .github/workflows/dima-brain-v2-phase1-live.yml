@@ -345,6 +345,7 @@ jobs:
             "engine_sha":r.get("engine_sha"),
             "engine_release":r.get("engine_release"),
             "brain_state":r.get("brain_state"),
+            "accepted_intent":r.get("accepted_intent"),
             "research":r.get("research"),
             "p17":r.get("p17"),
             "p19":r.get("p19"),
