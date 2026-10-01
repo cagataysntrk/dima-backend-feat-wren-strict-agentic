@@ -1,4 +1,10 @@
-from app.v3.brain_v2.telemetry import BrainRunTelemetry, OwnerProviderUsage
+from app.v3.brain_v2.telemetry import (
+    BoundaryName,
+    BoundaryTrace,
+    BoundaryTraceEvent,
+    BrainRunTelemetry,
+    OwnerProviderUsage,
+)
 
 
 def test_brain_run_telemetry_aggregates_only_non_sensitive_usage() -> None:
@@ -58,3 +64,59 @@ def test_telemetry_quality_per_dollar_is_absent_when_cost_is_zero() -> None:
         manual_quality=3,
     )
     assert value.quality_per_dollar is None
+
+
+def test_boundary_trace_reports_first_invalid_fingerprint_boundary() -> None:
+    trace = BoundaryTrace(
+        events=(
+            BoundaryTraceEvent(
+                boundary=BoundaryName.SCOPE_RESOLVE,
+                owner="ResearchScope",
+                thread_id="thread-1",
+                scope_version_id="scope_v2",
+                scope_fingerprint="a" * 64,
+            ),
+            BoundaryTraceEvent(
+                boundary=BoundaryName.MATERIAL_COMPILE,
+                owner="ResearchAnalyticalScope",
+                thread_id="thread-1",
+                scope_version_id="scope_v2",
+                scope_fingerprint="b" * 64,
+                error_code="R1_MATERIAL_SCOPE_FINGERPRINT_MISMATCH",
+                expected_fingerprint="a" * 64,
+                observed_fingerprint="b" * 64,
+            ),
+        )
+    )
+
+    receipt = trace.public_receipt()
+    assert receipt["last_valid_boundary"] == "dima.scope.resolve"
+    assert receipt["first_invalid_boundary"] == "dima.material.compile"
+    assert receipt["expected_fingerprint"] == "a" * 64
+    assert receipt["observed_fingerprint"] == "b" * 64
+    serialized = str(receipt).lower()
+    assert "prompt" not in serialized
+    assert "reasoning_content" not in serialized
+
+
+def test_success_boundary_trace_has_no_invalid_boundary() -> None:
+    trace = BoundaryTrace(
+        events=(
+            BoundaryTraceEvent(
+                boundary=BoundaryName.SCOPE_RESOLVE,
+                owner="ResearchScope",
+                scope_version_id="scope_v1",
+                scope_fingerprint="c" * 64,
+            ),
+            BoundaryTraceEvent(
+                boundary=BoundaryName.EVIDENCE_ADMIT,
+                owner="Evidence",
+                scope_version_id="scope_v1",
+                scope_fingerprint="c" * 64,
+                native_acquisition_count=1,
+            ),
+        )
+    )
+    receipt = trace.public_receipt()
+    assert receipt["last_valid_boundary"] == "dima.evidence.admit"
+    assert receipt["first_invalid_boundary"] is None
