@@ -69,7 +69,7 @@ PROBES = {
     "R_LIVE_2_ADAPTIVE": {
         "historical_round2_case_id": None,
         "turns": (
-            "Assembly bölümünde Mayıs-Haziran 2026 machine downtime artışını maintenance delay ile spare-part delay adayları arasında araştır. İlk governed Evidence iki adayı güvenli biçimde ayıramıyorsa yalnız bir yüksek bilgi değerli discriminating analitik test yap, yeni Evidence ile P19 değerlendirmesini yenile ve sonra dur. Destek, karşı kanıt ve nedensellik sınırını koru.",
+            "Mayıs-Haziran 2026 dönemi genelinde Assembly bölümündeki machine downtime seviyesini maintenance delay ile spare-part delay adayları arasında araştır. İlk governed Evidence iki adayı güvenli biçimde ayıramıyorsa yalnız bir yüksek bilgi değerli discriminating analitik test yap, yeni Evidence ile P19 değerlendirmesini yenile ve sonra dur. Destek, karşı kanıt ve nedensellik sınırını koru.",
         ),
         "manual_contract": (
             "accepted user candidate identities are preserved exactly",
