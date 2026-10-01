@@ -514,6 +514,7 @@ class DimaQueryReceiptSealer:
         native_result_provenance_ref: str,
         query_fingerprint: str,
         semantic_context_version: str,
+        scope_fingerprint: str | None = None,
         runtime: RuntimeIdentity | None,
         result: ExecutionResultSnapshot,
         event: ExecutionEventIdentity,
@@ -581,6 +582,7 @@ class DimaQueryReceiptSealer:
                 "native_result_provenance_ref": native_result_provenance_ref,
                 "canonical_query_fingerprint": query_fingerprint,
                 "semantic_context_version": semantic_context_version,
+                "scope_fingerprint": scope_fingerprint,
                 "semantic_refs": sorted(semantic_refs),
                 "resource_bindings": sorted(
                     zip(resource_entity_ids, resource_fingerprints, strict=True)
@@ -632,6 +634,7 @@ class DimaQueryReceiptSealer:
             execution_access_fingerprint=None,
             access_attestation_refs=(),
             semantic_context_version=semantic_context_version,
+            scope_fingerprint=scope_fingerprint,
             resource_entity_ids=resource_entity_ids,
             resource_fingerprints=resource_fingerprints,
             substrate=runtime.substrate,
