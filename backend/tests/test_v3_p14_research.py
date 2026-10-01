@@ -291,6 +291,46 @@ def test_native_material_message_projects_typed_temporal_observation(
     assert "MBQL" not in message
 
 
+def test_native_material_message_projects_only_required_accepted_semantic_labels():
+    session = _session("obl-p14-labels")
+    unrelated = ResearchSemanticRef(
+        source_mention="returns",
+        candidate_id="metric.unrelated_returns",
+        target_kind=SemanticTargetKind.METRIC,
+        canonical_name="Unrelated Returns",
+    )
+    brief = session.accepted_brief
+    assert brief is not None
+    session = session.model_copy(
+        update={
+            "accepted_brief": brief.model_copy(
+                update={
+                    "scope": brief.scope.model_copy(
+                        update={
+                            "semantic_refs": (
+                                *brief.scope.semantic_refs,
+                                unrelated,
+                            )
+                        }
+                    )
+                }
+            )
+        }
+    )
+
+    prepared = ResearchManager.prepare_native_delegation(
+        session,
+        obligation_id="obl-p14-labels",
+        now=NOW,
+    )
+
+    assert "- metric.sales_order_count :: Sales Order Count" in prepared.request.message
+    assert "metric.unrelated_returns" not in prepared.request.message
+    assert "Unrelated Returns" not in prepared.request.message
+    assert "SQL" not in prepared.request.message
+    assert "MBQL" not in prepared.request.message
+
+
 def test_p14_durable_state_delegates_objective_to_real_native_bridge_without_query_planner():
     session = _session("obl-p14-1")
     prepared = ResearchManager.prepare_native_delegation(
@@ -300,7 +340,10 @@ def test_p14_durable_state_delegates_objective_to_real_native_bridge_without_que
     )
 
     assert prepared.request.message.startswith("[DIMA ACCEPTED ANALYTICAL CONTRACT]\n")
-    assert "metrics:\n- metric.sales_order_count" in prepared.request.message
+    assert (
+        "metrics:\n- metric.sales_order_count :: Sales Order Count"
+        in prepared.request.message
+    )
     assert "[USER OBLIGATION]\n" + session.obligations[0].objective in prepared.request.message
     assert prepared.request.context["dima_analytical_scope"]["metric_refs"] == [
         "metric.sales_order_count"
