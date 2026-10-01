@@ -134,9 +134,14 @@ class FakeActivities:
             hypotheses = ("p19h_" + "a" * 24,)
         else:
             hypotheses = ("p19h_" + "a" * 24, "p19h_" + "b" * 24)
+        semantics = tuple(
+            f"metric.candidate_{index}"
+            for index, _ in enumerate(hypotheses, start=1)
+        )
         return CandidateProjectionActivityResult(
             hypothesis_revision=state.hypothesis_revision + (1 if hypotheses else 0),
             hypothesis_ids=hypotheses,
+            candidate_semantic_ids=semantics,
             candidate_count=len(hypotheses),
             activity_fingerprint=self._fp("project-candidates", state),
         )
@@ -222,6 +227,10 @@ def test_discovery_projects_candidates_without_p17_provider() -> None:
     assert activities.calls["p17_next_test"] == 0
     assert activities.calls["p19"] == 1
     assert len(result.hypothesis_ids) == 2
+    assert result.candidate_semantic_ids == (
+        "metric.candidate_1",
+        "metric.candidate_2",
+    )
 
 
 @pytest.mark.parametrize("mode", ["discovery_zero", "discovery_one"])
