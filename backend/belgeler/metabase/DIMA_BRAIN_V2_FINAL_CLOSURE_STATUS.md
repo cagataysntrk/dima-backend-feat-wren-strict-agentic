@@ -1,10 +1,10 @@
 # DIMA BRAIN V2 — FINAL CLOSURE STATUS
 
 CURRENT GATE
-G4
+G5
 
 Platform HEAD
-7e1c48531ff2c5833efccd66577ac232e4c9ef1c
+3071cca8a7197ee16a424292a87d95aadf5339f0
 
 semantic Product SHA
 bf7dd7b0a39418471141327994ac3e2a773aa749
@@ -70,42 +70,49 @@ covered family:
 Hypothesis analytical-material state-machine added with production material/delta projectors.
 
 LIVE
-run: 36912879070
-artifact: dima-brain-v2-live-R_LIVE_2_ADAPTIVE-36912879070
+T3 final recertification:
+run: 36915701021
+artifact: dima-brain-v2-live-R_LIVE_2_ADAPTIVE-36915701021
+artifact id: 11189563441
+artifact digest: sha256:7f0bb6773368c5fea0837a3123c8a680bca8b1a1b91eba6f29bc4e60e5d8862d
 mechanical: GREEN
-manual: 4/4 provisional pending G2/G3 shared material-seam closure
+manual: 4/4
+candidate: bf7dd7b0a39418471141327994ac3e2a773aa749
 
 Manual basis:
 - accepted user candidate identities preserved exactly
 - initial aggregate Evidence was insufficient for discrimination
-- exactly one typed P17 temporal-order re-entry
-- follow-up Evidence materially changed from 1 aggregate row to 8 governed daily observations
-- two native acquisitions total, no third acquisition
-- P19 reassessed after new Evidence and terminated honestly
-- both candidates remain observationally plausible; no causal direction or candidate discrimination fabricated
-- P20 preserves limitations instead of inventing counter-Evidence
+- exactly one typed P17 adaptive child material re-entry
+- follow-up Evidence changed from 1 aggregate row to 8 governed daily observations
+- evidence revision advanced before P19 reassessment
+- two native acquisitions total; no third acquisition
+- P19 retained both candidates as observationally plausible and did not invent causal direction
+- P20 carried limitations forward without fabricated challenge/counter-Evidence
+- duplicate native = 0
+- stale Evidence = 0
+- exception = 0
 
 PROVIDER REQUESTS
-T3 diagnostic GREEN: 8 total
+T3 final: 8 total
 research_intake=1
 metabase=4
 p17=1
 p19=2
 
 TOKENS
-T3 diagnostic GREEN:
-prompt=95913
-completion=3618
-reasoning=605
+T3 final:
+prompt=91635
+completion=3170
+reasoning=483
 
 LATENCY
-42838 ms
+37286 ms
 
 COST
-$0.01892568
+$0.0173724
 
 EXCEPTIONS
-0 in run 36912879070
+0 in run 36915701021
 
 DUPLICATE NATIVE
 0 known
@@ -114,19 +121,22 @@ STALE EVIDENCE
 0 known
 
 KNOWN BLOCKERS
-- T3 4/4 run 36912879070 is provisional because G2/G3 changed shared adaptive material semantics after that run.
-- Exactly one fresh T3 recertification is required on bf7dd7b0... with G3 PF 36914969117.
-- T4/T5/T6/T7 final lives pending.
+- T4 DISCOVERY fresh live pending.
+- T5 RELATIONSHIP fresh live pending.
+- T6 CONTEXTUAL REPORT fresh live pending.
+- T7 MULTI-INTENT fresh live pending.
 
 SEALED CAPABILITIES
 T1 SCOPE RESUME = 36908273500 = GREEN = 4/4
 T2 ONE_PASS = 36908926530 = GREEN = 4/4
+T3 ADAPTIVE = 36915701021 = GREEN = 4/4
 
 NEXT EXACT ACTION
-Freeze bf7dd7b0a39418471141327994ac3e2a773aa749 with G3 PF 36914969117.
-Run exactly one fresh R_LIVE_2_ADAPTIVE recertification.
-If mechanical GREEN and manual >=3, seal T3 and move immediately to G5 T4 DISCOVERY.
-No same-candidate retry.
+G5: certify T4 DISCOVERY.
+Provider-free carry-forward authority: 36914969117 = GREEN on final semantic Product bf7dd7b0...
+The full suite includes the real-owner discovery path with one native acquisition, governed candidate refs and P19 grounding.
+Run exactly one fresh R_LIVE_3_DISCOVERY.
+If mechanical GREEN and manual >=3, seal T4 and continue G6 T5/T6.
 
 90+ HIGH-CONFIDENCE READINESS
 NO
