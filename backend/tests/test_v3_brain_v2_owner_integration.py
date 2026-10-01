@@ -1670,16 +1670,6 @@ def test_adaptive_same_result_hash_never_becomes_fake_information_gain() -> None
     assert material.calls == 2
     assert p19_manager.call_count == 1
     assert next_test_manager.call_count == 1
-    snapshot = investigation.snapshot(
-        session_id=next(
-            item.research_session_id
-            for item in investigation.snapshot_store_items()
-        ) if hasattr(investigation, "snapshot_store_items") else "",
-        principal=_principal(),
-    ) if False else None
-    del snapshot
-
-
 def test_real_owner_discovery_forms_governed_candidates_without_extra_native() -> None:
     (
         _,
