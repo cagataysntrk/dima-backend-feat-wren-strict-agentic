@@ -213,6 +213,64 @@ def test_discovery_mechanical_gate_accepts_typed_honest_insufficient_stop() -> N
 
 
 
+
+def test_discovery_mechanical_gate_accepts_partial_candidate_then_honest_stop() -> None:
+    state = BrainGraphState(
+        thread_id="live:discovery-partial-stop",
+        tenant_binding="id:tenant",
+        principal_ref="user-1",
+        research_session_id="rs_" + "9" * 24,
+        accepted_brief_ref="rb_discovery",
+        scope_version_id="scope_v1",
+        evidence_revision=1,
+        evidence_ids=("evi_" + "2" * 24,),
+        hypothesis_ids=("p19h_" + "3" * 24,),
+        workflow_status=BrainWorkflowStatus.INCONCLUSIVE,
+        last_completed_node="HONEST_STOP",
+        discovery_required=False,
+        discovery_turns=2,
+    )
+    provider = {
+        "provider_requests_by_source": {
+            "research_intake": 1,
+            "metabase": 2,
+            "p17_manager": 2,
+            "p19_manager": 0,
+        },
+        "actual_provider_request_count": 5,
+        "prompt_tokens": 1500,
+        "blocked_request_count": 0,
+    }
+    p17_snapshot = SimpleNamespace(
+        investigation=SimpleNamespace(nodes=()),
+        claims=(object(),),
+        terminal_stop_reason=SimpleNamespace(
+            value="CAUSAL_IDENTIFICATION_LIMIT"
+        ),
+    )
+    p19_snapshot = SimpleNamespace(
+        hypotheses=(_grounded_hypothesis(),),
+    )
+
+    result = _mechanical(
+        probe_id="R_LIVE_3_DISCOVERY",
+        state=state,
+        provider=provider,
+        links=(_link(),),
+        p17_snapshot=p17_snapshot,
+        p19_snapshot=p19_snapshot,
+        report_doc=None,
+    )
+
+    assert result["mechanical_green"] is True
+    assert result["discovery_candidate_path"] is False
+    assert result["discovery_honest_stop"] is True
+    assert result["hypothesis_count"] == 1
+    assert result["evidence_grounded_hypothesis_count"] == 1
+    assert result["p19_assessment_exists"] is False
+    assert result["report_exists"] is False
+
+
 def test_scope_resume_mechanical_gate_requires_new_scope_and_disjoint_evidence() -> None:
     state = BrainGraphState(
         thread_id="live:scope",
