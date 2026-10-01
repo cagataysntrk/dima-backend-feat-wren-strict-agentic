@@ -1,3 +1,5 @@
+import pytest
+
 from app.v3.brain_v2.telemetry import (
     BoundaryName,
     BoundaryTrace,
@@ -120,3 +122,114 @@ def test_success_boundary_trace_has_no_invalid_boundary() -> None:
     receipt = trace.public_receipt()
     assert receipt["last_valid_boundary"] == "dima.evidence.admit"
     assert receipt["first_invalid_boundary"] is None
+
+
+class _RecordingSpan:
+    def __init__(self, name, attributes):
+        self.name = name
+        self.attributes = dict(attributes or {})
+
+    def set_attribute(self, key, value):
+        self.attributes[key] = value
+
+
+class _RecordingContext:
+    def __init__(self, span):
+        self.span = span
+
+    def __enter__(self):
+        return self.span
+
+    def __exit__(self, exc_type, exc, tb):
+        return False
+
+
+class _RecordingTracer:
+    def __init__(self):
+        self.spans = []
+
+    def start_as_current_span(self, name, attributes=None):
+        span = _RecordingSpan(name, attributes)
+        self.spans.append(span)
+        return _RecordingContext(span)
+
+
+def test_opentelemetry_bridge_exports_only_allowlisted_metadata() -> None:
+    from app.v3.brain_v2.state import BrainGraphState
+    from app.v3.brain_v2.telemetry import OpenTelemetryBridge
+
+    tracer = _RecordingTracer()
+    bridge = OpenTelemetryBridge(tracer=tracer)
+    state = BrainGraphState(
+        thread_id="thread-otel",
+        tenant_binding="tenant:test",
+        principal_ref="user:test",
+        current_user_input="non-exported input",
+        scope_version_id="scope_v1",
+        evidence_revision=2,
+        hypothesis_revision=1,
+    )
+
+    with bridge.operation(
+        BoundaryName.DISCOVERY_PROJECT_CANDIDATES,
+        state=state,
+        scope_fingerprint="a" * 64,
+        material_fingerprint="b" * 64,
+    ) as span:
+        span.set_attributes(candidate_count=3, not_allowlisted="drop-me")
+
+    recorded = tracer.spans[0]
+    assert recorded.name == "dima.discovery.project_candidates"
+    assert recorded.attributes["scope_version_id"] == "scope_v1"
+    assert recorded.attributes["scope_fingerprint"] == "a" * 64
+    assert recorded.attributes["material_fingerprint"] == "b" * 64
+    assert recorded.attributes["candidate_count"] == 3
+    serialized = str(recorded.attributes)
+    assert "non-exported input" not in serialized
+    assert "tenant:test" not in serialized
+    assert "user:test" not in serialized
+    assert "not_allowlisted" not in recorded.attributes
+
+
+def test_opentelemetry_bridge_records_stable_error_type_without_message() -> None:
+    from app.v3.brain_v2.telemetry import OpenTelemetryBridge
+
+    class DomainError(RuntimeError):
+        code = "BRAIN_TEST_STABLE_ERROR"
+
+    tracer = _RecordingTracer()
+    bridge = OpenTelemetryBridge(tracer=tracer)
+
+    with pytest.raises(DomainError):
+        with bridge.operation(BoundaryName.P19_ASSESS):
+            raise DomainError("detail must not be exported")
+
+    recorded = tracer.spans[0]
+    assert recorded.attributes["error.type"] == "BRAIN_TEST_STABLE_ERROR"
+    assert "detail must not be exported" not in str(recorded.attributes)
+
+
+def test_required_brain_v21_otel_boundary_names_are_canonical() -> None:
+    assert {
+        BoundaryName.INTENT_INTERPRET.value,
+        BoundaryName.SCOPE_RESOLVE.value,
+        BoundaryName.MATERIAL_COMPILE.value,
+        BoundaryName.NATIVE_EXECUTE.value,
+        BoundaryName.EVIDENCE_ADMIT.value,
+        BoundaryName.DISCOVERY_PROJECT_CANDIDATES.value,
+        BoundaryName.P19_ASSESS.value,
+        BoundaryName.P17_NEXT_TEST.value,
+        BoundaryName.P18_ADJUDICATE.value,
+        BoundaryName.P20_REPORT.value,
+    } == {
+        "dima.intent.interpret",
+        "dima.scope.resolve",
+        "dima.material.compile",
+        "dima.native.execute",
+        "dima.evidence.admit",
+        "dima.discovery.project_candidates",
+        "dima.p19.assess",
+        "dima.p17.next_test",
+        "dima.p18.adjudicate",
+        "dima.p20.report",
+    }
