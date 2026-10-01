@@ -90,9 +90,26 @@ def _native_temporal_scope_error(
     expected: Mapping[str, Any],
     observed: Mapping[str, Any],
 ) -> ResearchAnalyticalScopeError:
+    expected_payload = json.dumps(
+        expected,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+        default=str,
+    )
+    observed_payload = json.dumps(
+        observed,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+        default=str,
+    )
     return ResearchAnalyticalScopeError(
         "R1_NATIVE_TIME_SCOPE_MISMATCH",
-        detail,
+        (
+            f"{detail}; expected_temporal_scope={expected_payload}; "
+            f"observed_temporal_scope={observed_payload}"
+        ),
         last_valid_boundary="dima.material.compile",
         first_invalid_boundary="dima.native.observe",
         expected_fingerprint=_boundary_fingerprint(expected),
