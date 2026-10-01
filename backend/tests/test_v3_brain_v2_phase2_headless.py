@@ -45,7 +45,7 @@ def test_phase2_manifest_proof_references_exist_exactly():
         assert capability["proofs"], capability["id"]
         for proof in capability["proofs"]:
             raw_path,test_name=proof.split("::",1)
-            path=ROOT.parent / raw_path.removeprefix("backend/")
+            path=ROOT / raw_path.removeprefix("backend/")
             assert path.exists(), proof
             source=path.read_text(encoding="utf-8")
             assert f"def {test_name}(" in source, proof
