@@ -31,6 +31,7 @@ from app.v3.research_intake import (
     ResearchIntakeCompiler,
     ResearchIntakeError,
     ResearchIntakeTerminal,
+    _followup_scope_provider_schema,
     _intake_provider_schema,
 )
 from app.v3.structured_transport import (
@@ -945,8 +946,17 @@ def prior_brief() -> ResearchBrief:
 
 
 def test_explicit_repair_does_not_restore_removed_prior_obligation():
-    payload = ready_payload()
-    payload["scope_mutation_kind"] = "REMOVE"
+    payload = {
+        "terminal": "READY",
+        "operations": [
+            {
+                "facet": "METRIC",
+                "operation": "SET",
+                "semantic_ids": ["metric.downtime"],
+                "source_fragment": "include downtime only",
+            }
+        ],
+    }
     transport = FakeTransport(payload)
     result = ResearchIntakeCompiler(
         transport=transport
@@ -1260,7 +1270,7 @@ def test_provider_intake_schema_is_terminal_payload_not_domain_kitchen_sink():
     assert "lineage_id" not in json.dumps(schema)
 
 
-def test_provider_intake_schema_exposes_time_and_mutation_only_when_governed():
+def test_followup_scope_schema_exposes_patch_facets_not_mutation_kind():
     base = catalog()
     temporal = ResearchIntakeCatalog(
         context_version=base.context_version,
@@ -1269,14 +1279,18 @@ def test_provider_intake_schema_exposes_time_and_mutation_only_when_governed():
         supported_domains=base.supported_domains,
         temporal_dimension_ids=("dimension.event_date",),
     )
-    schema = _intake_provider_schema(
-        temporal,
-        has_prior_brief=True,
-    )
-    ready = schema["$defs"]["ModelReadyResearchIntake"]
-    assert "time_surfaces" not in ready["properties"]
-    assert "time_periods" in ready["properties"]
-    assert "scope_mutation_kind" in ready["properties"]
+    schema = _followup_scope_provider_schema(temporal)
+    ready = schema["$defs"]["ModelReadyFollowupScopePatch"]
+    assert set(ready["properties"]) == {"terminal", "operations"}
+    serialized = json.dumps(schema, sort_keys=True)
+    assert "scope_mutation_kind" not in serialized
+    assert "source_scope_version_id" not in serialized
+    operation = schema["$defs"]["ModelScopePatchOperationDraft"]
+    facets = {
+        item["properties"]["facet"]["enum"][0]
+        for item in operation["anyOf"]
+    }
+    assert facets == {"ENTITY", "PERIOD", "METRIC", "BREAKDOWN"}
 
 
 def _r6_temporal_catalog() -> ResearchIntakeCatalog:
@@ -2215,14 +2229,23 @@ def test_r6_follow_up_narrowing_advances_scope_from_two_periods_to_one():
     )
     assert initial.brief is not None
 
-    narrowed_payload = ready_payload(
-        kind="comparison",
-        subject=("metric.downtime", "metric.fault_count"),
-    )
-    narrowed_payload["time_periods"] = [
-        _r6_period("June only", "2026-06-01", "2026-07-01")
-    ]
-    narrowed_payload["scope_mutation_kind"] = "CHANGE_PERIOD"
+    narrowed_payload = {
+        "terminal": "READY",
+        "operations": [
+            {
+                "facet": "PERIOD",
+                "operation": "SET",
+                "periods": [
+                    _r6_period(
+                        "June only",
+                        "2026-06-01",
+                        "2026-07-01",
+                    )
+                ],
+                "source_fragment": "narrow to June only",
+            }
+        ],
+    }
     narrowed = ResearchIntakeCompiler(
         transport=FakeTransport(narrowed_payload)
     ).compile(
@@ -2283,14 +2306,23 @@ def test_r6_follow_up_surface_rewording_does_not_mint_new_scope_version():
     )
     assert first.brief is not None
 
-    reworded_payload = ready_payload()
-    reworded_payload["time_periods"] = [
-        _r6_period(
-            "the June 2026 window",
-            "2026-06-01",
-            "2026-07-01",
-        )
-    ]
+    reworded_payload = {
+        "terminal": "READY",
+        "operations": [
+            {
+                "facet": "PERIOD",
+                "operation": "SET",
+                "periods": [
+                    _r6_period(
+                        "the June 2026 window",
+                        "2026-06-01",
+                        "2026-07-01",
+                    )
+                ],
+                "source_fragment": "June 2026 window",
+            }
+        ],
+    }
     reworded = ResearchIntakeCompiler(
         transport=FakeTransport(reworded_payload)
     ).compile(
@@ -2304,8 +2336,9 @@ def test_r6_follow_up_surface_rewording_does_not_mint_new_scope_version():
         reworded.brief.scope.scope_version.version_id
         == first.brief.scope.scope_version.version_id
     )
-    assert reworded.brief.scope.time_surfaces == (
-        "the June 2026 window",
+    assert (
+        reworded.brief.scope.time_surfaces
+        == first.brief.scope.time_surfaces
     )
     assert [
         (
