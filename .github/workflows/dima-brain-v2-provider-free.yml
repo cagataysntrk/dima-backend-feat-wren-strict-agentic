@@ -63,4 +63,9 @@ jobs:
             tests/test_v3_brain_v2_graph.py \
             tests/test_v3_brain_v2_discovery_stateful.py \
             tests/test_v3_brain_v2_owner_integration.py \
-            tests/test_v3_brain_v2_telemetry.py
+            tests/test_v3_brain_v2_telemetry.py \
+            tests/test_v3_product_composition.py::test_relationship_p18_adjudication_emits_observation_only_span \
+            tests/test_v3_product_composition.py::test_explain_deliverable_reuses_terminal_p18_without_new_report_or_material \
+            tests/test_v3_product_contracts.py::test_contextual_report_reuses_current_research_without_scope_mutation \
+            tests/test_v3_research_intake.py::test_followup_scope_patch_noop_inherits_prior_scope_without_new_version \
+            tests/test_v3_brain_v2_phase2_headless.py::test_t6_contextual_report_is_projection_only_and_cannot_reopen_analytics
