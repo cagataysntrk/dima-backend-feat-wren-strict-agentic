@@ -739,6 +739,68 @@ class DeterministicDiscoveryManager:
         )
 
 
+class DeterministicNextTestManager:
+    """Provider-free P17 stand-in that must design the ADAPTIVE test."""
+
+    def __init__(self) -> None:
+        self.call_count = 0
+        self.calls = []
+
+    def propose_for_obligation_with_constraints(
+        self,
+        snapshot,
+        *,
+        target_parent_obligation,
+        allowed_evidence_refs,
+        allowed_intents,
+    ):
+        assert allowed_intents == (
+            InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE,
+        )
+        assert allowed_evidence_refs
+        self.call_count += 1
+        self.calls.append(
+            {
+                "target_parent_obligation": target_parent_obligation,
+                "allowed_evidence_refs": tuple(allowed_evidence_refs),
+                "allowed_intents": tuple(allowed_intents),
+            }
+        )
+        rule = snapshot.action_profile.rule_for(
+            InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE
+        )
+        assert rule is not None
+        parent = (
+            rule.legal_parent_step_ids[-1]
+            if rule.legal_parent_step_ids
+            else None
+        )
+        assert parent is not None or rule.allow_parentless
+        return ManagerProposal(
+            proposal_id=f"adaptive-next-{self.call_count}",
+            source_revision=snapshot.source_revision,
+            target_parent_obligation=target_parent_obligation,
+            action=ManagerAction.EXPLORE_NATIVE,
+            intent=InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE,
+            parent_step_id=parent,
+            branch_key=None,
+            target_kind=InvestigationTargetKind.EXPLANATION,
+            target_ref="typed-next-test",
+            objective_key=f"adaptive.discrimination.{self.call_count}",
+            bounded_objective=(
+                "Test the temporal ordering that can distinguish the governed "
+                "competing hypotheses inside the accepted analytical scope."
+            ),
+            rationale="One bounded high-information discrimination step.",
+            inspected_evidence_refs=tuple(allowed_evidence_refs),
+            inspected_claim_refs=(),
+            inspected_material_refs=(),
+            expected_information_gain=(
+                "Resolve one typed ambiguity with materially new Evidence."
+            ),
+        )
+
+
 class BombP17:
     def __getattr__(self, name):
         raise AssertionError(f"ONE_PASS must not invoke P17: {name}")
@@ -1178,7 +1240,7 @@ def _adaptive_stack(*, discovery: bool = False, p19_manager_override=None):
     discovery_manager = (
         DeterministicDiscoveryManager()
         if discovery
-        else BombP17()
+        else DeterministicNextTestManager()
     )
     activities = DimaBrainV2Activities(
         principal=principal,
@@ -1218,7 +1280,7 @@ def test_real_owner_adaptive_runs_one_typed_followup_without_duplicate_native() 
         investigation,
         _,
         p19_manager,
-        _,
+        next_test_manager,
         activities,
     ) = _adaptive_stack()
     service = BrainV2Service(activities=activities)
@@ -1237,6 +1299,10 @@ def test_real_owner_adaptive_runs_one_typed_followup_without_duplicate_native() 
     assert bridge.metabot_posts == 2
     assert material.calls == 2
     assert p19_manager.call_count == 2
+    assert next_test_manager.call_count == 1
+    assert next_test_manager.calls[0]["allowed_intents"] == (
+        InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE,
+    )
     assert len(result.evidence_ids) == 2
     snapshot = investigation.snapshot(
         session_id=result.research_session_id,
@@ -1248,6 +1314,10 @@ def test_real_owner_adaptive_runs_one_typed_followup_without_duplicate_native() 
         if node.intent == InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE
     )
     assert len(next_test_steps) == 1
+    assert next_test_steps[0].bounded_objective == (
+        "Test the temporal ordering that can distinguish the governed "
+        "competing hypotheses inside the accepted analytical scope."
+    )
     assert len(snapshot.evidence_results) == 2
     assert len(p19_manager.context_calls) == 2
     assert p19_manager.context_calls[0][
