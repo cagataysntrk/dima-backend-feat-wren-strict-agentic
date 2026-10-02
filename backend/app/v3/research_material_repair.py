@@ -23,6 +23,7 @@ class MaterialRepairDisposition(StrEnum):
 class MaterialRepairDecision(Frozen):
     disposition: MaterialRepairDisposition
     validation_code: str = Field(min_length=1)
+    validation_detail: str | None = Field(default=None, min_length=1)
     repair_attempt: int = Field(ge=0, le=1)
     require_new_query_fingerprint: bool = True
     preserve_scope_identity: bool = True
@@ -46,6 +47,7 @@ def decide_material_repair(
     *,
     validation_code: str,
     prior_repair_attempts: int,
+    validation_detail: str | None = None,
 ) -> MaterialRepairDecision:
     if prior_repair_attempts < 0:
         raise ValueError("prior repair attempts cannot be negative")
@@ -61,6 +63,7 @@ def decide_material_repair(
             else MaterialRepairDisposition.TERMINAL_LIMIT
         ),
         validation_code=validation_code,
+        validation_detail=validation_detail,
         repair_attempt=1 if repairable else min(prior_repair_attempts, 1),
     )
 
@@ -73,7 +76,7 @@ def material_repair_feedback(decision: MaterialRepairDecision) -> dict[str, obje
 
     if decision.disposition != MaterialRepairDisposition.REPAIR:
         raise ValueError("terminal material limitation has no repair feedback")
-    return {
+    feedback: dict[str, object] = {
         "schema": "dima_material_repair_feedback_v1",
         "validation_code": decision.validation_code,
         "repair_attempt": decision.repair_attempt,
@@ -82,3 +85,6 @@ def material_repair_feedback(decision: MaterialRepairDecision) -> dict[str, obje
         "preserve_scope_identity": decision.preserve_scope_identity,
         "preserve_material_contract": decision.preserve_material_contract,
     }
+    if decision.validation_detail is not None:
+        feedback["validation_detail"] = decision.validation_detail
+    return feedback
