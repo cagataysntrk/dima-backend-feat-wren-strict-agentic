@@ -418,28 +418,34 @@ Read `DIMA_BRAIN_V2_1_ENGINEERING_PLAYBOOK.md` before modifying Product code.
 
 ## 12. Next legal action
 
-Current work is complete at the pre-benchmark gate.
+The frozen broad benchmark has now run and is sealed.
 
 Next action:
 
 ~~~text
-WAIT FOR EXPLICIT 30-CASE EXECUTION AUTHORIZATION
+BROAD 30-CASE RECOVERY
+= GENERIC FAILURE-FAMILY CLOSURE ONLY
 ~~~
 
-When authorization is given:
+Required order:
 
-1. freeze the exact semantic Product candidate;
-2. do not modify benchmark cases/prompts/oracle to fit the Product;
-3. run the frozen 30-case once under the approved protocol;
-4. preserve RED artifacts immutably;
-5. do not enter a case-by-case paid patch loop;
-6. report actual score separately from “high-confidence readiness.”
+1. preserve run `37027548693` and artifact `11235884317` as immutable benchmark authority;
+2. do not rerun the 30-case on the same candidate;
+3. reproduce the broad failure families provider-free;
+4. close ranking-admission, completion/sealing, adaptive-material, causal-temporal and scope-repair invariants generically;
+5. add stateful/metamorphic siblings before any live proof;
+6. use only targeted paid probes when they generate new information;
+7. freeze a new semantic Product candidate only after provider-free closure;
+8. reassess readiness from the generic fixes;
+9. request new explicit user authorization before any future broad 30-case.
 
-Until that authorization:
+Current status:
 
 ~~~text
-30-case = NOT RUN
-frontend = NOT IMPLEMENTED
+30-case = COMPLETED
+final score = 60.5 / 100
+broad authorization = CLOSED
+frontend = NOT IMPLEMENTED / NOT AUTHORIZED
 architecture = FROZEN
 ~~~
 
