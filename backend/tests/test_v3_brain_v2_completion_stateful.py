@@ -9,6 +9,7 @@ from app.v3.brain_v2.material_groups import project_material_groups
 from app.v3.brain_v2.owner_adapter import DimaBrainV2Activities
 from app.v3.brain_v2.state import BrainGraphState
 from app.v3.business_relationship_v1 import RelationshipTerminalDisposition
+from app.v3.research import ObligationState, ResearchObligation
 from control_plane.authorize import Principal
 
 from app.v3.research_contracts import (
@@ -111,6 +112,18 @@ class CompletionOwnerHarness(DimaBrainV2Activities):
             context_version="ctx_completion_stateful",
             authority_id="atc_completion_stateful",
             lineage_id="atl_completion_stateful",
+            obligations=(
+                ResearchObligation(
+                    obligation_id="g_rank",
+                    objective="Rank downtime by department.",
+                    state=ObligationState.READY,
+                ),
+                ResearchObligation(
+                    obligation_id="g_rel",
+                    objective="Assess downtime with faults by department.",
+                    state=ObligationState.READY,
+                ),
+            ),
         )
         self._relationship_results = SimpleNamespace(
             load=lambda **kwargs: SimpleNamespace(
