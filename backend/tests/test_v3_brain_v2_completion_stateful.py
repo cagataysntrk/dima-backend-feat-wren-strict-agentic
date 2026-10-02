@@ -9,6 +9,8 @@ from app.v3.brain_v2.material_groups import project_material_groups
 from app.v3.brain_v2.owner_adapter import DimaBrainV2Activities
 from app.v3.brain_v2.state import BrainGraphState
 from app.v3.business_relationship_policy import RelationshipPolicyResolutionStatus
+from control_plane.authorize import Principal
+
 from app.v3.research_contracts import (
     PresentationKind,
     RankingSurface,
@@ -97,6 +99,12 @@ def accepted_brief() -> ResearchBrief:
 
 class CompletionOwnerHarness(DimaBrainV2Activities):
     def __init__(self):
+        self._principal = Principal(
+            user_id="00000000-0000-4000-8000-000000009901",
+            tenant_id="00000000-0000-4000-8000-000000009902",
+            tenant_slug="completion-stateful",
+            roles=["analyst"],
+        )
         self.session = SimpleNamespace(
             accepted_brief=accepted_brief(),
             session_id="rs_" + "1" * 24,
@@ -141,8 +149,8 @@ class CompletionOwnerStateMachine(RuleBasedStateMachine):
         report = self.report_done
         return BrainGraphState(
             thread_id="completion-stateful",
-            tenant_binding="id:tenant",
-            principal_ref="user",
+            tenant_binding="id:00000000-0000-4000-8000-000000009902",
+            principal_ref="00000000-0000-4000-8000-000000009901",
             research_session_id=self.owner.session.session_id,
             accepted_brief_ref=self.owner.session.accepted_brief.brief_id,
             scope_version_id="scope_v1",
