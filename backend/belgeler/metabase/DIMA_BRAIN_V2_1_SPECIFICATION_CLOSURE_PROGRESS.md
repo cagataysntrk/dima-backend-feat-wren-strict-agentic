@@ -218,3 +218,49 @@ Consulted before implementation:
 Next legal action: inspect each frozen failure family against current owner contracts, build the
 independent semantic conformance kernel **before** the first Product semantic fix, then close one
 owner family at a time.
+
+
+### Step 2 — semantic conformance kernel + ranking admission family
+
+Conformance kernel opened under `backend/tests/semantic_spec/` with:
+
+- independent symbolic law model;
+- 5,040-case deterministic semantic matrix;
+- all 15 semantic dimension-pairs covered;
+- independent scope-patch reference law;
+- Hypothesis production-vs-reference scope locality check (400 generated examples);
+- generated ranking-admission siblings;
+- CI coverage artifact.
+
+First intentional RED:
+
+- run `37041250852`;
+- exactly one semantic failure;
+- boundary: `dima.native.observe` ranking admission;
+- error: `R1_NATIVE_RANKING_SCOPE_MISMATCH`;
+- root cause: authorized ranking was required to be the *only* observed ordering even though
+  the same owner already defined LIMIT-less Metabase ordering as non-row-restrictive
+  presentation/stability material.
+
+Generic Product fix:
+
+- exact authorized ranking target/direction/limit remains mandatory;
+- any additional row-limiting ranking remains forbidden;
+- additional LIMIT-less ordering is admitted because it cannot truncate material;
+- principal/tenant/ScopeVersion/currentness/resource binding rules are unchanged;
+- engine unchanged;
+- no prompt, regex, fuzzy or benchmark vocabulary added.
+
+Pattern applied:
+
+- semantic admission law: required material may be a legal subset of observed permitted material;
+- Metabase remains owner of harmless native presentation/stability ordering;
+- deliberately NOT adopted: permissive admission for LIMIT-bearing or foreign authority.
+
+GREEN proof:
+
+- commit `c555522d0324796dbdf88c49aa8e9c2296523e65`;
+- sibling tests commit `db545d42e958f88fc358858b7d9e184e2be74a8e`;
+- provider-free semantic conformance run `37041450560` = SUCCESS.
+
+Owner status: **RANKING ADMISSION GENERIC CLOSURE — GREEN / FREEZE**.
