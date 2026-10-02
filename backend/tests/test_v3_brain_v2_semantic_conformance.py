@@ -71,6 +71,7 @@ from tests.semantic_spec.model import (
     entity_filter_admission_allowed,
     pair_coverage,
     material_group_may_complete,
+    ranking_basis_admission_allowed,
     ranking_basis_is_coherent,
     result_dependency_dimension_roles_are_coherent,
     result_dependency_disposition,
@@ -961,6 +962,53 @@ def _ranking_observation_with_legal_nonrestrictive_order() -> NativeMaterialObse
             ),
         ),
     )
+
+
+def test_change_ranking_cannot_be_admitted_from_level_metric_ordering() -> None:
+    assert not ranking_basis_admission_allowed(
+        required=RankingBasis.CHANGE,
+        observed=RankingBasis.LEVEL,
+    )
+
+    base = _ranking_contract()
+    contract = base.model_copy(
+        update={
+            "comparison": AnalyticalComparisonInvariant(
+                mode="symbolic-change",
+                reference_period=AnalyticalPeriodInvariant(
+                    kind="reference",
+                    time_dimension="dimension.t1",
+                    start="2026-01-01",
+                    end="2026-02-01",
+                ),
+                base_period=AnalyticalPeriodInvariant(
+                    kind="base",
+                    time_dimension="dimension.t1",
+                    start="2026-02-01",
+                    end="2026-03-01",
+                ),
+            ),
+            "ranking": AnalyticalRankingInvariant(
+                measure="metric.m1",
+                direction="desc",
+                limit=3,
+                basis=ProductRankingBasis.CHANGE,
+            ),
+        }
+    )
+    observation = _ranking_observation_with_legal_nonrestrictive_order()
+    bindings = {
+        "metric.m1": NativeMaterialBinding(
+            candidate_id="metric.m1",
+            candidate_kind="metric",
+            database_id=1,
+            metric_id=101,
+            metric_entity_id="metric-entity-m1",
+        )
+    }
+
+    with pytest.raises(ResearchAnalyticalScopeError):
+        _assert_material_ranking_scope(contract, observation, bindings)
 
 
 def test_native_ranking_admission_allows_extra_nonrestrictive_stability_order() -> None:
