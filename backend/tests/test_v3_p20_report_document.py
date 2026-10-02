@@ -502,7 +502,7 @@ def test_auto_draft_projects_governed_claim_policy_provenance_and_limitations():
     )
     assert limitation.detail == "Örneklem yalnız mevcut governed dönemle sınırlıdır."
     assert any(
-        item.statement_kind == ReportStatementKind.NUMERIC
+        item.statement_kind == ReportStatementKind.OBSERVATION
         for item in draft.statements
     )
 
@@ -517,7 +517,7 @@ def test_auto_draft_projects_governed_claim_policy_provenance_and_limitations():
 
 
 
-def test_auto_numeric_projection_preserves_source_backed_tabular_fact_meaning():
+def test_auto_observation_projection_preserves_source_backed_tabular_fact_meaning():
     db = db_engine()
     state = make_state(db, suffix='presentation-law')
     store = ReportDocumentStore(
@@ -532,25 +532,21 @@ def test_auto_numeric_projection_preserves_source_backed_tabular_fact_meaning():
 
     actual = []
     for item in draft.statements:
-        if item.statement_kind != ReportStatementKind.NUMERIC:
+        if item.statement_kind != ReportStatementKind.OBSERVATION:
             continue
-        source = next(
-            ref
-            for ref in item.source_refs
-            if ref.source_kind == ReportSourceKind.P14_EVIDENCE
-        )
         context = tuple(
             (str(entry['label']), str(entry['value']))
             for entry in item.payload.get('context', ())
         )
-        actual.append(
-            ReferencePresentationFact(
-                source_path=source.source_path or '',
-                label=str(item.payload.get('label') or ''),
-                context=context,
-                value=item.payload['value'],
+        for metric in item.payload.get('metrics', ()):
+            actual.append(
+                ReferencePresentationFact(
+                    source_path=str(metric['source_path']),
+                    label=str(metric['label']),
+                    context=context,
+                    value=metric['value'],
+                )
             )
-        )
 
     expected = reference_tabular_numeric_facts(
         column_labels=('Channel', 'Sales Order Count'),
@@ -559,9 +555,7 @@ def test_auto_numeric_projection_preserves_source_backed_tabular_fact_meaning():
     assert tuple(actual) == expected
 
 
-
-
-def test_auto_numeric_projection_seals_contextual_source_backed_text():
+def test_auto_observation_projection_seals_contextual_source_backed_text():
     db = db_engine()
     state = make_state(db, suffix='presentation-text')
     store = ReportDocumentStore(
@@ -579,24 +573,18 @@ def test_auto_numeric_projection_seals_contextual_source_backed_text():
         now=STAMP + timedelta(minutes=30),
     )
 
-    numeric_texts = tuple(
+    observation_texts = tuple(
         item.text
         for item in report.statements
-        if item.statement_kind == ReportStatementKind.NUMERIC
+        if item.statement_kind == ReportStatementKind.OBSERVATION
     )
-    assert 'Channel=Web; Sales Order Count=34' in numeric_texts
-    assert 'Channel=Partner; Sales Order Count=12' in numeric_texts
+    assert 'Observation: Channel=Web: Sales Order Count=34' in observation_texts
+    assert 'Observation: Channel=Partner: Sales Order Count=12' in observation_texts
 
 
-@pytest.mark.parametrize(
-    'payload_update',
-    (
-        {'label': 'Invented Metric'},
-        {'context': [{'label': 'Channel', 'value': 'Invented Entity'}]},
-    ),
-)
-def test_auto_numeric_projection_rejects_invented_presentation_context(
-    payload_update,
+@pytest.mark.parametrize('tamper_kind', ('label', 'context'))
+def test_auto_observation_projection_rejects_invented_presentation_context(
+    tamper_kind,
 ):
     db = db_engine()
     state = make_state(db, suffix='presentation-tamper')
@@ -612,10 +600,13 @@ def test_auto_numeric_projection_rejects_invented_presentation_context(
     target = next(
         item
         for item in draft.statements
-        if item.statement_kind == ReportStatementKind.NUMERIC
+        if item.statement_kind == ReportStatementKind.OBSERVATION
     )
-    tampered_payload = dict(target.payload)
-    tampered_payload.update(payload_update)
+    tampered_payload = json.loads(json.dumps(target.payload))
+    if tamper_kind == 'label':
+        tampered_payload['metrics'][0]['label'] = 'Invented Metric'
+    else:
+        tampered_payload['context'][0]['value'] = 'Invented Entity'
     tampered = target.model_copy(update={'payload': tampered_payload})
     statements = tuple(
         tampered if item.statement_id == target.statement_id else item
@@ -629,8 +620,7 @@ def test_auto_numeric_projection_rejects_invented_presentation_context(
             principal=state['principal'],
             now=STAMP + timedelta(minutes=30),
         )
-    assert exc.value.code == 'P20_NUMERIC_PRESENTATION_MISMATCH'
-
+    assert exc.value.code == 'P20_OBSERVATION_PRESENTATION_MISMATCH'
 
 
 
