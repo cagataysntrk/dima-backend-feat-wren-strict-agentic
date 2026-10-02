@@ -28,6 +28,7 @@ from app.v3.brain_v2.telemetry import (
 )
 from app.v3.hypothesis_root_cause_provider import StructuredP19AssessmentManager
 from app.v3.business_relationship_policy import BusinessRelationshipPolicyStore
+from app.v3.p18_relationship_interpreter import StructuredP18RelationshipInterpreter
 from app.v3.report_document import ReportDocumentStore
 from app.v3.research_exploration import NativeResearchExploration
 from app.v3.research_followup import NativeResearchFollowupExecutor
@@ -495,6 +496,12 @@ def main() -> int:
         base_url=proxy + "/source/p17_manager/v1",
         owner="p17_manager",
     )
+    raw_p18 = OpenRouterStructuredJSONTransport(
+        api_key=api_key,
+        model=MODEL,
+        base_url=proxy + "/source/p18_manager/v1",
+        owner="p18_manager",
+    )
     raw_p19 = OpenRouterStructuredJSONTransport(
         api_key=api_key,
         model=MODEL,
@@ -506,6 +513,9 @@ def main() -> int:
     )
     p17_transport = BoundedStructuredTransport(
         raw_p17, budget=budget, owner="p17_manager"
+    )
+    p18_transport = BoundedStructuredTransport(
+        raw_p18, budget=budget, owner="p18_manager"
     )
     p19_transport = BoundedStructuredTransport(
         raw_p19, budget=budget, owner="p19_manager"
@@ -535,6 +545,7 @@ def main() -> int:
         db_engine=db_engine,
     )
     p17_manager = StructuredResearchProposalManager(transport=p17_transport)
+    p18_manager = StructuredP18RelationshipInterpreter(transport=p18_transport)
     epistemics = HypothesisRootCauseStore(research_store=store, db_engine=db_engine)
     p19_manager = StructuredP19AssessmentManager(transport=p19_transport)
     reports = ReportDocumentStore(research_store=store, db_engine=db_engine)
@@ -555,6 +566,7 @@ def main() -> int:
         epistemic_manager=p19_manager,
         reports=reports,
         relationships=relationships,
+        relationship_interpreter=p18_manager,
         native_session_token=token,
         engine_identity=f"{args.engine_sha}@{args.runtime_image_digest}",
         model_profile=MODEL,

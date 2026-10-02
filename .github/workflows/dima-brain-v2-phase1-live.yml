@@ -293,7 +293,7 @@ jobs:
           if [[ "${{ steps.auth.outputs.probe_id }}" == "R_LIVE_4_SCOPE_RESUME" ]]; then
             INTAKE_SOURCE_CEILING=2
           fi
-          nohup python backend/lab/metabase/core_b/runtime/openrouter_counting_proxy.py             --listen-host 0.0.0.0             --listen-port "$PROVIDER_PROXY_PORT"             --ceiling "$HARD_PROVIDER_REQUEST_CEILING"             --source-ceiling research_intake="$INTAKE_SOURCE_CEILING"             --source-ceiling metabase=7             --source-ceiling p17_manager=3             --source-ceiling p19_manager=2             --prompt-token-ceiling "$PROMPT_TOKEN_CEILING"             --completion-token-ceiling "$COMPLETION_TOKEN_CEILING"             --reasoning-token-ceiling "$REASONING_TOKEN_CEILING"             --provider-cost-ceiling "$PROVIDER_COST_CEILING"             --receipt backend/eval/brain_v2_live/provider_probe.json             >backend/eval/brain_v2_live/provider_probe_proxy.log 2>&1 &
+          nohup python backend/lab/metabase/core_b/runtime/openrouter_counting_proxy.py             --listen-host 0.0.0.0             --listen-port "$PROVIDER_PROXY_PORT"             --ceiling "$HARD_PROVIDER_REQUEST_CEILING"             --source-ceiling research_intake="$INTAKE_SOURCE_CEILING"             --source-ceiling metabase=7             --source-ceiling p17_manager=3             --source-ceiling p18_manager=1             --source-ceiling p19_manager=2             --prompt-token-ceiling "$PROMPT_TOKEN_CEILING"             --completion-token-ceiling "$COMPLETION_TOKEN_CEILING"             --reasoning-token-ceiling "$REASONING_TOKEN_CEILING"             --provider-cost-ceiling "$PROVIDER_COST_CEILING"             --receipt backend/eval/brain_v2_live/provider_probe.json             >backend/eval/brain_v2_live/provider_probe_proxy.log 2>&1 &
           echo "PROVIDER_PROXY_PID=$!" >> "$GITHUB_ENV"
           for i in $(seq 1 30); do
             curl -fsS "http://127.0.0.1:${PROVIDER_PROXY_PORT}/__dima__/health" >/dev/null && break
@@ -340,7 +340,11 @@ jobs:
               assert provider["provider_requests_by_source"].get("research_intake",0) <= 1
           assert provider["provider_requests_by_source"].get("metabase",0) <= 7
           assert provider["provider_requests_by_source"].get("p17_manager",0) <= 3
+          assert provider["provider_requests_by_source"].get("p18_manager",0) <= 1
           assert provider["provider_requests_by_source"].get("p19_manager",0) <= 2
+          if probe in {"RELATIONSHIP_REPORT_PHASE2_V1","MULTI_INTENT_PHASE2_V1"}:
+              assert provider["provider_requests_by_source"].get("p17_manager",0)==0
+              assert provider["provider_requests_by_source"].get("p18_manager",0)==1
           assert r["mechanical"]["duplicate_native"] == 0 if "duplicate_native" in r["mechanical"] else r["mechanical"]["duplicate_native_execution_zero"] is True
           assert provider["privacy_contract"]["api_keys_persisted"] is False
           assert provider["privacy_contract"]["reasoning_text_persisted"] is False

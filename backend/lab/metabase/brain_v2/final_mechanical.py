@@ -104,6 +104,8 @@ def phase2_mechanical(
         "duplicate_native": duplicate_native,
         "p18_terminal_count": len(state.p18_requirement_ids),
         "p18_not_required_without_business_policy": policy_not_required,
+        "p17_relationship_provider_calls": int(budget_after.get("p17_manager", 0)),
+        "p18_relationship_provider_calls": int(budget_after.get("p18_manager", 0)),
         "p19_assessment_ref": state.latest_p19_assessment_ref,
         "report_present": report_present,
         "all_analytical_terminal": analytical.issubset(terminal),
@@ -124,6 +126,12 @@ def phase2_mechanical(
         "checkpoint_roundtrip": bool(common["checkpoint_roundtrip"]),
         "duplicate_native_zero": common["duplicate_native"] == 0,
         "p18_observational_not_business_policy": bool(policy_not_required),
+        "p17_not_used_for_observational_relationship": (
+            common["p17_relationship_provider_calls"] == 0
+        ),
+        "p18_interpretation_once": (
+            common["p18_relationship_provider_calls"] == 1
+        ),
         "p19_not_used_for_observational_relationship": (
             state.latest_p19_assessment_ref is None
         ),
@@ -141,6 +149,7 @@ def phase2_mechanical(
                 "research_intake",
                 "metabase",
                 "p17_manager",
+                "p18_manager",
                 "p19_manager",
             )
         }
