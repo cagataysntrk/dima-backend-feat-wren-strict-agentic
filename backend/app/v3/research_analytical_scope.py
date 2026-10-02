@@ -34,6 +34,7 @@ from app.v3.native_standard.contracts import NativeAttestationEnvelope
 from app.v3.research_contracts import (
     CausalEffectObservation,
     PresentationKind,
+    RankingBasis,
     ResearchGoalKind,
     ResearchNativeVerificationBinding,
     ResearchQuestion,
@@ -803,6 +804,14 @@ def analytical_scope_contract(
     ranking = None
     if question.ranking is not None:
         value = question.ranking
+        if value.basis == RankingBasis.CHANGE and comparison is None:
+            raise ResearchAnalyticalScopeError(
+                "R1_CHANGE_RANKING_COMPARISON_REQUIRED",
+                (
+                    "change ranking requires exactly one typed baseline/comparison "
+                    "period pair"
+                ),
+            )
         goal_metric_ids = {item.candidate_id for item in goal_metrics}
         explicit_measure = value.measure_semantic_id
         if explicit_measure is not None and explicit_measure not in goal_metric_ids:
@@ -828,6 +837,7 @@ def analytical_scope_contract(
                 measure=native_measure,
                 direction=value.direction,
                 limit=value.limit,
+                basis=value.basis,
             )
         else:
             # A multi-metric ranking with no explicit governed basis remains a
