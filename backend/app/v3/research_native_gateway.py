@@ -379,6 +379,7 @@ class NativeResearchMaterialExecutor:
         session: ResearchSession,
         obligation_id: str,
         analytical_scope: AnalyticalRequestContract | None = None,
+        source_execution_obligation_id: str | None = None,
     ) -> ResultSelectionResolution | None:
         """Project one VERIFIED parent ranking value into child execution material.
 
@@ -410,9 +411,19 @@ class NativeResearchMaterialExecutor:
         if dependency is None:
             return None
 
+        execution_source = (
+            source_execution_obligation_id or dependency.source_goal_id
+        )
+        if execution_source == obligation_id:
+            raise ResearchMaterialLimitation(
+                "R1_RESULT_DEPENDENCY_EXECUTION_SELF_REFERENCE",
+                execution_source,
+                last_valid_boundary="dima.requirements.plan",
+                first_invalid_boundary="dima.material.compile",
+            )
         parent_link, parent_result = self._store.verified_material_result(
             session_id=session.session_id,
-            obligation_id=dependency.source_goal_id,
+            obligation_id=execution_source,
         )
         bindings = self._material_bindings(
             principal=principal,
@@ -458,6 +469,7 @@ class NativeResearchMaterialExecutor:
                 native_field_id=int(binding.field_id),
                 parent_result=parent_result,
                 dimension_name=semantic_ref.canonical_name,
+                source_execution_obligation_id=execution_source,
             )
         except ResultDependencyProjectionError as exc:
             raise ResearchMaterialLimitation(
