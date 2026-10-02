@@ -422,7 +422,7 @@ class DiscoverySequenceStateMachine(RuleBasedStateMachine):
 
 TestDiscoverySequenceStateMachine = DiscoverySequenceStateMachine.TestCase
 TestDiscoverySequenceStateMachine.settings = settings(
-    max_examples=180,
+    max_examples=200,
     stateful_step_count=30,
     deadline=None,
 )

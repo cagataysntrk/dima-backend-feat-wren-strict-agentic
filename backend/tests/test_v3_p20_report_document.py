@@ -621,6 +621,115 @@ def test_contribution_wording_cannot_invent_percentage():
         ReportDocumentStore(research_store=state['store'], db_engine=db).seal(draft=report_draft(state, item), principal=state['principal'])
     assert exc.value.code == 'P20_TEXT_NOT_CANONICAL'
 
+def test_relationship_report_renders_exact_salient_magnitudes_and_decision_use():
+    db = db_engine()
+    state = make_state(db, suffix='relationship-presentation')
+    relationship = state['claims'].create_claim(
+        session_id=state['session'].session_id,
+        obligation_id='g1',
+        principal=state['principal'],
+        claim_text='Observed channel counts move in the same direction in this bounded view.',
+        proposition={
+            'relationship_kind': 'ASSOCIATION',
+            'relationship_intent': 'observational',
+            'material_mode': 'CROSS_SECTIONAL_ASSOCIATION',
+            'source_semantic_id': 'metric.orders',
+            'target_semantic_id': 'metric.orders_peer',
+            'salient_cells': [
+                {
+                    'evidence_id': state['evidence_id'],
+                    'row_index': 0,
+                    'column_index': 1,
+                },
+                {
+                    'evidence_id': state['evidence_id'],
+                    'row_index': 1,
+                    'column_index': 1,
+                },
+            ],
+        },
+        scope={'scope_version_id': 'scope_v1'},
+        freshness=ClaimFreshness(as_of=STAMP),
+        limitations=('Cross-sectional Evidence does not establish causality.',),
+    )
+    relationship = state['claims'].link_evidence(
+        session_id=state['session'].session_id,
+        claim_id=relationship.claim_id,
+        evidence_id=state['evidence_id'],
+        relation=ClaimEvidenceRelation.SUPPORTS,
+        principal=state['principal'],
+    )
+    item = statement(
+        ReportStatementKind.ANALYTICAL_FACT,
+        sources=(source_claim(state, relationship),),
+        payload={
+            'claim_id': relationship.claim_id,
+            'epistemic_state': 'SUPPORTED',
+        },
+        ceiling='SUPPORTED',
+        seed='relationship-salient',
+    )
+
+    report = ReportDocumentStore(
+        research_store=state['store'],
+        db_engine=db,
+    ).seal(
+        draft=report_draft(state, item, key='relationship-salient'),
+        principal=state['principal'],
+    )
+
+    text = report.statements[0].text or ''
+    assert 'Observed magnitudes:' in text
+    assert 'Web' in text and '34' in text
+    assert 'Partner' in text and '12' in text
+    assert 'Decision use:' in text
+    assert 'not as causal evidence' in text
+
+
+def test_relationship_salient_projection_fails_closed_on_stale_evidence_identity():
+    db = db_engine()
+    state = make_state(db, suffix='relationship-stale')
+    relationship = state['claims'].create_claim(
+        session_id=state['session'].session_id,
+        obligation_id='g1',
+        principal=state['principal'],
+        claim_text='Bounded relationship.',
+        proposition={
+            'relationship_kind': 'ASSOCIATION',
+            'salient_cells': [
+                {
+                    'evidence_id': 'evi_' + 'f' * 24,
+                    'row_index': 0,
+                    'column_index': 1,
+                },
+            ],
+        },
+        scope={'scope_version_id': 'scope_v1'},
+        freshness=ClaimFreshness(as_of=STAMP),
+    )
+    # No Evidence edge can be created for the foreign identity. The report must
+    # fail at the projection boundary rather than silently omit provenance.
+    item = statement(
+        ReportStatementKind.ANALYTICAL_FACT,
+        sources=(source_claim(state, relationship),),
+        payload={
+            'claim_id': relationship.claim_id,
+            'epistemic_state': 'PROPOSED',
+        },
+        ceiling='PROPOSED',
+        seed='relationship-stale',
+    )
+    with pytest.raises(P20ReportError) as exc:
+        ReportDocumentStore(
+            research_store=state['store'],
+            db_engine=db,
+        ).seal(
+            draft=report_draft(state, item, key='relationship-stale'),
+            principal=state['principal'],
+        )
+    assert exc.value.code == 'P20_RELATIONSHIP_SALIENT_EVIDENCE_INVALID'
+
+
 def test_p15_numeric_requires_exact_p19_retained_provenance():
     db = db_engine()
     state = make_state(db)

@@ -594,6 +594,121 @@ class ReportClaimGate:
             text += f' {unit}'
         return self._canonical_statement(statement, text)
 
+    @staticmethod
+    def _column_label(payload: dict[str, Any], column_index: int) -> str:
+        data = payload.get('data')
+        cols = data.get('cols') if isinstance(data, dict) else None
+        if isinstance(cols, list) and column_index < len(cols):
+            item = cols[column_index]
+            if isinstance(item, dict):
+                for key in ('display_name', 'name'):
+                    value = item.get(key)
+                    if isinstance(value, str) and value.strip():
+                        return value.strip()
+        return f'column_{column_index}'
+
+    def _relationship_observed_magnitudes(self, *, session, claim) -> str | None:
+        """Render exact cells selected by P18 without calculating new analytics."""
+
+        if 'relationship_kind' not in claim.proposition:
+            return None
+        raw_cells = claim.proposition.get('salient_cells')
+        if not isinstance(raw_cells, list) or not raw_cells:
+            return None
+
+        links = {item.evidence_id: item for item in claim.evidence_links}
+        observations: list[str] = []
+        seen: set[tuple[str, int, int]] = set()
+        grouped: dict[tuple[str, int], list[tuple[str, Any]]] = {}
+        contexts: dict[tuple[str, int], str | None] = {}
+
+        for raw in raw_cells:
+            if not isinstance(raw, dict) or set(raw) != {
+                'evidence_id',
+                'row_index',
+                'column_index',
+            }:
+                raise P20ReportError('P20_RELATIONSHIP_SALIENT_CELL_INVALID', claim.claim_id)
+            evidence_id = raw.get('evidence_id')
+            row_index = raw.get('row_index')
+            column_index = raw.get('column_index')
+            if (
+                not isinstance(evidence_id, str)
+                or isinstance(row_index, bool)
+                or not isinstance(row_index, int)
+                or row_index < 0
+                or isinstance(column_index, bool)
+                or not isinstance(column_index, int)
+                or column_index < 0
+            ):
+                raise P20ReportError('P20_RELATIONSHIP_SALIENT_CELL_INVALID', claim.claim_id)
+            identity = (evidence_id, row_index, column_index)
+            if identity in seen:
+                raise P20ReportError('P20_RELATIONSHIP_SALIENT_CELL_DUPLICATE', claim.claim_id)
+            seen.add(identity)
+
+            link = links.get(evidence_id)
+            if link is None:
+                raise P20ReportError('P20_RELATIONSHIP_SALIENT_EVIDENCE_INVALID', evidence_id)
+            if not any(
+                item.evidence_id == evidence_id
+                and item.receipt_id == link.receipt_id
+                and item.obligation_id == claim.obligation_id
+                for item in session.evidence_refs
+            ):
+                raise P20ReportError('P20_RELATIONSHIP_SALIENT_EVIDENCE_STALE', evidence_id)
+
+            source = SourceReference(
+                source_kind=ReportSourceKind.P14_EVIDENCE,
+                source_ref=evidence_id,
+                source_receipt_id=link.receipt_id,
+                obligation_id=claim.obligation_id,
+            )
+            payload = self._payload_for_numeric_source(session=session, ref=source)
+            data = payload.get('data')
+            rows = data.get('rows') if isinstance(data, dict) else None
+            if (
+                not isinstance(rows, list)
+                or row_index >= len(rows)
+                or not isinstance(rows[row_index], (list, tuple))
+                or column_index >= len(rows[row_index])
+            ):
+                raise P20ReportError('P20_RELATIONSHIP_SALIENT_CELL_INVALID', claim.claim_id)
+            row = rows[row_index]
+            value = row[column_index]
+            if isinstance(value, bool) or not isinstance(value, (int, float)):
+                raise P20ReportError('P20_RELATIONSHIP_SALIENT_VALUE_NOT_NUMERIC', claim.claim_id)
+
+            group_key = (evidence_id, row_index)
+            grouped.setdefault(group_key, []).append(
+                (self._column_label(payload, column_index), value)
+            )
+            if group_key not in contexts:
+                context = None
+                for index, candidate in enumerate(row):
+                    if index == column_index:
+                        continue
+                    if isinstance(candidate, str) and candidate.strip():
+                        context = (
+                            f'{self._column_label(payload, index)}='
+                            f'{candidate.strip()}'
+                        )
+                        break
+                contexts[group_key] = context
+
+        for group_key, values in grouped.items():
+            context = contexts.get(group_key)
+            rendered = ', '.join(
+                f'{label}={_render_scalar(value)}'
+                for label, value in values
+            )
+            observations.append(
+                f'{context}: {rendered}' if context else rendered
+            )
+        if not observations:
+            return None
+        return 'Observed magnitudes: ' + '; '.join(observations) + '.'
+
     def _analytical_fact(self, *, session, statement: ReportStatement, principal: Principal) -> ReportStatement:
         ref = self._find_one(statement, ReportSourceKind.P16_CLAIM)
         claim = self._claims.load_claim(session_id=session.session_id, claim_id=ref.source_ref, principal=principal)
@@ -606,6 +721,26 @@ class ReportClaimGate:
             text = claim.claim_text
         else:
             text = f'{claim.epistemic_state.value}: {claim.claim_text}'
+
+        magnitude = self._relationship_observed_magnitudes(
+            session=session,
+            claim=claim,
+        )
+        if magnitude is not None:
+            text += ' ' + magnitude
+        if 'relationship_kind' in claim.proposition:
+            if claim.epistemic_state == ClaimEpistemicState.SUPPORTED:
+                text += (
+                    ' Decision use: treat the observed relationship as a '
+                    'prioritization and monitoring signal within the current '
+                    'scope, not as causal evidence.'
+                )
+            else:
+                text += (
+                    ' Decision use: do not use this relationship alone for '
+                    'action prioritization; additional governed Evidence is '
+                    'required.'
+                )
         return self._canonical_statement(statement, text)
 
     def _p19_statement(self, *, session, statement: ReportStatement, principal: Principal) -> ReportStatement:
