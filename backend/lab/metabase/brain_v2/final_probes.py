@@ -1,0 +1,75 @@
+"""Closed final certification probe definitions for the one Brain V2 runtime."""
+from __future__ import annotations
+
+from enum import StrEnum
+
+
+class ForwardRuntime(StrEnum):
+    BRAIN_V2_LANGGRAPH = "BRAIN_V2_LANGGRAPH"
+
+
+FINAL_CAPABILITY_RUNTIME = {
+    f"T{index}": ForwardRuntime.BRAIN_V2_LANGGRAPH
+    for index in range(1, 8)
+}
+
+
+PROBES = {
+    "R_LIVE_1_ONE_PASS": {
+        "turns": (
+            "Packaging bölümünde Mayıs-Haziran 2026 machine downtime artışını açıklarken maintenance delay ile spare-part delay adaylarını değerlendir. İki adayın destekleyen ve zayıflatan kanıtlarını ayrı tut. Mevcut governed Evidence adayları yeterince değerlendiriyorsa sırf derinlik göstermek için ek analitik sorgu açma; P19 ile en savunulabilir terminal sonuca ulaş ve nedensellik sınırını koru.",
+        ),
+        "manual_contract": (
+            "accepted user candidate identities are preserved exactly",
+            "initial native material produces governed Evidence",
+            "user-seeded hypotheses reach P19 without redundant P17 discovery",
+            "P19 assessment exists",
+            "no redundant native acquisition or causal overclaim",
+        ),
+    },
+    "R_LIVE_2_ADAPTIVE": {
+        "turns": (
+            "Mayıs-Haziran 2026 dönemi genelinde Assembly bölümündeki machine downtime seviyesini maintenance delay ile spare-part delay adayları arasında araştır. İlk governed Evidence iki adayı güvenli biçimde ayıramıyorsa yalnız bir yüksek bilgi değerli discriminating analitik test yap, yeni Evidence ile P19 değerlendirmesini yenile ve sonra dur. Destek, karşı kanıt ve nedensellik sınırını koru.",
+        ),
+        "manual_contract": (
+            "accepted user candidate identities are preserved exactly",
+            "one typed information-gain re-entry occurs only when P19 requests it",
+            "new Evidence is grounded before P19 reassessment",
+            "no retry-until-lucky or causal overclaim",
+        ),
+    },
+    "R_LIVE_3_DISCOVERY": {
+        "turns": (
+            "Assembly bölümünde Mayıs-Haziran 2026 machine downtime artışını açıkla. Aday neden vermiyorum: governed operasyon metrikleri içinden kanıtla desteklenebilen birden fazla aday mekanizmayı keşfet, destek ve karşı kanıtlarını değerlendir, sonra P19 ile savunulabilir sonuca ulaş. Gereksiz analitik tekrar yapma ve nedensellik sınırını koru.",
+        ),
+        "manual_contract": (
+            "CandidateSetProjector emits only governed candidate identities from VERIFIED material",
+            "normal discovery makes zero P17 provider calls",
+            "P19 judges the projected candidates",
+            "no fabricated semantic identity or causal overclaim",
+        ),
+    },
+    "RELATIONSHIP_REPORT_PHASE2_V1": {
+        "turns": (
+            "Mayıs-Haziran 2026'da bölüm bazında machine downtime ile fault count birlikte hareket ediyor mu? Yalnız gözlemsel association/co-movement olarak değerlendir; supporting/challenging veya yetersiz Evidence'ı ayır, BUSINESS_POLICY veya causality kurma.",
+            "Bu mevcut governed ilişki araştırmasını yönetim için kanıta bağlı kısa bir rapora dönüştür. Yeni analitik acquisition açma; mevcut Evidence, gözlemsel ilişki durumu, sınırlılıklar ve karar açısından önemli noktaları provenance ile koru.",
+        ),
+        "manual_contract": (
+            "turn 1 preserves observational relationship authority",
+            "turn 2 is presentation-only over the same Research/Scope authority",
+            "turn 2 native/P17/P18/P19 delta is zero",
+            "P20 report is current and evidence/provenance-bound",
+        ),
+    },
+    "MULTI_INTENT_PHASE2_V1": {
+        "turns": (
+            "Mayıs-Haziran 2026'da bölüm bazında machine downtime'ı sıralayıp en çok dikkat isteyen bölümleri göster; aynı governed material içinde machine downtime ile fault count gözlemsel olarak birlikte hareket ediyor mu değerlendir. İki ihtiyacı da koru ve sonunda kısa yönetim raporu üret. BUSINESS_POLICY veya causality iddiası kurma.",
+        ),
+        "manual_contract": (
+            "ranking and observational relationship requirements are both retained",
+            "compatible requirements share minimum sufficient MaterialGroup",
+            "all USER_MUST requirements receive explicit terminal accounting",
+            "P20 consumes terminal governed outcomes without duplicate analytics",
+        ),
+    },
+}

@@ -73,14 +73,14 @@ def _require_locked_engine_runtime(args: Any) -> None:
         )
 
 
-from lab.metabase.core_b.phase1_pinpoint_live import (
+from lab.metabase.brain_v2.final_probes import PROBES
+from lab.metabase.brain_v2.live_support import (
     BoundedMaterialExecutor,
     BoundedStructuredTransport,
     MAX_ORCHESTRATION_BOUNDARY_UNITS,
     MODEL,
     METABOT_MODEL,
     OrchestrationBudget,
-    PROBES,
     build_catalog,
     load_binding_manifest,
     seed_native_resource_bindings,
