@@ -1,99 +1,117 @@
 # Dima — Brain V2.1 / Metabase Platform
 
-This repository contains the canonical headless Dima backend and governed company-intelligence
-runtime.
+This repository contains the canonical headless Dima backend and governed company-intelligence runtime.
 
-## Current architecture
+## Current authority
 
-~~~text
-METABASE / METABOT
-= single analytical cognition engine
+```text
+working branch
+feat/dima-brain-v2-1-specification-closure
 
-BRAIN V2 SERVICE / LANGGRAPH
-= single forward orchestrator
+architecture
+Brain V2.1 = FROZEN
 
-DIMA
-= requirement meaning
-+ scope/currentness
-+ material authority
-+ Evidence/provenance
-+ completion
+analytics
+Metabase / Metabot = single analytical cognition engine
 
-P18
-= relationship epistemic owner
-
-P19
-= RCA epistemic owner
-
-P17
-= typed NextTest / information-gain controller only
-
-P20
-= governed synthesis from terminal state
-~~~
-
-There is no Wren execution runtime, no dual analytics engine, no Agent API final path and no
-legacy composer in final certification.
-
-## Repository map
-
-- `backend/app/v3/` — canonical Dima Product/domain authorities.
-- `backend/app/v3/brain_v2/` — BrainV2Service, LangGraph state/activities/owner adapters.
-- `backend/app/v3/substrate/metabase/` — native Metabase/Metabot bridge.
-- `backend/control_plane/` — tenant/principal/authorization/durable authority database.
-- `backend/migrations/` — canonical Alembic history.
-- `backend/tests/` — provider-free, stateful, metamorphic, security and certification tests.
-- `backend/belgeler/metabase/` — current documentation authority plus `legacy/`.
-- `backend/lab/metabase/` — certification/evaluation harnesses.
-- `engine/metabase` — frozen Metabase engine gitlink.
-
-## Current state
-
-~~~text
-BRAIN V2.1 ARCHITECTURE FROZEN
-
-semantic Product
-ce8704d6a0db10dc3fb6b1a7e5d0f86afe9ccdc9
+orchestration
+BrainV2Service / LangGraph = single forward runtime
 
 engine
 d5c60dc9f37a9ec9c5b0117f178146bbcb8dca88
 0.63.18-dima.9
+FROZEN
 
-90+ HIGH-CONFIDENCE READINESS = YES
-30-CASE READY = YES
+frontend / UI / UX implementation
+NOT AUTHORIZED
+```
 
-90+ PROVEN = NO
-30-case = NOT RUN
+Dima owns business intent, scope/currentness, material requirements, Evidence/provenance,
+epistemic-owner dispatch, completion, and governed report/decision semantics. It does not own
+SQL/MBQL planning or a second analytical engine.
 
-frontend = NOT IMPLEMENTED
-~~~
+Permanent owner split:
 
-Final provider-free closure:
+```text
+Metabase / Metabot = analytics and native query cognition
+LangGraph          = routing / durable forward orchestration
+P18                = relationship epistemic owner
+P19                = RCA epistemic owner
+P17                = bounded NextTest / information-gain controller only
+P20                = governed synthesis from terminal state
+```
 
-~~~text
-Phase-1 provider-free              37020220583 GREEN
-Phase-2/headless + metamorphic     37020220833 GREEN
-~~~
+## Specification-closure recovery
+
+The immutable Round-2 broad benchmark is sealed:
+
+```text
+run       37027548693
+artifact  11235884317
+quality   60.5 / 100
+simple    87.5
+medium    60.0
+hard      50.0
+```
+
+That benchmark is now a counterexample corpus, not a development loop. Broad paid authorization
+is closed. Do not rerun the 30-case without new explicit authorization.
+
+Current recovery objective:
+
+```text
+BUILD A GENERIC SEMANTIC CONFORMANCE SYSTEM
+AND CLOSE BROAD PRODUCT GAPS
+AT THEIR REAL CONTRACT OWNERS.
+```
+
+Provider-free specification closure is active. Production changes must come from independent
+semantic laws, provider-free reproductions, generated/metamorphic siblings, and one-owner root
+fixes. Fuzzy/regex/morph/prompt semantic patches and case-specific branches are forbidden.
+
+The living recovery log is:
+
+`backend/belgeler/metabase/DIMA_BRAIN_V2_1_SPECIFICATION_CLOSURE_PROGRESS.md`
+
+## Repository map
+
+- `backend/app/v3/` — canonical Dima Product/domain authorities.
+- `backend/app/v3/brain_v2/` — BrainV2Service, LangGraph state, activities, routing adapters.
+- `backend/app/v3/substrate/metabase/` — native Metabase/Metabot bridge.
+- `backend/control_plane/` — tenant/principal/authorization/durable authority database.
+- `backend/migrations/` — canonical Alembic history.
+- `backend/tests/` — provider-free, semantic, stateful, metamorphic, security and certification tests.
+- `backend/belgeler/metabase/` — current Brain V2.1 documentation authority plus `legacy/`.
+- `backend/lab/metabase/` — certification/evaluation harnesses.
+- `engine/metabase` — frozen Metabase engine gitlink.
 
 ## Canonical documentation
 
-Start here:
+Start with:
 
 `backend/belgeler/metabase/README.md`
 
-Do not use historical recovery/roadmap documents as current authority. They are archived under
-`backend/belgeler/metabase/legacy/`.
+Then read, in order:
+
+1. `DIMA_BRAIN_V2_1_FINAL_ARCHITECTURE.md`
+2. `DIMA_BRAIN_V2_1_ENGINEERING_PLAYBOOK.md`
+3. `DIMA_BRAIN_V2_1_CURRENT_HANDOFF.md`
+4. `DIMA_BRAIN_V2_1_SPECIFICATION_CLOSURE_PROGRESS.md`
+5. `DIMA_BRAIN_V2_1_FORWARD_RUNTIME_LAWS.md`
+
+Historical documents live only under `backend/belgeler/metabase/legacy/` and are not current
+execution authority.
 
 ## Local backend
 
-~~~bash
+```bash
 cd backend
 python -m venv .venv
 . .venv/bin/activate
 pip install -e ".[dev]"
 alembic upgrade head
 uvicorn app.main:app --reload
-~~~
+```
 
-`GET /health` is liveness. `GET /health/ready` checks control-plane readiness and reports
-the analytical-engine identity.
+`GET /health` is liveness. `GET /health/ready` checks control-plane readiness and reports the
+analytical-engine identity.
