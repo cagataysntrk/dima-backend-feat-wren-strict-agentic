@@ -106,6 +106,40 @@ def snapshot() -> P19CaseSnapshot:
     )
 
 
+def single_snapshot() -> P19CaseSnapshot:
+    full = snapshot()
+    first = full.hypotheses[0]
+    return full.model_copy(update={"hypotheses": (first,)})
+
+
+def single_in_progress_payload():
+    snap = single_snapshot()
+    item = snap.hypotheses[0]
+    return {
+        "candidates": [
+            {
+                "hypothesis_id": item.hypothesis.hypothesis_id,
+                "grounding_link_ids": [
+                    link.grounding_link_id for link in item.groundings
+                ],
+                "disposition": "OPEN",
+                "epistemic_class": "ASSOCIATION",
+                "contribution_class": "UNKNOWN",
+                "evidence_strength": "INSUFFICIENT",
+                "supporting_grounding_link_ids": [],
+                "challenging_grounding_link_ids": [],
+                "causal_qualification": "NOT_CLAIMED",
+                "relationship_dependent": False,
+                "relationship_policy_use_id": None,
+                "identification_limitations": ["ASSOCIATION_ONLY"],
+            }
+        ],
+        "aggregate_outcome": "IN_PROGRESS",
+        "root_cause_hypothesis_ids": [],
+        "limitations": ["Only one governed candidate is currently available."],
+    }
+
+
 def assert_strict_objects(node):
     if isinstance(node, dict):
         props = node.get("properties")
@@ -186,6 +220,29 @@ def valid_payload():
         "root_cause_hypothesis_ids": [],
         "limitations": ["Causal identification remains limited."],
     }
+
+
+def test_provider_accepts_single_governed_candidate_without_fabricating_competitor():
+    snap = single_snapshot()
+    transport = FakeTransport(single_in_progress_payload())
+    manager = StructuredP19AssessmentManager(transport=transport)
+
+    draft = manager.propose(
+        snap,
+        deterministic_feedback_code="P19_SINGLE_CANDIDATE_NO_COMPETITION",
+        discriminating_test_available=False,
+    )
+
+    assert manager.call_count == 1
+    assert len(draft.candidates) == 1
+    assert draft.candidates[0].hypothesis_id == (
+        snap.hypotheses[0].hypothesis.hypothesis_id
+    )
+    assert draft.aggregate_outcome.value == "IN_PROGRESS"
+    assert draft.root_cause_hypothesis_ids == ()
+    packet = transport.calls[0]["user"]
+    assert "P19_SINGLE_CANDIDATE_NO_COMPETITION" in packet
+    assert packet.count(snap.hypotheses[0].hypothesis.hypothesis_id) >= 1
 
 
 def test_provider_schema_is_portable_strict_and_has_no_numeric_confidence_field():

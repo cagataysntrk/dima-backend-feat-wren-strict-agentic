@@ -103,7 +103,7 @@ class FakeActivities:
         ordinal = self.calls["p19"]
         if self.mode == "fail_p19_once" and ordinal == 1:
             raise RuntimeError("simulated provider interruption before durable P19 result")
-        if self.mode == "inconclusive":
+        if self.mode in {"inconclusive", "discovery_one"}:
             route = BrainP19Route.INCONCLUSIVE
             next_ref = None
         elif self.mode in {"adaptive", "always_next"} and ordinal == 1:
@@ -233,9 +233,8 @@ def test_discovery_projects_candidates_without_p17_provider() -> None:
     )
 
 
-@pytest.mark.parametrize("mode", ["discovery_zero", "discovery_one"])
-def test_discovery_without_competing_candidate_set_stops_honestly(mode: str) -> None:
-    result, activities = _run(mode)
+def test_discovery_zero_candidate_set_stops_before_p19() -> None:
+    result, activities = _run("discovery_zero")
 
     assert result.workflow_status == BrainWorkflowStatus.INCONCLUSIVE
     assert result.last_completed_node == "HONEST_STOP"
@@ -244,6 +243,20 @@ def test_discovery_without_competing_candidate_set_stops_honestly(mode: str) -> 
     assert activities.calls["p17_discovery"] == 0
     assert activities.calls["p19"] == 0
     assert activities.calls["report"] == 0
+
+
+def test_discovery_single_real_candidate_reaches_p19_without_fake_competitor() -> None:
+    result, activities = _run("discovery_one")
+
+    assert result.workflow_status == BrainWorkflowStatus.INCONCLUSIVE
+    assert result.last_completed_node == "HONEST_STOP"
+    assert activities.calls["material"] == 1
+    assert activities.calls["project_candidates"] == 1
+    assert activities.calls["p17_discovery"] == 0
+    assert activities.calls["p19"] == 1
+    assert activities.calls["report"] == 0
+    assert result.hypothesis_ids == ("p19h_" + "a" * 24,)
+    assert result.candidate_semantic_ids == ("metric.candidate_1",)
 
 
 def test_inconclusive_is_an_honest_terminal_without_extra_work() -> None:
