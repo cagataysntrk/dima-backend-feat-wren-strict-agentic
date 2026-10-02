@@ -1305,6 +1305,37 @@ class BusinessRelationshipPolicyUseRecord(SQLModel, table=True):
 
 
 
+
+
+class P18RelationshipResultRecord(SQLModel, table=True):
+    """Immutable P18 terminal relationship outcome; no analytical execution."""
+
+    __tablename__ = "p18_relationship_result"
+    __table_args__ = (
+        UniqueConstraint(
+            "result_fingerprint",
+            name="uq_p18_relationship_result_fingerprint",
+        ),
+    )
+
+    result_id: str = Field(primary_key=True)
+    research_session_id: str = Field(
+        foreign_key="research_session.session_id",
+        index=True,
+    )
+    obligation_id: str = Field(index=True)
+    tenant_binding: str = Field(index=True)
+    semantic_context_version: str = Field(index=True)
+    scope_lineage_id: str = Field(index=True)
+    scope_version_id: str = Field(index=True)
+    disposition: str = Field(index=True)
+    projection_json: str = Field(sa_column=Column(Text, nullable=False))
+    result_fingerprint: str = Field(index=True)
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
+
+
 class HypothesisRecord(SQLModel, table=True):
     """P19 stable candidate explanation identity; never P16 claim/Evidence truth."""
 
