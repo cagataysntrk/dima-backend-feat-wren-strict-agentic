@@ -18,11 +18,12 @@ from app.v3.hypothesis_root_cause_v1 import (
 from app.v3.research_analytical_scope import analytical_scope_contract
 from app.v3.research_manager import InvestigationIntent
 
-from .activities import P17ActivityResult
+from .activities import P17ActivityResult, P17NextTestDisposition
 from .adaptive_test_design import (
     AdaptiveTestDesignError,
+    NextTestMaterialDisposition,
     TypedNextTestProposalManager,
-    typed_child_material_delta_for_next_test,
+    evaluate_next_test_material_delta,
 )
 from .keys import CognitionPurpose
 from .owner_adapter import BrainV2OwnerError, DimaBrainV2Activities
@@ -31,6 +32,33 @@ from .state import BrainGraphState
 
 class AdaptiveDimaBrainV2Activities(DimaBrainV2Activities):
     """Use the existing P17 owner to design one typed adaptive re-entry."""
+
+    def _inconclusive_next_test(
+        self,
+        *,
+        state: BrainGraphState,
+        request,
+        snapshot,
+        reason_code: str,
+    ) -> P17ActivityResult:
+        key = self._cognition_key(
+            state=state,
+            owner="P17",
+            purpose=CognitionPurpose.DESIGN_DISCRIMINATING_TEST,
+            objective_id=request.request_id,
+            legal_profile_hash=snapshot.fingerprint,
+        )
+        return P17ActivityResult(
+            hypothesis_revision=state.hypothesis_revision,
+            hypothesis_ids=state.hypothesis_ids,
+            material_requirement_ids=(),
+            discovery_required=False,
+            produced_evidence_ids=(),
+            produced_receipt_refs=(),
+            next_test_disposition=P17NextTestDisposition.INCONCLUSIVE,
+            next_test_reason_code=reason_code,
+            activity_fingerprint=key.fingerprint,
+        )
 
     def design_next_test(self, state: BrainGraphState) -> P17ActivityResult:
         request, session, goal = self._current_next_test(state=state)
@@ -44,9 +72,11 @@ class AdaptiveDimaBrainV2Activities(DimaBrainV2Activities):
             evidence_surface_available=bool(self._native_session_token),
             target_obligation_id=goal.goal_id,
         ):
-            raise BrainV2OwnerError(
-                "BRAIN_V2_NEXT_TEST_NOT_CALLABLE",
-                request.request_id,
+            return self._inconclusive_next_test(
+                state=state,
+                request=request,
+                snapshot=snapshot,
+                reason_code="NEXT_TEST_NOT_CALLABLE",
             )
 
         before_evidence_pairs = tuple(
@@ -69,14 +99,22 @@ class AdaptiveDimaBrainV2Activities(DimaBrainV2Activities):
                 raise AdaptiveTestDesignError(
                     "adaptive child material requires accepted ResearchBrief"
                 )
-            delta = typed_child_material_delta_for_next_test(
+            decision = evaluate_next_test_material_delta(
                 parent=parent_scope,
                 request=request,
                 governed_semantic_refs=tuple(
                     item.candidate_id for item in brief.scope.semantic_refs
                 ),
             )
-            child_scope = delta.child_contract
+            if decision.disposition == NextTestMaterialDisposition.INCONCLUSIVE:
+                return self._inconclusive_next_test(
+                    state=state,
+                    request=request,
+                    snapshot=snapshot,
+                    reason_code=decision.reason_code or "NO_LEGAL_MATERIAL_DELTA",
+                )
+            assert decision.delta is not None
+            child_scope = decision.delta.child_contract
             manager = TypedNextTestProposalManager(
                 inner=self._investigation_manager,
                 request=request,
@@ -124,9 +162,11 @@ class AdaptiveDimaBrainV2Activities(DimaBrainV2Activities):
             if item not in before_pairs
         )
         if not new_pairs:
-            raise BrainV2OwnerError(
-                "BRAIN_V2_NEXT_TEST_NO_NEW_EVIDENCE",
-                request.request_id,
+            return self._inconclusive_next_test(
+                state=state,
+                request=request,
+                snapshot=snapshot,
+                reason_code="NO_NEW_EVIDENCE",
             )
 
         after_snapshot = self._investigation.snapshot(
@@ -143,11 +183,11 @@ class AdaptiveDimaBrainV2Activities(DimaBrainV2Activities):
             not new_result_hashes
             or new_result_hashes.issubset(before_result_hashes)
         ):
-            raise BrainV2OwnerError(
-                "BRAIN_V2_NEXT_TEST_NO_INFORMATION_GAIN",
-                request.request_id,
-                last_valid_boundary="dima.p17.next_test",
-                first_invalid_boundary="dima.evidence.admit",
+            return self._inconclusive_next_test(
+                state=state,
+                request=request,
+                snapshot=snapshot,
+                reason_code="NO_INFORMATION_GAIN",
             )
 
         self._ground_evidence(
@@ -169,5 +209,6 @@ class AdaptiveDimaBrainV2Activities(DimaBrainV2Activities):
             discovery_required=False,
             produced_evidence_ids=tuple(item[0] for item in new_pairs),
             produced_receipt_refs=tuple(item[1] for item in new_pairs),
+            next_test_disposition=P17NextTestDisposition.EXECUTED,
             activity_fingerprint=key.fingerprint,
         )
