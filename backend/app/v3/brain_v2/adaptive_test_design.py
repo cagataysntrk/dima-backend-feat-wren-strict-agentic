@@ -6,6 +6,7 @@ single TEST_DISCRIMINATING_EVIDENCE intent authorized by a typed NextTestRequest
 """
 from __future__ import annotations
 
+from enum import StrEnum
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -61,6 +62,43 @@ class ChildMaterialDelta(Frozen):
 class AdaptiveTestDesignError(RuntimeError):
     """The P17 design result escaped the typed adaptive boundary."""
 
+    def __init__(
+        self,
+        detail: str,
+        *,
+        code: str = "NEXT_TEST_DESIGN_INVALID",
+    ) -> None:
+        super().__init__(detail)
+        self.code = code
+        self.detail = detail
+
+
+class NextTestMaterialDisposition(StrEnum):
+    EXECUTABLE = "EXECUTABLE"
+    INCONCLUSIVE = "INCONCLUSIVE"
+
+
+class NextTestMaterialDecision(Frozen):
+    """Typed decision over whether the requested information gain is executable."""
+
+    disposition: NextTestMaterialDisposition
+    delta: ChildMaterialDelta | None = None
+    reason_code: str | None = Field(default=None, min_length=1)
+
+    @model_validator(mode="after")
+    def coherent(self):
+        if self.disposition == NextTestMaterialDisposition.EXECUTABLE:
+            if self.delta is None:
+                raise ValueError("executable next test requires a material delta")
+            if self.reason_code is not None:
+                raise ValueError("executable next test cannot carry a stop reason")
+        else:
+            if self.delta is not None:
+                raise ValueError("inconclusive next test cannot carry a material delta")
+            if self.reason_code is None:
+                raise ValueError("inconclusive next test requires a reason code")
+        return self
+
 
 def _parent_governed_refs(
     parent: AnalyticalRequestContract,
@@ -99,29 +137,34 @@ def typed_child_material_delta_for_next_test(
         or request.scope_version_id != parent.scope_identity.version_id
     ):
         raise AdaptiveTestDesignError(
-            "typed child material must remain on the current accepted scope"
+            "typed child material must remain on the current accepted scope",
+            code="NEXT_TEST_SCOPE_IDENTITY_MISMATCH",
         )
 
     if request.required_evidence_surface != NextTestEvidenceSurface.TEMPORAL_ORDER:
         raise AdaptiveTestDesignError(
             "no deterministic child material delta exists for "
-            + request.required_evidence_surface.value
+            + request.required_evidence_surface.value,
+            code="NEXT_TEST_NO_LEGAL_MATERIAL_DELTA",
         )
 
     if parent.comparison is not None or parent.temporal_observation is not None:
         raise AdaptiveTestDesignError(
             "TEMPORAL_ORDER is already observable in parent material; "
-            "no materially new child material exists"
+            "no materially new child material exists",
+            code="NEXT_TEST_NO_LEGAL_MATERIAL_DELTA",
         )
     if parent.period is None:
         raise AdaptiveTestDesignError(
-            "TEMPORAL_ORDER requires accepted bounded time authority"
+            "TEMPORAL_ORDER requires accepted bounded time authority",
+            code="NEXT_TEST_NO_LEGAL_MATERIAL_DELTA",
         )
 
     time_ref = parent.period.time_dimension
     if time_ref not in set(governed_semantic_refs):
         raise AdaptiveTestDesignError(
-            "typed child material may use only governed semantic refs"
+            "typed child material may use only governed semantic refs",
+            code="NEXT_TEST_NO_LEGAL_MATERIAL_DELTA",
         )
 
     dimensions = tuple(dict.fromkeys((*parent.dimension_refs, time_ref)))
@@ -131,7 +174,8 @@ def typed_child_material_delta_for_next_test(
         and grains == parent.grain_constraints
     ):
         raise AdaptiveTestDesignError(
-            "TEMPORAL_ORDER child material would repeat parent material"
+            "TEMPORAL_ORDER child material would repeat parent material",
+            code="NEXT_TEST_NO_LEGAL_MATERIAL_DELTA",
         )
 
     child = parent.model_copy(
@@ -169,6 +213,38 @@ def typed_child_material_delta_for_next_test(
             if item not in parent_allowed
         ),
         child_contract=child,
+    )
+
+
+def evaluate_next_test_material_delta(
+    *,
+    parent: AnalyticalRequestContract,
+    request: NextTestRequest,
+    governed_semantic_refs: tuple[str, ...],
+) -> NextTestMaterialDecision:
+    """Classify one typed NextTest without converting honest limits to exceptions.
+
+    Structural authority drift still fails closed. A semantically valid request
+    for which Dima has no legal, materially-new child contract terminates as a
+    governed INCONCLUSIVE outcome instead of creating an internal Product error.
+    """
+
+    try:
+        delta = typed_child_material_delta_for_next_test(
+            parent=parent,
+            request=request,
+            governed_semantic_refs=governed_semantic_refs,
+        )
+    except AdaptiveTestDesignError as exc:
+        if exc.code != "NEXT_TEST_NO_LEGAL_MATERIAL_DELTA":
+            raise
+        return NextTestMaterialDecision(
+            disposition=NextTestMaterialDisposition.INCONCLUSIVE,
+            reason_code="NO_LEGAL_MATERIAL_DELTA",
+        )
+    return NextTestMaterialDecision(
+        disposition=NextTestMaterialDisposition.EXECUTABLE,
+        delta=delta,
     )
 
 
