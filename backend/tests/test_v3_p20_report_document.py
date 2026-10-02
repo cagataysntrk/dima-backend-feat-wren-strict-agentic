@@ -554,6 +554,79 @@ def test_auto_numeric_projection_preserves_source_backed_tabular_fact_meaning():
 
 
 
+
+def test_auto_numeric_projection_seals_contextual_source_backed_text():
+    db = db_engine()
+    state = make_state(db, suffix='presentation-text')
+    store = ReportDocumentStore(
+        research_store=state['store'],
+        db_engine=db,
+    )
+    draft = store.draft_from_governed_research(
+        research_session_id=state['session'].session_id,
+        report_key='presentation-text',
+        principal=state['principal'],
+    )
+    report = store.seal(
+        draft=draft,
+        principal=state['principal'],
+        now=STAMP + timedelta(minutes=30),
+    )
+
+    numeric_texts = tuple(
+        item.text
+        for item in report.statements
+        if item.statement_kind == ReportStatementKind.NUMERIC
+    )
+    assert 'Channel=Web; Sales Order Count=34' in numeric_texts
+    assert 'Channel=Partner; Sales Order Count=12' in numeric_texts
+
+
+@pytest.mark.parametrize(
+    'payload_update',
+    (
+        {'label': 'Invented Metric'},
+        {'context': [{'label': 'Channel', 'value': 'Invented Entity'}]},
+    ),
+)
+def test_auto_numeric_projection_rejects_invented_presentation_context(
+    payload_update,
+):
+    db = db_engine()
+    state = make_state(db, suffix='presentation-tamper')
+    store = ReportDocumentStore(
+        research_store=state['store'],
+        db_engine=db,
+    )
+    draft = store.draft_from_governed_research(
+        research_session_id=state['session'].session_id,
+        report_key='presentation-tamper',
+        principal=state['principal'],
+    )
+    target = next(
+        item
+        for item in draft.statements
+        if item.statement_kind == ReportStatementKind.NUMERIC
+    )
+    tampered_payload = dict(target.payload)
+    tampered_payload.update(payload_update)
+    tampered = target.model_copy(update={'payload': tampered_payload})
+    statements = tuple(
+        tampered if item.statement_id == target.statement_id else item
+        for item in draft.statements
+    )
+    bad = draft.model_copy(update={'statements': statements})
+
+    with pytest.raises(P20ReportError) as exc:
+        store.seal(
+            draft=bad,
+            principal=state['principal'],
+            now=STAMP + timedelta(minutes=30),
+        )
+    assert exc.value.code == 'P20_NUMERIC_PRESENTATION_MISMATCH'
+
+
+
 def test_user_must_is_100_percent_accounted_and_seals_one_report():
     db = db_engine()
     state = make_state(db)
