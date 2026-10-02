@@ -86,6 +86,16 @@ def ranking_basis_is_coherent(
     return True
 
 
+def ranking_basis_admission_allowed(
+    *,
+    required: RankingBasis,
+    observed: RankingBasis | None,
+) -> bool:
+    """Law 2: ranking quantity semantics must be materially observable."""
+
+    return observed is not None and observed == required
+
+
 class ResultDependencyDisposition(StrEnum):
     WAITING = "WAITING"
     READY = "READY"
