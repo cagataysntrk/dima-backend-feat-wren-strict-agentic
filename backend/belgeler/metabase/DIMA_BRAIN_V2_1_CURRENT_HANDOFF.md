@@ -14,25 +14,87 @@ intermediate certification receipts are archived under `legacy/`.
 
 ---
 
-## 1. Current decision
+## 1. Current decision — ROUND-2 30-CASE COMPLETED
+
+The former pre-benchmark readiness claim is superseded by the actual broad benchmark.
+
+Canonical adjudication:
+
+`DIMA_BRAIN_V2_1_ROUND2_FINAL_ADJUDICATION_2026-10-02.md`
 
 ~~~text
 BRAIN V2.1 ARCHITECTURE FROZEN
 
-90+ HIGH-CONFIDENCE READINESS = YES
-30-CASE READY = YES
+ROUND-2 30-CASE
+COMPLETED
 
-90+ PROVEN = NO
-30-case = NOT RUN
+complete run
+37027548693
 
-frontend = NOT IMPLEMENTED
+artifact
+11235884317
+
+artifact digest
+sha256:095d1593ceace7dba94ae872e7ad85f520a3d2b4f4d7de603cfe1f22e4a352f1
+
+FINAL PRODUCT QUALITY SCORE
+60.5 / 100
+
+90+ PROVEN
+NO
+
+80+ PROVEN
+NO
+
+former 90+ HIGH-CONFIDENCE READINESS
+INVALIDATED BY BROAD EVIDENCE
+
+broad paid authorization
+CLOSED
+
+frontend
+NOT IMPLEMENTED / NOT AUTHORIZED
 ~~~
 
-The next Product milestone is the frozen 30-case, but it has **not** been run by this closure.
-Do not silently treat “30-CASE READY” as a benchmark result.
+The Product and engine remained frozen for the final complete benchmark:
 
-Any semantic Product change after `ce8704d6...` invalidates carry-forward for every affected
-capability and requires affected resealing before the 30-case.
+~~~text
+Product
+ce8704d6a0db10dc3fb6b1a7e5d0f86afe9ccdc9
+
+engine
+d5c60dc9f37a9ec9c5b0117f178146bbcb8dca88
+0.63.18-dima.9
+
+model topology
+Luna / Luna / no cascade
+~~~
+
+The complete run proves a strong speed/cost improvement but insufficient broad quality:
+
+~~~text
+30-case case-latency total = 648.852 s
+median                    = 19.560 s
+p90                       = 49.952 s
+
+provider requests          = 137
+prompt tokens              = 1,925,857
+provider-reported cost     = $0.24909254
+average cost / case        = $0.00830308
+~~~
+
+The first benchmark attempt `37027114003` completed only F01_S before a harness-only
+model-budget validation defect aborted the run. It spent 3 provider requests / $0.00713981.
+The semantic Product and engine were unchanged; the final quality score uses only the complete
+run `37027548693`. Total campaign provider cost including that aborted harness attempt is
+`$0.25623235`.
+
+Do not rerun the broad benchmark on the same candidate. The next work is generic
+provider-free recovery of the broad failure families, followed by targeted proofs. A later
+30-case requires new explicit user authorization.
+
+Any semantic Product change after `ce8704d6...` creates a new candidate and invalidates
+affected carry-forward evidence.
 
 ---
 
