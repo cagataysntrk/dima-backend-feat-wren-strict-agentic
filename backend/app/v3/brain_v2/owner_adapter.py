@@ -11,8 +11,11 @@ from typing import Any
 
 from app.v3.business_relationship_policy import (
     BusinessRelationshipPolicyStore,
+    RelationshipPolicyDecision,
     RelationshipPolicyRequirement,
+    RelationshipPolicyResolutionStatus,
 )
+from app.v3.business_relationship_v1 import project_relationship_result
 from app.v3.hypothesis_root_cause import (
     AggregateOutcome,
     ContributionClass,
@@ -26,6 +29,11 @@ from app.v3.hypothesis_root_cause_v1 import (
     discriminating_test_capacity_available,
     discriminating_test_is_callable,
     next_test_request,
+)
+from app.v3.product.completion import (
+    ProductCompletionLedger,
+    ProductRequirementCompletion,
+    ProductRequirementDisposition,
 )
 from app.v3.product.contracts import ProductInvestigationRequirementKind
 from app.v3.report_document import (
@@ -73,6 +81,7 @@ from .activities import (
     BrainActivities,
     CandidateProjectionActivityResult,
     CanonicalizeActivityResult,
+    CompletionActivityResult,
     EvidenceActivityResult,
     IntakeActivityResult,
     MaterialActivityResult,
@@ -2070,20 +2079,294 @@ class DimaBrainV2Activities(BrainActivities):
             }
         )
 
+    def evaluate_completion(
+        self,
+        state: BrainGraphState,
+    ) -> CompletionActivityResult:
+        session = self._session(state)
+        brief = session.accepted_brief
+        assert brief is not None
+        groups = {
+            item.material_group_id: item
+            for item in project_material_groups(session)
+        }
+        completed_groups = set(state.completed_material_group_ids)
+        direct_terminal: set[str] = set()
+        fulfilled_ref_by_requirement: dict[str, str] = {}
+
+        for group_id in completed_groups:
+            group = groups.get(group_id)
+            if group is None:
+                raise BrainV2OwnerError(
+                    "BRAIN_V2_COMPLETION_MATERIAL_GROUP_UNKNOWN",
+                    group_id,
+                    last_valid_boundary="dima.evidence.admit",
+                    first_invalid_boundary="dima.completion.evaluate",
+                )
+            anchor_pairs = self._evidence_pairs(
+                session,
+                group.anchor_requirement_id,
+            )
+            if not anchor_pairs:
+                raise BrainV2OwnerError(
+                    "BRAIN_V2_COMPLETION_EVIDENCE_REQUIRED",
+                    group_id,
+                    last_valid_boundary="dima.material.group",
+                    first_invalid_boundary="dima.completion.evaluate",
+                )
+            evidence_ref = anchor_pairs[-1][0]
+            for requirement_id in group.consumer_requirement_ids:
+                if requirement_id in set(state.direct_requirement_ids):
+                    direct_terminal.add(requirement_id)
+                    fulfilled_ref_by_requirement[requirement_id] = evidence_ref
+
+        relationship_terminal: set[str] = set()
+        relationship_disposition: dict[
+            str, ProductRequirementDisposition
+        ] = {}
+        for requirement_id, policy_use_ref in zip(
+            state.p18_requirement_ids,
+            state.p18_policy_use_refs,
+            strict=True,
+        ):
+            if self._relationships is None:
+                raise BrainV2OwnerError(
+                    "BRAIN_V2_P18_OWNER_REQUIRED",
+                    requirement_id,
+                )
+            use = self._relationships.load_use(
+                session_id=session.session_id,
+                policy_use_id=policy_use_ref,
+                principal=self._principal,
+            )
+            relationship_terminal.add(requirement_id)
+            fulfilled_ref_by_requirement[requirement_id] = policy_use_ref
+            relationship_disposition[requirement_id] = (
+                ProductRequirementDisposition.FULFILLED
+                if use.resolution_status
+                in {
+                    RelationshipPolicyResolutionStatus.NOT_REQUIRED,
+                    RelationshipPolicyResolutionStatus.SATISFIED,
+                }
+                else ProductRequirementDisposition.LIMITED
+            )
+
+        root_terminal: set[str] = set()
+        root_disposition: dict[str, ProductRequirementDisposition] = {}
+        if (
+            state.root_cause_requirement_ids
+            and state.latest_p19_assessment_ref is not None
+            and state.latest_p19_route is not None
+        ):
+            if len(state.root_cause_requirement_ids) != 1:
+                raise BrainV2OwnerError(
+                    "BRAIN_V2_MULTI_RCA_COMPLETION_DEFERRED",
+                    ",".join(state.root_cause_requirement_ids),
+                )
+            requirement_id = state.root_cause_requirement_ids[0]
+            root_terminal.add(requirement_id)
+            fulfilled_ref_by_requirement[requirement_id] = (
+                state.latest_p19_assessment_ref
+            )
+            root_disposition[requirement_id] = (
+                ProductRequirementDisposition.FULFILLED
+                if state.latest_p19_route == BrainP19Route.SUFFICIENT
+                else ProductRequirementDisposition.INCONCLUSIVE
+            )
+
+        analytical_terminal = (
+            direct_terminal | relationship_terminal | root_terminal
+        )
+        accepted_analytical = {
+            item.goal_id for item in brief.questions
+        }
+        analytical_complete = accepted_analytical.issubset(
+            analytical_terminal
+        )
+
+        report_ids = set(state.report_requirement_ids)
+        report_terminal = report_ids if state.report_ref is not None else set()
+        terminal_ids = tuple(
+            item
+            for item in brief.must_requirement_ids
+            if item in analytical_terminal or item in report_terminal
+        )
+        report_required = bool(report_ids and state.report_ref is None)
+        requirement_complete = (
+            set(brief.must_requirement_ids) == set(terminal_ids)
+        )
+
+        # Build the shared ledger only when every USER_MUST is terminal. The
+        # report gate before P20 intentionally has a pending deliverable and is
+        # represented by analytical_complete/report_required instead.
+        if requirement_complete:
+            entries: list[ProductRequirementCompletion] = []
+            for requirement_id in brief.must_requirement_ids:
+                if requirement_id in report_ids:
+                    disposition = ProductRequirementDisposition.FULFILLED
+                    fulfilled_by = state.report_ref
+                elif requirement_id in relationship_disposition:
+                    disposition = relationship_disposition[requirement_id]
+                    fulfilled_by = fulfilled_ref_by_requirement.get(requirement_id)
+                elif requirement_id in root_disposition:
+                    disposition = root_disposition[requirement_id]
+                    fulfilled_by = fulfilled_ref_by_requirement.get(requirement_id)
+                else:
+                    disposition = ProductRequirementDisposition.FULFILLED
+                    fulfilled_by = fulfilled_ref_by_requirement.get(requirement_id)
+                entries.append(
+                    ProductRequirementCompletion(
+                        requirement_id=requirement_id,
+                        disposition=disposition,
+                        fulfilled_by_ref=fulfilled_by,
+                    )
+                )
+            ledger = ProductCompletionLedger(
+                entries=tuple(entries),
+                process_complete=True,
+                requirement_complete=all(
+                    item.disposition
+                    == ProductRequirementDisposition.FULFILLED
+                    for item in entries
+                ),
+                trusted_complete=True,
+            )
+            if tuple(item.requirement_id for item in ledger.entries) != tuple(
+                brief.must_requirement_ids
+            ):
+                raise BrainV2OwnerError(
+                    "BRAIN_V2_COMPLETION_IDENTITY_MISMATCH",
+                    brief.brief_id,
+                )
+
+        return CompletionActivityResult(
+            completion_revision=state.completion_revision + 1,
+            terminal_requirement_ids=terminal_ids,
+            analytical_complete=analytical_complete,
+            requirement_complete=requirement_complete,
+            report_required=report_required,
+            activity_fingerprint=_fingerprint(
+                {
+                    "activity": "COMPLETION_EVALUATE",
+                    "session": session.session_id,
+                    "scope": state.scope_version_id,
+                    "terminal_requirements": list(terminal_ids),
+                    "report_ref": state.report_ref,
+                }
+            ),
+        )
+
+    def _relationship_results_from_state(self, *, state, session):
+        if not state.p18_requirement_ids:
+            return ()
+        if self._relationships is None:
+            raise BrainV2OwnerError(
+                "BRAIN_V2_P18_OWNER_REQUIRED",
+                session.session_id,
+            )
+        brief = session.accepted_brief
+        assert brief is not None
+        snapshot = self._investigation.snapshot(
+            session_id=session.session_id,
+            principal=self._principal,
+        )
+        claim_by_id = {item.claim_id: item for item in snapshot.claims}
+        results = []
+        for requirement_id, claim_ref, policy_use_ref in zip(
+            state.p18_requirement_ids,
+            state.p18_claim_refs,
+            state.p18_policy_use_refs,
+            strict=True,
+        ):
+            goal = next(
+                (
+                    item
+                    for item in brief.questions
+                    if item.goal_id == requirement_id
+                ),
+                None,
+            )
+            claim = claim_by_id.get(claim_ref)
+            if goal is None or goal.kind != ResearchGoalKind.RELATIONSHIP:
+                raise BrainV2OwnerError(
+                    "BRAIN_V2_P20_RELATIONSHIP_REQUIREMENT_INVALID",
+                    requirement_id,
+                )
+            if claim is None:
+                raise BrainV2OwnerError(
+                    "BRAIN_V2_P20_RELATIONSHIP_CLAIM_NOT_FOUND",
+                    claim_ref,
+                )
+            use = self._relationships.load_use(
+                session_id=session.session_id,
+                policy_use_id=policy_use_ref,
+                principal=self._principal,
+            )
+            required = (
+                use.resolution_status
+                != RelationshipPolicyResolutionStatus.NOT_REQUIRED
+            )
+            eligible = use.resolution_status in {
+                RelationshipPolicyResolutionStatus.NOT_REQUIRED,
+                RelationshipPolicyResolutionStatus.SATISFIED,
+            }
+            decision = RelationshipPolicyDecision(
+                required=required,
+                eligible=eligible,
+                resolution_status=use.resolution_status,
+                policy_use_id=use.policy_use_id,
+                policy_id=use.policy_id,
+                limitation_code=use.limitation_code,
+            )
+            source_ref, target_ref, dimensions = self._relationship_refs(goal)
+            applicability_scope = {
+                "accepted_relationship_goal_id": goal.goal_id,
+                "semantic_ref_ids": sorted(
+                    {
+                        item.candidate_id
+                        for item in (*goal.subject_refs, *goal.related_refs)
+                    }
+                ),
+                "dimension_ref_ids": list(dimensions),
+            }
+            # source/target are intentionally recomputed from accepted typed
+            # relationship authority; they are not inferred from report text.
+            del source_ref, target_ref
+            results.append(
+                project_relationship_result(
+                    research_session_id=session.session_id,
+                    claim=claim,
+                    decision=decision,
+                    scope_lineage_id=session.lineage_id,
+                    scope_version_id=brief.scope.scope_version.version_id,
+                    applicability_scope=applicability_scope,
+                )
+            )
+        return tuple(results)
+
     def synthesize_report(self, state: BrainGraphState) -> ReportActivityResult:
         session = self._session(state)
         report_key = (
             f"brain-v2:{state.thread_id}:{state.scope_version_id or 'scope_v1'}"
         )
+        relationship_results = self._relationship_results_from_state(
+            state=state,
+            session=session,
+        )
         base = self._reports.draft_from_governed_research(
             research_session_id=session.session_id,
             report_key=report_key,
             principal=self._principal,
+            relationship_results=relationship_results,
         )
-        draft = self._report_with_epistemic_projection(
-            state=state,
-            session=session,
-            base=base,
+        draft = (
+            self._report_with_epistemic_projection(
+                state=state,
+                session=session,
+                base=base,
+            )
+            if state.latest_p19_assessment_ref is not None
+            else base
         )
         report = self._reports.seal(
             draft=draft,

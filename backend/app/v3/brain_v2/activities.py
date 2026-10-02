@@ -167,6 +167,7 @@ class P18ActivityResult(ActivityResult):
 class CompletionActivityResult(ActivityResult):
     completion_revision: int = Field(ge=1)
     terminal_requirement_ids: tuple[str, ...] = ()
+    analytical_complete: bool
     requirement_complete: bool
     report_required: bool
 
