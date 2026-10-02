@@ -26,11 +26,13 @@ from app.v3.brain_v2.telemetry import (
     BoundaryTraceEvent,
 )
 from app.v3.hypothesis_root_cause_provider import StructuredP19AssessmentManager
+from app.v3.business_relationship_policy import BusinessRelationshipPolicyStore
 from app.v3.report_document import ReportDocumentStore
 from app.v3.research_exploration import NativeResearchExploration
 from app.v3.research_followup import NativeResearchFollowupExecutor
 from app.v3.research_intake import ResearchIntakeCompiler
 from app.v3.research_analytical_scope import analytical_scope_contract
+from app.v3.brain_v2.material_groups import project_material_groups
 from app.v3.research_manager import ResearchInvestigationManager, ResearchReasoningStore
 from app.v3.research_manager_provider import StructuredResearchProposalManager
 from app.v3.research_product import NativeResearchOccurrenceRunner, ResearchAskOrchestrator
@@ -74,6 +76,11 @@ def _require_locked_engine_runtime(args: Any) -> None:
 
 
 from lab.metabase.brain_v2.final_probes import PROBES
+from lab.metabase.brain_v2.final_mechanical import (
+    MULTI_INTENT,
+    RELATIONSHIP_REPORT,
+    phase2_mechanical,
+)
 from lab.metabase.brain_v2.live_support import (
     BoundedMaterialExecutor,
     BoundedStructuredTransport,
@@ -118,6 +125,8 @@ LIVE_PROBES = (
     "R_LIVE_2_ADAPTIVE",
     "R_LIVE_3_DISCOVERY",
     SCOPE_RESUME_PROBE,
+    RELATIONSHIP_REPORT,
+    MULTI_INTENT,
 )
 
 
@@ -507,6 +516,10 @@ def main() -> int:
     epistemics = HypothesisRootCauseStore(research_store=store, db_engine=db_engine)
     p19_manager = StructuredP19AssessmentManager(transport=p19_transport)
     reports = ReportDocumentStore(research_store=store, db_engine=db_engine)
+    relationships = BusinessRelationshipPolicyStore(
+        research_store=store,
+        db_engine=db_engine,
+    )
 
     principal = sealed._principal()
     activities = DimaBrainV2Activities(
@@ -519,6 +532,7 @@ def main() -> int:
         epistemics=epistemics,
         epistemic_manager=p19_manager,
         reports=reports,
+        relationships=relationships,
         native_session_token=token,
         engine_identity=f"{args.engine_sha}@{args.runtime_image_digest}",
         model_profile=MODEL,
@@ -539,6 +553,9 @@ def main() -> int:
         "manual_contract": list(manual_contract),
         "manual_quality_score": None,
         "manual_quality_status": "PENDING",
+        "runtime": "BRAIN_V2_LANGGRAPH",
+        "legacy_composer_calls": 0,
+        "agent_api_request_count": 0,
     }
     started = time.monotonic()
     state = None
@@ -564,6 +581,13 @@ def main() -> int:
                 and first_checkpointed.model_dump(mode="json")
                 == first_state.model_dump(mode="json")
             )
+            first_budget_by_owner = dict(budget.by_owner)
+            first_native_count = len(
+                tuple(
+                    item for item in _links(db_engine, first_state.research_session_id)
+                    if getattr(item, "status", None) == "VERIFIED"
+                )
+            )
             if is_scope_resume:
                 state = service.continue_turn(
                     thread_id=first_state.thread_id,
@@ -571,19 +595,26 @@ def main() -> int:
                     principal_ref=first_state.principal_ref,
                     user_input=SCOPE_RESUME_TURNS[1],
                 )
-                second_checkpointed = service.state(thread_id=state.thread_id)
-                second_checkpoint_roundtrip = (
-                    second_checkpointed is not None
-                    and second_checkpointed.model_dump(mode="json")
-                    == state.model_dump(mode="json")
+            elif args.probe_id == RELATIONSHIP_REPORT:
+                state = service.continue_report_turn(
+                    thread_id=first_state.thread_id,
+                    tenant_binding=first_state.tenant_binding,
+                    principal_ref=first_state.principal_ref,
+                    user_input=str(PROBES[args.probe_id]["turns"][1]),
                 )
-                report["checkpoint_roundtrip_equal"] = (
-                    first_checkpoint_roundtrip and second_checkpoint_roundtrip
-                )
-                report["first_brain_state"] = first_state.model_dump(mode="json")
             else:
                 state = first_state
-                report["checkpoint_roundtrip_equal"] = first_checkpoint_roundtrip
+            second_checkpointed = service.state(thread_id=state.thread_id)
+            second_checkpoint_roundtrip = (
+                second_checkpointed is not None
+                and second_checkpointed.model_dump(mode="json")
+                == state.model_dump(mode="json")
+            )
+            report["checkpoint_roundtrip_equal"] = (
+                first_checkpoint_roundtrip and second_checkpoint_roundtrip
+            )
+            if state is not first_state:
+                report["first_brain_state"] = first_state.model_dump(mode="json")
             report["brain_state"] = state.model_dump(mode="json")
 
         assert state is not None
@@ -591,27 +622,42 @@ def main() -> int:
             session_id=state.research_session_id,
             principal=principal,
         )
-        goal = next(
-            item for item in session.accepted_brief.questions
-            if item.kind.value == "root_cause"
+        brief = session.accepted_brief
+        if brief is None:
+            raise RuntimeError("live Brain V2 session has no accepted brief")
+        goals = tuple(brief.questions)
+        root_goals = tuple(
+            item for item in goals if item.kind.value == "root_cause"
         )
-        material_contract = analytical_scope_contract(
-            session=session,
-            obligation_id=goal.goal_id,
-        )
+        material_groups = project_material_groups(session)
+        material_contracts = {
+            item.goal_id: _safe(
+                analytical_scope_contract(
+                    session=session,
+                    obligation_id=item.goal_id,
+                )
+            )
+            for item in goals
+        }
         report["accepted_intent"] = {
-            "goal": _safe(goal),
-            "scope": _safe(session.accepted_brief.scope),
-            "material_contract": _safe(material_contract),
+            "goals": [_safe(item) for item in goals],
+            "scope": _safe(brief.scope),
+            "material_groups": [_safe(item) for item in material_groups],
+            "material_contracts": material_contracts,
         }
         p17_snapshot = investigation.snapshot(
             session_id=session.session_id,
             principal=principal,
         )
-        p19_snapshot = epistemics.snapshot(
-            research_session_id=session.session_id,
-            obligation_id=goal.goal_id,
-            principal=principal,
+        root_goal = root_goals[0] if len(root_goals) == 1 else None
+        p19_snapshot = (
+            epistemics.snapshot(
+                research_session_id=session.session_id,
+                obligation_id=root_goal.goal_id,
+                principal=principal,
+            )
+            if root_goal is not None
+            else None
         )
         assessment = (
             epistemics.load_assessment(
@@ -621,6 +667,14 @@ def main() -> int:
             if state.latest_p19_assessment_ref
             else None
         )
+        p18_uses = tuple(
+            relationships.load_use(
+                session_id=session.session_id,
+                policy_use_id=policy_use_id,
+                principal=principal,
+            )
+            for policy_use_id in state.p18_policy_use_refs
+        )
         report_doc = (
             reports.load(report_id=state.report_ref, principal=principal)
             if state.report_ref
@@ -628,7 +682,6 @@ def main() -> int:
         )
         scope_resume = None
         if is_scope_resume:
-            assert first_state is not None
             first_session = research.resume_state(
                 session_id=first_state.research_session_id,
                 principal=principal,
@@ -665,11 +718,12 @@ def main() -> int:
         else:
             links = _links(db_engine, session.session_id)
         provider = _provider_receipt(args.provider_receipt)
+        native_occurrences = _native_occurrence_projection(links)
 
         report["research"] = {
             "session_id": session.session_id,
             "lineage_id": session.lineage_id,
-            "scope_version_id": session.accepted_brief.scope.scope_version.version_id,
+            "scope_version_id": brief.scope.scope_version.version_id,
             "obligations": [_safe(item) for item in session.obligations],
             "evidence_refs": [_safe(item) for item in session.evidence_refs],
         }
@@ -678,43 +732,90 @@ def main() -> int:
             "investigation": _safe(p17_snapshot.investigation),
             "evidence_results": [_safe(item) for item in p17_snapshot.evidence_results],
         }
+        report["p18"] = {
+            "requirement_ids": list(state.p18_requirement_ids),
+            "policy_uses": [_safe(item) for item in p18_uses],
+        }
         report["p19"] = {
             "assessment": _safe(assessment),
             "snapshot": _safe(p19_snapshot),
         }
         report["p20"] = _safe(report_doc)
-        scope_fingerprint = (
-            session.accepted_brief.scope_fingerprint
-            if session.accepted_brief is not None
-            else None
+        report["native_occurrences"] = native_occurrences
+        report["provider_receipt"] = provider
+        report["orchestration_boundary_units"] = budget.used
+        report["orchestration_boundary_units_by_owner"] = dict(
+            sorted(budget.by_owner.items())
         )
-        material_fingerprint = material_contract.fingerprint
-        trace_events = [
-            BoundaryTraceEvent(
-                boundary=BoundaryName.INTENT_INTERPRET,
-                owner="ResearchIntake",
-                thread_id=state.thread_id,
-                scope_version_id=state.scope_version_id,
-                scope_fingerprint=scope_fingerprint,
-                provider_call_count=int(
-                    (provider.get("by_owner") or {})
-                    .get("research_intake", {})
-                    .get("requests", 0)
+
+        if args.probe_id in {RELATIONSHIP_REPORT, MULTI_INTENT}:
+            first_same_session = (
+                first_state.research_session_id == state.research_session_id
+            )
+            first_same_scope = (
+                first_state.scope_version_id == state.scope_version_id
+            )
+            report["mechanical"] = phase2_mechanical(
+                probe_id=args.probe_id,
+                state=state,
+                first_state=(first_state if args.probe_id == RELATIONSHIP_REPORT else None),
+                native_occurrences=tuple(native_occurrences),
+                first_native_count=(
+                    first_native_count
+                    if args.probe_id == RELATIONSHIP_REPORT
+                    else None
                 ),
-            ),
-        ]
-        if state.scope_version_id != "scope_v1":
-            trace_events.append(
+                p18_uses=p18_uses,
+                report_present=report_doc is not None,
+                budget_before_report=(
+                    first_budget_by_owner
+                    if args.probe_id == RELATIONSHIP_REPORT
+                    else None
+                ),
+                budget_after=dict(budget.by_owner),
+                same_research_session=first_same_session,
+                same_scope_version=first_same_scope,
+                checkpoint_roundtrip=bool(
+                    report.get("checkpoint_roundtrip_equal")
+                ),
+            )
+            report["boundary_trace"] = {
+                "runtime": "BRAIN_V2_LANGGRAPH",
+                "events": [
+                    "dima.intent.interpret",
+                    "dima.scope.resolve",
+                    "dima.requirements.plan",
+                    "dima.material.group",
+                    "dima.native.execute",
+                    "dima.evidence.admit",
+                    "dima.requirement.dispatch",
+                    "dima.p18.adjudicate",
+                    "dima.completion.evaluate",
+                    "dima.p20.report",
+                ],
+            }
+        else:
+            if root_goal is None or p19_snapshot is None:
+                raise RuntimeError("RCA live probe requires exactly one root-cause goal")
+            material_contract = analytical_scope_contract(
+                session=session,
+                obligation_id=root_goal.goal_id,
+            )
+            scope_fingerprint = brief.scope_fingerprint
+            material_fingerprint = material_contract.fingerprint
+            trace_events = [
                 BoundaryTraceEvent(
-                    boundary=BoundaryName.SCOPE_PATCH,
-                    owner="ResearchScope",
+                    boundary=BoundaryName.INTENT_INTERPRET,
+                    owner="ResearchIntake",
                     thread_id=state.thread_id,
                     scope_version_id=state.scope_version_id,
                     scope_fingerprint=scope_fingerprint,
-                )
-            )
-        trace_events.extend(
-            (
+                    provider_call_count=int(
+                        (provider.get("by_owner") or {})
+                        .get("research_intake", {})
+                        .get("requests", 0)
+                    ),
+                ),
                 BoundaryTraceEvent(
                     boundary=BoundaryName.SCOPE_RESOLVE,
                     owner="ResearchScope",
@@ -740,14 +841,6 @@ def main() -> int:
                     native_acquisition_count=len(links),
                 ),
                 BoundaryTraceEvent(
-                    boundary=BoundaryName.NATIVE_OBSERVE,
-                    owner="Metabase",
-                    thread_id=state.thread_id,
-                    scope_version_id=state.scope_version_id,
-                    scope_fingerprint=scope_fingerprint,
-                    material_fingerprint=material_fingerprint,
-                ),
-                BoundaryTraceEvent(
                     boundary=BoundaryName.EVIDENCE_ADMIT,
                     owner="Evidence",
                     thread_id=state.thread_id,
@@ -765,38 +858,33 @@ def main() -> int:
                     evidence_revision=state.evidence_revision,
                     hypothesis_revision=state.hypothesis_revision,
                 ),
-            )
-        )
-        if report_doc is not None:
-            trace_events.append(
-                BoundaryTraceEvent(
-                    boundary=BoundaryName.P20_REPORT,
-                    owner="P20",
-                    thread_id=state.thread_id,
-                    scope_version_id=state.scope_version_id,
-                    scope_fingerprint=scope_fingerprint,
-                    evidence_revision=state.evidence_revision,
-                    hypothesis_revision=state.hypothesis_revision,
+            ]
+            if report_doc is not None:
+                trace_events.append(
+                    BoundaryTraceEvent(
+                        boundary=BoundaryName.P20_REPORT,
+                        owner="P20",
+                        thread_id=state.thread_id,
+                        scope_version_id=state.scope_version_id,
+                        scope_fingerprint=scope_fingerprint,
+                        evidence_revision=state.evidence_revision,
+                        hypothesis_revision=state.hypothesis_revision,
+                    )
                 )
+            report["boundary_trace"] = BoundaryTrace(
+                events=tuple(trace_events)
+            ).public_receipt()
+            report["mechanical"] = _mechanical(
+                probe_id=args.probe_id,
+                state=state,
+                provider=provider,
+                links=links,
+                p17_snapshot=p17_snapshot,
+                p19_snapshot=p19_snapshot,
+                report_doc=report_doc,
+                scope_resume=scope_resume,
             )
-        report["boundary_trace"] = BoundaryTrace(
-            events=tuple(trace_events)
-        ).public_receipt()
 
-        report["native_occurrences"] = _native_occurrence_projection(links)
-        report["provider_receipt"] = provider
-        report["orchestration_boundary_units"] = budget.used
-        report["orchestration_boundary_units_by_owner"] = dict(sorted(budget.by_owner.items()))
-        report["mechanical"] = _mechanical(
-            probe_id=args.probe_id,
-            state=state,
-            provider=provider,
-            links=links,
-            p17_snapshot=p17_snapshot,
-            p19_snapshot=p19_snapshot,
-            report_doc=report_doc,
-            scope_resume=scope_resume,
-        )
         report["mechanical_verdict"] = (
             "GREEN" if report["mechanical"]["mechanical_green"] else "RED"
         )
