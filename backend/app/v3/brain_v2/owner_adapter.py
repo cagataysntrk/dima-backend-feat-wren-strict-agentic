@@ -2217,22 +2217,25 @@ class DimaBrainV2Activities(BrainActivities):
 
         report_ids = set(state.report_requirement_ids)
         report_terminal = report_ids if state.report_ref is not None else set()
+        effective_must = tuple(
+            dict.fromkeys(
+                (*brief.must_requirement_ids, *state.report_requirement_ids)
+            )
+        )
         terminal_ids = tuple(
             item
-            for item in brief.must_requirement_ids
+            for item in effective_must
             if item in analytical_terminal or item in report_terminal
         )
-        report_required = bool(report_ids and state.report_ref is None)
-        requirement_complete = (
-            set(brief.must_requirement_ids) == set(terminal_ids)
-        )
+        report_required = bool(report_ids - report_terminal)
+        requirement_complete = set(effective_must) == set(terminal_ids)
 
         # Build the shared ledger only when every USER_MUST is terminal. The
         # report gate before P20 intentionally has a pending deliverable and is
         # represented by analytical_complete/report_required instead.
         if requirement_complete:
             entries: list[ProductRequirementCompletion] = []
-            for requirement_id in brief.must_requirement_ids:
+            for requirement_id in effective_must:
                 if requirement_id in report_ids:
                     disposition = ProductRequirementDisposition.FULFILLED
                     fulfilled_by = state.report_ref
@@ -2262,9 +2265,7 @@ class DimaBrainV2Activities(BrainActivities):
                 ),
                 trusted_complete=True,
             )
-            if tuple(item.requirement_id for item in ledger.entries) != tuple(
-                brief.must_requirement_ids
-            ):
+            if tuple(item.requirement_id for item in ledger.entries) != effective_must:
                 raise BrainV2OwnerError(
                     "BRAIN_V2_COMPLETION_IDENTITY_MISMATCH",
                     brief.brief_id,
@@ -2378,7 +2379,8 @@ class DimaBrainV2Activities(BrainActivities):
     def synthesize_report(self, state: BrainGraphState) -> ReportActivityResult:
         session = self._session(state)
         report_key = (
-            f"brain-v2:{state.thread_id}:{state.scope_version_id or 'scope_v1'}"
+            f"brain-v2:{state.thread_id}:{state.scope_version_id or 'scope_v1'}:"
+            f"presentation-v{state.presentation_revision}"
         )
         relationship_results = self._relationship_results_from_state(
             state=state,

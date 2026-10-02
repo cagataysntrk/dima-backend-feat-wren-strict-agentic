@@ -1,6 +1,8 @@
 """Thin execution facade for the Brain V2 LangGraph runtime."""
 from __future__ import annotations
 
+import hashlib
+
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
 
@@ -101,6 +103,77 @@ class BrainV2Service:
                 "principal_ref": principal_ref,
                 "current_user_input": current,
                 "workflow_status": BrainWorkflowStatus.NEW,
+            },
+            config=self._config(thread_id),
+        )
+        return BrainGraphState.model_validate(result)
+
+    def continue_report_turn(
+        self,
+        *,
+        thread_id: str,
+        tenant_binding: str,
+        principal_ref: str,
+        user_input: str,
+    ) -> BrainGraphState:
+        """Run one typed presentation-only continuation on the current authority.
+
+        This path cannot invoke intake, mutate Research/Scope, or reopen native
+        analytics. The user-facing/API layer chooses this explicit action; the
+        LangGraph still owns completion -> P20 -> completion routing.
+        """
+
+        prior = self.state(thread_id=thread_id)
+        if prior is None:
+            raise BrainV2ThreadError("Brain V2 thread does not exist")
+        self._assert_identity(
+            prior,
+            tenant_binding=tenant_binding,
+            principal_ref=principal_ref,
+        )
+        if prior.workflow_status not in {
+            BrainWorkflowStatus.COMPLETE,
+            BrainWorkflowStatus.INCONCLUSIVE,
+        }:
+            raise BrainV2ThreadError(
+                "Brain V2 presentation continuation requires terminal analytical state"
+            )
+        analytical = set(
+            (
+                *prior.direct_requirement_ids,
+                *prior.relationship_requirement_ids,
+                *prior.root_cause_requirement_ids,
+            )
+        )
+        if not analytical.issubset(set(prior.terminal_requirement_ids)):
+            raise BrainV2ThreadError(
+                "Brain V2 presentation continuation cannot bypass open analytics"
+            )
+        current = str(user_input or "").strip()
+        if not current:
+            raise BrainV2ThreadError("Brain V2 presentation request is required")
+        next_revision = prior.presentation_revision + 1
+        raw = (
+            f"{thread_id}\x1f{next_revision}\x1f{current}"
+        ).encode("utf-8")
+        requirement_id = "d_report_" + hashlib.sha256(raw).hexdigest()[:24]
+
+        result = self._graph.invoke(
+            {
+                "thread_id": thread_id,
+                "tenant_binding": tenant_binding,
+                "principal_ref": principal_ref,
+                "current_user_input": None,
+                "open_requirement_ids": tuple(
+                    dict.fromkeys((*prior.open_requirement_ids, requirement_id))
+                ),
+                "report_requirement_ids": tuple(
+                    dict.fromkeys((*prior.report_requirement_ids, requirement_id))
+                ),
+                "presentation_revision": next_revision,
+                "report_ref": None,
+                "workflow_status": BrainWorkflowStatus.RUNNING,
+                "last_completed_node": "PRESENTATION_REQUEST",
             },
             config=self._config(thread_id),
         )

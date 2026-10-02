@@ -597,6 +597,16 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
             return "honest_stop"
         raise ValueError("P19 route is absent")
 
+    def start_route(state: BrainStatePayload) -> str:
+        current = _snapshot(state)
+        if current.last_completed_node == "PRESENTATION_REQUEST":
+            if current.current_user_input is not None:
+                raise ValueError(
+                    "presentation continuation cannot carry analytical user input"
+                )
+            return "completion_evaluate"
+        return "intake"
+
     builder.add_node("intake", intake_node)
     builder.add_node("canonicalize", canonicalize_node)
     builder.add_node("requirements_plan", requirement_plan_node)
@@ -613,7 +623,14 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
     builder.add_node("complete", complete_node)
     builder.add_node("honest_stop", honest_stop_node)
 
-    builder.add_edge(START, "intake")
+    builder.add_conditional_edges(
+        START,
+        start_route,
+        {
+            "intake": "intake",
+            "completion_evaluate": "completion_evaluate",
+        },
+    )
     builder.add_edge("intake", "canonicalize")
     builder.add_edge("canonicalize", "requirements_plan")
     builder.add_conditional_edges(

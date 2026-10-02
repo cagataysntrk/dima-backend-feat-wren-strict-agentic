@@ -109,12 +109,21 @@ class FakeActivities:
         self, state: BrainGraphState
     ) -> CompletionActivityResult:
         self.calls["completion"] += 1
+        report_terminal = (
+            state.report_requirement_ids if state.report_ref is not None else ()
+        )
+        terminal = tuple(dict.fromkeys(("goal-1", *report_terminal)))
+        report_required = bool(
+            set(state.report_requirement_ids) - set(report_terminal)
+        )
         return CompletionActivityResult(
             completion_revision=state.completion_revision + 1,
-            terminal_requirement_ids=("goal-1",),
+            terminal_requirement_ids=terminal,
             analytical_complete=True,
-            requirement_complete=True,
-            report_required=False,
+            requirement_complete=(
+                set(state.open_requirement_ids).issubset(set(terminal))
+            ),
+            report_required=report_required,
             activity_fingerprint=self._fp("completion", state),
         )
 
@@ -358,6 +367,44 @@ def test_continue_turn_advances_scope_without_reusing_old_current_evidence() -> 
     assert set(first_evidence).isdisjoint(second.evidence_ids)
     assert activities.calls["intake"] == 2
     assert activities.calls["material"] == 2
+
+
+def test_report_only_continuation_reuses_research_and_opens_zero_analytics() -> None:
+    activities = FakeActivities("one_pass")
+    service = BrainV2Service(activities=activities)
+    first = service.run(
+        BrainGraphState(
+            thread_id="thread-report-only",
+            tenant_binding="id:tenant",
+            principal_ref="user-1",
+            current_user_input="Investigate the accepted governed question.",
+        )
+    )
+    before = activities.calls.copy()
+
+    second = service.continue_report_turn(
+        thread_id=first.thread_id,
+        tenant_binding=first.tenant_binding,
+        principal_ref=first.principal_ref,
+        user_input="Turn the current governed result into a management report.",
+    )
+
+    assert second.workflow_status == BrainWorkflowStatus.COMPLETE
+    assert second.research_session_id == first.research_session_id
+    assert second.scope_version_id == first.scope_version_id
+    assert second.presentation_revision == first.presentation_revision + 1
+    assert second.report_ref is not None
+    assert activities.calls["intake"] == before["intake"]
+    assert activities.calls["canonicalize"] == before["canonicalize"]
+    assert activities.calls["material"] == before["material"]
+    assert activities.calls["material_group"] == before["material_group"]
+    assert activities.calls["p17_next_test"] == before["p17_next_test"]
+    assert activities.calls["p19"] == before["p19"]
+    assert activities.calls["report"] == before["report"] + 1
+    assert activities.calls["completion"] == before["completion"] + 2
+    assert set(second.report_requirement_ids).issubset(
+        set(second.terminal_requirement_ids)
+    )
 
 
 def test_foreign_principal_cannot_resume_or_trigger_activities() -> None:

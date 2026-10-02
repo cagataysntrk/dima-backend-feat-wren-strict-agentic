@@ -90,6 +90,7 @@ class BrainGraphState(BaseModel):
     p18_claim_refs: tuple[str, ...] = ()
     p18_policy_use_refs: tuple[str, ...] = ()
     completion_revision: int = Field(default=0, ge=0)
+    presentation_revision: int = Field(default=0, ge=0)
 
     report_ref: str | None = Field(
         default=None, pattern=r"^p20r_[a-f0-9]{24}$"
@@ -233,6 +234,7 @@ class BrainStatePayload(TypedDict, total=False):
     p18_claim_refs: tuple[str, ...]
     p18_policy_use_refs: tuple[str, ...]
     completion_revision: int
+    presentation_revision: int
     report_ref: str | None
     workflow_status: BrainWorkflowStatus
     last_completed_node: str | None
