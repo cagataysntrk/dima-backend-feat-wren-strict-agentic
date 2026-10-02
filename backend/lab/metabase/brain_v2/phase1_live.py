@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import sys
 import time
 from pathlib import Path
 from typing import Any
@@ -41,7 +42,6 @@ from app.v3.structured_transport import OpenRouterStructuredJSONTransport
 from app.v3.hypothesis_root_cause import HypothesisRootCauseStore
 from app.v3.claim_lineage import ClaimLineageStore
 
-from lab.metabase.core_b import live_sentinel as sealed
 
 ENGINE_RUNTIME_LOCK = (
     Path(__file__).resolve().parents[1]
@@ -87,9 +87,17 @@ from lab.metabase.brain_v2.live_support import (
     MAX_ORCHESTRATION_BOUNDARY_UNITS,
     MODEL,
     METABOT_MODEL,
+    NativeEngineIdentity,
+    NativeRequestAudit,
+    NativeResearchMaterialExecutor,
+    NativeSubjectSessionProvider,
     OrchestrationBudget,
     build_catalog,
+    build_control_plane,
+    execution_links,
     load_binding_manifest,
+    login,
+    principal,
     seed_native_resource_bindings,
 )
 
@@ -169,7 +177,7 @@ def _provider_receipt(path: Path) -> dict[str, Any]:
 
 
 def _links(db_engine, session_id: str):
-    return tuple(sealed._links(db_engine, session_id))
+    return tuple(execution_links(db_engine, session_id))
 
 
 def _native_occurrence_projection(links) -> list[dict[str, Any]]:
@@ -428,12 +436,12 @@ def main() -> int:
     )
     binding_manifest = load_binding_manifest(args.binding_manifest)
     catalog = build_catalog(binding_manifest)
-    token, current = sealed._login(args.base_url, args.email, args.password)
-    db_engine = sealed._build_control_plane(args.control_db, int(current["id"]))
+    token, current = login(args.base_url, args.email, args.password)
+    db_engine = build_control_plane(args.control_db, int(current["id"]))
     seed_native_resource_bindings(db_engine, binding_manifest)
 
     store = ResearchSessionStore(db_engine)
-    expected = sealed.NativeEngineIdentity(
+    expected = NativeEngineIdentity(
         engine_sha=args.engine_sha,
         upstream_base_sha=args.upstream_sha,
         runtime_tag=args.runtime_tag,
@@ -441,14 +449,16 @@ def main() -> int:
         build_identity=args.build_identity,
         runtime_image_identity=args.image_identity,
     )
-    subjects = sealed.NativeSubjectSessionProvider(
+    request_audit = NativeRequestAudit()
+    subjects = NativeSubjectSessionProvider(
         base_url=args.base_url,
         expected_identity=expected,
         db_engine=db_engine,
+        request_observer=request_audit.observe,
     )
 
     budget = OrchestrationBudget(MAX_ORCHESTRATION_BOUNDARY_UNITS)
-    raw_material = sealed.NativeResearchMaterialExecutor(
+    raw_material = NativeResearchMaterialExecutor(
         subject_provider=subjects,
         store=store,
         expected_identity=expected,
@@ -521,9 +531,9 @@ def main() -> int:
         db_engine=db_engine,
     )
 
-    principal = sealed._principal()
+    current_principal = principal()
     activities = DimaBrainV2Activities(
-        principal=principal,
+        principal=current_principal,
         catalog=catalog,
         intake=intake,
         research=research,
@@ -554,9 +564,21 @@ def main() -> int:
         "manual_quality_score": None,
         "manual_quality_status": "PENDING",
         "runtime": "BRAIN_V2_LANGGRAPH",
-        "legacy_composer_calls": 0,
-        "agent_api_request_count": 0,
     }
+    legacy_modules = (
+        "lab.metabase.core_b.live_sentinel",
+        "lab.metabase.core_b.phase1_pinpoint_live",
+        "app.v3.product.composition",
+    )
+    loaded_legacy_modules = tuple(
+        name for name in legacy_modules if name in sys.modules
+    )
+    if loaded_legacy_modules:
+        raise RuntimeError(
+            "BRAIN_V2_LEGACY_RUNTIME_IMPORTED:"
+            + ",".join(loaded_legacy_modules)
+        )
+    report["legacy_composer_calls"] = 0
     started = time.monotonic()
     state = None
     try:
@@ -570,8 +592,8 @@ def main() -> int:
             )
             initial = BrainGraphState(
                 thread_id=f"live:{args.probe_id}:{args.candidate_product_sha[:12]}",
-                tenant_binding=ResearchAskOrchestrator.tenant_binding_for(principal),
-                principal_ref=str(principal.user_id),
+                tenant_binding=ResearchAskOrchestrator.tenant_binding_for(current_principal),
+                principal_ref=str(current_principal.user_id),
                 current_user_input=question,
             )
             first_state = service.run(initial)
@@ -620,7 +642,7 @@ def main() -> int:
         assert state is not None
         session = research.resume_state(
             session_id=state.research_session_id,
-            principal=principal,
+            principal=current_principal,
         )
         brief = session.accepted_brief
         if brief is None:
@@ -647,14 +669,14 @@ def main() -> int:
         }
         p17_snapshot = investigation.snapshot(
             session_id=session.session_id,
-            principal=principal,
+            principal=current_principal,
         )
         root_goal = root_goals[0] if len(root_goals) == 1 else None
         p19_snapshot = (
             epistemics.snapshot(
                 research_session_id=session.session_id,
                 obligation_id=root_goal.goal_id,
-                principal=principal,
+                principal=current_principal,
             )
             if root_goal is not None
             else None
@@ -662,7 +684,7 @@ def main() -> int:
         assessment = (
             epistemics.load_assessment(
                 assessment_id=state.latest_p19_assessment_ref,
-                principal=principal,
+                principal=current_principal,
             )
             if state.latest_p19_assessment_ref
             else None
@@ -671,12 +693,12 @@ def main() -> int:
             relationships.load_use(
                 session_id=session.session_id,
                 policy_use_id=policy_use_id,
-                principal=principal,
+                principal=current_principal,
             )
             for policy_use_id in state.p18_policy_use_refs
         )
         report_doc = (
-            reports.load(report_id=state.report_ref, principal=principal)
+            reports.load(report_id=state.report_ref, principal=current_principal)
             if state.report_ref
             else None
         )
@@ -684,7 +706,7 @@ def main() -> int:
         if is_scope_resume:
             first_session = research.resume_state(
                 session_id=first_state.research_session_id,
-                principal=principal,
+                principal=current_principal,
             )
             prior_historical = False
             try:
@@ -718,6 +740,11 @@ def main() -> int:
         else:
             links = _links(db_engine, session.session_id)
         provider = _provider_receipt(args.provider_receipt)
+        report["agent_api_request_count"] = request_audit.agent_api_request_count
+        report["native_http_requests"] = [
+            {"method": method, "path": path}
+            for method, path in request_audit.requests
+        ]
         native_occurrences = _native_occurrence_projection(links)
 
         report["research"] = {

@@ -8,9 +8,12 @@ from __future__ import annotations
 
 import hashlib
 import json
+from pathlib import Path
 from typing import Any
+from uuid import UUID
 
-from sqlmodel import Session
+import httpx
+from sqlmodel import SQLModel, Session, create_engine, select
 
 from app.v3.research_contracts import (
     ResearchNativeVerificationBinding,
@@ -18,13 +21,140 @@ from app.v3.research_contracts import (
     SemanticTargetKind,
 )
 from app.v3.research_intake import AllowedRelationship, ResearchIntakeCatalog
-from control_plane.models import NativeResourceBinding
-from lab.metabase.core_b import live_sentinel as sealed
+from app.v3.research_native_gateway import (
+    NativeResearchMaterialExecutor,
+    NativeSubjectSessionProvider,
+)
+from app.v3.substrate.metabase.native_models import NativeEngineIdentity
+from control_plane.authorize import Principal
+from control_plane.models import (
+    NativeResourceBinding,
+    NativeSubjectBinding,
+    ResearchExecutionLink,
+    Tenant,
+    User,
+)
 
 MODEL = "openai/gpt-5.6-luna"
 METABOT_MODEL = "openrouter/openai/gpt-5.6-luna"
 CONTEXT = "phase1-final-pinpoint-v1"
 MAX_ORCHESTRATION_BOUNDARY_UNITS = 12
+
+TENANT_ID = UUID("00000000-0000-4000-8000-000000006801")
+USER_ID = UUID("00000000-0000-4000-8000-000000006802")
+FOREIGN_TENANT_ID = UUID("00000000-0000-4000-8000-000000006811")
+FOREIGN_USER_ID = UUID("00000000-0000-4000-8000-000000006812")
+
+
+class NativeRequestAudit:
+    def __init__(self) -> None:
+        self.requests: list[tuple[str, str]] = []
+
+    def observe(self, method: str, path: str) -> None:
+        self.requests.append((str(method).upper(), str(path)))
+
+    @property
+    def agent_api_request_count(self) -> int:
+        return sum(
+            1 for _, path in self.requests
+            if path == "/api/agent" or path.startswith("/api/agent/")
+        )
+
+
+def login(base_url: str, email: str, password: str) -> tuple[str, dict[str, Any]]:
+    response = httpx.post(
+        base_url.rstrip("/") + "/api/session",
+        json={"username": email, "password": password},
+        timeout=30,
+    )
+    response.raise_for_status()
+    token = str((response.json() or {}).get("id") or "")
+    if not token:
+        raise RuntimeError("Metabase session token missing")
+    current = httpx.get(
+        base_url.rstrip("/") + "/api/user/current",
+        headers={"X-Metabase-Session": token},
+        timeout=30,
+    )
+    current.raise_for_status()
+    body = current.json()
+    if not isinstance(body, dict) or not isinstance(body.get("id"), int):
+        raise RuntimeError("Metabase current-user identity missing")
+    if body.get("is_superuser"):
+        raise RuntimeError("Brain V2 analytical principal must not be superuser")
+    return token, body
+
+
+def principal() -> Principal:
+    return Principal(
+        user_id=str(USER_ID),
+        tenant_id=str(TENANT_ID),
+        roles=["analyst"],
+        tenant_slug="brain-v2-live",
+    )
+
+
+def build_control_plane(path: Path, metabase_user_id: int):
+    if path.exists():
+        path.unlink()
+    engine = create_engine(
+        f"sqlite:///{path}",
+        connect_args={"check_same_thread": False},
+    )
+    SQLModel.metadata.create_all(engine)
+    with Session(engine) as db:
+        db.add(Tenant(id=TENANT_ID, slug="brain-v2-live", name="Brain V2 Live"))
+        db.add(
+            User(
+                id=USER_ID,
+                tenant_id=TENANT_ID,
+                email="brain-v2-live@dima.local",
+                password_hash="not-used",
+            )
+        )
+        db.add(
+            Tenant(
+                id=FOREIGN_TENANT_ID,
+                slug="brain-v2-foreign",
+                name="Brain V2 Foreign",
+            )
+        )
+        db.add(
+            User(
+                id=FOREIGN_USER_ID,
+                tenant_id=FOREIGN_TENANT_ID,
+                email="brain-v2-foreign@dima.local",
+                password_hash="not-used",
+            )
+        )
+        db.commit()
+        db.add(
+            NativeSubjectBinding(
+                tenant_id=TENANT_ID,
+                dima_user_id=USER_ID,
+                metabase_user_id=metabase_user_id,
+                security_profile="brain-v2-readonly",
+                policy_version="brain-v2-v2.1",
+                approved_by_user_id=USER_ID,
+            )
+        )
+        db.commit()
+    return engine
+
+
+def execution_links(store_engine, session_id: str):
+    with Session(store_engine) as db:
+        return tuple(
+            db.exec(
+                select(ResearchExecutionLink)
+                .where(ResearchExecutionLink.session_id == session_id)
+                .order_by(
+                    ResearchExecutionLink.created_at,
+                    ResearchExecutionLink.id,
+                )
+            ).all()
+        )
+
 
 class PinpointBudgetExceeded(RuntimeError):
     code = "PINPOINT_ORCHESTRATION_BOUNDARY_BUDGET_EXHAUSTED"
@@ -158,7 +288,7 @@ def _native_resource_binding_rows(
         }
         rows.append(
             NativeResourceBinding(
-                tenant_id=sealed.TENANT_ID,
+                tenant_id=TENANT_ID,
                 semantic_context_version=CONTEXT,
                 candidate_id=candidate_id,
                 candidate_kind=SemanticTargetKind.METRIC.value,
@@ -189,7 +319,7 @@ def _native_resource_binding_rows(
         }
         rows.append(
             NativeResourceBinding(
-                tenant_id=sealed.TENANT_ID,
+                tenant_id=TENANT_ID,
                 semantic_context_version=CONTEXT,
                 candidate_id=candidate_id,
                 candidate_kind=SemanticTargetKind.DIMENSION.value,
@@ -218,7 +348,7 @@ def _native_resource_binding_rows(
         }
         rows.append(
             NativeResourceBinding(
-                tenant_id=sealed.TENANT_ID,
+                tenant_id=TENANT_ID,
                 semantic_context_version=CONTEXT,
                 candidate_id=candidate_id,
                 candidate_kind=SemanticTargetKind.ENTITY_VALUE.value,

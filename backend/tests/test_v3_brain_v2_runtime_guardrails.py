@@ -1,4 +1,6 @@
 from pathlib import Path
+import subprocess
+import sys
 
 from lab.metabase.brain_v2.final_probes import (
     FINAL_CAPABILITY_RUNTIME,
@@ -10,6 +12,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 BACKEND_ROOT = REPO_ROOT / "backend"
 LIVE_WORKFLOW = REPO_ROOT / ".github" / "workflows" / "dima-brain-v2-phase1-live.yml"
 BRAIN_LIVE = BACKEND_ROOT / "lab" / "metabase" / "brain_v2" / "phase1_live.py"
+LIVE_SUPPORT = BACKEND_ROOT / "lab" / "metabase" / "brain_v2" / "live_support.py"
 
 
 def test_all_final_probes_use_brain_v2_runtime():
@@ -22,10 +25,14 @@ def test_all_final_probes_use_brain_v2_runtime():
 def test_no_final_probe_imports_or_calls_headless_composer():
     workflow = LIVE_WORKFLOW.read_text(encoding="utf-8")
     harness = BRAIN_LIVE.read_text(encoding="utf-8")
+    support = LIVE_SUPPORT.read_text(encoding="utf-8")
     assert "core_b/phase1_pinpoint_live.py" not in workflow
     assert "phase1_pinpoint_live import" not in harness
     assert "HeadlessProductComposer" not in workflow
     assert "HeadlessProductComposer" not in harness
+    assert "live_sentinel" not in harness
+    assert "live_sentinel" not in support
+    assert "HeadlessProductComposer" not in support
 
 
 def test_agent_api_disabled_in_final_live():
@@ -38,3 +45,19 @@ def test_live_probe_owner_map_is_single_runtime():
     workflow = LIVE_WORKFLOW.read_text(encoding="utf-8")
     assert workflow.count("lab/metabase/brain_v2/phase1_live.py") >= 1
     assert "lab/metabase/core_b/phase1_pinpoint_live.py" not in workflow
+
+
+def test_final_harness_import_graph_contains_no_legacy_runtime_module():
+    code = (
+        "import sys; import lab.metabase.brain_v2.phase1_live; "
+        "forbidden={'lab.metabase.core_b.live_sentinel',"
+        "'lab.metabase.core_b.phase1_pinpoint_live',"
+        "'app.v3.product.composition'}; "
+        "loaded=sorted(forbidden.intersection(sys.modules)); "
+        "assert not loaded, loaded"
+    )
+    subprocess.run(
+        [sys.executable, "-c", code],
+        cwd=BACKEND_ROOT,
+        check=True,
+    )
