@@ -17,6 +17,10 @@ from app.v3.research_contracts import RelationshipIntent
 EVIDENCE = "evi_" + "a" * 24
 
 
+def cell_ref(row_index: int, column_index: int, evidence_id: str = EVIDENCE) -> str:
+    return f"{evidence_id}:{row_index}:{column_index}"
+
+
 class FakeTransport:
     def __init__(self, payload):
         self.payload = payload
@@ -69,17 +73,9 @@ def payload(kind="ASSOCIATION", evidence_id=EVIDENCE):
                 "relation": ClaimEvidenceRelation.SUPPORTS.value,
             }
         ],
-        "salient_cells": [
-            {
-                "evidence_id": evidence_id,
-                "row_index": 0,
-                "column_index": 1,
-            },
-            {
-                "evidence_id": evidence_id,
-                "row_index": 0,
-                "column_index": 2,
-            },
+        "salient_cell_refs": [
+            cell_ref(0, 1, evidence_id),
+            cell_ref(0, 2, evidence_id),
         ],
         "limitations": [
             "Cross-sectional evidence does not establish temporal order or causality."
@@ -140,7 +136,7 @@ def test_temporal_material_schema_may_express_co_movement():
 
 def test_p18_interpreter_rejects_out_of_bounds_salient_cell():
     bad = payload()
-    bad["salient_cells"][1]["row_index"] = 99
+    bad["salient_cell_refs"][1] = cell_ref(99, 2)
     manager = StructuredP18RelationshipInterpreter(transport=FakeTransport(bad))
 
     with pytest.raises(ValueError, match="outside Evidence"):
@@ -149,7 +145,7 @@ def test_p18_interpreter_rejects_out_of_bounds_salient_cell():
 
 def test_p18_interpreter_rejects_non_numeric_salient_cell():
     bad = payload()
-    bad["salient_cells"][0]["column_index"] = 0
+    bad["salient_cell_refs"][0] = cell_ref(0, 0)
     manager = StructuredP18RelationshipInterpreter(transport=FakeTransport(bad))
 
     with pytest.raises(ValueError, match="exact numeric"):
@@ -158,7 +154,7 @@ def test_p18_interpreter_rejects_non_numeric_salient_cell():
 
 def test_supported_numeric_relationship_requires_two_observed_metric_columns():
     bad = payload()
-    bad["salient_cells"] = bad["salient_cells"][:1]
+    bad["salient_cell_refs"] = bad["salient_cell_refs"][:1]
     manager = StructuredP18RelationshipInterpreter(transport=FakeTransport(bad))
 
     with pytest.raises(ValueError, match="at least two observed numeric columns"):
@@ -185,16 +181,16 @@ def test_p18_interpreter_module_cannot_open_analytics():
         assert forbidden not in source
 
 
-def test_salient_schema_enumerates_only_existing_numeric_cells():
+def test_salient_schema_enumerates_only_existing_numeric_cell_refs():
     transport = FakeTransport(payload())
     manager = StructuredP18RelationshipInterpreter(transport=transport)
 
     manager.interpret(view())
 
-    salient = transport.calls[0]["schema"]["$defs"]["P18SalientCell"]
-    assert salient["enum"] == [
-        {"evidence_id": EVIDENCE, "row_index": 0, "column_index": 1},
-        {"evidence_id": EVIDENCE, "row_index": 0, "column_index": 2},
-        {"evidence_id": EVIDENCE, "row_index": 1, "column_index": 1},
-        {"evidence_id": EVIDENCE, "row_index": 1, "column_index": 2},
+    salient_refs = transport.calls[0]["schema"]["properties"]["salient_cell_refs"]
+    assert salient_refs["items"]["enum"] == [
+        cell_ref(0, 1),
+        cell_ref(0, 2),
+        cell_ref(1, 1),
+        cell_ref(1, 2),
     ]
