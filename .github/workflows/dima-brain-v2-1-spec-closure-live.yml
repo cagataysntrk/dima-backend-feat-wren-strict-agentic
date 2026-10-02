@@ -1,11 +1,7 @@
 name: dima-brain-v2-1-spec-closure-live
 
 on:
-  push:
-    branches:
-      - feat/dima-brain-v2-1-specification-closure
-    paths:
-      - ".github/BRAIN_V21_SPEC_CLOSURE_LIVE_TRIGGER"
+  workflow_dispatch:
 
 permissions:
   contents: read
