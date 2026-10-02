@@ -1,0 +1,71 @@
+name: dima-brain-v2-1-semantic-conformance
+
+on:
+  push:
+    branches:
+      - feat/dima-brain-v2-1-specification-closure
+    paths:
+      - ".github/workflows/dima-brain-v2-1-semantic-conformance.yml"
+      - "backend/tests/semantic_spec/**"
+      - "backend/tests/test_v3_brain_v2_semantic_conformance.py"
+      - "backend/tests/__init__.py"
+      - "backend/app/v3/analytical_request_contract.py"
+      - "backend/app/v3/research_analytical_scope.py"
+      - "backend/app/v3/research_scope_patch.py"
+      - "backend/app/v3/research_contracts.py"
+      - "backend/app/v3/substrate/metabase/native_models.py"
+      - "backend/pyproject.toml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  semantic-conformance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DIMA_VQR_EMBEDDER: "off"
+      DIMA_SCHEDULER_ENABLED: "false"
+      DIMA_INTERACTION_LOG: "false"
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          submodules: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install provider-free test environment
+        working-directory: backend
+        run: pip install -e ".[dev]"
+
+      - name: Test-only boundary audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          ! grep -R -nE 'tests\.semantic_spec|semantic_spec' backend/app
+          ! grep -R -nE 'F02|F03|F04|F06|F07|F10|June|Assembly|downtime|fault_count' backend/app/v3/brain_v2
+
+      - name: Emit semantic coverage artifact
+        working-directory: backend
+        run: |
+          mkdir -p artifacts
+          python -m tests.semantic_spec.coverage_report > artifacts/semantic-conformance-coverage.json
+
+      - name: Semantic conformance
+        working-directory: backend
+        run: pytest -q tests/test_v3_brain_v2_semantic_conformance.py
+
+      - name: Upload semantic coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: semantic-conformance-coverage
+          path: backend/artifacts/semantic-conformance-coverage.json
+          if-no-files-found: error
