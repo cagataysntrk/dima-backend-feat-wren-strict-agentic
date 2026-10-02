@@ -1,6 +1,6 @@
 {
   "schema_version": "dima_brain_v2_1_spec_closure_live_authorization_v1",
-  "enabled": true,
+  "enabled": false,
   "case_count": 1,
   "case_id": "F06_M",
   "candidate_product_sha": "dacf41f99e1371197917e520e5faffa037aed9b3",
@@ -13,5 +13,9 @@
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
   "automatic_retry_allowed": false,
-  "purpose": "Verify the F06_M provider/NLU boundary after generic comparison-material repair closure; stop on mechanical/contract RED."
+  "purpose": "Verify the F06_M provider/NLU boundary after generic comparison-material repair closure; stop on mechanical/contract RED.",
+  "last_run_id": 37060828140,
+  "last_artifact_id": 11250770945,
+  "last_manual_quality_score": 2,
+  "last_manual_quality_status": "PARTIAL_STOP_PROVIDER_FREE_REQUIRED"
 }
