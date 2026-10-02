@@ -67,12 +67,14 @@ def test_repair_feedback_is_structured_and_contract_preserving(code: str) -> Non
     decision = decide_material_repair(
         validation_code=code,
         prior_repair_attempts=0,
+        validation_detail="symbolic missing required semantic material",
     )
     feedback = material_repair_feedback(decision)
 
     assert feedback == {
         "schema": "dima_material_repair_feedback_v1",
         "validation_code": code,
+        "validation_detail": "symbolic missing required semantic material",
         "repair_attempt": 1,
         "required_action": "REGENERATE_NATIVE_QUERY",
         "require_new_query_fingerprint": True,
