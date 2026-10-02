@@ -9,7 +9,11 @@ from app.v3.brain_v2.activities import (
     CanonicalizeActivityResult,
     EvidenceActivityResult,
     IntakeActivityResult,
+    CompletionActivityResult,
     MaterialActivityResult,
+    MaterialGroupActivityResult,
+    P18ActivityResult,
+    RequirementPlanActivityResult,
     P17ActivityResult,
     P19ActivityResult,
     ReportActivityResult,
@@ -72,6 +76,46 @@ class FakeActivities:
             hypothesis_ids=hypotheses,
             discovery_required=self.mode.startswith("discovery"),
             activity_fingerprint=self._fp("canonicalize", state),
+        )
+
+    def plan_requirements(
+        self, state: BrainGraphState
+    ) -> RequirementPlanActivityResult:
+        self.calls["requirements_plan"] += 1
+        return RequirementPlanActivityResult(
+            material_group_ids=("mg_" + "a" * 24,),
+            root_cause_requirement_ids=("goal-1",),
+            activity_fingerprint=self._fp("requirements-plan", state),
+        )
+
+    def acquire_material_group(
+        self, state: BrainGraphState
+    ) -> MaterialGroupActivityResult:
+        self.calls["material_group"] += 1
+        return MaterialGroupActivityResult(
+            material_group_id="mg_" + "a" * 24,
+            consumer_requirement_ids=("goal-1",),
+            produced_evidence_ids=("evi_" + "9" * 24,),
+            produced_receipt_refs=("dqr_" + "9" * 24,),
+            activity_fingerprint=self._fp("material-group", state),
+        )
+
+    def adjudicate_relationship(
+        self, state: BrainGraphState
+    ) -> P18ActivityResult:
+        raise AssertionError("pure RCA fixture must not invoke P18")
+
+    def evaluate_completion(
+        self, state: BrainGraphState
+    ) -> CompletionActivityResult:
+        self.calls["completion"] += 1
+        return CompletionActivityResult(
+            completion_revision=state.completion_revision + 1,
+            terminal_requirement_ids=("goal-1",),
+            analytical_complete=True,
+            requirement_complete=True,
+            report_required=False,
+            activity_fingerprint=self._fp("completion", state),
         )
 
     def acquire_material(self, state: BrainGraphState) -> MaterialActivityResult:
