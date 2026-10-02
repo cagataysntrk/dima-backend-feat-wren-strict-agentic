@@ -71,11 +71,15 @@ from .activities import (
     EvidenceActivityResult,
     IntakeActivityResult,
     MaterialActivityResult,
+    MaterialGroupActivityResult,
+    RequirementPlanActivityResult,
     P17ActivityResult,
     P19ActivityResult,
     ReportActivityResult,
 )
 from .keys import CognitionPurpose, CognitionRequestKey, NativeMaterialRequestKey
+from .material_groups import project_material_groups
+from .requirement_dispatch import RequirementOwner, dispatch_requirements
 from .p19_context import project_p19_scope_authority
 from .state import BrainGraphState, BrainP19Route
 from .telemetry import BoundaryName, OpenTelemetryBridge
@@ -634,6 +638,158 @@ class DimaBrainV2Activities(BrainActivities):
             activity_fingerprint=fp,
         )
 
+    def plan_requirements(
+        self,
+        state: BrainGraphState,
+    ) -> RequirementPlanActivityResult:
+        session = self._session(state)
+        brief = session.accepted_brief
+        assert brief is not None
+        groups = project_material_groups(session)
+        dispatch = dispatch_requirements(brief)
+
+        def ids(owner: RequirementOwner) -> tuple[str, ...]:
+            return tuple(
+                item.requirement_id
+                for item in dispatch
+                if item.owner == owner
+            )
+
+        fp = _fingerprint(
+            {
+                "activity": "PLAN_REQUIREMENTS",
+                "session": session.session_id,
+                "scope": brief.scope.scope_version.version_id,
+                "material_groups": [
+                    item.model_dump(mode="json") for item in groups
+                ],
+                "dispatch": [
+                    item.model_dump(mode="json") for item in dispatch
+                ],
+            }
+        )
+        return RequirementPlanActivityResult(
+            material_group_ids=tuple(item.material_group_id for item in groups),
+            direct_requirement_ids=ids(RequirementOwner.DIRECT_EVIDENCE),
+            relationship_requirement_ids=ids(RequirementOwner.P18),
+            root_cause_requirement_ids=ids(RequirementOwner.P19),
+            report_requirement_ids=ids(RequirementOwner.P20),
+            activity_fingerprint=fp,
+        )
+
+    def acquire_material_group(
+        self,
+        state: BrainGraphState,
+    ) -> MaterialGroupActivityResult:
+        session = self._session(state)
+        brief = session.accepted_brief
+        assert brief is not None
+        groups = {
+            item.material_group_id: item
+            for item in project_material_groups(session)
+        }
+        if state.material_group_ids and set(state.material_group_ids) != set(groups):
+            raise BrainV2OwnerError(
+                "BRAIN_V2_MATERIAL_GROUP_PLAN_DRIFT",
+                session.session_id,
+                last_valid_boundary="dima.requirements.plan",
+                first_invalid_boundary="dima.material.group",
+            )
+        pending = tuple(
+            item
+            for item in groups.values()
+            if item.material_group_id not in set(state.completed_material_group_ids)
+        )
+        if state.active_material_group_id is not None:
+            group = groups.get(state.active_material_group_id)
+            if group is None:
+                raise BrainV2OwnerError(
+                    "BRAIN_V2_MATERIAL_GROUP_UNKNOWN",
+                    state.active_material_group_id,
+                )
+        elif pending:
+            group = sorted(
+                pending,
+                key=lambda item: (
+                    item.material_fingerprint,
+                    item.material_group_id,
+                ),
+            )[0]
+        else:
+            raise BrainV2OwnerError(
+                "BRAIN_V2_MATERIAL_GROUP_COMPLETE",
+                session.session_id,
+            )
+
+        contract = analytical_scope_contract(
+            session=session,
+            obligation_id=group.anchor_requirement_id,
+        )
+        if contract.scope_fingerprint != brief.scope_fingerprint:
+            raise BrainV2OwnerError(
+                "BRAIN_V2_MATERIAL_SCOPE_FINGERPRINT_MISMATCH",
+                group.material_group_id,
+                last_valid_boundary="dima.scope.resolve",
+                first_invalid_boundary="dima.material.group",
+                expected_fingerprint=brief.scope_fingerprint,
+                observed_fingerprint=contract.scope_fingerprint,
+            )
+        existing = self._evidence_pairs(
+            session,
+            group.anchor_requirement_id,
+        )
+        request_key = NativeMaterialRequestKey(
+            tenant=self._tenant(),
+            principal=self._subject(),
+            scope_version_id=group.scope_version_id,
+            scope_fingerprint=brief.scope_fingerprint,
+            material_requirement_fingerprint=group.material_fingerprint,
+            engine_identity=self._engine_identity,
+        )
+        if existing:
+            return MaterialGroupActivityResult(
+                material_group_id=group.material_group_id,
+                consumer_requirement_ids=group.consumer_requirement_ids,
+                produced_evidence_ids=tuple(item[0] for item in existing),
+                produced_receipt_refs=tuple(item[1] for item in existing),
+                activity_fingerprint=request_key.fingerprint,
+            )
+
+        with self._otel_bridge.operation(
+            BoundaryName.NATIVE_EXECUTE,
+            state=state,
+            scope_fingerprint=brief.scope_fingerprint,
+            material_fingerprint=group.material_fingerprint,
+            native_acquisition_count=1,
+            dedup_hit=False,
+        ):
+            response = self._research.run_next(
+                session_id=session.session_id,
+                principal=self._principal,
+                obligation_id=group.anchor_requirement_id,
+                native_session_token=self._native_session_token,
+            )
+        if not response.evidence_id or not response.receipt_id:
+            raise BrainV2OwnerError(
+                response.limitation_code or "BRAIN_V2_NATIVE_EVIDENCE_REQUIRED",
+                response.limitation_detail or group.material_group_id,
+                last_valid_boundary=response.last_valid_boundary,
+                first_invalid_boundary=response.first_invalid_boundary,
+                expected_fingerprint=response.expected_fingerprint,
+                observed_fingerprint=response.observed_fingerprint,
+                scope_fingerprint=response.scope_fingerprint,
+                material_fingerprint=response.material_fingerprint,
+                expected_semantic_shape=response.expected_semantic_shape,
+                observed_semantic_shape=response.observed_semantic_shape,
+            )
+        return MaterialGroupActivityResult(
+            material_group_id=group.material_group_id,
+            consumer_requirement_ids=group.consumer_requirement_ids,
+            produced_evidence_ids=(response.evidence_id,),
+            produced_receipt_refs=(response.receipt_id,),
+            activity_fingerprint=request_key.fingerprint,
+        )
+
     def acquire_material(self, state: BrainGraphState) -> MaterialActivityResult:
         session = self._session(state)
         goal = self._root_goal(session)
@@ -748,6 +904,65 @@ class DimaBrainV2Activities(BrainActivities):
 
     def admit_evidence(self, state: BrainGraphState) -> EvidenceActivityResult:
         session = self._session(state)
+        if state.active_material_group_id is not None:
+            groups = {
+                item.material_group_id: item
+                for item in project_material_groups(session)
+            }
+            group = groups.get(state.active_material_group_id)
+            if group is None:
+                raise BrainV2OwnerError(
+                    "BRAIN_V2_MATERIAL_GROUP_UNKNOWN",
+                    state.active_material_group_id,
+                )
+            pending = tuple(
+                zip(
+                    state.pending_evidence_ids,
+                    state.pending_receipt_refs,
+                    strict=True,
+                )
+            )
+            if not pending:
+                raise BrainV2OwnerError(
+                    "BRAIN_V2_PENDING_EVIDENCE_REQUIRED",
+                    group.material_group_id,
+                )
+            persisted = self._evidence_pairs(
+                session,
+                group.anchor_requirement_id,
+            )
+            if not set(pending).issubset(set(persisted)):
+                raise BrainV2OwnerError(
+                    "BRAIN_V2_EVIDENCE_PROVENANCE_MISMATCH",
+                    group.material_group_id,
+                    last_valid_boundary="dima.native.execute",
+                    first_invalid_boundary="dima.evidence.admit",
+                )
+            evidence_ids = tuple(
+                dict.fromkeys(
+                    (
+                        *state.evidence_ids,
+                        *(item[0] for item in pending),
+                    )
+                )
+            )
+            return EvidenceActivityResult(
+                evidence_revision=state.evidence_revision + 1,
+                evidence_ids=evidence_ids,
+                hypothesis_revision=state.hypothesis_revision,
+                hypothesis_ids=state.hypothesis_ids,
+                discovery_required=False,
+                activity_fingerprint=_fingerprint(
+                    {
+                        "activity": "ADMIT_MATERIAL_GROUP_EVIDENCE",
+                        "group": group.material_group_id,
+                        "scope": state.scope_version_id,
+                        "evidence": list(item[0] for item in pending),
+                        "receipts": list(item[1] for item in pending),
+                    }
+                ),
+            )
+
         goal = self._root_goal(session)
         pending = tuple(
             zip(
