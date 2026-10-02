@@ -212,7 +212,7 @@ class AnalyticalMaterialStateMachine(RuleBasedStateMachine):
 
 TestAnalyticalMaterialStateMachine = AnalyticalMaterialStateMachine.TestCase
 TestAnalyticalMaterialStateMachine.settings = settings(
-    max_examples=160,
+    max_examples=1000,
     stateful_step_count=24,
     deadline=None,
 )
