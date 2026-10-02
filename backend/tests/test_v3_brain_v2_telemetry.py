@@ -252,6 +252,8 @@ def test_first_wrong_boundary_receipt_carries_owner_and_execution_refs():
                 scope_version_id="scope_v1",
                 requirement_id="g_relationship",
                 material_group_id="mg_" + "1" * 24,
+                scope_fingerprint="a" * 64,
+                material_fingerprint="b" * 64,
                 expected_owner="P18",
                 observed_owner="P18",
                 error_code="P18_TEST_RED",
@@ -264,6 +266,25 @@ def test_first_wrong_boundary_receipt_carries_owner_and_execution_refs():
     assert receipt["first_invalid_boundary"] == "dima.p18.adjudicate"
     assert receipt["requirement_id"] == "g_relationship"
     assert receipt["material_group_id"] == "mg_" + "1" * 24
+    assert receipt["scope_fingerprint"] == "a" * 64
+    assert receipt["material_fingerprint"] == "b" * 64
     assert receipt["expected_owner"] == "P18"
     assert receipt["observed_owner"] == "P18"
     assert receipt["error_type"] == "P18_TEST_RED"
+
+
+def test_required_runtime_convergence_boundaries_are_all_observable() -> None:
+    required = {
+        "dima.intent.interpret",
+        "dima.scope.resolve",
+        "dima.requirements.plan",
+        "dima.material.group",
+        "dima.native.execute",
+        "dima.evidence.admit",
+        "dima.requirement.dispatch",
+        "dima.p18.adjudicate",
+        "dima.p19.assess",
+        "dima.completion.evaluate",
+        "dima.p20.report",
+    }
+    assert required.issubset({item.value for item in BoundaryName})

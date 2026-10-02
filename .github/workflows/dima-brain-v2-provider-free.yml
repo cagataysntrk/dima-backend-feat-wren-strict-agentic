@@ -9,6 +9,10 @@ on:
       - ".github/workflows/dima-brain-v2-provider-free.yml"
       - "backend/pyproject.toml"
       - "backend/app/v3/brain_v2/**"
+      - "backend/app/v3/business_relationship_v1.py"
+      - "backend/app/v3/business_relationship_policy.py"
+      - "backend/control_plane/models.py"
+      - "backend/migrations/versions/*p18*"
       - "backend/tests/test_v3_brain_v2_*.py"
   workflow_dispatch:
 

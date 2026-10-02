@@ -1,4 +1,5 @@
 from pathlib import Path
+import re
 import subprocess
 import sys
 
@@ -64,3 +65,29 @@ def test_final_harness_import_graph_contains_no_legacy_runtime_module():
         cwd=BACKEND_ROOT,
         check=True,
     )
+
+
+def test_production_brain_v2_contains_no_benchmark_or_case_ids():
+    source = "\n".join(
+        path.read_text(encoding="utf-8")
+        for path in sorted((BACKEND_ROOT / "app" / "v3" / "brain_v2").rglob("*.py"))
+    )
+    forbidden = (
+        r"\bDEV80\b",
+        r"\bValidation50\b",
+        r"\bHidden50\b",
+        r"\b30[-_ ]?case\b",
+        r"\bF0[0-9]\b",
+        r"\bF10\b",
+        r"\bT[1-7]\b",
+    )
+    for pattern in forbidden:
+        assert re.search(pattern, source, flags=re.IGNORECASE) is None, pattern
+
+
+def test_normal_discovery_has_no_p17_provider_graph_route():
+    graph = (
+        BACKEND_ROOT / "app" / "v3" / "brain_v2" / "graph.py"
+    ).read_text(encoding="utf-8")
+    assert 'builder.add_node("p17_discover"' not in graph
+    assert '"project_candidates": "project_candidates"' in graph

@@ -117,6 +117,12 @@ class BoundaryTrace(Frozen):
             "observed_fingerprint": (
                 invalid.observed_fingerprint if invalid is not None else None
             ),
+            "scope_fingerprint": (
+                invalid.scope_fingerprint if invalid is not None else None
+            ),
+            "material_fingerprint": (
+                invalid.material_fingerprint if invalid is not None else None
+            ),
             "requirement_id": (
                 invalid.requirement_id if invalid is not None else None
             ),
