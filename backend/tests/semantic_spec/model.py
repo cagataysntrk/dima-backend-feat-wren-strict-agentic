@@ -29,6 +29,26 @@ class PeriodStructure(StrEnum):
     EFFECT_PERIOD = "EFFECT_PERIOD"
 
 
+@dataclass(frozen=True)
+class ReferenceTemporalPeriod:
+    dimension: str
+    start: str
+    end: str
+    role: str
+
+
+def temporal_periods_have_unique_semantic_identity(
+    periods: tuple[ReferenceTemporalPeriod, ...],
+) -> bool:
+    """Law 6: temporal role is part of semantic period identity."""
+
+    identities = {
+        (item.dimension, item.start, item.end, item.role)
+        for item in periods
+    }
+    return len(identities) == len(periods)
+
+
 class EntityCardinality(StrEnum):
     NONE = "NONE"
     ONE = "ONE"
