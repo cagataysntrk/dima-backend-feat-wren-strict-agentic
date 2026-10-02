@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 from hypothesis import given, strategies as st
 
-from app.v3.brain_v2.material_repair import (
+from app.v3.research_material_repair import (
     MaterialRepairDisposition,
     decide_material_repair,
     material_repair_feedback,
