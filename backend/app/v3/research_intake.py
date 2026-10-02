@@ -1161,6 +1161,8 @@ class ResearchIntakeCompiler:
     @staticmethod
     def _canonicalize_analytical_goals(
         draft: ModelResearchBriefDraft,
+        *,
+        catalog: ResearchIntakeCatalog,
     ) -> ModelResearchBriefDraft:
         """Canonicalize typed analytical authority before execution.
 
@@ -1241,14 +1243,29 @@ class ResearchIntakeCompiler:
         )
         if not analytical:
             return draft
-        covered_refs = {
-            semantic_id
-            for item in analytical
-            for semantic_id in (
-                *item.subject_semantic_ids,
-                *item.related_semantic_ids,
-            )
-        }
+        covered_refs: set[str] = set()
+        for item in analytical:
+            if item.kind == ResearchGoalKind.RELATIONSHIP:
+                relationship = ResearchIntakeCompiler._relationship_for_goal(
+                    item,
+                    catalog=catalog,
+                )
+                if relationship is None:
+                    raise ResearchIntakeError(
+                        "INTAKE_RELATIONSHIP_INCOMPLETE",
+                        item.goal_key,
+                    )
+                covered_refs.update(
+                    (
+                        relationship.left_semantic_id,
+                        relationship.right_semantic_id,
+                    )
+                )
+                if relationship.dimension_semantic_id is not None:
+                    covered_refs.add(relationship.dimension_semantic_id)
+                continue
+            covered_refs.update(item.subject_semantic_ids)
+            covered_refs.update(item.related_semantic_ids)
         root_ref_sets = tuple(
             frozenset(
                 (*item.subject_semantic_ids, *item.related_semantic_ids)
@@ -2269,7 +2286,10 @@ class ResearchIntakeCompiler:
             ),
         )
 
-        draft = self._canonicalize_analytical_goals(draft)
+        draft = self._canonicalize_analytical_goals(
+            draft,
+            catalog=catalog,
+        )
         draft = self._canonicalize_temporal_comparison_subgoals(draft)
         draft = self._canonicalize_root_temporal_material(draft)
         draft = self._canonicalize_exact_period_repeats(draft)
@@ -2326,7 +2346,10 @@ class ResearchIntakeCompiler:
                 },
             )
 
-        draft = self._canonicalize_analytical_goals(draft)
+        draft = self._canonicalize_analytical_goals(
+            draft,
+            catalog=catalog,
+        )
         draft = self._canonicalize_temporal_comparison_subgoals(draft)
         draft = self._canonicalize_root_temporal_material(draft)
         draft = self._canonicalize_exact_period_repeats(draft)
