@@ -21,6 +21,7 @@ from app.v3.research_contracts import ResearchGoalKind
 from app.v3.report_projection import (
     governed_tabular_numeric_fact_for_path,
     project_governed_tabular_numeric_facts,
+    project_governed_tabular_rows,
 )
 from app.v3.research_store import ResearchPersistenceError, ResearchSessionStore
 from control_plane.authorize import Principal
@@ -39,6 +40,7 @@ class P20ReportError(RuntimeError):
 
 class ReportStatementKind(StrEnum):
     NUMERIC = 'NUMERIC'
+    OBSERVATION = 'OBSERVATION'
     ANALYTICAL_FACT = 'ANALYTICAL_FACT'
     CAUSAL = 'CAUSAL'
     ROOT_CAUSE = 'ROOT_CAUSE'
@@ -620,6 +622,103 @@ class ReportClaimGate:
             text += f' {unit}'
         return self._canonical_statement(statement, text)
 
+    def _observation_statement(
+        self,
+        *,
+        session,
+        statement: ReportStatement,
+    ) -> ReportStatement:
+        if statement.upstream_epistemic_ceiling != 'EXACT_GOVERNED_OBSERVATION':
+            raise P20ReportError(
+                'P20_OBSERVATION_CEILING_MISMATCH',
+                statement.statement_id,
+            )
+        if set(statement.payload) != {'context', 'metrics'}:
+            raise P20ReportError(
+                'P20_OBSERVATION_PAYLOAD_INVALID',
+                statement.statement_id,
+            )
+        refs = tuple(statement.source_refs)
+        if (
+            not refs
+            or any(
+                ref.source_kind != ReportSourceKind.P14_EVIDENCE
+                or ref.source_path is None
+                for ref in refs
+            )
+        ):
+            raise P20ReportError(
+                'P20_OBSERVATION_PROVENANCE_REQUIRED',
+                statement.statement_id,
+            )
+        source_identity = {
+            (
+                ref.source_ref,
+                ref.source_receipt_id,
+                ref.obligation_id,
+            )
+            for ref in refs
+        }
+        if len(source_identity) != 1:
+            raise P20ReportError(
+                'P20_OBSERVATION_SOURCE_MIXED',
+                statement.statement_id,
+            )
+        paths = tuple(ref.source_path for ref in refs)
+        if len(paths) != len(set(paths)):
+            raise P20ReportError(
+                'P20_OBSERVATION_SOURCE_DUPLICATE',
+                statement.statement_id,
+            )
+
+        payload = self._payload_for_numeric_source(
+            session=session,
+            ref=refs[0],
+        )
+        expected = next(
+            (
+                item
+                for item in project_governed_tabular_rows(payload)
+                if tuple(metric.source_path for metric in item.metrics) == paths
+            ),
+            None,
+        )
+        if expected is None:
+            raise P20ReportError(
+                'P20_OBSERVATION_SOURCE_ROW_INVALID',
+                statement.statement_id,
+            )
+        expected_payload = {
+            'context': [
+                item.model_dump(mode='json')
+                for item in expected.context
+            ],
+            'metrics': [
+                item.model_dump(mode='json')
+                for item in expected.metrics
+            ],
+        }
+        if statement.payload != expected_payload:
+            raise P20ReportError(
+                'P20_OBSERVATION_PRESENTATION_MISMATCH',
+                statement.statement_id,
+            )
+
+        context = '; '.join(
+            f'{item.label}={item.value}'
+            for item in expected.context
+        )
+        metrics = ', '.join(
+            f'{item.label}={_render_scalar(item.value)}'
+            for item in expected.metrics
+        )
+        text = (
+            f'Observation: {context}: {metrics}'
+            if context
+            else f'Observation: {metrics}'
+        )
+        return self._canonical_statement(statement, text)
+
     @staticmethod
     def _column_label(payload: dict[str, Any], column_index: int) -> str:
         data = payload.get('data')
@@ -854,6 +953,11 @@ class ReportClaimGate:
             self._source_snapshot(session=session, ref=ref, principal=principal)
         if statement.statement_kind == ReportStatementKind.NUMERIC:
             return self._numeric_statement(session=session, statement=statement, principal=principal)
+        if statement.statement_kind == ReportStatementKind.OBSERVATION:
+            return self._observation_statement(
+                session=session,
+                statement=statement,
+            )
         if statement.statement_kind == ReportStatementKind.ANALYTICAL_FACT:
             return self._analytical_fact(session=session, statement=statement, principal=principal)
         if statement.statement_kind in {ReportStatementKind.CAUSAL, ReportStatementKind.ROOT_CAUSE, ReportStatementKind.CONTRIBUTION, ReportStatementKind.UNCERTAINTY}:
@@ -1389,37 +1493,45 @@ class ReportDocumentStore:
                     rows[0].native_result_json,
                     code='P20_NUMERIC_SOURCE_PAYLOAD_INVALID',
                 )
-                for fact in project_governed_tabular_numeric_facts(payload):
-                    source = SourceReference(
-                        source_kind=ReportSourceKind.P14_EVIDENCE,
-                        source_ref=evidence.evidence_id,
-                        source_receipt_id=evidence.receipt_id,
-                        obligation_id=obligation_id,
-                        source_path=fact.source_path,
+                for observation in project_governed_tabular_rows(payload):
+                    sources = tuple(
+                        SourceReference(
+                            source_kind=ReportSourceKind.P14_EVIDENCE,
+                            source_ref=evidence.evidence_id,
+                            source_receipt_id=evidence.receipt_id,
+                            obligation_id=obligation_id,
+                            source_path=metric.source_path,
+                        )
+                        for metric in observation.metrics
                     )
-                    fact_payload = {
-                        'value': fact.value,
-                        'label': fact.label,
+                    observation_payload = {
                         'context': [
                             item.model_dump(mode='json')
-                            for item in fact.context
+                            for item in observation.context
+                        ],
+                        'metrics': [
+                            item.model_dump(mode='json')
+                            for item in observation.metrics
                         ],
                     }
                     statement_id = stable_statement_id(
                         {
-                            'kind': ReportStatementKind.NUMERIC.value,
-                            'source': source.model_dump(mode='json'),
-                            'fact': fact_payload,
+                            'kind': ReportStatementKind.OBSERVATION.value,
+                            'sources': [
+                                source.model_dump(mode='json')
+                                for source in sources
+                            ],
+                            'observation': observation_payload,
                         }
                     )
                     statements.append(
                         ReportStatement(
                             statement_id=statement_id,
-                            statement_kind=ReportStatementKind.NUMERIC,
-                            source_refs=(source,),
+                            statement_kind=ReportStatementKind.OBSERVATION,
+                            source_refs=sources,
                             obligation_refs=(obligation_id,),
-                            upstream_epistemic_ceiling='EXACT_GOVERNED_NUMERIC',
-                            payload=fact_payload,
+                            upstream_epistemic_ceiling='EXACT_GOVERNED_OBSERVATION',
+                            payload=observation_payload,
                         )
                     )
                     approved_ids.append(statement_id)
