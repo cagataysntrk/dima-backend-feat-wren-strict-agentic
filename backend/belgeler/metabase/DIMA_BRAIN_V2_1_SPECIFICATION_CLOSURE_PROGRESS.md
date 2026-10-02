@@ -392,3 +392,75 @@ Next legal action:
   material -> result coverage`;
 - do **not** weaken Evidence admission merely to accept a result missing the required
   reference period.
+
+
+### Step 6 — material totality + bounded P14 material repair closure
+
+Material totality first closed the owner/graph mismatch independently of repair:
+
+- canonical P14 material limitation is now a typed `EVIDENCE | LIMITED` activity result;
+- a legal `LIMITED` result does not enter Evidence admission;
+- MaterialGroup limitation terminalizes only that material group and preserves independent work;
+- completion derives LIMITED consumer outcomes from canonical Research limitation artifacts;
+- unexplained missing Evidence with no canonical limitation remains an integrity error;
+- provider-free graph/completion gate `37046358634` = SUCCESS.
+
+Frozen F06_M forensics then established a distinct boundary:
+
+- accepted comparison authority already carried reference + base periods;
+- native context/message already carried comparison coverage and required time breakout;
+- the produced native result omitted required reference-period material;
+- Evidence admission correctly rejected it;
+- therefore weakening admission or adding prompt/case heuristics would violate the semantic law.
+
+Reference patterns consulted:
+
+- Wren architecture/correctness: adopt explicit context -> plan -> validation -> bounded repair
+  primitives; deliberately do **not** adopt Wren runtime/planner.
+- Metabase/Metabot: Metabot remains the analytical cognition/query owner under the authenticated
+  user's permissions; Dima does **not** construct SQL/MBQL.
+- Temporal durable-execution patterns: a completed/failed external occurrence is durable history;
+  repair is a new correlated occurrence rather than overwrite/blind replay; deliberately do **not**
+  introduce Temporal runtime.
+
+Generic P14 closure:
+
+- `research_material_repair.py` classifies only material-shape validation families that can be
+  repaired without changing authority;
+- authority/security/currentness/integrity failures are never repaired;
+- exactly one repair attempt is allowed;
+- the failed exact native occurrence remains durable and LIMITED;
+- a new `P14_REPAIR` occurrence continues the same Metabot conversation from source-backed
+  persisted agent state + conversation history;
+- the exact accepted `dima_analytical_scope` is unchanged;
+- structured validation code/detail is supplied as repair feedback;
+- Metabot must emit a new native query fingerprint; repeating the failed query is terminal;
+- a second material miss becomes honest terminal LIMITED; no third turn is opened;
+- graph and `owner_adapter.py` contain no repair policy.
+
+Provider-free proof:
+
+- repair policy + real P14 orchestration + continuation-history + semantic/stateful gate
+  `37048412146` = SUCCESS;
+- provider/model calls = 0;
+- engine diff = 0.
+
+Owner status: **MATERIAL TOTALITY + COMPARISON MATERIAL RECOVERY — GREEN / FREEZE**.
+
+### Step 7 — temporal-role separation family opened
+
+Next frozen seed: F07_M.
+
+Law to prove before Product change:
+
+- material window, baseline/comparison periods, effect period and Evidence window are distinct roles;
+- a wider Evidence window is not automatically a user-scope expansion;
+- temporal Evidence may support candidate discrimination without manufacturing causal authority;
+- accepted USER_MUST must terminalize rather than fail because two legal temporal roles coexist.
+
+Next legal action:
+
+- locate the first invalid typed boundary behind
+  `INTAKE_CAUSAL_CHANGE_TEMPORAL_MATERIAL_REQUIRED`;
+- compare accepted intake authority, analytical material authority and Evidence-window requirements;
+- create symbolic/provider-free siblings before any Product semantic change.
