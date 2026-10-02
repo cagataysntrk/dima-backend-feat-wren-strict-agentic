@@ -2,7 +2,7 @@
 
 > **Status:** FINAL / ARCHITECTURE FROZEN  
 > **Branch:** `feat/dima-brain-v2-1-discovery-simplification`  
-> **Documentation baseline HEAD:** `54dcc6b7f2bc7a0a7cc554801f831c08fbb1c2e6`  
+> **Documentation consolidation source HEAD:** `ed95d22a3dee4c3e3cac8932ebd3050a6c0d691e`  
 > **Final semantic Product SHA:** `ce8704d6a0db10dc3fb6b1a7e5d0f86afe9ccdc9`  
 > **Engine:** `d5c60dc9f37a9ec9c5b0117f178146bbcb8dca88` / `0.63.18-dima.9`  
 > **Engine digest:** `sha256:22c384198740274bbbba78fb6d41aa63a6d204dfe708b19a6ca9bc322b458ba7`  
@@ -13,13 +13,18 @@ It explains the architecture from first principles, identifies the permanent own
 truth and transition, maps the codebase to those responsibilities, and records how the
 backend foundation supports the future Product/UX layer.
 
-It is intentionally not a historical diary. Historical decisions and intermediate REDs
-remain in the older decision, roadmap and receipt documents. For new development, read
-this document together with:
+It is intentionally not a historical diary. Superseded decisions, roadmaps, receipts,
+pre-development reviews and recovery notes are archived under `legacy/`. Nothing under
+`legacy/` is current execution authority unless this current documentation set explicitly
+cites it as historical evidence.
+
+For new development, read this document together with:
 
 - `DIMA_BRAIN_V2_1_ENGINEERING_PLAYBOOK.md`
 - `DIMA_BRAIN_V2_1_CURRENT_HANDOFF.md`
 - `DIMA_BRAIN_V2_1_FORWARD_RUNTIME_LAWS.md`
+
+The authoritative documentation entry point is `README.md` in this directory.
 
 ---
 

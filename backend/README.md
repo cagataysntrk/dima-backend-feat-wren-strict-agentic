@@ -1,27 +1,30 @@
-# Dima Metabase Platform Backend
+# Dima Backend
 
-The backend is a headless organizational-intelligence layer over the frozen
+The backend is the headless governed company-intelligence layer over the frozen
 Metabase / Metabot analytical engine.
 
-It does not contain a frontend, a Wren runtime, bundled demo data or an external-action executor.
+It contains no frontend and no Wren execution runtime.
 
-## Active backend surfaces
+## Canonical runtime surfaces
 
 ~~~text
-app/v3/                         sealed Dima authorities
+app/v3/                         Dima Product/domain authorities
+app/v3/brain_v2/                BrainV2Service / LangGraph forward runtime
 app/v3/substrate/metabase/      native Metabase/Metabot bridge
-app/v3/core_a/                  ActionWork / Outcome / Memory / Watch / Signal
+app/v3/core_a/                  ActionWork / Outcome / Memory / Watch / Signal owners
 control_plane/                  tenant/principal/auth/durable state
-product_contracts/              pre-UI contracts
 migrations/                     Alembic
-tests/                          retained canonical regression
-belgeler/metabase/              active authority documentation
-lab/metabase/                   active certification only
+tests/                          provider-free/stateful/metamorphic/security certification
+belgeler/metabase/              current architecture documentation
+belgeler/metabase/legacy/       historical docs only
+lab/metabase/                   certification/evaluation harnesses
 ~~~
 
-The canonical Python runtime contains no Ask-v2 compatibility namespace and no Wren runtime.
-Sealed product contracts live under `app/v3/`; historical implementations remain available only
-through Git history.
+Canonical documentation entry point:
+
+`belgeler/metabase/README.md`
+
+Do not start development from a file under `belgeler/metabase/legacy/`.
 
 ## Run
 
@@ -38,10 +41,15 @@ the certified Metabase runtime.
 
 ## Permanent boundaries
 
-- analytics: Metabase / Metabot
-- Dima: organizational authority and interpretation
-- no Wren fallback
-- no shadow analytics
-- no external production side effects
-- no frontend/UI implementation
-- `DEFAULT_ACTION_CAPABILITY_REGISTRY` remains empty until separately authorized
+- analytics: Metabase / Metabot;
+- orchestration: BrainV2Service / LangGraph;
+- Dima: requirement/scope/material/Evidence/provenance/completion;
+- P18: relationship epistemics;
+- P19: RCA epistemics;
+- P17: bounded NextTest only;
+- P20: governed terminal synthesis;
+- no Wren fallback;
+- no shadow analytics;
+- no Agent API final path;
+- no legacy composer final path;
+- no frontend/UI implementation until separately authorized.
