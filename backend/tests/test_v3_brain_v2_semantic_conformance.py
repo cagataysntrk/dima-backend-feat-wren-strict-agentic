@@ -49,6 +49,7 @@ from tests.semantic_spec.model import (
     EntityFilterAdmissionSpec,
     GoalKind,
     MaterialShape,
+    MaterialTerminalKind,
     PeriodStructure,
     PresentationKind,
     RankingBasis,
@@ -59,6 +60,7 @@ from tests.semantic_spec.model import (
     apply_reference_patch,
     entity_filter_admission_allowed,
     pair_coverage,
+    material_group_may_complete,
     ranking_basis_is_coherent,
     result_dependency_disposition,
     semantic_matrix,
@@ -327,6 +329,12 @@ def test_goal_can_declare_typed_parent_result_selection_dependency() -> None:
     assert goal.result_dependency is not None
     assert goal.result_dependency.source_goal_key == "g-parent"
     assert goal.result_dependency.dimension_semantic_id == "dimension.d1"
+
+
+def test_retryable_material_is_not_a_terminal_group_outcome() -> None:
+    assert material_group_may_complete(MaterialTerminalKind.EVIDENCE)
+    assert material_group_may_complete(MaterialTerminalKind.TERMINAL_LIMIT)
+    assert not material_group_may_complete(MaterialTerminalKind.RETRYABLE)
 
 
 def test_finite_semantic_matrix_has_complete_pair_coverage() -> None:
