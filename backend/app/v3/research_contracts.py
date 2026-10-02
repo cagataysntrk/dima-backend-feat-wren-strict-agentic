@@ -390,6 +390,7 @@ class ResearchScope(FrozenModel):
                 item.time_dimension_candidate_id,
                 item.start,
                 item.end,
+                item.role.value,
             )
             for item in self.periods
         ]
