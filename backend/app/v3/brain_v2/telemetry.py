@@ -53,6 +53,13 @@ class BoundaryTraceEvent(Frozen):
         default=None,
         pattern=r"^[a-f0-9]{64}$",
     )
+    requirement_id: str | None = Field(default=None, min_length=1)
+    material_group_id: str | None = Field(
+        default=None,
+        pattern=r"^mg_[a-f0-9]{24}$",
+    )
+    expected_owner: str | None = Field(default=None, min_length=1)
+    observed_owner: str | None = Field(default=None, min_length=1)
     evidence_revision: int | None = Field(default=None, ge=0)
     hypothesis_revision: int | None = Field(default=None, ge=0)
     candidate_count: int | None = Field(default=None, ge=0)
@@ -61,6 +68,7 @@ class BoundaryTraceEvent(Frozen):
     dedup_hit: bool | None = None
     terminal_state: str | None = None
     error_code: str | None = None
+    error_type: str | None = None
     expected_fingerprint: str | None = Field(
         default=None,
         pattern=r"^[a-f0-9]{64}$",
@@ -108,6 +116,23 @@ class BoundaryTrace(Frozen):
             ),
             "observed_fingerprint": (
                 invalid.observed_fingerprint if invalid is not None else None
+            ),
+            "requirement_id": (
+                invalid.requirement_id if invalid is not None else None
+            ),
+            "material_group_id": (
+                invalid.material_group_id if invalid is not None else None
+            ),
+            "expected_owner": (
+                invalid.expected_owner if invalid is not None else None
+            ),
+            "observed_owner": (
+                invalid.observed_owner if invalid is not None else None
+            ),
+            "error_type": (
+                (invalid.error_type or invalid.error_code)
+                if invalid is not None
+                else None
             ),
             "events": [
                 item.model_dump(mode="json")
@@ -217,6 +242,10 @@ _OTEL_SAFE_ATTRIBUTES = frozenset(
         "scope_version_id",
         "scope_fingerprint",
         "material_fingerprint",
+        "requirement_id",
+        "material_group_id",
+        "expected_owner",
+        "observed_owner",
         "evidence_revision",
         "hypothesis_revision",
         "candidate_count",
@@ -253,6 +282,10 @@ class OpenTelemetryBridge:
         terminal_value = getattr(terminal, "value", terminal)
         return {
             "scope_version_id": getattr(state, "scope_version_id", None),
+            "requirement_id": getattr(state, "active_requirement_id", None),
+            "material_group_id": getattr(
+                state, "active_material_group_id", None
+            ),
             "evidence_revision": getattr(state, "evidence_revision", None),
             "hypothesis_revision": getattr(state, "hypothesis_revision", None),
             "terminal_state": (

@@ -233,3 +233,37 @@ def test_required_brain_v21_otel_boundary_names_are_canonical() -> None:
         "dima.p18.adjudicate",
         "dima.p20.report",
     }
+
+
+def test_first_wrong_boundary_receipt_carries_owner_and_execution_refs():
+    trace = BoundaryTrace(
+        events=(
+            BoundaryTraceEvent(
+                boundary=BoundaryName.MATERIAL_GROUP,
+                owner="MaterialGroup",
+                thread_id="t",
+                scope_version_id="scope_v1",
+                material_group_id="mg_" + "1" * 24,
+            ),
+            BoundaryTraceEvent(
+                boundary=BoundaryName.P18_ADJUDICATE,
+                owner="P18",
+                thread_id="t",
+                scope_version_id="scope_v1",
+                requirement_id="g_relationship",
+                material_group_id="mg_" + "1" * 24,
+                expected_owner="P18",
+                observed_owner="P18",
+                error_code="P18_TEST_RED",
+                error_type="P18_TEST_RED",
+            ),
+        )
+    )
+    receipt = trace.public_receipt()
+    assert receipt["last_valid_boundary"] == "dima.material.group"
+    assert receipt["first_invalid_boundary"] == "dima.p18.adjudicate"
+    assert receipt["requirement_id"] == "g_relationship"
+    assert receipt["material_group_id"] == "mg_" + "1" * 24
+    assert receipt["expected_owner"] == "P18"
+    assert receipt["observed_owner"] == "P18"
+    assert receipt["error_type"] == "P18_TEST_RED"

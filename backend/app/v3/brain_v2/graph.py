@@ -49,9 +49,18 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
     builder = StateGraph(BrainStatePayload)
     otel = getattr(activities, "otel_bridge", None) or OpenTelemetryBridge()
 
-    def run_activity(boundary: BoundaryName, payload: dict[str, Any], call):
+    def run_activity(
+        boundary: BoundaryName,
+        payload: dict[str, Any],
+        call,
+        **attributes: Any,
+    ):
         state = BrainGraphState.model_validate(payload)
-        with otel.operation(boundary, state=state) as span:
+        with otel.operation(
+            boundary,
+            state=state,
+            **attributes,
+        ) as span:
             result = call(state)
             if isinstance(result, CandidateProjectionActivityResult):
                 span.set_attributes(candidate_count=result.candidate_count)
@@ -122,6 +131,8 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
             BoundaryName.P18_ADJUDICATE,
             payload,
             activities.adjudicate_relationship,
+            expected_owner="P18",
+            observed_owner="P18",
         )
 
     @task(name="brain_v2_completion_activity")
@@ -334,17 +345,21 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
 
     def requirement_dispatch_node(state: BrainStatePayload):
         current = _snapshot(state)
+        done = set(current.p18_requirement_ids)
+        pending = tuple(
+            item
+            for item in current.relationship_requirement_ids
+            if item not in done
+        )
+        active = pending[0] if pending else None
         with otel.operation(
             BoundaryName.REQUIREMENT_DISPATCH,
             state=current,
+            requirement_id=active,
+            expected_owner=("P18" if active is not None else "COMPLETION"),
+            observed_owner=("P18" if active is not None else "COMPLETION"),
         ):
-            done = set(current.p18_requirement_ids)
-            pending = tuple(
-                item
-                for item in current.relationship_requirement_ids
-                if item not in done
-            )
-            active = pending[0] if pending else None
+            pass
         return {
             "active_requirement_id": active,
             "last_completed_node": "REQUIREMENT_DISPATCH",
