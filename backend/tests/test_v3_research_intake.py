@@ -2798,6 +2798,58 @@ def test_r6_duplicate_typed_period_identity_is_rejected_even_with_new_wording():
     assert exc.value.code == "INTAKE_TIME_PERIOD_DUPLICATE"
 
 
+def test_r6_same_bounds_can_bind_distinct_temporal_roles():
+    payload = ready_payload()
+    payload["time_periods"] = [
+        _r6_period(
+            "shared material interval",
+            "2026-05-01",
+            "2026-07-01",
+            role="material_window",
+        ),
+        _r6_period(
+            "shared evidence interval",
+            "2026-05-01",
+            "2026-07-01",
+            role="evidence_window",
+        ),
+    ]
+
+    result = ResearchIntakeCompiler(
+        transport=FakeTransport(payload)
+    ).compile(
+        question=(
+            "Use the shared material interval. "
+            "Use the shared evidence interval."
+        ),
+        catalog=_r6_temporal_catalog(),
+    )
+
+    assert result.brief is not None
+    assert [
+        (
+            item.time_dimension_candidate_id,
+            item.start,
+            item.end,
+            item.role,
+        )
+        for item in result.brief.scope.periods
+    ] == [
+        (
+            "dimension.event_date",
+            "2026-05-01",
+            "2026-07-01",
+            TemporalRole.MATERIAL_WINDOW,
+        ),
+        (
+            "dimension.event_date",
+            "2026-05-01",
+            "2026-07-01",
+            TemporalRole.EVIDENCE_WINDOW,
+        ),
+    ]
+
+
 def test_r6_shared_surface_can_bind_distinct_typed_periods():
     payload = ready_payload()
     payload["time_periods"] = [
