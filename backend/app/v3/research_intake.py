@@ -499,10 +499,13 @@ Authority rules:
   accepted periods to remain distinguishable. Both comparison periods must use one time dimension.
   The nested periods are ROOT_CAUSE temporal authority; do not duplicate them into top-level
   time_periods. This object interprets user intent only; it never asserts data truth.
-- Emit typed comparisons, never free-text comparison authority. Use TEMPORAL_PERIOD only for an
-  actual period-vs-period comparison. Use CAUSAL_CANDIDATE for user-provided candidate mechanisms,
-  and ENTITY_OR_MEASURE for governed entity/measure competition. Every non-temporal comparison item
-  must carry one semantic_id from the grounded catalog and from that goal's accepted refs.
+- Emit typed non-temporal comparisons only: use CAUSAL_CANDIDATE for user-provided candidate
+  mechanisms and ENTITY_OR_MEASURE for governed entity/measure competition. Every provider-emitted
+  comparison item must carry one semantic_id from the grounded catalog and from that goal's accepted
+  refs. Temporal comparison authority is NOT emitted through this generic list: for a standalone
+  period-vs-period comparison emit one COMPARISON goal plus exactly two role-bound top-level periods
+  (BASELINE_PERIOD and COMPARISON_PERIOD). ROOT_CAUSE uses its closed temporal_material contract.
+  Dima deterministically projects the corresponding TEMPORAL_PERIOD surface after validation.
 - Preserve every current MUST analytical/presentation obligation as a separate goal/deliverable.
 - For every READY goal emit source_fragment_text as one exact verbatim substring of the CURRENT
   user message that directly supports that goal. Never paraphrase the fragment.
@@ -699,14 +702,21 @@ def _intake_provider_schema(
     if isinstance(comparison_definition, dict):
         comparison_properties = comparison_definition.get("properties")
         if isinstance(comparison_properties, dict):
-            comparison_properties["semantic_id"] = {
-                "anyOf": [
-                    {
-                        "type": "string",
-                        "enum": list(semantic_ids),
-                    },
-                    {"type": "null"},
+            # Temporal comparison authority is carried atomically by typed
+            # period roles (or ROOT_CAUSE temporal_material), then projected by
+            # Dima. The provider may use this generic comparison DTO only for
+            # governed non-temporal identities, so one truth is never split
+            # across an LLM-selected role and separately selected periods.
+            comparison_properties["role"] = {
+                "type": "string",
+                "enum": [
+                    ComparisonRole.ENTITY_OR_MEASURE.value,
+                    ComparisonRole.CAUSAL_CANDIDATE.value,
                 ],
+            }
+            comparison_properties["semantic_id"] = {
+                "type": "string",
+                "enum": list(semantic_ids),
             }
     causal_definition = definitions.get("ModelCausalCompetitionDraft")
     if isinstance(causal_definition, dict):
@@ -1561,6 +1571,82 @@ class ResearchIntakeCompiler:
         return draft.model_copy(update={"goals": canonical})
 
     @staticmethod
+    def _derive_standalone_temporal_comparison(
+        draft: ModelResearchBriefDraft,
+    ) -> ModelResearchBriefDraft:
+        """Project atomic period authority into a durable comparison surface.
+
+        Provider-facing generic comparisons cannot carry TEMPORAL_PERIOD. A
+        standalone temporal comparison is therefore recognized only from the
+        typed combination of one COMPARISON goal and exactly two role-bound
+        same-dimension periods. No wording, month name, metric identity or
+        benchmark fixture participates in this projection.
+        """
+
+        if draft.terminal != ResearchIntakeTerminal.READY:
+            return draft
+        if any(
+            item.role == ComparisonRole.TEMPORAL_PERIOD
+            for goal in draft.goals
+            for item in goal.comparisons
+        ):
+            # Backward-compatible deterministic fixtures may already carry the
+            # canonical surface. Existing validation remains authoritative.
+            return draft
+        if len(draft.time_periods) != 2:
+            return draft
+        left, right = draft.time_periods
+        if {left.role, right.role} != {
+            TemporalRole.BASELINE_PERIOD,
+            TemporalRole.COMPARISON_PERIOD,
+        }:
+            return draft
+        if (
+            left.time_dimension_semantic_id
+            != right.time_dimension_semantic_id
+        ):
+            raise ResearchIntakeError(
+                "INTAKE_TEMPORAL_COMPARISON_DIMENSION_DRIFT",
+                "typed temporal comparison periods must use one time dimension",
+            )
+
+        comparison_goals = tuple(
+            goal
+            for goal in draft.goals
+            if goal.kind == ResearchGoalKind.COMPARISON
+        )
+        if not comparison_goals:
+            return draft
+        if len(comparison_goals) != 1:
+            raise ResearchIntakeError(
+                "INTAKE_TEMPORAL_COMPARISON_AMBIGUOUS",
+                "role-bound temporal periods require exactly one comparison owner",
+            )
+
+        owner = comparison_goals[0]
+        label = owner.source_fragment_text or owner.source_text
+        projected = owner.model_copy(
+            update={
+                "comparisons": (
+                    *owner.comparisons,
+                    ModelComparisonDraft(
+                        text=label,
+                        role=ComparisonRole.TEMPORAL_PERIOD,
+                        semantic_id=None,
+                    ),
+                )
+            }
+        )
+        return draft.model_copy(
+            update={
+                "goals": tuple(
+                    projected if goal.goal_key == owner.goal_key else goal
+                    for goal in draft.goals
+                )
+            }
+        )
+
+    @staticmethod
     def _canonicalize_typed_temporal_comparison(
         draft: ModelResearchBriefDraft,
     ) -> ModelResearchBriefDraft:
@@ -2187,6 +2273,7 @@ class ResearchIntakeCompiler:
         draft = self._canonicalize_temporal_comparison_subgoals(draft)
         draft = self._canonicalize_root_temporal_material(draft)
         draft = self._canonicalize_exact_period_repeats(draft)
+        draft = self._derive_standalone_temporal_comparison(draft)
         draft = self._canonicalize_typed_temporal_comparison(draft)
         duplicate_root_keys = self._duplicate_root_cause_goal_keys(draft)
         if duplicate_root_keys:
@@ -2243,6 +2330,7 @@ class ResearchIntakeCompiler:
         draft = self._canonicalize_temporal_comparison_subgoals(draft)
         draft = self._canonicalize_root_temporal_material(draft)
         draft = self._canonicalize_exact_period_repeats(draft)
+        draft = self._derive_standalone_temporal_comparison(draft)
         draft = self._canonicalize_typed_temporal_comparison(draft)
         duplicate_root_keys = self._duplicate_root_cause_goal_keys(draft)
         if duplicate_root_keys:
