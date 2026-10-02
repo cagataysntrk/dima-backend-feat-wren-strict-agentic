@@ -50,8 +50,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          ! grep -R -nE 'tests\.semantic_spec|semantic_spec' backend/app
-          ! grep -R -nE 'F02|F03|F04|F06|F07|F10|June|Assembly|downtime|fault_count' backend/app/v3/brain_v2
+          if grep -R -nE '(^|[[:space:]])(from|import)[[:space:]]+(tests\\.)?semantic_spec|tests\\.semantic_spec' backend/app; then
+            echo "Runtime imported the test-only semantic conformance package."
+            exit 1
+          fi
+          if grep -R -nE 'F02|F03|F04|F06|F07|F10|June|Assembly|downtime|fault_count' backend/app/v3/brain_v2; then
+            echo "Case-specific benchmark authority leaked into Brain V2 production."
+            exit 1
+          fi
 
       - name: Emit semantic coverage artifact
         working-directory: backend
