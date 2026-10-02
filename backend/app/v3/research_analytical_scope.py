@@ -212,6 +212,78 @@ def _has_only_material_refs(question: ResearchQuestion) -> bool:
     return bool(refs) and all(item.target_kind in _MATERIAL_REF_KINDS for item in refs)
 
 
+def _provenance_identity(question: ResearchQuestion) -> str:
+    return (
+        question.source_fragment_identity
+        or (
+            "text-sha256:"
+            + hashlib.sha256(question.source_text.encode("utf-8")).hexdigest()
+        )
+    )
+
+
+def _cross_fragment_material_compatible(
+    anchor: ResearchQuestion,
+    relationship: ResearchQuestion,
+) -> bool:
+    """Prove one safe cross-clause material-sharing class from typed authority.
+
+    Distinct user clauses may share one native occurrence only when an unbounded
+    ranking and an observational material relationship operate at the exact same
+    governed grain/model surface and the ranking measures are already contained
+    in the relationship material need. Bounded ranking is intentionally excluded:
+    top-N material is not a lawful substitute for an all-entity relationship.
+    """
+
+    if (
+        anchor.kind != ResearchGoalKind.RANKING
+        or relationship.kind != ResearchGoalKind.RELATIONSHIP
+        or not _has_only_material_refs(anchor)
+        or not _has_only_material_refs(relationship)
+        or anchor.ranking is None
+        or anchor.ranking.limit is not None
+        or anchor.comparisons
+    ):
+        return False
+
+    anchor_refs = _material_refs(anchor)
+    relationship_refs = _material_refs(relationship)
+    anchor_metrics = {
+        item.candidate_id
+        for item in anchor_refs
+        if item.target_kind
+        in {SemanticTargetKind.METRIC, SemanticTargetKind.KPI}
+    }
+    relationship_metrics = {
+        item.candidate_id
+        for item in relationship_refs
+        if item.target_kind
+        in {SemanticTargetKind.METRIC, SemanticTargetKind.KPI}
+    }
+    anchor_dimensions = {
+        item.candidate_id
+        for item in anchor_refs
+        if item.target_kind == SemanticTargetKind.DIMENSION
+    }
+    relationship_dimensions = {
+        item.candidate_id
+        for item in relationship_refs
+        if item.target_kind == SemanticTargetKind.DIMENSION
+    }
+    if (
+        not anchor_metrics
+        or not anchor_metrics.issubset(relationship_metrics)
+        or anchor_dimensions != relationship_dimensions
+    ):
+        return False
+
+    all_refs = tuple(dict.fromkeys((*anchor_refs, *relationship_refs)))
+    cube_sets = [set(item.cube_names) for item in all_refs]
+    if not cube_sets or any(not item for item in cube_sets):
+        return False
+    return bool(set.intersection(*cube_sets))
+
+
 def coorigin_material_requirements(
     session: ResearchSession,
 ) -> tuple[CoOriginMaterialRequirement, ...]:
@@ -231,14 +303,7 @@ def coorigin_material_requirements(
 
     by_source: dict[str, list[ResearchQuestion]] = {}
     for question in brief.questions:
-        provenance_identity = (
-            question.source_fragment_identity
-            or (
-                "text-sha256:"
-                + hashlib.sha256(question.source_text.encode("utf-8")).hexdigest()
-            )
-        )
-        by_source.setdefault(provenance_identity, []).append(question)
+        by_source.setdefault(_provenance_identity(question), []).append(question)
 
     requirements: list[CoOriginMaterialRequirement] = []
     temporal_roles = tuple(
@@ -356,6 +421,78 @@ def coorigin_material_requirements(
                 anchor_goal_id=anchor.goal_id,
                 source_goal_ids=tuple(item.goal_id for item in (anchor, *relationships)),
                 source_fragment_identity=provenance_identity,
+                scope_version_id=brief.scope.scope_version.version_id,
+                semantic_context_version=session.context_version,
+                required_metric_refs=metrics,
+                required_dimension_refs=dimensions,
+                required_temporal_roles=temporal_roles,
+            )
+        )
+
+    # Separate user clauses can still describe one minimum sufficient native
+    # material need. Do not use wording similarity: share only when typed
+    # material semantics prove the narrow cross-fragment compatibility above.
+    already_grouped = {
+        goal_id
+        for requirement in requirements
+        for goal_id in requirement.source_goal_ids
+    }
+    cross_anchors = tuple(
+        item
+        for item in brief.questions
+        if item.goal_id not in already_grouped
+        and item.kind == ResearchGoalKind.RANKING
+        and _has_only_material_refs(item)
+    )
+    cross_relationships = tuple(
+        item
+        for item in brief.questions
+        if item.goal_id not in already_grouped
+        and item.kind == ResearchGoalKind.RELATIONSHIP
+        and _has_only_material_refs(item)
+    )
+    compatible_anchors = {
+        relationship.goal_id: tuple(
+            anchor
+            for anchor in cross_anchors
+            if _cross_fragment_material_compatible(anchor, relationship)
+        )
+        for relationship in cross_relationships
+    }
+    for anchor in cross_anchors:
+        relationships = tuple(
+            relationship
+            for relationship in cross_relationships
+            if compatible_anchors[relationship.goal_id] == (anchor,)
+        )
+        if not relationships:
+            continue
+
+        ordered_refs: list[ResearchSemanticRef] = []
+        seen: set[str] = set()
+        for question in (anchor, *relationships):
+            for ref in _material_refs(question):
+                if ref.candidate_id not in seen:
+                    ordered_refs.append(ref)
+                    seen.add(ref.candidate_id)
+        metrics = tuple(
+            item.candidate_id
+            for item in ordered_refs
+            if item.target_kind
+            in {SemanticTargetKind.METRIC, SemanticTargetKind.KPI}
+        )
+        dimensions = tuple(
+            item.candidate_id
+            for item in ordered_refs
+            if item.target_kind == SemanticTargetKind.DIMENSION
+        )
+        requirements.append(
+            CoOriginMaterialRequirement(
+                anchor_goal_id=anchor.goal_id,
+                source_goal_ids=tuple(
+                    item.goal_id for item in (anchor, *relationships)
+                ),
+                source_fragment_identity=_provenance_identity(anchor),
                 scope_version_id=brief.scope.scope_version.version_id,
                 semantic_context_version=session.context_version,
                 required_metric_refs=metrics,
