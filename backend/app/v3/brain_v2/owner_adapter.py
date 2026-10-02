@@ -874,6 +874,10 @@ class DimaBrainV2Activities(BrainActivities):
                 material_fingerprint=response.material_fingerprint,
                 expected_semantic_shape=response.expected_semantic_shape,
                 observed_semantic_shape=response.observed_semantic_shape,
+                requirement_id=group.anchor_requirement_id,
+                material_group_id=group.material_group_id,
+                expected_owner="METABOT_MATERIAL",
+                observed_owner="METABOT_MATERIAL",
             )
         return MaterialGroupActivityResult(
             material_group_id=group.material_group_id,

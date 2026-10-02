@@ -894,6 +894,9 @@ def native_request_context(contract: AnalyticalRequestContract) -> dict[str, Any
         if coverage_period is not None
         else None
     )
+    scope["material_coverage"] = material_coverage_contract(
+        contract
+    ).model_dump(mode="json")
     if contract.temporal_observation is None:
         # Preserve the sealed context shape for capabilities that do not carry
         # the new CHANGE authority. Only the affected family gets a new field.
@@ -1680,9 +1683,45 @@ def _assert_material_metric_scope(
         for item in observation.native_metrics
     }
     if not required.issubset(observed) or not observed.issubset(allowed):
+        reverse = {
+            (binding.metric_id, binding.metric_entity_id): candidate_id
+            for candidate_id, binding in bindings.items()
+            if binding.metric_id is not None and binding.metric_entity_id
+        }
+        observed_refs = tuple(
+            sorted(
+                reverse.get(
+                    identity,
+                    (
+                        "metabase:metric:"
+                        + str(identity[0])
+                        + ":"
+                        + str(identity[1])
+                    ),
+                )
+                for identity in observed
+            )
+        )
+        expected_shape = {
+            "axis": "METRIC",
+            "required_metrics": list(coverage.required_metric_refs),
+            "allowed_metrics": list(coverage.allowed_metric_refs),
+        }
+        observed_shape = {
+            "axis": "METRIC",
+            "observed_metrics": list(observed_refs),
+        }
         raise ResearchAnalyticalScopeError(
             "R1_NATIVE_METRIC_IDENTITY_MISMATCH",
             "observed governed metric identities violate material coverage",
+            last_valid_boundary="dima.native.execute",
+            first_invalid_boundary="dima.evidence.admit",
+            expected_fingerprint=_boundary_fingerprint(expected_shape),
+            observed_fingerprint=_boundary_fingerprint(observed_shape),
+            scope_fingerprint=contract.scope_fingerprint,
+            material_fingerprint=contract.material_fingerprint,
+            expected_semantic_shape=expected_shape,
+            observed_semantic_shape=observed_shape,
         )
 
 def _assert_material_filter_scope(

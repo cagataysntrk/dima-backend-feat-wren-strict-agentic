@@ -8,6 +8,7 @@ from typing import Literal
 from uuid import UUID, uuid4
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from app.v3.analytical_request_contract import material_coverage_contract
 from app.v3.research_contracts import ResearchBrief, ResearchBriefStatus
 from app.v3.research_analytical_scope import (
     analytical_scope_contract,
@@ -297,12 +298,33 @@ class ResearchManager:
                 f"[{value.start}, {end})"
             )
 
+        coverage = material_coverage_contract(analytical_scope)
         lines = [
             "[DIMA ACCEPTED ANALYTICAL CONTRACT]",
             f"scope_version: {analytical_scope.scope_identity.version_id}",
             *section(
                 "metrics",
                 analytical_scope.metric_refs,
+                semantic=True,
+            ),
+            *section(
+                "required_metrics",
+                coverage.required_metric_refs,
+                semantic=True,
+            ),
+            *section(
+                "allowed_metrics",
+                coverage.allowed_metric_refs,
+                semantic=True,
+            ),
+            *section(
+                "required_breakouts",
+                coverage.required_breakout_refs,
+                semantic=True,
+            ),
+            *section(
+                "allowed_breakouts",
+                coverage.allowed_breakout_refs,
                 semantic=True,
             ),
             *section(
@@ -399,6 +421,8 @@ class ResearchManager:
             (
                 "rules:",
                 "- preserve the accepted metric identities exactly",
+                "- every required metric must be observable in the same native occurrence",
+                "- no metric outside allowed_metrics may enter the occurrence",
                 "- preserve the accepted filters and temporal bounds exactly",
                 "- do not broaden the accepted scope",
                 "- preserve the governed temporal observation material exactly",
