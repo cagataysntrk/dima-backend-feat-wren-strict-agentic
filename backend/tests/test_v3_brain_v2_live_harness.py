@@ -340,6 +340,65 @@ def test_scope_resume_mechanical_gate_requires_new_scope_and_disjoint_evidence()
     assert result["duplicate_native_execution_zero"] is True
 
 
+def test_scope_resume_without_presentation_requirement_does_not_require_report() -> None:
+    state = BrainGraphState(
+        thread_id="live:scope-no-report",
+        tenant_binding="id:tenant",
+        principal_ref="user-1",
+        research_session_id="rs_" + "8" * 24,
+        accepted_brief_ref="rb_scope_v2_no_report",
+        scope_version_id="scope_v2",
+        evidence_revision=2,
+        evidence_ids=("evi_" + "8" * 24,),
+        hypothesis_ids=("p19h_" + "3" * 24, "p19h_" + "4" * 24),
+        latest_p19_assessment_ref="p19a_" + "5" * 24,
+        report_ref=None,
+        report_requirement_ids=(),
+        workflow_status=BrainWorkflowStatus.COMPLETE,
+        last_completed_node="COMPLETE",
+    )
+    provider = {
+        "provider_requests_by_source": {
+            "research_intake": 2,
+            "metabase": 6,
+            "p17_manager": 0,
+            "p19_manager": 2,
+        },
+        "actual_provider_request_count": 10,
+        "prompt_tokens": 1000,
+        "blocked_request_count": 0,
+    }
+    scope_resume = {
+        "first_scope_version_id": "scope_v1",
+        "second_scope_version_id": "scope_v2",
+        "same_lineage": True,
+        "prior_historical": True,
+        "evidence_disjoint": True,
+        "checkpoint_resume": True,
+    }
+    result = _mechanical(
+        probe_id="R_LIVE_4_SCOPE_RESUME",
+        state=state,
+        provider=provider,
+        links=(
+            _link(fingerprint="a" * 64, ordinal=1),
+            _link(fingerprint="b" * 64, ordinal=2),
+        ),
+        p17_snapshot=SimpleNamespace(
+            investigation=SimpleNamespace(nodes=()),
+            claims=(),
+        ),
+        p19_snapshot=SimpleNamespace(
+            hypotheses=(_grounded_hypothesis(), _grounded_hypothesis()),
+        ),
+        report_doc=None,
+        scope_resume=scope_resume,
+    )
+
+    assert result["report_exists"] is False
+    assert result["mechanical_green"] is True
+
+
 def test_live_runtime_guard_uses_certified_lock_instead_of_release_literal(
     tmp_path,
     monkeypatch,
