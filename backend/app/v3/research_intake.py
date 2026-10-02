@@ -35,6 +35,7 @@ from app.v3.research_contracts import (
     ResearchGoalStatus,
     ResearchQuestion,
     ResearchNativeVerificationBinding,
+    ResultSelectionDependency,
     ResearchScope,
     ResearchSemanticRef,
     ResearchTimePeriod,
@@ -306,6 +307,14 @@ ModelTemporalMaterialDraft = (
 )
 
 
+class ModelResultSelectionDependencyDraft(Frozen):
+    """Typed dependency on one upstream governed ranking result."""
+
+    source_goal_key: str = Field(min_length=1, max_length=120)
+    dimension_semantic_id: str = Field(min_length=1)
+    selection: Literal["first_ranked_entity"] = "first_ranked_entity"
+
+
 class ModelGoalDraft(Frozen):
     goal_key: str = Field(min_length=1, max_length=120)
     kind: ResearchGoalKind
@@ -319,6 +328,7 @@ class ModelGoalDraft(Frozen):
     comparisons: tuple[ModelComparisonDraft, ...] = ()
     causal_competition: ModelCausalCompetitionDraft | None = None
     temporal_material: ModelTemporalMaterialDraft | None = None
+    result_dependency: ModelResultSelectionDependencyDraft | None = None
     material_parent_goal_key: str | None = Field(
         default=None,
         min_length=1,
@@ -575,6 +585,10 @@ Authority rules:
 - ranking.measure_semantic_id is set only when the user explicitly identifies one governed metric/KPI
   as the ranking basis. With multiple metrics and no explicit single basis, keep it null; do not pick
   the first metric or manufacture a composite score.
+- result_dependency is used only when one analytical goal explicitly depends on an upstream ranked
+  entity selection. source_goal_key must name that ranking goal; dimension_semantic_id must be the
+  governed non-temporal dimension whose FIRST ranked row becomes an execution-local constraint.
+  This does not mutate user scope and does not authorize inventing a value.
 - If a native single-metric ranking needs direction and the user's direction is genuinely ambiguous,
   return CLARIFY rather than guessing direction from words, morphology, regex, or a default.
 - Do not emit implementation-specific Wren/SQL/lane/token concepts.
@@ -700,6 +714,28 @@ def _intake_provider_schema(
                     {"type": "null"},
                 ],
             }
+    result_dependency_definition = definitions.get(
+        "ModelResultSelectionDependencyDraft"
+    )
+    if isinstance(result_dependency_definition, dict):
+        dependency_properties = result_dependency_definition.get("properties")
+        if isinstance(dependency_properties, dict):
+            dependency_dimension_ids = tuple(
+                sorted(
+                    item.candidate_id
+                    for item in catalog.semantic_refs
+                    if (
+                        item.target_kind == SemanticTargetKind.DIMENSION
+                        and item.candidate_id
+                        not in set(catalog.temporal_dimension_ids)
+                    )
+                )
+            )
+            dependency_properties["dimension_semantic_id"] = {
+                "type": "string",
+                "enum": list(dependency_dimension_ids),
+            }
+
     relationship_ids = tuple(
         sorted(
             item.relationship_id
@@ -776,6 +812,7 @@ def _intake_provider_schema(
         "source_fragment_text",
         "ranking",
         "comparisons",
+        "result_dependency",
     )
     source_fragment_schema = {
         "type": "string",
@@ -2639,6 +2676,92 @@ class ResearchIntakeCompiler:
                     status=ResearchGoalStatus.RESOLVED,
                 )
             )
+
+        dependency_edges = {
+            goal.goal_key: goal.result_dependency.source_goal_key
+            for goal in draft.goals
+            if goal.result_dependency is not None
+        }
+        for child_key, source_key in dependency_edges.items():
+            if source_key not in goal_id_by_key:
+                raise ResearchIntakeError(
+                    "INTAKE_RESULT_DEPENDENCY_SOURCE_UNKNOWN",
+                    source_key,
+                )
+            if source_key == child_key:
+                raise ResearchIntakeError(
+                    "INTAKE_RESULT_DEPENDENCY_SELF_REFERENCE",
+                    child_key,
+                )
+            seen: set[str] = set()
+            current_key = child_key
+            while current_key in dependency_edges:
+                if current_key in seen:
+                    raise ResearchIntakeError(
+                        "INTAKE_RESULT_DEPENDENCY_CYCLE",
+                        child_key,
+                    )
+                seen.add(current_key)
+                current_key = dependency_edges[current_key]
+
+        question_by_id = {item.goal_id: item for item in questions}
+        resolved_questions: list[ResearchQuestion] = []
+        for goal, question in zip(draft.goals, questions, strict=True):
+            dependency = goal.result_dependency
+            if dependency is None:
+                resolved_questions.append(question)
+                continue
+            source_goal_id = goal_id_by_key[dependency.source_goal_key]
+            parent = question_by_id.get(source_goal_id)
+            if parent is None or parent.ranking is None:
+                raise ResearchIntakeError(
+                    "INTAKE_RESULT_DEPENDENCY_SOURCE_NOT_RANKING",
+                    dependency.source_goal_key,
+                )
+            if parent.ranking.direction == "unspecified":
+                raise ResearchIntakeError(
+                    "INTAKE_RESULT_DEPENDENCY_RANKING_DIRECTION_REQUIRED",
+                    dependency.source_goal_key,
+                )
+            dimension = by_id.get(dependency.dimension_semantic_id)
+            if (
+                dimension is None
+                or dimension.target_kind != SemanticTargetKind.DIMENSION
+                or dependency.dimension_semantic_id
+                in set(catalog.temporal_dimension_ids)
+            ):
+                raise ResearchIntakeError(
+                    "INTAKE_RESULT_DEPENDENCY_DIMENSION_INVALID",
+                    dependency.dimension_semantic_id,
+                )
+            parent_dimensions = {
+                item.candidate_id
+                for item in (*parent.subject_refs, *parent.related_refs)
+                if item.target_kind == SemanticTargetKind.DIMENSION
+            }
+            child_dimensions = {
+                item.candidate_id
+                for item in (*question.subject_refs, *question.related_refs)
+                if item.target_kind == SemanticTargetKind.DIMENSION
+            }
+            if dependency.dimension_semantic_id not in parent_dimensions:
+                raise ResearchIntakeError(
+                    "INTAKE_RESULT_DEPENDENCY_PARENT_DIMENSION_MISSING",
+                    dependency.dimension_semantic_id,
+                )
+            if dependency.dimension_semantic_id not in child_dimensions:
+                raise ResearchIntakeError(
+                    "INTAKE_RESULT_DEPENDENCY_CHILD_DIMENSION_MISSING",
+                    dependency.dimension_semantic_id,
+                )
+            payload = question.model_dump(mode="python")
+            payload["result_dependency"] = ResultSelectionDependency(
+                source_goal_id=source_goal_id,
+                dimension_semantic_id=dependency.dimension_semantic_id,
+                selection=dependency.selection,
+            )
+            resolved_questions.append(ResearchQuestion(**payload))
+        questions = resolved_questions
 
         deliverables: list[ResearchDeliverableRequirement] = []
         seen_deliverables: set[str] = set()
