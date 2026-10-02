@@ -8,6 +8,7 @@ on:
       - ".github/workflows/dima-brain-v2-1-semantic-conformance.yml"
       - "backend/tests/semantic_spec/**"
       - "backend/tests/test_v3_brain_v2_semantic_conformance.py"
+      - "backend/tests/test_v3_brain_v2_semantic_stateful.py"
       - "backend/tests/__init__.py"
       - "backend/app/v3/analytical_request_contract.py"
       - "backend/app/v3/research_analytical_scope.py"
@@ -67,7 +68,7 @@ jobs:
 
       - name: Semantic conformance
         working-directory: backend
-        run: pytest -q tests/test_v3_brain_v2_semantic_conformance.py
+        run: pytest -q tests/test_v3_brain_v2_semantic_conformance.py tests/test_v3_brain_v2_semantic_stateful.py
 
       - name: Upload semantic coverage
         if: always()
