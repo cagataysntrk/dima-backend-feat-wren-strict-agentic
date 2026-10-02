@@ -32,7 +32,7 @@ from app.v3.substrate.metabase.native_models import (
     NativeMaterialRankingTarget,
 )
 
-from semantic_spec.model import (
+from tests.semantic_spec.model import (
     EntityCardinality,
     GoalKind,
     MaterialShape,
