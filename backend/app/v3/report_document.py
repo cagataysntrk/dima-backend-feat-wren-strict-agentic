@@ -18,6 +18,10 @@ from app.v3.hypothesis_root_cause import AggregateOutcome, CausalQualification, 
 from app.v3.research import ObligationState
 from app.v3.research_analytical_scope import coorigin_material_requirements
 from app.v3.research_contracts import ResearchGoalKind
+from app.v3.report_projection import (
+    governed_tabular_numeric_fact_for_path,
+    project_governed_tabular_numeric_facts,
+)
 from app.v3.research_store import ResearchPersistenceError, ResearchSessionStore
 from control_plane.authorize import Principal
 from control_plane.db import engine as control_plane_engine
@@ -548,9 +552,36 @@ class ReportClaimGate:
         value = _path_value(payload, ref.source_path, code='P20_NUMERIC_SOURCE_PATH_INVALID')
         if isinstance(value, bool) or not isinstance(value, (int, float)):
             raise P20ReportError('P20_NUMERIC_SOURCE_NOT_NUMERIC', ref.source_path)
-        allowed = {'value', 'unit'}
+        allowed = {'value', 'unit', 'label', 'context'}
         if set(statement.payload) - allowed or statement.payload.get('value') != value:
             raise P20ReportError('P20_NUMERIC_VALUE_MISMATCH', statement.statement_id)
+
+        projected_fact = governed_tabular_numeric_fact_for_path(
+            payload,
+            ref.source_path,
+        )
+        has_projection = (
+            'label' in statement.payload or 'context' in statement.payload
+        )
+        if has_projection:
+            if projected_fact is None:
+                raise P20ReportError(
+                    'P20_NUMERIC_PRESENTATION_SOURCE_INVALID',
+                    ref.source_path,
+                )
+            expected_context = [
+                item.model_dump(mode='json')
+                for item in projected_fact.context
+            ]
+            if (
+                statement.payload.get('label') != projected_fact.label
+                or statement.payload.get('context') != expected_context
+            ):
+                raise P20ReportError(
+                    'P20_NUMERIC_PRESENTATION_MISMATCH',
+                    statement.statement_id,
+                )
+
         unit = None
         if ref.source_unit_path is not None:
             unit = _path_value(payload, ref.source_unit_path, code='P20_NUMERIC_UNIT_PATH_INVALID')
@@ -575,7 +606,16 @@ class ReportClaimGate:
                 raise P20ReportError('P20_P15_NUMERIC_NOT_GOVERNED_BY_P19', ref.source_ref)
         if statement.upstream_epistemic_ceiling != 'EXACT_GOVERNED_NUMERIC':
             raise P20ReportError('P20_NUMERIC_CEILING_MISMATCH', statement.statement_id)
-        text = f'Numeric result: {_render_scalar(value)}'
+
+        if has_projection and projected_fact is not None:
+            context = '; '.join(
+                f'{item.label}={item.value}'
+                for item in projected_fact.context
+            )
+            value_text = f'{projected_fact.label}={_render_scalar(value)}'
+            text = f'{context}; {value_text}' if context else value_text
+        else:
+            text = f'Numeric result: {_render_scalar(value)}'
         if unit is not None:
             text += f' {unit}'
         return self._canonical_statement(statement, text)
@@ -1349,19 +1389,27 @@ class ReportDocumentStore:
                     rows[0].native_result_json,
                     code='P20_NUMERIC_SOURCE_PAYLOAD_INVALID',
                 )
-                for source_path, value in _numeric_row_values(payload):
+                for fact in project_governed_tabular_numeric_facts(payload):
                     source = SourceReference(
                         source_kind=ReportSourceKind.P14_EVIDENCE,
                         source_ref=evidence.evidence_id,
                         source_receipt_id=evidence.receipt_id,
                         obligation_id=obligation_id,
-                        source_path=source_path,
+                        source_path=fact.source_path,
                     )
+                    fact_payload = {
+                        'value': fact.value,
+                        'label': fact.label,
+                        'context': [
+                            item.model_dump(mode='json')
+                            for item in fact.context
+                        ],
+                    }
                     statement_id = stable_statement_id(
                         {
                             'kind': ReportStatementKind.NUMERIC.value,
                             'source': source.model_dump(mode='json'),
-                            'value': value,
+                            'fact': fact_payload,
                         }
                     )
                     statements.append(
@@ -1371,7 +1419,7 @@ class ReportDocumentStore:
                             source_refs=(source,),
                             obligation_refs=(obligation_id,),
                             upstream_epistemic_ceiling='EXACT_GOVERNED_NUMERIC',
-                            payload={'value': value},
+                            payload=fact_payload,
                         )
                     )
                     approved_ids.append(statement_id)
