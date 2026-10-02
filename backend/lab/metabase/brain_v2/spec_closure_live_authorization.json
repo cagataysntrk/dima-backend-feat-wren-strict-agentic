@@ -1,6 +1,6 @@
 {
   "schema_version": "dima_brain_v2_1_spec_closure_live_authorization_v1",
-  "enabled": true,
+  "enabled": false,
   "case_count": 1,
   "case_id": "F06_M",
   "candidate_product_sha": "4ddca914d5e0bf7fa4216bf6aee9945a88d183d9",
@@ -13,7 +13,7 @@
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
   "automatic_retry_allowed": false,
-  "purpose": "Verify F06_M after generic retryable-terminality, shared-occurrence, and dependency-filter-role closure. Stop on first real RED.",
+  "purpose": "Paid panel locked while/after run 37076370845. Reopen only after adjudication and any required provider-free closure.",
   "prior_run_id": 37060828140,
   "prior_artifact_id": 11250770945,
   "prior_manual_quality_score": 2,
