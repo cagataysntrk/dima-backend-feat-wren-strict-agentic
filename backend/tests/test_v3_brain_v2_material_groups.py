@@ -1,5 +1,6 @@
 from types import SimpleNamespace
 
+from app.v3.brain_v2 import material_groups as material_groups_module
 from app.v3.brain_v2.material_groups import project_material_groups
 from app.v3.research_contracts import (
     PresentationKind,
@@ -12,6 +13,7 @@ from app.v3.research_contracts import (
     ResearchGoalStatus,
     ResearchQuestion,
     ResearchScope,
+    ResultSelectionDependency,
     ResearchSemanticRef,
     ResearchTimePeriod,
     ScopeVersion,
@@ -164,6 +166,48 @@ def test_incompatible_bounded_ranking_relationship_use_two_groups():
     assert {
         tuple(group.consumer_requirement_ids) for group in groups
     } == {("g_rank",), ("g_relationship",)}
+
+
+def test_result_dependent_material_group_waits_for_verified_parent_group():
+    parent = ranking(bounded=True)
+    child = ResearchQuestion(
+        goal_id="g_child",
+        kind=ResearchGoalKind.BREAKDOWN,
+        source_text="Inspect one selected governed slice.",
+        source_fragment_identity="fragment-sha256:" + "9" * 64,
+        subject_refs=(FAULTS,),
+        related_refs=(DEPT, LINE),
+        result_dependency=ResultSelectionDependency(
+            source_goal_id=parent.goal_id,
+            dimension_semantic_id=DEPT.candidate_id,
+            selection="first_ranked_entity",
+        ),
+        status=ResearchGoalStatus.RESOLVED,
+    )
+    groups = project_material_groups(session(brief(parent, child)))
+    selector = getattr(
+        material_groups_module,
+        "select_pending_material_group",
+        None,
+    )
+    assert callable(selector), "result-dependent material needs a typed readiness selector"
+
+    by_consumer = {
+        consumer: group
+        for group in groups
+        for consumer in group.consumer_requirement_ids
+    }
+    parent_group = by_consumer[parent.goal_id]
+    child_group = by_consumer[child.goal_id]
+    assert child_group.dependency_requirement_ids == (parent.goal_id,)
+
+    first = selector(groups, completed_material_group_ids=())
+    assert first.material_group_id == parent_group.material_group_id
+    second = selector(
+        groups,
+        completed_material_group_ids=(parent_group.material_group_id,),
+    )
+    assert second.material_group_id == child_group.material_group_id
 
 
 def test_report_requirement_creates_zero_additional_material_groups():
