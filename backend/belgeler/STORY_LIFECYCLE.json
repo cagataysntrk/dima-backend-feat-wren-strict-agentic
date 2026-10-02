@@ -1,7 +1,6 @@
 {
   "schema_version": "dima-story-lifecycle-v1",
   "stories": {
-    "metabase": "ACTIVE",
-    "comparison": "HISTORICAL_EVIDENCE"
+    "metabase": "ACTIVE"
   }
 }
