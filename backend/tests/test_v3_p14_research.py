@@ -12,6 +12,7 @@ from app.v3.authority import AcceptedResearchAuthority
 from app.v3.evidence import DimaQueryReceipt, EvidenceArtifact, EvidenceState
 from app.v3.research_contracts import (
     CausalCompetitionSurface,
+    RankingBasis,
     ResearchBrief,
     ResearchBriefStatus,
     ResearchGoalKind,
@@ -23,9 +24,15 @@ from app.v3.research_contracts import (
     SemanticTargetKind,
 )
 from app.v3.analytical_request_contract import (
+    AnalyticalComparisonInvariant,
+    AnalyticalPeriodInvariant,
+    AnalyticalRankingInvariant,
     AnalyticalTemporalObservationInvariant,
 )
-from app.v3.research_analytical_scope import analytical_scope_contract
+from app.v3.research_analytical_scope import (
+    analytical_scope_contract,
+    native_request_context,
+)
 from app.v3.research import (
     EvidenceRelation,
     HypothesisState,
@@ -301,6 +308,54 @@ def test_native_material_message_projects_typed_temporal_observation(
         in message
     )
     assert "GROUP BY" not in message
+    assert "SQL" not in message
+    assert "MBQL" not in message
+
+
+def test_native_material_contract_projects_change_ranking_without_owning_query_plan():
+    session = _session("obl-change-ranking")
+    item = session.obligations[0]
+    base = analytical_scope_contract(
+        session=session,
+        obligation_id="obl-change-ranking",
+    )
+    comparison = AnalyticalComparisonInvariant(
+        mode="explicit_periods",
+        reference_period=AnalyticalPeriodInvariant(
+            kind="explicit_half_open",
+            time_dimension="dimension.event_date",
+            start="2026-01-01",
+            end="2026-02-01",
+        ),
+        base_period=AnalyticalPeriodInvariant(
+            kind="explicit_half_open",
+            time_dimension="dimension.event_date",
+            start="2026-02-01",
+            end="2026-03-01",
+        ),
+    )
+    contract = base.model_copy(
+        update={
+            "period": None,
+            "comparison": comparison,
+            "ranking": AnalyticalRankingInvariant(
+                measure="metric.sales_order_count",
+                direction="desc",
+                limit=1,
+                basis=RankingBasis.CHANGE,
+            ),
+        }
+    )
+
+    message = ResearchManager._native_material_message(item, contract)
+    context = native_request_context(contract)["dima_analytical_scope"]
+
+    assert "- basis: change" in message
+    assert "- reference: dimension.event_date [2026-01-01, 2026-02-01)" in message
+    assert "- base: dimension.event_date [2026-02-01, 2026-03-01)" in message
+    assert "rank by the accepted baseline-to-comparison change" in message
+    assert context["ranking"]["basis"] == "change"
+    assert context["comparison"] is not None
     assert "SQL" not in message
     assert "MBQL" not in message
 
