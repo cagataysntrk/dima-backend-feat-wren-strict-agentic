@@ -1,6 +1,6 @@
 {
   "schema_version": "dima_brain_v2_1_round2_authorization_v1",
-  "enabled": true,
+  "enabled": false,
   "candidate_product_sha": "ce8704d6a0db10dc3fb6b1a7e5d0f86afe9ccdc9",
   "frozen_branch_head": "54dcc6b7f2bc7a0a7cc554801f831c08fbb1c2e6",
   "engine_sha": "d5c60dc9f37a9ec9c5b0117f178146bbcb8dca88",
@@ -10,9 +10,18 @@
   "manifest": "backend/eval/dima_neutral_feature_benchmark_round2.json",
   "fixture": "backend/eval/round2_neutral_machine_fixture.json",
   "case_count": 30,
-  "broad_paid_allowed": true,
-  "thirty_case_allowed": true,
+  "broad_paid_allowed": false,
+  "thirty_case_allowed": false,
   "automatic_retry_allowed": false,
   "authorization_basis": "explicit user authorization 2026-10-02",
-  "purpose": "single frozen 30-case proof for final quality/speed/cost seal"
+  "purpose": "single frozen 30-case proof for final quality/speed/cost seal",
+  "closure": {
+    "status": "CLOSED",
+    "complete_run_id": 37027548693,
+    "complete_artifact_id": 11235884317,
+    "complete_artifact_digest": "sha256:095d1593ceace7dba94ae872e7ad85f520a3d2b4f4d7de603cfe1f22e4a352f1",
+    "incomplete_harness_run_id": 37027114003,
+    "final_adjudicated_score": 60.5,
+    "rerun_requires_new_explicit_user_authorization": true
+  }
 }
