@@ -1,139 +1,88 @@
-# Dima Metabase Platform — Canonical Architecture
+# Dima Brain V2.1 — Canonical Architecture
 
-**Branch:** `feat/dima-metabase-platform`  
+**Working branch:** `feat/dima-brain-v2-1-specification-closure`  
+**Architecture:** Brain V2.1 frozen  
 **Canonical analytical engine:** Metabase / Metabot  
-**Repository canonicalization:** SEALED  
-**UI:** not implemented / forbidden
+**Engine:** `d5c60dc9f37a9ec9c5b0117f178146bbcb8dca88` / `0.63.18-dima.9`  
+**UI/Frontend:** not implemented / forbidden during specification closure
 
-## Ownership
+## Permanent ownership
 
-~~~text
+```text
 METABASE / METABOT
-= analytical computation / execution / governed analytical material
+= analytical cognition
+= native query construction/execution
 
-DIMA CORE
-= company/context meaning
-= Research / Evidence / Claim / Investigation / Epistemics
-= Report / Decision / Human Adoption
-= internal Work / Outcome / Memory / Watch / Signal
-= headless product projection/orchestration
-~~~
+LANGGRAPH / BrainV2Service
+= forward orchestration
+= routing / checkpoint-resume control
 
-Dima does not reproduce Metabase analytical primitives.
+DIMA
+= business intent
+= ScopeVersion/currentness
+= material requirements
+= Evidence/provenance
+= completion
+= report/decision semantics
 
-## Sealed authority chain
+P18 = relationship epistemic owner
+P19 = RCA epistemic owner
+P17 = bounded NextTest controller only
+P20 = governed synthesis from terminal state
+```
 
-~~~text
-P14 Research
-→ P15 native Exploration
-→ P16 Claim / Evidence lineage
-→ P17 Investigation
-→ P18 Relationship Policy
-→ P19 Epistemics / Root-Cause Assessment
-→ P20 Report
-→ P21 DecisionBrief
-→ Human Adoption
-→ optional ActionAuthorization
-~~~
+No second analytics engine. No Wren runtime. No SQL/MBQL planner in Dima. No Brain V3. No second
+semantic truth.
 
-Permanent:
+## Runtime authority chain
 
-~~~text
-P17 investigation != causal graph
-P18 direction != causality
-P20 cannot strengthen source semantics
-P21 recommendation != Human Adoption
-Adoption != external execution
-~~~
+```text
+User requirement
+-> typed Research intake
+-> Scope / ScopeVersion
+-> USER_MUST obligations
+-> minimum governed material
+-> Metabase / Metabot
+-> native observation + provenance
+-> Evidence admission
+-> typed owner (direct / P18 / P19)
+-> completion
+-> P20 governed synthesis
+```
 
-## Core A — SEALED
+P20 may only synthesize terminal governed artifacts. It never reopens Metabot merely for prose,
+never creates upstream fulfillment, and never silently upgrades observational evidence to causal
+truth.
 
-~~~text
-ActionWork            = internal commitment lifecycle
-OutcomeObservation    = governed observation; Outcome != causality
-InstitutionalMemory   = precedent/reference; Memory != truth authority
-Watch / Signal        = governed observation/context; Watch != analytics engine
-~~~
+## Specification-closure recovery
 
-Exactly five durable Core A families remain sealed.
+The frozen Round-2 benchmark (`37027548693`) scored `60.5/100`; it is now immutable
+counterexample evidence. The recovery branch closes the exposed failure families through
+independent semantic laws rather than benchmark wording.
 
-## Core B — ACTIVE
+Current method:
 
-Preferred package: `app/v3/product/`.
+```text
+semantic law
+-> provider-free RED
+-> first invalid boundary
+-> exact owner
+-> generic fix
+-> siblings/stateful proof
+-> aggregate provider-free certification
+-> optional surgical live recovery panel
+```
 
-Core B owns no analytical or business truth. It owns:
+The engine stays dima.9 unless an independent engine defect is proven.
 
-~~~text
-stable product DTOs
-CompanyContext
-CapabilityDiscovery
-navigation / deep links
-typed product errors
-correlation / audit projection
-deterministic pagination
-durable-ID resume
-currentness projection
-artifact timeline
-headless closed-loop orchestration
-~~~
+## UX boundary
 
-Future clients consume product contracts, not SQLModel rows.
+The backend may become contract-ready for future UX, but frontend development is not authorized.
+A future UI must project canonical backend authority and must not reconstruct alternate business
+truth in client state.
 
-### Resume
+Current documentation authority begins at:
+`backend/belgeler/metabase/README.md`.
 
-~~~text
-RESUME != RAW PROMPT REINTERPRETATION
-~~~
-
-Every protected resume/read reauthorizes the current Principal.
-
-### Timeline
-
-~~~text
-TIMELINE = READ-ONLY PROJECTION
-TIMELINE != AUTHORITY
-~~~
-
-No timeline table by default.
-
-## Product-facing error taxonomy
-
-~~~text
-UNAVAILABLE
-FORBIDDEN
-STALE
-SUPERSEDED
-INVALID_TRANSITION
-INSUFFICIENT_EVIDENCE
-INCONCLUSIVE
-DEFERRED_CAPABILITY
-UNKNOWN_OUTCOME
-~~~
-
-Cross-tenant and missing identities preserve non-oracle behavior.
-
-## External execution
-
-Deferred. `action:execute` is absent and the default ActionCapability registry remains empty.
-
-## Engine
-
-`cbe313af9ac2d5960f662068e433d328d896fb06` — `0.63.18-dima.6`.
-
-No Wren runtime, Wren source substrate, Wren bake-off or dual-engine product architecture exists.
-
-## Final product-seal sequence
-
-~~~text
-Core B headless product layer
-→ provider-free closed-loop rehearsal
-→ 50 UX readiness freeze
-→ one final provider-free sealed regression
-→ product contract freeze
-→ immutable neutral-comparison candidate
-→ neutral-comparison dossier
-→ STOP
-~~~
-
-No DEV80, Validation50, Hidden50, Wren evaluation, winner selection or UI implementation occurs
-under the current authority.
+Historical architecture, platform, Wren-comparison, pre-development and older Brain documents live
+under `backend/belgeler/metabase/legacy/` only.
