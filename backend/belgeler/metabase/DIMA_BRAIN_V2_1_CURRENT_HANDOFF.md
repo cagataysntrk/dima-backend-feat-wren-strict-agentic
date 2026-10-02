@@ -2,7 +2,7 @@
 
 > **Status:** CURRENT OPERATIONAL AUTHORITY  
 > **Architecture:** FROZEN  
-> **Branch:** `feat/dima-brain-v2-1-discovery-simplification`  
+> **Working recovery branch:** `feat/dima-brain-v2-1-specification-closure`  
 > **Documentation consolidation source HEAD:** `ed95d22a3dee4c3e3cac8932ebd3050a6c0d691e`  
 > **Final semantic Product SHA:** `ce8704d6a0db10dc3fb6b1a7e5d0f86afe9ccdc9`  
 > **Engine:** `d5c60dc9f37a9ec9c5b0117f178146bbcb8dca88` / `0.63.18-dima.9`  
@@ -11,6 +11,11 @@
 
 This handoff contains only the current closure state. Historical handoffs, roadmaps, REDs and
 intermediate certification receipts are archived under `legacy/`.
+
+> **Post-benchmark recovery note:** generic semantic specification closure is active on the
+> recovery branch above. For the exact latest RED/GREEN sequence and certification run IDs,
+> read `DIMA_BRAIN_V2_1_SPECIFICATION_CLOSURE_PROGRESS.md` before acting on the older
+> broad-recovery checklist later in this handoff.
 
 ---
 
