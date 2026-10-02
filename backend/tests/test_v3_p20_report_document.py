@@ -366,7 +366,7 @@ def test_shared_relationship_completion_seals_without_forging_p14_terminal_state
     # the accepted relationship at Product level without forging duplicate Evidence.
     persisted = store.load(
         session.session_id,
-        tenant=str(TENANT),
+        tenant=f"id:{TENANT}",
         principal=str(USER),
     )
     relationship_obligation = ResearchManager.obligation(
