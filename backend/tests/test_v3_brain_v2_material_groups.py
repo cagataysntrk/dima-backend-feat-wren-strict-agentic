@@ -176,6 +176,7 @@ def test_shared_requirement_resolves_to_exact_material_execution_anchor():
     assert len(groups) == 1
     group = groups[0]
     assert set(group.consumer_requirement_ids) == {"g_anchor", "g_source"}
+    assert group.material_group_id.startswith("mg_")
     resolver = getattr(
         material_groups_module,
         "material_execution_anchor_for_requirement",
