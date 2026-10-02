@@ -17,7 +17,7 @@ from app.v3.claim_lineage import ClaimEpistemicState, ClaimLineageStore
 from app.v3.hypothesis_root_cause import AggregateOutcome, CausalQualification, ContributionClass, EvidenceStrength, GroundingSourceKind, HypothesisDisposition, HypothesisRootCauseStore
 from app.v3.research import ObligationState
 from app.v3.research_analytical_scope import coorigin_material_requirements
-from app.v3.research_contracts import ResearchGoalKind
+from app.v3.research_contracts import PresentationKind, ResearchGoalKind
 from app.v3.report_projection import (
     governed_tabular_numeric_fact_for_path,
     project_governed_tabular_numeric_facts,
@@ -1581,6 +1581,139 @@ class ReportDocumentStore:
         )
 
     @staticmethod
+    def _with_observation_only_report_transparency(
+        *,
+        draft: ReportDraft,
+        session,
+    ) -> ReportDraft:
+        """Expose the epistemic ceiling when REPORT has descriptive Evidence only.
+
+        This is final-draft presentation policy. It never creates an analytical
+        finding and must run only after any P16/P18/P19 statements have already
+        been composed into the draft.
+        """
+
+        brief = session.accepted_brief
+        if brief is None or not any(
+            item.kind == PresentationKind.REPORT
+            for item in brief.deliverables
+        ):
+            return draft
+
+        coverage_by_id = {
+            item.obligation_id: item
+            for item in draft.coverage
+        }
+        statement_by_id = {
+            item.statement_id: item
+            for item in draft.statements
+        }
+        existing_by_obligation = {
+            item.obligation_id
+            for item in draft.limitations
+            if item.code == 'P20_REPORT_OBSERVATION_ONLY'
+        }
+
+        observation_kinds = {
+            ReportStatementKind.OBSERVATION,
+            ReportStatementKind.NUMERIC,
+        }
+        interpretation_kinds = {
+            ReportStatementKind.ANALYTICAL_FACT,
+            ReportStatementKind.CAUSAL,
+            ReportStatementKind.ROOT_CAUSE,
+            ReportStatementKind.CONTRIBUTION,
+            ReportStatementKind.UNCERTAINTY,
+        }
+
+        additions: list[ReportStatement] = []
+        limitations = list(draft.limitations)
+        coverage_updates: dict[str, CoverageEntry] = {}
+
+        for obligation_id in _analytical_requirement_ids(brief):
+            entry = coverage_by_id.get(obligation_id)
+            if (
+                entry is None
+                or entry.coverage_status != CoverageStatus.REPRESENTED
+                or obligation_id in existing_by_obligation
+            ):
+                continue
+            owned = tuple(
+                statement_by_id[sid]
+                for sid in entry.statement_ids
+                if sid in statement_by_id
+            )
+            has_observation = any(
+                item.statement_kind in observation_kinds
+                for item in owned
+            )
+            has_interpretation = any(
+                item.statement_kind in interpretation_kinds
+                for item in owned
+            )
+            if not has_observation or has_interpretation:
+                continue
+
+            limitation_id = stable_limitation_id(
+                {
+                    'session_id': session.session_id,
+                    'obligation_id': obligation_id,
+                    'code': 'P20_REPORT_OBSERVATION_ONLY',
+                }
+            )
+            detail = (
+                'Only exact governed descriptive evidence is available for this '
+                'requirement. No governed analytical finding, relationship '
+                'judgment, or RCA assessment is present, so interpretation is '
+                'intentionally limited to descriptive evidence.'
+            )
+            limitation = ReportLimitation(
+                limitation_id=limitation_id,
+                obligation_id=obligation_id,
+                code='P20_REPORT_OBSERVATION_ONLY',
+                detail=detail,
+            )
+            statement_id = stable_statement_id(
+                {
+                    'kind': ReportStatementKind.LIMITATION.value,
+                    'limitation_id': limitation_id,
+                    'obligation_id': obligation_id,
+                }
+            )
+            statement = ReportStatement(
+                statement_id=statement_id,
+                statement_kind=ReportStatementKind.LIMITATION,
+                obligation_refs=(obligation_id,),
+                limitation_refs=(limitation_id,),
+                upstream_epistemic_ceiling='LIMITATION',
+                payload={'limitation_id': limitation_id},
+            )
+            limitations.append(limitation)
+            additions.append(statement)
+            coverage_updates[obligation_id] = entry.model_copy(
+                update={
+                    'statement_ids': tuple(
+                        dict.fromkeys(
+                            (*entry.statement_ids, statement_id)
+                        )
+                    )
+                }
+            )
+
+        if not additions:
+            return draft
+        return draft.model_copy(
+            update={
+                'coverage': tuple(
+                    coverage_updates.get(item.obligation_id, item)
+                    for item in draft.coverage
+                ),
+                'statements': (*draft.statements, *additions),
+                'limitations': tuple(limitations),
+            }
+        )
+
+    @staticmethod
     def _hydrate(row: ReportDocumentRecord) -> ReportDocument:
         try:
             coverage = json.loads(row.coverage_json)
@@ -1594,6 +1727,14 @@ class ReportDocumentStore:
         return ReportDocument(report_id=row.report_id, research_session_id=row.research_session_id, tenant_binding=row.tenant_binding, semantic_context_version=row.semantic_context_version, report_key=row.report_key, revision=row.revision, parent_report_id=row.parent_report_id, coverage=tuple((CoverageEntry.model_validate(item) for item in coverage)), statements=tuple((ReportStatement.model_validate(item) for item in statements)), source_refs=tuple((SourceReference.model_validate(item) for item in sources)), limitations=tuple((ReportLimitation.model_validate(item) for item in limitations)), source_set_fingerprint=row.source_set_fingerprint, report_fingerprint=row.report_fingerprint, created_at=row.created_at)
 
     def seal(self, *, draft: ReportDraft, principal: Principal, now: datetime | None=None) -> ReportDocument:
+        session, _ = self._gate._session(
+            draft.research_session_id,
+            principal,
+        )
+        draft = self._with_observation_only_report_transparency(
+            draft=draft,
+            session=session,
+        )
         session, mandatory, statements, sources, source_set_fingerprint = self._gate.validate(draft=draft, principal=principal)
         if session.accepted_brief is None:
             raise P20ReportError('P20_ACCEPTED_BRIEF_REQUIRED', session.session_id)
