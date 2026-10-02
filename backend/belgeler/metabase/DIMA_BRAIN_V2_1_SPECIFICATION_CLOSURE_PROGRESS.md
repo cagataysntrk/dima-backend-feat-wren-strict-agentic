@@ -992,3 +992,53 @@ Next required existing-suite proof:
   mandatory and unchanged.
 
 No paid live authorization is opened until Phase-2 is GREEN.
+
+
+### Step 10D — provider-free specification-closure candidate frozen
+
+Phase-2/headless certification:
+
+- run `37060243625` = **SUCCESS**;
+- T1-T7 headless Product contracts/composition: 96 passed;
+- current T1-T4 owner proofs: 4 passed;
+- P18 relationship owner proofs: 28 passed;
+- full P20 ReportDocument suite: 32 passed;
+- independent T1-T7 metamorphic suite: 15 passed;
+- security + repository hygiene: 26 passed;
+- forbidden-surface audit: GREEN.
+
+Carry-forward current provider-free seals on the same Product bytes:
+
+- focused Brain V2 provider-free `37057450986` = SUCCESS;
+- semantic conformance `37057450859` = SUCCESS;
+- aggregate Phase-1 `37059975136` = SUCCESS;
+- Phase-2/headless/metamorphic `37060243625` = SUCCESS.
+
+Frozen semantic Product candidate for targeted live recovery:
+
+`dacf41f99e1371197917e520e5faffa037aed9b3`
+
+From this SHA through the certification/receipt commits:
+
+- `backend/app/**` diff = 0;
+- `backend/pyproject.toml` diff = 0;
+- `engine/metabase` diff = 0.
+
+Engine remains:
+
+`d5c60dc9f37a9ec9c5b0117f178146bbcb8dca88 / 0.63.18-dima.9`
+
+Provider-free specification closure status:
+**GREEN / FREEZE ONE CANDIDATE**.
+
+Targeted live authorization may now open only as:
+
+- one frozen counterexample per run;
+- Luna / Luna / no cascade;
+- dima.9 exact digest;
+- low hard provider/token/cost ceiling;
+- production diff from frozen candidate = 0;
+- broad paid = false;
+- 30-case = false;
+- stop on first mechanical/contract RED;
+- manually adjudicate Product quality before proceeding to the next probe.
