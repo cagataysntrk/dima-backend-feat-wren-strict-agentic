@@ -1331,32 +1331,44 @@ Do not reopen CandidateSetProjector or MaterialGroup unless a generic mechanical
 
 ## 33. Readiness status
 
-Final decision:
+The pre-benchmark readiness inference has now been superseded by the frozen broad benchmark.
+
+Current decision:
 
 ~~~text
 BRAIN V2.1 ARCHITECTURE FROZEN
 
-90+ HIGH-CONFIDENCE READINESS
-YES
+ROUND-2 30-CASE
+COMPLETED
 
-30-CASE READY
-YES
+FINAL PRODUCT QUALITY
+60.5 / 100
 
 90+ PROVEN
 NO
 
-30-case
-NOT RUN
+80+ PROVEN
+NO
+
+former 90+ HIGH-CONFIDENCE READINESS
+INVALIDATED BY BROAD EVIDENCE
 
 frontend
-NOT IMPLEMENTED
+NOT IMPLEMENTED / NOT AUTHORIZED
 ~~~
+
+Canonical benchmark authority:
+
+`DIMA_BRAIN_V2_1_ROUND2_FINAL_ADJUDICATION_2026-10-02.md`
 
 Meaning:
 
-- the architecture, targeted live panel, manual quality and stateful/metamorphic evidence justify proceeding to the frozen 30-case when separately authorized;
-- no claim is made that the Product has already scored >=90 on that benchmark;
-- 90+ PROVEN requires the separately authorized frozen 30-case to actually run and score >=90.0.
+- the architecture itself remains frozen and the speed/cost simplification remains materially successful;
+- the targeted T1-T7 panel was not representative enough to support a 90+ broad-quality inference;
+- the broad corpus exposed generic ranking-admission, completion/sealing, adaptive, causal-temporal and multi-turn scope-repair gaps;
+- no Brain V3 or broad retry is authorized by this result;
+- the next recovery work must close those generic invariant families provider-free, then use targeted live proofs;
+- another 30-case requires new explicit user authorization on a newly frozen candidate.
 
 ---
 
