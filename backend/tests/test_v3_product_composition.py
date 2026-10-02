@@ -1422,6 +1422,91 @@ def test_r8_a_coorigin_relationship_reuses_verified_sibling_material_without_sec
     assert result.user_must_fulfilled == 2
 
 
+def test_shared_relationship_report_handoff_carries_exact_downstream_authority():
+    fragment_identity = "fragment-sha256:" + "9" * 64
+    ranking = ResearchQuestion(
+        goal_id="g_shared_report_rank",
+        kind=ResearchGoalKind.RANKING,
+        source_text="Rank downtime by department.",
+        source_fragment_identity=fragment_identity,
+        subject_refs=(DEPT, DOWNTIME),
+        related_refs=(),
+        ranking=RankingSurface(
+            text="rank downtime",
+            direction="desc",
+            limit=None,
+            measure_semantic_id=DOWNTIME.candidate_id,
+        ),
+        status=ResearchGoalStatus.RESOLVED,
+    )
+    relationship = ResearchQuestion(
+        goal_id="g_shared_report_relationship",
+        kind=ResearchGoalKind.RELATIONSHIP,
+        source_text="Assess downtime with faults by department.",
+        source_fragment_identity=fragment_identity,
+        subject_refs=(DOWNTIME, FAULTS),
+        related_refs=(DEPT,),
+        status=ResearchGoalStatus.RESOLVED,
+    )
+    b = brief(ranking, relationship, report=True)
+    c, research, _, reasoning = composer(relationship_blocked=False)
+
+    original = c._resolve_relationship
+
+    def wrapped(**kwargs):
+        reasoning.current_obligation_by_session[kwargs["material_session_id"]] = (
+            kwargs["material_goal"].goal_id
+        )
+        return original(**kwargs)
+
+    c._resolve_relationship = wrapped
+
+    class ExactAuthorityReports(FakeReports):
+        def __init__(self, research):
+            super().__init__(research)
+            self.relationship_results = None
+
+        def draft_from_governed_research(
+            self,
+            *,
+            research_session_id,
+            report_key,
+            principal,
+            relationship_results,
+            explicit_limitations=(),
+        ):
+            self.relationship_results = tuple(relationship_results)
+            return super().draft_from_governed_research(
+                research_session_id=research_session_id,
+                report_key=report_key,
+                principal=principal,
+                explicit_limitations=explicit_limitations,
+            )
+
+    reports = ExactAuthorityReports(research)
+    c._reports = reports
+
+    result = c.compose(
+        brief=b,
+        principal=principal(),
+        request_ref="shared-relationship-report-authority",
+        source_message_hash="9" * 64,
+        native_session_token=None,
+    )
+
+    assert research.run_calls == [
+        (result.research_session_id, ranking.goal_id)
+    ]
+    assert len(reports.relationship_results) == 1
+    projected = reports.relationship_results[0]
+    assert projected.obligation_id == ranking.goal_id
+    assert (
+        projected.applicability_scope["accepted_relationship_goal_id"]
+        == relationship.goal_id
+    )
+    assert result.p20_report_ref == "p20r_" + "3" * 24
+
+
 def test_relationship_scoped_provider_is_claim_only_when_shared_material_is_complete():
     class Inner:
         call_count = 0
