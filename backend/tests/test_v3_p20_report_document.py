@@ -20,7 +20,13 @@ from app.v3.research_product import ResearchAskOrchestrator
 from app.v3.research_store import ResearchSessionStore
 from control_plane.authorize import Principal
 from control_plane.models import BusinessRelationshipPolicyUseRecord, ClaimEvidenceLinkRecord, HypothesisGroundingLink, HypothesisRecord, ReportDocumentRecord, ResearchClaimRecord, ResearchExecutionLink, ResearchExplorationMaterial, ResearchReasoningStepRecord, RootCauseAssessment, Tenant, User
-from tests.semantic_spec.model import ReferencePresentationFact, reference_tabular_numeric_facts
+from tests.semantic_spec.model import (
+    ReferencePresentationFact,
+    ReferencePresentationMetric,
+    ReferencePresentationRow,
+    reference_tabular_numeric_facts,
+    reference_tabular_rows,
+)
 TENANT = UUID('00000000-0000-4000-8000-000000002001')
 USER = UUID('00000000-0000-4000-8000-000000002002')
 STAMP = datetime(2026, 9, 25, 21, 0, tzinfo=timezone.utc)
@@ -40,7 +46,7 @@ def brief(suffix: str='base') -> ResearchBrief:
     question = ResearchQuestion(goal_id='g1', kind=ResearchGoalKind.PERFORMANCE, source_text='Kanal farkını yönetişimli biçimde raporla.', subject_refs=(metric,), status=ResearchGoalStatus.RESOLVED)
     return ResearchBrief(brief_id=f'rb-p20-{suffix}', objective=question.source_text, scope=ResearchScope(semantic_refs=(metric,)), questions=(question,), must_requirement_ids=('g1',), context_version='ctx-p20-v1', status=ResearchBriefStatus.READY_FOR_RESEARCH)
 
-def make_state(db, suffix: str='base'):
+def make_state(db, suffix: str='base', result_override=None):
     SQLModel.metadata.create_all(db)
     with Session(db) as s:
         s.add(Tenant(id=TENANT, slug='p20', name='P20', created_at=STAMP))
@@ -55,7 +61,7 @@ def make_state(db, suffix: str='base'):
     query = {'database': 1, 'type': 'query', 'query': {'source-table': 10, 'aggregation': [['count']], 'breakout': [['field', 20, None]]}}
     link = store.mark_candidate(link.id, native_query_id=f'p20-{suffix}-query', native_query=query, query_fingerprint=h(query))
     store.mark_execution_started(link.id, native_subject_ref='metabase-user:20')
-    result = {'database_id': 1, 'row_count': 2, 'data': {'cols': [{'display_name': 'Channel'}, {'display_name': 'Sales Order Count'}], 'rows': [['Web', 34], ['Partner', 12]]}, 'statistics': {'association': 0.72}, 'identification': {'kind': 'NATIVE_CAUSAL_IDENTIFICATION'}}
+    result = result_override or {'database_id': 1, 'row_count': 2, 'data': {'cols': [{'display_name': 'Channel'}, {'display_name': 'Sales Order Count'}], 'rows': [['Web', 34], ['Partner', 12]]}, 'statistics': {'association': 0.72}, 'identification': {'kind': 'NATIVE_CAUSAL_IDENTIFICATION'}}
     store.mark_executed(link.id, native_subject_ref='metabase-user:20', runtime_identity={'substrate': 'metabase-native', 'runtime_version': 'v0.63.18-dima.6', 'image_digest': 'sha256:' + 'd' * 64, 'database_id': 'metabase:1'}, result_payload=result, result_hash=h(result), executed_at=STAMP)
     evidence_id = 'evi_' + h({'suffix': suffix, 'kind': 'evidence'})[:24]
     receipt_id = 'dqr_' + h({'suffix': suffix, 'kind': 'receipt'})[:24]
@@ -624,6 +630,71 @@ def test_auto_numeric_projection_rejects_invented_presentation_context(
             now=STAMP + timedelta(minutes=30),
         )
     assert exc.value.code == 'P20_NUMERIC_PRESENTATION_MISMATCH'
+
+
+
+
+def test_auto_report_projects_one_governed_observation_per_source_row():
+    result = {
+        'database_id': 1,
+        'row_count': 1,
+        'data': {
+            'cols': [
+                {'display_name': 'Entity'},
+                {'display_name': 'Metric One'},
+                {'display_name': 'Metric Two'},
+                {'display_name': 'Metric Three'},
+            ],
+            'rows': [['entity.e1', 11, 22.5, 33]],
+        },
+    }
+    db = db_engine()
+    state = make_state(
+        db,
+        suffix='row-presentation-law',
+        result_override=result,
+    )
+    store = ReportDocumentStore(
+        research_store=state['store'],
+        db_engine=db,
+    )
+    draft = store.draft_from_governed_research(
+        research_session_id=state['session'].session_id,
+        report_key='row-presentation-law',
+        principal=state['principal'],
+    )
+
+    evidence_statements = tuple(
+        item
+        for item in draft.statements
+        if any(
+            ref.source_kind == ReportSourceKind.P14_EVIDENCE
+            and ref.source_ref == state['evidence_id']
+            for ref in item.source_refs
+        )
+    )
+    assert len(evidence_statements) == 1
+
+    item = evidence_statements[0]
+    actual = ReferencePresentationRow(
+        context=tuple(
+            (str(entry['label']), str(entry['value']))
+            for entry in item.payload.get('context', ())
+        ),
+        metrics=tuple(
+            ReferencePresentationMetric(
+                source_path=str(entry['source_path']),
+                label=str(entry['label']),
+                value=entry['value'],
+            )
+            for entry in item.payload.get('metrics', ())
+        ),
+    )
+    expected = reference_tabular_rows(
+        column_labels=('Entity', 'Metric One', 'Metric Two', 'Metric Three'),
+        rows=(('entity.e1', 11, 22.5, 33),),
+    )
+    assert (actual,) == expected
 
 
 
