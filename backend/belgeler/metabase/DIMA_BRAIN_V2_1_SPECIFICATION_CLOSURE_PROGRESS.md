@@ -1606,3 +1606,80 @@ Classification:
 
 Next gate:
 Phase-2/headless/metamorphic certification on these exact Product bytes. Paid live remains CLOSED.
+
+
+### Step 12D — role-aware temporal identity / Phase-1 seal
+
+Surgical F06_M live run `37076370845` stopped after the first provider call with:
+
+- exception: `INTAKE_TIME_PERIOD_DUPLICATE`;
+- detail: `dimension.event_date|2026-05-01|2026-07-01`;
+- provider requests: 1;
+- provider cost ~= $0.00461;
+- duplicate native: 0;
+- stale Evidence: 0.
+
+Paid authorization was closed immediately.
+
+Root cause:
+
+- temporal semantic roles are first-class Dima authority;
+- durable scope-patch identity already used
+  `(time_dimension, start, end, role)`;
+- initial intake binding and `ResearchScope` uniqueness still used
+  `(time_dimension, start, end)`;
+- therefore two legal role-distinct periods sharing exact physical bounds were collapsed as a
+  duplicate before analytical execution.
+
+Independent law:
+
+- temporal role is part of semantic period identity;
+- same dimension/bounds with distinct roles is legal;
+- exact same dimension/bounds/role remains duplicate;
+- byte-equivalent provider DTO repetition remains idempotently collapsible.
+
+Reference patterns consulted:
+
+- Metabase official filtering/query-builder semantics: one governed date field may participate in
+  multiple query constraints; physical field/bounds alone are not Dima semantic-role authority;
+- Wren OSS architecture: preserve business/context semantics as explicit governed primitives.
+
+Adopted:
+
+- role-aware temporal semantic identity.
+
+Deliberately NOT adopted:
+
+- no new query engine or planner;
+- no SQL/MBQL generation;
+- no prompt phrase routing;
+- no benchmark-specific case branch;
+- no scope/currentness/security weakening;
+- no engine change.
+
+Provider-free proof:
+
+- intentional Product RED `37076809271`: 155 passed / exactly 1 failed at the role-less
+  `ResearchScope` identity validator;
+- focused Brain V2 on RED candidate `37076809241` = SUCCESS / 101 passed, 1 skipped;
+- Product fix aligns intake + durable scope identity with existing role-aware scope-patch identity;
+- semantic conformance `37077097037` = SUCCESS / 156 passed;
+- aggregate Phase-1 `37077120286` = **SUCCESS**:
+  - Brain V2 deterministic closure: 141 passed;
+  - Research/scope/P14 authority regressions: 255 passed;
+  - P17 investigation regressions: 145 passed;
+  - P19 epistemic regressions: 53 passed;
+  - P20/Core-B semantic regressions: 56 passed;
+  - security/repository hygiene: 26 passed.
+
+Semantic Product candidate:
+
+`400ae37b4804c8fee35325eea85fabc852b55214`
+
+The following `9ee4b154...` commit is provider-free proof only.
+
+Classification:
+**TEMPORAL ROLE IDENTITY — GENERIC LAW GREEN / PHASE-1 SEALED**.
+
+Next gate:
+Phase-2/headless/metamorphic certification on the same Product bytes. Paid live remains CLOSED.
