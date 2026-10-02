@@ -18,6 +18,7 @@ from .activities import (
     P18ActivityResult,
     RequirementPlanActivityResult,
     P17ActivityResult,
+    P17NextTestDisposition,
     P19ActivityResult,
     ReportActivityResult,
 )
@@ -470,6 +471,24 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
         result = P17ActivityResult.model_validate(
             next_test_activity(current.model_dump(mode="json")).result()
         )
+        if result.next_test_disposition == P17NextTestDisposition.INCONCLUSIVE:
+            # P17 owns only bounded information-gain control. Exhausting that
+            # control capacity is routed back to P19 so P19 can author the
+            # durable epistemic terminal; LangGraph does not manufacture one.
+            return {
+                "hypothesis_revision": result.hypothesis_revision,
+                "hypothesis_ids": result.hypothesis_ids,
+                "material_requirement_ids": (),
+                "pending_evidence_ids": (),
+                "pending_receipt_refs": (),
+                "pending_next_test_ref": None,
+                "discovery_required": False,
+                "adaptive_reentries": current.max_adaptive_reentries,
+                "last_completed_node": "P17_NEXT_TEST_INCONCLUSIVE",
+                "activity_fingerprints": _append_fingerprint(
+                    current, result.activity_fingerprint
+                ),
+            }
         return {
             "hypothesis_revision": result.hypothesis_revision,
             "hypothesis_ids": result.hypothesis_ids,
@@ -598,6 +617,12 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
             return "p17_discover"
         return "honest_stop"
 
+    def after_next_test(state: BrainStatePayload) -> str:
+        current = _snapshot(state)
+        if current.last_completed_node == "P17_NEXT_TEST_INCONCLUSIVE":
+            return "p19_assess"
+        return "acquire_material"
+
     def after_p19(state: BrainStatePayload) -> str:
         current = _snapshot(state)
         if current.latest_p19_route in {
@@ -706,7 +731,14 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
             "p17_next_test": "p17_next_test",
         },
     )
-    builder.add_edge("p17_next_test", "acquire_material")
+    builder.add_conditional_edges(
+        "p17_next_test",
+        after_next_test,
+        {
+            "p19_assess": "p19_assess",
+            "acquire_material": "acquire_material",
+        },
+    )
     builder.add_edge("report", "completion_evaluate")
     builder.add_edge("complete", END)
     builder.add_edge("honest_stop", END)
