@@ -405,6 +405,7 @@ class ResearchManager:
                 (
                     "- kind: native_metric",
                     f"- measure: {ranking.measure}",
+                    f"- basis: {ranking.basis.value}",
                     f"- direction: {ranking.direction}",
                     f"- limit: {ranking.limit if ranking.limit is not None else 'none'}",
                 )
@@ -437,6 +438,13 @@ class ResearchManager:
             )
         elif ranking is not None:
             lines.append("- preserve the governed native ranking basis exactly")
+            if ranking.basis.value == "change":
+                lines.extend(
+                    (
+                        "- rank by the accepted baseline-to-comparison change, not pooled level",
+                        "- keep the accepted comparison periods distinguishable in governed material",
+                    )
+                )
 
         lines.extend(
             (
