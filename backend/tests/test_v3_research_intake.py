@@ -230,7 +230,9 @@ def test_change_ranking_intake_preserves_basis_and_role_bound_periods():
     )
     schema = transport.calls[0]["schema"]
     ranking_schema = schema["$defs"]["DraftRanking"]
-    assert set(ranking_schema["properties"]["basis"]["enum"]) == {"level", "change"}
+    basis_schema = ranking_schema["properties"]["basis"]
+    assert basis_schema["$ref"] == "#/$defs/RankingBasis"
+    assert set(schema["$defs"]["RankingBasis"]["enum"]) == {"level", "change"}
 
 
 def test_causal_competition_is_one_root_cause_goal_not_relationship_query_plan():
