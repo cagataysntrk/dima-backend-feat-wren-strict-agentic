@@ -70,13 +70,15 @@ def test_relationship_report_requires_zero_second_turn_reanalysis():
         budget_before_report={
             "research_intake": 1,
             "metabase": 1,
-            "p17_manager": 1,
+            "p17_manager": 0,
+            "p18_manager": 1,
             "p19_manager": 0,
         },
         budget_after={
             "research_intake": 1,
             "metabase": 1,
-            "p17_manager": 1,
+            "p17_manager": 0,
+            "p18_manager": 1,
             "p19_manager": 0,
         },
         same_research_session=True,
@@ -136,7 +138,8 @@ def test_multi_intent_requires_one_shared_material_and_full_terminal_accounting(
         budget_after={
             "research_intake": 1,
             "metabase": 1,
-            "p17_manager": 1,
+            "p17_manager": 0,
+            "p18_manager": 1,
             "p19_manager": 0,
         },
         same_research_session=True,
