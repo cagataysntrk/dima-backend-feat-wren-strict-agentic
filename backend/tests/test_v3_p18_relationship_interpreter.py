@@ -183,3 +183,18 @@ def test_p18_interpreter_module_cannot_open_analytics():
         "explore_adhoc",
     ):
         assert forbidden not in source
+
+
+def test_salient_schema_enumerates_only_existing_numeric_cells():
+    transport = FakeTransport(payload())
+    manager = StructuredP18RelationshipInterpreter(transport=transport)
+
+    manager.interpret(view())
+
+    salient = transport.calls[0]["schema"]["$defs"]["P18SalientCell"]
+    assert salient["enum"] == [
+        {"evidence_id": EVIDENCE, "row_index": 0, "column_index": 1},
+        {"evidence_id": EVIDENCE, "row_index": 0, "column_index": 2},
+        {"evidence_id": EVIDENCE, "row_index": 1, "column_index": 1},
+        {"evidence_id": EVIDENCE, "row_index": 1, "column_index": 2},
+    ]
