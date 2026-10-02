@@ -2228,12 +2228,13 @@ class DimaBrainV2Activities(BrainActivities):
             if item in analytical_terminal or item in report_terminal
         )
         report_required = bool(report_ids - report_terminal)
-        requirement_complete = set(effective_must) == set(terminal_ids)
+        all_requirements_terminal = set(effective_must) == set(terminal_ids)
+        requirement_complete = False
 
         # Build the shared ledger only when every USER_MUST is terminal. The
         # report gate before P20 intentionally has a pending deliverable and is
         # represented by analytical_complete/report_required instead.
-        if requirement_complete:
+        if all_requirements_terminal:
             entries: list[ProductRequirementCompletion] = []
             for requirement_id in effective_must:
                 if requirement_id in report_ids:
@@ -2270,11 +2271,13 @@ class DimaBrainV2Activities(BrainActivities):
                     "BRAIN_V2_COMPLETION_IDENTITY_MISMATCH",
                     brief.brief_id,
                 )
+            requirement_complete = ledger.requirement_complete
 
         return CompletionActivityResult(
             completion_revision=state.completion_revision + 1,
             terminal_requirement_ids=terminal_ids,
             analytical_complete=analytical_complete,
+            all_requirements_terminal=all_requirements_terminal,
             requirement_complete=requirement_complete,
             report_required=report_required,
             activity_fingerprint=_fingerprint(
@@ -2288,9 +2291,21 @@ class DimaBrainV2Activities(BrainActivities):
             ),
         )
 
-    def _relationship_results_from_state(self, *, state, session):
+    def _relationship_results_from_terminal_index(self, *, state, session):
         if not state.p18_requirement_ids:
             return ()
+        if state.completion_revision <= 0:
+            raise BrainV2OwnerError(
+                "BRAIN_V2_P20_COMPLETION_INDEX_REQUIRED",
+                session.session_id,
+            )
+        terminal = set(state.terminal_requirement_ids)
+        missing_terminal = set(state.p18_requirement_ids) - terminal
+        if missing_terminal:
+            raise BrainV2OwnerError(
+                "BRAIN_V2_P20_RELATIONSHIP_NOT_TERMINAL",
+                ",".join(sorted(missing_terminal)),
+            )
         if self._relationships is None:
             raise BrainV2OwnerError(
                 "BRAIN_V2_P18_OWNER_REQUIRED",
@@ -2378,11 +2393,28 @@ class DimaBrainV2Activities(BrainActivities):
 
     def synthesize_report(self, state: BrainGraphState) -> ReportActivityResult:
         session = self._session(state)
+        if state.completion_revision <= 0:
+            raise BrainV2OwnerError(
+                "BRAIN_V2_P20_COMPLETION_INDEX_REQUIRED",
+                session.session_id,
+            )
+        analytical = set(
+            (
+                *state.direct_requirement_ids,
+                *state.relationship_requirement_ids,
+                *state.root_cause_requirement_ids,
+            )
+        )
+        if not analytical.issubset(set(state.terminal_requirement_ids)):
+            raise BrainV2OwnerError(
+                "BRAIN_V2_P20_ANALYTICAL_TERMINAL_REQUIRED",
+                session.session_id,
+            )
         report_key = (
             f"brain-v2:{state.thread_id}:{state.scope_version_id or 'scope_v1'}:"
             f"presentation-v{state.presentation_revision}"
         )
-        relationship_results = self._relationship_results_from_state(
+        relationship_results = self._relationship_results_from_terminal_index(
             state=state,
             session=session,
         )

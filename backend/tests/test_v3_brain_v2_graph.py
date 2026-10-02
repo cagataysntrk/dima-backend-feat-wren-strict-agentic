@@ -120,6 +120,7 @@ class FakeActivities:
             completion_revision=state.completion_revision + 1,
             terminal_requirement_ids=terminal,
             analytical_complete=True,
+            all_requirements_terminal=True,
             requirement_complete=(
                 set(state.open_requirement_ids).issubset(set(terminal))
             ),

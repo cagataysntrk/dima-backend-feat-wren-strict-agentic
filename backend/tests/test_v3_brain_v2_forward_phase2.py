@@ -160,6 +160,9 @@ class ForwardPhase2Activities:
             completion_revision=state.completion_revision + 1,
             terminal_requirement_ids=terminal,
             analytical_complete=analytical.issubset(set(terminal)),
+            all_requirements_terminal=set(state.open_requirement_ids).issubset(
+                set(terminal)
+            ),
             requirement_complete=set(state.open_requirement_ids).issubset(
                 set(terminal)
             ),

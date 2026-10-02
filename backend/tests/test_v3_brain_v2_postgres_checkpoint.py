@@ -82,6 +82,7 @@ class OnePassActivities:
             completion_revision=state.completion_revision + 1,
             terminal_requirement_ids=("g1",),
             analytical_complete=True,
+            all_requirements_terminal=True,
             requirement_complete=True,
             report_required=False,
             activity_fingerprint=_fp("completion"),
