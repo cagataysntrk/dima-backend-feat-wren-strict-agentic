@@ -7,6 +7,7 @@ import pytest
 from hypothesis import given, settings, strategies as st
 
 from app.v3.analytical_request_contract import (
+    AnalyticalFilterInvariant,
     AnalyticalRankingInvariant,
     AnalyticalRequestContract,
     AnalyticalScopeIdentity,
@@ -14,6 +15,7 @@ from app.v3.analytical_request_contract import (
 from app.v3.research_analytical_scope import (
     NativeMaterialBinding,
     ResearchAnalyticalScopeError,
+    _assert_material_filter_scope,
     _assert_material_ranking_scope,
 )
 from app.v3.research_contracts import (
@@ -32,6 +34,7 @@ from app.v3.research_scope_patch import (
     resolve_scope_patch,
 )
 from app.v3.substrate.metabase.native_models import (
+    NativeMaterialFilter,
     NativeMaterialObservation,
     NativeMaterialRanking,
     NativeMaterialRankingTarget,
@@ -39,6 +42,7 @@ from app.v3.substrate.metabase.native_models import (
 
 from tests.semantic_spec.model import (
     EntityCardinality,
+    EntityFilterAdmissionSpec,
     GoalKind,
     MaterialShape,
     PeriodStructure,
@@ -47,6 +51,7 @@ from tests.semantic_spec.model import (
     ReferencePatch,
     ReferenceScope,
     apply_reference_patch,
+    entity_filter_admission_allowed,
     pair_coverage,
     semantic_matrix,
 )
@@ -402,6 +407,65 @@ def test_same_patch_replay_from_same_source_is_idempotent() -> None:
 
     assert first.current_scope == second.current_scope
     assert first.scope_fingerprint == second.scope_fingerprint
+
+
+def test_multi_value_entity_filter_matches_exact_governed_value_set() -> None:
+    required = frozenset({"entity.e1", "entity.e2"})
+    observed = frozenset({"entity.e2", "entity.e1"})
+    assert entity_filter_admission_allowed(
+        EntityFilterAdmissionSpec(
+            required_values=required,
+            observed_values=observed,
+        )
+    )
+
+    contract = AnalyticalRequestContract(
+        authority_id="auth-semantic-spec",
+        request_ref="req-filter-set",
+        semantic_context_version="ctx-semantic-spec-v1",
+        scope_identity=AnalyticalScopeIdentity(
+            lineage_id="lineage-semantic-spec",
+            version_id="scope_v2",
+        ),
+        metric_refs=("metric.m1",),
+        filters=(
+            AnalyticalFilterInvariant(
+                semantic_ref="entity.e1",
+                source_candidate_id="entity.e1",
+                dimension_name="dimension.entity",
+                value="entity.e1",
+            ),
+            AnalyticalFilterInvariant(
+                semantic_ref="entity.e2",
+                source_candidate_id="entity.e2",
+                dimension_name="dimension.entity",
+                value="entity.e2",
+            ),
+        ),
+    )
+    bindings = {
+        candidate_id: NativeMaterialBinding(
+            candidate_id=candidate_id,
+            candidate_kind="entity_value",
+            database_id=1,
+            table_id=10,
+            field_id=20,
+        )
+        for candidate_id in required
+    }
+    observation = SimpleNamespace(
+        filters=(
+            NativeMaterialFilter(
+                stage_number=0,
+                operator="=",
+                values=("entity.e2", "entity.e1"),
+                field_id=20,
+                table_id=10,
+            ),
+        )
+    )
+
+    _assert_material_filter_scope(contract, observation, bindings)
 
 
 def _ranking_contract() -> AnalyticalRequestContract:
