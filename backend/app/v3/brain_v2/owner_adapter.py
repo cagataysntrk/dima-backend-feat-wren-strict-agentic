@@ -108,7 +108,11 @@ from .activities import (
     ReportActivityResult,
 )
 from .keys import CognitionPurpose, CognitionRequestKey, NativeMaterialRequestKey
-from .material_groups import project_material_groups
+from .material_groups import (
+    MaterialGroupDependencyError,
+    project_material_groups,
+    select_pending_material_group,
+)
 from .requirement_dispatch import RequirementOwner, dispatch_requirements
 from .p19_context import project_p19_scope_authority
 from .state import BrainGraphState, BrainP19Route
@@ -807,27 +811,20 @@ class DimaBrainV2Activities(BrainActivities):
                 last_valid_boundary="dima.requirements.plan",
                 first_invalid_boundary="dima.material.group",
             )
-        pending = tuple(
-            item
-            for item in groups.values()
-            if item.material_group_id not in set(state.completed_material_group_ids)
-        )
-        if state.active_material_group_id is not None:
-            group = groups.get(state.active_material_group_id)
-            if group is None:
-                raise BrainV2OwnerError(
-                    "BRAIN_V2_MATERIAL_GROUP_UNKNOWN",
-                    state.active_material_group_id,
-                )
-        elif pending:
-            group = sorted(
-                pending,
-                key=lambda item: (
-                    item.material_fingerprint,
-                    item.material_group_id,
-                ),
-            )[0]
-        else:
+        try:
+            group = select_pending_material_group(
+                tuple(groups.values()),
+                completed_material_group_ids=state.completed_material_group_ids,
+                active_material_group_id=state.active_material_group_id,
+            )
+        except MaterialGroupDependencyError as exc:
+            raise BrainV2OwnerError(
+                exc.code,
+                exc.detail,
+                last_valid_boundary="dima.requirements.plan",
+                first_invalid_boundary="dima.material.group",
+            ) from exc
+        if group is None:
             raise BrainV2OwnerError(
                 "BRAIN_V2_MATERIAL_GROUP_COMPLETE",
                 session.session_id,
