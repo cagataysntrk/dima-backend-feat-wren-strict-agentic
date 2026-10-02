@@ -21,6 +21,7 @@ from app.v3.analytics_contract import (
     ResolvedPeriod,
     ResolvedRanking,
 )
+from app.v3.research_contracts import RankingBasis
 
 
 class FrozenModel(BaseModel):
@@ -61,12 +62,13 @@ class AnalyticalTemporalObservationInvariant(FrozenModel):
 
 
 class AnalyticalRankingInvariant(FrozenModel):
-    """Native material ranking only when one governed metric basis is authorized."""
+    """Native ranking WHAT; Metabot still owns analytical HOW."""
 
     kind: Literal["native_metric"] = "native_metric"
     measure: str = Field(min_length=1)
     direction: Literal["asc", "desc"]
     limit: int | None = Field(default=None, ge=1, le=1000)
+    basis: RankingBasis = RankingBasis.LEVEL
 
 
 class AnalyticalEvidenceSynthesisRankingInvariant(FrozenModel):
@@ -159,6 +161,19 @@ class AnalyticalRequestContract(FrozenModel):
         # Backward-compatible alias for call sites that already treat this as
         # material identity. Authority/request provenance lives in separate fields.
         return self.material_fingerprint
+
+    @model_validator(mode="after")
+    def coherent_ranking_basis(self):
+        ranking = self.ranking
+        if (
+            isinstance(ranking, AnalyticalRankingInvariant)
+            and ranking.basis == RankingBasis.CHANGE
+            and self.comparison is None
+        ):
+            raise ValueError(
+                "change ranking requires typed baseline/comparison authority"
+            )
+        return self
 
     @model_validator(mode="after")
     def coherent_temporal_observation(self):
