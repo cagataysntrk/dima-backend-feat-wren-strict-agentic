@@ -12,6 +12,7 @@ from app.v3.analytical_request_contract import (
     AnalyticalRequestContract,
     AnalyticalScopeIdentity,
 )
+from app.v3.research_intake import DraftRanking
 from app.v3.research_analytical_scope import (
     NativeMaterialBinding,
     ResearchAnalyticalScopeError,
@@ -47,12 +48,14 @@ from tests.semantic_spec.model import (
     MaterialShape,
     PeriodStructure,
     PresentationKind,
+    RankingBasis,
     RankingKind,
     ReferencePatch,
     ReferenceScope,
     apply_reference_patch,
     entity_filter_admission_allowed,
     pair_coverage,
+    ranking_basis_is_coherent,
     semantic_matrix,
 )
 
@@ -166,6 +169,26 @@ def _production_patch(
         source_scope_version_id=f"scope_v{source.version}",
         operations=tuple(operations),
     )
+
+
+def test_change_ranking_has_explicit_typed_basis_and_comparison_authority() -> None:
+    assert ranking_basis_is_coherent(
+        basis=RankingBasis.CHANGE,
+        period=PeriodStructure.BASELINE_CANDIDATE,
+    )
+    assert not ranking_basis_is_coherent(
+        basis=RankingBasis.CHANGE,
+        period=PeriodStructure.SINGLE_WINDOW,
+    )
+
+    ranking = DraftRanking(
+        direction="desc",
+        limit=1,
+        measure_semantic_id="metric.m1",
+        source_text="symbolic ranked change",
+        basis="change",
+    )
+    assert ranking.model_dump(mode="json")["basis"] == "change"
 
 
 def test_finite_semantic_matrix_has_complete_pair_coverage() -> None:
