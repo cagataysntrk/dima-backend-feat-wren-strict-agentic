@@ -168,6 +168,7 @@ class NativeResearchOccurrenceRunner:
         request: NativeEngineRequest | None,
         native_session_token: str | None,
         analytical_scope: AnalyticalRequestContract | None = None,
+        repair_parent_link_id: UUID | None = None,
     ) -> NativeResearchOccurrenceResult:
         resumed_exact = False
         with self._bridges.open(
@@ -230,11 +231,78 @@ class NativeResearchOccurrenceRunner:
                             "history": continuation_history,
                         }
                     )
+                elif link.execution_kind == "P14_REPAIR":
+                    if request.state or request.history is not None:
+                        raise ResearchPersistenceError(
+                            "P14_REPAIR_CONTINUATION_CALLER_FORBIDDEN",
+                            (
+                                "P14 repair state/history are Dima-owned "
+                                "source-backed continuation provenance"
+                            ),
+                        )
+                    if repair_parent_link_id is None:
+                        raise ResearchPersistenceError(
+                            "P14_REPAIR_PARENT_REQUIRED",
+                            "material repair requires the failed parent occurrence",
+                        )
+                    parent = self._store.execution_link(repair_parent_link_id)
+                    if (
+                        parent.session_id != session.session_id
+                        or parent.obligation_id != obligation_id
+                        or parent.native_conversation_id
+                        != link.native_conversation_id
+                        or parent.status != "LIMITED"
+                    ):
+                        raise ResearchPersistenceError(
+                            "P14_REPAIR_PARENT_SCOPE_INVALID",
+                            "repair parent must be the same limited Research occurrence",
+                        )
+                    captured = self._store.captured_agent_state(parent)
+                    if captured is None:
+                        raise ResearchPersistenceError(
+                            "P14_REPAIR_PARENT_STATE_REQUIRED",
+                            "limited parent occurrence has no durable Metabot state",
+                        )
+                    continuation_state, _ = captured
+                    continuation_history = bridge.conversation_history(
+                        link.native_conversation_id
+                    )
+                    if not continuation_history:
+                        raise ResearchPersistenceError(
+                            "P14_REPAIR_CONTINUATION_HISTORY_REQUIRED",
+                            (
+                                "limited parent native conversation has no "
+                                "source-backed cognition history"
+                            ),
+                        )
+                    request = request.model_copy(
+                        update={
+                            "state": continuation_state,
+                            "history": continuation_history,
+                        }
+                    )
                 observation = bridge.invoke(request)
                 produced = bridge.capture_produced_query(
                     observation,
                     prior_state=request.state,
                 )
+                if link.execution_kind == "P14_REPAIR":
+                    assert repair_parent_link_id is not None
+                    parent = self._store.execution_link(repair_parent_link_id)
+                    if (
+                        parent.native_query_fingerprint is not None
+                        and produced.query_fingerprint
+                        == parent.native_query_fingerprint
+                    ):
+                        raise ResearchMaterialLimitation(
+                            "P14_REPAIR_REPEATED_NATIVE_QUERY",
+                            (
+                                "Metabot repair reproduced the exact failed "
+                                "native query fingerprint"
+                            ),
+                            last_valid_boundary="dima.native.generate",
+                            first_invalid_boundary="dima.native.repair",
+                        )
                 link = self._store.mark_candidate(
                     link.id,
                     native_query_id=produced.native_query_id,
