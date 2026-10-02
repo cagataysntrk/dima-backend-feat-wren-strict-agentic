@@ -311,3 +311,84 @@ GREEN proof:
 - provider-free semantic conformance run `37041821483` = SUCCESS.
 
 Owner status: **P20 COMPLETION DERIVATION GENERIC CLOSURE — GREEN / FREEZE**.
+
+
+### Step 4 — independent sequence testing + adaptive totality closure
+
+Independent RuleBasedStateMachine proof was added before further Product work:
+
+- Scope lifecycle: 200 examples × 30 steps, compared after every transition to the
+  independent `ReferenceScope` law.
+- Completion lifecycle: 200 examples × 20 steps, terminal USER_MUST ownership remains
+  the completion truth under process-status churn.
+- provider-free semantic state-machine run `37042466988` = SUCCESS.
+
+Adaptive information-gain pattern research:
+
+- Wren architecture: correctness is composed from explicit context/validation/execution
+  primitives; adopted the primitive separation, not the Wren runtime.
+- Metabase/Metabot: analytical cognition stays in Metabot and governed query/result
+  surfaces remain the analytics boundary.
+- Hypothesis RuleBasedStateMachine: adopted long generated action sequences + shrinking,
+  not production projectors as their own correctness oracle.
+- P19 remains epistemic owner; P17 remains bounded information-gain controller; graph
+  remains routing only.
+
+Intentional adaptive RED:
+
+- test commit `5925fed2847cc08f438907421f64803c35ffe9ab`;
+- run `37043843678` = RED at the intentionally missing typed decision primitive;
+- the failing semantic law was: a valid NextTest with no legal materially-new child
+  contract must end governed INCONCLUSIVE/LIMITED, not Product exception.
+
+Generic closure:
+
+- `adaptive_test_design.py` now returns a typed
+  `EXECUTABLE | INCONCLUSIVE` material decision.
+- Scope lineage/version drift stays fail-closed as structural authority violation.
+- Unsupported/no-op/no-bounded temporal delta becomes
+  `NO_LEGAL_MATERIAL_DELTA`, not an internal exception.
+- `P17ActivityResult` carries a typed next-test disposition.
+- `adaptive_owner_adapter.py` converts no callable test, no legal delta, no new
+  Evidence, or no information gain into governed P17 INCONCLUSIVE control outcomes.
+- LangGraph routes that control outcome back to P19 with adaptive capacity exhausted;
+  P19 performs the durable epistemic terminal reassessment. Graph/P17 do not mint P19
+  truth.
+- Successful adaptive work still requires a new Evidence/receipt pair and new result
+  hash; structural design drift still raises.
+- `owner_adapter.py` gained no new semantic branch.
+
+Provider-free proof:
+
+- semantic law + routing + real-owner adaptive gate run `37044713744` = SUCCESS.
+- real-owner adaptive success still performs one typed follow-up and no duplicate native
+  acquisition.
+- generated/fixture adaptive inconclusive path performs zero follow-up native work and
+  returns to P19.
+
+Owner status: **ADAPTIVE TOTALITY / NO-LEGAL-GAIN CLOSURE — GREEN / FREEZE**.
+
+### Step 5 — F06_M comparison-material boundary opened
+
+Frozen broad counterexample forensics (no rerun):
+
+- case F06_M had `turn_count=0`, `evidence_count=0`,
+  `native_acquisitions=0`;
+- Metabase/provider requests occurred, but the first material failed before governed
+  Evidence admission with
+  `R1_RESULT_COMPARISON_COVERAGE_INCOMPLETE: reference_period`;
+- therefore this is not the P17 follow-up defect above.
+
+Current law check:
+
+- `material_coverage_contract()` already requires the governed time dimension as a
+  required breakout for comparison;
+- `assert_material_result_coverage()` correctly requires both reference and base
+  periods before one result can claim full comparison Evidence.
+
+Next legal action:
+
+- trace `typed comparison requirement -> Metabot acquisition context -> observed native
+  material -> result coverage`;
+- do **not** weaken Evidence admission merely to accept a result missing the required
+  reference period.
