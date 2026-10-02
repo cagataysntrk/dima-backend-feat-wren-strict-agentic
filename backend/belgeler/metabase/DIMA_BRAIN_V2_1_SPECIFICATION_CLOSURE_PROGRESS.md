@@ -916,3 +916,48 @@ Next Law-7 audit:
   analytical derivations that must be owned upstream;
 - classify F01_H, F04_H, F05 variants and F08 variants by first missing typed semantic
   boundary before any further Product change.
+
+
+### Step 10B — documentation authority / repository hygiene reconciliation
+
+Aggregate Phase-1 run `37057620767` reached the final security/repository-hygiene
+step after every runtime/Product regression step had passed.
+
+The five failures were all stale repository-governance expectations:
+
+- root `DIMA-METABASE-DURUM.md` was expected even though the current Brain V2.1
+  documentation consolidation intentionally moved Metabase-platform status material under
+  `legacy/metabase-platform/`;
+- two tests attempted to read deleted active-path
+  `DIMA_METABASE_CURRENT_PRODUCT_PLAN.md` /
+  `DIMA_METABASE_CORE_CLOSURE_FINAL_ROADMAP.md`;
+- engine documentation assertion still expected dima.6-era authority;
+- `STORY_LIFECYCLE.json` listed a top-level `comparison` story even though comparison
+  evidence now lives under `metabase/legacy/comparison/`.
+
+Repository audit also found real stale developer-facing authority:
+
+- root `README.md` still claimed pre-benchmark 90+ high-confidence readiness and
+  `30-case = NOT RUN`;
+- `backend/CLAUDE.md`, `backend/AGENTS.md`, and `backend/MIMARI.md` still pointed to
+  `feat/dima-metabase-platform`, Core-B, and dima.6.
+
+Generic governance closure:
+
+- top-level story lifecycle now matches the actual one-story tree:
+  `metabase = ACTIVE`; comparison history remains under `metabase/legacy/comparison/`;
+- repository-hygiene tests now validate the current Brain V2.1 authority set rather than
+  deleted Metabase-platform active paths;
+- exact documented engine identity is dima.9;
+- root/developer docs now point to
+  `feat/dima-brain-v2-1-specification-closure`, frozen Brain V2.1 architecture,
+  immutable broad run `37027548693`, specification-closure recovery, and frontend ban;
+- current documentation index/handoff explicitly point developers to this living recovery log.
+
+No Product/runtime/engine behavior changed.
+
+Classification:
+**repository-governance oracle + stale current-document authority reconciliation**.
+
+Next proof:
+rerun aggregate Phase-1 provider-free certification on this exact documentation/runtime HEAD.
