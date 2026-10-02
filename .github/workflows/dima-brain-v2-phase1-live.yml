@@ -290,7 +290,7 @@ jobs:
           kill "$PROVIDER_PROXY_PID"
           wait "$PROVIDER_PROXY_PID" 2>/dev/null || true
           INTAKE_SOURCE_CEILING=1
-          if [[ "${{ steps.auth.outputs.probe_id }}" == "R_LIVE_4_SCOPE_RESUME" || "${{ steps.auth.outputs.probe_id }}" == "RELATIONSHIP_REPORT_PHASE2_V1" ]]; then
+          if [[ "${{ steps.auth.outputs.probe_id }}" == "R_LIVE_4_SCOPE_RESUME" ]]; then
             INTAKE_SOURCE_CEILING=2
           fi
           nohup python backend/lab/metabase/core_b/runtime/openrouter_counting_proxy.py             --listen-host 0.0.0.0             --listen-port "$PROVIDER_PROXY_PORT"             --ceiling "$HARD_PROVIDER_REQUEST_CEILING"             --source-ceiling research_intake="$INTAKE_SOURCE_CEILING"             --source-ceiling metabase=7             --source-ceiling p17_manager=3             --source-ceiling p19_manager=2             --prompt-token-ceiling "$PROMPT_TOKEN_CEILING"             --completion-token-ceiling "$COMPLETION_TOKEN_CEILING"             --reasoning-token-ceiling "$REASONING_TOKEN_CEILING"             --provider-cost-ceiling "$PROVIDER_COST_CEILING"             --receipt backend/eval/brain_v2_live/provider_probe.json             >backend/eval/brain_v2_live/provider_probe_proxy.log 2>&1 &
@@ -321,32 +321,14 @@ jobs:
           from pathlib import Path
           probe=os.environ["PROBE_ID"]
           r=json.loads(Path(f"eval/brain_v2_live/{probe}.json").read_text())
-          if probe in {"RELATIONSHIP_REPORT_PHASE2_V1","MULTI_INTENT_PHASE2_V1"}:
-              assert r["schema_version"]=="dima_v1_phase1_final_pinpoint_live_v1"
-              assert r["candidate_product_sha"]==os.environ["CANDIDATE_SHA"]
-              assert r["engine_sha"]=="d5c60dc9f37a9ec9c5b0117f178146bbcb8dca88"
-              assert r["engine_runtime_tag"]=="v0.63.18-dima.9"
-              assert r.get("exception") is None, r.get("exception")
-              assert r["mechanical_verdict"]=="PASS", r.get("mechanical_observations")
-              provider=r["provider_receipt"]
-              assert provider["actual_provider_request_count"] <= 12, provider
-              assert provider["blocked_request_count"] == 0, provider
-              sources=provider["provider_requests_by_source"]
-              assert sources.get("research_intake",0) <= (2 if probe=="RELATIONSHIP_REPORT_PHASE2_V1" else 1)
-              assert sources.get("metabase",0) <= 7
-              assert sources.get("p17_manager",0) <= 3
-              assert sources.get("p19_manager",0) <= 2
-              assert provider["privacy_contract"]["api_keys_persisted"] is False
-              assert provider["privacy_contract"]["reasoning_text_persisted"] is False
-              assert r["manual_quality_score"] is None
-              assert r["manual_quality_status"]=="PENDING"
-              print("BRAIN_V2_PHASE2_LIVE_ARTIFACT_READY")
-              raise SystemExit(0)
           assert r["schema_version"]=="dima_brain_v2_phase1_live_v1"
           assert r["candidate_product_sha"]==os.environ["CANDIDATE_SHA"]
           assert r["engine_sha"]=="d5c60dc9f37a9ec9c5b0117f178146bbcb8dca88"
           assert r["engine_release"]=="v0.63.18-dima.9"
           assert r.get("exception") is None, r.get("exception")
+          assert r["runtime"]=="BRAIN_V2_LANGGRAPH"
+          assert r["legacy_composer_calls"]==0
+          assert r["agent_api_request_count"]==0
           assert r["checkpoint_roundtrip_equal"] is True
           assert r["mechanical_verdict"]=="GREEN", r.get("mechanical")
           provider=r["provider_receipt"]
@@ -359,6 +341,7 @@ jobs:
           assert provider["provider_requests_by_source"].get("metabase",0) <= 7
           assert provider["provider_requests_by_source"].get("p17_manager",0) <= 3
           assert provider["provider_requests_by_source"].get("p19_manager",0) <= 2
+          assert r["mechanical"]["duplicate_native"] == 0 if "duplicate_native" in r["mechanical"] else r["mechanical"]["duplicate_native_execution_zero"] is True
           assert provider["privacy_contract"]["api_keys_persisted"] is False
           assert provider["privacy_contract"]["reasoning_text_persisted"] is False
           if probe=="R_LIVE_1_ONE_PASS":
@@ -385,8 +368,7 @@ jobs:
               print('DIMA_BRAIN_V2_ADJUDICATION={"artifact_missing":true}')
               raise SystemExit(0)
           r=json.loads(p.read_text())
-          if probe in {"RELATIONSHIP_REPORT_PHASE2_V1","MULTI_INTENT_PHASE2_V1"}:
-              projection={
+          projection={
                 "probe_id":r.get("probe_id"),
                 "candidate_product_sha":r.get("candidate_product_sha"),
                 "engine_sha":r.get("engine_sha"),
@@ -410,6 +392,7 @@ jobs:
             "accepted_intent":r.get("accepted_intent"),
             "research":r.get("research"),
             "p17":r.get("p17"),
+            "p18":r.get("p18"),
             "p19":r.get("p19"),
             "p20":r.get("p20"),
             "native_occurrences":r.get("native_occurrences"),
@@ -418,6 +401,9 @@ jobs:
             "provider_receipt":r.get("provider_receipt"),
             "latency_ms":r.get("latency_ms"),
             "manual_contract":r.get("manual_contract"),
+            "runtime":r.get("runtime"),
+            "legacy_composer_calls":r.get("legacy_composer_calls"),
+            "agent_api_request_count":r.get("agent_api_request_count"),
             "exception":r.get("exception"),
           }
           print("DIMA_BRAIN_V2_ADJUDICATION="+json.dumps(projection,ensure_ascii=False,sort_keys=True))
