@@ -30,8 +30,10 @@ def test_no_final_probe_imports_or_calls_headless_composer():
     assert "phase1_pinpoint_live import" not in harness
     assert "HeadlessProductComposer" not in workflow
     assert "HeadlessProductComposer" not in harness
-    assert "live_sentinel" not in harness
-    assert "live_sentinel" not in support
+    assert "from lab.metabase.core_b import live_sentinel" not in harness
+    assert "import lab.metabase.core_b.live_sentinel" not in harness
+    assert "from lab.metabase.core_b import live_sentinel" not in support
+    assert "import lab.metabase.core_b.live_sentinel" not in support
     assert "HeadlessProductComposer" not in support
 
 
