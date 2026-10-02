@@ -458,9 +458,14 @@ class ResearchSessionStore:
                 )
                 .where(ResearchExecutionLink.status == "VERIFIED")
             ).all()
+        if not rows:
+            raise ResearchPersistenceError(
+                "P14_RESULT_DEPENDENCY_PARENT_PENDING",
+                "result dependency parent material is not VERIFIED yet",
+            )
         if len(rows) != 1:
             raise ResearchPersistenceError(
-                "P14_RESULT_DEPENDENCY_VERIFIED_PARENT_REQUIRED",
+                "P14_RESULT_DEPENDENCY_PARENT_AMBIGUOUS",
                 (
                     "result dependency requires exactly one VERIFIED parent "
                     "material occurrence"
