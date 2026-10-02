@@ -14,7 +14,7 @@ from app.v3.analytical_request_contract import (
     AnalyticalRequestContract,
     AnalyticalScopeIdentity,
 )
-from app.v3.research_intake import DraftRanking
+from app.v3.research_intake import DraftRanking, ModelGoalDraft
 from app.v3.research_analytical_scope import (
     NativeMaterialBinding,
     ResearchAnalyticalScopeError,
@@ -53,12 +53,14 @@ from tests.semantic_spec.model import (
     PresentationKind,
     RankingBasis,
     RankingKind,
+    ResultDependencyDisposition,
     ReferencePatch,
     ReferenceScope,
     apply_reference_patch,
     entity_filter_admission_allowed,
     pair_coverage,
     ranking_basis_is_coherent,
+    result_dependency_disposition,
     semantic_matrix,
 )
 
@@ -283,6 +285,48 @@ def test_change_ranking_symbolic_siblings_preserve_basis(
     )
     assert ranking.basis.value == "change"
     assert ranking.measure_semantic_id == "metric.m2"
+
+
+@pytest.mark.parametrize(
+    ("parent_verified", "value_count", "scope_unchanged", "expected"),
+    (
+        (False, 0, True, ResultDependencyDisposition.WAITING),
+        (True, 1, True, ResultDependencyDisposition.READY),
+        (True, 0, True, ResultDependencyDisposition.LIMITED),
+        (True, 2, True, ResultDependencyDisposition.LIMITED),
+        (True, 1, False, ResultDependencyDisposition.INVALID),
+    ),
+)
+def test_result_dependency_independent_law(
+    parent_verified: bool,
+    value_count: int,
+    scope_unchanged: bool,
+    expected: ResultDependencyDisposition,
+) -> None:
+    assert result_dependency_disposition(
+        parent_verified=parent_verified,
+        selected_value_count=value_count,
+        scope_version_unchanged=scope_unchanged,
+    ) == expected
+
+
+def test_goal_can_declare_typed_parent_result_selection_dependency() -> None:
+    goal = ModelGoalDraft(
+        goal_key="g-child",
+        kind="breakdown",
+        source_text="Inspect one governed child slice.",
+        source_fragment_text="Inspect one governed child slice.",
+        subject_semantic_ids=("metric.m2",),
+        related_semantic_ids=("dimension.d1",),
+        result_dependency={
+            "source_goal_key": "g-parent",
+            "dimension_semantic_id": "dimension.d1",
+            "selection": "first_ranked_entity",
+        },
+    )
+    assert goal.result_dependency is not None
+    assert goal.result_dependency.source_goal_key == "g-parent"
+    assert goal.result_dependency.dimension_semantic_id == "dimension.d1"
 
 
 def test_finite_semantic_matrix_has_complete_pair_coverage() -> None:
