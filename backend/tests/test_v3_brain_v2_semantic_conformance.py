@@ -64,6 +64,7 @@ from tests.semantic_spec.model import (
     ResultDependencyDisposition,
     ReferencePatch,
     ReferenceScope,
+    ReferenceTemporalPeriod,
     apply_reference_patch,
     entity_filter_admission_allowed,
     pair_coverage,
@@ -72,6 +73,7 @@ from tests.semantic_spec.model import (
     result_dependency_dimension_roles_are_coherent,
     result_dependency_disposition,
     semantic_matrix,
+    temporal_periods_have_unique_semantic_identity,
 )
 
 
@@ -436,6 +438,32 @@ def test_retryable_material_is_not_a_terminal_group_outcome() -> None:
     assert material_group_may_complete(MaterialTerminalKind.EVIDENCE)
     assert material_group_may_complete(MaterialTerminalKind.TERMINAL_LIMIT)
     assert not material_group_may_complete(MaterialTerminalKind.RETRYABLE)
+
+
+def test_temporal_role_is_part_of_period_semantic_identity() -> None:
+    same_bounds_distinct_roles = (
+        ReferenceTemporalPeriod(
+            dimension="dimension.d1",
+            start="period.p1.start",
+            end="period.p1.end",
+            role="material_window",
+        ),
+        ReferenceTemporalPeriod(
+            dimension="dimension.d1",
+            start="period.p1.start",
+            end="period.p1.end",
+            role="comparison_period",
+        ),
+    )
+    exact_duplicate = (
+        same_bounds_distinct_roles[0],
+        same_bounds_distinct_roles[0],
+    )
+
+    assert temporal_periods_have_unique_semantic_identity(
+        same_bounds_distinct_roles
+    )
+    assert not temporal_periods_have_unique_semantic_identity(exact_duplicate)
 
 
 def test_finite_semantic_matrix_has_complete_pair_coverage() -> None:
