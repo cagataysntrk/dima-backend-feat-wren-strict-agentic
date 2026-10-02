@@ -321,6 +321,89 @@ def test_same_facet_nonconflicting_composition_is_order_independent() -> None:
     assert left.scope_fingerprint == right.scope_fingerprint
 
 
+def test_same_facet_add_remove_overlap_remains_fail_closed() -> None:
+    add = ScopePatchOperation(
+        facet=ScopePatchFacet.METRIC,
+        operation=ScopePatchOperationKind.ADD,
+        semantic_refs=(_metric("metric.m2"),),
+        source_fragment="symbolic add",
+    )
+    remove = ScopePatchOperation(
+        facet=ScopePatchFacet.METRIC,
+        operation=ScopePatchOperationKind.REMOVE,
+        semantic_refs=(_metric("metric.m2"),),
+        source_fragment="symbolic remove",
+    )
+
+    with pytest.raises(ValueError, match="both adds and removes"):
+        TurnScopePatch(
+            source_scope_version_id="scope_v1",
+            operations=(add, remove),
+        )
+
+
+def test_same_facet_multiple_replacements_remain_fail_closed() -> None:
+    first = ScopePatchOperation(
+        facet=ScopePatchFacet.METRIC,
+        operation=ScopePatchOperationKind.SET,
+        semantic_refs=(_metric("metric.m1"),),
+        source_fragment="symbolic replacement one",
+    )
+    second = ScopePatchOperation(
+        facet=ScopePatchFacet.METRIC,
+        operation=ScopePatchOperationKind.SET,
+        semantic_refs=(_metric("metric.m2"),),
+        source_fragment="symbolic replacement two",
+    )
+
+    with pytest.raises(ValueError, match="multiple replacement authorities"):
+        TurnScopePatch(
+            source_scope_version_id="scope_v1",
+            operations=(first, second),
+        )
+
+
+def test_same_patch_replay_from_same_source_is_idempotent() -> None:
+    scope = ReferenceScope(
+        entities=frozenset({"entity.e1"}),
+        metrics=frozenset({"metric.m1", "metric.m2"}),
+        breakdowns=frozenset({"dimension.d1"}),
+        version=1,
+    )
+    production = _production_scope(scope)
+    patch = TurnScopePatch(
+        source_scope_version_id="scope_v1",
+        operations=(
+            ScopePatchOperation(
+                facet=ScopePatchFacet.METRIC,
+                operation=ScopePatchOperationKind.SET,
+                semantic_refs=(_metric("metric.m1"),),
+                source_fragment="symbolic replacement",
+            ),
+            ScopePatchOperation(
+                facet=ScopePatchFacet.METRIC,
+                operation=ScopePatchOperationKind.REMOVE,
+                semantic_refs=(_metric("metric.m2"),),
+                source_fragment="symbolic removal",
+            ),
+        ),
+    )
+
+    first = resolve_scope_patch(
+        production,
+        patch,
+        context_version="ctx-semantic-spec-v1",
+    )
+    second = resolve_scope_patch(
+        production,
+        patch,
+        context_version="ctx-semantic-spec-v1",
+    )
+
+    assert first.current_scope == second.current_scope
+    assert first.scope_fingerprint == second.scope_fingerprint
+
+
 def _ranking_contract() -> AnalyticalRequestContract:
     return AnalyticalRequestContract(
         authority_id="auth-semantic-spec",
