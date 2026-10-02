@@ -49,7 +49,10 @@ def dispatch_requirements(brief: ResearchBrief) -> tuple[RequirementDispatch, ..
     """
 
     output: list[RequirementDispatch] = []
+    must_ids = set(brief.must_requirement_ids)
     for question in brief.questions:
+        if question.goal_id not in must_ids:
+            continue
         if question.kind == ResearchGoalKind.RELATIONSHIP:
             owner = RequirementOwner.P18
         elif question.kind == ResearchGoalKind.ROOT_CAUSE:
@@ -69,6 +72,8 @@ def dispatch_requirements(brief: ResearchBrief) -> tuple[RequirementDispatch, ..
         )
 
     for deliverable in brief.deliverables:
+        if deliverable.requirement_id not in must_ids:
+            continue
         if deliverable.kind == PresentationKind.NONE:
             continue
         output.append(
