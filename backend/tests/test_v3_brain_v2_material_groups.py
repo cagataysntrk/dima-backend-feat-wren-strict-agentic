@@ -229,6 +229,11 @@ def test_result_dependent_material_group_waits_for_verified_parent_group():
         completed_material_group_ids=(parent_group.material_group_id,),
     )
     assert second.material_group_id == child_group.material_group_id
+    assert material_groups_module.result_dependency_execution_anchor(
+        session=session(brief(parent, child)),
+        groups=groups,
+        requirement_id=child.goal_id,
+    ) == parent_group.anchor_requirement_id
 
 
 def test_report_requirement_creates_zero_additional_material_groups():
