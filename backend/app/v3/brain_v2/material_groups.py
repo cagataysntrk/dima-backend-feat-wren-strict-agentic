@@ -43,6 +43,7 @@ class MaterialGroup(Frozen):
     anchor_requirement_id: str = Field(min_length=1)
     scope_version_id: str = Field(pattern=r"^scope_v[1-9][0-9]*$")
     consumer_requirement_ids: tuple[str, ...] = Field(min_length=1)
+    dependency_requirement_ids: tuple[str, ...] = ()
     required_metric_refs: tuple[str, ...] = Field(min_length=1)
     required_dimension_refs: tuple[str, ...] = ()
     required_periods: tuple[MaterialPeriodRef, ...] = ()
@@ -55,6 +56,14 @@ class MaterialGroup(Frozen):
             set(self.consumer_requirement_ids)
         ):
             raise ValueError("MaterialGroup consumer requirement refs must be unique")
+        if len(self.dependency_requirement_ids) != len(
+            set(self.dependency_requirement_ids)
+        ):
+            raise ValueError("MaterialGroup dependency refs must be unique")
+        if set(self.dependency_requirement_ids).intersection(
+            self.consumer_requirement_ids
+        ):
+            raise ValueError("MaterialGroup cannot depend on one of its own consumers")
         if len(self.required_metric_refs) != len(set(self.required_metric_refs)):
             raise ValueError("MaterialGroup metric refs must be unique")
         if len(self.required_dimension_refs) != len(
@@ -127,6 +136,17 @@ def _group(*, session, anchor_requirement_id: str, consumers: tuple[str, ...]):
         obligation_id=anchor_requirement_id,
     )
     consumer_ids = tuple(sorted(dict.fromkeys(consumers)))
+    questions_by_id = {item.goal_id: item for item in brief.questions}
+    dependency_ids = tuple(
+        sorted(
+            {
+                question.result_dependency.source_goal_id
+                for consumer_id in consumer_ids
+                if (question := questions_by_id.get(consumer_id)) is not None
+                and question.result_dependency is not None
+            }
+        )
+    )
     # Presentation belongs to the requirement/outcome plane, not the
     # material plane. Reuse the canonical AnalyticalRequestContract identity
     # with presentation surfaces erased so adding REPORT/EXPLAIN cannot mint a
@@ -140,12 +160,15 @@ def _group(*, session, anchor_requirement_id: str, consumers: tuple[str, ...]):
         "consumer_requirement_ids": list(consumer_ids),
         "material_fingerprint": material_fingerprint,
     }
+    if dependency_ids:
+        identity["dependency_requirement_ids"] = list(dependency_ids)
     digest = hashlib.sha256(_canonical(identity).encode("utf-8")).hexdigest()
     return MaterialGroup(
         material_group_id="mg_" + digest[:24],
         anchor_requirement_id=anchor_requirement_id,
         scope_version_id=brief.scope.scope_version.version_id,
         consumer_requirement_ids=consumer_ids,
+        dependency_requirement_ids=dependency_ids,
         required_metric_refs=tuple(dict.fromkeys(contract.metric_refs)),
         required_dimension_refs=tuple(dict.fromkeys(contract.dimension_refs)),
         required_periods=_periods(contract),
@@ -178,6 +201,16 @@ def project_material_groups(session) -> tuple[MaterialGroup, ...]:
         )
         if not consumers:
             continue
+        if any(
+            question.result_dependency is not None
+            and question.result_dependency.source_goal_id in set(consumers)
+            for consumer_id in consumers
+            if (question := questions_by_id.get(consumer_id)) is not None
+        ):
+            # A result-dependent child needs a second occurrence after the
+            # parent's governed result exists; it cannot co-origin-share that
+            # occurrence even when static base material looks compatible.
+            continue
         overlap = assigned.intersection(consumers)
         if overlap:
             raise ValueError(
@@ -208,9 +241,13 @@ def project_material_groups(session) -> tuple[MaterialGroup, ...]:
     # Exact material identity is sufficient for sharing. This is not fuzzy
     # clause similarity: AnalyticalRequestContract already encodes the complete
     # typed material need including scope, filters, time, ranking and outputs.
-    by_identity: dict[tuple[str, str], MaterialGroup] = {}
+    by_identity: dict[tuple[str, str, tuple[str, ...]], MaterialGroup] = {}
     for group in projected:
-        key = (group.scope_version_id, group.material_fingerprint)
+        key = (
+            group.scope_version_id,
+            group.material_fingerprint,
+            group.dependency_requirement_ids,
+        )
         prior = by_identity.get(key)
         if prior is None:
             by_identity[key] = group
@@ -248,3 +285,83 @@ def project_material_groups(session) -> tuple[MaterialGroup, ...]:
     if tuple(sorted(consumer_ids)) != expected:
         raise ValueError("MaterialGroup projection lost or duplicated analytical requirements")
     return output
+
+
+class MaterialGroupDependencyError(RuntimeError):
+    def __init__(self, code: str, detail: str) -> None:
+        super().__init__(f"{code}: {detail}")
+        self.code = code
+        self.detail = detail
+
+
+def select_pending_material_group(
+    groups: tuple[MaterialGroup, ...],
+    *,
+    completed_material_group_ids: tuple[str, ...],
+    active_material_group_id: str | None = None,
+) -> MaterialGroup | None:
+    """Select one dependency-ready group without inventing semantic work."""
+
+    by_id = {item.material_group_id: item for item in groups}
+    if len(by_id) != len(groups):
+        raise MaterialGroupDependencyError(
+            "BRAIN_V2_MATERIAL_GROUP_DUPLICATE",
+            "material group ids must be unique",
+        )
+    requirement_group = {
+        requirement_id: group.material_group_id
+        for group in groups
+        for requirement_id in group.consumer_requirement_ids
+    }
+    completed = set(completed_material_group_ids)
+
+    def ready(group: MaterialGroup) -> bool:
+        for requirement_id in group.dependency_requirement_ids:
+            source_group_id = requirement_group.get(requirement_id)
+            if source_group_id is None:
+                raise MaterialGroupDependencyError(
+                    "BRAIN_V2_MATERIAL_DEPENDENCY_SOURCE_UNKNOWN",
+                    requirement_id,
+                )
+            if source_group_id == group.material_group_id:
+                raise MaterialGroupDependencyError(
+                    "BRAIN_V2_MATERIAL_DEPENDENCY_SELF_GROUP",
+                    requirement_id,
+                )
+            if source_group_id not in completed:
+                return False
+        return True
+
+    if active_material_group_id is not None:
+        active = by_id.get(active_material_group_id)
+        if active is None:
+            raise MaterialGroupDependencyError(
+                "BRAIN_V2_MATERIAL_GROUP_UNKNOWN",
+                active_material_group_id,
+            )
+        if not ready(active):
+            raise MaterialGroupDependencyError(
+                "BRAIN_V2_MATERIAL_DEPENDENCY_NOT_READY",
+                active_material_group_id,
+            )
+        return active
+
+    pending = tuple(
+        item for item in groups
+        if item.material_group_id not in completed
+    )
+    if not pending:
+        return None
+    runnable = tuple(item for item in pending if ready(item))
+    if not runnable:
+        raise MaterialGroupDependencyError(
+            "BRAIN_V2_MATERIAL_DEPENDENCY_DEADLOCK",
+            "pending material groups have no dependency-ready member",
+        )
+    return sorted(
+        runnable,
+        key=lambda item: (
+            item.material_fingerprint,
+            item.material_group_id,
+        ),
+    )[0]
