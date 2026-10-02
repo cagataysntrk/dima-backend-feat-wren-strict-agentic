@@ -47,11 +47,13 @@ ACTIVE_AUTHORITY = (
     BACKEND / "CLAUDE.md",
     BACKEND / "AGENTS.md",
     BACKEND / "MIMARI.md",
-    BACKEND / "belgeler" / "metabase" / "DIMA_METABASE_CORE_CLOSURE_FINAL_ROADMAP.md",
-    BACKEND / "belgeler" / "metabase" / "DIMA_METABASE_CURRENT_PRODUCT_PLAN.md",
-    BACKEND / "belgeler" / "metabase" / "DIMA_METABASE_CURRENT_HANDOFF.md",
+    BACKEND / "belgeler" / "metabase" / "README.md",
+    BACKEND / "belgeler" / "metabase" / "DIMA_BRAIN_V2_1_FINAL_ARCHITECTURE.md",
+    BACKEND / "belgeler" / "metabase" / "DIMA_BRAIN_V2_1_ENGINEERING_PLAYBOOK.md",
+    BACKEND / "belgeler" / "metabase" / "DIMA_BRAIN_V2_1_CURRENT_HANDOFF.md",
+    BACKEND / "belgeler" / "metabase" / "DIMA_BRAIN_V2_1_FORWARD_RUNTIME_LAWS.md",
+    BACKEND / "belgeler" / "metabase" / "DIMA_BRAIN_V2_1_SPECIFICATION_CLOSURE_PROGRESS.md",
     REPO_ROOT / "README.md",
-    REPO_ROOT / "DIMA-METABASE-DURUM.md",
 )
 
 
@@ -63,7 +65,10 @@ def test_forbidden_legacy_paths_are_absent():
 def test_root_is_one_story():
     for relative in FORBIDDEN_ROOT_DOCS:
         assert not (REPO_ROOT / relative).exists(), relative
-    assert (REPO_ROOT / "DIMA-METABASE-DURUM.md").exists()
+    assert not (REPO_ROOT / "DIMA-METABASE-DURUM.md").exists()
+    assert (
+        BACKEND / "belgeler" / "metabase" / "README.md"
+    ).exists()
 
 
 def test_old_frontend_and_ui_roots_are_absent():
@@ -95,28 +100,31 @@ def test_active_developer_authority_is_canonical():
     agents=(BACKEND/"AGENTS.md").read_text(encoding="utf-8")
     mimari=(BACKEND/"MIMARI.md").read_text(encoding="utf-8")
     for text in (claude,agents,mimari):
-        assert "feat/dima-metabase-platform" in text
+        assert "feat/dima-brain-v2-1-specification-closure" in text
+        assert "Brain V2.1" in text
         assert "Metabase" in text
-        assert "Core B" in text
+        assert "dima.9" in text
     for token in (
         "belgeler/plan/",
         "feat/ask-v2-mvp",
         "Wren incumbent",
         "CURRENT CONTINUATION — POST-J1B",
         "Day6.5",
+        "feat/dima-metabase-platform",
+        "Core B = ACTIVE",
+        "0.63.18-dima.6",
     ):
         assert token not in claude
         assert token not in agents
-    assert "Wren remains incumbent" not in mimari
-    assert "Wren-vs-Platform bake-off" not in mimari
+        assert token not in mimari
 
 
-def test_current_product_plan_has_no_forward_wren_bakeoff():
-    text=(BACKEND/"belgeler"/"metabase"/"DIMA_METABASE_CURRENT_PRODUCT_PLAN.md").read_text(encoding="utf-8")
-    current=text.split("## HISTORICAL / SUPERSEDED",1)[0]
-    assert "Wren-vs-Platform bake-off" not in current
-    normalized = " ".join(current.split())
-    assert "DEV80 is not run" in normalized
+def test_current_brain_authority_has_no_forward_wren_bakeoff():
+    text=(
+        BACKEND/"belgeler"/"metabase"/"DIMA_BRAIN_V2_1_FINAL_ARCHITECTURE.md"
+    ).read_text(encoding="utf-8")
+    assert "Wren-vs-Platform bake-off" not in text
+    assert "No Wren runtime" in text
 
 
 def test_active_docs_do_not_reference_deleted_current_paths():
@@ -204,10 +212,11 @@ def test_legacy_top_level_runtime_is_absent():
 def test_engine_gitlink_is_documented_exactly():
     gitmodules = (REPO_ROOT / ".gitmodules").read_text(encoding="utf-8")
     assert "engine/metabase" in gitmodules
-    roadmap = (
-        BACKEND / "belgeler" / "metabase" / "DIMA_METABASE_CORE_CLOSURE_FINAL_ROADMAP.md"
+    authority = (
+        BACKEND / "belgeler" / "metabase" / "DIMA_BRAIN_V2_1_FINAL_ARCHITECTURE.md"
     ).read_text(encoding="utf-8")
-    assert "cbe313af9ac2d5960f662068e433d328d896fb06" in roadmap
+    assert "d5c60dc9f37a9ec9c5b0117f178146bbcb8dca88" in authority
+    assert "0.63.18-dima.9" in authority
 
 
 def test_default_action_registry_and_execution_boundary_remain_closed():
@@ -245,7 +254,10 @@ def test_backend_belgeler_has_single_active_story():
     assert story_dirs == set(stories), (story_dirs, stories)
     active = sorted(name for name, state in stories.items() if state == "ACTIVE")
     assert active == ["metabase"], active
-    assert stories.get("comparison") == "HISTORICAL_EVIDENCE"
+    assert "comparison" not in stories
+    assert (
+        root / "metabase" / "legacy" / "comparison"
+    ).is_dir()
 
 
 def test_final_cleanup_helpers_are_absent():
