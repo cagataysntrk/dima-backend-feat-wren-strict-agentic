@@ -97,7 +97,13 @@ def test_t5_observational_relationship_is_owned_by_forward_p18_without_causal_pr
     assert "def adjudicate_relationship(" in owner
     assert "goal.relationship_intent" in owner
     assert "RelationshipIntent.OBSERVATIONAL" in owner
-    assert "native_session_token=None" in owner
+    assert "_relationship_interpreter.interpret" in owner
+    relationship_body = owner.split("def adjudicate_relationship(", 1)[1].split(
+        "def project_candidates(", 1
+    )[0]
+    assert "_investigation.run_one" not in relationship_body
+    assert "_investigation_manager" not in relationship_body
+    assert "FORM_CLAIM" not in relationship_body
     assert (
         "causality_state: RelationshipLayerState = "
         "RelationshipLayerState.NOT_ESTABLISHED"
