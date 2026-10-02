@@ -283,6 +283,14 @@ class ResearchUnresolvedRef(FrozenModel):
     reason: str
 
 
+class ResultSelectionDependency(FrozenModel):
+    """Execution-local dependency on one governed upstream ranked result."""
+
+    source_goal_id: str = Field(min_length=1)
+    dimension_semantic_id: str = Field(min_length=1)
+    selection: Literal["first_ranked_entity"] = "first_ranked_entity"
+
+
 class ResearchQuestion(FrozenModel):
     goal_id: str
     kind: ResearchGoalKind
@@ -296,10 +304,29 @@ class ResearchQuestion(FrozenModel):
     related_refs: tuple[ResearchSemanticRef, ...] = ()
     ranking: RankingSurface | None = None
     comparisons: tuple[ComparisonSurface, ...] = ()
+    result_dependency: ResultSelectionDependency | None = None
     causal_competition: CausalCompetitionSurface | None = None
     relationship_intent: RelationshipIntent | None = None
     unresolved: tuple[ResearchUnresolvedRef, ...] = ()
     status: ResearchGoalStatus
+
+    @model_validator(mode="after")
+    def coherent_result_dependency(self):
+        dependency = self.result_dependency
+        if dependency is None:
+            return self
+        if dependency.source_goal_id == self.goal_id:
+            raise ValueError("result dependency cannot target the same goal")
+        dimensions = {
+            item.candidate_id
+            for item in (*self.subject_refs, *self.related_refs)
+            if item.target_kind == SemanticTargetKind.DIMENSION
+        }
+        if dependency.dimension_semantic_id not in dimensions:
+            raise ValueError(
+                "result dependency dimension must be accepted child material"
+            )
+        return self
 
     @model_validator(mode="after")
     def coherent_causal_competition(self):
@@ -593,6 +620,47 @@ class ResearchBrief(FrozenModel):
     budget: ResearchBudget = Field(default_factory=ResearchBudget)
     context_version: str
     status: ResearchBriefStatus
+
+    @model_validator(mode="after")
+    def coherent_result_dependencies(self):
+        by_id = {item.goal_id: item for item in self.questions}
+        if len(by_id) != len(self.questions):
+            raise ValueError("Research goal ids must be unique")
+
+        edges: dict[str, str] = {}
+        for child in self.questions:
+            dependency = child.result_dependency
+            if dependency is None:
+                continue
+            parent = by_id.get(dependency.source_goal_id)
+            if parent is None:
+                raise ValueError("result dependency source goal is absent")
+            if parent.ranking is None:
+                raise ValueError("result dependency source must be a ranking goal")
+            if parent.ranking.direction == "unspecified":
+                raise ValueError(
+                    "result dependency source ranking must have explicit direction"
+                )
+            parent_dimensions = {
+                item.candidate_id
+                for item in (*parent.subject_refs, *parent.related_refs)
+                if item.target_kind == SemanticTargetKind.DIMENSION
+            }
+            if dependency.dimension_semantic_id not in parent_dimensions:
+                raise ValueError(
+                    "result dependency dimension is absent from parent material"
+                )
+            edges[child.goal_id] = parent.goal_id
+
+        for start in edges:
+            seen: set[str] = set()
+            current = start
+            while current in edges:
+                if current in seen:
+                    raise ValueError("result dependency graph must be acyclic")
+                seen.add(current)
+                current = edges[current]
+        return self
 
     @property
     def scope_fingerprint(self) -> str:
