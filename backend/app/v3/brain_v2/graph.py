@@ -13,6 +13,7 @@ from .activities import (
     CompletionActivityResult,
     EvidenceActivityResult,
     IntakeActivityResult,
+    MaterialActivityDisposition,
     MaterialActivityResult,
     MaterialGroupActivityResult,
     P18ActivityResult,
@@ -287,6 +288,20 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
                 current.model_dump(mode="json")
             ).result()
         )
+        if result.disposition == MaterialActivityDisposition.LIMITED:
+            completed = current.completed_material_group_ids
+            if result.material_group_id not in completed:
+                completed = (*completed, result.material_group_id)
+            return {
+                "active_material_group_id": None,
+                "completed_material_group_ids": completed,
+                "pending_evidence_ids": (),
+                "pending_receipt_refs": (),
+                "last_completed_node": "MATERIAL_GROUP_LIMITED",
+                "activity_fingerprints": _append_fingerprint(
+                    current, result.activity_fingerprint
+                ),
+            }
         return {
             "active_material_group_id": result.material_group_id,
             "pending_evidence_ids": result.produced_evidence_ids,
@@ -309,6 +324,16 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
         result = MaterialActivityResult.model_validate(
             material_activity(current.model_dump(mode="json")).result()
         )
+        if result.disposition == MaterialActivityDisposition.LIMITED:
+            return {
+                "material_requirement_ids": result.material_requirement_ids,
+                "pending_evidence_ids": (),
+                "pending_receipt_refs": (),
+                "last_completed_node": "MATERIAL_LIMITED",
+                "activity_fingerprints": _append_fingerprint(
+                    current, result.activity_fingerprint
+                ),
+            }
         return {
             "material_requirement_ids": result.material_requirement_ids,
             "pending_evidence_ids": result.produced_evidence_ids,
@@ -547,6 +572,22 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
             return "acquire_material_group"
         return "requirement_dispatch"
 
+    def after_material_group(state: BrainStatePayload) -> str:
+        current = _snapshot(state)
+        if current.last_completed_node != "MATERIAL_GROUP_LIMITED":
+            return "admit_evidence"
+        if set(current.completed_material_group_ids) != set(
+            current.material_group_ids
+        ):
+            return "acquire_material_group"
+        return "completion_evaluate"
+
+    def after_material(state: BrainStatePayload) -> str:
+        current = _snapshot(state)
+        if current.last_completed_node == "MATERIAL_LIMITED":
+            return "completion_evaluate"
+        return "admit_evidence"
+
     def after_material_group_evidence(state: BrainGraphState) -> str:
         if set(state.completed_material_group_ids) != set(
             state.material_group_ids
@@ -684,8 +725,23 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
             "requirement_dispatch": "requirement_dispatch",
         },
     )
-    builder.add_edge("acquire_material_group", "admit_evidence")
-    builder.add_edge("acquire_material", "admit_evidence")
+    builder.add_conditional_edges(
+        "acquire_material_group",
+        after_material_group,
+        {
+            "admit_evidence": "admit_evidence",
+            "acquire_material_group": "acquire_material_group",
+            "completion_evaluate": "completion_evaluate",
+        },
+    )
+    builder.add_conditional_edges(
+        "acquire_material",
+        after_material,
+        {
+            "admit_evidence": "admit_evidence",
+            "completion_evaluate": "completion_evaluate",
+        },
+    )
     builder.add_conditional_edges(
         "admit_evidence",
         after_evidence,
