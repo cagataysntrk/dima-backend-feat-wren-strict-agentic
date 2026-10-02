@@ -1,13 +1,16 @@
 # DIMA BRAIN V2.1 — CANONICAL DOCUMENTATION INDEX
 
 > **Status:** CURRENT AUTHORITY  
-> **Branch:** `feat/dima-brain-v2-1-discovery-simplification`  
+> **Working recovery branch:** `feat/dima-brain-v2-1-specification-closure`  
 > **Documentation consolidation source HEAD:** `ed95d22a3dee4c3e3cac8932ebd3050a6c0d691e`  
 > **Final semantic Product SHA:** `ce8704d6a0db10dc3fb6b1a7e5d0f86afe9ccdc9`  
 > **Engine:** `d5c60dc9f37a9ec9c5b0117f178146bbcb8dca88` / `0.63.18-dima.9`
 
 This directory intentionally contains only the current Brain V2.1 authority set plus
-`legacy/`. If a developer is unsure what is current, start here.
+`legacy/`. If a developer is unsure what is current, start here. During the active
+post-benchmark recovery, `DIMA_BRAIN_V2_1_SPECIFICATION_CLOSURE_PROGRESS.md` is the living
+execution log; it may advance run IDs and the next legal action without changing frozen
+architecture laws.
 
 ## Read in this order
 
@@ -27,7 +30,10 @@ This directory intentionally contains only the current Brain V2.1 authority set 
 4. **[DIMA_BRAIN_V2_1_ROUND2_FINAL_ADJUDICATION_2026-10-02.md](./DIMA_BRAIN_V2_1_ROUND2_FINAL_ADJUDICATION_2026-10-02.md)**  
    Immutable broad 30-case quality/speed/cost receipt and the current benchmark verdict.
 
-5. **[DIMA_BRAIN_V2_1_FORWARD_RUNTIME_LAWS.md](./DIMA_BRAIN_V2_1_FORWARD_RUNTIME_LAWS.md)**  
+5. **[DIMA_BRAIN_V2_1_SPECIFICATION_CLOSURE_PROGRESS.md](./DIMA_BRAIN_V2_1_SPECIFICATION_CLOSURE_PROGRESS.md)**  
+   Living provider-free recovery log and current certification status.
+
+6. **[DIMA_BRAIN_V2_1_FORWARD_RUNTIME_LAWS.md](./DIMA_BRAIN_V2_1_FORWARD_RUNTIME_LAWS.md)**  
    Compact permanent architecture laws backed by executable CI guardrails.
 
 ## Authority precedence
