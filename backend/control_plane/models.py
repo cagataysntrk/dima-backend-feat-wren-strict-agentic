@@ -1285,10 +1285,12 @@ class BusinessRelationshipPolicyUseRecord(SQLModel, table=True):
         foreign_key="research_claim.claim_id",
         index=True,
     )
-    reasoning_step_id: str = Field(
+    reasoning_step_id: str | None = Field(
+        default=None,
         foreign_key="research_reasoning_step.step_id",
         index=True,
     )
+    interpretation_ref: str | None = Field(default=None, index=True)
     requirement_fingerprint: str = Field(index=True)
     policy_id: str | None = Field(
         default=None,

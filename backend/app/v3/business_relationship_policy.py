@@ -59,7 +59,14 @@ class RelationshipPolicyRequirement(Frozen):
     research_session_id: str = Field(pattern=r"^rs_[a-f0-9]{24}$")
     obligation_id: str = Field(min_length=1)
     claim_id: str = Field(pattern=r"^clm_[a-f0-9]{24}$")
-    reasoning_step_id: str = Field(pattern=r"^rrs_[a-f0-9]{24}$")
+    reasoning_step_id: str | None = Field(
+        default=None,
+        pattern=r"^rrs_[a-f0-9]{24}$",
+    )
+    interpretation_ref: str | None = Field(
+        default=None,
+        pattern=r"^p18i_[a-f0-9]{24}$",
+    )
     policy_key: str = Field(min_length=1)
     source_business_ref: str = Field(min_length=1)
     target_business_ref: str = Field(min_length=1)
@@ -71,6 +78,15 @@ class RelationshipPolicyRequirement(Frozen):
     def exact_scope_required(self):
         if not self.applicability_scope:
             raise ValueError("P18 requires a non-empty exact applicability scope")
+        provenance = tuple(
+            value
+            for value in (self.reasoning_step_id, self.interpretation_ref)
+            if value is not None
+        )
+        if len(provenance) != 1:
+            raise ValueError(
+                "P18 requirement requires exactly one interpretation provenance ref"
+            )
         return self
 
 
@@ -97,7 +113,14 @@ class BusinessRelationshipPolicyUse(Frozen):
     research_session_id: str = Field(pattern=r"^rs_[a-f0-9]{24}$")
     obligation_id: str = Field(min_length=1)
     claim_id: str = Field(pattern=r"^clm_[a-f0-9]{24}$")
-    reasoning_step_id: str = Field(pattern=r"^rrs_[a-f0-9]{24}$")
+    reasoning_step_id: str | None = Field(
+        default=None,
+        pattern=r"^rrs_[a-f0-9]{24}$",
+    )
+    interpretation_ref: str | None = Field(
+        default=None,
+        pattern=r"^p18i_[a-f0-9]{24}$",
+    )
     requirement_fingerprint: str = Field(pattern=r"^[a-f0-9]{64}$")
     policy_id: str | None = Field(
         default=None,
@@ -286,6 +309,7 @@ class BusinessRelationshipPolicyStore:
             obligation_id=row.obligation_id,
             claim_id=row.claim_id,
             reasoning_step_id=row.reasoning_step_id,
+            interpretation_ref=row.interpretation_ref,
             requirement_fingerprint=row.requirement_fingerprint,
             policy_id=row.policy_id,
             policy_fingerprint=row.policy_fingerprint,
@@ -509,16 +533,20 @@ class BusinessRelationshipPolicyStore:
 
         with Session(self._engine) as db:
             claim = db.get(ResearchClaimRecord, requirement.claim_id)
-            step = db.get(
-                ResearchReasoningStepRecord,
-                requirement.reasoning_step_id,
+            step = (
+                db.get(
+                    ResearchReasoningStepRecord,
+                    requirement.reasoning_step_id,
+                )
+                if requirement.reasoning_step_id is not None
+                else None
             )
         if claim is None:
             raise BusinessRelationshipPolicyError(
                 "P18_CLAIM_NOT_FOUND",
                 requirement.claim_id,
             )
-        if step is None:
+        if requirement.reasoning_step_id is not None and step is None:
             raise BusinessRelationshipPolicyError(
                 "P18_REASONING_STEP_NOT_FOUND",
                 requirement.reasoning_step_id,
@@ -528,20 +556,23 @@ class BusinessRelationshipPolicyStore:
                 "P18_CLAIM_SESSION_MISMATCH",
                 requirement.claim_id,
             )
-        if step.session_id != session.session_id:
+        if step is not None and step.session_id != session.session_id:
             raise BusinessRelationshipPolicyError(
                 "P18_REASONING_SESSION_MISMATCH",
-                requirement.reasoning_step_id,
+                requirement.reasoning_step_id or "",
             )
         if claim.obligation_id != requirement.obligation_id:
             raise BusinessRelationshipPolicyError(
                 "P18_CLAIM_OBLIGATION_MISMATCH",
                 requirement.claim_id,
             )
-        if step.parent_obligation_id != requirement.obligation_id:
+        if (
+            step is not None
+            and step.parent_obligation_id != requirement.obligation_id
+        ):
             raise BusinessRelationshipPolicyError(
                 "P18_REASONING_OBLIGATION_MISMATCH",
-                requirement.reasoning_step_id,
+                requirement.reasoning_step_id or "",
             )
         if (
             claim.tenant_binding != session.tenant_binding
@@ -567,6 +598,7 @@ class BusinessRelationshipPolicyStore:
                 "obligation_id": requirement.obligation_id,
                 "claim_id": requirement.claim_id,
                 "reasoning_step_id": requirement.reasoning_step_id,
+                "interpretation_ref": requirement.interpretation_ref,
                 "policy_key": requirement.policy_key,
                 "source_business_ref": requirement.source_business_ref,
                 "target_business_ref": requirement.target_business_ref,
@@ -609,6 +641,7 @@ class BusinessRelationshipPolicyStore:
                     requirement.obligation_id,
                     requirement.claim_id,
                     requirement.reasoning_step_id,
+                    requirement.interpretation_ref,
                     requirement_fingerprint,
                     policy.policy_id if policy else None,
                     policy.policy_fingerprint if policy else None,
@@ -620,6 +653,7 @@ class BusinessRelationshipPolicyStore:
                     existing.obligation_id,
                     existing.claim_id,
                     existing.reasoning_step_id,
+                    existing.interpretation_ref,
                     existing.requirement_fingerprint,
                     existing.policy_id,
                     existing.policy_fingerprint,
@@ -639,6 +673,7 @@ class BusinessRelationshipPolicyStore:
                 obligation_id=requirement.obligation_id,
                 claim_id=requirement.claim_id,
                 reasoning_step_id=requirement.reasoning_step_id,
+                interpretation_ref=requirement.interpretation_ref,
                 requirement_fingerprint=requirement_fingerprint,
                 policy_id=policy.policy_id if policy else None,
                 policy_fingerprint=(

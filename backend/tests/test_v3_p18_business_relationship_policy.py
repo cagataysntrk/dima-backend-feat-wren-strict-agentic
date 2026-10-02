@@ -310,13 +310,19 @@ def requirement(
     target="business:customer",
     claim_id=None,
     step_id=None,
+    interpretation_ref=None,
     obligation="g1",
 ):
     return RelationshipPolicyRequirement(
         research_session_id=state["session"].session_id,
         obligation_id=obligation,
         claim_id=claim_id or state["claim"].claim_id,
-        reasoning_step_id=step_id or state["step_id"],
+        reasoning_step_id=(
+            None
+            if interpretation_ref is not None
+            else (step_id or state["step_id"])
+        ),
+        interpretation_ref=interpretation_ref,
         policy_key="sales-order-customer-attribution",
         source_business_ref=source,
         target_business_ref=target,
@@ -440,6 +446,50 @@ def test_retired_exact_policy_blocks_and_preserves_exact_failed_authority():
     assert use.policy_id == retired.policy_id
     assert use.policy_fingerprint == retired.policy_fingerprint
     assert use.limitation_code == "P18_RELATIONSHIP_POLICY_RETIRED"
+
+
+def test_forward_interpretation_ref_resolves_without_p17_reasoning_step():
+    db = db_engine()
+    state = make_state(db)
+    req = requirement(
+        state,
+        required=False,
+        interpretation_ref="p18i_" + "a" * 24,
+    )
+
+    decision = state["p18"].resolve(
+        requirement=req,
+        principal=state["principal"],
+    )
+    use = state["p18"].load_use(
+        session_id=state["session"].session_id,
+        policy_use_id=decision.policy_use_id,
+        principal=state["principal"],
+    )
+
+    assert decision.resolution_status == RelationshipPolicyResolutionStatus.NOT_REQUIRED
+    assert use.reasoning_step_id is None
+    assert use.interpretation_ref == "p18i_" + "a" * 24
+
+
+def test_p18_requirement_requires_exactly_one_provenance_ref():
+    db = db_engine()
+    state = make_state(db)
+
+    with pytest.raises(ValueError, match="exactly one"):
+        RelationshipPolicyRequirement(
+            research_session_id=state["session"].session_id,
+            obligation_id="g1",
+            claim_id=state["claim"].claim_id,
+            reasoning_step_id=state["step_id"],
+            interpretation_ref="p18i_" + "b" * 24,
+            policy_key="sales-order-customer-attribution",
+            source_business_ref="business:sales-order",
+            target_business_ref="business:customer",
+            semantic_context_version=state["session"].context_version,
+            applicability_scope=policy_scope(),
+            required=False,
+        )
 
 
 def test_not_required_returns_without_policy_lookup():
@@ -737,6 +787,7 @@ def test_p18_records_reference_sealed_truth_without_copying_it():
     assert forbidden_copy.isdisjoint(policy_fields | use_fields)
     assert "claim_id" in use_fields
     assert "reasoning_step_id" in use_fields
+    assert "interpretation_ref" in use_fields
     assert "requirement_fingerprint" in use_fields
 
 
