@@ -5,6 +5,7 @@ providers or Metabase/Metabot. Results contain refs/revisions only.
 """
 from __future__ import annotations
 
+from enum import StrEnum
 from typing import Protocol
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -143,6 +144,11 @@ class P19ActivityResult(ActivityResult):
         return self
 
 
+class P17NextTestDisposition(StrEnum):
+    EXECUTED = "EXECUTED"
+    INCONCLUSIVE = "INCONCLUSIVE"
+
+
 class P17ActivityResult(ActivityResult):
     hypothesis_revision: int = Field(ge=0)
     hypothesis_ids: tuple[str, ...] = ()
@@ -150,11 +156,27 @@ class P17ActivityResult(ActivityResult):
     discovery_required: bool = False
     produced_evidence_ids: tuple[str, ...] = ()
     produced_receipt_refs: tuple[str, ...] = ()
+    next_test_disposition: P17NextTestDisposition | None = None
+    next_test_reason_code: str | None = Field(default=None, min_length=1)
 
     @model_validator(mode="after")
     def coherent_transition(self):
         if len(self.produced_evidence_ids) != len(self.produced_receipt_refs):
             raise ValueError("P17 produced Evidence/receipt refs must be paired")
+        if self.next_test_disposition == P17NextTestDisposition.INCONCLUSIVE:
+            if self.produced_evidence_ids or self.produced_receipt_refs:
+                raise ValueError("inconclusive P17 next test cannot produce Evidence")
+            if self.material_requirement_ids:
+                raise ValueError("inconclusive P17 next test cannot open material")
+            if self.next_test_reason_code is None:
+                raise ValueError("inconclusive P17 next test requires a reason code")
+        elif self.next_test_disposition == P17NextTestDisposition.EXECUTED:
+            if not self.produced_evidence_ids:
+                raise ValueError("executed P17 next test requires new Evidence")
+            if self.next_test_reason_code is not None:
+                raise ValueError("executed P17 next test cannot carry a stop reason")
+        elif self.next_test_reason_code is not None:
+            raise ValueError("P17 next-test reason requires a typed disposition")
         return self
 
 
