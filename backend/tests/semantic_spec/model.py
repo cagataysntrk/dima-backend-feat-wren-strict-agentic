@@ -217,6 +217,39 @@ def legal_next_test(spec: AdaptiveSpec) -> bool:
     )
 
 
+class ChangeTemporalDisposition(StrEnum):
+    NOT_APPLICABLE = "NOT_APPLICABLE"
+    EXPLICIT_BOUNDED = "EXPLICIT_BOUNDED"
+    OBSERVE_GOVERNED_TIME = "OBSERVE_GOVERNED_TIME"
+    CLARIFY_TIME_AXIS = "CLARIFY_TIME_AXIS"
+    BLOCKED_NO_TIME_AXIS = "BLOCKED_NO_TIME_AXIS"
+
+
+def reference_change_temporal_disposition(
+    *,
+    effect_is_change: bool,
+    explicit_period_count: int,
+    governed_temporal_dimension_count: int,
+) -> ChangeTemporalDisposition:
+    """Law 6: CHANGE intent is not identical to explicit period authority.
+
+    Explicit periods remain exact user scope. Without an explicit period, one
+    uniquely governed time axis is enough to request temporal observation
+    material without inventing a calendar filter. Ambiguous or absent axes are
+    typed terminals, never incidental representation exceptions.
+    """
+
+    if not effect_is_change:
+        return ChangeTemporalDisposition.NOT_APPLICABLE
+    if explicit_period_count > 0:
+        return ChangeTemporalDisposition.EXPLICIT_BOUNDED
+    if governed_temporal_dimension_count == 1:
+        return ChangeTemporalDisposition.OBSERVE_GOVERNED_TIME
+    if governed_temporal_dimension_count > 1:
+        return ChangeTemporalDisposition.CLARIFY_TIME_AXIS
+    return ChangeTemporalDisposition.BLOCKED_NO_TIME_AXIS
+
+
 @dataclass(frozen=True)
 class TemporalRoleSpec:
     material_window: str | None = None
