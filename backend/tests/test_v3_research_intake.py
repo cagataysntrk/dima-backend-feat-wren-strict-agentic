@@ -1437,7 +1437,9 @@ def test_headless_product_delegates_raw_question_to_intake_owner():
 
 
 def test_request_scoped_intake_schema_closes_authority_ids_before_domain_execution():
-    schema = _intake_provider_schema(catalog())
+    # Temporal identity is typed catalog authority, never inferred from a
+    # dimension name such as "event_date".
+    schema = _intake_provider_schema(_temporal_catalog())
     goal = schema["$defs"]["ModelGoalDraft"]
     variants = goal["anyOf"]
     relationship = next(
