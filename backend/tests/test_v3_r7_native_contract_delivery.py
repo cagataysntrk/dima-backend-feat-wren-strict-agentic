@@ -13,6 +13,7 @@ from app.v3.analytical_request_contract import (
     AnalyticalScopeIdentity,
 )
 from app.v3.research import ResearchManager
+from app.v3.research_analytical_scope import native_request_context
 
 
 def _contract(
@@ -109,6 +110,36 @@ def test_r7_delivers_exact_governed_contract_on_visible_native_message():
     assert "grain_constraints:\n- dimension.department" in message
     assert "output_surfaces:\n- table" in message
     assert "[USER OBLIGATION]\nInvestigate the accepted obligation." in message
+
+
+def test_r7_shared_material_contract_serializes_required_and_allowed_sets():
+    contract = _contract(evidence_synthesis=False)
+    message = _message(contract)
+    context = native_request_context(contract)["dima_analytical_scope"]
+
+    assert (
+        "required_metrics:\n"
+        "- metric.machine_downtime_minutes\n"
+        "- metric.fault_count"
+    ) in message
+    assert (
+        "allowed_metrics:\n"
+        "- metric.machine_downtime_minutes\n"
+        "- metric.fault_count"
+    ) in message
+    assert context["material_coverage"]["required_metric_refs"] == [
+        "metric.machine_downtime_minutes",
+        "metric.fault_count",
+    ]
+    assert context["material_coverage"]["allowed_metric_refs"] == [
+        "metric.machine_downtime_minutes",
+        "metric.fault_count",
+    ]
+    assert (
+        "- every required metric must be observable in the same native occurrence"
+        in message
+    )
+    assert "- no metric outside allowed_metrics may enter the occurrence" in message
 
 
 def test_r7_evidence_synthesis_has_exact_metric_set_without_native_ranking_basis():
