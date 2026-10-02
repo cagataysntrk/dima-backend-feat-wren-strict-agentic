@@ -778,18 +778,21 @@ def analytical_scope_contract(
         and question.causal_competition.effect_observation
         == CausalEffectObservation.CHANGE
     ):
-        if not periods:
-            raise ResearchAnalyticalScopeError(
-                "R1_EFFECT_CHANGE_TIME_REQUIRED",
-                "causal change observation requires accepted bounded time authority",
-            )
-        time_dimensions = {
-            item.time_dimension_candidate_id for item in periods
-        }
+        time_dimensions = (
+            {
+                item.time_dimension_candidate_id
+                for item in periods
+            }
+            if periods
+            else set(brief.scope.temporal_dimension_ids)
+        )
         if len(time_dimensions) != 1:
             raise ResearchAnalyticalScopeError(
                 "R1_EFFECT_CHANGE_TIME_DIMENSION_AMBIGUOUS",
-                "causal change observation requires one governed time dimension",
+                (
+                    "causal change observation requires exactly one governed "
+                    "time dimension"
+                ),
             )
         temporal_observation = AnalyticalTemporalObservationInvariant(
             kind="change",
@@ -1102,6 +1105,8 @@ def _time_field_ref(
                 "comparison periods use different time dimensions",
             )
         return next(iter(dims))
+    if contract.temporal_observation is not None:
+        return contract.temporal_observation.time_dimension
     return None
 
 
@@ -1275,7 +1280,42 @@ def _assert_time_scope(
             time_ref,
         )
     expected = material_coverage_period(contract)
-    assert expected is not None
+    if expected is None:
+        if contract.temporal_observation is None:
+            raise ResearchAnalyticalScopeError(
+                "R1_TIME_AUTHORITY_INCOMPLETE",
+                "time dimension has no bounded or observational authority",
+            )
+        if manifest.temporal_predicates:
+            raise ResearchAnalyticalScopeError(
+                "R1_NATIVE_TIME_SCOPE_MISMATCH",
+                (
+                    "observation-only temporal authority cannot authorize a "
+                    "native calendar predicate"
+                ),
+            )
+        time_binding = _require_binding(
+            bindings,
+            time_ref,
+            column_required=True,
+        )
+        matching_breakouts = tuple(
+            item.field_id
+            for item in manifest.breakouts
+            if _matches_binding(
+                time_binding,
+                _locator(locators, item.field_id),
+            )
+        )
+        if len(matching_breakouts) != 1:
+            raise ResearchAnalyticalScopeError(
+                "R1_NATIVE_TIME_BREAKOUT_REQUIRED",
+                (
+                    "change observation requires exactly one breakout on the "
+                    "governed time dimension"
+                ),
+            )
+        return matching_breakouts[0]
     if expected.end is None:
         raise ResearchAnalyticalScopeError(
             "R1_OPEN_ENDED_TIME_SCOPE_UNSUPPORTED",
@@ -1778,7 +1818,13 @@ def _material_expected_period(
     if time_ref is None:
         return None, None, None
     coverage_period = material_coverage_period(contract)
-    assert coverage_period is not None
+    if coverage_period is None:
+        if contract.temporal_observation is None:
+            raise ResearchAnalyticalScopeError(
+                "R1_TIME_AUTHORITY_INCOMPLETE",
+                "time dimension has no bounded or observational authority",
+            )
+        return time_ref, None, None
     return time_ref, coverage_period.start, coverage_period.end
 
 
@@ -1806,6 +1852,31 @@ def _assert_material_time_scope(
         return None
     binding = _material_binding(bindings, time_ref)
     expected_identity = _material_field_identity(binding)
+    if start is None and end is None:
+        if contract.temporal_observation is None:
+            raise ResearchAnalyticalScopeError(
+                "R1_TIME_AUTHORITY_INCOMPLETE",
+                "unbounded time identity requires temporal observation authority",
+            )
+        if observation.temporal_scopes:
+            raise _native_temporal_scope_error(
+                detail=(
+                    "observation-only temporal authority cannot authorize "
+                    "native calendar bounds"
+                ),
+                expected={
+                    "time_ref": time_ref,
+                    "period": None,
+                    "field_identity": expected_identity,
+                },
+                observed={
+                    "temporal_scopes": [
+                        item.model_dump(mode="json")
+                        for item in observation.temporal_scopes
+                    ],
+                },
+            )
+        return expected_identity
     matches = [
         item
         for item in observation.temporal_scopes
