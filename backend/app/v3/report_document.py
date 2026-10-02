@@ -809,6 +809,36 @@ class ReportDocumentStore:
         self._engine = db_engine or control_plane_engine
         self._gate = ReportClaimGate(research_store=research_store, db_engine=self._engine)
 
+    @staticmethod
+    def _relationship_source_anchor(
+        snapshot: dict[str, Any],
+        *,
+        target_requirement_id: str,
+    ) -> str:
+        """Return the material/source authority feeding one P18 terminal.
+
+        The terminal requirement identity belongs to P18. A shared-material
+        claim/policy may originate from another analytical obligation only via
+        the existing typed co-origin coverage bridge.
+        """
+
+        bridge = snapshot.get('coverage_bridge')
+        if not bridge:
+            return target_requirement_id
+        coverage = str(bridge.get('coverage_obligation_id') or '').strip()
+        source = str(bridge.get('source_obligation_id') or '').strip()
+        material = str(bridge.get('material_requirement_ref') or '').strip()
+        if (
+            coverage != target_requirement_id
+            or not source
+            or source != material
+        ):
+            raise P20ReportError(
+                'P20_RELATIONSHIP_RESULT_AUTHORITY_MISMATCH',
+                target_requirement_id,
+            )
+        return source
+
     def draft_from_governed_research(
         self,
         *,
@@ -842,16 +872,21 @@ class ReportDocumentStore:
                     'P20_RELATIONSHIP_RESULT_SESSION_MISMATCH',
                     result.research_session_id,
                 )
-            target_id = str(
+            target_id = str(result.obligation_id or '').strip()
+            declared_target_id = str(
                 result.applicability_scope.get(
                     'accepted_relationship_goal_id'
                 )
                 or ''
             ).strip()
-            if not target_id or target_id in relationship_by_goal:
+            if (
+                not target_id
+                or declared_target_id != target_id
+                or target_id in relationship_by_goal
+            ):
                 raise P20ReportError(
                     'P20_RELATIONSHIP_RESULT_TARGET_INVALID',
-                    target_id or result.policy_use_id,
+                    target_id or declared_target_id or result.policy_use_id,
                 )
             if (
                 result.scope_lineage_id != session.lineage_id
@@ -883,13 +918,18 @@ class ReportDocumentStore:
                 ref=policy_source,
                 principal=principal,
             )
+            claim_anchor = self._relationship_source_anchor(
+                claim_snapshot,
+                target_requirement_id=target_id,
+            )
+            policy_anchor = self._relationship_source_anchor(
+                policy_snapshot,
+                target_requirement_id=target_id,
+            )
             if (
                 claim_snapshot.get('claim_id') != result.claim_id
                 or policy_snapshot.get('claim_id') != result.claim_id
-                or (
-                    claim_snapshot.get('coverage_bridge') or {}
-                ).get('source_obligation_id')
-                != result.obligation_id
+                or claim_anchor != policy_anchor
             ):
                 raise P20ReportError(
                     'P20_RELATIONSHIP_RESULT_AUTHORITY_MISMATCH',
