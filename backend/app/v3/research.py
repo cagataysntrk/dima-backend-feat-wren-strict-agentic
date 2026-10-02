@@ -8,7 +8,7 @@ from typing import Literal
 from uuid import UUID, uuid4
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from app.v3.analytical_request_contract import material_coverage_contract
+from app.v3.analytical_request_contract import AnalyticalRequestContract, material_coverage_contract
 from app.v3.research_contracts import ResearchBrief, ResearchBriefStatus
 from app.v3.research_analytical_scope import (
     analytical_scope_contract,
@@ -468,7 +468,16 @@ class ResearchManager:
         )
 
     @classmethod
-    def prepare_native_delegation(cls,session,*,obligation_id,profile_id="nlq",metabot_id=None,now=None):
+    def prepare_native_delegation(
+        cls,
+        session,
+        *,
+        obligation_id,
+        profile_id="nlq",
+        metabot_id=None,
+        now=None,
+        analytical_scope: AnalyticalRequestContract | None = None,
+    ):
         if session.stopping.status!=StoppingStatus.ACTIVE: raise ResearchStateError("P14_RESEARCH_NOT_ACTIVE",session.stopping.status)
         item=cls.obligation(session,obligation_id)
         if item.state in cls.terminal: raise ResearchStateError("P14_OBLIGATION_TERMINAL",obligation_id)
@@ -476,7 +485,7 @@ class ResearchManager:
         conv=session.native_conversation or NativeMetabotConversationRef(conversation_id=uuid4(),profile_id=profile_id,metabot_id=metabot_id)
         if (conv.profile_id,conv.metabot_id)!=(profile_id,metabot_id): raise ResearchStateError("P14_NATIVE_CONVERSATION_IDENTITY_MISMATCH","profile/metabot changed")
         turn=session.budget.native_turns_used+1; rid=f"p14-{session.session_id}-{obligation_id}-t{turn}"
-        analytical_scope=analytical_scope_contract(
+        analytical_scope = analytical_scope or analytical_scope_contract(
             session=session,
             obligation_id=obligation_id,
         )
