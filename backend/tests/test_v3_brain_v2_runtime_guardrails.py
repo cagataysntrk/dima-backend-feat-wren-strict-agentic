@@ -91,3 +91,20 @@ def test_normal_discovery_has_no_p17_provider_graph_route():
     ).read_text(encoding="utf-8")
     assert 'builder.add_node("p17_discover"' not in graph
     assert '"project_candidates": "project_candidates"' in graph
+
+
+def test_normal_relationship_owner_never_routes_through_p17():
+    import inspect
+
+    from app.v3.brain_v2.owner_adapter import DimaBrainV2Activities
+
+    source = inspect.getsource(DimaBrainV2Activities.adjudicate_relationship)
+    for forbidden in (
+        "_investigation.run_one",
+        "_RelationshipInterpretationProposalManager",
+        "_investigation_manager",
+        "FORM_CLAIM",
+    ):
+        assert forbidden not in source
+    assert "_relationship_interpreter.interpret" in source
+    assert "load_verified_evidence_digests" in source

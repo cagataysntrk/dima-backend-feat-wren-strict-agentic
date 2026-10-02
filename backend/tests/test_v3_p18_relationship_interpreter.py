@@ -119,3 +119,23 @@ def test_temporal_material_schema_may_express_co_movement():
         "ASSOCIATION",
         "CO_MOVEMENT",
     }
+
+
+def test_p18_interpreter_module_cannot_open_analytics():
+    from pathlib import Path
+
+    source = Path("app/v3/p18_relationship_interpreter.py").read_text(
+        encoding="utf-8"
+    )
+    for forbidden in (
+        "NativeEngineBridge",
+        "NativeResearchMaterialExecutor",
+        "NativeSubjectSessionProvider",
+        "research_native_gateway",
+        "substrate.metabase",
+        "ResearchInvestigationManager",
+        "StructuredResearchProposalManager",
+        "execute_native",
+        "explore_adhoc",
+    ):
+        assert forbidden not in source
