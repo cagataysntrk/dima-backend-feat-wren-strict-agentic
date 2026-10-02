@@ -505,9 +505,10 @@ class FakeReports:
         research_session_id,
         report_key,
         principal,
+        relationship_results=(),
         explicit_limitations=(),
     ):
-        del report_key, principal
+        del report_key, principal, relationship_results
         session = self.research.sessions[research_session_id]
         explicit = {item.obligation_id: item for item in explicit_limitations}
         coverage = []

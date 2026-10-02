@@ -1390,6 +1390,7 @@ class HeadlessProductComposer:
         brief: ResearchBrief,
         principal: Principal,
         composition_limitations: tuple[CompositionLimitation, ...],
+        relationship_results: tuple[RelationshipResultProjection, ...],
         owner_calls: list[str],
     ):
         analytical_ids = {item.goal_id for item in brief.questions}
@@ -1429,6 +1430,7 @@ class HeadlessProductComposer:
             research_session_id=session_id,
             report_key="product-composition",
             principal=principal,
+            relationship_results=relationship_results,
             explicit_limitations=tuple(explicit),
         )
         report = self._reports.seal(
@@ -2071,6 +2073,7 @@ class HeadlessProductComposer:
                 brief=brief,
                 principal=principal,
                 composition_limitations=tuple(limitations),
+                relationship_results=tuple(relationship_results),
                 owner_calls=owner_calls,
             )
 

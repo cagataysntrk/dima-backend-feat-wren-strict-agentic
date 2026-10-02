@@ -12,9 +12,12 @@ from enum import StrEnum
 from typing import Any
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from sqlmodel import Session, select
+from app.v3.business_relationship_v1 import RelationshipResultProjection
 from app.v3.claim_lineage import ClaimEpistemicState, ClaimLineageStore
 from app.v3.hypothesis_root_cause import AggregateOutcome, CausalQualification, ContributionClass, EvidenceStrength, GroundingSourceKind, HypothesisDisposition, HypothesisRootCauseStore
 from app.v3.research import ObligationState, StoppingStatus
+from app.v3.research_analytical_scope import coorigin_material_requirements
+from app.v3.research_contracts import ResearchGoalKind
 from app.v3.research_store import ResearchPersistenceError, ResearchSessionStore
 from control_plane.authorize import Principal
 from control_plane.db import engine as control_plane_engine
@@ -239,23 +242,166 @@ class ReportClaimGate:
         self._p19 = HypothesisRootCauseStore(research_store=research_store, db_engine=self._engine)
 
     def _session(self, session_id: str, principal: Principal):
+        """Load structural Research authority; terminality is checked separately.
+
+        P14 state is not the only legal terminal owner. A relationship obligation
+        may remain READY when one typed co-origin occurrence was deliberately
+        acquired under a sibling anchor and P16/P18 subsequently terminalized the
+        relationship. P20 never mutates P14 to disguise that distinction.
+        """
         try:
-            session = self._research.load(session_id, tenant=_tenant(principal), principal=_subject(principal))
+            session = self._research.load(
+                session_id,
+                tenant=_tenant(principal),
+                principal=_subject(principal),
+            )
         except ResearchPersistenceError as exc:
-            raise P20ReportError('P20_RESEARCH_SESSION_SCOPE_INVALID', exc.code) from exc
+            raise P20ReportError(
+                'P20_RESEARCH_SESSION_SCOPE_INVALID',
+                exc.code,
+            ) from exc
         if session.accepted_brief is None:
-            raise P20ReportError('P20_ACCEPTED_BRIEF_REQUIRED', 'P20 never reparses the original user prompt')
+            raise P20ReportError(
+                'P20_ACCEPTED_BRIEF_REQUIRED',
+                'P20 never reparses the original user prompt',
+            )
         mandatory = _analytical_requirement_ids(session.accepted_brief)
-        obligation_map = {item.obligation_id: item for item in session.obligations}
+        obligation_map = {
+            item.obligation_id: item for item in session.obligations
+        }
         if not mandatory or tuple(obligation_map) != mandatory:
-            raise P20ReportError('P20_MANDATORY_OBLIGATION_AUTHORITY_MISMATCH', 'P14 execution obligations must exactly equal accepted analytical Research question ids')
-        if not set(mandatory).issubset(set(session.accepted_brief.must_requirement_ids)):
-            raise P20ReportError('P20_MANDATORY_OBLIGATION_AUTHORITY_MISMATCH', 'analytical Research requirements left accepted USER_MUST authority')
-        if any((obligation_map[oid].state not in {ObligationState.VERIFIED, ObligationState.LIMITED} for oid in mandatory)):
-            raise P20ReportError('P20_RESEARCH_SESSION_NOT_SEALED', 'analytical Research obligation remains non-terminal')
-        if session.stopping.status not in {StoppingStatus.COMPLETE, StoppingStatus.PARTIAL}:
-            raise P20ReportError('P20_RESEARCH_SESSION_NOT_SEALED', session.stopping.status.value)
+            raise P20ReportError(
+                'P20_MANDATORY_OBLIGATION_AUTHORITY_MISMATCH',
+                'P14 execution obligations must exactly equal accepted analytical Research question ids',
+            )
+        if not set(mandatory).issubset(
+            set(session.accepted_brief.must_requirement_ids)
+        ):
+            raise P20ReportError(
+                'P20_MANDATORY_OBLIGATION_AUTHORITY_MISMATCH',
+                'analytical Research requirements left accepted USER_MUST authority',
+            )
         return (session, mandatory)
+
+    @staticmethod
+    def _assert_sealed(
+        session,
+        mandatory: tuple[str, ...],
+        *,
+        downstream_terminal_ids: set[str] | frozenset[str] = frozenset(),
+    ) -> None:
+        obligation_map = {
+            item.obligation_id: item for item in session.obligations
+        }
+        unresolved = {
+            oid
+            for oid in mandatory
+            if obligation_map[oid].state
+            not in {ObligationState.VERIFIED, ObligationState.LIMITED}
+            and oid not in downstream_terminal_ids
+        }
+        if unresolved:
+            raise P20ReportError(
+                'P20_RESEARCH_SESSION_NOT_SEALED',
+                'analytical Research obligation remains non-terminal',
+            )
+        if session.stopping.status not in {
+            StoppingStatus.COMPLETE,
+            StoppingStatus.PARTIAL,
+        }:
+            p14_nonterminal = {
+                oid
+                for oid in mandatory
+                if obligation_map[oid].state
+                not in {ObligationState.VERIFIED, ObligationState.LIMITED}
+            }
+            if not p14_nonterminal or not p14_nonterminal.issubset(
+                downstream_terminal_ids
+            ):
+                raise P20ReportError(
+                    'P20_RESEARCH_SESSION_NOT_SEALED',
+                    session.stopping.status.value,
+                )
+
+    @staticmethod
+    def _coorigin_coverage_bridge(
+        session,
+        *,
+        source_obligation_id: str,
+        coverage_obligation_id: str,
+        source_kind: ReportSourceKind,
+    ) -> dict[str, str] | None:
+        if source_obligation_id == coverage_obligation_id:
+            return None
+        if source_kind not in {
+            ReportSourceKind.P16_CLAIM,
+            ReportSourceKind.P18_POLICY_USE,
+        }:
+            raise P20ReportError(
+                'P20_SOURCE_OBLIGATION_SCOPE_MISMATCH',
+                coverage_obligation_id,
+            )
+        brief = session.accepted_brief
+        assert brief is not None
+        target = next(
+            (
+                item
+                for item in brief.questions
+                if item.goal_id == coverage_obligation_id
+            ),
+            None,
+        )
+        if target is None or target.kind != ResearchGoalKind.RELATIONSHIP:
+            raise P20ReportError(
+                'P20_SOURCE_OBLIGATION_SCOPE_MISMATCH',
+                coverage_obligation_id,
+            )
+        matches = tuple(
+            item
+            for item in coorigin_material_requirements(session)
+            if item.anchor_goal_id == source_obligation_id
+            and coverage_obligation_id in item.source_goal_ids
+        )
+        if len(matches) != 1:
+            raise P20ReportError(
+                'P20_SOURCE_OBLIGATION_SCOPE_MISMATCH',
+                coverage_obligation_id,
+            )
+        return {
+            'source_obligation_id': source_obligation_id,
+            'coverage_obligation_id': coverage_obligation_id,
+            'material_requirement_ref': matches[0].anchor_goal_id,
+        }
+
+    @staticmethod
+    def _downstream_terminal_ids(
+        snapshots: tuple[dict[str, Any], ...],
+    ) -> set[str]:
+        by_target: dict[str, dict[str, set[str]]] = {}
+        for snapshot in snapshots:
+            bridge = snapshot.get('coverage_bridge')
+            if not bridge:
+                continue
+            target = bridge['coverage_obligation_id']
+            bucket = by_target.setdefault(
+                target,
+                {'claims': set(), 'policy_claims': set()},
+            )
+            kind = snapshot.get('source_kind')
+            if kind == ReportSourceKind.P16_CLAIM.value:
+                if snapshot.get('claim_epistemic_state') != (
+                    ClaimEpistemicState.PROPOSED.value
+                ):
+                    bucket['claims'].add(str(snapshot.get('claim_id') or ''))
+            elif kind == ReportSourceKind.P18_POLICY_USE.value:
+                bucket['policy_claims'].add(
+                    str(snapshot.get('claim_id') or '')
+                )
+        return {
+            target
+            for target, bucket in by_target.items()
+            if (bucket['claims'] & bucket['policy_claims']) - {''}
+        }
 
     @staticmethod
     def _source_key(ref: SourceReference) -> str:
@@ -265,6 +411,8 @@ class ReportClaimGate:
         if ref.obligation_id not in {item.obligation_id for item in session.obligations}:
             raise P20ReportError('P20_SOURCE_OBLIGATION_INVALID', ref.obligation_id)
         authority_fingerprint: str
+        bridge: dict[str, str] | None = None
+        source_meta: dict[str, Any] = {}
         with Session(self._engine) as db:
             if ref.source_kind == ReportSourceKind.P14_EVIDENCE:
                 rows = tuple(db.exec(select(ResearchExecutionLink).where(ResearchExecutionLink.session_id == session.session_id).where(ResearchExecutionLink.obligation_id == ref.obligation_id).where(ResearchExecutionLink.evidence_id == ref.source_ref).where(ResearchExecutionLink.status == 'VERIFIED')).all())
@@ -291,17 +439,68 @@ class ReportClaimGate:
                     raise P20ReportError('P20_P17_SOURCE_SCOPE_MISMATCH', ref.source_ref)
                 authority_fingerprint = _canonical_json({'step_id': row.step_id, 'proposal_fingerprint': row.proposal_fingerprint, 'status': row.status, 'result_refs_json': row.result_refs_json}, code='P20_P17_SOURCE_NOT_CANONICAL')[1]
             elif ref.source_kind == ReportSourceKind.P18_POLICY_USE:
-                row = db.get(BusinessRelationshipPolicyUseRecord, ref.source_ref)
+                row = db.get(
+                    BusinessRelationshipPolicyUseRecord,
+                    ref.source_ref,
+                )
                 if row is None:
-                    raise P20ReportError('P20_P18_SOURCE_NOT_FOUND', ref.source_ref)
-                if row.research_session_id != session.session_id or row.obligation_id != ref.obligation_id:
-                    raise P20ReportError('P20_P18_SOURCE_SCOPE_MISMATCH', ref.source_ref)
-                authority_fingerprint = _canonical_json({'policy_use_id': row.policy_use_id, 'requirement_fingerprint': row.requirement_fingerprint, 'policy_id': row.policy_id, 'policy_fingerprint': row.policy_fingerprint, 'resolution_status': row.resolution_status, 'limitation_code': row.limitation_code}, code='P20_P18_SOURCE_NOT_CANONICAL')[1]
+                    raise P20ReportError(
+                        'P20_P18_SOURCE_NOT_FOUND',
+                        ref.source_ref,
+                    )
+                if row.research_session_id != session.session_id:
+                    raise P20ReportError(
+                        'P20_P18_SOURCE_SCOPE_MISMATCH',
+                        ref.source_ref,
+                    )
+                bridge = self._coorigin_coverage_bridge(
+                    session,
+                    source_obligation_id=row.obligation_id,
+                    coverage_obligation_id=ref.obligation_id,
+                    source_kind=ref.source_kind,
+                )
+                authority_fingerprint = _canonical_json(
+                    {
+                        'policy_use_id': row.policy_use_id,
+                        'requirement_fingerprint': row.requirement_fingerprint,
+                        'policy_id': row.policy_id,
+                        'policy_fingerprint': row.policy_fingerprint,
+                        'resolution_status': row.resolution_status,
+                        'limitation_code': row.limitation_code,
+                    },
+                    code='P20_P18_SOURCE_NOT_CANONICAL',
+                )[1]
+                source_meta = {
+                    'claim_id': row.claim_id,
+                    'resolution_status': row.resolution_status,
+                }
             elif ref.source_kind == ReportSourceKind.P16_CLAIM:
-                claim = self._claims.load_claim(session_id=session.session_id, claim_id=ref.source_ref, principal=principal)
-                if claim.obligation_id != ref.obligation_id:
-                    raise P20ReportError('P20_CLAIM_SOURCE_SCOPE_MISMATCH', ref.source_ref)
-                authority_fingerprint = _canonical_json({'claim_fingerprint': claim.claim_fingerprint, 'epistemic_state': claim.epistemic_state.value, 'links': [item.model_dump(mode='json') for item in claim.evidence_links]}, code='P20_CLAIM_SOURCE_NOT_CANONICAL')[1]
+                claim = self._claims.load_claim(
+                    session_id=session.session_id,
+                    claim_id=ref.source_ref,
+                    principal=principal,
+                )
+                bridge = self._coorigin_coverage_bridge(
+                    session,
+                    source_obligation_id=claim.obligation_id,
+                    coverage_obligation_id=ref.obligation_id,
+                    source_kind=ref.source_kind,
+                )
+                authority_fingerprint = _canonical_json(
+                    {
+                        'claim_fingerprint': claim.claim_fingerprint,
+                        'epistemic_state': claim.epistemic_state.value,
+                        'links': [
+                            item.model_dump(mode='json')
+                            for item in claim.evidence_links
+                        ],
+                    },
+                    code='P20_CLAIM_SOURCE_NOT_CANONICAL',
+                )[1]
+                source_meta = {
+                    'claim_id': claim.claim_id,
+                    'claim_epistemic_state': claim.epistemic_state.value,
+                }
             elif ref.source_kind == ReportSourceKind.P19_ASSESSMENT:
                 assessment = self._p19.load_assessment(assessment_id=ref.source_ref, principal=principal)
                 if assessment.research_session_id != session.session_id or assessment.obligation_id != ref.obligation_id:
@@ -309,7 +508,13 @@ class ReportClaimGate:
                 authority_fingerprint = assessment.assessment_fingerprint
             else:
                 raise P20ReportError('P20_SOURCE_KIND_UNSUPPORTED', ref.source_kind.value)
-        return {'source': ref.model_dump(mode='json'), 'authority_fingerprint': authority_fingerprint}
+        return {
+            'source': ref.model_dump(mode='json'),
+            'source_kind': ref.source_kind.value,
+            'authority_fingerprint': authority_fingerprint,
+            'coverage_bridge': bridge,
+            **source_meta,
+        }
 
     def _payload_for_numeric_source(self, *, session, ref: SourceReference) -> Any:
         with Session(self._engine) as db:
@@ -513,7 +718,10 @@ class ReportClaimGate:
         raise P20ReportError('P20_STATEMENT_KIND_UNSUPPORTED', statement.statement_kind.value)
 
     def validate(self, *, draft: ReportDraft, principal: Principal):
-        session, mandatory = self._session(draft.research_session_id, principal)
+        session, mandatory = self._session(
+            draft.research_session_id,
+            principal,
+        )
         coverage_map = {item.obligation_id: item for item in draft.coverage}
         if len(coverage_map) != len(draft.coverage) or set(coverage_map) != set(mandatory):
             raise P20ReportError('P20_USER_MUST_COVERAGE_INCOMPLETE', 'every accepted analytical Research requirement must have exactly one report-content coverage entry')
@@ -562,7 +770,21 @@ class ReportClaimGate:
             for ref in limitation.source_refs:
                 source_by_key[self._source_key(ref)] = ref
         sources = tuple((source_by_key[key] for key in sorted(source_by_key)))
-        snapshots = tuple((self._source_snapshot(session=session, ref=ref, principal=principal) for ref in sources))
+        snapshots = tuple(
+            self._source_snapshot(
+                session=session,
+                ref=ref,
+                principal=principal,
+            )
+            for ref in sources
+        )
+        self._assert_sealed(
+            session,
+            mandatory,
+            downstream_terminal_ids=self._downstream_terminal_ids(
+                snapshots
+            ),
+        )
         if session.accepted_brief is None:
             raise P20ReportError(
                 'P20_ACCEPTED_BRIEF_REQUIRED',
@@ -593,6 +815,7 @@ class ReportDocumentStore:
         research_session_id: str,
         report_key: str,
         principal: Principal,
+        relationship_results: tuple[RelationshipResultProjection, ...] = (),
         explicit_limitations: tuple[ReportLimitation, ...] = (),
     ) -> ReportDraft:
         """Project report content from terminal analytical authority only.
@@ -600,13 +823,110 @@ class ReportDocumentStore:
         Presentation deliverables are fulfilled by the sealed report at Product Composition;
         they are never P20 content-coverage obligations.
         """
-        session, mandatory = self._gate._session(research_session_id, principal)
+        session, mandatory = self._gate._session(
+            research_session_id,
+            principal,
+        )
+        relationship_by_goal: dict[
+            str,
+            tuple[
+                RelationshipResultProjection,
+                SourceReference,
+                SourceReference,
+            ],
+        ] = {}
+        bridge_snapshots: list[dict[str, Any]] = []
+        for result in relationship_results:
+            if result.research_session_id != session.session_id:
+                raise P20ReportError(
+                    'P20_RELATIONSHIP_RESULT_SESSION_MISMATCH',
+                    result.research_session_id,
+                )
+            target_id = str(
+                result.applicability_scope.get(
+                    'accepted_relationship_goal_id'
+                )
+                or ''
+            ).strip()
+            if not target_id or target_id in relationship_by_goal:
+                raise P20ReportError(
+                    'P20_RELATIONSHIP_RESULT_TARGET_INVALID',
+                    target_id or result.policy_use_id,
+                )
+            if (
+                result.scope_lineage_id != session.lineage_id
+                or session.accepted_brief is None
+                or result.scope_version_id
+                != session.accepted_brief.scope.scope_version.version_id
+            ):
+                raise P20ReportError(
+                    'P20_RELATIONSHIP_RESULT_SCOPE_MISMATCH',
+                    target_id,
+                )
+            claim_source = SourceReference(
+                source_kind=ReportSourceKind.P16_CLAIM,
+                source_ref=result.claim_id,
+                obligation_id=target_id,
+            )
+            policy_source = SourceReference(
+                source_kind=ReportSourceKind.P18_POLICY_USE,
+                source_ref=result.policy_use_id,
+                obligation_id=target_id,
+            )
+            claim_snapshot = self._gate._source_snapshot(
+                session=session,
+                ref=claim_source,
+                principal=principal,
+            )
+            policy_snapshot = self._gate._source_snapshot(
+                session=session,
+                ref=policy_source,
+                principal=principal,
+            )
+            if (
+                claim_snapshot.get('claim_id') != result.claim_id
+                or policy_snapshot.get('claim_id') != result.claim_id
+                or (
+                    claim_snapshot.get('coverage_bridge') or {}
+                ).get('source_obligation_id')
+                != result.obligation_id
+            ):
+                raise P20ReportError(
+                    'P20_RELATIONSHIP_RESULT_AUTHORITY_MISMATCH',
+                    target_id,
+                )
+            relationship_by_goal[target_id] = (
+                result,
+                claim_source,
+                policy_source,
+            )
+            bridge_snapshots.extend((claim_snapshot, policy_snapshot))
+
+        downstream_terminal_ids = self._gate._downstream_terminal_ids(
+            tuple(bridge_snapshots)
+        )
+        self._gate._assert_sealed(
+            session,
+            mandatory,
+            downstream_terminal_ids=downstream_terminal_ids,
+        )
         explicit_by_obligation: dict[str, ReportLimitation] = {}
         for limitation in explicit_limitations:
             if limitation.obligation_id not in set(mandatory):
                 raise P20ReportError('P20_LIMITATION_OBLIGATION_INVALID', limitation.limitation_id)
             if limitation.obligation_id in explicit_by_obligation:
                 raise P20ReportError('P20_LIMITATION_OBLIGATION_DUPLICATE', limitation.obligation_id)
+            bridge = relationship_by_goal.get(limitation.obligation_id)
+            if bridge is not None and not limitation.source_refs:
+                _, claim_source, policy_source = bridge
+                limitation = limitation.model_copy(
+                    update={
+                        'source_refs': (
+                            claim_source,
+                            policy_source,
+                        )
+                    }
+                )
             explicit_by_obligation[limitation.obligation_id] = limitation
 
         obligation_map = {item.obligation_id: item for item in session.obligations}
@@ -627,6 +947,70 @@ class ReportDocumentStore:
                         obligation_id=obligation_id,
                         coverage_status=CoverageStatus.LIMITED,
                         limitation_ids=(explicit.limitation_id,),
+                    )
+                )
+                continue
+
+            bridge = relationship_by_goal.get(obligation_id)
+            if bridge is not None:
+                result, claim_source, policy_source = bridge
+                claim = self._gate._claims.load_claim(
+                    session_id=session.session_id,
+                    claim_id=result.claim_id,
+                    principal=principal,
+                )
+                claim_limitation_ids: list[str] = []
+                for detail in claim.limitations:
+                    limitation_id = stable_limitation_id(
+                        {
+                            'session_id': session.session_id,
+                            'obligation_id': obligation_id,
+                            'claim_id': claim.claim_id,
+                            'detail': detail,
+                        }
+                    )
+                    limitations.append(
+                        ReportLimitation(
+                            limitation_id=limitation_id,
+                            obligation_id=obligation_id,
+                            code='P16_CLAIM_LIMITATION',
+                            detail=detail,
+                            source_refs=(claim_source,),
+                        )
+                    )
+                    claim_limitation_ids.append(limitation_id)
+                statement_id = stable_statement_id(
+                    {
+                        'kind': ReportStatementKind.ANALYTICAL_FACT.value,
+                        'claim_id': claim.claim_id,
+                        'epistemic_state': claim.epistemic_state.value,
+                        'coverage_obligation_id': obligation_id,
+                        'source_refs': [
+                            claim_source.model_dump(mode='json'),
+                            policy_source.model_dump(mode='json'),
+                        ],
+                        'limitation_refs': claim_limitation_ids,
+                    }
+                )
+                statements.append(
+                    ReportStatement(
+                        statement_id=statement_id,
+                        statement_kind=ReportStatementKind.ANALYTICAL_FACT,
+                        source_refs=(claim_source, policy_source),
+                        obligation_refs=(obligation_id,),
+                        limitation_refs=tuple(claim_limitation_ids),
+                        upstream_epistemic_ceiling=claim.epistemic_state.value,
+                        payload={
+                            'claim_id': claim.claim_id,
+                            'epistemic_state': claim.epistemic_state.value,
+                        },
+                    )
+                )
+                coverage.append(
+                    CoverageEntry(
+                        obligation_id=obligation_id,
+                        coverage_status=CoverageStatus.REPRESENTED,
+                        statement_ids=(statement_id,),
                     )
                 )
                 continue
@@ -944,9 +1328,26 @@ class ReportDocumentStore:
     def currentness(self, *, report_id: str, principal: Principal) -> ReportCurrentness:
         report = self.load(report_id=report_id, principal=principal)
         try:
-            session, mandatory = self._gate._session(report.research_session_id, principal)
+            session, mandatory = self._gate._session(
+                report.research_session_id,
+                principal,
+            )
             self._research.assert_lineage_head(session)
-            snapshots = tuple((self._gate._source_snapshot(session=session, ref=ref, principal=principal) for ref in report.source_refs))
+            snapshots = tuple(
+                self._gate._source_snapshot(
+                    session=session,
+                    ref=ref,
+                    principal=principal,
+                )
+                for ref in report.source_refs
+            )
+            self._gate._assert_sealed(
+                session,
+                mandatory,
+                downstream_terminal_ids=self._gate._downstream_terminal_ids(
+                    snapshots
+                ),
+            )
             if session.accepted_brief is None:
                 raise P20ReportError('P20_ACCEPTED_BRIEF_REQUIRED', session.session_id)
             current = _canonical_json({
