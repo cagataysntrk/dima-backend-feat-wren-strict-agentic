@@ -84,6 +84,12 @@ class FakeActivities:
         self, state: BrainGraphState
     ) -> RequirementPlanActivityResult:
         self.calls["requirements_plan"] += 1
+        if self.mode == "material_group_waiting":
+            return RequirementPlanActivityResult(
+                material_group_ids=("mg_" + "a" * 24,),
+                direct_requirement_ids=("goal-1",),
+                activity_fingerprint=self._fp("requirements-plan", state),
+            )
         return RequirementPlanActivityResult(
             material_group_ids=("mg_" + "a" * 24,),
             root_cause_requirement_ids=("goal-1",),
@@ -94,6 +100,14 @@ class FakeActivities:
         self, state: BrainGraphState
     ) -> MaterialGroupActivityResult:
         self.calls["material_group"] += 1
+        if self.mode == "material_group_waiting":
+            return MaterialGroupActivityResult(
+                material_group_id="mg_" + "a" * 24,
+                consumer_requirement_ids=("goal-1",),
+                disposition=MaterialActivityDisposition.WAITING,
+                limitation_code="P14_TRANSIENT_WAIT",
+                activity_fingerprint=self._fp("material-group-waiting", state),
+            )
         return MaterialGroupActivityResult(
             material_group_id="mg_" + "a" * 24,
             consumer_requirement_ids=("goal-1",),
@@ -266,6 +280,17 @@ def _run(mode: str) -> tuple[BrainGraphState, FakeActivities]:
         )
     )
     return result, activities
+
+
+def test_retryable_material_group_waits_without_terminalizing_or_completing() -> None:
+    result, activities = _run("material_group_waiting")
+
+    assert result.workflow_status == BrainWorkflowStatus.WAITING
+    assert result.completed_material_group_ids == ()
+    assert result.terminal_requirement_ids == ()
+    assert result.active_material_group_id is None
+    assert activities.calls["material_group"] == 1
+    assert activities.calls["completion"] == 0
 
 
 def test_one_pass_skips_p17_and_executes_one_material_acquisition() -> None:
