@@ -125,7 +125,7 @@ def test_current_brain_authority_has_no_forward_wren_bakeoff():
     ).read_text(encoding="utf-8")
     assert "Wren-vs-Platform bake-off" not in text
     assert "METABASE / METABOT" in text
-    assert "single analytical cognition engine" in text.lower()
+    assert "NO SECOND ANALYTICS ENGINE." in text
     assert "Wren remains incumbent" not in text
     assert "WREN RUNTIME" not in text
 
