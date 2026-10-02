@@ -171,6 +171,68 @@ def ready_payload(
     }
 
 
+def test_change_ranking_intake_preserves_basis_and_role_bound_periods():
+    question = "Compare the governed metric between two periods and rank its change."
+    payload = ready_payload(
+        kind="ranking",
+        subject=("metric.downtime",),
+        related=("dimension.department",),
+    )
+    payload["goals"][0].update(
+        {
+            "source_text": question,
+            "source_fragment_text": question,
+            "ranking": {
+                "source_text": question,
+                "direction": "desc",
+                "limit": 1,
+                "measure_semantic_id": "metric.downtime",
+                "basis": "change",
+            },
+        }
+    )
+    payload["time_periods"] = [
+        {
+            "source_text": "baseline",
+            "time_dimension_semantic_id": "dimension.event_date",
+            "start": "2026-01-01",
+            "end": "2026-02-01",
+            "role": "baseline_period",
+        },
+        {
+            "source_text": "comparison",
+            "time_dimension_semantic_id": "dimension.event_date",
+            "start": "2026-02-01",
+            "end": "2026-03-01",
+            "role": "comparison_period",
+        },
+    ]
+    transport = FakeTransport(payload)
+    result = ResearchIntakeCompiler(
+        transport=transport,
+        calendar_reference_date="2026-03-15",
+    ).compile(
+        question=question,
+        catalog=catalog().model_copy(
+            update={"temporal_dimension_ids": ("dimension.event_date",)}
+        ),
+    )
+
+    assert result.terminal == ResearchIntakeTerminal.READY
+    assert result.brief is not None
+    ranking = result.brief.questions[0].ranking
+    assert ranking is not None
+    assert ranking.basis.value == "change"
+    assert ranking.measure_semantic_id == "metric.downtime"
+    assert tuple(item.role for item in result.brief.scope.periods) == (
+        TemporalRole.BASELINE_PERIOD,
+        TemporalRole.COMPARISON_PERIOD,
+    )
+    schema = transport.calls[0]["schema"]
+    ranking_schema = schema["$defs"]["DraftRanking"]
+    assert set(ranking_schema["properties"]["basis"]["enum"]) == {"level", "change"}
+
+
 def test_causal_competition_is_one_root_cause_goal_not_relationship_query_plan():
     payload = ready_payload(
         kind="root_cause",
