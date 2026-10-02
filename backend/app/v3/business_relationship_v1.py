@@ -298,7 +298,17 @@ class RelationshipResultStore:
                 row.result_id,
             ) from exc
         projection = RelationshipResultProjection.model_validate(body)
-        canonical, observed = _canonical_projection(projection)
+        canonical, projection_fingerprint = _canonical_projection(projection)
+        meaning = json.dumps(
+            {
+                "tenant_binding": row.tenant_binding,
+                "semantic_context_version": row.semantic_context_version,
+                "projection_fingerprint": projection_fingerprint,
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        observed = hashlib.sha256(meaning.encode("utf-8")).hexdigest()
         if canonical != row.projection_json or observed != row.result_fingerprint:
             raise RelationshipResultStoreError(
                 "P18_RESULT_FINGERPRINT_MISMATCH",
