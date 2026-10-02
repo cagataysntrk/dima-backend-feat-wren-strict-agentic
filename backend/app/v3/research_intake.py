@@ -2739,21 +2739,14 @@ class ResearchIntakeCompiler:
                 for item in (*parent.subject_refs, *parent.related_refs)
                 if item.target_kind == SemanticTargetKind.DIMENSION
             }
-            child_dimensions = {
-                item.candidate_id
-                for item in (*question.subject_refs, *question.related_refs)
-                if item.target_kind == SemanticTargetKind.DIMENSION
-            }
             if dependency.dimension_semantic_id not in parent_dimensions:
                 raise ResearchIntakeError(
                     "INTAKE_RESULT_DEPENDENCY_PARENT_DIMENSION_MISSING",
                     dependency.dimension_semantic_id,
                 )
-            if dependency.dimension_semantic_id not in child_dimensions:
-                raise ResearchIntakeError(
-                    "INTAKE_RESULT_DEPENDENCY_CHILD_DIMENSION_MISSING",
-                    dependency.dimension_semantic_id,
-                )
+            # A result-selected dimension constrains the child execution as a
+            # filter. It need not also be projected/grouped in the child output.
+            # The governed parent dimension plus accepted scope remain authority.
             payload = question.model_dump(mode="python")
             payload["result_dependency"] = ResultSelectionDependency(
                 source_goal_id=source_goal_id,
