@@ -40,6 +40,17 @@ class RankingSurface(FrozenModel):
     measure_semantic_id: str | None = Field(default=None, min_length=1)
     basis: RankingBasis = RankingBasis.LEVEL
 
+    @model_validator(mode="after")
+    def coherent_basis(self):
+        if (
+            self.basis == RankingBasis.CHANGE
+            and self.measure_semantic_id is None
+        ):
+            raise ValueError(
+                "change ranking requires one explicit governed measure"
+            )
+        return self
+
 
 class ComparisonRole(StrEnum):
     TEMPORAL_PERIOD = "temporal_period"
