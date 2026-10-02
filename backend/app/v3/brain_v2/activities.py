@@ -168,6 +168,9 @@ class CompletionActivityResult(ActivityResult):
     completion_revision: int = Field(ge=1)
     terminal_requirement_ids: tuple[str, ...] = ()
     analytical_complete: bool
+    all_requirements_terminal: bool
+    # Fulfillment is stronger than terminal accounting. LIMITED/INCONCLUSIVE
+    # terminals may close process routing without satisfying USER_MUST.
     requirement_complete: bool
     report_required: bool
 
