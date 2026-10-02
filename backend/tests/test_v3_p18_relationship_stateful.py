@@ -77,18 +77,10 @@ def _payload(
                 "relation": relation,
             }
         ],
-        "salient_cells": (
+        "salient_cell_refs": (
             [
-                {
-                    "evidence_id": EVIDENCE,
-                    "row_index": 0,
-                    "column_index": 1,
-                },
-                {
-                    "evidence_id": EVIDENCE,
-                    "row_index": 0,
-                    "column_index": 2,
-                },
+                f"{EVIDENCE}:0:1",
+                f"{EVIDENCE}:0:2",
             ]
             if salient
             else []
