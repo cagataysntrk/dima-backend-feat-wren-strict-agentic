@@ -1335,3 +1335,56 @@ Commits after that Product SHA are test/oracle/proof only. Engine remains frozen
 Next:
 run Phase-2/headless/metamorphic certification on these exact Product bytes. Paid live remains closed
 until that gate is GREEN.
+
+
+### Step 11F — result-dependency Phase-2 seal and live freeze
+
+Phase-2/headless certification on the same semantic Product bytes:
+
+- run `37068830395` = **SUCCESS**;
+- T1-T7 headless Product contracts/composition: 96 passed;
+- current T1-T4 owner proofs: 4 passed;
+- P18 observational owner proofs: 28 passed;
+- P20 ReportDocument owner proofs: 32 passed;
+- independent T1-T7 metamorphic suite: 15 passed;
+- security/repository hygiene: 26 passed;
+- forbidden-surface audit: GREEN.
+
+The standalone focused Brain V2 provider-free workflow is a strict subset of tests exercised
+across the current Phase-1 + Phase-2 gates: Brain V2 focused files are in Phase-1 deterministic
+closure; its product-composition/context assertions are in the Phase-2 headless block. No
+additional runtime surface is left untested merely because that narrower workflow was not
+re-triggered by Research-only file paths.
+
+Frozen semantic Product candidate:
+
+`537dec606d8e67b20da451846e1716a50e74d5e2`
+
+From that Product SHA through this certification receipt:
+
+- `backend/app/**` diff = 0;
+- `backend/pyproject.toml` diff = 0;
+- `engine/metabase` diff = 0;
+- only tests + specification-closure documentation changed.
+
+Current provider-free evidence:
+
+- semantic conformance `37067834925` = SUCCESS;
+- aggregate Phase-1 `37068498863` = SUCCESS;
+- Phase-2/headless/metamorphic `37068830395` = SUCCESS;
+- engine remains dima.9 exact frozen gitlink.
+
+Classification:
+**F06_M RESULT-DEPENDENCY GENERIC CLOSURE — PROVIDER-FREE GREEN / FROZEN CANDIDATE**.
+
+The next legal action is one surgical F06_M live recovery probe only:
+
+- Luna / Luna / no cascade;
+- dima.9 exact digest;
+- broad paid = false;
+- 30-case = false;
+- one frozen case;
+- low provider/token/cost ceilings;
+- STOP on mechanical or Product-quality RED;
+- manually adjudicate against correctness, scope fidelity, task completion,
+  Evidence/provenance, causal restraint and useful synthesis.
