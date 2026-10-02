@@ -235,6 +235,71 @@ def test_change_ranking_intake_preserves_basis_and_role_bound_periods():
     assert set(schema["$defs"]["RankingBasis"]["enum"]) == {"level", "change"}
 
 
+def test_result_dependency_dimension_can_constrain_child_without_child_breakout():
+    question = (
+        "Rank governed departments, then inspect the selected department "
+        "using a different governed breakdown."
+    )
+    payload = ready_payload(
+        kind="ranking",
+        subject=("metric.downtime",),
+        related=("dimension.department",),
+    )
+    payload["goals"][0].update(
+        {
+            "goal_key": "g-parent",
+            "source_text": "Rank governed departments.",
+            "source_fragment_text": "Rank governed departments.",
+            "ranking": {
+                "source_text": "Rank governed departments.",
+                "direction": "desc",
+                "limit": 1,
+                "measure_semantic_id": "metric.downtime",
+                "basis": "level",
+            },
+            "result_dependency": None,
+        }
+    )
+    payload["goals"].append(
+        {
+            "goal_key": "g-child",
+            "kind": "breakdown",
+            "source_text": "Inspect the selected department by machine.",
+            "source_fragment_text": "Inspect the selected department by machine.",
+            "subject_semantic_ids": ["metric.fault_count"],
+            "related_semantic_ids": ["dimension.machine_id"],
+            "ranking": None,
+            "comparisons": [],
+            "result_dependency": {
+                "source_goal_key": "g-parent",
+                "dimension_semantic_id": "dimension.department",
+                "selection": "first_ranked_entity",
+            },
+            "causal_competition": None,
+        }
+    )
+
+    result = ResearchIntakeCompiler(
+        transport=FakeTransport(payload)
+    ).compile(
+        question=question,
+        catalog=catalog(),
+    )
+
+    assert result.terminal == ResearchIntakeTerminal.READY
+    assert result.brief is not None
+    parent, child = result.brief.questions
+    assert child.result_dependency is not None
+    assert child.result_dependency.source_goal_id == parent.goal_id
+    assert child.result_dependency.dimension_semantic_id == "dimension.department"
+    assert "dimension.department" not in {
+        item.candidate_id for item in (*child.subject_refs, *child.related_refs)
+    }
+    assert "dimension.department" in {
+        item.candidate_id for item in result.brief.scope.semantic_refs
+    }
+
+
 def test_causal_competition_is_one_root_cause_goal_not_relationship_query_plan():
     payload = ready_payload(
         kind="root_cause",
