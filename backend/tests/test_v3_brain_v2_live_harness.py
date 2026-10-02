@@ -119,27 +119,28 @@ def test_discovery_mechanical_gate_accepts_governed_candidate_path() -> None:
         evidence_revision=1,
         evidence_ids=("evi_" + "2" * 24,),
         hypothesis_ids=("p19h_" + "3" * 24, "p19h_" + "4" * 24),
+        candidate_semantic_ids=("metric.a", "metric.b"),
         latest_p19_assessment_ref="p19a_" + "5" * 24,
         report_ref="p20r_" + "6" * 24,
         workflow_status=BrainWorkflowStatus.COMPLETE,
         last_completed_node="REPORT",
         discovery_required=False,
-        discovery_turns=2,
+        discovery_turns=0,
     )
     provider = {
         "provider_requests_by_source": {
             "research_intake": 1,
             "metabase": 2,
-            "p17_manager": 2,
+            "p17_manager": 0,
             "p19_manager": 1,
         },
-        "actual_provider_request_count": 6,
+        "actual_provider_request_count": 4,
         "prompt_tokens": 2000,
         "blocked_request_count": 0,
     }
     p17_snapshot = SimpleNamespace(
         investigation=SimpleNamespace(nodes=()),
-        claims=(object(), object()),
+        claims=(),
         terminal_stop_reason=None,
     )
     p19_snapshot = SimpleNamespace(
@@ -159,6 +160,9 @@ def test_discovery_mechanical_gate_accepts_governed_candidate_path() -> None:
     assert result["mechanical_green"] is True
     assert result["discovery_candidate_path"] is True
     assert result["discovery_honest_stop"] is False
+    assert result["p17_provider_requests"] == 0
+    assert result["candidate_projection_coherent"] is True
+    assert result["p19_provider_requests"] == 1
 
 
 def test_discovery_mechanical_gate_accepts_typed_honest_insufficient_stop() -> None:
@@ -171,27 +175,28 @@ def test_discovery_mechanical_gate_accepts_typed_honest_insufficient_stop() -> N
         scope_version_id="scope_v1",
         evidence_revision=1,
         evidence_ids=("evi_" + "2" * 24,),
+        candidate_semantic_ids=(),
         hypothesis_ids=(),
         workflow_status=BrainWorkflowStatus.INCONCLUSIVE,
         last_completed_node="HONEST_STOP",
         discovery_required=False,
-        discovery_turns=1,
+        discovery_turns=0,
     )
     provider = {
         "provider_requests_by_source": {
             "research_intake": 1,
             "metabase": 2,
-            "p17_manager": 1,
+            "p17_manager": 0,
             "p19_manager": 0,
         },
-        "actual_provider_request_count": 4,
+        "actual_provider_request_count": 3,
         "prompt_tokens": 1500,
         "blocked_request_count": 0,
     }
     p17_snapshot = SimpleNamespace(
         investigation=SimpleNamespace(nodes=()),
         claims=(),
-        terminal_stop_reason=SimpleNamespace(value="NO_MEANINGFUL_GAIN"),
+        terminal_stop_reason=None,
     )
     p19_snapshot = SimpleNamespace(hypotheses=())
 
@@ -208,15 +213,14 @@ def test_discovery_mechanical_gate_accepts_typed_honest_insufficient_stop() -> N
     assert result["mechanical_green"] is True
     assert result["discovery_candidate_path"] is False
     assert result["discovery_honest_stop"] is True
+    assert result["p17_provider_requests"] == 0
     assert result["p19_assessment_exists"] is False
     assert result["report_exists"] is False
 
 
-
-
-def test_discovery_mechanical_gate_accepts_partial_candidate_then_honest_stop() -> None:
+def test_discovery_mechanical_gate_accepts_singleton_after_p19_honest_stop() -> None:
     state = BrainGraphState(
-        thread_id="live:discovery-partial-stop",
+        thread_id="live:discovery-singleton-stop",
         tenant_binding="id:tenant",
         principal_ref="user-1",
         research_session_id="rs_" + "9" * 24,
@@ -224,29 +228,29 @@ def test_discovery_mechanical_gate_accepts_partial_candidate_then_honest_stop() 
         scope_version_id="scope_v1",
         evidence_revision=1,
         evidence_ids=("evi_" + "2" * 24,),
+        candidate_semantic_ids=("metric.a",),
         hypothesis_ids=("p19h_" + "3" * 24,),
+        latest_p19_assessment_ref="p19a_" + "5" * 24,
         workflow_status=BrainWorkflowStatus.INCONCLUSIVE,
         last_completed_node="HONEST_STOP",
         discovery_required=False,
-        discovery_turns=2,
+        discovery_turns=0,
     )
     provider = {
         "provider_requests_by_source": {
             "research_intake": 1,
             "metabase": 2,
-            "p17_manager": 2,
-            "p19_manager": 0,
+            "p17_manager": 0,
+            "p19_manager": 1,
         },
-        "actual_provider_request_count": 5,
+        "actual_provider_request_count": 4,
         "prompt_tokens": 1500,
         "blocked_request_count": 0,
     }
     p17_snapshot = SimpleNamespace(
         investigation=SimpleNamespace(nodes=()),
-        claims=(object(),),
-        terminal_stop_reason=SimpleNamespace(
-            value="CAUSAL_IDENTIFICATION_LIMIT"
-        ),
+        claims=(),
+        terminal_stop_reason=None,
     )
     p19_snapshot = SimpleNamespace(
         hypotheses=(_grounded_hypothesis(),),
@@ -266,8 +270,10 @@ def test_discovery_mechanical_gate_accepts_partial_candidate_then_honest_stop() 
     assert result["discovery_candidate_path"] is False
     assert result["discovery_honest_stop"] is True
     assert result["hypothesis_count"] == 1
+    assert result["candidate_projection_coherent"] is True
     assert result["evidence_grounded_hypothesis_count"] == 1
-    assert result["p19_assessment_exists"] is False
+    assert result["p19_assessment_exists"] is True
+    assert result["p19_provider_requests"] == 1
     assert result["report_exists"] is False
 
 
