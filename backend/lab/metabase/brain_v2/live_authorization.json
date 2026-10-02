@@ -1,6 +1,6 @@
 {
   "schema_version": "dima_brain_v2_live_authorization_v1",
-  "enabled": true,
+  "enabled": false,
   "probe_id": "R_LIVE_3_DISCOVERY",
   "candidate_product_sha": "0bdb27006ac7619b3b3bc79fad1cfb3adba49de9",
   "provider_free_run_id": 36964917533,
@@ -10,5 +10,5 @@
   "model_policy": "LUNA_FIRST",
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
-  "authorization_receipt": "v2.1-final-t4-pf-green"
+  "authorization_receipt": "v2.1-final-t4-green-disarmed"
 }
