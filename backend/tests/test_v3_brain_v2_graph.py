@@ -454,11 +454,13 @@ def test_discovery_graph_emits_governed_boundary_span_sequence() -> None:
     assert [item["name"] for item in bridge.records] == [
         "dima.intent.interpret",
         "dima.scope.resolve",
+        "dima.requirements.plan",
         "dima.material.compile",
         "dima.evidence.admit",
         "dima.discovery.project_candidates",
         "dima.p19.assess",
         "dima.p20.report",
+        "dima.completion.evaluate",
     ]
     projection = next(
         item

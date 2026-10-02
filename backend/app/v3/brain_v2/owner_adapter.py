@@ -700,11 +700,9 @@ class DimaBrainV2Activities(BrainActivities):
         return CanonicalizeActivityResult(
             research_session_id=session.session_id,
             scope_version_id=state.scope_version_id or "scope_v1",
-            open_requirement_ids=tuple(
-                item.obligation_id
-                for item in session.obligations
-                if item.state.value not in {"VERIFIED", "LIMITED"}
-            ),
+            # Requirement authority is the immutable accepted USER_MUST set.
+            # Analytical obligation state must never erase presentation MUSTs.
+            open_requirement_ids=tuple(brief.must_requirement_ids),
             material_requirement_ids=(goal.goal_id,),
             hypothesis_ids=tuple(dict.fromkeys(hypothesis_ids)),
             discovery_required=not user_seeded,
