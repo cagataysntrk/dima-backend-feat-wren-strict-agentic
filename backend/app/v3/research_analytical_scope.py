@@ -1469,6 +1469,22 @@ def _assert_breakout_and_ranking(
             )
         return
 
+    if ranking.basis == RankingBasis.CHANGE:
+        raise ResearchAnalyticalScopeError(
+            "R1_NATIVE_RANKING_BASIS_UNOBSERVABLE",
+            (
+                "current native attestation observes ranking target/direction/limit "
+                "but cannot prove that the ordered quantity is baseline-to-comparison "
+                "CHANGE rather than LEVEL"
+            ),
+            last_valid_boundary="dima.material.compile",
+            first_invalid_boundary="dima.evidence.admit",
+            scope_fingerprint=contract.scope_fingerprint,
+            material_fingerprint=contract.material_fingerprint,
+            expected_semantic_shape={"ranking_basis": "change"},
+            observed_semantic_shape={"ranking_basis": "unobservable"},
+        )
+
     if ranking.limit is None:
         if manifest.limit is not None:
             raise ResearchAnalyticalScopeError(
@@ -2121,6 +2137,21 @@ def _assert_material_ranking_scope(
                 "evidence-synthesis ranking has no authorized native row limit",
             )
         return
+    if ranking.basis == RankingBasis.CHANGE:
+        raise ResearchAnalyticalScopeError(
+            "R1_NATIVE_RANKING_BASIS_UNOBSERVABLE",
+            (
+                "dima.9 material observation exposes native ranking "
+                "target/direction/limit but no proof that the ordered quantity "
+                "is baseline-to-comparison CHANGE rather than LEVEL"
+            ),
+            last_valid_boundary="dima.native.observe",
+            first_invalid_boundary="dima.evidence.admit",
+            scope_fingerprint=contract.scope_fingerprint,
+            material_fingerprint=contract.material_fingerprint,
+            expected_semantic_shape={"ranking_basis": "change"},
+            observed_semantic_shape={"ranking_basis": "unobservable"},
+        )
     binding = _material_binding(bindings, ranking.measure)
     if binding.metric_id is None or not binding.metric_entity_id:
         raise ResearchAnalyticalScopeError(
