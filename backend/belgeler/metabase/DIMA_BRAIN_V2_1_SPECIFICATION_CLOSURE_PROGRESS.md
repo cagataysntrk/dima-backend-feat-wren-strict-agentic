@@ -1556,3 +1556,53 @@ Next gate:
 - Phase-2/headless/metamorphic certification on the same semantic Product bytes;
 - no Product change before that result;
 - only after Phase-2 GREEN may one F06_M surgical live recovery probe be considered.
+
+
+### Step 12C — dependency filter-role closure / Phase-1 seal
+
+A subsequent one-case F06_M probe reached a new intake-contract boundary and stopped the paid panel
+immediately. The dependent dimension was being treated as if it must also be a child BREAKOUT,
+although its legal role is to constrain the child execution as a source-backed FILTER only.
+
+Independent law:
+
+- a result-dependent dimension may be FILTER-only in the child;
+- dependency dimension membership in accepted governed scope is required;
+- dependency dimension does not have to appear in child `related_refs`;
+- if the same dimension is independently requested as a child breakout, both roles may coexist;
+- foreign/unbound dependency dimensions remain fail-closed.
+
+Generic Product closure:
+
+- `AnalyticalRequestContract` separates dependency-filter role from breakout role;
+- intake canonicalization accepts governed dependency dimensions without manufacturing child
+  breakout semantics;
+- no prompt phrase, benchmark id, fuzzy/regex/morph rule, SQL/MBQL or engine change was introduced.
+
+Provider-free proof:
+
+- semantic conformance after Product fix: `37073948758` = SUCCESS;
+- generated dependency-role siblings: `37074020997` = SUCCESS;
+- first aggregate Phase-1 `37074043769` exposed one stale test fixture only:
+  declared source fragments were not verbatim substrings of the synthetic user question;
+- fixture was repaired without weakening the source-backed intake invariant;
+- final aggregate Phase-1 `37075865938` = **SUCCESS**:
+  - Brain V2 deterministic closure: 141 passed;
+  - Research/scope/P14 authority regressions: 254 passed;
+  - P17 investigation regressions: 145 passed;
+  - P19 epistemic regressions: 53 passed;
+  - P20/Core-B semantic regressions: 56 passed;
+  - security/repository hygiene: 26 passed;
+  - architecture invariants + single migration head: GREEN.
+
+Current semantic Product candidate:
+
+`4ddca914d5e0bf7fa4216bf6aee9945a88d183d9`
+
+Commits after that Product SHA are tests/proof only.
+
+Classification:
+**DEPENDENCY FILTER-ROLE — GENERIC LAW GREEN / PHASE-1 SEALED**.
+
+Next gate:
+Phase-2/headless/metamorphic certification on these exact Product bytes. Paid live remains CLOSED.
