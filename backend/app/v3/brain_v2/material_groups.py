@@ -294,6 +294,62 @@ class MaterialGroupDependencyError(RuntimeError):
         self.detail = detail
 
 
+def material_execution_anchor_for_requirement(
+    groups: tuple[MaterialGroup, ...],
+    *,
+    requirement_id: str,
+) -> str:
+    """Resolve one analytical requirement to its exact shared execution anchor."""
+
+    matches = tuple(
+        group
+        for group in groups
+        if requirement_id in set(group.consumer_requirement_ids)
+    )
+    if not matches:
+        raise MaterialGroupDependencyError(
+            "BRAIN_V2_MATERIAL_DEPENDENCY_SOURCE_UNKNOWN",
+            requirement_id,
+        )
+    if len(matches) != 1:
+        raise MaterialGroupDependencyError(
+            "BRAIN_V2_MATERIAL_DEPENDENCY_SOURCE_AMBIGUOUS",
+            requirement_id,
+        )
+    return matches[0].anchor_requirement_id
+
+
+def result_dependency_execution_anchor(
+    *,
+    session,
+    groups: tuple[MaterialGroup, ...],
+    requirement_id: str,
+) -> str | None:
+    """Map a declared result dependency to the durable P14 occurrence anchor."""
+
+    brief = session.accepted_brief
+    if brief is None:
+        raise MaterialGroupDependencyError(
+            "BRAIN_V2_MATERIAL_DEPENDENCY_BRIEF_REQUIRED",
+            requirement_id,
+        )
+    matches = tuple(
+        item for item in brief.questions if item.goal_id == requirement_id
+    )
+    if len(matches) != 1:
+        raise MaterialGroupDependencyError(
+            "BRAIN_V2_MATERIAL_DEPENDENCY_REQUIREMENT_UNKNOWN",
+            requirement_id,
+        )
+    dependency = matches[0].result_dependency
+    if dependency is None:
+        return None
+    return material_execution_anchor_for_requirement(
+        groups,
+        requirement_id=dependency.source_goal_id,
+    )
+
+
 def select_pending_material_group(
     groups: tuple[MaterialGroup, ...],
     *,
