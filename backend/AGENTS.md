@@ -1,82 +1,59 @@
-# Dima Metabase Platform — Agent Engineering Contract
+# Dima Brain V2.1 — Agent Engineering Contract
 
-## Product authority
+```text
+branch = feat/dima-brain-v2-1-specification-closure
+architecture = Brain V2.1 frozen
+analytics = Metabase / Metabot only
+orchestrator = LangGraph / BrainV2Service
+engine = dima.9 frozen
+frontend = forbidden
+broad benchmark = sealed counterexample corpus
+```
 
-~~~text
-branch = feat/dima-metabase-platform
-canonical analytics = Metabase / Metabot
-Dima = organizational intelligence + governed closed loop
-repository canonicalization = SEALED
-P14-P21 = SEALED
-Core A = SEALED
-Core B = ACTIVE
-final target = SEALED NEUTRAL-COMPARISON CANDIDATE
-external execution = DEFERRED
-UI/UX = FORBIDDEN
-Wren = historical / non-canonical
-DEV80 / Validation50 / Hidden50 = NOT AUTHORIZED
-~~~
+## Owner purity
 
-## One analytics engine
+Metabot owns analytics. P18 owns relationship judgment. P19 owns RCA judgment. P17 owns only
+bounded information-gain control. P20 owns synthesis. Graph owns routing.
 
-Never add a second analytical execution path, dataframe/statistics shadow engine, raw-SQL fallback,
-Wren fallback, or dual-engine abstraction. Metabase/Metabot owns analytical computation.
-
-## Sealed-owner discipline
-
-P14-P21, Human Adoption, ActionAuthorization and Core A change only for a measured defect.
-Core B delegates to them and never duplicates truth.
-
-Permanent distinctions:
-
-~~~text
-analytics != organizational authority
-Outcome != causality
-Memory != truth authority
-Watch != analytics engine
-Decision != Human Adoption
-Adoption != external execution
-timeline != authority
-~~~
+Never add a second analytical execution path, dataframe/statistics shadow engine, raw-SQL/MBQL
+fallback, Wren runtime, or hidden semantic truth.
 
 ## Failure protocol
 
-~~~text
-FIRST WRONG TRANSITION
-→ OWNER
-→ ROOT CAUSE
-→ GENERIC FIX
-→ FOCUSED PROOF
-~~~
+```text
+FIRST WRONG BOUNDARY
+-> OWNER
+-> INDEPENDENT LAW
+-> PROVIDER-FREE REPRODUCER
+-> GENERIC ROOT FIX
+-> GENERATED SIBLINGS
+-> WIDER PROVIDER-FREE
+```
 
-Three rooted failures on the same invariant is an architecture STOP.
+There is no special-case patch category. Fuzzy, regex, morphology and prompt-phrase routing are
+not semantic authority.
 
-## Core B rules
+Do not reopen a GREEN owner without a reproducer. Keep `owner_adapter.py` from accumulating
+new owner semantics. Put a new rule in the smallest typed owner module only when the reproducer
+proves that owner is wrong.
 
-Core B may own product DTOs, projection, navigation, correlation, deterministic pagination, resume,
-capability discovery, observability and headless orchestration.
+## Testing discipline
 
-It must:
-- reauthorize the current Principal on protected read/resume;
-- preserve non-oracle behavior;
-- resume from durable IDs/artifacts only;
-- expose stale/superseded/inconclusive state explicitly;
-- project timeline from existing owners;
-- avoid raw SQLModel/table-shaped product contracts;
-- add zero durable truth families unless a measured blocker proves one necessary.
+Existing stateful/Hypothesis floors remain mandatory. New semantic correctness must also be tested
+against the small independent `tests/semantic_spec/` law model rather than production calling
+itself as oracle.
 
-## Testing / cost control
+During specification closure:
 
-Use focused provider-free proofs during development, then one coherent provider-free closure.
-Do not run DEV80, Validation50 or Hidden50. Do not restore them as automatic CI. Do not perform or
-score the later neutral comparison.
+- provider/model calls = 0;
+- broad 30-case = forbidden;
+- security/currentness remains exact;
+- stale Evidence = 0;
+- cross-tenant = 0;
+- duplicate native work = 0;
+- engine diff = 0 unless a genuine engine defect is independently proven.
 
-## Prohibited work
+Only after aggregate provider-free GREEN may a small stop-on-first-real-RED paid recovery panel be
+used to verify provider/NLU boundaries.
 
-- UI/frontend implementation
-- external action execution or `action:execute`
-- Wren restoration, evaluation, merge or winner selection
-- Metabase core modification without genuine STOP
-- second truth/receipt/analytics owner
-- broad paid final certification
-- hidden semantic fallback or test-trajectory branching
+Engine authority: `d5c60dc9f37a9ec9c5b0117f178146bbcb8dca88` / `0.63.18-dima.9`.
