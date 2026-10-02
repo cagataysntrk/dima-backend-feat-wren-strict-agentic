@@ -100,6 +100,27 @@ class P18RelationshipInterpretationDraft(Frozen):
         return self
 
 
+class P18RelationshipInterpretationTransport(Frozen):
+    """Provider-safe transport; cell coordinates remain Dima-owned."""
+
+    analytical_kind: RelationshipAnalyticalKind
+    claim_text: str = Field(min_length=1)
+    evidence_assessments: tuple[P18EvidenceAssessment, ...] = Field(min_length=1)
+    salient_cell_refs: tuple[str, ...] = Field(default=(), max_length=6)
+    limitations: tuple[str, ...] = ()
+
+    @model_validator(mode="after")
+    def identities_unique(self):
+        evidence_refs = [item.evidence_id for item in self.evidence_assessments]
+        if len(evidence_refs) != len(set(evidence_refs)):
+            raise ValueError("P18 Evidence assessments must be unique by evidence_id")
+        if len(self.salient_cell_refs) != len(set(self.salient_cell_refs)):
+            raise ValueError("P18 salient cell refs must be unique")
+        if any(not item.strip() for item in self.limitations):
+            raise ValueError("P18 limitations must be non-empty strings")
+        return self
+
+
 class StructuredJSONTransport(Protocol):
     def structured_json(
         self,
@@ -122,10 +143,10 @@ For TEMPORAL_CO_MOVEMENT material, co-movement may be assessed only from the
 supplied paired temporal observations. Causality remains NOT ESTABLISHED.
 BUSINESS_POLICY is outside this interpretation and is resolved separately.
 When the Evidence supports or challenges a relationship and exact numeric cells
-are available, select 2-6 salient_cells directly from the supplied rows. Prefer
-cells spanning both relationship metrics and useful observed entities. A cell is
-only an exact pointer (Evidence id, row index, column index); never calculate a
-new statistic, delta, percentage, score or derived value. If the material cannot
+are available, select 2-6 salient_cell_refs only from the supplied allowed list.
+Prefer refs spanning both relationship metrics and useful observed entities.
+Each ref resolves to one existing governed Evidence cell; never calculate a new
+statistic, delta, percentage, score or derived value. If the material cannot
 support the requested interpretation, use INSUFFICIENT Evidence relations and
 explicit limitations instead of filling the gap."""
 
@@ -141,8 +162,59 @@ def _canonical(value: Any) -> str:
     )
 
 
+def _salient_cell_ref(cell: P18SalientCell) -> str:
+    return f"{cell.evidence_id}:{cell.row_index}:{cell.column_index}"
+
+
+def _salient_cell_catalog(
+    view: P18RelationshipView,
+) -> tuple[tuple[str, P18SalientCell], ...]:
+    output: list[tuple[str, P18SalientCell]] = []
+    for evidence in view.evidence:
+        for row_index, row in enumerate(evidence.rows):
+            for column_index, value in enumerate(row):
+                if isinstance(value, bool) or not isinstance(value, (int, float)):
+                    continue
+                cell = P18SalientCell(
+                    evidence_id=evidence.evidence_id,
+                    row_index=row_index,
+                    column_index=column_index,
+                )
+                output.append((_salient_cell_ref(cell), cell))
+    return tuple(output)
+
+
+def _resolve_salient_cell_ref(
+    *,
+    view: P18RelationshipView,
+    cell_ref: str,
+) -> P18SalientCell:
+    try:
+        evidence_id, row_raw, column_raw = cell_ref.rsplit(":", 2)
+        row_index = int(row_raw)
+        column_index = int(column_raw)
+    except (ValueError, AttributeError) as exc:
+        raise ValueError("P18 salient cell ref is outside Evidence") from exc
+
+    evidence_by_id = {item.evidence_id: item for item in view.evidence}
+    evidence = evidence_by_id.get(evidence_id)
+    if evidence is None or row_index < 0 or row_index >= len(evidence.rows):
+        raise ValueError("P18 salient cell ref is outside Evidence")
+    row = evidence.rows[row_index]
+    if column_index < 0 or column_index >= len(row):
+        raise ValueError("P18 salient cell ref is outside Evidence")
+    value = row[column_index]
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError("P18 salient cell ref must resolve to an exact numeric value")
+    return P18SalientCell(
+        evidence_id=evidence_id,
+        row_index=row_index,
+        column_index=column_index,
+    )
+
+
 def _schema(view: P18RelationshipView) -> dict[str, Any]:
-    schema = strict_json_schema(P18RelationshipInterpretationDraft)
+    schema = strict_json_schema(P18RelationshipInterpretationTransport)
     props = schema["properties"]
     allowed_kinds = (
         [RelationshipAnalyticalKind.ASSOCIATION.value]
@@ -165,33 +237,17 @@ def _schema(view: P18RelationshipView) -> dict[str, Any]:
             "type": "string",
             "enum": evidence_ids,
         }
-    salient = defs.get("P18SalientCell")
-    legal_salient_cells = [
-        {
-            "evidence_id": evidence.evidence_id,
-            "row_index": row_index,
-            "column_index": column_index,
-        }
-        for evidence in view.evidence
-        for row_index, row in enumerate(evidence.rows)
-        for column_index, value in enumerate(row)
-        if isinstance(value, (int, float)) and not isinstance(value, bool)
-    ]
-    if isinstance(salient, dict):
-        salient_props = salient.get("properties") or {}
-        salient_props["evidence_id"] = {
-            "type": "string",
-            "enum": evidence_ids,
-        }
-        if legal_salient_cells:
-            # Salience is a pointer into existing governed material, never a
-            # provider-authored coordinate. Constrain the structured output to
-            # the finite set of exact numeric Evidence cells before validation.
-            salient["enum"] = legal_salient_cells
+
+    catalog = _salient_cell_catalog(view)
+    salient_refs = props.get("salient_cell_refs")
+    if isinstance(salient_refs, dict):
+        if catalog:
+            salient_refs["items"] = {
+                "type": "string",
+                "enum": [ref for ref, _ in catalog],
+            }
         else:
-            salient_cells = props.get("salient_cells")
-            if isinstance(salient_cells, dict):
-                salient_cells["maxItems"] = 0
+            salient_refs["maxItems"] = 0
     return schema
 
 
@@ -212,7 +268,13 @@ class StructuredP18RelationshipInterpreter:
         self,
         view: P18RelationshipView,
     ) -> P18RelationshipInterpretationDraft:
-        packet = _canonical(view.model_dump(mode="json"))
+        catalog = _salient_cell_catalog(view)
+        packet = _canonical(
+            {
+                "view": view.model_dump(mode="json"),
+                "allowed_salient_cell_refs": [ref for ref, _ in catalog],
+            }
+        )
         raw = self._transport.structured_json(
             _SYSTEM,
             (
@@ -224,7 +286,17 @@ class StructuredP18RelationshipInterpreter:
             schema_name=self._schema_name,
         )
         self.call_count += 1
-        draft = P18RelationshipInterpretationDraft.model_validate_json(raw)
+        transport = P18RelationshipInterpretationTransport.model_validate_json(raw)
+        draft = P18RelationshipInterpretationDraft(
+            analytical_kind=transport.analytical_kind,
+            claim_text=transport.claim_text,
+            evidence_assessments=transport.evidence_assessments,
+            salient_cells=tuple(
+                _resolve_salient_cell_ref(view=view, cell_ref=ref)
+                for ref in transport.salient_cell_refs
+            ),
+            limitations=transport.limitations,
+        )
 
         expected = {item.evidence_id for item in view.evidence}
         observed = {item.evidence_id for item in draft.evidence_assessments}
