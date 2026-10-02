@@ -15,7 +15,7 @@ from sqlmodel import Session, select
 from app.v3.business_relationship_v1 import RelationshipResultProjection
 from app.v3.claim_lineage import ClaimEpistemicState, ClaimLineageStore
 from app.v3.hypothesis_root_cause import AggregateOutcome, CausalQualification, ContributionClass, EvidenceStrength, GroundingSourceKind, HypothesisDisposition, HypothesisRootCauseStore
-from app.v3.research import ObligationState, StoppingStatus
+from app.v3.research import ObligationState
 from app.v3.research_analytical_scope import coorigin_material_requirements
 from app.v3.research_contracts import ResearchGoalKind
 from app.v3.research_store import ResearchPersistenceError, ResearchSessionStore
