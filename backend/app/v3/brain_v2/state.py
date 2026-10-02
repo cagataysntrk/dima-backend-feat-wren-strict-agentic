@@ -87,6 +87,7 @@ class BrainGraphState(BaseModel):
     max_adaptive_reentries: int = Field(default=1, ge=0, le=4)
 
     p18_requirement_ids: tuple[str, ...] = ()
+    p18_result_refs: tuple[str, ...] = ()
     p18_claim_refs: tuple[str, ...] = ()
     p18_policy_use_refs: tuple[str, ...] = ()
     completion_revision: int = Field(default=0, ge=0)
@@ -115,6 +116,7 @@ class BrainGraphState(BaseModel):
             "root_cause_requirement_ids": self.root_cause_requirement_ids,
             "report_requirement_ids": self.report_requirement_ids,
             "p18_requirement_ids": self.p18_requirement_ids,
+            "p18_result_refs": self.p18_result_refs,
             "p18_claim_refs": self.p18_claim_refs,
             "p18_policy_use_refs": self.p18_policy_use_refs,
             "investigation_requirement_ids": self.investigation_requirement_ids,
@@ -164,10 +166,14 @@ class BrainGraphState(BaseModel):
             set(self.open_requirement_ids)
         ):
             raise ValueError("report owner refs must belong to current requirements")
+        if len(self.p18_requirement_ids) != len(self.p18_result_refs):
+            raise ValueError("P18 requirement/result refs must be paired")
         if len(self.p18_requirement_ids) != len(self.p18_claim_refs):
             raise ValueError("P18 requirement/claim refs must be paired")
         if len(self.p18_requirement_ids) != len(self.p18_policy_use_refs):
             raise ValueError("P18 requirement/policy-use refs must be paired")
+        if any(not value.startswith("p18r_") for value in self.p18_result_refs):
+            raise ValueError("P18 result refs must use canonical identity")
         if any(not value.startswith("clm_") for value in self.p18_claim_refs):
             raise ValueError("P18 claim refs must use canonical identity")
         if any(not value.startswith("bru_") for value in self.p18_policy_use_refs):
@@ -231,6 +237,7 @@ class BrainStatePayload(TypedDict, total=False):
     adaptive_reentries: int
     max_adaptive_reentries: int
     p18_requirement_ids: tuple[str, ...]
+    p18_result_refs: tuple[str, ...]
     p18_claim_refs: tuple[str, ...]
     p18_policy_use_refs: tuple[str, ...]
     completion_revision: int

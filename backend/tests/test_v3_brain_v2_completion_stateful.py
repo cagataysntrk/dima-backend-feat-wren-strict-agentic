@@ -8,7 +8,7 @@ from hypothesis.stateful import RuleBasedStateMachine, invariant, precondition, 
 from app.v3.brain_v2.material_groups import project_material_groups
 from app.v3.brain_v2.owner_adapter import DimaBrainV2Activities
 from app.v3.brain_v2.state import BrainGraphState
-from app.v3.business_relationship_policy import RelationshipPolicyResolutionStatus
+from app.v3.business_relationship_v1 import RelationshipTerminalDisposition
 from control_plane.authorize import Principal
 
 from app.v3.research_contracts import (
@@ -112,12 +112,14 @@ class CompletionOwnerHarness(DimaBrainV2Activities):
             authority_id="atc_completion_stateful",
             lineage_id="atl_completion_stateful",
         )
-        self._relationships = SimpleNamespace(
-            load_use=lambda **kwargs: SimpleNamespace(
-                resolution_status=RelationshipPolicyResolutionStatus.NOT_REQUIRED,
-                policy_use_id=kwargs["policy_use_id"],
-                policy_id=None,
-                limitation_code=None,
+        self._relationship_results = SimpleNamespace(
+            load=lambda **kwargs: SimpleNamespace(
+                disposition=RelationshipTerminalDisposition.FULFILLED,
+                projection=SimpleNamespace(
+                    research_session_id=self.session.session_id,
+                    obligation_id="g_rel",
+                    scope_version_id="scope_v1",
+                ),
             )
         )
 
@@ -166,6 +168,7 @@ class CompletionOwnerStateMachine(RuleBasedStateMachine):
             evidence_revision=1 if self.material_done else 0,
             evidence_ids=(("evi_" + "2" * 24,) if self.material_done else ()),
             p18_requirement_ids=(("g_rel",) if p18 else ()),
+            p18_result_refs=(("p18r_" + "7" * 24,) if p18 else ()),
             p18_claim_refs=(("clm_" + "4" * 24,) if p18 else ()),
             p18_policy_use_refs=(("bru_" + "5" * 24,) if p18 else ()),
             completion_revision=self.revision,

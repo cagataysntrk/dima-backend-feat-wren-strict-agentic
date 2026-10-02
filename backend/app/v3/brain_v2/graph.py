@@ -380,6 +380,7 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
                 *current.p18_requirement_ids,
                 result.requirement_id,
             ),
+            "p18_result_refs": (*current.p18_result_refs, result.result_ref),
             "p18_claim_refs": (*current.p18_claim_refs, result.claim_ref),
             "p18_policy_use_refs": (
                 *current.p18_policy_use_refs,

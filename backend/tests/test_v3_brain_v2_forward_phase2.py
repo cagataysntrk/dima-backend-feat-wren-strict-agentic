@@ -134,6 +134,7 @@ class ForwardPhase2Activities:
         assert len(state.evidence_ids) == 1
         return P18ActivityResult(
             requirement_id=REL,
+            result_ref="p18r_" + "7" * 24,
             claim_ref="clm_" + "4" * 24,
             policy_use_ref="bru_" + "5" * 24,
             activity_fingerprint=self._fp("p18", state),

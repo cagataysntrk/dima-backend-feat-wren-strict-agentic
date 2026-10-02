@@ -160,6 +160,7 @@ class P17ActivityResult(ActivityResult):
 
 class P18ActivityResult(ActivityResult):
     requirement_id: str = Field(min_length=1)
+    result_ref: str = Field(pattern=r"^p18r_[a-f0-9]{24}$")
     claim_ref: str = Field(pattern=r"^clm_[a-f0-9]{24}$")
     policy_use_ref: str = Field(pattern=r"^bru_[a-f0-9]{24}$")
 

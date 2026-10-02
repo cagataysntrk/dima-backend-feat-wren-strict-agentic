@@ -137,6 +137,7 @@ def project_relationship_result(
     research_session_id: str,
     claim,
     decision: RelationshipPolicyDecision,
+    requirement_id: str | None = None,
     scope_lineage_id: str,
     scope_version_id: str,
     applicability_scope: dict[str, Any],
@@ -179,7 +180,7 @@ def project_relationship_result(
 
     return RelationshipResultProjection(
         research_session_id=research_session_id,
-        obligation_id=claim.obligation_id,
+        obligation_id=(requirement_id or claim.obligation_id),
         claim_id=claim.claim_id,
         policy_use_id=decision.policy_use_id,
         policy_id=decision.policy_id,

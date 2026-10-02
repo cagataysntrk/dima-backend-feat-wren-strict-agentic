@@ -15,7 +15,12 @@ from app.v3.business_relationship_policy import (
     RelationshipPolicyRequirement,
     RelationshipPolicyResolutionStatus,
 )
-from app.v3.business_relationship_v1 import project_relationship_result
+from app.v3.business_relationship_v1 import (
+    RelationshipResultStore,
+    RelationshipResultStoreError,
+    RelationshipTerminalDisposition,
+    project_relationship_result,
+)
 from app.v3.hypothesis_root_cause import (
     AggregateOutcome,
     ContributionClass,
@@ -315,6 +320,14 @@ class DimaBrainV2Activities(BrainActivities):
         self._epistemic_manager = epistemic_manager
         self._reports = reports
         self._relationships = relationships
+        self._relationship_results = (
+            RelationshipResultStore(
+                research_store=relationships.research_store,
+                db_engine=relationships.db_engine,
+            )
+            if relationships is not None
+            else None
+        )
         self._native_session_token = native_session_token
         self._engine_identity = str(engine_identity or "").strip()
         self._model_profile = str(model_profile or "").strip()
@@ -1291,8 +1304,35 @@ class DimaBrainV2Activities(BrainActivities):
             ),
             principal=self._principal,
         )
+        if self._relationship_results is None:
+            raise BrainV2OwnerError(
+                "BRAIN_V2_P18_RESULT_OWNER_REQUIRED",
+                goal.goal_id,
+            )
+        projection = project_relationship_result(
+            research_session_id=session.session_id,
+            claim=claim,
+            decision=decision,
+            requirement_id=goal.goal_id,
+            scope_lineage_id=session.lineage_id,
+            scope_version_id=brief.scope.scope_version.version_id,
+            applicability_scope=applicability_scope,
+        )
+        try:
+            sealed = self._relationship_results.seal(
+                projection=projection,
+                principal=self._principal,
+            )
+        except RelationshipResultStoreError as exc:
+            raise BrainV2OwnerError(
+                exc.code,
+                exc.detail,
+                last_valid_boundary="dima.evidence.admit",
+                first_invalid_boundary="dima.p18.adjudicate",
+            ) from exc
         return P18ActivityResult(
             requirement_id=goal.goal_id,
+            result_ref=sealed.result_id,
             claim_ref=claim.claim_id,
             policy_use_ref=decision.policy_use_id,
             activity_fingerprint=_fingerprint(
@@ -1300,6 +1340,7 @@ class DimaBrainV2Activities(BrainActivities):
                     "activity": "P18_ADJUDICATE",
                     "requirement": goal.goal_id,
                     "material_group": group.material_group_id,
+                    "result": sealed.result_id,
                     "claim": claim.claim_id,
                     "policy_use": decision.policy_use_id,
                 }
@@ -2155,30 +2196,45 @@ class DimaBrainV2Activities(BrainActivities):
         relationship_disposition: dict[
             str, ProductRequirementDisposition
         ] = {}
-        for requirement_id, policy_use_ref in zip(
+        for requirement_id, result_ref in zip(
             state.p18_requirement_ids,
-            state.p18_policy_use_refs,
+            state.p18_result_refs,
             strict=True,
         ):
-            if self._relationships is None:
+            if self._relationship_results is None:
                 raise BrainV2OwnerError(
-                    "BRAIN_V2_P18_OWNER_REQUIRED",
+                    "BRAIN_V2_P18_RESULT_OWNER_REQUIRED",
                     requirement_id,
                 )
-            use = self._relationships.load_use(
-                session_id=session.session_id,
-                policy_use_id=policy_use_ref,
-                principal=self._principal,
-            )
+            try:
+                artifact = self._relationship_results.load(
+                    result_id=result_ref,
+                    principal=self._principal,
+                )
+            except RelationshipResultStoreError as exc:
+                raise BrainV2OwnerError(
+                    exc.code,
+                    exc.detail,
+                    last_valid_boundary="dima.p18.adjudicate",
+                    first_invalid_boundary="dima.completion.evaluate",
+                ) from exc
+            if (
+                artifact.projection.research_session_id != session.session_id
+                or artifact.projection.obligation_id != requirement_id
+                or artifact.projection.scope_version_id != state.scope_version_id
+            ):
+                raise BrainV2OwnerError(
+                    "BRAIN_V2_P18_RESULT_AUTHORITY_MISMATCH",
+                    result_ref,
+                    last_valid_boundary="dima.p18.adjudicate",
+                    first_invalid_boundary="dima.completion.evaluate",
+                )
             relationship_terminal.add(requirement_id)
-            fulfilled_ref_by_requirement[requirement_id] = policy_use_ref
+            fulfilled_ref_by_requirement[requirement_id] = result_ref
             relationship_disposition[requirement_id] = (
                 ProductRequirementDisposition.FULFILLED
-                if use.resolution_status
-                in {
-                    RelationshipPolicyResolutionStatus.NOT_REQUIRED,
-                    RelationshipPolicyResolutionStatus.SATISFIED,
-                }
+                if artifact.disposition
+                == RelationshipTerminalDisposition.FULFILLED
                 else ProductRequirementDisposition.LIMITED
             )
 
@@ -2306,89 +2362,42 @@ class DimaBrainV2Activities(BrainActivities):
                 "BRAIN_V2_P20_RELATIONSHIP_NOT_TERMINAL",
                 ",".join(sorted(missing_terminal)),
             )
-        if self._relationships is None:
+        if self._relationship_results is None:
             raise BrainV2OwnerError(
-                "BRAIN_V2_P18_OWNER_REQUIRED",
+                "BRAIN_V2_P18_RESULT_OWNER_REQUIRED",
                 session.session_id,
             )
-        brief = session.accepted_brief
-        assert brief is not None
-        snapshot = self._investigation.snapshot(
-            session_id=session.session_id,
-            principal=self._principal,
-        )
-        claim_by_id = {item.claim_id: item for item in snapshot.claims}
         results = []
-        for requirement_id, claim_ref, policy_use_ref in zip(
+        for requirement_id, result_ref in zip(
             state.p18_requirement_ids,
-            state.p18_claim_refs,
-            state.p18_policy_use_refs,
+            state.p18_result_refs,
             strict=True,
         ):
-            goal = next(
-                (
-                    item
-                    for item in brief.questions
-                    if item.goal_id == requirement_id
-                ),
-                None,
-            )
-            claim = claim_by_id.get(claim_ref)
-            if goal is None or goal.kind != ResearchGoalKind.RELATIONSHIP:
+            try:
+                artifact = self._relationship_results.load(
+                    result_id=result_ref,
+                    principal=self._principal,
+                )
+            except RelationshipResultStoreError as exc:
                 raise BrainV2OwnerError(
-                    "BRAIN_V2_P20_RELATIONSHIP_REQUIREMENT_INVALID",
-                    requirement_id,
-                )
-            if claim is None:
+                    exc.code,
+                    exc.detail,
+                    last_valid_boundary="dima.completion.evaluate",
+                    first_invalid_boundary="dima.p20.report",
+                ) from exc
+            projection = artifact.projection
+            if (
+                projection.research_session_id != session.session_id
+                or projection.obligation_id != requirement_id
+                or projection.scope_version_id != state.scope_version_id
+            ):
                 raise BrainV2OwnerError(
-                    "BRAIN_V2_P20_RELATIONSHIP_CLAIM_NOT_FOUND",
-                    claim_ref,
+                    "BRAIN_V2_P20_RELATIONSHIP_RESULT_AUTHORITY_MISMATCH",
+                    result_ref,
+                    last_valid_boundary="dima.completion.evaluate",
+                    first_invalid_boundary="dima.p20.report",
                 )
-            use = self._relationships.load_use(
-                session_id=session.session_id,
-                policy_use_id=policy_use_ref,
-                principal=self._principal,
-            )
-            required = (
-                use.resolution_status
-                != RelationshipPolicyResolutionStatus.NOT_REQUIRED
-            )
-            eligible = use.resolution_status in {
-                RelationshipPolicyResolutionStatus.NOT_REQUIRED,
-                RelationshipPolicyResolutionStatus.SATISFIED,
-            }
-            decision = RelationshipPolicyDecision(
-                required=required,
-                eligible=eligible,
-                resolution_status=use.resolution_status,
-                policy_use_id=use.policy_use_id,
-                policy_id=use.policy_id,
-                limitation_code=use.limitation_code,
-            )
-            source_ref, target_ref, dimensions = self._relationship_refs(goal)
-            applicability_scope = {
-                "accepted_relationship_goal_id": goal.goal_id,
-                "semantic_ref_ids": sorted(
-                    {
-                        item.candidate_id
-                        for item in (*goal.subject_refs, *goal.related_refs)
-                    }
-                ),
-                "dimension_ref_ids": list(dimensions),
-            }
-            # source/target are intentionally recomputed from accepted typed
-            # relationship authority; they are not inferred from report text.
-            del source_ref, target_ref
-            results.append(
-                project_relationship_result(
-                    research_session_id=session.session_id,
-                    claim=claim,
-                    decision=decision,
-                    scope_lineage_id=session.lineage_id,
-                    scope_version_id=brief.scope.scope_version.version_id,
-                    applicability_scope=applicability_scope,
-                )
-            )
+            results.append(projection)
         return tuple(results)
 
     def synthesize_report(self, state: BrainGraphState) -> ReportActivityResult:

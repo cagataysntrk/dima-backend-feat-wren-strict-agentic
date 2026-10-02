@@ -194,6 +194,14 @@ class BusinessRelationshipPolicyStore:
         self._research = research_store
         self._engine = db_engine or control_plane_engine
 
+    @property
+    def research_store(self) -> ResearchSessionStore:
+        return self._research
+
+    @property
+    def db_engine(self):
+        return self._engine
+
     @staticmethod
     def _tenant(principal: Principal) -> str:
         if principal.tenant_id is not None:
