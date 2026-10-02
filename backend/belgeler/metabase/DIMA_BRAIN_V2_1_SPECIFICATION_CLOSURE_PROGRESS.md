@@ -1111,3 +1111,62 @@ Next legal sequence:
 `independent ranking-basis law -> RED -> typed intake/contract primitive -> provider-free GREEN ->
 independent result-dependency law -> RED -> typed execution-local dependency -> provider-free
 GREEN -> aggregate Phase-1/Phase-2 -> only then reconsider one F06_M live probe`.
+
+
+### Step 11A — F06_M ranking-basis semantic primitive
+
+Surgical live F06_M exposed a Product-quality RED with mechanical safety intact.
+The first semantic loss was reproduced independently: ranking intent represented
+direction/limit/measure but not whether the governed quantity was a LEVEL or a CHANGE.
+
+Independent RED:
+
+- semantic law: CHANGE ranking is coherent only with typed baseline/candidate authority;
+- production reproducer initially failed because `DraftRanking` rejected `basis=change`;
+- no benchmark wording, case id, month name, department name, regex or fuzzy rule participates.
+
+Reference patterns consulted:
+
+- Metabase official query-builder/custom-expression documentation: summarize/breakout,
+  expression/offset, ordering and limit are native analytical cognition/execution concerns;
+- Wren OSS architecture: preserve governed semantic/context/planning/validation boundaries
+  as explicit primitives.
+
+Adopted:
+
+- Dima carries only the typed semantic quantity being ranked (`LEVEL | CHANGE`);
+- CHANGE requires one explicit governed metric plus distinct baseline/comparison periods;
+- the accepted `AnalyticalRequestContract` exposes this basis to Metabot through the
+  existing structured context and deterministic contract projection.
+
+Deliberately NOT adopted:
+
+- no Dima delta/window calculation;
+- no SQL/MBQL generation;
+- no new analytics engine;
+- no dima.10 build;
+- no benchmark phrase recognition;
+- no prompt-only semantic authority.
+
+Generic Product changes:
+
+- `RankingBasis` added to durable `RankingSurface`;
+- provider-facing `DraftRanking` preserves the same typed basis;
+- CHANGE without an explicit governed measure is rejected;
+- `AnalyticalRankingInvariant` preserves the basis;
+- CHANGE without typed baseline/comparison authority is fail-closed;
+- Metabot-visible contract/context carries `basis=change` and the accepted periods.
+
+Provider-free proof so far:
+
+- semantic conformance `37063597125` = SUCCESS / 139 passed;
+- focused Brain V2 `37063597129` = SUCCESS / 100 passed, 1 skipped;
+- generated symbolic direction/limit siblings GREEN;
+- independent reference-law matrix agrees with Product contract acceptance;
+- intake and P14 boundary tests added for aggregate execution.
+
+Ranking-basis status:
+**GENERIC PRIMITIVE IMPLEMENTED; AGGREGATE PHASE-1 PROOF PENDING**.
+
+Next:
+run aggregate Phase-1 provider-free on the exact current HEAD. Paid live remains closed.
