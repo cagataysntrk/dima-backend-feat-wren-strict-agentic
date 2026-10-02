@@ -45,6 +45,11 @@ from app.v3.research_material_coverage import (
     ResearchMaterialCoverageError,
     assert_material_result_coverage,
 )
+from app.v3.research_result_dependency import (
+    ResultDependencyProjectionError,
+    ResultSelectionResolution,
+    resolve_first_ranked_entity,
+)
 from app.v3.research_store import ResearchSessionStore
 from app.v3.substrate.metabase.native_engine import (
     NativeDatasetExecutionError,
@@ -366,6 +371,103 @@ class NativeResearchMaterialExecutor:
                     ),
                 )
         return output
+
+    def resolve_result_dependency(
+        self,
+        *,
+        principal: Principal,
+        session: ResearchSession,
+        obligation_id: str,
+        analytical_scope: AnalyticalRequestContract | None = None,
+    ) -> ResultSelectionResolution | None:
+        """Project one VERIFIED parent ranking value into child execution material.
+
+        This never replays parent native work and never mutates accepted user scope.
+        The selected value comes only from the durable VERIFIED result bound to the
+        declared result dependency.
+        """
+
+        contract = analytical_scope or analytical_scope_contract(
+            session=session,
+            obligation_id=obligation_id,
+        )
+        brief = session.accepted_brief
+        if brief is None:
+            raise ResearchMaterialLimitation(
+                "R1_ACCEPTED_BRIEF_REQUIRED",
+                "result dependency requires immutable accepted ResearchBrief",
+            )
+        matches = tuple(
+            item for item in brief.questions if item.goal_id == obligation_id
+        )
+        if len(matches) != 1:
+            raise ResearchMaterialLimitation(
+                "R1_RESULT_DEPENDENCY_CHILD_REQUIRED",
+                obligation_id,
+            )
+        question = matches[0]
+        dependency = question.result_dependency
+        if dependency is None:
+            return None
+
+        parent_link, parent_result = self._store.verified_material_result(
+            session_id=session.session_id,
+            obligation_id=dependency.source_goal_id,
+        )
+        bindings = self._material_bindings(
+            principal=principal,
+            session=session,
+            contract=contract,
+        )
+        binding = bindings.get(dependency.dimension_semantic_id)
+        if binding is None or binding.field_id is None:
+            raise ResearchMaterialLimitation(
+                "R1_RESULT_DEPENDENCY_NATIVE_FIELD_REQUIRED",
+                dependency.dimension_semantic_id,
+                last_valid_boundary="dima.evidence.admit",
+                first_invalid_boundary="dima.material.compile",
+                scope_fingerprint=contract.scope_fingerprint,
+                material_fingerprint=contract.material_fingerprint,
+            )
+        semantic_ref = next(
+            (
+                item
+                for item in brief.scope.semantic_refs
+                if item.candidate_id == dependency.dimension_semantic_id
+            ),
+            None,
+        )
+        if semantic_ref is None:
+            raise ResearchMaterialLimitation(
+                "R1_RESULT_DEPENDENCY_DIMENSION_OUTSIDE_SCOPE",
+                dependency.dimension_semantic_id,
+                last_valid_boundary="dima.scope.resolve",
+                first_invalid_boundary="dima.material.compile",
+                scope_fingerprint=contract.scope_fingerprint,
+                material_fingerprint=contract.material_fingerprint,
+            )
+
+        try:
+            return resolve_first_ranked_entity(
+                base_contract=contract,
+                source_goal_id=dependency.source_goal_id,
+                source_evidence_id=str(parent_link.evidence_id),
+                source_receipt_id=str(parent_link.receipt_id),
+                source_result_hash=str(parent_link.result_hash),
+                dimension_semantic_id=dependency.dimension_semantic_id,
+                native_field_id=int(binding.field_id),
+                parent_result=parent_result,
+                dimension_name=semantic_ref.canonical_name,
+            )
+        except ResultDependencyProjectionError as exc:
+            raise ResearchMaterialLimitation(
+                exc.code,
+                exc.detail,
+                last_valid_boundary="dima.evidence.admit",
+                first_invalid_boundary="dima.material.compile",
+                scope_fingerprint=contract.scope_fingerprint,
+                material_fingerprint=contract.material_fingerprint,
+            ) from exc
 
     def enrich_native_request(
         self,
