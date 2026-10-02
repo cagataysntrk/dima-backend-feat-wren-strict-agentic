@@ -16,7 +16,7 @@ from app.v3.brain_v2.adaptive_owner_adapter import (
     AdaptiveDimaBrainV2Activities as DimaBrainV2Activities,
 )
 from app.v3.brain_v2.service import BrainV2Service, BrainV2ThreadError
-from app.v3.brain_v2.state import BrainGraphState, BrainWorkflowStatus
+from app.v3.brain_v2.state import BrainGraphState, BrainP19Route, BrainWorkflowStatus
 from app.v3.brain_v2.owner_adapter import BrainV2OwnerError
 from app.v3.evidence import DimaQueryReceipt, EvidenceArtifact, EvidenceState
 from app.v3.business_relationship_policy import BusinessRelationshipPolicyStore
@@ -1768,21 +1768,36 @@ def test_adaptive_same_result_hash_never_becomes_fake_information_gain() -> None
     ) = _adaptive_stack(repeat_followup_result=True)
     service = BrainV2Service(activities=activities)
 
-    with pytest.raises(BrainV2OwnerError) as exc:
-        service.run(
-            BrainGraphState(
-                thread_id="adaptive-no-gain",
-                tenant_binding=f"id:{TENANT_ID}",
-                principal_ref=USER_ID,
-                current_user_input="Provider-free ADAPTIVE RCA.",
-            )
+    result = service.run(
+        BrainGraphState(
+            thread_id="adaptive-no-gain",
+            tenant_binding=f"id:{TENANT_ID}",
+            principal_ref=USER_ID,
+            current_user_input="Provider-free ADAPTIVE RCA.",
         )
+    )
 
-    assert exc.value.code == "BRAIN_V2_NEXT_TEST_NO_INFORMATION_GAIN"
+    # Duplicate material is durable history but not new information. P17
+    # terminalizes its control capacity and returns authority to P19 instead of
+    # turning a legal no-gain outcome into an internal exception.
+    assert result.workflow_status == BrainWorkflowStatus.COMPLETE
+    assert result.latest_p19_route == BrainP19Route.SUFFICIENT
+    assert result.adaptive_reentries == result.max_adaptive_reentries
+    assert result.pending_next_test_ref is None
     assert bridge.metabot_posts == 2
     assert material.calls == 2
-    assert p19_manager.call_count == 1
+    assert p19_manager.call_count == 2
     assert next_test_manager.call_count == 1
+    assert len(result.evidence_ids) == 1
+    snapshot = investigation.snapshot(
+        session_id=result.research_session_id,
+        principal=_principal(),
+    )
+    assert len(snapshot.evidence_results) == 2
+    assert (
+        snapshot.evidence_results[0].result_hash
+        == snapshot.evidence_results[1].result_hash
+    )
 
 def test_discovery_projection_does_not_consult_p17_provider_stop() -> None:
     stop_manager = DeterministicDiscoveryStopManager()
