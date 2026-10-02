@@ -30,10 +30,12 @@ from app.v3.research_contracts import (
     ResearchGoalStatus,
     ResearchQuestion,
     ResearchScope,
+    ResearchTimePeriod,
     ResearchSemanticRef,
     ResultSelectionDependency,
     ScopeVersion,
     SemanticTargetKind,
+    TemporalRole,
 )
 from app.v3.report_document import P20ReportError, ReportClaimGate
 from app.v3.research import ObligationState, StoppingStatus
@@ -464,6 +466,39 @@ def test_temporal_role_is_part_of_period_semantic_identity() -> None:
         same_bounds_distinct_roles
     )
     assert not temporal_periods_have_unique_semantic_identity(exact_duplicate)
+
+
+def test_product_scope_accepts_same_bounds_when_temporal_roles_differ() -> None:
+    dimension = _breakdown("dimension.d1")
+    scope = ResearchScope(
+        semantic_refs=(dimension,),
+        temporal_dimension_ids=("dimension.d1",),
+        periods=(
+            ResearchTimePeriod(
+                source_text="shared interval as material",
+                time_dimension_candidate_id="dimension.d1",
+                start="2026-01-01",
+                end="2026-02-01",
+                role=TemporalRole.MATERIAL_WINDOW,
+            ),
+            ResearchTimePeriod(
+                source_text="shared interval as evidence",
+                time_dimension_candidate_id="dimension.d1",
+                start="2026-01-01",
+                end="2026-02-01",
+                role=TemporalRole.EVIDENCE_WINDOW,
+            ),
+        ),
+        time_surfaces=(
+            "shared interval as material",
+            "shared interval as evidence",
+        ),
+    )
+
+    assert tuple(item.role for item in scope.periods) == (
+        TemporalRole.MATERIAL_WINDOW,
+        TemporalRole.EVIDENCE_WINDOW,
+    )
 
 
 def test_finite_semantic_matrix_has_complete_pair_coverage() -> None:
