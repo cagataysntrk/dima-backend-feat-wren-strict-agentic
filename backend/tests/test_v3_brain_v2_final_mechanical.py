@@ -31,6 +31,7 @@ def _state(*, report=True, multi=False):
         evidence_revision=1,
         evidence_ids=("evi_" + "2" * 24,),
         p18_requirement_ids=("rel",),
+        p18_result_refs=("p18r_" + "7" * 24,),
         p18_claim_refs=("clm_" + "3" * 24,),
         p18_policy_use_refs=("bru_" + "4" * 24,),
         completion_revision=2 if report else 1,
