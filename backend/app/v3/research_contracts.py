@@ -317,15 +317,10 @@ class ResearchQuestion(FrozenModel):
             return self
         if dependency.source_goal_id == self.goal_id:
             raise ValueError("result dependency cannot target the same goal")
-        dimensions = {
-            item.candidate_id
-            for item in (*self.subject_refs, *self.related_refs)
-            if item.target_kind == SemanticTargetKind.DIMENSION
-        }
-        if dependency.dimension_semantic_id not in dimensions:
-            raise ValueError(
-                "result dependency dimension must be accepted child material"
-            )
+        # The dependency dimension is an execution-filter role, not necessarily
+        # a child output/breakout role. Parent material + ResearchBrief scope own
+        # its semantic admission; requiring it in child refs conflates filter
+        # and projection semantics.
         return self
 
     @model_validator(mode="after")
@@ -627,6 +622,11 @@ class ResearchBrief(FrozenModel):
         if len(by_id) != len(self.questions):
             raise ValueError("Research goal ids must be unique")
 
+        scope_dimensions = {
+            item.candidate_id
+            for item in self.scope.semantic_refs
+            if item.target_kind == SemanticTargetKind.DIMENSION
+        }
         edges: dict[str, str] = {}
         for child in self.questions:
             dependency = child.result_dependency
@@ -640,6 +640,10 @@ class ResearchBrief(FrozenModel):
             if parent.ranking.direction == "unspecified":
                 raise ValueError(
                     "result dependency source ranking must have explicit direction"
+                )
+            if dependency.dimension_semantic_id not in scope_dimensions:
+                raise ValueError(
+                    "result dependency dimension is outside accepted Research scope"
                 )
             parent_dimensions = {
                 item.candidate_id
