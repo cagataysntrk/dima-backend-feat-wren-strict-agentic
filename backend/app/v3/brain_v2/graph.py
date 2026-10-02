@@ -486,6 +486,7 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
         _snapshot(state)
         return {
             "workflow_status": BrainWorkflowStatus.COMPLETE,
+            "last_completed_node": "COMPLETE",
         }
 
     def honest_stop_node(state: BrainStatePayload):

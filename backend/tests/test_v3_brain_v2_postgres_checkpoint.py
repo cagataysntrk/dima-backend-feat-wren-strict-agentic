@@ -154,7 +154,10 @@ def test_postgres_checkpoint_survives_service_reconstruction_and_is_schema_isola
         restored = restarted.state(thread_id=thread_id)
         assert restored is not None
         assert restored.workflow_status == BrainWorkflowStatus.COMPLETE
-        assert restored.report_ref == "p20r_" + "f" * 24
+        # This fixture has no presentation requirement. Durable checkpointing
+        # must not manufacture a P20 artifact merely because RCA is terminal.
+        assert restored.report_ref is None
+        assert restored.last_completed_node == "COMPLETE"
 
     with connect(DSN, autocommit=True) as conn:
         with conn.cursor() as cur:

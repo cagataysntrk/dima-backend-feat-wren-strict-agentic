@@ -6,9 +6,10 @@ from lab.metabase.brain_v2.final_probes import (
 )
 
 
-ROOT = Path(__file__).resolve().parents[2]
-LIVE_WORKFLOW = ROOT.parent / ".github" / "workflows" / "dima-brain-v2-phase1-live.yml"
-BRAIN_LIVE = ROOT / "lab" / "metabase" / "brain_v2" / "phase1_live.py"
+REPO_ROOT = Path(__file__).resolve().parents[2]
+BACKEND_ROOT = REPO_ROOT / "backend"
+LIVE_WORKFLOW = REPO_ROOT / ".github" / "workflows" / "dima-brain-v2-phase1-live.yml"
+BRAIN_LIVE = BACKEND_ROOT / "lab" / "metabase" / "brain_v2" / "phase1_live.py"
 
 
 def test_all_final_probes_use_brain_v2_runtime():
