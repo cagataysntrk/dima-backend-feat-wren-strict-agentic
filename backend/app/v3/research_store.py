@@ -438,6 +438,74 @@ class ResearchSessionStore:
             )
         return link
 
+    def verified_material_result(
+        self,
+        *,
+        session_id: str,
+        obligation_id: str,
+    ) -> tuple[ResearchExecutionLink, dict]:
+        """Load one immutable VERIFIED P14 result without replaying native work."""
+
+        with Session(self._engine) as db:
+            rows = db.exec(
+                select(ResearchExecutionLink)
+                .where(ResearchExecutionLink.session_id == session_id)
+                .where(ResearchExecutionLink.obligation_id == obligation_id)
+                .where(
+                    ResearchExecutionLink.execution_kind.in_(
+                        ("P14_BASE", "P14_REPAIR")
+                    )
+                )
+                .where(ResearchExecutionLink.status == "VERIFIED")
+            ).all()
+        if len(rows) != 1:
+            raise ResearchPersistenceError(
+                "P14_RESULT_DEPENDENCY_VERIFIED_PARENT_REQUIRED",
+                (
+                    "result dependency requires exactly one VERIFIED parent "
+                    "material occurrence"
+                ),
+            )
+        link = rows[0]
+        if (
+            not link.native_result_json
+            or not link.result_hash
+            or not link.evidence_id
+            or not link.receipt_id
+            or not link.native_query_id
+            or not link.native_query_fingerprint
+        ):
+            raise ResearchPersistenceError(
+                "P14_RESULT_DEPENDENCY_PARENT_PROVENANCE_INCOMPLETE",
+                "VERIFIED parent material lacks durable result/Evidence provenance",
+            )
+        try:
+            result = json.loads(link.native_result_json)
+        except json.JSONDecodeError as exc:
+            raise ResearchPersistenceError(
+                "P14_RESULT_DEPENDENCY_PARENT_RESULT_INVALID",
+                "VERIFIED parent material result is invalid JSON",
+            ) from exc
+        if not isinstance(result, dict):
+            raise ResearchPersistenceError(
+                "P14_RESULT_DEPENDENCY_PARENT_RESULT_INVALID",
+                "VERIFIED parent material result must be an object",
+            )
+        raw = json.dumps(
+            result,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+            allow_nan=False,
+        )
+        observed_hash = hashlib.sha256(raw.encode("utf-8")).hexdigest()
+        if observed_hash != link.result_hash:
+            raise ResearchPersistenceError(
+                "P14_NATIVE_RESULT_FINGERPRINT_MISMATCH",
+                "VERIFIED parent material result changed after execution",
+            )
+        return link, result
+
     def material_repair_attempt_count(
         self,
         *,
