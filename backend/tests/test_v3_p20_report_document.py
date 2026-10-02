@@ -760,6 +760,105 @@ def test_report_with_only_governed_observations_declares_epistemic_limitation():
 
 
 
+
+def test_observation_only_transparency_requires_report_deliverable():
+    db = db_engine()
+    state = make_state(
+        db,
+        suffix='observation-only-no-report',
+        minimal=True,
+    )
+    store = ReportDocumentStore(
+        research_store=state['store'],
+        db_engine=db,
+    )
+    draft = store.draft_from_governed_research(
+        research_session_id=state['session'].session_id,
+        report_key='observation-only-no-report',
+        principal=state['principal'],
+    )
+    report = store.seal(
+        draft=draft,
+        principal=state['principal'],
+        now=STAMP + timedelta(minutes=30),
+    )
+    assert all(
+        item.code != 'P20_REPORT_OBSERVATION_ONLY'
+        for item in report.limitations
+    )
+
+
+def test_report_with_governed_interpretation_is_not_marked_observation_only():
+    db = db_engine()
+    state = make_state(
+        db,
+        suffix='interpreted-report',
+        report=True,
+    )
+    store = ReportDocumentStore(
+        research_store=state['store'],
+        db_engine=db,
+    )
+    draft = store.draft_from_governed_research(
+        research_session_id=state['session'].session_id,
+        report_key='interpreted-report',
+        principal=state['principal'],
+    )
+    assert any(
+        item.statement_kind == ReportStatementKind.ANALYTICAL_FACT
+        for item in draft.statements
+    )
+    report = store.seal(
+        draft=draft,
+        principal=state['principal'],
+        now=STAMP + timedelta(minutes=30),
+    )
+    assert all(
+        item.code != 'P20_REPORT_OBSERVATION_ONLY'
+        for item in report.limitations
+    )
+
+
+def test_observation_only_report_transparency_is_restart_idempotent():
+    db = db_engine()
+    state = make_state(
+        db,
+        suffix='observation-only-restart',
+        report=True,
+        minimal=True,
+    )
+    store = ReportDocumentStore(
+        research_store=state['store'],
+        db_engine=db,
+    )
+    draft = store.draft_from_governed_research(
+        research_session_id=state['session'].session_id,
+        report_key='observation-only-restart',
+        principal=state['principal'],
+    )
+    first = store.seal(
+        draft=draft,
+        principal=state['principal'],
+        now=STAMP + timedelta(minutes=30),
+    )
+    second = ReportDocumentStore(
+        research_store=state['store'],
+        db_engine=db,
+    ).seal(
+        draft=draft,
+        principal=state['principal'],
+        now=STAMP + timedelta(minutes=31),
+    )
+    assert second.report_id == first.report_id
+    assert second.report_fingerprint == first.report_fingerprint
+    assert tuple(
+        item.code
+        for item in second.limitations
+        if item.code == 'P20_REPORT_OBSERVATION_ONLY'
+    ) == ('P20_REPORT_OBSERVATION_ONLY',)
+
+
+
 def test_user_must_is_100_percent_accounted_and_seals_one_report():
     db = db_engine()
     state = make_state(db)
