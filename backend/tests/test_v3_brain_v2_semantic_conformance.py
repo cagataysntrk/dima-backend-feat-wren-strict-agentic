@@ -237,6 +237,90 @@ def test_production_scope_patch_matches_independent_locality_law(
     assert actual == expected
 
 
+def test_same_facet_explicit_operations_compose_to_one_local_delta() -> None:
+    scope = ReferenceScope(
+        entities=frozenset({"entity.e1"}),
+        metrics=frozenset({"metric.m1", "metric.m2"}),
+        breakdowns=frozenset({"dimension.d1"}),
+        version=1,
+    )
+    production = _production_scope(scope)
+    operations = (
+        ScopePatchOperation(
+            facet=ScopePatchFacet.METRIC,
+            operation=ScopePatchOperationKind.SET,
+            semantic_refs=(_metric("metric.m1"),),
+            source_fragment="symbolic metric replacement",
+        ),
+        ScopePatchOperation(
+            facet=ScopePatchFacet.METRIC,
+            operation=ScopePatchOperationKind.REMOVE,
+            semantic_refs=(_metric("metric.m2"),),
+            source_fragment="symbolic metric removal",
+        ),
+    )
+    expected = apply_reference_patch(
+        scope,
+        ReferencePatch(metrics=frozenset({"metric.m1"})),
+    )
+
+    resolved = resolve_scope_patch(
+        production,
+        TurnScopePatch(
+            source_scope_version_id="scope_v1",
+            operations=operations,
+        ),
+        context_version="ctx-semantic-spec-v1",
+    )
+
+    assert _reference_scope(resolved.current_scope) == expected
+    assert resolved.changed_facets == (ScopePatchFacet.METRIC,)
+
+
+def test_same_facet_nonconflicting_composition_is_order_independent() -> None:
+    scope = ReferenceScope(
+        entities=frozenset(),
+        metrics=frozenset({"metric.m1", "metric.m2"}),
+        breakdowns=frozenset(),
+        version=1,
+    )
+    production = _production_scope(scope)
+    add = ScopePatchOperation(
+        facet=ScopePatchFacet.METRIC,
+        operation=ScopePatchOperationKind.ADD,
+        semantic_refs=(_metric("metric.m3"),),
+        source_fragment="symbolic add",
+    )
+    remove = ScopePatchOperation(
+        facet=ScopePatchFacet.METRIC,
+        operation=ScopePatchOperationKind.REMOVE,
+        semantic_refs=(_metric("metric.m2"),),
+        source_fragment="symbolic remove",
+    )
+
+    left = resolve_scope_patch(
+        production,
+        TurnScopePatch(
+            source_scope_version_id="scope_v1",
+            operations=(add, remove),
+        ),
+        context_version="ctx-semantic-spec-v1",
+    )
+    right = resolve_scope_patch(
+        production,
+        TurnScopePatch(
+            source_scope_version_id="scope_v1",
+            operations=(remove, add),
+        ),
+        context_version="ctx-semantic-spec-v1",
+    )
+
+    assert _reference_scope(left.current_scope) == _reference_scope(
+        right.current_scope
+    )
+    assert left.scope_fingerprint == right.scope_fingerprint
+
+
 def _ranking_contract() -> AnalyticalRequestContract:
     return AnalyticalRequestContract(
         authority_id="auth-semantic-spec",
