@@ -140,7 +140,7 @@ def _case_runtime(
     checkpointer: Any,
     model_budget: int,
 ):
-    budget = OrchestrationBudget(max(8, model_budget * 3))
+    budget = OrchestrationBudget(12)
     raw_material = NativeResearchMaterialExecutor(
         subject_provider=subjects,
         store=store,
