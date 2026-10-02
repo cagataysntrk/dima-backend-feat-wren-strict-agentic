@@ -8,8 +8,9 @@ from uuid import UUID
 import pytest
 from sqlalchemy.pool import StaticPool
 from sqlmodel import SQLModel, Session, create_engine, select
-from app.v3.research_contracts import ResearchBrief, ResearchBriefStatus, ResearchGoalKind, ResearchGoalStatus, ResearchQuestion, ResearchScope, ResearchSemanticRef, SemanticTargetKind
+from app.v3.research_contracts import RankingSurface, ResearchBrief, ResearchBriefStatus, ResearchGoalKind, ResearchGoalStatus, ResearchQuestion, ResearchScope, ResearchSemanticRef, SemanticTargetKind
 from app.v3.business_relationship_policy import BusinessRelationshipPolicyStore, RelationshipPolicyRequirement
+from app.v3.business_relationship_v1 import project_relationship_result
 from app.v3.claim_lineage import ClaimEvidenceRelation, ClaimFreshness, ClaimLineageStore
 from app.v3.hypothesis_root_cause import AggregateOutcome, CandidateAssessment, CausalQualification, ContributionClass, EvidenceStrength, GroundingRelation, GroundingSourceKind, HypothesisDisposition, HypothesisEpistemicClass, HypothesisRootCauseStore, IdentificationLimitation, NumericAnalyticalKind, NumericProvenanceRef, RootCauseAssessmentDraft
 from app.v3.report_document import CoverageEntry, CoverageStatus, P20ReportError, ReportCurrentness, ReportDocumentStore, ReportDraft, ReportLimitation, ReportSourceKind, ReportStatement, ReportStatementKind, SourceReference, stable_limitation_id, stable_statement_id
@@ -104,6 +105,306 @@ def statement(kind, *, sources=(), payload=None, ceiling, text=None, seed=None):
 
 def report_draft(state, statement_item, *, key='report-main', limitations=()):
     return ReportDraft(research_session_id=state['session'].session_id, report_key=key, coverage=(CoverageEntry(obligation_id='g1', coverage_status=CoverageStatus.REPRESENTED, statement_ids=(statement_item.statement_id,)),), statements=(statement_item,), limitations=tuple(limitations))
+
+def test_shared_relationship_completion_seals_without_forging_p14_terminal_state():
+    db = db_engine()
+    SQLModel.metadata.create_all(db)
+    with Session(db) as s:
+        s.add(Tenant(id=TENANT, slug='p20', name='P20', created_at=STAMP))
+        s.add(User(id=USER, tenant_id=TENANT, email='p20@example.test', password_hash='unused', created_at=STAMP))
+        s.commit()
+
+    p = principal()
+    downtime = ResearchSemanticRef(
+        source_mention='downtime',
+        candidate_id='metric.downtime',
+        target_kind=SemanticTargetKind.METRIC,
+        canonical_name='Downtime',
+        cube_names=('machine_operations',),
+    )
+    faults = ResearchSemanticRef(
+        source_mention='faults',
+        candidate_id='metric.faults',
+        target_kind=SemanticTargetKind.METRIC,
+        canonical_name='Fault Count',
+        cube_names=('machine_operations',),
+    )
+    department = ResearchSemanticRef(
+        source_mention='department',
+        candidate_id='dimension.department',
+        target_kind=SemanticTargetKind.DIMENSION,
+        canonical_name='Department',
+        cube_names=('machine_operations',),
+    )
+    fragment = 'fragment-sha256:' + 'b' * 64
+    ranking = ResearchQuestion(
+        goal_id='g_rank',
+        kind=ResearchGoalKind.RANKING,
+        source_text='Rank downtime by department.',
+        source_fragment_identity=fragment,
+        subject_refs=(department, downtime),
+        ranking=RankingSurface(
+            text='rank downtime',
+            direction='desc',
+            limit=None,
+            measure_semantic_id=downtime.candidate_id,
+        ),
+        status=ResearchGoalStatus.RESOLVED,
+    )
+    relationship = ResearchQuestion(
+        goal_id='g_relationship',
+        kind=ResearchGoalKind.RELATIONSHIP,
+        source_text='Assess downtime with faults by department.',
+        source_fragment_identity=fragment,
+        subject_refs=(downtime, faults),
+        related_refs=(department,),
+        status=ResearchGoalStatus.RESOLVED,
+    )
+    accepted = ResearchBrief(
+        brief_id='rb-p20-shared-relationship',
+        objective='Reuse one governed analytical occurrence.',
+        scope=ResearchScope(
+            semantic_refs=(department, downtime, faults),
+        ),
+        questions=(ranking, relationship),
+        must_requirement_ids=(ranking.goal_id, relationship.goal_id),
+        context_version='ctx-p20-v1',
+        status=ResearchBriefStatus.READY_FOR_RESEARCH,
+    )
+    store = ResearchSessionStore(db)
+    session = ResearchAskOrchestrator(store=store).start_from_brief(
+        brief=accepted,
+        request_ref='p20-shared-relationship',
+        source_message_hash='b' * 64,
+        principal=p,
+    )
+
+    prepared = ResearchManager.prepare_native_delegation(
+        session,
+        obligation_id=ranking.goal_id,
+    )
+    session = store.save(
+        prepared.session,
+        expected_revision=session.revision,
+    )
+    link = store.begin_delegation(
+        session=session,
+        obligation_id=ranking.goal_id,
+        dima_request_id=prepared.request.dima_request_id,
+        dima_trace_id=prepared.request.dima_trace_id,
+        native_conversation_id=prepared.request.conversation_id,
+    )
+    query = {
+        'database': 1,
+        'type': 'query',
+        'query': {
+            'source-table': 10,
+            'aggregation': [['sum', ['field', 20, None]]],
+            'breakout': [['field', 21, None]],
+        },
+    }
+    link = store.mark_candidate(
+        link.id,
+        native_query_id='p20-shared-query',
+        native_query=query,
+        query_fingerprint=h(query),
+    )
+    store.mark_execution_started(
+        link.id,
+        native_subject_ref='metabase-user:20',
+    )
+    result_payload = {
+        'database_id': 1,
+        'row_count': 2,
+        'data': {
+            'rows': [
+                ['Assembly', 100, 10],
+                ['Quality', 50, 3],
+            ]
+        },
+    }
+    store.mark_executed(
+        link.id,
+        native_subject_ref='metabase-user:20',
+        runtime_identity={
+            'substrate': 'metabase-native',
+            'runtime_version': 'v0.63.18-dima.9',
+            'image_digest': 'sha256:' + 'e' * 64,
+            'database_id': 'metabase:1',
+        },
+        result_payload=result_payload,
+        result_hash=h(result_payload),
+        executed_at=STAMP,
+    )
+    evidence_id = 'evi_' + h({'shared': 'evidence'})[:24]
+    receipt_id = 'dqr_' + h({'shared': 'receipt'})[:24]
+    store.mark_verified(
+        link.id,
+        receipt_id=receipt_id,
+        evidence_id=evidence_id,
+    )
+    verified = ResearchManager.obligation(
+        session,
+        ranking.goal_id,
+    ).model_copy(
+        update={
+            'state': ObligationState.VERIFIED,
+            'evidence_refs': (evidence_id,),
+        }
+    )
+    session = ResearchManager.advance(
+        session,
+        obligations=ResearchManager.replace(session, verified),
+        evidence_refs=(
+            EvidenceRef(
+                evidence_id=evidence_id,
+                receipt_id=receipt_id,
+                authority_id=session.authority_id,
+                obligation_id=ranking.goal_id,
+            ),
+        ),
+        now=STAMP + timedelta(minutes=1),
+    )
+    session = store.save(
+        session,
+        expected_revision=session.revision - 1,
+    )
+
+    claims = ClaimLineageStore(research_store=store, db_engine=db)
+    claim = claims.create_claim(
+        session_id=session.session_id,
+        obligation_id=ranking.goal_id,
+        principal=p,
+        claim_text='Downtime and fault count move together in the governed departmental slice.',
+        proposition={'relationship_kind': 'ASSOCIATION'},
+        scope={'dimension': department.candidate_id},
+        freshness=ClaimFreshness(
+            as_of=STAMP,
+            stale_after=STAMP + timedelta(days=30),
+        ),
+        origin_material_refs=(),
+    )
+    claim = claims.link_evidence(
+        session_id=session.session_id,
+        claim_id=claim.claim_id,
+        evidence_id=evidence_id,
+        relation=ClaimEvidenceRelation.SUPPORTS,
+        principal=p,
+    )
+    step_id = 'rrs_' + h({'shared': session.session_id})[:24]
+    with Session(db) as s:
+        s.add(
+            ResearchReasoningStepRecord(
+                step_id=step_id,
+                session_id=session.session_id,
+                source_revision=session.revision,
+                source_snapshot_fingerprint=session.fingerprint,
+                parent_obligation_id=ranking.goal_id,
+                parent_step_id=None,
+                depth=0,
+                branch_id='ibr_' + h(step_id)[:20],
+                intent='FORM_CLAIM',
+                target_kind='CLAIM',
+                target_ref=claim.claim_id,
+                stop_scope=None,
+                proposal_id='proposal-shared',
+                proposal_json=json.dumps({'kind': 'shared-relationship'}, sort_keys=True),
+                action='FORM_CLAIM',
+                objective_key='p20.shared.relationship',
+                bounded_objective='Assess one governed relationship from shared material.',
+                rationale='Provider-free shared material fixture.',
+                inspected_evidence_refs_json=json.dumps([evidence_id]),
+                inspected_claim_refs_json=json.dumps([claim.claim_id]),
+                inspected_material_refs_json='[]',
+                proposal_fingerprint=h({'step': step_id, 'claim': claim.claim_id}),
+                status='COMPLETED',
+                stop_reason=None,
+                result_refs_json=json.dumps([claim.claim_id]),
+                created_at=STAMP + timedelta(minutes=2),
+                completed_at=STAMP + timedelta(minutes=2),
+            )
+        )
+        s.commit()
+
+    applicability = {
+        'accepted_relationship_goal_id': relationship.goal_id,
+        'semantic_ref_ids': [
+            department.candidate_id,
+            downtime.candidate_id,
+            faults.candidate_id,
+        ],
+    }
+    decision = BusinessRelationshipPolicyStore(
+        research_store=store,
+        db_engine=db,
+    ).resolve(
+        requirement=RelationshipPolicyRequirement(
+            research_session_id=session.session_id,
+            obligation_id=ranking.goal_id,
+            claim_id=claim.claim_id,
+            reasoning_step_id=step_id,
+            policy_key='observational-only',
+            source_business_ref='metric:downtime',
+            target_business_ref='metric:faults',
+            semantic_context_version=session.context_version,
+            applicability_scope=applicability,
+            required=False,
+        ),
+        principal=p,
+        now=STAMP + timedelta(minutes=3),
+    )
+    relationship_result = project_relationship_result(
+        research_session_id=session.session_id,
+        claim=claim,
+        decision=decision,
+        scope_lineage_id=session.lineage_id,
+        scope_version_id=accepted.scope.scope_version.version_id,
+        applicability_scope=applicability,
+    )
+
+    # The relationship P14 obligation intentionally stays READY. P18 terminalizes
+    # the accepted relationship at Product level without forging duplicate Evidence.
+    persisted = store.load(
+        session.session_id,
+        tenant=str(TENANT),
+        principal=str(USER),
+    )
+    relationship_obligation = ResearchManager.obligation(
+        persisted,
+        relationship.goal_id,
+    )
+    assert relationship_obligation.state == ObligationState.READY
+
+    reports = ReportDocumentStore(research_store=store, db_engine=db)
+    draft = reports.draft_from_governed_research(
+        research_session_id=session.session_id,
+        report_key='shared-relationship-report',
+        principal=p,
+        relationship_results=(relationship_result,),
+    )
+    report = reports.seal(draft=draft, principal=p)
+
+    coverage = {item.obligation_id: item for item in report.coverage}
+    assert coverage[ranking.goal_id].coverage_status == CoverageStatus.REPRESENTED
+    assert coverage[relationship.goal_id].coverage_status == CoverageStatus.REPRESENTED
+    relationship_statements = [
+        item
+        for item in report.statements
+        if relationship.goal_id in item.obligation_refs
+    ]
+    assert len(relationship_statements) == 1
+    assert relationship_statements[0].payload['claim_id'] == claim.claim_id
+    assert {
+        item.source_kind for item in relationship_statements[0].source_refs
+    } == {
+        ReportSourceKind.P16_CLAIM,
+        ReportSourceKind.P18_POLICY_USE,
+    }
+    assert reports.currentness(
+        report_id=report.report_id,
+        principal=p,
+    ) == ReportCurrentness.CURRENT
+
 
 def test_auto_draft_projects_governed_claim_policy_provenance_and_limitations():
     db = db_engine()
