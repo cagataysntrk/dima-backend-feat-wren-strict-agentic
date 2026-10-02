@@ -424,6 +424,88 @@ def test_presentation_other_covered_by_governed_relationship_is_not_analytical()
     )
 
 
+def test_presentation_other_coverage_resolves_alternate_governed_relationship():
+    ranking_clause = "Rank governed downtime by department."
+    relationship_clause = (
+        "Assess governed downtime and performance observationally by department."
+    )
+    report_clause = "Produce a bounded governed summary."
+    question = " ".join((ranking_clause, relationship_clause, report_clause))
+    payload = {
+        "terminal": "READY",
+        "objective": "Preserve analytical intents without duplicating presentation.",
+        "goals": [
+            {
+                "goal_key": "g-ranking",
+                "kind": "ranking",
+                "source_text": ranking_clause,
+                "source_fragment_text": ranking_clause,
+                "subject_semantic_ids": [
+                    "dimension.department",
+                    "metric.downtime",
+                ],
+                "related_semantic_ids": [],
+                "ranking": {
+                    "source_text": ranking_clause,
+                    "direction": "desc",
+                    "limit": None,
+                    "measure_semantic_id": "metric.downtime",
+                },
+                "comparisons": [],
+            },
+            {
+                "goal_key": "g-relationship",
+                "kind": "relationship",
+                "source_text": relationship_clause,
+                "source_fragment_text": relationship_clause,
+                "allowed_relationship_id": (
+                    "rel.downtime_performance_by_department"
+                ),
+                "relationship_intent": "observational",
+                "ranking": None,
+                "comparisons": [],
+            },
+            {
+                "goal_key": "g-presentation-duplicate",
+                "kind": "other",
+                "source_text": report_clause,
+                "source_fragment_text": report_clause,
+                "subject_semantic_ids": [
+                    "dimension.department",
+                    "metric.downtime",
+                    "metric.performance",
+                ],
+                "related_semantic_ids": [],
+                "ranking": None,
+                "comparisons": [],
+            },
+        ],
+        "deliverables": [
+            {
+                "key": "d-report",
+                "kind": "report",
+                "source_text": report_clause,
+            }
+        ],
+        "investigation_directives": [],
+        "required_domains": ["machine_operations"],
+    }
+
+    result = ResearchIntakeCompiler(
+        transport=FakeTransport(payload),
+        calendar_reference_date="2026-09-30",
+    ).compile(
+        question=question,
+        catalog=catalog(),
+    )
+
+    assert result.brief is not None
+    assert tuple(item.kind for item in result.brief.questions) == (
+        ResearchGoalKind.RANKING,
+        ResearchGoalKind.RELATIONSHIP,
+    )
+
+
 def test_non_executable_other_subgoal_fully_covered_by_one_root_cause_is_absorbed():
     clause = "Determine which governed explanation better accounts for downtime."
     evidence_clause = "Preserve the governed evidence needed to assess the alternatives."
