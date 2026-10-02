@@ -837,6 +837,7 @@ class ResearchAskOrchestrator:
         principal: Principal,
         obligation_id: str | None = None,
         native_session_token: str | None = None,
+        result_dependency_source_obligation_id: str | None = None,
     ) -> ResearchAskResponse:
         bridge_factory, material_executor = self._runtime()
         tenant = self.tenant_binding_for(principal)
@@ -867,6 +868,9 @@ class ResearchAskOrchestrator:
                     principal=principal,
                     session=session,
                     obligation_id=selected,
+                    source_execution_obligation_id=(
+                        result_dependency_source_obligation_id
+                    ),
                 )
             except ResearchPersistenceError as exc:
                 if exc.code == "P14_RESULT_DEPENDENCY_PARENT_PENDING":
