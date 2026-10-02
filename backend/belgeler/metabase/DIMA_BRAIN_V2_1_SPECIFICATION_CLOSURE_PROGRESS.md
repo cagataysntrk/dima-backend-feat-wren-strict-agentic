@@ -586,3 +586,84 @@ Intentional RED commit: `a1ab9cece3808d4c50dfcb194035f33c4695b2cb`.
 
 Do not freeze Scope Law 3 until this RED is closed and the full scope/stateful provider-free
 floors are GREEN.
+
+
+### Step 8 closure — Scope Law 3 / F10 family
+
+Pattern research:
+
+- Google AIP-134: absent field is unchanged; explicitly addressed fields own the update.
+- RFC 7396: omission and explicit mutation/removal are distinct.
+- Frozen dima.9 / Metabase Lib source: one observed filter is reported as
+  native field identity + operator + `values[]`.
+- Metabase exact equality/membership semantics may carry multiple values in one
+  predicate; physical predicate count is not semantic scope authority.
+
+Generic scope-patch closure:
+
+- multiple explicit operations on one facet compose only when their net semantic
+  delta is unambiguous;
+- operation tuple order is not mutation authority;
+- multiple replacement authorities fail closed;
+- ADD/REMOVE overlap on the same semantic identity fails closed;
+- replay from the same source scope is deterministic/idempotent;
+- accepted untouched facets remain local/unchanged.
+
+Generic entity-filter admission closure:
+
+- accepted ENTITY_VALUE filters are grouped by governed native field identity;
+- multiple accepted values on one governed field form one exact membership set;
+- native `=` or `in` may carry that exact value set in one predicate;
+- missing or extra values fail closed;
+- foreign native field fails closed;
+- non-membership operators fail closed;
+- multiple observed atomic predicates for one field fail closed because R5 does
+  not expose their compound AND/OR tree and Dima will not guess it.
+
+Intentional RED:
+
+- `37052822660` = 84 passed / exactly 1 failed;
+- failure:
+  `R1_NATIVE_FILTER_SCOPE_MISMATCH: material filter count differs from accepted scope`.
+
+Generic root fix:
+
+- commit `39361ffbe02629318e93e8b155372c088397caab`;
+- only `research_analytical_scope.py` admission owner changed;
+- no prompt, regex, fuzzy, benchmark vocabulary, graph branch or engine change.
+
+Proof:
+
+- immediate semantic GREEN `37053087795` = 85 passed;
+- negative/metamorphic sibling GREEN `37053281381` = 91 passed;
+- full recovery scope gate `37053432461` = 99 passed, including the existing
+  `1000 examples × 30 steps` scope RuleBasedStateMachine.
+
+Owner status:
+**SCOPE PATCH LOCALITY + ENTITY FILTER SEMANTIC ADMISSION — GREEN / FREEZE**.
+
+### Step 9 — synthesis completeness opened
+
+Frozen quality seeds now point to P20 presentation semantics rather than missing analytics:
+
+- F01_H: governed period material exists; delta/contributor synthesis is incomplete.
+- F04_H: seven governed metrics exist; management/contradiction synthesis is incomplete.
+- F05 medium/hard: relationship authority is useful but comparative salience language is weak.
+- F08 medium/hard: governed material exists but report narration/structure is incomplete.
+
+Initial boundary finding:
+
+- P20 already has exact provenance, column-label helpers, relationship salient-cell
+  projection and strict causal ceilings;
+- generic P14 Evidence projection currently emits each numeric cell as a
+  `NUMERIC` statement with only `{"value": ...}`;
+- canonical rendering then becomes only `Numeric result: X`;
+- row context / column meaning from the same governed native result is therefore
+  discarded before presentation.
+
+Next legal action:
+
+`independent presentation-completeness law -> provider-free symbolic table reproducer ->
+smallest P20 projection fix -> P20 full regressions -> wider provider-free`.
+
+No Metabot call, new analytics, prompt patch or causal upgrade is authorized for this family.
