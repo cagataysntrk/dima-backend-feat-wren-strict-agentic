@@ -1,6 +1,6 @@
 {
   "schema_version": "dima_brain_v2_1_spec_closure_live_authorization_v1",
-  "enabled": true,
+  "enabled": false,
   "case_count": 1,
   "case_id": "F06_M",
   "candidate_product_sha": "a5f920782c599180d5a32feb939dacf4161f1d8e",
@@ -13,15 +13,17 @@
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
   "automatic_retry_allowed": false,
-  "purpose": "One post-closure F06_M provider/NLU verification after retryable-terminality and shared-occurrence generic closure. Stop on first RED.",
+  "purpose": "Paid panel closed after single F06_M intake contract RED. Reopen only after generic provider-free closure and full Phase-1/Phase-2 reseal.",
   "prior_run_id": 37060828140,
   "prior_artifact_id": 11250770945,
   "prior_manual_quality_score": 2,
   "prior_manual_quality_status": "PARTIAL_STOP_PROVIDER_FREE_REQUIRED",
-  "last_run_id": 37069226925,
+  "last_run_id": 37073201415,
   "last_artifact_id": 11253604592,
   "last_manual_quality_score": null,
   "last_manual_quality_status": "MECHANICAL_RED_PROVIDER_FREE_REQUIRED",
-  "last_failure_code": "BRAIN_V2_COMPLETION_EVIDENCE_REQUIRED",
-  "last_failure_boundary": "dima.material.group -> dima.completion.evaluate"
+  "last_failure_code": "INTAKE_RESULT_DEPENDENCY_CHILD_DIMENSION_MISSING",
+  "last_failure_boundary": "research_intake result-dependency role validation",
+  "last_provider_request_count": 1,
+  "last_provider_cost": 0.00452055
 }
