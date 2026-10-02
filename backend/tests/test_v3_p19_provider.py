@@ -227,8 +227,10 @@ def test_provider_accepts_single_governed_candidate_without_fabricating_competit
     transport = FakeTransport(single_in_progress_payload())
     manager = StructuredP19AssessmentManager(transport=transport)
 
-    draft = manager.propose(
+    draft = manager.propose_with_context(
         snap,
+        objective=None,
+        scope_authority=None,
         deterministic_feedback_code="P19_SINGLE_CANDIDATE_NO_COMPETITION",
         discriminating_test_available=False,
     )
