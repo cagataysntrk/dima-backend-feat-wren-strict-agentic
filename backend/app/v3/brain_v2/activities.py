@@ -64,11 +64,18 @@ class RequirementPlanActivityResult(ActivityResult):
         return self
 
 
+class MaterialActivityDisposition(StrEnum):
+    EVIDENCE = "EVIDENCE"
+    LIMITED = "LIMITED"
+
+
 class MaterialGroupActivityResult(ActivityResult):
     material_group_id: str = Field(pattern=r"^mg_[a-f0-9]{24}$")
     consumer_requirement_ids: tuple[str, ...] = Field(min_length=1)
+    disposition: MaterialActivityDisposition = MaterialActivityDisposition.EVIDENCE
     produced_evidence_ids: tuple[str, ...] = ()
     produced_receipt_refs: tuple[str, ...] = ()
+    limitation_code: str | None = Field(default=None, min_length=1)
 
     @model_validator(mode="after")
     def evidence_has_receipt_provenance(self):
@@ -78,18 +85,40 @@ class MaterialGroupActivityResult(ActivityResult):
             set(self.consumer_requirement_ids)
         ):
             raise ValueError("MaterialGroup consumer refs must be unique")
+        if self.disposition == MaterialActivityDisposition.EVIDENCE:
+            if not self.produced_evidence_ids:
+                raise ValueError("Evidence material group requires Evidence")
+            if self.limitation_code is not None:
+                raise ValueError("Evidence material group cannot carry limitation")
+        else:
+            if self.produced_evidence_ids or self.produced_receipt_refs:
+                raise ValueError("Limited material group cannot carry Evidence")
+            if self.limitation_code is None:
+                raise ValueError("Limited material group requires limitation code")
         return self
 
 
 class MaterialActivityResult(ActivityResult):
     material_requirement_ids: tuple[str, ...] = ()
+    disposition: MaterialActivityDisposition = MaterialActivityDisposition.EVIDENCE
     produced_evidence_ids: tuple[str, ...] = ()
     produced_receipt_refs: tuple[str, ...] = ()
+    limitation_code: str | None = Field(default=None, min_length=1)
 
     @model_validator(mode="after")
     def evidence_has_receipt_provenance(self):
         if len(self.produced_evidence_ids) != len(self.produced_receipt_refs):
             raise ValueError("produced Evidence/receipt refs must be paired")
+        if self.disposition == MaterialActivityDisposition.EVIDENCE:
+            if not self.produced_evidence_ids:
+                raise ValueError("Evidence material result requires Evidence")
+            if self.limitation_code is not None:
+                raise ValueError("Evidence material result cannot carry limitation")
+        else:
+            if self.produced_evidence_ids or self.produced_receipt_refs:
+                raise ValueError("Limited material result cannot carry Evidence")
+            if self.limitation_code is None:
+                raise ValueError("Limited material result requires limitation code")
         return self
 
 
