@@ -67,6 +67,7 @@ class RequirementPlanActivityResult(ActivityResult):
 class MaterialActivityDisposition(StrEnum):
     EVIDENCE = "EVIDENCE"
     LIMITED = "LIMITED"
+    WAITING = "WAITING"
 
 
 class MaterialGroupActivityResult(ActivityResult):
@@ -92,9 +93,9 @@ class MaterialGroupActivityResult(ActivityResult):
                 raise ValueError("Evidence material group cannot carry limitation")
         else:
             if self.produced_evidence_ids or self.produced_receipt_refs:
-                raise ValueError("Limited material group cannot carry Evidence")
+                raise ValueError("non-evidence material group cannot carry Evidence")
             if self.limitation_code is None:
-                raise ValueError("Limited material group requires limitation code")
+                raise ValueError("non-evidence material group requires status code")
         return self
 
 
@@ -116,9 +117,9 @@ class MaterialActivityResult(ActivityResult):
                 raise ValueError("Evidence material result cannot carry limitation")
         else:
             if self.produced_evidence_ids or self.produced_receipt_refs:
-                raise ValueError("Limited material result cannot carry Evidence")
+                raise ValueError("non-evidence material result cannot carry Evidence")
             if self.limitation_code is None:
-                raise ValueError("Limited material result requires limitation code")
+                raise ValueError("non-evidence material result requires status code")
         return self
 
 
