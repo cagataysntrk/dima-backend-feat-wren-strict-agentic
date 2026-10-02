@@ -413,6 +413,109 @@ def test_verified_parent_result_dependency_resolves_through_p14_executor(monkeyp
     assert resolution.contract.filters[-1].source_candidate_id == channel.candidate_id
 
 
+def test_result_dependency_preserves_semantic_source_and_uses_execution_anchor(monkeypatch):
+    base_brief = brief()
+    metric, channel = base_brief.scope.semantic_refs
+    child = ResearchQuestion(
+        goal_id="g-child-shared",
+        kind=ResearchGoalKind.BREAKDOWN,
+        source_text="Inspect the selected governed channel.",
+        subject_refs=(metric,),
+        related_refs=(channel,),
+        result_dependency=ResultSelectionDependency(
+            source_goal_id="g-semantic-parent",
+            dimension_semantic_id=channel.candidate_id,
+            selection="first_ranked_entity",
+        ),
+        status=ResearchGoalStatus.RESOLVED,
+    )
+    session = SimpleNamespace(
+        session_id="rs-shared-result-dependency",
+        accepted_brief=SimpleNamespace(
+            questions=(child,),
+            scope=base_brief.scope,
+        ),
+    )
+    parent_result = {
+        "data": {
+            "cols": [
+                {
+                    "id": 20,
+                    "table_id": 10,
+                    "name": "sales_order_channel",
+                    "field_ref": ["field", 20, None],
+                },
+                {"name": "count", "field_ref": ["aggregation", 0]},
+            ],
+            "rows": [["Web", 41], ["Direct", 33]],
+        }
+    }
+    parent_link = SimpleNamespace(
+        evidence_id="evidence-shared",
+        receipt_id="receipt-shared",
+        result_hash="e" * 64,
+    )
+
+    class SharedOccurrenceStore:
+        def __init__(self):
+            self.requested_obligation_ids = []
+
+        def verified_material_result(self, *, session_id, obligation_id):
+            assert session_id == "rs-shared-result-dependency"
+            self.requested_obligation_ids.append(obligation_id)
+            assert obligation_id == "g-execution-anchor"
+            return parent_link, parent_result
+
+    store = SharedOccurrenceStore()
+    executor = NativeResearchMaterialExecutor(
+        subject_provider=SimpleNamespace(db_engine=None),
+        store=store,
+        expected_identity=expected_identity(),
+    )
+    monkeypatch.setattr(
+        executor,
+        "_material_bindings",
+        lambda **_: {
+            channel.candidate_id: scope_module.NativeMaterialBinding(
+                candidate_id=channel.candidate_id,
+                candidate_kind="dimension",
+                database_id=1,
+                table_id=10,
+                field_id=20,
+            )
+        },
+    )
+    base = AnalyticalRequestContract(
+        authority_id="authority-shared-result-dependency",
+        request_ref="request-shared-result-dependency",
+        semantic_context_version=CONTEXT,
+        scope_identity=AnalyticalScopeIdentity(
+            lineage_id="atl-shared-result-dependency",
+            version_id="scope_v1",
+        ),
+        scope_fingerprint=base_brief.scope_fingerprint,
+        metric_refs=(metric.candidate_id,),
+        dimension_refs=(channel.candidate_id,),
+    )
+
+    resolution = executor.resolve_result_dependency(
+        principal=principal(),
+        session=session,
+        obligation_id=child.goal_id,
+        analytical_scope=base,
+        source_execution_obligation_id="g-execution-anchor",
+    )
+
+    assert resolution is not None
+    assert store.requested_obligation_ids == ["g-execution-anchor"]
+    assert resolution.source_goal_id == "g-semantic-parent"
+    assert resolution.source_execution_obligation_id == "g-execution-anchor"
+    assert resolution.selected_value == "Web"
+    assert resolution.contract.scope_identity == base.scope_identity
+    assert resolution.contract.scope_fingerprint == base.scope_fingerprint
+    assert resolution.contract.filters[-1].value == "Web"
+
+
 def test_execution_local_overlay_reaches_metabot_contract_projection():
     engine = db_engine()
     seed(engine)
