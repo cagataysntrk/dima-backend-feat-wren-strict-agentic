@@ -14,6 +14,7 @@ on:
       - "backend/tests/test_v3_brain_v2_owner_integration.py"
       - "backend/tests/test_v3_brain_v2_completion_policy.py"
       - "backend/tests/test_v3_brain_v2_material_repair.py"
+      - "backend/tests/test_v3_brain_v2_temporal_roles.py"
       - "backend/tests/test_v3_p14_product.py"
       - "backend/tests/test_v3_p17_native_continuation_history.py"
       - "backend/tests/__init__.py"
@@ -84,7 +85,7 @@ jobs:
 
       - name: Semantic conformance
         working-directory: backend
-        run: pytest -q tests/test_v3_brain_v2_semantic_conformance.py tests/test_v3_brain_v2_semantic_stateful.py tests/test_v3_brain_v2_adaptive_material_delta.py tests/test_v3_brain_v2_graph.py tests/test_v3_brain_v2_completion_policy.py tests/test_v3_brain_v2_material_repair.py tests/test_v3_p14_product.py tests/test_v3_p17_native_continuation_history.py tests/test_v3_brain_v2_owner_integration.py::test_real_owner_adaptive_runs_one_typed_followup_without_duplicate_native
+        run: pytest -q tests/test_v3_brain_v2_semantic_conformance.py tests/test_v3_brain_v2_semantic_stateful.py tests/test_v3_brain_v2_adaptive_material_delta.py tests/test_v3_brain_v2_graph.py tests/test_v3_brain_v2_completion_policy.py tests/test_v3_brain_v2_material_repair.py tests/test_v3_brain_v2_temporal_roles.py tests/test_v3_p14_product.py tests/test_v3_p17_native_continuation_history.py tests/test_v3_brain_v2_owner_integration.py::test_real_owner_adaptive_runs_one_typed_followup_without_duplicate_native
 
       - name: Upload semantic coverage
         if: always()
