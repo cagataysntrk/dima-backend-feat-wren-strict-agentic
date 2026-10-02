@@ -244,7 +244,8 @@ def test_one_pass_skips_p17_and_executes_one_material_acquisition() -> None:
     assert activities.calls["p17_discovery"] == 0
     assert activities.calls["p17_next_test"] == 0
     assert activities.calls["p19"] == 1
-    assert activities.calls["report"] == 1
+    assert activities.calls["report"] == 0
+    assert activities.calls["completion"] == 1
     assert result.adaptive_reentries == 0
 
 
@@ -292,13 +293,15 @@ def test_discovery_zero_candidate_set_stops_before_p19() -> None:
 def test_discovery_single_real_candidate_reaches_p19_without_fake_competitor() -> None:
     result, activities = _run("discovery_one")
 
-    assert result.workflow_status == BrainWorkflowStatus.INCONCLUSIVE
-    assert result.last_completed_node == "HONEST_STOP"
+    assert result.workflow_status == BrainWorkflowStatus.COMPLETE
+    assert result.last_completed_node == "COMPLETE"
+    assert result.latest_p19_route == BrainP19Route.INCONCLUSIVE
     assert activities.calls["material"] == 1
     assert activities.calls["project_candidates"] == 1
     assert activities.calls["p17_discovery"] == 0
     assert activities.calls["p19"] == 1
     assert activities.calls["report"] == 0
+    assert activities.calls["completion"] == 1
     assert result.hypothesis_ids == ("p19h_" + "a" * 24,)
     assert result.candidate_semantic_ids == ("metric.candidate_1",)
 
@@ -306,11 +309,13 @@ def test_discovery_single_real_candidate_reaches_p19_without_fake_competitor() -
 def test_inconclusive_is_an_honest_terminal_without_extra_work() -> None:
     result, activities = _run("inconclusive")
 
-    assert result.workflow_status == BrainWorkflowStatus.INCONCLUSIVE
-    assert result.last_completed_node == "HONEST_STOP"
+    assert result.workflow_status == BrainWorkflowStatus.COMPLETE
+    assert result.last_completed_node == "COMPLETE"
+    assert result.latest_p19_route == BrainP19Route.INCONCLUSIVE
     assert activities.calls["material"] == 1
     assert activities.calls["p17_next_test"] == 0
     assert activities.calls["report"] == 0
+    assert activities.calls["completion"] == 1
 
 
 def test_reentry_bound_stops_second_next_test_instead_of_looping() -> None:
@@ -410,7 +415,8 @@ def test_interrupted_graph_resumes_without_repeating_completed_activities() -> N
     assert activities.calls["material"] == before["material"] == 1
     assert activities.calls["evidence"] == before["evidence"] == 1
     assert activities.calls["p19"] == before["p19"] + 1 == 2
-    assert activities.calls["report"] == 1
+    assert activities.calls["report"] == 0
+    assert activities.calls["completion"] == 1
 
 
 class _CapturedBoundarySpan:
@@ -459,8 +465,6 @@ def test_discovery_graph_emits_governed_boundary_span_sequence() -> None:
         "dima.evidence.admit",
         "dima.discovery.project_candidates",
         "dima.p19.assess",
-        "dima.completion.evaluate",
-        "dima.p20.report",
         "dima.completion.evaluate",
     ]
     projection = next(
