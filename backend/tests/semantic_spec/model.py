@@ -49,6 +49,23 @@ class RankingKind(StrEnum):
     TOP_K = "TOP_K"
 
 
+class RankingBasis(StrEnum):
+    LEVEL = "LEVEL"
+    CHANGE = "CHANGE"
+
+
+def ranking_basis_is_coherent(
+    *,
+    basis: RankingBasis,
+    period: PeriodStructure,
+) -> bool:
+    """Independent law: CHANGE ranking needs typed baseline/candidate authority."""
+
+    if basis == RankingBasis.CHANGE:
+        return period == PeriodStructure.BASELINE_CANDIDATE
+    return True
+
+
 class MutationKind(StrEnum):
     ADD = "ADD"
     REMOVE = "REMOVE"
