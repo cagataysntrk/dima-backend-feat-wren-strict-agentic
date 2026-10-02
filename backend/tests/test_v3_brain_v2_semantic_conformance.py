@@ -7,7 +7,9 @@ import pytest
 from hypothesis import given, settings, strategies as st
 
 from app.v3.analytical_request_contract import (
+    AnalyticalComparisonInvariant,
     AnalyticalFilterInvariant,
+    AnalyticalPeriodInvariant,
     AnalyticalRankingInvariant,
     AnalyticalRequestContract,
     AnalyticalScopeIdentity,
@@ -20,6 +22,7 @@ from app.v3.research_analytical_scope import (
     _assert_material_ranking_scope,
 )
 from app.v3.research_contracts import (
+    RankingBasis as ProductRankingBasis,
     ResearchScope,
     ResearchSemanticRef,
     ScopeVersion,
@@ -189,6 +192,97 @@ def test_change_ranking_has_explicit_typed_basis_and_comparison_authority() -> N
         basis="change",
     )
     assert ranking.model_dump(mode="json")["basis"] == "change"
+
+
+@pytest.mark.parametrize(
+    ("basis", "period"),
+    tuple(
+        (basis, period)
+        for basis in RankingBasis
+        for period in (
+            PeriodStructure.NONE,
+            PeriodStructure.SINGLE_WINDOW,
+            PeriodStructure.BASELINE_CANDIDATE,
+        )
+    ),
+)
+def test_product_ranking_basis_matches_independent_period_law(
+    basis: RankingBasis,
+    period: PeriodStructure,
+) -> None:
+    coherent = ranking_basis_is_coherent(basis=basis, period=period)
+    comparison = None
+    single = None
+    if period == PeriodStructure.BASELINE_CANDIDATE:
+        comparison = AnalyticalComparisonInvariant(
+            mode="symbolic",
+            reference_period=AnalyticalPeriodInvariant(
+                kind="symbolic",
+                time_dimension="dimension.t1",
+                start="2026-01-01",
+                end="2026-02-01",
+            ),
+            base_period=AnalyticalPeriodInvariant(
+                kind="symbolic",
+                time_dimension="dimension.t1",
+                start="2026-02-01",
+                end="2026-03-01",
+            ),
+        )
+    elif period == PeriodStructure.SINGLE_WINDOW:
+        single = AnalyticalPeriodInvariant(
+            kind="symbolic",
+            time_dimension="dimension.t1",
+            start="2026-01-01",
+            end="2026-03-01",
+        )
+
+    payload = dict(
+        authority_id="auth-ranking-basis",
+        request_ref="req-ranking-basis",
+        semantic_context_version="ctx-ranking-basis",
+        scope_identity=AnalyticalScopeIdentity(
+            lineage_id="atl-ranking-basis",
+            version_id="scope_v1",
+        ),
+        scope_fingerprint="1" * 64,
+        metric_refs=("metric.m1",),
+        period=single,
+        comparison=comparison,
+        ranking=AnalyticalRankingInvariant(
+            measure="metric.m1",
+            direction="desc",
+            limit=1,
+            basis=ProductRankingBasis(basis.value.lower()),
+        ),
+    )
+    if coherent:
+        contract = AnalyticalRequestContract(**payload)
+        assert contract.ranking is not None
+        assert contract.ranking.basis.value == basis.value.lower()
+    else:
+        with pytest.raises(ValueError, match="baseline/comparison"):
+            AnalyticalRequestContract(**payload)
+
+
+@given(
+    direction=st.sampled_from(("asc", "desc")),
+    limit=st.one_of(st.none(), st.integers(min_value=1, max_value=50)),
+)
+@settings(max_examples=80, deadline=None)
+def test_change_ranking_symbolic_siblings_preserve_basis(
+    direction: str,
+    limit: int | None,
+) -> None:
+    ranking = DraftRanking(
+        direction=direction,
+        limit=limit,
+        measure_semantic_id="metric.m2",
+        source_text="symbolic governed change ranking",
+        basis="change",
+    )
+    assert ranking.basis.value == "change"
+    assert ranking.measure_semantic_id == "metric.m2"
 
 
 def test_finite_semantic_matrix_has_complete_pair_coverage() -> None:
