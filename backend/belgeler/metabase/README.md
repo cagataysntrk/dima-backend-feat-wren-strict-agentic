@@ -24,7 +24,10 @@ This directory intentionally contains only the current Brain V2.1 authority set 
    Exact current closure receipt and next legal action. This is the operational
    starting point for the next developer.
 
-4. **[DIMA_BRAIN_V2_1_FORWARD_RUNTIME_LAWS.md](./DIMA_BRAIN_V2_1_FORWARD_RUNTIME_LAWS.md)**  
+4. **[DIMA_BRAIN_V2_1_ROUND2_FINAL_ADJUDICATION_2026-10-02.md](./DIMA_BRAIN_V2_1_ROUND2_FINAL_ADJUDICATION_2026-10-02.md)**  
+   Immutable broad 30-case quality/speed/cost receipt and the current benchmark verdict.
+
+5. **[DIMA_BRAIN_V2_1_FORWARD_RUNTIME_LAWS.md](./DIMA_BRAIN_V2_1_FORWARD_RUNTIME_LAWS.md)**  
    Compact permanent architecture laws backed by executable CI guardrails.
 
 ## Authority precedence
@@ -53,12 +56,15 @@ change the permanent architecture laws.
 ~~~text
 BRAIN V2.1 ARCHITECTURE FROZEN
 
-90+ HIGH-CONFIDENCE READINESS = YES
-30-CASE READY = YES
+ROUND-2 30-CASE = COMPLETED
+FINAL PRODUCT QUALITY = 60.5 / 100
 
 90+ PROVEN = NO
-30-case = NOT RUN
-frontend = NOT IMPLEMENTED
+80+ PROVEN = NO
+former 90+ HIGH-CONFIDENCE READINESS = INVALIDATED BY BROAD EVIDENCE
+
+frontend = NOT IMPLEMENTED / NOT AUTHORIZED
+broad paid authorization = CLOSED
 
 semantic Product
 ce8704d6a0db10dc3fb6b1a7e5d0f86afe9ccdc9
@@ -69,19 +75,27 @@ d5c60dc9f37a9ec9c5b0117f178146bbcb8dca88
 engine builds in V2.1 = 0
 ~~~
 
-Final fresh capability runs:
+Canonical broad receipt:
 
-| Capability | Run | Mechanical | Manual |
-|---|---:|---|---:|
-| T1 Scope / Resume | 37002719189 | GREEN | 4/4 |
-| T2 ONE_PASS | 37003097196 | GREEN | 4/4 |
-| T3 ADAPTIVE | 37003440451 | GREEN | 4/4 |
-| T4 DISCOVERY | 37003830042 | GREEN | 3/4 |
-| T5 Relationship | 37017824173 | GREEN | 4/4 |
-| T6 Contextual Report | 37017824173 | GREEN | 4/4 |
-| T7 Multi-intent | 37019171940 | GREEN | 3/4 |
+~~~text
+complete run      37027548693
+artifact          11235884317
+artifact digest   sha256:095d1593ceace7dba94ae872e7ad85f520a3d2b4f4d7de603cfe1f22e4a352f1
 
-Final provider-free seals:
+case latency total 648.852 s
+median             19.560 s
+p90                49.952 s
+
+provider requests  137
+prompt tokens      1,925,857
+provider cost      $0.24909254
+~~~
+
+The earlier targeted T1-T7 panel remains useful diagnostic history, but its 90+ readiness
+inference was disproven by the frozen broad corpus. The broad result is now higher authority
+for Product quality.
+
+Final provider-free/stateful seals remain valid architecture evidence:
 
 ~~~text
 Phase-1 provider-free              37020220583 GREEN
@@ -95,7 +109,7 @@ old readiness receipts and comparison material are under:
 
 - **[legacy/README.md](./legacy/README.md)**
 
-Nothing under `legacy/` is current execution authority unless one of the four current
+Nothing under `legacy/` is current execution authority unless one of the current
 documents above explicitly cites it for historical evidence.
 
 ## Documentation hygiene law
