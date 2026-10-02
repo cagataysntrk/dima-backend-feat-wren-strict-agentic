@@ -961,3 +961,34 @@ Classification:
 
 Next proof:
 rerun aggregate Phase-1 provider-free certification on this exact documentation/runtime HEAD.
+
+
+### Step 10C — aggregate Phase-1 provider-free seal
+
+Repository-governance oracle reconciliation completed without Product/runtime changes.
+
+Final aggregate proof:
+
+- run `37059975136` = **SUCCESS**;
+- Brain V2 deterministic closure: 138 passed;
+- Research/scope authority regressions: 245 passed;
+- P17 investigation regressions: 145 passed;
+- P19 epistemic regressions: 53 passed;
+- P20/Core-B semantic regressions: 56 passed;
+- security + repository hygiene: 26 passed;
+- architecture invariants + single migration head: GREEN;
+- engine gitlink: dima.9 unchanged;
+- provider/model calls: 0.
+
+Classification:
+**PHASE-1 AGGREGATE PROVIDER-FREE — GREEN / SEALED FOR THIS CANDIDATE**.
+
+Next required existing-suite proof:
+
+- rerun the Phase-2/headless + independent metamorphic suite on the current specification-closure
+  candidate;
+- the stale pre-recovery “owner files must be byte-identical to old Phase-2 base” guard is not
+  authority for this recovery branch; actual Phase-2 owner/headless/metamorphic tests remain
+  mandatory and unchanged.
+
+No paid live authorization is opened until Phase-2 is GREEN.
