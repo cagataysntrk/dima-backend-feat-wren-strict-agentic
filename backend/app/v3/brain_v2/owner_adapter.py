@@ -372,7 +372,7 @@ class DimaBrainV2Activities(BrainActivities):
         return session
 
     @staticmethod
-    def _root_goal(session) -> ResearchQuestion:
+    def _root_goal_or_none(session) -> ResearchQuestion | None:
         brief = session.accepted_brief
         assert brief is not None
         roots = tuple(
@@ -380,17 +380,19 @@ class DimaBrainV2Activities(BrainActivities):
             for item in brief.questions
             if item.kind == ResearchGoalKind.ROOT_CAUSE
         )
-        if len(roots) != 1:
+        if len(roots) == 1 and len(brief.questions) == 1:
+            return roots[0]
+        return None
+
+    @classmethod
+    def _root_goal(cls, session) -> ResearchQuestion:
+        goal = cls._root_goal_or_none(session)
+        if goal is None:
             raise BrainV2OwnerError(
-                "BRAIN_V2_PHASE1_ROOT_SCOPE_INVALID",
-                "Phase-1 graph requires exactly one ROOT_CAUSE analytical goal",
+                "BRAIN_V2_ROOT_SCOPE_INVALID",
+                "RCA owner boundary requires exactly one ROOT_CAUSE analytical goal",
             )
-        if len(brief.questions) != 1:
-            raise BrainV2OwnerError(
-                "BRAIN_V2_PHASE1_MULTI_ANALYTICAL_DEFERRED",
-                "Phase-1 root certification does not compose multiple analytical goals",
-            )
-        return roots[0]
+        return goal
 
     @staticmethod
     def _mechanism_refs(
@@ -557,8 +559,14 @@ class DimaBrainV2Activities(BrainActivities):
                 else None
             ),
         )
-        goal = self._root_goal(session)
-        _, user_seeded = self._mechanism_refs(goal=goal, session=session)
+        goal = self._root_goal_or_none(session)
+        user_seeded = False
+        if goal is not None:
+            _, user_seeded = self._mechanism_refs(
+                goal=goal,
+                session=session,
+            )
+        objective_id = goal.goal_id if goal is not None else brief.brief_id
         fp = self._cognition_key(
             state=BrainGraphState.model_validate(
                 state.model_copy(
@@ -575,7 +583,7 @@ class DimaBrainV2Activities(BrainActivities):
                 if prior_brief is not None
                 else CognitionPurpose.INTERPRET_NEW_INTENT
             ),
-            objective_id=goal.goal_id,
+            objective_id=objective_id,
             legal_profile_hash=self._catalog.fingerprint,
         ).fingerprint
         adaptive_requirements = tuple(
@@ -591,7 +599,9 @@ class DimaBrainV2Activities(BrainActivities):
             open_requirement_ids=tuple(
                 item.obligation_id for item in session.obligations
             ),
-            material_requirement_ids=(goal.goal_id,),
+            material_requirement_ids=tuple(
+                item.goal_id for item in brief.questions
+            ),
             investigation_requirement_ids=tuple(
                 item.requirement_id for item in result.investigation_requirements
             ),
@@ -600,13 +610,42 @@ class DimaBrainV2Activities(BrainActivities):
                     item.source_goal_id for item in adaptive_requirements
                 )
             ),
-            discovery_required=not user_seeded,
+            discovery_required=(goal is not None and not user_seeded),
             activity_fingerprint=fp,
         )
 
     def canonicalize(self, state: BrainGraphState) -> CanonicalizeActivityResult:
         session = self._session(state)
-        goal = self._root_goal(session)
+        brief = session.accepted_brief
+        assert brief is not None
+        goal = self._root_goal_or_none(session)
+        if goal is None:
+            fp = _fingerprint(
+                {
+                    "activity": "CANONICALIZE_REQUIREMENTS",
+                    "session": session.session_id,
+                    "scope": state.scope_version_id,
+                    "requirements": [
+                        item.goal_id for item in brief.questions
+                    ],
+                }
+            )
+            return CanonicalizeActivityResult(
+                research_session_id=session.session_id,
+                scope_version_id=state.scope_version_id or "scope_v1",
+                open_requirement_ids=tuple(
+                    item.obligation_id
+                    for item in session.obligations
+                    if item.state.value not in {"VERIFIED", "LIMITED"}
+                ),
+                material_requirement_ids=tuple(
+                    item.goal_id for item in brief.questions
+                ),
+                hypothesis_ids=(),
+                discovery_required=False,
+                activity_fingerprint=fp,
+            )
+
         mechanism_refs, user_seeded = self._mechanism_refs(
             goal=goal,
             session=session,
