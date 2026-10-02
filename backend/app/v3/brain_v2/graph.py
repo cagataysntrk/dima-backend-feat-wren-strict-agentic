@@ -339,10 +339,10 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
 
     def after_projection(state: BrainStatePayload) -> str:
         current = _snapshot(state)
-        # Current P19 requires competing hypotheses. Preserve a single real
-        # candidate without manufacturing a rival; the legal terminal is an
-        # honest inconclusive stop until the epistemic contract says otherwise.
-        if len(current.hypothesis_ids) >= 2:
+        # Candidate cardinality is not an epistemic judgment. Zero means there
+        # is nothing for P19 to assess; every real candidate set, including a
+        # singleton, goes to P19 without manufacturing a competitor.
+        if current.hypothesis_ids:
             return "p19_assess"
         return "honest_stop"
 

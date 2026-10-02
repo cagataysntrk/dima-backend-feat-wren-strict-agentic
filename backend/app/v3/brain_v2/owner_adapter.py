@@ -1123,9 +1123,9 @@ class DimaBrainV2Activities(BrainActivities):
             obligation_id=goal.goal_id,
             principal=self._principal,
         )
-        if len(snapshot.hypotheses) < 2:
+        if not snapshot.hypotheses:
             raise BrainV2OwnerError(
-                "BRAIN_V2_P19_COMPETING_HYPOTHESES_REQUIRED",
+                "BRAIN_V2_P19_HYPOTHESIS_REQUIRED",
                 goal.goal_id,
             )
 
@@ -1141,8 +1141,10 @@ class DimaBrainV2Activities(BrainActivities):
         typed_adaptive_intent = (
             goal.goal_id in set(state.follow_verified_material_goal_ids)
         )
+        competing_set_available = len(snapshot.hypotheses) >= 2
         discrimination_capacity = (
-            typed_adaptive_intent
+            competing_set_available
+            and typed_adaptive_intent
             and state.adaptive_reentries < state.max_adaptive_reentries
             and bool(self._native_session_token)
             and parent_verified
@@ -1183,9 +1185,13 @@ class DimaBrainV2Activities(BrainActivities):
 
         if assessment is None:
             feedback_code = (
-                "P19_DISCRIMINATING_TEST_AVAILABLE"
-                if discrimination_capacity
-                else "P19_NO_CALLABLE_DISCRIMINATING_TEST"
+                "P19_SINGLE_CANDIDATE_NO_COMPETITION"
+                if len(snapshot.hypotheses) == 1
+                else (
+                    "P19_DISCRIMINATING_TEST_AVAILABLE"
+                    if discrimination_capacity
+                    else "P19_NO_CALLABLE_DISCRIMINATING_TEST"
+                )
             )
             propose_with_context = getattr(
                 self._epistemic_manager,

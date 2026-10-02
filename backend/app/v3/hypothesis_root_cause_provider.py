@@ -141,6 +141,11 @@ Architecture:
   could materially narrow the ambiguity, return IN_PROGRESS rather than prematurely
   terminalizing. Do not use IN_PROGRESS if current Evidence already supports a lawful
   terminal outcome.
+- If deterministic_feedback_code is P19_SINGLE_CANDIDATE_NO_COMPETITION, exactly
+  one governed candidate is currently legal. Preserve that one candidate, never
+  invent a competitor, and return IN_PROGRESS with an explicit limitation. A
+  terminal P19 outcome is structurally unavailable until a competing governed
+  alternative exists; do not imply a discriminating re-entry is callable.
 - If deterministic_feedback_code is P19_NO_CALLABLE_DISCRIMINATING_TEST, Product/P17
   has established that no legal/materially useful next analytical test is callable.
   Return a terminal assessment consistent with current Evidence and limitations;
@@ -393,10 +398,8 @@ class StructuredP19AssessmentManager:
             for item in snapshot.hypotheses
             for link in item.groundings
         }
-        if len(known_hypotheses) < 2:
-            raise ValueError(
-                "P19 model assessment requires competing hypotheses"
-            )
+        if not known_hypotheses:
+            raise ValueError("P19 model assessment requires a governed hypothesis")
 
         user = (
             "Assess the bounded P19 case using only this governed packet. "
@@ -426,6 +429,18 @@ class StructuredP19AssessmentManager:
         )
         self.call_count += 1
         draft = ModelAssessmentDraft.model_validate_json(raw)
+
+        if (
+            len(known_hypotheses) == 1
+            and draft.aggregate_outcome != AggregateOutcome.IN_PROGRESS
+        ):
+            raise ValueError(
+                "single-candidate P19 assessment must remain IN_PROGRESS"
+            )
+        if len(known_hypotheses) == 1 and draft.root_cause_hypothesis_ids:
+            raise ValueError(
+                "single-candidate P19 assessment cannot promote a root cause"
+            )
 
         ids = {item.hypothesis_id for item in draft.candidates}
         if ids != known_hypotheses:
