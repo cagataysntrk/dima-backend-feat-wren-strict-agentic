@@ -1,0 +1,18 @@
+{
+  "schema_version": "dima_brain_v2_1_round2_authorization_v1",
+  "enabled": true,
+  "candidate_product_sha": "ce8704d6a0db10dc3fb6b1a7e5d0f86afe9ccdc9",
+  "frozen_branch_head": "54dcc6b7f2bc7a0a7cc554801f831c08fbb1c2e6",
+  "engine_sha": "d5c60dc9f37a9ec9c5b0117f178146bbcb8dca88",
+  "engine_release": "0.63.18-dima.9",
+  "engine_digest": "sha256:22c384198740274bbbba78fb6d41aa63a6d204dfe708b19a6ca9bc322b458ba7",
+  "model_policy": "LUNA_LUNA_NO_CASCADE",
+  "manifest": "backend/eval/dima_neutral_feature_benchmark_round2.json",
+  "fixture": "backend/eval/round2_neutral_machine_fixture.json",
+  "case_count": 30,
+  "broad_paid_allowed": true,
+  "thirty_case_allowed": true,
+  "automatic_retry_allowed": false,
+  "authorization_basis": "explicit user authorization 2026-10-02",
+  "purpose": "single frozen 30-case proof for final quality/speed/cost seal"
+}
