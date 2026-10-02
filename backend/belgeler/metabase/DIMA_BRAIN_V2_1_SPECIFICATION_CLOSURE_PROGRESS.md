@@ -1204,3 +1204,24 @@ Required law before Product change:
 - parent native work is never replayed merely to recover the selected value;
 - missing/empty/ambiguous parent result yields bounded LIMITED/INCONCLUSIVE behavior, not
   a hidden scope guess or internal exception.
+
+
+### Step 11C — result-dependency independent RED setup
+
+Intent boundary:
+
+- independent law RED `37064578505` = 144 passed / exactly 1 failed because
+  `ModelGoalDraft` rejected typed `result_dependency`;
+- typed intake/durable dependency primitive added;
+- semantic conformance `37065308701` = SUCCESS.
+
+Runtime/planner RED now required independently:
+
+- symbolic ranked parent + dependent child breakdown;
+- child may not become runnable before parent material completes;
+- child MaterialGroup must retain the source requirement dependency;
+- no benchmark vocabulary is used.
+
+The focused Brain V2 workflow does not include
+`test_v3_brain_v2_material_groups.py`; therefore the canonical aggregate Phase-1 suite is
+triggered specifically to obtain the runtime RED before Product planner changes.
