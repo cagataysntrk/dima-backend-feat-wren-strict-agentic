@@ -103,6 +103,32 @@ def _canonical_datetime(value: str) -> datetime:
     return stamp.astimezone(timezone.utc)
 
 
+def _unbounded_temporal_value(raw: object) -> tuple[str, date | datetime]:
+    """Normalize one observed time value without inventing calendar bounds."""
+
+    if not isinstance(raw, str) or not raw.strip():
+        raise ResearchMaterialCoverageError(
+            "R1_RESULT_TEMPORAL_VALUE_INVALID",
+            "change result temporal value is not a non-empty ISO string",
+        )
+    value = raw.strip()
+    if "T" not in value:
+        try:
+            return ("date", date.fromisoformat(value))
+        except ValueError as exc:
+            raise ResearchMaterialCoverageError(
+                "R1_RESULT_TEMPORAL_VALUE_INVALID",
+                "change result temporal value is not ISO-8601",
+            ) from exc
+    try:
+        return ("datetime", _canonical_datetime(value))
+    except ValueError as exc:
+        raise ResearchMaterialCoverageError(
+            "R1_RESULT_TEMPORAL_VALUE_INVALID",
+            "change result temporal value is not ISO-8601",
+        ) from exc
+
+
 def _period_value(
     raw: object,
     period: AnalyticalPeriodInvariant,
@@ -264,15 +290,16 @@ def assert_material_result_coverage(
     assert temporal_observation is not None
     period = contract.period
     if period is None:
-        raise ResearchMaterialCoverageError(
-            "R1_RESULT_CHANGE_PERIOD_REQUIRED",
-            "change result coverage requires accepted bounded time authority",
-        )
-    normalized_values = {
-        _period_value(value, period)
-        for value in temporal_values
-        if _contains(value, period)
-    }
+        normalized_values = {
+            _unbounded_temporal_value(value)
+            for value in temporal_values
+        }
+    else:
+        normalized_values = {
+            _period_value(value, period)
+            for value in temporal_values
+            if _contains(value, period)
+        }
     if len(normalized_values) < temporal_observation.minimum_distinct_values:
         raise ResearchMaterialCoverageError(
             "R1_RESULT_CHANGE_COVERAGE_INCOMPLETE",
