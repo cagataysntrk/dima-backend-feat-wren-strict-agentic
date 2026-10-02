@@ -96,9 +96,10 @@ SCOPE_RESUME_TURNS = (
 )
 DISCOVERY_MANUAL_CONTRACT = (
     "user supplies no candidate mechanism identities",
-    "P17 returns only governed candidate IDs or an honest insufficient-candidate terminal",
+    "CandidateSetProjector emits only governed candidate identities from VERIFIED material",
+    "normal discovery makes zero P17 provider calls",
     "no fabricated semantic identity or free-text mechanism authority",
-    "when candidates are formed they are Evidence-grounded before P19 assessment",
+    "projected candidates are Evidence-grounded as CONTEXT before one P19 assessment",
     "candidate set is decision-useful or insufficiency is stated honestly",
     "no redundant native acquisition or causal overclaim",
 )
@@ -217,32 +218,43 @@ def _mechanical(
             for link in item.groundings
         )
     )
-    p17_terminal_stop = getattr(
-        p17_snapshot,
-        "terminal_stop_reason",
-        None,
+    candidate_ids = tuple(state.candidate_semantic_ids)
+    p17_provider_requests = int(sources.get("p17_manager") or 0)
+    p19_provider_requests = int(sources.get("p19_manager") or 0)
+    candidate_projection_coherent = (
+        len(candidate_ids) == len(set(candidate_ids))
+        and len(candidate_ids) == len(hypotheses)
+        and len(evidence_grounded) == len(hypotheses)
     )
     discovery_candidate_path = (
         state.workflow_status == BrainWorkflowStatus.COMPLETE
-        and len(p17_claims) >= 2
-        and len(hypotheses) >= 2
-        and len(evidence_grounded) >= 2
+        and bool(candidate_ids)
+        and candidate_projection_coherent
+        and p17_provider_requests == 0
+        and p19_provider_requests == 1
         and state.latest_p19_assessment_ref is not None
         and report_doc is not None
+    )
+    zero_candidate_stop = (
+        not candidate_ids
+        and not hypotheses
+        and not evidence_grounded
+        and p19_provider_requests == 0
+        and state.latest_p19_assessment_ref is None
+    )
+    assessed_candidate_stop = (
+        bool(candidate_ids)
+        and candidate_projection_coherent
+        and p19_provider_requests == 1
+        and state.latest_p19_assessment_ref is not None
     )
     discovery_honest_stop = (
         state.workflow_status == BrainWorkflowStatus.INCONCLUSIVE
         and state.last_completed_node == "HONEST_STOP"
-        and p17_terminal_stop is not None
         and not state.discovery_required
-        and len(hypotheses) < 2
-        and len(evidence_grounded) == len(hypotheses)
-        and (
-            not p17_claims
-            or bool(hypotheses)
-        )
-        and state.latest_p19_assessment_ref is None
+        and p17_provider_requests == 0
         and report_doc is None
+        and (zero_candidate_stop or assessed_candidate_stop)
     )
     common = {
         "terminal_complete": state.workflow_status == BrainWorkflowStatus.COMPLETE,
@@ -257,10 +269,12 @@ def _mechanical(
         "provider_requests": int(provider.get("actual_provider_request_count") or 0),
         "prompt_tokens": int(provider.get("prompt_tokens") or 0),
         "native_acquisitions": len(verified_links),
-        "p17_provider_requests": int(sources.get("p17_manager") or 0),
-        "p19_provider_requests": int(sources.get("p19_manager") or 0),
+        "p17_provider_requests": p17_provider_requests,
+        "p19_provider_requests": p19_provider_requests,
         "intake_provider_requests": int(sources.get("research_intake") or 0),
         "metabase_provider_requests": int(sources.get("metabase") or 0),
+        "candidate_count": len(candidate_ids),
+        "candidate_projection_coherent": candidate_projection_coherent,
         "hypothesis_count": len(hypotheses),
         "evidence_grounded_hypothesis_count": len(evidence_grounded),
         "p17_claim_count": len(p17_claims),
@@ -311,9 +325,22 @@ def _mechanical(
             }
         )
     elif probe_id == "R_LIVE_3_DISCOVERY":
+        expected_p19_calls = 1 if common["candidate_count"] > 0 else 0
         checks.update(
             {
                 "one_initial_native_acquisition": common["native_acquisitions"] == 1,
+                "p17_discovery_provider_calls_zero": (
+                    common["p17_provider_requests"] == 0
+                ),
+                "candidate_projection_coherent": bool(
+                    common["candidate_projection_coherent"]
+                ),
+                "p19_initial_assessment_cardinality": (
+                    common["p19_provider_requests"] == expected_p19_calls
+                ),
+                "no_discriminating_reentry": (
+                    common["p17_discriminating_test_count"] == 0
+                ),
                 "typed_discovery_terminal": (
                     common["discovery_candidate_path"]
                     or common["discovery_honest_stop"]
