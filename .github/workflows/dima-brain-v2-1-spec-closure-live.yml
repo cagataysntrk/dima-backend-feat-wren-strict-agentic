@@ -57,10 +57,10 @@ jobs:
           assert auth["thirty_case_allowed"] is False
           assert auth["automatic_retry_allowed"] is False
           assert auth["case_count"] == 1
-          assert auth["candidate_product_sha"]=="537dec606d8e67b20da451846e1716a50e74d5e2"
-          assert auth["provider_free_phase1_run_id"]==37068498863
-          assert auth["provider_free_phase2_run_id"]==37068830395
-          assert auth["semantic_conformance_run_id"]==37067834925
+          assert auth["candidate_product_sha"]=="a5f920782c599180d5a32feb939dacf4161f1d8e"
+          assert auth["provider_free_phase1_run_id"]==37072619817
+          assert auth["provider_free_phase2_run_id"]==37072922802
+          assert auth["semantic_conformance_run_id"]==37072210385
           assert isinstance(auth["case_id"],str) and auth["case_id"]
           assert auth["engine_sha"]=="d5c60dc9f37a9ec9c5b0117f178146bbcb8dca88"
           assert auth["engine_release"]=="0.63.18-dima.9"
@@ -73,7 +73,7 @@ jobs:
           )
           print("candidate="+auth["candidate_product_sha"])
           PY
-          echo "candidate_sha=537dec606d8e67b20da451846e1716a50e74d5e2" >> "$GITHUB_OUTPUT"
+          echo "candidate_sha=a5f920782c599180d5a32feb939dacf4161f1d8e" >> "$GITHUB_OUTPUT"
           echo "case_id=$(python -c 'import json; print(json.load(open("backend/lab/metabase/brain_v2/spec_closure_live_authorization.json"))["case_id"])')" >> "$GITHUB_OUTPUT"
           test -n "$DIMA_OPENROUTER_API_KEY"
 
@@ -343,7 +343,7 @@ jobs:
           r=json.loads(p.read_text())
           assert r["schema_version"]=="dima_brain_v2_1_recovery_live_v1"
           assert r["system"]=="DIMA_BRAIN_V2_1_LANGGRAPH"
-          assert r["candidate_product_sha"]=="537dec606d8e67b20da451846e1716a50e74d5e2"
+          assert r["candidate_product_sha"]=="a5f920782c599180d5a32feb939dacf4161f1d8e"
           assert r["engine_sha"]=="d5c60dc9f37a9ec9c5b0117f178146bbcb8dca88"
           assert r["engine_release"]=="v0.63.18-dima.9"
           assert r["source_case_count"]==30
@@ -384,6 +384,19 @@ jobs:
             "latency":r.get("latency"),
             "provider_total":r.get("provider_total"),
           },ensure_ascii=False,sort_keys=True))
+          if r.get("cases"):
+              case=r["cases"][0]
+              print("RECOVERY_CASE="+json.dumps({
+                  "id":case.get("id"),
+                  "expected":case.get("expected"),
+                  "terminal_state":case.get("terminal_state"),
+                  "workflow_status":case.get("workflow_status"),
+                  "requirement_complete":case.get("requirement_complete"),
+                  "mechanical_safety":case.get("mechanical_safety"),
+                  "raw_harness_pass":case.get("raw_harness_pass"),
+                  "exception":case.get("exception"),
+                  "turns":case.get("turns"),
+              },ensure_ascii=False,sort_keys=True))
           PY
 
       - uses: actions/upload-artifact@v4
