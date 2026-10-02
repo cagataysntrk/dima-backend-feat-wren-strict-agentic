@@ -1,9 +1,9 @@
 DIMA Brain V2.1 specification-closure surgical live trigger
 case_id=F06_M
-candidate=a5f920782c599180d5a32feb939dacf4161f1d8e
-provider_free_phase1=37072619817
-provider_free_phase2=37072922802
-semantic_conformance=37072210385
+candidate=4ddca914d5e0bf7fa4216bf6aee9945a88d183d9
+provider_free_phase1=37075865938
+provider_free_phase2=37076145279
+semantic_conformance=37074020997
 broad_paid=false
 thirty_case=false
-reason=verify_retryable_terminality_and_shared_occurrence_closure
+reason=verify_dependency_filter_role_closure
