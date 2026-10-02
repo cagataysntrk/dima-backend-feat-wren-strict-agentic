@@ -23,6 +23,11 @@ from app.v3.research import (
     ResearchManager,
     ResearchSession,
 )
+from app.v3.research_material_repair import (
+    MaterialRepairDisposition,
+    decide_material_repair,
+    material_repair_feedback,
+)
 from app.v3.research_store import ResearchPersistenceError, ResearchSessionStore
 from app.v3.substrate.metabase.native_engine import (
     NativeEngineBridge,
@@ -699,6 +704,65 @@ class ResearchAskOrchestrator:
             "Research has no open native analytical obligation",
         )
 
+    def _prepare_material_repair(
+        self,
+        *,
+        session: ResearchSession,
+        obligation_id: str,
+        parent_link,
+        failure: ResearchMaterialLimitation,
+    ):
+        """Open at most one P14-owned repair occurrence for material-shape misses.
+
+        The failed exact occurrence stays durable and is never overwritten.
+        Repair preserves the accepted analytical contract and delegates query
+        regeneration to the same Metabot conversation.
+        """
+
+        attempts = self._store.material_repair_attempt_count(
+            session_id=session.session_id,
+            obligation_id=obligation_id,
+        )
+        decision = decide_material_repair(
+            validation_code=failure.code,
+            validation_detail=failure.detail,
+            prior_repair_attempts=attempts,
+        )
+        if decision.disposition != MaterialRepairDisposition.REPAIR:
+            return None
+        if session.budget.native_turns_used >= session.budget.max_native_turns:
+            return None
+
+        self._store.mark_limited(
+            parent_link.id,
+            code=failure.code,
+            detail=failure.detail,
+        )
+        before = session.revision
+        prepared = ResearchManager.prepare_native_delegation(
+            session,
+            obligation_id=obligation_id,
+        )
+        feedback = material_repair_feedback(decision)
+        context = dict(prepared.request.context)
+        context["dima_material_repair_feedback"] = feedback
+        request = prepared.request.model_copy(update={"context": context})
+        updated = self._store.save(
+            prepared.session,
+            expected_revision=before,
+        )
+        conversation = updated.native_conversation
+        assert conversation is not None
+        link = self._store.begin_delegation(
+            session=updated,
+            obligation_id=obligation_id,
+            dima_request_id=request.dima_request_id,
+            dima_trace_id=request.dima_trace_id,
+            native_conversation_id=conversation.conversation_id,
+            execution_kind="P14_REPAIR",
+        )
+        return updated, request, link
+
     def _limit(
         self,
         *,
@@ -856,21 +920,79 @@ class ResearchAskOrchestrator:
                 detail=exc.detail,
             )
         except ResearchMaterialLimitation as exc:
-            return self._limit(
+            repair = self._prepare_material_repair(
                 session=session,
                 obligation_id=selected,
-                code=exc.code,
-                detail=exc.detail,
-                link_id=pending.id,
-                last_valid_boundary=exc.last_valid_boundary,
-                first_invalid_boundary=exc.first_invalid_boundary,
-                expected_fingerprint=exc.expected_fingerprint,
-                observed_fingerprint=exc.observed_fingerprint,
-                scope_fingerprint=exc.scope_fingerprint,
-                material_fingerprint=exc.material_fingerprint,
-                expected_semantic_shape=exc.expected_semantic_shape,
-                observed_semantic_shape=exc.observed_semantic_shape,
+                parent_link=pending,
+                failure=exc,
             )
+            if repair is None:
+                return self._limit(
+                    session=session,
+                    obligation_id=selected,
+                    code=exc.code,
+                    detail=exc.detail,
+                    link_id=pending.id,
+                    last_valid_boundary=exc.last_valid_boundary,
+                    first_invalid_boundary=exc.first_invalid_boundary,
+                    expected_fingerprint=exc.expected_fingerprint,
+                    observed_fingerprint=exc.observed_fingerprint,
+                    scope_fingerprint=exc.scope_fingerprint,
+                    material_fingerprint=exc.material_fingerprint,
+                    expected_semantic_shape=exc.expected_semantic_shape,
+                    observed_semantic_shape=exc.observed_semantic_shape,
+                )
+            session, repair_request, repair_link = repair
+            try:
+                occurrence = runner.execute(
+                    session=session,
+                    principal=principal,
+                    obligation_id=selected,
+                    link=repair_link,
+                    request=repair_request,
+                    native_session_token=native_session_token,
+                    repair_parent_link_id=pending.id,
+                )
+            except ResearchMaterialObservationUnavailable as repair_exc:
+                return self._retryable_observation_limit(
+                    session=session,
+                    obligation_id=selected,
+                    code=repair_exc.code,
+                    detail=repair_exc.detail,
+                )
+            except ResearchMaterialLimitation as repair_exc:
+                return self._limit(
+                    session=session,
+                    obligation_id=selected,
+                    code=repair_exc.code,
+                    detail=repair_exc.detail,
+                    link_id=repair_link.id,
+                    last_valid_boundary=repair_exc.last_valid_boundary,
+                    first_invalid_boundary=repair_exc.first_invalid_boundary,
+                    expected_fingerprint=repair_exc.expected_fingerprint,
+                    observed_fingerprint=repair_exc.observed_fingerprint,
+                    scope_fingerprint=repair_exc.scope_fingerprint,
+                    material_fingerprint=repair_exc.material_fingerprint,
+                    expected_semantic_shape=repair_exc.expected_semantic_shape,
+                    observed_semantic_shape=repair_exc.observed_semantic_shape,
+                )
+            except NativeEngineBridgeError as repair_exc:
+                return self._limit(
+                    session=session,
+                    obligation_id=selected,
+                    code="P14_NATIVE_TRANSPORT_FAILED",
+                    detail=str(repair_exc),
+                    link_id=repair_link.id,
+                )
+            except ResearchPersistenceError as repair_exc:
+                return self._limit(
+                    session=session,
+                    obligation_id=selected,
+                    code=repair_exc.code,
+                    detail=repair_exc.detail,
+                    link_id=repair_link.id,
+                )
+            pending = repair_link
         except NativeEngineBridgeError as exc:
             return self._limit(
                 session=session,
