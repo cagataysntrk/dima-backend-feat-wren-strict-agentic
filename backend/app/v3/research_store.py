@@ -309,16 +309,16 @@ class ResearchSessionStore:
         investigation_task_id: str | None = None,
     ) -> ResearchExecutionLink:
         now = _now()
-        if execution_kind not in {"P14_BASE", "P17_FOLLOWUP"}:
+        if execution_kind not in {"P14_BASE", "P14_REPAIR", "P17_FOLLOWUP"}:
             raise ResearchPersistenceError(
                 "RESEARCH_EXECUTION_KIND_INVALID",
                 execution_kind,
             )
-        if execution_kind == "P14_BASE":
+        if execution_kind in {"P14_BASE", "P14_REPAIR"}:
             if reasoning_step_id is not None or investigation_task_id is not None:
                 raise ResearchPersistenceError(
-                    "P14_BASE_SUBORDINATE_LINEAGE_FORBIDDEN",
-                    "sealed P14 base occurrence cannot carry P17 lineage",
+                    "P14_SUBORDINATE_LINEAGE_FORBIDDEN",
+                    "P14 base/repair occurrence cannot carry P17 lineage",
                 )
         elif not reasoning_step_id or not investigation_task_id:
             raise ResearchPersistenceError(
@@ -384,7 +384,11 @@ class ResearchSessionStore:
                 select(ResearchExecutionLink)
                 .where(ResearchExecutionLink.session_id == session_id)
                 .where(ResearchExecutionLink.obligation_id == obligation_id)
-                .where(ResearchExecutionLink.execution_kind == "P14_BASE")
+                .where(
+                    ResearchExecutionLink.execution_kind.in_(
+                        ("P14_BASE", "P14_REPAIR")
+                    )
+                )
                 .where(
                     ResearchExecutionLink.status.in_(
                         (
@@ -409,7 +413,11 @@ class ResearchSessionStore:
                 select(ResearchExecutionLink)
                 .where(ResearchExecutionLink.session_id == session_id)
                 .where(ResearchExecutionLink.obligation_id == obligation_id)
-                .where(ResearchExecutionLink.execution_kind == "P14_BASE")
+                .where(
+                    ResearchExecutionLink.execution_kind.in_(
+                        ("P14_BASE", "P14_REPAIR")
+                    )
+                )
                 .where(ResearchExecutionLink.status == "VERIFIED")
             ).all()
         if len(rows) != 1:
@@ -429,6 +437,21 @@ class ResearchSessionStore:
                 "verified P14 occurrence lacks query/receipt/Evidence provenance",
             )
         return link
+
+    def material_repair_attempt_count(
+        self,
+        *,
+        session_id: str,
+        obligation_id: str,
+    ) -> int:
+        with Session(self._engine) as db:
+            rows = db.exec(
+                select(ResearchExecutionLink)
+                .where(ResearchExecutionLink.session_id == session_id)
+                .where(ResearchExecutionLink.obligation_id == obligation_id)
+                .where(ResearchExecutionLink.execution_kind == "P14_REPAIR")
+            ).all()
+        return len(rows)
 
     def execution_link_for_request(
         self,
