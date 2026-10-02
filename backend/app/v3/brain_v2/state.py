@@ -57,6 +57,10 @@ class BrainGraphState(BaseModel):
     )
     active_requirement_id: str | None = Field(default=None, min_length=1)
     terminal_requirement_ids: tuple[str, ...] = ()
+    direct_requirement_ids: tuple[str, ...] = ()
+    relationship_requirement_ids: tuple[str, ...] = ()
+    root_cause_requirement_ids: tuple[str, ...] = ()
+    report_requirement_ids: tuple[str, ...] = ()
     investigation_requirement_ids: tuple[str, ...] = ()
     follow_verified_material_goal_ids: tuple[str, ...] = ()
     pending_evidence_ids: tuple[str, ...] = ()
@@ -105,6 +109,10 @@ class BrainGraphState(BaseModel):
             "material_group_ids": self.material_group_ids,
             "completed_material_group_ids": self.completed_material_group_ids,
             "terminal_requirement_ids": self.terminal_requirement_ids,
+            "direct_requirement_ids": self.direct_requirement_ids,
+            "relationship_requirement_ids": self.relationship_requirement_ids,
+            "root_cause_requirement_ids": self.root_cause_requirement_ids,
+            "report_requirement_ids": self.report_requirement_ids,
             "p18_requirement_ids": self.p18_requirement_ids,
             "p18_claim_refs": self.p18_claim_refs,
             "p18_policy_use_refs": self.p18_policy_use_refs,
@@ -139,6 +147,22 @@ class BrainGraphState(BaseModel):
             and self.active_material_group_id not in set(self.material_group_ids)
         ):
             raise ValueError("active material group must belong to current plan")
+        analytical_families = (
+            self.direct_requirement_ids,
+            self.relationship_requirement_ids,
+            self.root_cause_requirement_ids,
+        )
+        analytical_refs = tuple(
+            item for family in analytical_families for item in family
+        )
+        if len(analytical_refs) != len(set(analytical_refs)):
+            raise ValueError("analytical requirement owner refs must be disjoint")
+        if not set(analytical_refs).issubset(set(self.open_requirement_ids)):
+            raise ValueError("analytical owner refs must belong to current requirements")
+        if not set(self.report_requirement_ids).issubset(
+            set(self.open_requirement_ids)
+        ):
+            raise ValueError("report owner refs must belong to current requirements")
         if len(self.p18_requirement_ids) != len(self.p18_claim_refs):
             raise ValueError("P18 requirement/claim refs must be paired")
         if len(self.p18_requirement_ids) != len(self.p18_policy_use_refs):
@@ -184,6 +208,10 @@ class BrainStatePayload(TypedDict, total=False):
     active_material_group_id: str | None
     active_requirement_id: str | None
     terminal_requirement_ids: tuple[str, ...]
+    direct_requirement_ids: tuple[str, ...]
+    relationship_requirement_ids: tuple[str, ...]
+    root_cause_requirement_ids: tuple[str, ...]
+    report_requirement_ids: tuple[str, ...]
     investigation_requirement_ids: tuple[str, ...]
     follow_verified_material_goal_ids: tuple[str, ...]
     pending_evidence_ids: tuple[str, ...]
