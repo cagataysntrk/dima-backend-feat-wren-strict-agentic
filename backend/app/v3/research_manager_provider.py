@@ -146,6 +146,13 @@ class ProviderClaimDraft(_Frozen):
     evidence_links: tuple[ProviderClaimEvidenceLink, ...] = ()
     limitations: tuple[str, ...] = ()
 
+    @model_validator(mode="after")
+    def unique_evidence_identity(self):
+        evidence_ids = [item.evidence_id for item in self.evidence_links]
+        if len(evidence_ids) != len(set(evidence_ids)):
+            raise ValueError("Evidence links must be unique by evidence_id")
+        return self
+
 
 def _provider_json_value(value: ProviderJSONValue) -> Any:
     if value.kind == "STRING":

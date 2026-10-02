@@ -272,6 +272,45 @@ def test_provider_claim_rejects_duplicate_evidence_identity_before_domain_mappin
         ProviderClaimDraft.model_validate(payload)
 
 
+def test_provider_claim_accepts_distinct_evidence_identities_across_relations():
+    payload = {
+        "claim_text": "One governed observational relationship claim.",
+        "proposition": {
+            "entries": [
+                _closed_entry(
+                    "relationship_kind",
+                    _closed_value("STRING", string="OBSERVATIONAL"),
+                ),
+            ],
+        },
+        "scope": {
+            "entries": [
+                _closed_entry(
+                    "scope_version_id",
+                    _closed_value("STRING", string="scope_v1"),
+                ),
+            ],
+        },
+        "freshness": {
+            "as_of": "2026-09-26T00:00:00Z",
+            "stale_after": None,
+        },
+        "origin_material_refs": [],
+        "evidence_links": [
+            {"evidence_id": "evi_a", "relation": "SUPPORTS"},
+            {"evidence_id": "evi_b", "relation": "CONTEXTUALIZES"},
+        ],
+        "limitations": [],
+    }
+
+    value = ProviderClaimDraft.model_validate(payload)
+
+    assert tuple(item.evidence_id for item in value.evidence_links) == (
+        "evi_a",
+        "evi_b",
+    )
+
+
 def test_runtime_reachable_provider_vocabulary_includes_form_claim():
     assert InvestigationIntent.FORM_CLAIM in AUTONOMOUS_INTENTS
     assert set(AUTONOMOUS_INTENTS) == set(_ACTION_FOR_INTENT)
