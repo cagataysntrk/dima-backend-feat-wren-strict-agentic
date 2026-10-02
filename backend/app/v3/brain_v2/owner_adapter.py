@@ -605,9 +605,7 @@ class DimaBrainV2Activities(BrainActivities):
             research_session_id=session.session_id,
             accepted_brief_ref=brief.brief_id,
             scope_version_id=brief.scope.scope_version.version_id,
-            open_requirement_ids=tuple(
-                item.obligation_id for item in session.obligations
-            ),
+            open_requirement_ids=tuple(brief.must_requirement_ids),
             material_requirement_ids=tuple(
                 item.goal_id for item in brief.questions
             ),
@@ -642,11 +640,7 @@ class DimaBrainV2Activities(BrainActivities):
             return CanonicalizeActivityResult(
                 research_session_id=session.session_id,
                 scope_version_id=state.scope_version_id or "scope_v1",
-                open_requirement_ids=tuple(
-                    item.obligation_id
-                    for item in session.obligations
-                    if item.state.value not in {"VERIFIED", "LIMITED"}
-                ),
+                open_requirement_ids=tuple(brief.must_requirement_ids),
                 material_requirement_ids=tuple(
                     item.goal_id for item in brief.questions
                 ),
