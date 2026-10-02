@@ -1360,6 +1360,10 @@ class DimaBrainV2Activities(BrainActivities):
                 "material_mode": material_mode.value,
                 "source_semantic_id": source_ref,
                 "target_semantic_id": target_ref,
+                "salient_cells": [
+                    item.model_dump(mode="json")
+                    for item in draft.salient_cells
+                ],
             },
             scope=applicability_scope,
             freshness=ClaimFreshness(

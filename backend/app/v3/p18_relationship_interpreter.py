@@ -69,10 +69,19 @@ class P18EvidenceAssessment(Frozen):
     relation: ClaimEvidenceRelation
 
 
+class P18SalientCell(Frozen):
+    """Exact existing Evidence cell selected for presentation, never a new fact."""
+
+    evidence_id: str = Field(pattern=r"^evi_[a-f0-9]{24}$")
+    row_index: int = Field(ge=0)
+    column_index: int = Field(ge=0)
+
+
 class P18RelationshipInterpretationDraft(Frozen):
     analytical_kind: RelationshipAnalyticalKind
     claim_text: str = Field(min_length=1)
     evidence_assessments: tuple[P18EvidenceAssessment, ...] = Field(min_length=1)
+    salient_cells: tuple[P18SalientCell, ...] = Field(default=(), max_length=6)
     limitations: tuple[str, ...] = ()
 
     @model_validator(mode="after")
@@ -82,6 +91,12 @@ class P18RelationshipInterpretationDraft(Frozen):
             raise ValueError("P18 Evidence assessments must be unique by evidence_id")
         if any(not item.strip() for item in self.limitations):
             raise ValueError("P18 limitations must be non-empty strings")
+        identities = [
+            (item.evidence_id, item.row_index, item.column_index)
+            for item in self.salient_cells
+        ]
+        if len(identities) != len(set(identities)):
+            raise ValueError("P18 salient Evidence cells must be unique")
         return self
 
 
@@ -106,8 +121,13 @@ association across the observed grain; never claim temporal co-movement.
 For TEMPORAL_CO_MOVEMENT material, co-movement may be assessed only from the
 supplied paired temporal observations. Causality remains NOT ESTABLISHED.
 BUSINESS_POLICY is outside this interpretation and is resolved separately.
-If the material cannot support the requested interpretation, use INSUFFICIENT
-Evidence relations and explicit limitations instead of filling the gap."""
+When the Evidence supports or challenges a relationship and exact numeric cells
+are available, select 2-6 salient_cells directly from the supplied rows. Prefer
+cells spanning both relationship metrics and useful observed entities. A cell is
+only an exact pointer (Evidence id, row index, column index); never calculate a
+new statistic, delta, percentage, score or derived value. If the material cannot
+support the requested interpretation, use INSUFFICIENT Evidence relations and
+explicit limitations instead of filling the gap."""
 
 
 def _canonical(value: Any) -> str:
@@ -137,12 +157,20 @@ def _schema(view: P18RelationshipView) -> dict[str, Any]:
         "enum": allowed_kinds,
     }
     defs = schema.get("$defs") or {}
+    evidence_ids = [item.evidence_id for item in view.evidence]
     assessment = defs.get("P18EvidenceAssessment")
     if isinstance(assessment, dict):
         assessment_props = assessment.get("properties") or {}
         assessment_props["evidence_id"] = {
             "type": "string",
-            "enum": [item.evidence_id for item in view.evidence],
+            "enum": evidence_ids,
+        }
+    salient = defs.get("P18SalientCell")
+    if isinstance(salient, dict):
+        salient_props = salient.get("properties") or {}
+        salient_props["evidence_id"] = {
+            "type": "string",
+            "enum": evidence_ids,
         }
     return schema
 
@@ -192,6 +220,51 @@ class StructuredP18RelationshipInterpreter:
             raise ValueError(
                 "cross-sectional material cannot establish temporal co-movement"
             )
+
+        evidence_by_id = {item.evidence_id: item for item in view.evidence}
+        assessment_by_id = {
+            item.evidence_id: item.relation
+            for item in draft.evidence_assessments
+        }
+        numeric_columns: set[tuple[str, int]] = set()
+        for evidence in view.evidence:
+            for row in evidence.rows:
+                for column_index, value in enumerate(row):
+                    if isinstance(value, (int, float)) and not isinstance(value, bool):
+                        numeric_columns.add((evidence.evidence_id, column_index))
+
+        selected_columns: set[tuple[str, int]] = set()
+        for cell in draft.salient_cells:
+            evidence = evidence_by_id.get(cell.evidence_id)
+            if evidence is None:
+                raise ValueError("P18 salient cell used foreign Evidence")
+            if cell.row_index >= len(evidence.rows):
+                raise ValueError("P18 salient cell row is outside Evidence")
+            row = evidence.rows[cell.row_index]
+            if cell.column_index >= len(row):
+                raise ValueError("P18 salient cell column is outside Evidence")
+            value = row[cell.column_index]
+            if isinstance(value, bool) or not isinstance(value, (int, float)):
+                raise ValueError("P18 salient cell must reference an exact numeric value")
+            if assessment_by_id[cell.evidence_id] == ClaimEvidenceRelation.INSUFFICIENT:
+                raise ValueError(
+                    "P18 salient cell cannot be presented from insufficient Evidence"
+                )
+            selected_columns.add((cell.evidence_id, cell.column_index))
+
+        material_relationship = any(
+            relation in {
+                ClaimEvidenceRelation.SUPPORTS,
+                ClaimEvidenceRelation.CHALLENGES,
+            }
+            for relation in assessment_by_id.values()
+        )
+        if material_relationship and len(numeric_columns) >= 2:
+            if len(draft.salient_cells) < 2 or len(selected_columns) < 2:
+                raise ValueError(
+                    "P18 material relationship requires salient values across "
+                    "at least two observed numeric columns"
+                )
         return draft
 
 

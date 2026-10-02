@@ -69,6 +69,18 @@ def payload(kind="ASSOCIATION", evidence_id=EVIDENCE):
                 "relation": ClaimEvidenceRelation.SUPPORTS.value,
             }
         ],
+        "salient_cells": [
+            {
+                "evidence_id": evidence_id,
+                "row_index": 0,
+                "column_index": 1,
+            },
+            {
+                "evidence_id": evidence_id,
+                "row_index": 0,
+                "column_index": 2,
+            },
+        ],
         "limitations": [
             "Cross-sectional evidence does not establish temporal order or causality."
         ],
@@ -83,6 +95,10 @@ def test_p18_interpreter_accepts_closed_cross_sectional_association():
 
     assert result.analytical_kind == RelationshipAnalyticalKind.ASSOCIATION
     assert result.evidence_assessments[0].evidence_id == EVIDENCE
+    assert {(x.row_index, x.column_index) for x in result.salient_cells} == {
+        (0, 1),
+        (0, 2),
+    }
     assert manager.call_count == 1
     schema = transport.calls[0]["schema"]
     assert schema["properties"]["analytical_kind"]["enum"] == ["ASSOCIATION"]
@@ -119,6 +135,34 @@ def test_temporal_material_schema_may_express_co_movement():
         "ASSOCIATION",
         "CO_MOVEMENT",
     }
+
+
+
+def test_p18_interpreter_rejects_out_of_bounds_salient_cell():
+    bad = payload()
+    bad["salient_cells"][1]["row_index"] = 99
+    manager = StructuredP18RelationshipInterpreter(transport=FakeTransport(bad))
+
+    with pytest.raises(ValueError, match="outside Evidence"):
+        manager.interpret(view())
+
+
+def test_p18_interpreter_rejects_non_numeric_salient_cell():
+    bad = payload()
+    bad["salient_cells"][0]["column_index"] = 0
+    manager = StructuredP18RelationshipInterpreter(transport=FakeTransport(bad))
+
+    with pytest.raises(ValueError, match="exact numeric"):
+        manager.interpret(view())
+
+
+def test_supported_numeric_relationship_requires_two_observed_metric_columns():
+    bad = payload()
+    bad["salient_cells"] = bad["salient_cells"][:1]
+    manager = StructuredP18RelationshipInterpreter(transport=FakeTransport(bad))
+
+    with pytest.raises(ValueError, match="at least two observed numeric columns"):
+        manager.interpret(view())
 
 
 def test_p18_interpreter_module_cannot_open_analytics():
