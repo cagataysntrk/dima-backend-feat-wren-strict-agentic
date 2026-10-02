@@ -8,9 +8,13 @@ from psycopg import connect
 
 from app.v3.brain_v2.activities import (
     CanonicalizeActivityResult,
+    CompletionActivityResult,
     EvidenceActivityResult,
     IntakeActivityResult,
     MaterialActivityResult,
+    MaterialGroupActivityResult,
+    P18ActivityResult,
+    RequirementPlanActivityResult,
     P19ActivityResult,
     ReportActivityResult,
 )
@@ -52,6 +56,35 @@ class OnePassActivities:
             hypothesis_ids=("p19h_" + "a" * 24, "p19h_" + "b" * 24),
             discovery_required=False,
             activity_fingerprint=_fp("canonicalize"),
+        )
+
+    def plan_requirements(self, state):
+        return RequirementPlanActivityResult(
+            material_group_ids=("mg_" + "a" * 24,),
+            root_cause_requirement_ids=("g1",),
+            activity_fingerprint=_fp("requirements-plan"),
+        )
+
+    def acquire_material_group(self, state):
+        return MaterialGroupActivityResult(
+            material_group_id="mg_" + "a" * 24,
+            consumer_requirement_ids=("g1",),
+            produced_evidence_ids=("evi_" + "c" * 24,),
+            produced_receipt_refs=("dqr_" + "d" * 24,),
+            activity_fingerprint=_fp("material-group"),
+        )
+
+    def adjudicate_relationship(self, state):
+        raise AssertionError("ONE_PASS must not invoke P18")
+
+    def evaluate_completion(self, state):
+        return CompletionActivityResult(
+            completion_revision=state.completion_revision + 1,
+            terminal_requirement_ids=("g1",),
+            analytical_complete=True,
+            requirement_complete=True,
+            report_required=False,
+            activity_fingerprint=_fp("completion"),
         )
 
     def acquire_material(self, state):
