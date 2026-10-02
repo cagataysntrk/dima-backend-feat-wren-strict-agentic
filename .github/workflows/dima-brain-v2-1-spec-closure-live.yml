@@ -1,11 +1,11 @@
-name: dima-brain-v2-1-round2-benchmark
+name: dima-brain-v2-1-spec-closure-live
 
 on:
   push:
     branches:
-      - benchmark/brain-v2-1-round2-20261002
+      - feat/dima-brain-v2-1-specification-closure
     paths:
-      - ".github/ROUND2_BRAIN_V21_TRIGGER"
+      - ".github/BRAIN_V21_SPEC_CLOSURE_LIVE_TRIGGER"
 
 permissions:
   contents: read
@@ -15,22 +15,22 @@ env:
   DIMA_OPENROUTER_API_KEY: ${{ secrets.DIMA_OPENROUTER_API_KEY || secrets.OPENROUTER_API_KEY }}
   METABOT_MODEL_IDENTIFIER: openrouter/openai/gpt-5.6-luna
   DIMA_COGNITION_MODEL: openai/gpt-5.6-luna
-  MB_ADMIN_EMAIL: admin@brain-v21-round2.local
-  MB_RESTRICTED_EMAIL: restricted@brain-v21-round2.local
-  MB_RESTRICTED_GROUP: Dima Brain V2.1 Round2 Restricted
+  MB_ADMIN_EMAIL: admin@brain-v21-recovery.local
+  MB_RESTRICTED_EMAIL: restricted@brain-v21-recovery.local
+  MB_RESTRICTED_GROUP: Dima Brain V2.1 Recovery Restricted
   PROVIDER_PROXY_PORT: "8799"
-  HARD_PROVIDER_REQUEST_CEILING: "360"
-  PROMPT_TOKEN_CEILING: "6000000"
-  COMPLETION_TOKEN_CEILING: "200000"
-  REASONING_TOKEN_CEILING: "150000"
-  PROVIDER_COST_CEILING: "2.00"
+  HARD_PROVIDER_REQUEST_CEILING: "20"
+  PROMPT_TOKEN_CEILING: "350000"
+  COMPLETION_TOKEN_CEILING: "30000"
+  REASONING_TOKEN_CEILING: "25000"
+  PROVIDER_COST_CEILING: "0.25"
 
 concurrency:
-  group: dima-brain-v2-1-round2-benchmark
+  group: dima-brain-v2-1-spec-closure-live
   cancel-in-progress: false
 
 jobs:
-  benchmark:
+  surgical-recovery:
     runs-on: ubuntu-latest
     timeout-minutes: 180
     environment: DIMA_OPENROUTER_API_KEY
@@ -41,24 +41,27 @@ jobs:
           fetch-depth: 128
           submodules: false
 
-      - name: Verify frozen benchmark authority
+      - name: Verify frozen surgical recovery authority
         id: auth
         shell: bash
         run: |
           set -euo pipefail
-          AUTH="backend/lab/metabase/brain_v2/round2_authorization.json"
+          AUTH="backend/lab/metabase/brain_v2/spec_closure_live_authorization.json"
           python - "$AUTH" <<'PY'
           import json, subprocess, sys
           from pathlib import Path
           auth=json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
-          assert auth["schema_version"]=="dima_brain_v2_1_round2_authorization_v1"
+          assert auth["schema_version"]=="dima_brain_v2_1_spec_closure_live_authorization_v1"
           assert auth["enabled"] is True
-          assert auth["broad_paid_allowed"] is True
-          assert auth["thirty_case_allowed"] is True
+          assert auth["broad_paid_allowed"] is False
+          assert auth["thirty_case_allowed"] is False
           assert auth["automatic_retry_allowed"] is False
-          assert auth["case_count"] == 30
-          assert auth["candidate_product_sha"]=="ce8704d6a0db10dc3fb6b1a7e5d0f86afe9ccdc9"
-          assert auth["frozen_branch_head"]=="54dcc6b7f2bc7a0a7cc554801f831c08fbb1c2e6"
+          assert auth["case_count"] == 1
+          assert auth["candidate_product_sha"]=="dacf41f99e1371197917e520e5faffa037aed9b3"
+          assert auth["provider_free_phase1_run_id"]==37059975136
+          assert auth["provider_free_phase2_run_id"]==37060243625
+          assert auth["semantic_conformance_run_id"]==37057450859
+          assert isinstance(auth["case_id"],str) and auth["case_id"]
           assert auth["engine_sha"]=="d5c60dc9f37a9ec9c5b0117f178146bbcb8dca88"
           assert auth["engine_release"]=="0.63.18-dima.9"
           assert auth["model_policy"]=="LUNA_LUNA_NO_CASCADE"
@@ -70,7 +73,8 @@ jobs:
           )
           print("candidate="+auth["candidate_product_sha"])
           PY
-          echo "candidate_sha=ce8704d6a0db10dc3fb6b1a7e5d0f86afe9ccdc9" >> "$GITHUB_OUTPUT"
+          echo "candidate_sha=dacf41f99e1371197917e520e5faffa037aed9b3" >> "$GITHUB_OUTPUT"
+          echo "case_id=$(python -c 'import json; print(json.load(open("backend/lab/metabase/brain_v2/spec_closure_live_authorization.json"))["case_id"])')" >> "$GITHUB_OUTPUT"
           test -n "$DIMA_OPENROUTER_API_KEY"
 
       - uses: actions/setup-python@v5
@@ -83,12 +87,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
 
-      - name: Provider-free benchmark preflight
+      - name: Provider-free recovery preflight
         working-directory: backend
         run: |
           set -euo pipefail
           python -m py_compile \
-            lab/metabase/brain_v2/round2_benchmark.py \
+            lab/metabase/brain_v2/spec_closure_recovery_live.py \
             lab/metabase/brain_v2/live_support.py \
             lab/metabase/core_b/runtime/openrouter_counting_proxy.py \
             lab/metabase/core_b/runtime/seed_phase1_pinpoint_metrics.py \
@@ -147,13 +151,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p backend/eval/brain_v21_round2
+          mkdir -p backend/eval/brain_v21_recovery
           nohup python backend/lab/metabase/core_b/runtime/openrouter_counting_proxy.py \
             --listen-host 0.0.0.0 \
             --listen-port "$PROVIDER_PROXY_PORT" \
             --ceiling 0 \
-            --receipt backend/eval/brain_v21_round2/provider_setup.json \
-            >backend/eval/brain_v21_round2/provider_setup_proxy.log 2>&1 &
+            --receipt backend/eval/brain_v21_recovery/provider_setup.json \
+            >backend/eval/brain_v21_recovery/provider_setup_proxy.log 2>&1 &
           echo "PROVIDER_PROXY_PID=$!" >> "$GITHUB_ENV"
           for i in $(seq 1 30); do
             curl -fsS "http://127.0.0.1:${PROVIDER_PROXY_PORT}/__dima__/health" >/dev/null && break
@@ -165,18 +169,18 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          docker network create dima-brain-v21-round2
+          docker network create dima-brain-v21-recovery
           PG="postgres@sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675"
           docker run -d --name analytics-db \
-            --network dima-brain-v21-round2 --network-alias analytics-db \
+            --network dima-brain-v21-recovery --network-alias analytics-db \
             -p 127.0.0.1:55461:5432 \
-            -e POSTGRES_DB=brain_v21_round2 \
+            -e POSTGRES_DB=brain_v21_recovery \
             -e POSTGRES_USER=brain_v21_owner \
             -e POSTGRES_PASSWORD="$PG_OWNER_PASSWORD" "$PG"
           docker run -d --name app-db \
-            --network dima-brain-v21-round2 --network-alias app-db \
+            --network dima-brain-v21-recovery --network-alias app-db \
             -p 127.0.0.1:55462:5432 \
-            -e POSTGRES_DB=metabase_brain_v21 \
+            -e POSTGRES_DB=metabase_brain_v21_recovery \
             -e POSTGRES_USER=metabase_app \
             -e POSTGRES_PASSWORD="$MB_APP_PASSWORD" "$PG"
           for n in analytics-db app-db; do
@@ -192,7 +196,7 @@ jobs:
         env:
           PGHOST: 127.0.0.1
           PGPORT: "55461"
-          PGDATABASE: brain_v21_round2
+          PGDATABASE: brain_v21_recovery
           PGUSER: brain_v21_owner
           PGPASSWORD: ${{ env.PG_OWNER_PASSWORD }}
           CORE_B_READONLY_USER: brain_v21_readonly
@@ -205,14 +209,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          docker run -d --name mb-brain-v21 \
-            --network dima-brain-v21-round2 \
+          docker run -d --name mb-brain-v21-recovery \
+            --network dima-brain-v21-recovery \
             --add-host=host.docker.internal:host-gateway \
             -p 127.0.0.1:3361:3000 \
             -e MB_DB_TYPE=postgres \
             -e MB_DB_HOST=app-db \
             -e MB_DB_PORT=5432 \
-            -e MB_DB_DBNAME=metabase_brain_v21 \
+            -e MB_DB_DBNAME=metabase_brain_v21_recovery \
             -e MB_DB_USER=metabase_app \
             -e MB_DB_PASS="$MB_APP_PASSWORD" \
             -e MB_AI_FEATURES_ENABLED=true \
@@ -235,8 +239,8 @@ jobs:
         working-directory: backend
         env:
           METABASE_URL: http://127.0.0.1:3361
-          MB_SITE_NAME: Dima Brain V2.1 Round2
-          ANALYTICS_DB_NAME: brain_v21_round2
+          MB_SITE_NAME: Dima Brain V2.1 Recovery
+          ANALYTICS_DB_NAME: brain_v21_recovery
           ANALYTICS_DB_USER: brain_v21_readonly
           ANALYTICS_DB_PASSWORD: ${{ env.CORE_B_READONLY_PASSWORD }}
           MB_ADMIN_EMAIL: ${{ env.MB_ADMIN_EMAIL }}
@@ -254,7 +258,7 @@ jobs:
           python - <<'PY'
           import json
           from pathlib import Path
-          r=json.loads(Path("backend/eval/brain_v21_round2/provider_setup.json").read_text())
+          r=json.loads(Path("backend/eval/brain_v21_recovery/provider_setup.json").read_text())
           assert r["hard_provider_request_ceiling"] == 0
           assert r["actual_provider_request_count"] == 0
           assert r["blocked_request_count"] == 0
@@ -271,9 +275,9 @@ jobs:
           python lab/metabase/core_b/runtime/seed_phase1_pinpoint_metrics.py \
             --base-url http://127.0.0.1:3361 \
             --fixture eval/round2_neutral_machine_fixture.json \
-            --output eval/brain_v21_round2/native_bindings.json
+            --output eval/brain_v21_recovery/native_bindings.json
 
-      - name: Arm single broad paid provider window
+      - name: Arm single surgical paid provider window
         shell: bash
         run: |
           set -euo pipefail
@@ -292,8 +296,8 @@ jobs:
             --completion-token-ceiling "$COMPLETION_TOKEN_CEILING" \
             --reasoning-token-ceiling "$REASONING_TOKEN_CEILING" \
             --provider-cost-ceiling "$PROVIDER_COST_CEILING" \
-            --receipt backend/eval/brain_v21_round2/provider_benchmark.json \
-            >backend/eval/brain_v21_round2/provider_benchmark_proxy.log 2>&1 &
+            --receipt backend/eval/brain_v21_recovery/provider_live.json \
+            >backend/eval/brain_v21_recovery/provider_live_proxy.log 2>&1 &
           echo "PROVIDER_PROXY_PID=$!" >> "$GITHUB_ENV"
           for i in $(seq 1 30); do
             curl -fsS "http://127.0.0.1:${PROVIDER_PROXY_PORT}/__dima__/health" >/dev/null && break
@@ -301,24 +305,24 @@ jobs:
             test "$i" -lt 30
           done
 
-      - name: Run exactly one frozen Brain V2.1 Round-2 30-case benchmark
+      - name: Run exactly one frozen Brain V2.1 recovery counterexample
         working-directory: backend
         env:
           PYTHONPATH: .
-          CHECKPOINT_DSN: postgresql://metabase_app:${{ env.MB_APP_PASSWORD }}@127.0.0.1:55462/metabase_brain_v21
+          CHECKPOINT_DSN: postgresql://metabase_app:${{ env.MB_APP_PASSWORD }}@127.0.0.1:55462/metabase_brain_v21_recovery
         run: |
           set -euo pipefail
-          python lab/metabase/brain_v2/round2_benchmark.py \
+          python lab/metabase/brain_v2/spec_closure_recovery_live.py \
             --base-url http://127.0.0.1:3361 \
             --email "$MB_RESTRICTED_EMAIL" \
             --password "$MB_RESTRICTED_PASSWORD" \
-            --binding-manifest eval/brain_v21_round2/native_bindings.json \
+            --binding-manifest eval/brain_v21_recovery/native_bindings.json \
             --manifest eval/dima_neutral_feature_benchmark_round2.json \
-            --output eval/brain_v21_round2/brain_v21_round2.json \
-            --control-db eval/brain_v21_round2/brain_v21_round2.db \
+            --output eval/brain_v21_recovery/recovery_live.json \
+            --control-db eval/brain_v21_recovery/recovery_live.db \
             --checkpoint-dsn "$CHECKPOINT_DSN" \
             --provider-proxy-base-url "http://127.0.0.1:${PROVIDER_PROXY_PORT}" \
-            --provider-receipt eval/brain_v21_round2/provider_benchmark.json \
+            --provider-receipt eval/brain_v21_recovery/provider_live.json \
             --engine-sha "$ENGINE_SHA" \
             --upstream-sha "$UPSTREAM_BASE_SHA" \
             --runtime-tag "$RUNTIME_TAG" \
@@ -326,22 +330,28 @@ jobs:
             --build-identity "$BUILD_IDENTITY" \
             --image-identity "$REGISTRY_DIGEST" \
             --candidate-product-sha "${{ steps.auth.outputs.candidate_sha }}" \
-            --checkout-sha "$GITHUB_SHA"
+            --checkout-sha "$GITHUB_SHA" \
+            --case-id "${{ steps.auth.outputs.case_id }}"
 
-      - name: Enforce benchmark artifact integrity
+      - name: Enforce surgical recovery artifact integrity
         working-directory: backend
         run: |
           python - <<'PY'
           import json
           from pathlib import Path
-          p=Path("eval/brain_v21_round2/brain_v21_round2.json")
+          p=Path("eval/brain_v21_recovery/recovery_live.json")
           r=json.loads(p.read_text())
-          assert r["schema_version"]=="dima_brain_v2_1_round2_benchmark_v1"
+          assert r["schema_version"]=="dima_brain_v2_1_recovery_live_v1"
           assert r["system"]=="DIMA_BRAIN_V2_1_LANGGRAPH"
-          assert r["candidate_product_sha"]=="ce8704d6a0db10dc3fb6b1a7e5d0f86afe9ccdc9"
+          assert r["candidate_product_sha"]=="dacf41f99e1371197917e520e5faffa037aed9b3"
           assert r["engine_sha"]=="d5c60dc9f37a9ec9c5b0117f178146bbcb8dca88"
           assert r["engine_release"]=="v0.63.18-dima.9"
-          assert r["case_count"]==30 and len(r["cases"])==30
+          assert r["source_case_count"]==30
+          assert r["case_count"]==1 and len(r["cases"])==1
+          assert r["selected_case_ids"]==["${{ steps.auth.outputs.case_id }}"]
+          assert r["case_exceptions"]==0
+          assert r["duplicate_native"]==0
+          assert r["stale_evidence"]==0
           assert r["agent_api_request_count"]==0
           assert r["model_topology"]["dima_cognition"]=="openai/gpt-5.6-luna"
           assert r["model_topology"]["metabot"]=="openrouter/openai/gpt-5.6-luna"
@@ -352,16 +362,16 @@ jobs:
           print("BRAIN_V21_ROUND2_ARTIFACT_READY")
           PY
 
-      - name: Emit benchmark summary
+      - name: Emit recovery summary
         if: always()
         working-directory: backend
         run: |
           python - <<'PY'
           import json
           from pathlib import Path
-          p=Path("eval/brain_v21_round2/brain_v21_round2.json")
+          p=Path("eval/brain_v21_recovery/recovery_live.json")
           if not p.exists():
-              print("ROUND2_ARTIFACT_MISSING")
+              print("RECOVERY_ARTIFACT_MISSING")
               raise SystemExit(0)
           r=json.loads(p.read_text())
           print(json.dumps({
@@ -379,16 +389,16 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: dima-brain-v2-1-round2-${{ github.run_id }}
+          name: dima-brain-v2-1-recovery-${{ steps.auth.outputs.case_id }}-${{ github.run_id }}
           path: |
-            backend/eval/brain_v21_round2/brain_v21_round2.json
-            backend/eval/brain_v21_round2/provider_benchmark.json
+            backend/eval/brain_v21_recovery/recovery_live.json
+            backend/eval/brain_v21_recovery/provider_live.json
           if-no-files-found: warn
           retention-days: 90
 
       - name: Runtime logs
         if: failure()
-        run: docker logs --tail=2000 mb-brain-v21 || true
+        run: docker logs --tail=2000 mb-brain-v21-recovery || true
 
       - name: Teardown
         if: always()
@@ -396,5 +406,5 @@ jobs:
           if [ -n "${PROVIDER_PROXY_PID:-}" ]; then
             kill "$PROVIDER_PROXY_PID" 2>/dev/null || true
           fi
-          docker rm -f mb-brain-v21 analytics-db app-db 2>/dev/null || true
-          docker network rm dima-brain-v21-round2 2>/dev/null || true
+          docker rm -f mb-brain-v21-recovery analytics-db app-db 2>/dev/null || true
+          docker network rm dima-brain-v21-recovery 2>/dev/null || true
