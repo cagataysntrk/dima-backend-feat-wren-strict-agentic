@@ -337,7 +337,7 @@ def test_observation_only_time_axis_rejects_invented_calendar_filter() -> None:
             _observation(with_temporal_scope=True),
             _binding(),
         )
-    assert exc.value.code == "R1_NATIVE_TEMPORAL_SCOPE_MISMATCH"
+    assert exc.value.code == "R1_NATIVE_TIME_SCOPE_MISMATCH"
 
 
 def test_unbounded_change_result_requires_two_distinct_governed_time_values() -> None:
