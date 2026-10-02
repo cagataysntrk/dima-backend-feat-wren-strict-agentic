@@ -486,3 +486,18 @@ def pair_coverage(
         key: tuple(sorted(values))
         for key, values in sorted(output.items())
     }
+
+
+class MaterialTerminalKind(StrEnum):
+    EVIDENCE = "EVIDENCE"
+    TERMINAL_LIMIT = "TERMINAL_LIMIT"
+    RETRYABLE = "RETRYABLE"
+
+
+def material_group_may_complete(kind: MaterialTerminalKind) -> bool:
+    """Independent lifecycle law: retryable work is not a terminal material outcome."""
+
+    return kind in {
+        MaterialTerminalKind.EVIDENCE,
+        MaterialTerminalKind.TERMINAL_LIMIT,
+    }
