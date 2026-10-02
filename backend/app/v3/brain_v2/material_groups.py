@@ -127,10 +127,18 @@ def _group(*, session, anchor_requirement_id: str, consumers: tuple[str, ...]):
         obligation_id=anchor_requirement_id,
     )
     consumer_ids = tuple(sorted(dict.fromkeys(consumers)))
+    # Presentation belongs to the requirement/outcome plane, not the
+    # material plane. Reuse the canonical AnalyticalRequestContract identity
+    # with presentation surfaces erased so adding REPORT/EXPLAIN cannot mint a
+    # second native material need.
+    execution_contract = contract.model_copy(
+        update={"requested_output_surfaces": ()}
+    )
+    material_fingerprint = execution_contract.material_fingerprint
     identity = {
         "scope_version_id": brief.scope.scope_version.version_id,
         "consumer_requirement_ids": list(consumer_ids),
-        "material_fingerprint": contract.material_fingerprint,
+        "material_fingerprint": material_fingerprint,
     }
     digest = hashlib.sha256(_canonical(identity).encode("utf-8")).hexdigest()
     return MaterialGroup(
@@ -142,7 +150,7 @@ def _group(*, session, anchor_requirement_id: str, consumers: tuple[str, ...]):
         required_dimension_refs=tuple(dict.fromkeys(contract.dimension_refs)),
         required_periods=_periods(contract),
         required_filters=_filters(contract),
-        material_fingerprint=contract.material_fingerprint,
+        material_fingerprint=material_fingerprint,
     )
 
 
