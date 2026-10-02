@@ -264,3 +264,50 @@ GREEN proof:
 - provider-free semantic conformance run `37041450560` = SUCCESS.
 
 Owner status: **RANKING ADMISSION GENERIC CLOSURE — GREEN / FREEZE**.
+
+
+### Step 3 — P20 completion derivation family
+
+Intentional provider-free RED:
+
+- conformance run `37041643840`;
+- result: `1 failed, 7 passed`;
+- only failure:
+  `test_p20_terminal_owner_artifact_is_not_blocked_by_stale_process_flag`;
+- exact error: `P20_RESEARCH_SESSION_NOT_SEALED: ACTIVE`.
+
+First wrong boundary:
+
+- `ReportClaimGate._assert_sealed()`;
+- the function already proved every mandatory USER_MUST owner terminal through
+  `VERIFIED` / `LIMITED` or an explicit downstream terminal bridge;
+- it then applied a second, incidental process-lifecycle gate:
+  `session.stopping.status in {COMPLETE, PARTIAL}`;
+- therefore process metadata could contradict already-terminal governed owner truth.
+
+Generic Product fix:
+
+- P20 sealing now derives completion exclusively from mandatory terminal owner artifacts;
+- genuinely open obligations still fail closed;
+- downstream terminal bridges remain exact;
+- P20 still does not mutate or manufacture upstream fulfillment;
+- no analytical, Evidence, security, currentness, or causal authority was relaxed;
+- `owner_adapter.py` unchanged.
+
+Pattern applied:
+
+- Temporal durable-execution pattern: process/workflow execution state is not domain/business truth.
+- Adopted: lifecycle metadata must not become a duplicate completion authority.
+- Deliberately NOT adopted: Temporal runtime, retry machinery, or a second durable state system.
+
+Commits:
+
+- law/reproducer: `1304c4ffb8153b6ce904516b02dbb48923a0b1f8`;
+- Product root fix: `b1eaf0d6bb7f1ddcc1fa17c0aa6962e6d6df0005`;
+- obsolete import cleanup: `b9188a07a97bff7bc1f457e49c393fccfbc45d79`.
+
+GREEN proof:
+
+- provider-free semantic conformance run `37041821483` = SUCCESS.
+
+Owner status: **P20 COMPLETION DERIVATION GENERIC CLOSURE — GREEN / FREEZE**.
