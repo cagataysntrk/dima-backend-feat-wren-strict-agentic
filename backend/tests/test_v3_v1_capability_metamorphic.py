@@ -152,7 +152,7 @@ def test_capability_metamorphic_manifest_is_independent_and_complete():
     assert manifest["schema_version"] == "dima_phase1_capability_metamorphic_v1"
     assert manifest["paid_cognition_required"] is False
     assert manifest["benchmark_case_ids"] == []
-    assert [item["family"] for item in manifest["cases"]] == [
+    expected_families = {
         "scope_currentness",
         "relationship",
         "adaptive",
@@ -160,7 +160,10 @@ def test_capability_metamorphic_manifest_is_independent_and_complete():
         "rca_adaptive",
         "reporting",
         "multi_intent",
-    ]
+    }
+    families = [item["family"] for item in manifest["cases"]]
+    assert set(families) == expected_families
+    assert all(families.count(family) >= 2 for family in expected_families)
     serialized = json.dumps(manifest, sort_keys=True).lower()
     for forbidden in (
         "f04_h",
@@ -522,3 +525,290 @@ def test_alt_multi_intent_compresses_shared_material_without_losing_ranking():
         DEFECTS.candidate_id,
     )
     assert classify_execution_mode(brief).mode == ProductExecutionMode.GUIDED
+
+
+def test_alt_scope_currentness_second_variant_keeps_parent_chain_and_current_period():
+    october = ResearchTimePeriod(
+        source_text="2026-10-01 through 2026-10-31",
+        time_dimension_candidate_id=DATE.candidate_id,
+        start="2026-10-01",
+        end="2026-11-01",
+        role=TemporalRole.MATERIAL_WINDOW,
+    )
+    november = ResearchTimePeriod(
+        source_text="2026-11-01 through 2026-11-30",
+        time_dimension_candidate_id=DATE.candidate_id,
+        start="2026-11-01",
+        end="2026-12-01",
+        role=TemporalRole.MATERIAL_WINDOW,
+    )
+    v1 = ResearchScope(
+        semantic_refs=(ENERGY, LINE, DATE, ALPHA, BETA),
+        time_surfaces=(october.source_text,),
+        periods=(october,),
+        temporal_dimension_ids=(DATE.candidate_id,),
+    )
+    v2 = apply_scope_mutation(
+        v1,
+        ScopeMutation(
+            kind=ScopeMutationKind.NARROW_ENTITY,
+            source_version_id="scope_v1",
+            target_semantic_refs=(ENERGY, LINE, DATE, BETA),
+            target_time_surfaces=(october.source_text,),
+            target_periods=(october,),
+            target_temporal_dimension_ids=(DATE.candidate_id,),
+            reason="Narrow alternate production scope to Beta line.",
+        ),
+    ).current_scope
+    v3 = apply_scope_mutation(
+        v2,
+        ScopeMutation(
+            kind=ScopeMutationKind.CHANGE_PERIOD,
+            source_version_id="scope_v2",
+            target_semantic_refs=v2.semantic_refs,
+            target_time_surfaces=(november.source_text,),
+            target_periods=(november,),
+            target_temporal_dimension_ids=(DATE.candidate_id,),
+            reason="Move the accepted Beta-line analysis to November.",
+        ),
+    ).current_scope
+    assert v3.scope_version == ScopeVersion(
+        version_id="scope_v3",
+        ordinal=3,
+        parent_version_id="scope_v2",
+    )
+    assert ALPHA.candidate_id not in {item.candidate_id for item in v3.semantic_refs}
+    assert v3.periods == (november,)
+
+
+def test_alt_relationship_second_variant_preserves_metric_pair_and_shift_dimension():
+    goal = ResearchQuestion(
+        goal_id="g_alt_relationship_b",
+        kind=ResearchGoalKind.RELATIONSHIP,
+        source_text="Inspect throughput with energy loss by shift.",
+        subject_refs=(THROUGHPUT, ENERGY),
+        related_refs=(SHIFT,),
+        status=ResearchGoalStatus.RESOLVED,
+    )
+    contract = analytical_scope_contract(
+        session=_session(_brief(goal)),
+        obligation_id=goal.goal_id,
+    )
+    assert contract.metric_refs == (THROUGHPUT.candidate_id, ENERGY.candidate_id)
+    assert contract.dimension_refs == (SHIFT.candidate_id,)
+    assert contract.comparison is None
+
+
+def test_alt_adaptive_second_variant_routes_by_typed_requirement_only():
+    goal = ResearchQuestion(
+        goal_id="g_alt_adaptive_b",
+        kind=ResearchGoalKind.BREAKDOWN,
+        source_text="Inspect energy loss by production line.",
+        subject_refs=(ENERGY,),
+        related_refs=(LINE,),
+        status=ResearchGoalStatus.RESOLVED,
+    )
+    requirement = ProductInvestigationRequirement(
+        requirement_id="pir_" + "8" * 20,
+        kind=ProductInvestigationRequirementKind.FOLLOW_VERIFIED_MATERIAL,
+        source_goal_id=goal.goal_id,
+        source_text="Follow exactly one verified material direction if needed.",
+    )
+    decision = classify_execution_mode(
+        _brief(goal),
+        investigation_requirements=(requirement,),
+    )
+    assert decision.mode == ProductExecutionMode.INVESTIGATION
+    assert decision.reason_codes == ("TYPED_ADAPTIVE_INVESTIGATION",)
+
+
+def test_alt_one_pass_rca_second_variant_keeps_effect_candidates_and_grain():
+    period = ResearchTimePeriod(
+        source_text="October 2026 alternate effect period",
+        time_dimension_candidate_id=DATE.candidate_id,
+        start="2026-10-01",
+        end="2026-11-01",
+        role=TemporalRole.EFFECT_PERIOD,
+    )
+    goal = ResearchQuestion(
+        goal_id="g_alt_rca_one_pass_b",
+        kind=ResearchGoalKind.ROOT_CAUSE,
+        source_text="Evaluate defect units versus energy loss for throughput.",
+        subject_refs=(THROUGHPUT, DEFECTS, ENERGY),
+        related_refs=(SHIFT, DATE),
+        causal_competition=CausalCompetitionSurface(
+            effect_semantic_id=THROUGHPUT.candidate_id,
+            candidate_mechanism_semantic_ids=(DEFECTS.candidate_id, ENERGY.candidate_id),
+            diagnostic_dimension_ids=(SHIFT.candidate_id,),
+        ),
+        status=ResearchGoalStatus.RESOLVED,
+    )
+    brief = ResearchBrief(
+        brief_id="rb-alt-rca-one-pass-b",
+        objective=goal.source_text,
+        scope=ResearchScope(
+            semantic_refs=(THROUGHPUT, DEFECTS, ENERGY, SHIFT, DATE),
+            time_surfaces=(period.source_text,),
+            periods=(period,),
+            temporal_dimension_ids=(DATE.candidate_id,),
+        ),
+        questions=(goal,),
+        must_requirement_ids=(goal.goal_id,),
+        context_version="ctx-alt-rca-one-pass-b",
+        status=ResearchBriefStatus.READY_FOR_RESEARCH,
+    )
+    requirement = coorigin_material_requirements(_session(brief))[0]
+    assert requirement.required_metric_refs == (
+        THROUGHPUT.candidate_id,
+        DEFECTS.candidate_id,
+        ENERGY.candidate_id,
+    )
+    assert SHIFT.candidate_id in requirement.required_dimension_refs
+    assert _root_cause_execution_mode(
+        aggregate_outcome=AggregateOutcome.NO_DEFENSIBLE_ROOT_CAUSE_ESTABLISHED,
+        analytical_reentry_count=0,
+        unresolved_without_callable_test=False,
+    ) == RootCauseExecutionMode.ONE_PASS
+
+
+def test_alt_adaptive_rca_second_variant_preserves_single_information_gain_reentry():
+    h1 = "p19h_" + "c" * 24
+    h2 = "p19h_" + "d" * 24
+    snapshot = SimpleNamespace(
+        research_session_id="rs_" + "c" * 24,
+        obligation_id="g_alt_rca_adaptive_b",
+        hypotheses=(
+            SimpleNamespace(
+                hypothesis=SimpleNamespace(hypothesis_id=h1),
+                groundings=(
+                    SimpleNamespace(
+                        source_kind=GroundingSourceKind.P14_EVIDENCE,
+                        source_ref="evi_" + "c" * 24,
+                        relation=GroundingRelation.SUPPORTS,
+                    ),
+                ),
+            ),
+            SimpleNamespace(
+                hypothesis=SimpleNamespace(hypothesis_id=h2),
+                groundings=(
+                    SimpleNamespace(
+                        source_kind=GroundingSourceKind.P14_EVIDENCE,
+                        source_ref="evi_" + "d" * 24,
+                        relation=GroundingRelation.SUPPORTS,
+                    ),
+                ),
+            ),
+        ),
+    )
+    candidate = lambda hypothesis_id: SimpleNamespace(
+        hypothesis_id=hypothesis_id,
+        disposition=HypothesisDisposition.RETAINED,
+        identification_limitations=(),
+        causal_identification_refs=(),
+        contribution_class=ContributionClass.UNKNOWN,
+        causal_qualification=CausalQualification.NOT_CLAIMED,
+    )
+    assessment = SimpleNamespace(
+        aggregate_outcome=AggregateOutcome.IN_PROGRESS,
+        candidates=(candidate(h1), candidate(h2)),
+    )
+    request = next_test_request(
+        snapshot=snapshot,
+        assessment=assessment,
+        scope_lineage_id="atl_alt_rca_b",
+        scope_version_id="scope_v1",
+    )
+    assert request is not None
+    callability = SimpleNamespace(
+        remaining_followup_native_turns=1,
+        action_profile=_AdaptiveProfile(),
+        investigation=SimpleNamespace(nodes=(), max_contract_depth=1),
+    )
+    assert discriminating_test_is_callable(
+        snapshot=callability,
+        request=request,
+        evidence_surface_available=True,
+    )
+
+
+def test_alt_reporting_second_variant_keeps_deliverable_separate_from_analytics():
+    goal = ResearchQuestion(
+        goal_id="g_alt_report_metric_b",
+        kind=ResearchGoalKind.BREAKDOWN,
+        source_text="Report energy loss by production line.",
+        subject_refs=(ENERGY,),
+        related_refs=(LINE,),
+        status=ResearchGoalStatus.RESOLVED,
+    )
+    brief = _brief(goal, report=True)
+    projected = (
+        ProductRequirementFulfillment(
+            requirement_id=goal.goal_id,
+            requirement_kind=ProductRequirementKind.ANALYTICAL,
+            state=ProductRequirementState.VERIFIED,
+            fulfilled_by_ref="evi_" + "e" * 24,
+        ),
+        ProductRequirementFulfillment(
+            requirement_id="d_alt_report",
+            requirement_kind=ProductRequirementKind.DELIVERABLE,
+            state=ProductRequirementState.FULFILLED,
+            fulfilled_by_ref="p20r_" + "e" * 24,
+        ),
+    )
+    ledger = HeadlessProductComposer._completion_ledger(
+        brief=brief,
+        projected=projected,
+        terminal=ProductCompositionTerminal.REPORT,
+    )
+    assert ledger.process_complete is True
+    assert ledger.requirement_complete is True
+    assert len(ledger.fulfillments) == 2
+
+
+def test_alt_multi_intent_second_variant_shares_material_independent_of_requirement_order():
+    fragment = "Rank energy loss and inspect defect units together by production line."
+    rank = ResearchQuestion(
+        goal_id="g_alt_rank_b",
+        kind=ResearchGoalKind.RANKING,
+        source_text=fragment,
+        source_fragment_identity="fragment-sha256:" + "e" * 64,
+        subject_refs=(LINE, ENERGY),
+        ranking=RankingSurface(
+            text="top production lines",
+            direction="desc",
+            limit=None,
+            measure_semantic_id=ENERGY.candidate_id,
+        ),
+        status=ResearchGoalStatus.RESOLVED,
+    )
+    relationship = ResearchQuestion(
+        goal_id="g_alt_rel_b",
+        kind=ResearchGoalKind.RELATIONSHIP,
+        source_text=fragment,
+        source_fragment_identity="fragment-sha256:" + "e" * 64,
+        subject_refs=(ENERGY, DEFECTS),
+        related_refs=(LINE,),
+        status=ResearchGoalStatus.RESOLVED,
+    )
+    brief_a = ResearchBrief(
+        brief_id="rb-alt-multi-b-a",
+        objective=fragment,
+        scope=ResearchScope(semantic_refs=(ENERGY, DEFECTS, LINE)),
+        questions=(rank, relationship),
+        must_requirement_ids=(rank.goal_id, relationship.goal_id),
+        context_version="ctx-alt-multi-b",
+        status=ResearchBriefStatus.READY_FOR_RESEARCH,
+    )
+    brief_b = brief_a.model_copy(
+        update={
+            "brief_id": "rb-alt-multi-b-b",
+            "questions": (relationship, rank),
+            "must_requirement_ids": (relationship.goal_id, rank.goal_id),
+        }
+    )
+    req_a = coorigin_material_requirements(_session(brief_a))[0]
+    req_b = coorigin_material_requirements(_session(brief_b))[0]
+    assert set(req_a.source_goal_ids) == {rank.goal_id, relationship.goal_id}
+    assert set(req_b.source_goal_ids) == {rank.goal_id, relationship.goal_id}
+    assert req_a.required_metric_refs == req_b.required_metric_refs
+    assert req_a.required_dimension_refs == req_b.required_dimension_refs

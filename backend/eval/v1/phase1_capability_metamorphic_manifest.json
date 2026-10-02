@@ -69,6 +69,77 @@
         "date",
         "wording"
       ]
+    },
+    {
+      "case_id": "M_SCOPE_CURRENTNESS_ALT_B",
+      "family": "scope_currentness",
+      "mutations": [
+        "entity",
+        "date",
+        "wording",
+        "period"
+      ]
+    },
+    {
+      "case_id": "M_RELATIONSHIP_ALT_B",
+      "family": "relationship",
+      "mutations": [
+        "metrics",
+        "dimension",
+        "entity_count",
+        "wording"
+      ]
+    },
+    {
+      "case_id": "M_ADAPTIVE_ALT_B",
+      "family": "adaptive",
+      "mutations": [
+        "metric",
+        "dimension",
+        "evidence_need",
+        "wording"
+      ]
+    },
+    {
+      "case_id": "M_RCA_ONE_PASS_ALT_B",
+      "family": "rca_one_pass",
+      "mutations": [
+        "effect_metric",
+        "candidate_mechanisms",
+        "dimension",
+        "dates",
+        "wording"
+      ]
+    },
+    {
+      "case_id": "M_RCA_ADAPTIVE_ALT_B",
+      "family": "rca_adaptive",
+      "mutations": [
+        "candidate_set",
+        "evidence_need",
+        "wording"
+      ]
+    },
+    {
+      "case_id": "M_REPORTING_ALT_B",
+      "family": "reporting",
+      "mutations": [
+        "metric",
+        "dimension",
+        "deliverable",
+        "report_wording"
+      ]
+    },
+    {
+      "case_id": "M_MULTI_INTENT_ALT_B",
+      "family": "multi_intent",
+      "mutations": [
+        "ranking_metric",
+        "relationship_metric",
+        "dimension",
+        "requirement_order",
+        "wording"
+      ]
     }
   ],
   "paid_cognition_required": false,

@@ -537,7 +537,7 @@ class ScopePatchStateMachine(RuleBasedStateMachine):
 
 TestScopePatchStateMachine = ScopePatchStateMachine.TestCase
 TestScopePatchStateMachine.settings = settings(
-    max_examples=200,
+    max_examples=1000,
     stateful_step_count=30,
     deadline=None,
 )
