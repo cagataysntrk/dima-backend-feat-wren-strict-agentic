@@ -52,32 +52,33 @@
     {
       "id": "T5",
       "capability_id": "brain.t5.relationship_observational",
-      "owner": "Research/P17 + observational P18 projection",
-      "proof_class": "PROVIDER_FREE_OWNER_PROOF",
+      "owner": "BrainV2Service/LangGraph -> shared MaterialGroup -> Evidence -> P18",
+      "proof_class": "BRAIN_V2_FORWARD_PROVIDER_FREE",
       "proofs": [
-        "backend/tests/test_v3_product_composition.py::test_relationship_composes_p14_material_p17_and_p18_without_creating_policy",
-        "backend/tests/test_v3_product_composition.py::test_r8_a_coorigin_relationship_reuses_verified_sibling_material_without_second_p14_turn",
+        "backend/tests/test_v3_brain_v2_forward_phase2.py::test_observational_relationship_uses_one_material_then_p18_only",
+        "backend/tests/test_v3_brain_v2_final_mechanical.py::test_relationship_report_requires_zero_second_turn_reanalysis",
         "backend/tests/test_v3_v1_capability_metamorphic.py::test_alt_relationship_preserves_two_metrics_and_new_dimension"
       ]
     },
     {
       "id": "T6",
       "capability_id": "brain.t6.report_contextual",
-      "owner": "P20 ReportDocument projection",
-      "proof_class": "PROVIDER_FREE_OWNER_PROOF",
+      "owner": "BrainV2Service/LangGraph presentation continuation -> Completion -> P20",
+      "proof_class": "BRAIN_V2_FORWARD_PROVIDER_FREE",
       "proofs": [
-        "backend/tests/test_v3_product_composition.py::test_report_is_written_only_through_p20_seal_and_covers_every_user_must",
-        "backend/tests/test_v3_p20_report_document.py::test_p14_to_p19_authorities_are_unchanged_by_report_seal",
+        "backend/tests/test_v3_brain_v2_forward_phase2.py::test_relationship_report_continuation_reuses_terminal_authority_zero_reanalysis",
+        "backend/tests/test_v3_brain_v2_graph.py::test_report_only_continuation_reuses_research_and_opens_zero_analytics",
         "backend/tests/test_v3_v1_capability_metamorphic.py::test_alt_reporting_separates_process_and_requirement_completion"
       ]
     },
     {
       "id": "T7",
       "capability_id": "brain.t7.multi_intent",
-      "owner": "Research material contract + Headless Product composition",
-      "proof_class": "PROVIDER_FREE_OWNER_PROOF",
+      "owner": "BrainV2Service/LangGraph -> one shared MaterialGroup -> Evidence/P18 -> Completion -> P20",
+      "proof_class": "BRAIN_V2_FORWARD_PROVIDER_FREE",
       "proofs": [
-        "backend/tests/test_v3_product_composition.py::test_r8_a_coorigin_relationship_reuses_verified_sibling_material_without_second_p14_turn",
+        "backend/tests/test_v3_brain_v2_forward_phase2.py::test_multi_intent_ranking_relationship_report_shares_one_material_group",
+        "backend/tests/test_v3_brain_v2_final_mechanical.py::test_multi_intent_requires_one_shared_material_and_full_terminal_accounting",
         "backend/tests/test_v3_v1_capability_metamorphic.py::test_alt_multi_intent_compresses_shared_material_without_losing_ranking"
       ]
     }
@@ -90,5 +91,8 @@
     "T6",
     "T7"
   ],
-  "genericity_rule": "No regex/fuzzy/morph routing, benchmark-specific branches, month/department/metric literals, provider-limit inflation, second analytics engine, or frontend work."
+  "genericity_rule": "No regex/fuzzy/morph routing, benchmark-specific branches, month/department/metric literals, provider-limit inflation, second analytics engine, or frontend work.",
+  "forward_runtime": "BRAIN_V2_LANGGRAPH",
+  "legacy_composer": "FALLBACK_ONLY",
+  "agent_api": "DISABLED_FINAL_CERTIFICATION"
 }

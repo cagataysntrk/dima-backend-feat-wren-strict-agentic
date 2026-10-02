@@ -32,6 +32,9 @@ def test_phase2_manifest_is_exact_t1_t7_headless_panel():
     assert manifest["phase1_status"]=="ACCEPTED_CARRY_FORWARD"
     assert manifest["frontend"]=="NOT_IMPLEMENTED"
     assert manifest["thirty_case"]=="NOT_RUN"
+    assert manifest["forward_runtime"]=="BRAIN_V2_LANGGRAPH"
+    assert manifest["legacy_composer"]=="FALLBACK_ONLY"
+    assert manifest["agent_api"]=="DISABLED_FINAL_CERTIFICATION"
     assert [item["id"] for item in manifest["capabilities"]]==[
         "T1","T2","T3","T4","T5","T6","T7"
     ]
@@ -84,16 +87,17 @@ def test_phase2_capability_catalog_matches_manifest():
     }==expected-always_supported
 
 
-def test_t5_observational_relationship_does_not_require_policy_or_claim_causality():
-    composition=(ROOT / "app" / "v3" / "product" / "composition.py").read_text(
+def test_t5_observational_relationship_is_owned_by_forward_p18_without_causal_promotion():
+    owner=(ROOT / "app" / "v3" / "brain_v2" / "owner_adapter.py").read_text(
         encoding="utf-8"
     )
     projection=(ROOT / "app" / "v3" / "business_relationship_v1.py").read_text(
         encoding="utf-8"
     )
-    assert "goal.relationship_intent != RelationshipIntent.OBSERVATIONAL" in composition
-    assert "RelationshipPolicyResolutionStatus.NOT_REQUIRED" in projection
-    assert "causality_state=RelationshipLayerState.NOT_ESTABLISHED" not in projection
+    assert "def adjudicate_relationship(" in owner
+    assert "goal.relationship_intent" in owner
+    assert "RelationshipIntent.OBSERVATIONAL" in owner
+    assert "native_session_token=None" in owner
     assert (
         "causality_state: RelationshipLayerState = "
         "RelationshipLayerState.NOT_ESTABLISHED"
@@ -120,20 +124,25 @@ def test_t6_contextual_report_is_projection_only_and_cannot_reopen_analytics():
         assert forbidden not in report
 
 
-def test_t7_multi_intent_remains_material_contract_composition_not_query_planning():
-    composition=(ROOT / "app" / "v3" / "product" / "composition.py").read_text(
+def test_t7_multi_intent_is_material_group_plus_langgraph_not_legacy_composition():
+    groups=(ROOT / "app" / "v3" / "brain_v2" / "material_groups.py").read_text(
         encoding="utf-8"
     )
-    assert "coorigin_material_requirements" in composition
-    for forbidden in (
-        "SELECT ",
-        "GROUP BY",
-        "JOIN ",
-        "construct_notebook_query",
-        "NativeEngineBridge",
-        "MetabaseAgentClient",
-    ):
-        assert forbidden not in composition
+    graph=(ROOT / "app" / "v3" / "brain_v2" / "graph.py").read_text(
+        encoding="utf-8"
+    )
+    assert "class MaterialGroup" in groups
+    assert "consumer_requirement_ids" in groups
+    assert 'builder.add_node("requirement_dispatch"' in graph
+    assert 'builder.add_node("completion_evaluate"' in graph
+    for source in (groups, graph):
+        for forbidden in (
+            "SELECT ",
+            "GROUP BY",
+            "HeadlessProductComposer",
+            "MetabaseAgentClient",
+        ):
+            assert forbidden not in source
 
 
 def test_phase2_product_surface_contains_no_frontend_or_benchmark_routing():
