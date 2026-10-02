@@ -200,6 +200,12 @@ class DraftRanking(Frozen):
     source_text: str = Field(min_length=1)
     basis: RankingBasis = RankingBasis.LEVEL
 
+    @model_validator(mode="after")
+    def coherent_basis(self):
+        if self.basis == RankingBasis.CHANGE and self.measure_semantic_id is None:
+            raise ValueError("change ranking requires one explicit governed measure")
+        return self
+
 
 class ModelCausalCompetitionDraft(Frozen):
     effect_semantic_id: str = Field(min_length=1)
@@ -561,6 +567,11 @@ Authority rules:
   independently requested analytical obligation, set material_parent_goal_key to null. This typed
   parentage records semantic obligation ownership only; it never specifies SQL, MBQL or query shape.
 - ranking.limit is null unless the user explicitly requested a bounded top-N/result count. Never invent top-N.
+- ranking.basis=LEVEL means rank the accepted metric level or magnitude.
+- ranking.basis=CHANGE means rank baseline-to-comparison change of one accepted metric. CHANGE
+  requires one explicit ranking.measure_semantic_id plus exactly one BASELINE_PERIOD and one
+  COMPARISON_PERIOD over the same governed time dimension. Never encode CHANGE as one pooled
+  MATERIAL_WINDOW; intake records semantic authority only and performs no calculation.
 - ranking.measure_semantic_id is set only when the user explicitly identifies one governed metric/KPI
   as the ranking basis. With multiple metrics and no explicit single basis, keep it null; do not pick
   the first metric or manufacture a composite score.
