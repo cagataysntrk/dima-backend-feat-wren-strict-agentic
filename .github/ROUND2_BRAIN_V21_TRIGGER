@@ -2,3 +2,5 @@ authorized_at=2026-10-02
 candidate=ce8704d6a0db10dc3fb6b1a7e5d0f86afe9ccdc9
 manifest=dima-neutral-feature-benchmark-round2-v2
 single_run=true
+harness_retry=1
+reason=sealed_orchestration_budget_contract
