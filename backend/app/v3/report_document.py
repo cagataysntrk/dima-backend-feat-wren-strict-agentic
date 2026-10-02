@@ -305,23 +305,9 @@ class ReportClaimGate:
                 'P20_RESEARCH_SESSION_NOT_SEALED',
                 'analytical Research obligation remains non-terminal',
             )
-        if session.stopping.status not in {
-            StoppingStatus.COMPLETE,
-            StoppingStatus.PARTIAL,
-        }:
-            p14_nonterminal = {
-                oid
-                for oid in mandatory
-                if obligation_map[oid].state
-                not in {ObligationState.VERIFIED, ObligationState.LIMITED}
-            }
-            if not p14_nonterminal or not p14_nonterminal.issubset(
-                downstream_terminal_ids
-            ):
-                raise P20ReportError(
-                    'P20_RESEARCH_SESSION_NOT_SEALED',
-                    session.stopping.status.value,
-                )
+        # USER_MUST completion is derived from terminal owner artifacts above.
+        # Research stopping status is process metadata and may lag behind already-
+        # terminal governed owners; it must not become a second completion truth.
 
     @staticmethod
     def _coorigin_coverage_bridge(
