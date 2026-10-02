@@ -464,3 +464,90 @@ Next legal action:
   `INTAKE_CAUSAL_CHANGE_TEMPORAL_MATERIAL_REQUIRED`;
 - compare accepted intake authority, analytical material authority and Evidence-window requirements;
 - create symbolic/provider-free siblings before any Product semantic change.
+
+
+### Step 7 — temporal-role separation closure
+
+Frozen counterexample forensics:
+
+- F07_M terminated before any native/material work;
+- provider calls: intake only;
+- first invalid boundary:
+  `INTAKE_CAUSAL_CHANGE_TEMPORAL_MATERIAL_REQUIRED`;
+- the provider-facing typed contract allowed
+  `effect_observation=CHANGE + temporal_material.mode=none`, while deterministic
+  canonicalization incorrectly equated CHANGE with explicit user calendar authority.
+
+Reference patterns consulted:
+
+- Metabase date/time behavior: a time-series observation/breakout is distinct from an
+  explicit period-over-period comparison. Adopted the separation between a governed time
+  axis and explicit calendar comparison/filter authority.
+- Dima's own permanent Law 6: material window, baseline/comparison, effect period and
+  Evidence window are separate roles; wider Evidence observation is not automatically
+  scope expansion.
+- No Metabase query planner, inferred date range or prompt vocabulary was copied into
+  Dima.
+
+Intentional symbolic RED:
+
+- independent semantic law added:
+  `CHANGE + no explicit period + exactly one governed temporal dimension`
+  => `OBSERVE_GOVERNED_TIME`;
+- symbolic Product reproducer used only
+  `metric.effect`, `metric.candidate_1/2`, `dimension.t`;
+- run `37049527142` = RED exactly at
+  `INTAKE_CAUSAL_CHANGE_TEMPORAL_MATERIAL_REQUIRED`
+  (73 passed / 1 intentional failure).
+
+Generic closure:
+
+- new owner module `research_temporal_authority.py` resolves temporal authority without
+  wording heuristics;
+- explicit user periods remain exact bounded authority;
+- no explicit period + one governed time axis becomes observation-only CHANGE authority;
+- multiple governed time axes => typed CLARIFY;
+- no governed time axis => typed UNSUPPORTED;
+- no calendar period/baseline/comparison is invented;
+- accepted scope carries the governed observation axis but no fabricated time surface;
+- `AnalyticalRequestContract` now permits temporal observation as its own typed authority;
+- native validation requires the governed time breakout and forbids an unaccepted temporal
+  predicate when no user calendar bounds exist;
+- result coverage requires at least two distinct governed temporal values;
+- explicit bounded period/comparison behavior remains unchanged.
+
+Provider-free proof:
+
+- semantic/stateful + temporal positive/negative siblings run
+  `37050408331` = SUCCESS;
+- 79 tests passed;
+- provider/model calls = 0;
+- engine diff = 0;
+- no graph or `owner_adapter.py` temporal semantic branch was added.
+
+Owner status: **TEMPORAL ROLE SEPARATION — GREEN / FREEZE**.
+
+### Step 8 — scope-patch locality family opened
+
+Reference patterns:
+
+- Google AIP-134: partial update changes only explicitly selected update fields; omitted
+  fields are not implicit replacement authority.
+- RFC 7396: absent object members remain untouched; explicit null carries removal
+  semantics.
+- Adopt the locality/explicitness law only. Do not introduce FieldMask/JSON Merge Patch
+  runtime or wire-format dependencies into Dima.
+
+Frozen seeds to classify next:
+
+- F10_S;
+- F10_M;
+- F10_H.
+
+Next legal action:
+
+- locate each seed's first wrong semantic boundary;
+- derive one symbolic ScopePatch law + generated siblings;
+- preserve exactly: absent facet = unchanged, explicit set/clear only changes that facet,
+  independent facets commute, repeated identical patch is idempotent, stale Evidence never
+  becomes current again.
