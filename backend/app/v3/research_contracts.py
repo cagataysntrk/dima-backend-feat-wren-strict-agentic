@@ -24,6 +24,13 @@ class PresentationKind(StrEnum):
     NONE = "none"
 
 
+class RankingBasis(StrEnum):
+    """Accepted semantic quantity being ranked; HOW remains Metabot-owned."""
+
+    LEVEL = "level"
+    CHANGE = "change"
+
+
 class RankingSurface(FrozenModel):
     """Accepted user/product ranking obligation, not automatically native ORDER BY."""
 
@@ -31,6 +38,7 @@ class RankingSurface(FrozenModel):
     direction: Literal["asc", "desc", "unspecified"] = "unspecified"
     limit: int | None = Field(default=None, ge=1, le=1000)
     measure_semantic_id: str | None = Field(default=None, min_length=1)
+    basis: RankingBasis = RankingBasis.LEVEL
 
 
 class ComparisonRole(StrEnum):
