@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
-"""Frozen Round-2 30-case benchmark for Dima Brain V2.1 / LangGraph.
+"""Surgical post-closure live recovery probe for Dima Brain V2.1 / LangGraph.
 
-This harness intentionally preserves the exact 2026-09-27 Round-2 prompt corpus
-and neutral fixture while executing only the accepted BrainV2Service runtime.
-It records raw governed outputs, provenance, provider telemetry, latency, and
-mechanical safety signals. Final Product Quality scoring is manual and happens
-from the artifact; harness PASS is never the final score.
+The immutable Round-2 manifest remains the source counterexample corpus, but this
+harness executes exactly one explicitly authorized case per run. Production code
+never sees the case id. Mechanical/contract RED exits non-zero; Product quality is
+manually adjudicated from the artifact before another paid case is authorized.
 """
 from __future__ import annotations
 
@@ -513,15 +512,30 @@ def main() -> int:
     ap.add_argument("--image-identity", required=True)
     ap.add_argument("--candidate-product-sha", required=True)
     ap.add_argument("--checkout-sha", required=True)
+    ap.add_argument(
+        "--case-id",
+        action="append",
+        default=[],
+        help="Exactly one frozen eval-side case id is authorized per paid run.",
+    )
     args = ap.parse_args()
 
     if not os.environ.get("DIMA_OPENROUTER_API_KEY", "").strip():
         raise RuntimeError("DIMA_OPENROUTER_API_KEY required")
 
     manifest = json.loads(args.manifest.read_text(encoding="utf-8"))
-    cases = list(manifest["cases"])
-    if len(cases) != 30:
-        raise RuntimeError("Round-2 requires exactly 30 frozen cases")
+    source_cases = list(manifest["cases"])
+    if len(source_cases) != 30:
+        raise RuntimeError("frozen source corpus must contain exactly 30 cases")
+    if len(args.case_id) != 1:
+        raise RuntimeError("surgical recovery requires exactly one --case-id")
+    by_id = {str(item["id"]): item for item in source_cases}
+    if len(by_id) != 30:
+        raise RuntimeError("frozen source case ids must be unique")
+    selected_id = str(args.case_id[0])
+    if selected_id not in by_id:
+        raise RuntimeError(f"unknown frozen recovery case id: {selected_id}")
+    cases = [by_id[selected_id]]
 
     binding_manifest = load_binding_manifest(args.binding_manifest)
     catalog = build_catalog(binding_manifest)
@@ -564,7 +578,7 @@ def main() -> int:
             )
             observations.append(result)
             checkpoint = {
-                "schema_version": "dima_brain_v2_1_round2_checkpoint_v1",
+                "schema_version": "dima_brain_v2_1_recovery_live_checkpoint_v1",
                 "candidate_product_sha": args.candidate_product_sha,
                 "checkout_sha": args.checkout_sha,
                 "completed_case_count": len(observations),
@@ -587,7 +601,7 @@ def main() -> int:
     latencies = [int(x["latency_ms"]) for x in observations]
     ordered = sorted(latencies)
     report = {
-        "schema_version": "dima_brain_v2_1_round2_benchmark_v1",
+        "schema_version": "dima_brain_v2_1_recovery_live_v1",
         "system": "DIMA_BRAIN_V2_1_LANGGRAPH",
         "candidate_product_sha": args.candidate_product_sha,
         "checkout_sha": args.checkout_sha,
@@ -601,6 +615,8 @@ def main() -> int:
         },
         "manifest_version": manifest["version"],
         "fixture": manifest["fixture"],
+        "source_case_count": len(source_cases),
+        "selected_case_ids": [selected_id],
         "case_count": len(observations),
         "raw_harness_passed": sum(bool(x["raw_harness_pass"]) for x in observations),
         "raw_harness_failed": sum(not bool(x["raw_harness_pass"]) for x in observations),
@@ -637,7 +653,7 @@ def main() -> int:
         "provider_cost": provider_total.get("provider_reported_cost"),
         "total_latency_ms": report["total_latency_ms"],
     }, ensure_ascii=False, sort_keys=True))
-    return 0
+    return 0 if report["raw_harness_failed"] == 0 else 2
 
 
 if __name__ == "__main__":
