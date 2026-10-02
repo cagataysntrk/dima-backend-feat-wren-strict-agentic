@@ -468,6 +468,56 @@ def test_verified_material_result_reports_parent_pending_without_replay():
     assert exc.value.code == "P14_RESULT_DEPENDENCY_PARENT_PENDING"
 
 
+def test_result_dependency_provenance_changes_execution_material_identity():
+    import app.v3.research_result_dependency as dependency_module
+
+    base = AnalyticalRequestContract(
+        authority_id="authority-result-provenance",
+        request_ref="request-result-provenance",
+        semantic_context_version=CONTEXT,
+        scope_identity=AnalyticalScopeIdentity(
+            lineage_id="atl-result-provenance",
+            version_id="scope_v1",
+        ),
+        scope_fingerprint="d" * 64,
+        metric_refs=("cand_sales_order_count",),
+        dimension_refs=("cand_sales_order_channel",),
+    )
+    parent_result = {
+        "data": {
+            "cols": [
+                {"id": 20, "field_ref": ["field", 20, None]},
+                {"field_ref": ["aggregation", 0]},
+            ],
+            "rows": [["Web", 41]],
+        }
+    }
+    common = {
+        "base_contract": base,
+        "source_goal_id": "g-parent",
+        "source_evidence_id": "evidence-parent",
+        "source_receipt_id": "receipt-parent",
+        "dimension_semantic_id": "cand_sales_order_channel",
+        "native_field_id": 20,
+        "parent_result": parent_result,
+    }
+
+    first = dependency_module.resolve_first_ranked_entity(
+        source_result_hash="1" * 64,
+        **common,
+    )
+    second = dependency_module.resolve_first_ranked_entity(
+        source_result_hash="2" * 64,
+        **common,
+    )
+
+    assert first.selected_value == second.selected_value == "Web"
+    assert first.contract.scope_identity == second.contract.scope_identity
+    assert first.contract.scope_fingerprint == second.contract.scope_fingerprint
+    assert first.contract.filters[-1].semantic_ref != second.contract.filters[-1].semantic_ref
+    assert first.contract.material_fingerprint != second.contract.material_fingerprint
+
+
 def test_native_request_context_preloads_only_required_governed_metrics():
     engine = db_engine()
     seed(engine)
