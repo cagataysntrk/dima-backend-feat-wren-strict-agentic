@@ -83,6 +83,8 @@ def session(value):
         accepted_brief=value,
         context_version=value.context_version,
         authority_id="atc_test",
+        session_id="rs_" + "a" * 24,
+        lineage_id="atl_material_groups",
     )
 
 
