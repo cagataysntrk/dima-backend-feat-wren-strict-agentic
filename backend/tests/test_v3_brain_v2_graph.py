@@ -459,6 +459,7 @@ def test_discovery_graph_emits_governed_boundary_span_sequence() -> None:
         "dima.evidence.admit",
         "dima.discovery.project_candidates",
         "dima.p19.assess",
+        "dima.completion.evaluate",
         "dima.p20.report",
         "dima.completion.evaluate",
     ]

@@ -583,10 +583,14 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
 
     def after_p19(state: BrainStatePayload) -> str:
         current = _snapshot(state)
-        if current.latest_p19_route == BrainP19Route.SUFFICIENT:
-            return "report"
-        if current.latest_p19_route == BrainP19Route.INCONCLUSIVE:
-            return "honest_stop"
+        if current.latest_p19_route in {
+            BrainP19Route.SUFFICIENT,
+            BrainP19Route.INCONCLUSIVE,
+        }:
+            # P19 is an epistemic terminal, not presentation authority.
+            # Completion must account for the RCA requirement before P20 can
+            # consume it, including governed INCONCLUSIVE outcomes.
+            return "completion_evaluate"
         if current.latest_p19_route == BrainP19Route.NEXT_TEST_REQUIRED:
             if current.adaptive_reentries < current.max_adaptive_reentries:
                 return "p17_next_test"
@@ -663,7 +667,7 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
         "p19_assess",
         after_p19,
         {
-            "report": "report",
+            "completion_evaluate": "completion_evaluate",
             "honest_stop": "honest_stop",
             "p17_next_test": "p17_next_test",
         },
