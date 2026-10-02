@@ -1,62 +1,61 @@
-# Dima Metabase Platform — Developer Guide
+# Dima Brain V2.1 — Developer Guide
 
-Current branch: `feat/dima-metabase-platform`
+Current recovery branch: `feat/dima-brain-v2-1-specification-closure`.
 
-## Canonical product
+## Canonical architecture
 
-~~~text
-DIMA CORE
-+
-METABASE / METABOT
-=
-CANONICAL PRODUCTION ARCHITECTURE
-~~~
+```text
+Brain V2.1 = frozen architecture
+Metabase / Metabot = single analytical cognition engine
+LangGraph / BrainV2Service = single forward orchestrator
+Dima = intent + scope + material + Evidence + epistemics + completion + synthesis
+engine = dima.9 (frozen)
+frontend = forbidden during this recovery
+```
 
-Wren/Ask-v2 is historical only. Do not restore Wren runtime, dual-engine abstractions, old frontend,
-or deleted operation trees.
+Read first:
 
-## Read first
+1. `belgeler/metabase/README.md`
+2. `belgeler/metabase/DIMA_BRAIN_V2_1_FINAL_ARCHITECTURE.md`
+3. `belgeler/metabase/DIMA_BRAIN_V2_1_ENGINEERING_PLAYBOOK.md`
+4. `belgeler/metabase/DIMA_BRAIN_V2_1_CURRENT_HANDOFF.md`
+5. `belgeler/metabase/DIMA_BRAIN_V2_1_SPECIFICATION_CLOSURE_PROGRESS.md`
 
-1. `backend/belgeler/metabase/DIMA_METABASE_CORE_CLOSURE_FINAL_ROADMAP.md`
-2. `backend/belgeler/metabase/DIMA_METABASE_CURRENT_PRODUCT_PLAN.md`
-3. `backend/belgeler/metabase/DIMA_METABASE_DECISION_RECEIPTS.md`
-4. `backend/belgeler/metabase/DIMA_METABASE_CURRENT_HANDOFF.md`
-5. relevant code + focused tests
+## Current recovery
 
-## Current state
+The broad Round-2 benchmark is immutable evidence: run `37027548693`, score `60.5/100`.
+Do not rerun it. Close the semantic space generically.
 
-- Repository canonicalization: SEALED
-- P14-P21: SEALED
-- Human Adoption: SEALED
-- ActionAuthorization: SEALED
-- Core Closure A: SEALED
-- Core Closure B: ACTIVE
-- Final target: SEALED NEUTRAL-COMPARISON CANDIDATE
-- External production execution: deferred
-- UI/UX implementation: forbidden
-- DEV80 / Validation50 / Hidden50: not authorized
+Required loop:
 
-## Engineering rules
+```text
+counterexample
+-> first invalid boundary
+-> exact owner
+-> independent semantic law
+-> provider-free RED
+-> generated/metamorphic siblings
+-> smallest generic root fix
+-> focused provider-free
+-> wider provider-free
+-> freeze
+```
 
-Do not reopen sealed owners without a measured defect. Metabase/Metabot is the sole analytical
-computation/execution owner. Dima owns organizational meaning, evidence, epistemics, reporting,
-decision context and closed-loop organizational authority.
+No fuzzy/regex/morph/prompt semantic authority. No benchmark-ID behavior. No second analytics
+engine. No SQL/MBQL planner in Dima. Do not grow `owner_adapter.py` with unrelated semantic
+branches. Graph remains routing.
 
-Normal failure handling:
+Permanent owners:
 
-~~~text
-FIRST WRONG TRANSITION
-→ OWNER
-→ ROOT CAUSE
-→ GENERIC FIX
-→ FOCUSED PROOF
-~~~
+- P18 = relationship judgment.
+- P19 = RCA judgment.
+- P17 = bounded NextTest control only.
+- P20 = governed synthesis from terminal state.
+- Metabot = analytics/query cognition.
 
-No regex/fuzzy/morph semantic patches. No shadow analytics. No test-specific behavior.
-Provider-free first and CI economy always.
+Provider/model calls are forbidden during deterministic specification closure. One surgical paid
+recovery panel is legal only after all required provider-free gates are GREEN. Broad paid testing
+remains forbidden.
 
-Core B is headless projection/orchestration over sealed owners. It exposes deliberate product DTOs,
-reauthorizes the current Principal, preserves non-oracle behavior, resumes only from durable IDs,
-and introduces no new truth family by default.
-
-Git history is the archive. Do not recreate legacy/archive directories.
+Engine: `d5c60dc9f37a9ec9c5b0117f178146bbcb8dca88` / `0.63.18-dima.9`.
+Do not build a new engine for a Product-owned problem.
