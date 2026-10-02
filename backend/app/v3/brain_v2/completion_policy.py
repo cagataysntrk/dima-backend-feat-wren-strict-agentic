@@ -9,6 +9,23 @@ from dataclasses import dataclass
 
 from app.v3.research import ObligationState
 
+from .activities import MaterialActivityDisposition
+
+
+def material_limitation_disposition(
+    *, obligation_state: str | None
+) -> MaterialActivityDisposition:
+    """Map canonical P14 obligation state to graph material terminality.
+
+    A limitation/status code is not sufficient to make material terminal.
+    Only canonical P14 LIMITED authority is terminal; retryable/delegated
+    material remains WAITING.
+    """
+
+    if obligation_state == ObligationState.LIMITED.value:
+        return MaterialActivityDisposition.LIMITED
+    return MaterialActivityDisposition.WAITING
+
 
 @dataclass(frozen=True)
 class MaterialLimitationTerminal:
