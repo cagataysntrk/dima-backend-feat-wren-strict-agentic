@@ -66,6 +66,35 @@ def ranking_basis_is_coherent(
     return True
 
 
+class ResultDependencyDisposition(StrEnum):
+    WAITING = "WAITING"
+    READY = "READY"
+    LIMITED = "LIMITED"
+    INVALID = "INVALID"
+
+
+def result_dependency_disposition(
+    *,
+    parent_verified: bool,
+    selected_value_count: int,
+    scope_version_unchanged: bool,
+) -> ResultDependencyDisposition:
+    """Independent law for governed parent-result -> child execution binding.
+
+    A dependency may narrow one execution only. It never mutates accepted user
+    scope, and it becomes runnable only from exactly one value in VERIFIED
+    parent material.
+    """
+
+    if not scope_version_unchanged:
+        return ResultDependencyDisposition.INVALID
+    if not parent_verified:
+        return ResultDependencyDisposition.WAITING
+    if selected_value_count == 1:
+        return ResultDependencyDisposition.READY
+    return ResultDependencyDisposition.LIMITED
+
+
 class MutationKind(StrEnum):
     ADD = "ADD"
     REMOVE = "REMOVE"
