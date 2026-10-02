@@ -339,6 +339,34 @@ def test_goal_can_declare_typed_parent_result_selection_dependency() -> None:
     assert goal.result_dependency.dimension_semantic_id == "dimension.d1"
 
 
+@pytest.mark.parametrize(
+    (
+        "source_has_dimension",
+        "scope_has_dimension",
+        "child_projects_dimension",
+        "expected",
+    ),
+    (
+        (True, True, False, True),
+        (True, True, True, True),
+        (False, True, False, False),
+        (True, False, False, False),
+        (False, False, True, False),
+    ),
+)
+def test_result_dependency_dimension_role_law_matrix(
+    source_has_dimension: bool,
+    scope_has_dimension: bool,
+    child_projects_dimension: bool,
+    expected: bool,
+) -> None:
+    assert result_dependency_dimension_roles_are_coherent(
+        source_material_has_dimension=source_has_dimension,
+        accepted_scope_has_dimension=scope_has_dimension,
+        child_projects_dimension=child_projects_dimension,
+    ) is expected
+
+
 def test_result_dependency_dimension_may_be_filter_only_in_child() -> None:
     assert result_dependency_dimension_roles_are_coherent(
         source_material_has_dimension=True,
