@@ -22,6 +22,11 @@ evidence; executable CI is the enforcement authority.
 6. Normal discovery is Metabot -> VERIFIED Evidence -> deterministic
    CandidateSetProjector -> P19. P17 is only an information-gain re-entry
    controller after a typed P19 NextTest request (plus bounded audit surfaces).
+6a. Normal observational relationship is VERIFIED Evidence -> bounded P18
+    interpretation -> immutable RelationshipResult. P17 provider calls are zero.
+    P18 may classify only the exact existing Evidence identity set and cannot
+    execute analytics, mutate scope, invent semantic identities, promote
+    causality, or require BUSINESS_POLICY for OBSERVATIONAL intent.
 7. P20 consumes terminal governed outcomes. It does not reopen analytics or
    decide whether upstream requirements were fulfilled.
 8. Semantic truth is independent from physical SQL/MBQL shape. Native
@@ -37,7 +42,8 @@ evidence; executable CI is the enforcement authority.
 
 Executable mapping:
 - `test_v3_brain_v2_runtime_guardrails.py`: one runtime, legacy ban, Agent API,
-  benchmark/case-id ban, and no normal-discovery P17 graph route.
+  benchmark/case-id ban, no normal-discovery P17 graph route, and no normal
+  observational-relationship P17 owner route.
 - material/requirement stateful tests: material sharing, report material +0,
   ordering/metamorphic invariance.
 - graph/owner integration: P17 discovery ban, completion-before-P20,
