@@ -1784,31 +1784,129 @@ def _assert_material_filter_scope(
     observation: NativeMaterialObservation,
     bindings: Mapping[str, NativeMaterialBinding],
 ) -> None:
-    unmatched = list(observation.filters)
-    if len(unmatched) != len(contract.filters):
-        raise ResearchAnalyticalScopeError(
-            "R1_NATIVE_FILTER_SCOPE_MISMATCH",
-            "material filter count differs from accepted scope",
+    """Admit exact governed entity membership independent of predicate packing.
+
+    Accepted ENTITY_VALUE refs are semantic scope. Multiple accepted values may
+    bind to the same governed physical field, while Metabase may represent that
+    exact membership set as one multi-value equality/in predicate. Predicate
+    count is therefore not authority.
+
+    The R5 observation deliberately exposes atomic filter material without the
+    compound boolean tree, so more than one observed predicate for the same
+    field remains ambiguous and fails closed rather than guessing AND/OR.
+    """
+
+    def token(value: Any) -> str:
+        return json.dumps(
+            value,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+            allow_nan=False,
         )
+
+    expected_by_field: dict[tuple[int, int | None], set[str]] = {}
+    expected_refs_by_field: dict[tuple[int, int | None], set[str]] = {}
     for expected in contract.filters:
         binding = _material_binding(bindings, expected.source_candidate_id)
         field_identity = _material_field_identity(binding)
-        match = next(
-            (
-                item
-                for item in unmatched
-                if _observed_field_identity(item) == field_identity
-                and item.operator == "="
-                and tuple(item.values) == (expected.value,)
-            ),
-            None,
+        expected_by_field.setdefault(field_identity, set()).add(
+            token(expected.value)
         )
-        if match is None:
+        expected_refs_by_field.setdefault(field_identity, set()).add(
+            expected.source_candidate_id
+        )
+
+    observed_by_field: dict[tuple[int, int | None], set[str]] = {}
+    for item in observation.filters:
+        field_identity = _observed_field_identity(item)
+        if field_identity in observed_by_field:
+            raise ResearchAnalyticalScopeError(
+                "R1_NATIVE_FILTER_SHAPE_UNSUPPORTED",
+                (
+                    "multiple native atomic predicates target one governed "
+                    "filter field; boolean composition is not observable"
+                ),
+                last_valid_boundary="dima.native.observe",
+                first_invalid_boundary="dima.evidence.admit",
+                scope_fingerprint=contract.scope_fingerprint,
+                material_fingerprint=contract.material_fingerprint,
+            )
+        if item.operator not in {"=", "in"}:
+            raise ResearchAnalyticalScopeError(
+                "R1_NATIVE_FILTER_SHAPE_UNSUPPORTED",
+                f"native entity filter operator is not exact membership: {item.operator}",
+                last_valid_boundary="dima.native.observe",
+                first_invalid_boundary="dima.evidence.admit",
+                scope_fingerprint=contract.scope_fingerprint,
+                material_fingerprint=contract.material_fingerprint,
+            )
+        if not item.values:
             raise ResearchAnalyticalScopeError(
                 "R1_NATIVE_FILTER_SCOPE_MISMATCH",
-                expected.source_candidate_id,
+                "native entity membership filter has no values",
+                last_valid_boundary="dima.native.observe",
+                first_invalid_boundary="dima.evidence.admit",
+                scope_fingerprint=contract.scope_fingerprint,
+                material_fingerprint=contract.material_fingerprint,
             )
-        unmatched.remove(match)
+        observed_by_field[field_identity] = {token(value) for value in item.values}
+
+    if set(observed_by_field) != set(expected_by_field):
+        raise ResearchAnalyticalScopeError(
+            "R1_NATIVE_FILTER_SCOPE_MISMATCH",
+            "native governed filter fields differ from accepted scope",
+            last_valid_boundary="dima.material.compile",
+            first_invalid_boundary="dima.native.observe",
+            scope_fingerprint=contract.scope_fingerprint,
+            material_fingerprint=contract.material_fingerprint,
+            expected_semantic_shape={
+                "filter_fields": [
+                    {
+                        "field_identity": list(identity),
+                        "source_candidate_ids": sorted(
+                            expected_refs_by_field[identity]
+                        ),
+                        "values": sorted(expected_by_field[identity]),
+                    }
+                    for identity in sorted(expected_by_field)
+                ]
+            },
+            observed_semantic_shape={
+                "filter_fields": [
+                    {
+                        "field_identity": list(identity),
+                        "values": sorted(observed_by_field[identity]),
+                    }
+                    for identity in sorted(observed_by_field)
+                ]
+            },
+        )
+
+    for field_identity, expected_values in expected_by_field.items():
+        if observed_by_field[field_identity] != expected_values:
+            raise ResearchAnalyticalScopeError(
+                "R1_NATIVE_FILTER_SCOPE_MISMATCH",
+                (
+                    "native entity membership values differ from accepted "
+                    "governed scope"
+                ),
+                last_valid_boundary="dima.material.compile",
+                first_invalid_boundary="dima.native.observe",
+                scope_fingerprint=contract.scope_fingerprint,
+                material_fingerprint=contract.material_fingerprint,
+                expected_semantic_shape={
+                    "field_identity": list(field_identity),
+                    "source_candidate_ids": sorted(
+                        expected_refs_by_field[field_identity]
+                    ),
+                    "values": sorted(expected_values),
+                },
+                observed_semantic_shape={
+                    "field_identity": list(field_identity),
+                    "values": sorted(observed_by_field[field_identity]),
+                },
+            )
 
 
 def _material_expected_period(
