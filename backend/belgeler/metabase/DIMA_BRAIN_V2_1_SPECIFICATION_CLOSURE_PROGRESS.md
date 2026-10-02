@@ -667,3 +667,73 @@ Next legal action:
 smallest P20 projection fix -> P20 full regressions -> wider provider-free`.
 
 No Metabot call, new analytics, prompt patch or causal upgrade is authorized for this family.
+
+
+### Step 9 continuation — source-backed row observation closure
+
+Pattern research:
+
+- Wren architecture: preserve governed business context as explicit artifacts/primitives and
+  keep planning/execution ownership separate from presentation.
+- Metabase official result contract: `data.rows[i]` is the stable row identity for one query
+  result and `data.cols[j]` carries the display/type metadata for `rows[i][j]`.
+- Adopted: P20 may preserve existing row/column meaning.
+- Deliberately NOT adopted: Wren runtime/planner, Metabase UI/visualization behavior, or any new
+  query/analytics pass.
+
+First presentation boundary:
+
+- generic auto P14 projection previously kept only exact numeric path/value;
+- labels and same-row categorical context were discarded before canonical report rendering.
+- intentional RED `37054156636` = 99 passed / 1 failed.
+- generic `report_projection.py` closure preserved
+  `source_path + column label + row context + exact numeric value`;
+- full P20 regression `37054634646` = 126 passed.
+
+Second presentation boundary:
+
+- even after exact cell semantics were preserved, one source row with N governed metrics became
+  N separate presentation statements;
+- independent law: one governed source row remains one presentation observation, with all numeric
+  cells retaining their exact source paths.
+- intentional RED `37055703715` = 126 passed / exactly 1 failed
+  (`assert 3 == 1` for one row carrying three symbolic metrics).
+
+Generic root fix:
+
+- `report_projection.py` now exposes typed `GovernedTabularRowObservation`;
+- auto P14 report projection emits one `OBSERVATION` statement per source row;
+- every metric in that statement keeps exact P14 Evidence + receipt + `data.rows.i.j` provenance;
+- P20 independently reloads the governed native result and revalidates context/labels/values before
+  sealing;
+- invented/tampered presentation context remains fail-closed;
+- manual low-level `NUMERIC` statements remain supported;
+- no arithmetic, comparison calculation, ranking calculation, query work or causal interpretation
+  was added.
+
+Provider-free proof:
+
+- semantic + scope state-machine + full P20 report regression
+  `37056027108` = SUCCESS;
+- 127 tests passed;
+- engine diff = 0;
+- graph diff = 0;
+- `owner_adapter.py` gained no new semantic branch.
+
+Owner sub-status:
+**P20 SOURCE-BACKED FACT + ROW PRESENTATION — GREEN / FREEZE**.
+
+Known Law 7 boundary intentionally NOT papered over:
+
+- the frozen F01_H accepted typed authority does not separately encode requested
+  absolute-change / percent-change / top-contributor output semantics;
+- its terminal native result carries period × entity cells, but P20 cannot legally recover those
+  requested derived semantics by reparsing prompt text;
+- arbitrary aggregation in P20 would also be unsafe for non-additive metrics.
+- therefore no case-specific arithmetic or prompt inference is authorized here.
+
+Next legal action:
+
+- prove final-report epistemic transparency: when a REPORT presentation reaches final P20 with
+  only governed observations and no governed P16/P18/P19 interpretation, the sealed report must
+  explicitly remain observation-only instead of implying higher-order analysis.
