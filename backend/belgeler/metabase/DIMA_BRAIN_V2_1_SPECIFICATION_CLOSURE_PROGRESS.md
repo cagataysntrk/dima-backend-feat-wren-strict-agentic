@@ -1042,3 +1042,72 @@ Targeted live authorization may now open only as:
 - 30-case = false;
 - stop on first mechanical/contract RED;
 - manually adjudicate Product quality before proceeding to the next probe.
+
+
+### Step 11 — surgical live F06_M: mechanical GREEN, Product-quality RED
+
+Provider-free freeze authorized one surgical provider-boundary probe only.
+
+Live run:
+
+- case: `F06_M` only;
+- run: `37060828140`;
+- artifact: `11250770945`;
+- candidate Product: `dacf41f99e1371197917e520e5faffa037aed9b3`;
+- engine: dima.9 exact digest;
+- model: Luna / Luna / no cascade;
+- broad paid: false;
+- 30-case: false.
+
+Mechanical result:
+
+- workflow SUCCESS;
+- raw harness PASS;
+- exception = 0;
+- duplicate native = 0;
+- stale Evidence = 0;
+- provider requests = 9;
+- provider cost ~= $0.0228;
+- three governed Evidence/native occurrences produced.
+
+Manual Product-quality adjudication:
+
+**2 / 4 = PARTIAL — STOP PAID PANEL.**
+
+The original USER_MUST was not strongly fulfilled:
+
+- typed trend material correctly covered the two periods;
+- the accepted ranking goal became ordinary level ranking by
+  `machine_downtime_minutes`, not ranking by period-over-period change;
+- its native result therefore ranked departments by two-month total level;
+- the dependent “inside that selected department” breakdown had no typed dependency on the
+  upstream ranking winner and executed over all departments;
+- P20 truthfully presented source-backed observations but could not state/justify the requested
+  selected department + dependent deep dive without inventing semantics.
+
+First missing typed boundaries:
+
+1. **Ranking basis:** `LEVEL` vs `CHANGE` is not represented by `RankingSurface`.
+2. **Analytical result dependency:** a downstream USER_MUST cannot currently declare that its
+   execution scope is selected from an upstream governed ranking result.
+
+Classification:
+
+**genuinely missing semantic primitive family**, not prompt quality and not the previous
+comparison-material repair defect.
+
+Paid authorization is CLOSED again. No second live case is legal until these primitives are
+closed provider-free and all required aggregate gates return GREEN.
+
+Reference pattern:
+
+- Wren: explicit context/planning/validation primitives; adopted explicit semantic authority,
+  not Wren runtime/planner.
+- Metabase: period-over-period difference/percentage comparison belongs in analytical query
+  cognition; Dima must not recreate it as a shadow analytics engine.
+
+Next legal sequence:
+
+`independent ranking-basis law -> RED -> typed intake/contract primitive -> provider-free GREEN ->
+independent result-dependency law -> RED -> typed execution-local dependency -> provider-free
+GREEN -> aggregate Phase-1/Phase-2 -> only then reconsider one F06_M live probe`.
