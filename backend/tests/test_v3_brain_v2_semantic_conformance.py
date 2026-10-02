@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from types import SimpleNamespace
 from uuid import UUID
 
 import pytest
@@ -21,6 +22,8 @@ from app.v3.research_contracts import (
     ScopeVersion,
     SemanticTargetKind,
 )
+from app.v3.report_document import P20ReportError, ReportClaimGate
+from app.v3.research import ObligationState, StoppingStatus
 from app.v3.research_scope_patch import (
     ScopePatchFacet,
     ScopePatchOperation,
@@ -389,3 +392,54 @@ def test_native_ranking_admission_generated_restrictive_siblings_fail_closed(
     with pytest.raises(ResearchAnalyticalScopeError) as exc:
         _assert_material_ranking_scope(contract, observation, bindings)
     assert exc.value.code == "R1_NATIVE_RANKING_SCOPE_MISMATCH"
+
+
+def _completion_session(
+    *,
+    state: ObligationState,
+    stopping: StoppingStatus,
+):
+    return SimpleNamespace(
+        obligations=(
+            SimpleNamespace(
+                obligation_id="goal.g1",
+                state=state,
+            ),
+        ),
+        stopping=SimpleNamespace(status=stopping),
+    )
+
+
+def test_p20_terminal_owner_artifact_is_not_blocked_by_stale_process_flag() -> None:
+    """Law 4: owner terminality, not an incidental lifecycle flag, gates P20."""
+
+    session = _completion_session(
+        state=ObligationState.VERIFIED,
+        stopping=StoppingStatus.ACTIVE,
+    )
+
+    ReportClaimGate._assert_sealed(session, ("goal.g1",))
+
+
+def test_p20_genuinely_open_owner_remains_fail_closed() -> None:
+    session = _completion_session(
+        state=ObligationState.READY,
+        stopping=StoppingStatus.ACTIVE,
+    )
+
+    with pytest.raises(P20ReportError) as exc:
+        ReportClaimGate._assert_sealed(session, ("goal.g1",))
+    assert exc.value.code == "P20_RESEARCH_SESSION_NOT_SEALED"
+
+
+def test_p20_downstream_terminal_owner_can_close_shared_material_obligation() -> None:
+    session = _completion_session(
+        state=ObligationState.READY,
+        stopping=StoppingStatus.ACTIVE,
+    )
+
+    ReportClaimGate._assert_sealed(
+        session,
+        ("goal.g1",),
+        downstream_terminal_ids={"goal.g1"},
+    )
