@@ -42,6 +42,7 @@ from app.v3.product.completion import (
 )
 from app.v3.product.contracts import ProductInvestigationRequirementKind
 from app.v3.report_document import (
+    P20ReportError,
     ReportDocumentStore,
     ReportDraft,
     ReportLimitation,
@@ -119,6 +120,10 @@ class BrainV2OwnerError(RuntimeError):
         material_fingerprint: str | None = None,
         expected_semantic_shape: dict[str, Any] | None = None,
         observed_semantic_shape: dict[str, Any] | None = None,
+        requirement_id: str | None = None,
+        material_group_id: str | None = None,
+        expected_owner: str | None = None,
+        observed_owner: str | None = None,
     ) -> None:
         super().__init__(f"{code}: {detail}")
         self.code = code
@@ -131,6 +136,10 @@ class BrainV2OwnerError(RuntimeError):
         self.material_fingerprint = material_fingerprint
         self.expected_semantic_shape = expected_semantic_shape
         self.observed_semantic_shape = observed_semantic_shape
+        self.requirement_id = requirement_id
+        self.material_group_id = material_group_id
+        self.expected_owner = expected_owner
+        self.observed_owner = observed_owner
 
 
 def _canonical(value: Any) -> str:
@@ -2427,25 +2436,80 @@ class DimaBrainV2Activities(BrainActivities):
             state=state,
             session=session,
         )
-        base = self._reports.draft_from_governed_research(
-            research_session_id=session.session_id,
-            report_key=report_key,
-            principal=self._principal,
-            relationship_results=relationship_results,
-        )
-        draft = (
-            self._report_with_epistemic_projection(
-                state=state,
-                session=session,
-                base=base,
+        try:
+            base = self._reports.draft_from_governed_research(
+                research_session_id=session.session_id,
+                report_key=report_key,
+                principal=self._principal,
+                relationship_results=relationship_results,
             )
-            if state.latest_p19_assessment_ref is not None
-            else base
-        )
-        report = self._reports.seal(
-            draft=draft,
-            principal=self._principal,
-        )
+            draft = (
+                self._report_with_epistemic_projection(
+                    state=state,
+                    session=session,
+                    base=base,
+                )
+                if state.latest_p19_assessment_ref is not None
+                else base
+            )
+            report = self._reports.seal(
+                draft=draft,
+                principal=self._principal,
+            )
+        except P20ReportError as exc:
+            brief = session.accepted_brief
+            scope_fingerprint = (
+                brief.scope_fingerprint if brief is not None else None
+            )
+            groups = {
+                item.material_group_id: item
+                for item in project_material_groups(session)
+            }
+            completed_groups = tuple(
+                groups[item]
+                for item in state.completed_material_group_ids
+                if item in groups
+            )
+            material_fingerprints = tuple(
+                sorted(item.material_fingerprint for item in completed_groups)
+            )
+            material_fingerprint = (
+                material_fingerprints[0]
+                if len(material_fingerprints) == 1
+                else (
+                    _fingerprint(
+                        {"material_fingerprints": material_fingerprints}
+                    )
+                    if material_fingerprints
+                    else None
+                )
+            )
+            material_group_id = (
+                completed_groups[0].material_group_id
+                if len(completed_groups) == 1
+                else None
+            )
+            requirement_id = (
+                str(exc.detail)
+                if str(exc.code).startswith("P20_RELATIONSHIP_")
+                else (
+                    state.report_requirement_ids[0]
+                    if len(state.report_requirement_ids) == 1
+                    else None
+                )
+            )
+            raise BrainV2OwnerError(
+                exc.code,
+                exc.detail,
+                last_valid_boundary="dima.completion.evaluate",
+                first_invalid_boundary="dima.p20.report",
+                scope_fingerprint=scope_fingerprint,
+                material_fingerprint=material_fingerprint,
+                requirement_id=requirement_id,
+                material_group_id=material_group_id,
+                expected_owner="P20",
+                observed_owner="P20",
+            ) from exc
         key = self._cognition_key(
             state=state,
             owner="P20",

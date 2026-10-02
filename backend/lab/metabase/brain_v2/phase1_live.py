@@ -166,6 +166,10 @@ def _exception(exc: Exception) -> dict[str, Any]:
         "observed_semantic_shape": getattr(
             exc, "observed_semantic_shape", None
         ),
+        "requirement_id": getattr(exc, "requirement_id", None),
+        "material_group_id": getattr(exc, "material_group_id", None),
+        "expected_owner": getattr(exc, "expected_owner", None),
+        "observed_owner": getattr(exc, "observed_owner", None),
     }
 
 

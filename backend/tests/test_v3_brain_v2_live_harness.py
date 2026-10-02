@@ -369,3 +369,31 @@ def test_live_runtime_guard_uses_certified_lock_instead_of_release_literal(
     args.engine_sha = "d" * 40
     with pytest.raises(RuntimeError, match="certified runtime lock"):
         _require_locked_engine_runtime(args)
+
+
+def test_exception_projection_includes_first_wrong_boundary_identity():
+    from app.v3.brain_v2.owner_adapter import BrainV2OwnerError
+    from lab.metabase.brain_v2.phase1_live import _exception
+
+    exc = BrainV2OwnerError(
+        "P20_TEST_RED",
+        "g_relationship",
+        last_valid_boundary="dima.completion.evaluate",
+        first_invalid_boundary="dima.p20.report",
+        scope_fingerprint="a" * 64,
+        material_fingerprint="b" * 64,
+        requirement_id="g_relationship",
+        material_group_id="mg_" + "1" * 24,
+        expected_owner="P20",
+        observed_owner="P20",
+    )
+    receipt = _exception(exc)
+
+    assert receipt["last_valid_boundary"] == "dima.completion.evaluate"
+    assert receipt["first_invalid_boundary"] == "dima.p20.report"
+    assert receipt["scope_fingerprint"] == "a" * 64
+    assert receipt["material_fingerprint"] == "b" * 64
+    assert receipt["requirement_id"] == "g_relationship"
+    assert receipt["material_group_id"] == "mg_" + "1" * 24
+    assert receipt["expected_owner"] == "P20"
+    assert receipt["observed_owner"] == "P20"
