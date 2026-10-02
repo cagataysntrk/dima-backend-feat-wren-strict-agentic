@@ -711,6 +711,7 @@ class ResearchAskOrchestrator:
         obligation_id: str,
         parent_link,
         failure: ResearchMaterialLimitation,
+        analytical_scope: AnalyticalRequestContract | None = None,
     ):
         """Open at most one P14-owned repair occurrence for material-shape misses.
 
@@ -742,6 +743,7 @@ class ResearchAskOrchestrator:
         prepared = ResearchManager.prepare_native_delegation(
             session,
             obligation_id=obligation_id,
+            analytical_scope=analytical_scope,
         )
         feedback = material_repair_feedback(decision)
         context = dict(prepared.request.context)
@@ -846,7 +848,64 @@ class ResearchAskOrchestrator:
             principal=subject,
         )
         selected = self._select_obligation(session, delegatable, obligation_id)
-        self.accepted_material_question(session, selected)
+        question = self.accepted_material_question(session, selected)
+        analytical_scope: AnalyticalRequestContract | None = None
+        if question.result_dependency is not None:
+            resolver = getattr(material_executor, "resolve_result_dependency", None)
+            if not callable(resolver):
+                return self._limit(
+                    session=session,
+                    obligation_id=selected,
+                    code="P14_RESULT_DEPENDENCY_RESOLVER_REQUIRED",
+                    detail=(
+                        "result-dependent material requires the governed P14 "
+                        "dependency resolver"
+                    ),
+                )
+            try:
+                resolution = resolver(
+                    principal=principal,
+                    session=session,
+                    obligation_id=selected,
+                )
+            except ResearchPersistenceError as exc:
+                if exc.code == "P14_RESULT_DEPENDENCY_PARENT_PENDING":
+                    return self._retryable_observation_limit(
+                        session=session,
+                        obligation_id=selected,
+                        code=exc.code,
+                        detail=exc.detail,
+                    )
+                return self._limit(
+                    session=session,
+                    obligation_id=selected,
+                    code=exc.code,
+                    detail=exc.detail,
+                )
+            except ResearchMaterialLimitation as exc:
+                return self._limit(
+                    session=session,
+                    obligation_id=selected,
+                    code=exc.code,
+                    detail=exc.detail,
+                    last_valid_boundary=exc.last_valid_boundary,
+                    first_invalid_boundary=exc.first_invalid_boundary,
+                    expected_fingerprint=exc.expected_fingerprint,
+                    observed_fingerprint=exc.observed_fingerprint,
+                    scope_fingerprint=exc.scope_fingerprint,
+                    material_fingerprint=exc.material_fingerprint,
+                    expected_semantic_shape=exc.expected_semantic_shape,
+                    observed_semantic_shape=exc.observed_semantic_shape,
+                )
+            if resolution is None:
+                return self._limit(
+                    session=session,
+                    obligation_id=selected,
+                    code="P14_RESULT_DEPENDENCY_RESOLUTION_MISSING",
+                    detail="declared result dependency produced no execution-local binding",
+                )
+            analytical_scope = resolution.contract
+
         pending = self._store.pending_link(
             session_id=session.session_id,
             obligation_id=selected,
@@ -883,6 +942,7 @@ class ResearchAskOrchestrator:
             prepared = ResearchManager.prepare_native_delegation(
                 session,
                 obligation_id=selected,
+                analytical_scope=analytical_scope,
             )
             session = self._store.save(
                 prepared.session,
@@ -911,6 +971,7 @@ class ResearchAskOrchestrator:
                 link=pending,
                 request=(prepared.request if prepared is not None else None),
                 native_session_token=native_session_token,
+                analytical_scope=analytical_scope,
             )
         except ResearchMaterialObservationUnavailable as exc:
             return self._retryable_observation_limit(
@@ -925,6 +986,7 @@ class ResearchAskOrchestrator:
                 obligation_id=selected,
                 parent_link=pending,
                 failure=exc,
+                analytical_scope=analytical_scope,
             )
             if repair is None:
                 return self._limit(
@@ -951,6 +1013,7 @@ class ResearchAskOrchestrator:
                     link=repair_link,
                     request=repair_request,
                     native_session_token=native_session_token,
+                    analytical_scope=analytical_scope,
                     repair_parent_link_id=pending.id,
                 )
             except ResearchMaterialObservationUnavailable as repair_exc:
