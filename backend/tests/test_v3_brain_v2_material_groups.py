@@ -168,6 +168,26 @@ def test_incompatible_bounded_ranking_relationship_use_two_groups():
     } == {("g_rank",), ("g_relationship",)}
 
 
+def test_shared_requirement_resolves_to_exact_material_execution_anchor():
+    first = ranking(bounded=True).model_copy(update={"goal_id": "g_anchor"})
+    source = ranking(bounded=True).model_copy(update={"goal_id": "g_source"})
+    groups = project_material_groups(session(brief(first, source)))
+
+    assert len(groups) == 1
+    group = groups[0]
+    assert set(group.consumer_requirement_ids) == {"g_anchor", "g_source"}
+    resolver = getattr(
+        material_groups_module,
+        "material_execution_anchor_for_requirement",
+        None,
+    )
+    assert callable(resolver), (
+        "shared material dependencies need one exact requirement -> execution anchor mapping"
+    )
+    assert resolver(groups, requirement_id="g_source") == group.anchor_requirement_id
+    assert group.anchor_requirement_id == "g_anchor"
+
+
 def test_result_dependent_material_group_waits_for_verified_parent_group():
     parent = ranking(bounded=True)
     child = ResearchQuestion(
