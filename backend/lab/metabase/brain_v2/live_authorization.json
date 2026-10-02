@@ -1,7 +1,7 @@
 {
   "schema_version": "dima_brain_v2_live_authorization_v1",
   "enabled": true,
-  "probe_id": "RELATIONSHIP_REPORT_PHASE2_V1",
+  "probe_id": "MULTI_INTENT_PHASE2_V1",
   "candidate_product_sha": "e5c0cccfd964551610249783b15af19729517630",
   "provider_free_run_id": 36994818212,
   "provider_free_status": "GREEN",
@@ -10,5 +10,5 @@
   "model_policy": "LUNA_FIRST",
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
-  "authorization_receipt": "v2.1-final-convergence-t5-t6-pf-green"
+  "authorization_receipt": "v2.1-final-convergence-t7-pf-green"
 }
