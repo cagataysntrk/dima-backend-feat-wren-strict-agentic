@@ -86,6 +86,7 @@ from app.v3.root_cause_candidate_contract import (
 )
 from control_plane.authorize import Principal
 
+from .completion_policy import project_material_limitation_terminals
 from .discovery_candidate_design import (
     project_candidate_set,
     remaining_discovery_mechanism_refs,
@@ -2293,8 +2294,26 @@ class DimaBrainV2Activities(BrainActivities):
             for item in project_material_groups(session)
         }
         completed_groups = set(state.completed_material_group_ids)
-        direct_terminal: set[str] = set()
-        fulfilled_ref_by_requirement: dict[str, str] = {}
+        material_limit_terminals = {
+            item.requirement_id: item
+            for item in project_material_limitation_terminals(
+                session=session,
+                material_groups=tuple(groups.values()),
+                completed_material_group_ids=state.completed_material_group_ids,
+            )
+        }
+        direct_terminal: set[str] = (
+            set(state.direct_requirement_ids) & set(material_limit_terminals)
+        )
+        direct_disposition: dict[str, ProductRequirementDisposition] = {
+            requirement_id: ProductRequirementDisposition.LIMITED
+            for requirement_id in direct_terminal
+        }
+        fulfilled_ref_by_requirement: dict[str, str] = {
+            requirement_id: terminal.limitation_ref
+            for requirement_id, terminal in material_limit_terminals.items()
+            if terminal.limitation_ref is not None
+        }
 
         for group_id in completed_groups:
             group = groups.get(group_id)
@@ -2305,6 +2324,17 @@ class DimaBrainV2Activities(BrainActivities):
                     last_valid_boundary="dima.evidence.admit",
                     first_invalid_boundary="dima.completion.evaluate",
                 )
+            if group.anchor_requirement_id in material_limit_terminals:
+                if not set(group.consumer_requirement_ids).issubset(
+                    set(material_limit_terminals)
+                ):
+                    raise BrainV2OwnerError(
+                        "BRAIN_V2_COMPLETION_LIMITATION_PROPAGATION_INCOMPLETE",
+                        group_id,
+                        last_valid_boundary="dima.material.group",
+                        first_invalid_boundary="dima.completion.evaluate",
+                    )
+                continue
             anchor_pairs = self._evidence_pairs(
                 session,
                 group.anchor_requirement_id,
@@ -2320,17 +2350,33 @@ class DimaBrainV2Activities(BrainActivities):
             for requirement_id in group.consumer_requirement_ids:
                 if requirement_id in set(state.direct_requirement_ids):
                     direct_terminal.add(requirement_id)
+                    direct_disposition[requirement_id] = (
+                        ProductRequirementDisposition.FULFILLED
+                    )
                     fulfilled_ref_by_requirement[requirement_id] = evidence_ref
 
-        relationship_terminal: set[str] = set()
+        relationship_terminal: set[str] = (
+            set(state.relationship_requirement_ids)
+            & set(material_limit_terminals)
+        )
         relationship_disposition: dict[
             str, ProductRequirementDisposition
-        ] = {}
+        ] = {
+            requirement_id: ProductRequirementDisposition.LIMITED
+            for requirement_id in relationship_terminal
+        }
         for requirement_id, result_ref in zip(
             state.p18_requirement_ids,
             state.p18_result_refs,
             strict=True,
         ):
+            if requirement_id in material_limit_terminals:
+                raise BrainV2OwnerError(
+                    "BRAIN_V2_COMPLETION_OWNER_CONFLICT",
+                    requirement_id,
+                    last_valid_boundary="dima.p18.adjudicate",
+                    first_invalid_boundary="dima.completion.evaluate",
+                )
             if self._relationship_results is None:
                 raise BrainV2OwnerError(
                     "BRAIN_V2_P18_RESULT_OWNER_REQUIRED",
@@ -2368,8 +2414,14 @@ class DimaBrainV2Activities(BrainActivities):
                 else ProductRequirementDisposition.LIMITED
             )
 
-        root_terminal: set[str] = set()
-        root_disposition: dict[str, ProductRequirementDisposition] = {}
+        root_terminal: set[str] = (
+            set(state.root_cause_requirement_ids)
+            & set(material_limit_terminals)
+        )
+        root_disposition: dict[str, ProductRequirementDisposition] = {
+            requirement_id: ProductRequirementDisposition.LIMITED
+            for requirement_id in root_terminal
+        }
         if (
             state.root_cause_requirement_ids
             and state.latest_p19_assessment_ref is not None
@@ -2381,6 +2433,13 @@ class DimaBrainV2Activities(BrainActivities):
                     ",".join(state.root_cause_requirement_ids),
                 )
             requirement_id = state.root_cause_requirement_ids[0]
+            if requirement_id in material_limit_terminals:
+                raise BrainV2OwnerError(
+                    "BRAIN_V2_COMPLETION_OWNER_CONFLICT",
+                    requirement_id,
+                    last_valid_boundary="dima.p19.assess",
+                    first_invalid_boundary="dima.completion.evaluate",
+                )
             root_terminal.add(requirement_id)
             fulfilled_ref_by_requirement[requirement_id] = (
                 state.latest_p19_assessment_ref
@@ -2431,6 +2490,9 @@ class DimaBrainV2Activities(BrainActivities):
                     fulfilled_by = fulfilled_ref_by_requirement.get(requirement_id)
                 elif requirement_id in root_disposition:
                     disposition = root_disposition[requirement_id]
+                    fulfilled_by = fulfilled_ref_by_requirement.get(requirement_id)
+                elif requirement_id in direct_disposition:
+                    disposition = direct_disposition[requirement_id]
                     fulfilled_by = fulfilled_ref_by_requirement.get(requirement_id)
                 else:
                     disposition = ProductRequirementDisposition.FULFILLED
