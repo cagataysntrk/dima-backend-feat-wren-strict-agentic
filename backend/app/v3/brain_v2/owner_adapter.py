@@ -1090,8 +1090,8 @@ class DimaBrainV2Activities(BrainActivities):
             ),
         )
 
-    @staticmethod
     def _relationship_refs(
+        self,
         goal: ResearchQuestion,
     ) -> tuple[str, str, tuple[str, ...]]:
         refs = tuple(dict.fromkeys((*goal.subject_refs, *goal.related_refs)))
@@ -1101,17 +1101,56 @@ class DimaBrainV2Activities(BrainActivities):
             if item.target_kind
             in {SemanticTargetKind.METRIC, SemanticTargetKind.KPI}
         )
-        if len(measures) < 2:
-            raise BrainV2OwnerError(
-                "BRAIN_V2_RELATIONSHIP_MEASURE_PAIR_REQUIRED",
-                goal.goal_id,
-            )
         dimensions = tuple(
             item.candidate_id
             for item in refs
             if item.target_kind == SemanticTargetKind.DIMENSION
         )
-        return measures[0], measures[1], dimensions
+        if len(measures) != 2:
+            raise BrainV2OwnerError(
+                "BRAIN_V2_RELATIONSHIP_MEASURE_PAIR_REQUIRED",
+                goal.goal_id,
+            )
+
+        measure_set = frozenset(measures)
+        dimension_set = frozenset(dimensions)
+        matches = tuple(
+            item
+            for item in self._catalog.allowed_relationships
+            if frozenset(
+                (item.left_semantic_id, item.right_semantic_id)
+            )
+            == measure_set
+            and (
+                (
+                    item.dimension_semantic_id is None
+                    and not dimension_set
+                )
+                or (
+                    item.dimension_semantic_id is not None
+                    and dimension_set
+                    == frozenset((item.dimension_semantic_id,))
+                )
+            )
+        )
+        if len(matches) != 1:
+            raise BrainV2OwnerError(
+                "BRAIN_V2_RELATIONSHIP_AUTHORITY_REQUIRED",
+                goal.goal_id,
+                last_valid_boundary="dima.intent.interpret",
+                first_invalid_boundary="dima.requirement.dispatch",
+            )
+        relationship = matches[0]
+        relationship_dimensions = (
+            (relationship.dimension_semantic_id,)
+            if relationship.dimension_semantic_id is not None
+            else ()
+        )
+        return (
+            relationship.left_semantic_id,
+            relationship.right_semantic_id,
+            relationship_dimensions,
+        )
 
     def adjudicate_relationship(
         self,
