@@ -2823,13 +2823,14 @@ class ResearchIntakeCompiler:
                 "READY intake must contain at least one analytical goal",
             )
 
-        period_identities: set[tuple[str, str, str]] = set()
+        period_identities: set[tuple[str, str, str, str]] = set()
         periods: list[ResearchTimePeriod] = []
         for item in draft.time_periods:
             identity = (
                 item.time_dimension_semantic_id,
                 item.start,
                 item.end,
+                item.role.value,
             )
             if identity in period_identities:
                 raise ResearchIntakeError(
