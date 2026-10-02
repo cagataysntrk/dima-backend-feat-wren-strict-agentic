@@ -51,6 +51,10 @@ from app.v3.research_scope_patch import (
     TurnScopePatch,
     resolve_scope_patch,
 )
+from app.v3.research_temporal_authority import (
+    ChangeTemporalAuthorityDisposition,
+    resolve_change_temporal_authority,
+)
 from app.v3.structured_transport import (
     strict_json_schema,
     validate_provider_strict_schema,
@@ -1350,15 +1354,6 @@ class ResearchIntakeCompiler:
                 if item.role == ComparisonRole.TEMPORAL_PERIOD
             )
             if temporal.mode == "none":
-                if (
-                    goal.causal_competition is not None
-                    and goal.causal_competition.effect_observation
-                    == CausalEffectObservation.CHANGE
-                ):
-                    raise ResearchIntakeError(
-                        "INTAKE_CAUSAL_CHANGE_TEMPORAL_MATERIAL_REQUIRED",
-                        goal.goal_key,
-                    )
                 if temporal_comparisons:
                     raise ResearchIntakeError(
                         "INTAKE_TEMPORAL_MATERIAL_MODE_CONFLICT",
@@ -2362,6 +2357,61 @@ class ResearchIntakeCompiler:
                 ",".join(duplicate_root_keys),
             )
 
+        change_observation_temporal_ids: list[str] = []
+        if draft.terminal == ResearchIntakeTerminal.READY:
+            for goal in draft.goals:
+                if (
+                    goal.kind != ResearchGoalKind.ROOT_CAUSE
+                    or goal.causal_competition is None
+                    or goal.temporal_material is None
+                ):
+                    continue
+                decision = resolve_change_temporal_authority(
+                    effect_observation=(
+                        goal.causal_competition.effect_observation
+                    ),
+                    explicit_temporal_material=(
+                        goal.temporal_material.mode != "none"
+                    ),
+                    governed_temporal_dimension_ids=(
+                        catalog.temporal_dimension_ids
+                    ),
+                )
+                if (
+                    decision.disposition
+                    == ChangeTemporalAuthorityDisposition.CLARIFY_TIME_AXIS
+                ):
+                    return ResearchIntakeResult(
+                        terminal=ResearchIntakeTerminal.CLARIFY,
+                        clarification_question=(
+                            "Which governed time dimension should define the "
+                            "requested change observation?"
+                        ),
+                        catalog_fingerprint=catalog.fingerprint,
+                        model_calls=self.call_count,
+                    )
+                if (
+                    decision.disposition
+                    == ChangeTemporalAuthorityDisposition.BLOCKED_NO_TIME_AXIS
+                ):
+                    return ResearchIntakeResult(
+                        terminal=ResearchIntakeTerminal.UNSUPPORTED,
+                        unsupported_reason=(
+                            "The requested change observation has no governed "
+                            "temporal dimension in the current semantic context."
+                        ),
+                        catalog_fingerprint=catalog.fingerprint,
+                        model_calls=self.call_count,
+                    )
+                if (
+                    decision.disposition
+                    == ChangeTemporalAuthorityDisposition.OBSERVE_GOVERNED_TIME
+                ):
+                    assert decision.time_dimension_id is not None
+                    change_observation_temporal_ids.append(
+                        decision.time_dimension_id
+                    )
+
         calls = self.call_count
         if draft.terminal == ResearchIntakeTerminal.CLARIFY:
             return ResearchIntakeResult(
@@ -2381,6 +2431,20 @@ class ResearchIntakeCompiler:
         by_id = {item.candidate_id: item for item in catalog.semantic_refs}
         questions: list[ResearchQuestion] = []
         scope_refs: dict[str, ResearchSemanticRef] = {}
+        for candidate_id in tuple(
+            dict.fromkeys(change_observation_temporal_ids)
+        ):
+            ref = by_id.get(candidate_id)
+            if (
+                ref is None
+                or ref.target_kind != SemanticTargetKind.DIMENSION
+                or candidate_id not in set(catalog.temporal_dimension_ids)
+            ):
+                raise ResearchIntakeError(
+                    "INTAKE_CHANGE_TEMPORAL_DIMENSION_INVALID",
+                    candidate_id,
+                )
+            scope_refs[candidate_id] = ref
         seen_goal_keys: set[str] = set()
         goal_id_by_key: dict[str, str] = {}
         for index, goal in enumerate(draft.goals, start=1):
