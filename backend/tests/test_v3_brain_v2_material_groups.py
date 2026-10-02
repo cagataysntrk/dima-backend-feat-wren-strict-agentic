@@ -13,8 +13,10 @@ from app.v3.research_contracts import (
     ResearchQuestion,
     ResearchScope,
     ResearchSemanticRef,
+    ResearchTimePeriod,
     ScopeVersion,
     SemanticTargetKind,
+    TemporalRole,
 )
 
 
@@ -42,9 +44,11 @@ DOWNTIME = metric("metric.downtime", "Machine Downtime")
 FAULTS = metric("metric.faults", "Fault Count")
 PERFORMANCE = metric("metric.performance", "Performance")
 DEPT = dim("dimension.department", "Department")
+DATE = dim("dimension.event_date", "Event Date")
+LINE = dim("dimension.line", "Production Line")
 
 
-def brief(*questions, report=False):
+def brief(*questions, report=False, temporal=False):
     refs = {}
     for question in questions:
         for ref in (*question.subject_refs, *question.related_refs):
@@ -65,6 +69,21 @@ def brief(*questions, report=False):
         objective="Project minimum typed material.",
         scope=ResearchScope(
             semantic_refs=tuple(refs.values()),
+            time_surfaces=(("May-June 2026",) if temporal else ()),
+            periods=(
+                (
+                    ResearchTimePeriod(
+                        source_text="May-June 2026",
+                        time_dimension_candidate_id=DATE.candidate_id,
+                        start="2026-05-01",
+                        end="2026-07-01",
+                        role=TemporalRole.MATERIAL_WINDOW,
+                    ),
+                )
+                if temporal
+                else ()
+            ),
+            temporal_dimension_ids=((DATE.candidate_id,) if temporal else ()),
             scope_version=ScopeVersion(version_id="scope_v1", ordinal=1),
         ),
         questions=tuple(questions),
@@ -88,13 +107,21 @@ def session(value):
     )
 
 
-def ranking(*, bounded=False):
+def ranking(*, bounded=False, temporal_ref=False, extra_breakdown=False):
     return ResearchQuestion(
         goal_id="g_rank",
         kind=ResearchGoalKind.RANKING,
         source_text="Rank downtime by department.",
         source_fragment_identity="fragment-sha256:" + "1" * 64,
         subject_refs=(DEPT, DOWNTIME),
+        related_refs=tuple(
+            item
+            for item in (
+                DATE if temporal_ref else None,
+                LINE if extra_breakdown else None,
+            )
+            if item is not None
+        ),
         ranking=RankingSurface(
             text="Rank downtime",
             direction="desc",
@@ -155,3 +182,39 @@ def test_requirement_order_does_not_change_material_group_authority():
     assert tuple(item.model_dump(mode="json") for item in left) == tuple(
         item.model_dump(mode="json") for item in right
     )
+
+
+def test_temporal_scope_dimension_does_not_block_compatible_material_sharing():
+    groups = project_material_groups(
+        session(
+            brief(
+                ranking(temporal_ref=True),
+                relationship(),
+                temporal=True,
+            )
+        )
+    )
+
+    assert len(groups) == 1
+    group = groups[0]
+    assert set(group.consumer_requirement_ids) == {"g_rank", "g_relationship"}
+    assert group.required_metric_refs == ("metric.downtime", "metric.faults")
+    assert group.required_dimension_refs == ("dimension.department",)
+    assert group.required_periods[0].time_dimension_ref == "dimension.event_date"
+
+
+def test_real_non_temporal_breakdown_still_blocks_cross_fragment_sharing():
+    groups = project_material_groups(
+        session(
+            brief(
+                ranking(temporal_ref=True, extra_breakdown=True),
+                relationship(),
+                temporal=True,
+            )
+        )
+    )
+
+    assert len(groups) == 2
+    assert {
+        tuple(group.consumer_requirement_ids) for group in groups
+    } == {("g_rank",), ("g_relationship",)}
