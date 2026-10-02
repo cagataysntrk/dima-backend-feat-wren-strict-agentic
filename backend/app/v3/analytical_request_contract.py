@@ -173,9 +173,10 @@ class AnalyticalRequestContract(FrozenModel):
         elif self.period is not None:
             time_dimensions = {self.period.time_dimension}
         else:
-            raise ValueError(
-                "temporal change observation requires accepted time authority"
-            )
+            # Observation-only CHANGE authority owns a governed time axis
+            # without manufacturing a user calendar filter. Native/result
+            # validation still requires that exact axis as a breakout.
+            time_dimensions = {requirement.time_dimension}
         if time_dimensions != {requirement.time_dimension}:
             raise ValueError(
                 "temporal change observation dimension must match accepted time"
