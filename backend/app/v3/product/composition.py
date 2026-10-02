@@ -15,6 +15,14 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from control_plane.authorize import Principal
 
+from app.v3.product.completion import (
+    ProductCompletionLedger,
+    ProductRequirementCompletion,
+    ProductRequirementDisposition,
+    ProductRequirementFulfillment,
+    ProductRequirementKind,
+    ProductRequirementState,
+)
 from app.v3.product.contracts import (
     ProductInvestigationRequirement,
     ProductInvestigationRequirementKind,
@@ -126,46 +134,6 @@ class CompositionLimitation(Frozen):
     code: str = Field(min_length=1)
     detail: str = Field(min_length=1)
     owner: str = Field(min_length=1)
-
-
-class ProductRequirementKind(StrEnum):
-    ANALYTICAL = "ANALYTICAL"
-    DELIVERABLE = "DELIVERABLE"
-
-
-class ProductRequirementState(StrEnum):
-    VERIFIED = "VERIFIED"
-    LIMITED = "LIMITED"
-    FULFILLED = "FULFILLED"
-    PENDING = "PENDING"
-
-
-class ProductRequirementDisposition(StrEnum):
-    FULFILLED = "FULFILLED"
-    LIMITED = "LIMITED"
-    UNSUPPORTED = "UNSUPPORTED"
-    INCONCLUSIVE = "INCONCLUSIVE"
-
-
-class ProductRequirementCompletion(Frozen):
-    requirement_id: str = Field(min_length=1)
-    disposition: ProductRequirementDisposition
-    fulfilled_by_ref: str | None = None
-
-
-class ProductCompletionLedger(Frozen):
-    entries: tuple[ProductRequirementCompletion, ...]
-    process_complete: bool
-    requirement_complete: bool
-    # Historical compatibility alias: terminal accounting, not fulfillment.
-    trusted_complete: bool
-
-
-class ProductRequirementFulfillment(Frozen):
-    requirement_id: str = Field(min_length=1)
-    requirement_kind: ProductRequirementKind
-    state: ProductRequirementState
-    fulfilled_by_ref: str | None = None
 
 
 class ProductCompositionResult(Frozen):
