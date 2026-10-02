@@ -95,6 +95,18 @@ def result_dependency_disposition(
     return ResultDependencyDisposition.LIMITED
 
 
+def result_dependency_dimension_roles_are_coherent(
+    *,
+    source_material_has_dimension: bool,
+    accepted_scope_has_dimension: bool,
+    child_projects_dimension: bool,
+) -> bool:
+    """Independent law: dependency filter role is distinct from child breakout role."""
+
+    _ = child_projects_dimension
+    return source_material_has_dimension and accepted_scope_has_dimension
+
+
 class MutationKind(StrEnum):
     ADD = "ADD"
     REMOVE = "REMOVE"
