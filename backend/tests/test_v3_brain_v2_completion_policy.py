@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
+from app.v3.brain_v2.activities import MaterialActivityDisposition
 from app.v3.brain_v2.completion_policy import (
+    material_limitation_disposition,
     project_material_limitation_terminals,
 )
 from app.v3.research import ObligationState
@@ -113,3 +115,15 @@ def test_uncompleted_group_does_not_propagate_anchor_limitation() -> None:
     )
 
     assert tuple(item.requirement_id for item in terminals) == ("goal.anchor",)
+
+
+def test_material_limitation_disposition_preserves_retryable_nonterminality() -> None:
+    assert material_limitation_disposition(
+        obligation_state=ObligationState.READY.value,
+    ) == MaterialActivityDisposition.WAITING
+    assert material_limitation_disposition(
+        obligation_state=ObligationState.DELEGATED.value,
+    ) == MaterialActivityDisposition.WAITING
+    assert material_limitation_disposition(
+        obligation_state=ObligationState.LIMITED.value,
+    ) == MaterialActivityDisposition.LIMITED
