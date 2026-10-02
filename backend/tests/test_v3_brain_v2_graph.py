@@ -15,6 +15,7 @@ from app.v3.brain_v2.activities import (
     P18ActivityResult,
     RequirementPlanActivityResult,
     P17ActivityResult,
+    P17NextTestDisposition,
     P19ActivityResult,
     ReportActivityResult,
 )
@@ -160,7 +161,10 @@ class FakeActivities:
         if self.mode in {"inconclusive", "discovery_one"}:
             route = BrainP19Route.INCONCLUSIVE
             next_ref = None
-        elif self.mode in {"adaptive", "always_next"} and ordinal == 1:
+        elif self.mode == "adaptive_inconclusive" and ordinal > 1:
+            route = BrainP19Route.INCONCLUSIVE
+            next_ref = None
+        elif self.mode in {"adaptive", "adaptive_inconclusive", "always_next"} and ordinal == 1:
             route = BrainP19Route.NEXT_TEST_REQUIRED
             next_ref = "ntr_" + "d" * 24
         elif self.mode == "always_next":
@@ -212,6 +216,16 @@ class FakeActivities:
 
     def design_next_test(self, state: BrainGraphState) -> P17ActivityResult:
         self.calls["p17_next_test"] += 1
+        if self.mode == "adaptive_inconclusive":
+            return P17ActivityResult(
+                hypothesis_revision=state.hypothesis_revision,
+                hypothesis_ids=state.hypothesis_ids,
+                material_requirement_ids=(),
+                discovery_required=False,
+                next_test_disposition=P17NextTestDisposition.INCONCLUSIVE,
+                next_test_reason_code="NO_LEGAL_MATERIAL_DELTA",
+                activity_fingerprint=self._fp("p17-next-test-inconclusive", state),
+            )
         self.calls["native_followup"] += 1
         ordinal = self.calls["native_followup"] + self.calls["material"]
         return P17ActivityResult(
@@ -270,6 +284,19 @@ def test_adaptive_runs_exactly_one_discriminating_reentry() -> None:
     assert activities.calls["p17_next_test"] == 1
     assert activities.calls["p19"] == 2
     assert result.adaptive_reentries == 1
+
+
+def test_unexecutable_adaptive_delta_returns_to_p19_without_native_work() -> None:
+    result, activities = _run("adaptive_inconclusive")
+
+    assert result.workflow_status == BrainWorkflowStatus.COMPLETE
+    assert result.latest_p19_route == BrainP19Route.INCONCLUSIVE
+    assert activities.calls["material"] == 1
+    assert activities.calls["native_followup"] == 0
+    assert activities.calls["p17_next_test"] == 1
+    assert activities.calls["p19"] == 2
+    assert result.pending_next_test_ref is None
+    assert result.adaptive_reentries == result.max_adaptive_reentries
 
 
 def test_discovery_projects_candidates_without_p17_provider() -> None:
