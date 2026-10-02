@@ -1253,3 +1253,85 @@ Next independent RED is P14 execution binding:
 
 Canonical Phase-1 is triggered before implementing this resolver so the RED is observed in the
 existing provider-free gate.
+
+
+### Step 11E — governed parent-result dependency runtime closure
+
+The second F06_M missing semantic boundary is now closed at the P14/material owner without
+changing analytical ownership.
+
+Independent law:
+
+- a result-dependent child is WAITING until its declared parent material is VERIFIED;
+- one VERIFIED ranked parent result may supply exactly one selected entity value;
+- zero/ambiguous/unusable parent material is bounded fail-closed behavior;
+- the selected value narrows one child execution only;
+- accepted ScopeVersion identity and scope fingerprint are immutable;
+- the parent result is never replayed merely to recover the selected value;
+- dependency provenance participates in execution material identity.
+
+Reference patterns consulted:
+
+- Wren OSS architecture: explicit context/planning/validation boundaries;
+- Metabase official query/filtering architecture: filtering and period/change query cognition remain
+  native analytical concerns.
+
+Adopted:
+
+- VERIFIED governed result -> typed execution-local constraint;
+- exact native field identity is used to extract the selected value;
+- the overlay is serialized through the existing AnalyticalRequestContract/Metabot context path;
+- source goal, Evidence, receipt, result hash, governed dimension, native field and selected value
+  bind the derived material identity.
+
+Deliberately NOT adopted:
+
+- no Dima re-ranking;
+- no Dima delta/business calculation;
+- no SQL/MBQL generation;
+- no parent native replay;
+- no accepted user-scope mutation;
+- no benchmark vocabulary, fuzzy/regex/morph authority;
+- no engine change.
+
+Generic Product closure:
+
+- durable ResearchQuestion carries ResultSelectionDependency;
+- MaterialGroup readiness enforces the parent-before-child dependency;
+- VERIFIED parent result loading validates immutable result provenance/hash;
+- NativeResearchMaterialExecutor resolves the exact first ranked governed entity;
+- ResearchManager accepts an execution-local analytical contract while retaining canonical default
+  behavior for every non-dependent path;
+- ResearchAskOrchestrator applies the same derived contract to initial execution, exact resume and
+  bounded P14 repair;
+- parent-not-yet-VERIFIED is retryable WAITING, not a terminal Product failure;
+- ambiguous VERIFIED parent material fails closed;
+- same selected value from a different parent result hash produces a different material identity.
+
+Provider-free proof:
+
+- semantic conformance after runtime integration: `37067834925` = SUCCESS;
+- first aggregate `37067959874` isolated one stale test oracle only: fixture named
+  `dimension.event_date` but had not declared typed temporal authority;
+- oracle reconciliation made temporal identity explicit instead of inferring semantics from names;
+- final aggregate Phase-1 `37068498863` = **SUCCESS**:
+  - Brain V2 deterministic closure: 139 passed;
+  - Research/scope/P14 authority regressions: 252 passed;
+  - P17 investigation regressions: 145 passed;
+  - P19 epistemic regressions: 53 passed;
+  - P20/Core-B semantic regressions: 56 passed;
+  - security/repository hygiene: 26 passed;
+  - architecture invariants + single migration head: GREEN.
+
+Result-dependency status:
+**GENERIC PRIMITIVE GREEN / PHASE-1 SEALED**.
+
+Current semantic Product candidate:
+
+`537dec606d8e67b20da451846e1716a50e74d5e2`
+
+Commits after that Product SHA are test/oracle/proof only. Engine remains frozen at dima.9.
+
+Next:
+run Phase-2/headless/metamorphic certification on these exact Product bytes. Paid live remains closed
+until that gate is GREEN.
