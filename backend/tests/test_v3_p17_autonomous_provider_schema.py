@@ -22,6 +22,7 @@ from app.v3.research_manager import (
     _build_action_profile,
 )
 from app.v3.research_manager_provider import (
+    ProviderClaimDraft,
     ResearchManagerProposalDraft,
     StructuredResearchProposalManager,
     _ACTION_FOR_INTENT,
@@ -234,6 +235,41 @@ def _closed_value(kind, *, string=None, integer=None, number=None, boolean=None,
 
 def _closed_entry(key, value):
     return {"key": key, "value": value}
+
+
+def test_provider_claim_rejects_duplicate_evidence_identity_before_domain_mapping():
+    payload = {
+        "claim_text": "One governed observational relationship claim.",
+        "proposition": {
+            "entries": [
+                _closed_entry(
+                    "relationship_kind",
+                    _closed_value("STRING", string="OBSERVATIONAL"),
+                ),
+            ],
+        },
+        "scope": {
+            "entries": [
+                _closed_entry(
+                    "scope_version_id",
+                    _closed_value("STRING", string="scope_v1"),
+                ),
+            ],
+        },
+        "freshness": {
+            "as_of": "2026-09-26T00:00:00Z",
+            "stale_after": None,
+        },
+        "origin_material_refs": [],
+        "evidence_links": [
+            {"evidence_id": "evi_same", "relation": "SUPPORTS"},
+            {"evidence_id": "evi_same", "relation": "CONTEXTUALIZES"},
+        ],
+        "limitations": [],
+    }
+
+    with pytest.raises(ValueError, match="Evidence links must be unique"):
+        ProviderClaimDraft.model_validate(payload)
 
 
 def test_runtime_reachable_provider_vocabulary_includes_form_claim():
