@@ -1,6 +1,6 @@
 {
   "schema_version": "dima_brain_v2_1_spec_closure_live_authorization_v1",
-  "enabled": true,
+  "enabled": false,
   "case_count": 1,
   "case_id": "F06_M",
   "candidate_product_sha": "537dec606d8e67b20da451846e1716a50e74d5e2",
@@ -13,9 +13,15 @@
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
   "automatic_retry_allowed": false,
-  "purpose": "Verify only the F06_M provider/NLU boundary after generic CHANGE-ranking and governed parent-result dependency closure; stop on the first mechanical or Product-quality RED.",
+  "purpose": "Paid panel closed after first mechanical RED. Reopen only after generic provider-free closure and full Phase-1/Phase-2 reseal.",
   "prior_run_id": 37060828140,
   "prior_artifact_id": 11250770945,
   "prior_manual_quality_score": 2,
-  "prior_manual_quality_status": "PARTIAL_STOP_PROVIDER_FREE_REQUIRED"
+  "prior_manual_quality_status": "PARTIAL_STOP_PROVIDER_FREE_REQUIRED",
+  "last_run_id": 37069226925,
+  "last_artifact_id": 11253604592,
+  "last_manual_quality_score": null,
+  "last_manual_quality_status": "MECHANICAL_RED_PROVIDER_FREE_REQUIRED",
+  "last_failure_code": "BRAIN_V2_COMPLETION_EVIDENCE_REQUIRED",
+  "last_failure_boundary": "dima.material.group -> dima.completion.evaluate"
 }
