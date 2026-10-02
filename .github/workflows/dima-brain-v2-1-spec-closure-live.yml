@@ -57,10 +57,10 @@ jobs:
           assert auth["thirty_case_allowed"] is False
           assert auth["automatic_retry_allowed"] is False
           assert auth["case_count"] == 1
-          assert auth["candidate_product_sha"]=="dacf41f99e1371197917e520e5faffa037aed9b3"
-          assert auth["provider_free_phase1_run_id"]==37059975136
-          assert auth["provider_free_phase2_run_id"]==37060243625
-          assert auth["semantic_conformance_run_id"]==37057450859
+          assert auth["candidate_product_sha"]=="537dec606d8e67b20da451846e1716a50e74d5e2"
+          assert auth["provider_free_phase1_run_id"]==37068498863
+          assert auth["provider_free_phase2_run_id"]==37068830395
+          assert auth["semantic_conformance_run_id"]==37067834925
           assert isinstance(auth["case_id"],str) and auth["case_id"]
           assert auth["engine_sha"]=="d5c60dc9f37a9ec9c5b0117f178146bbcb8dca88"
           assert auth["engine_release"]=="0.63.18-dima.9"
@@ -73,7 +73,7 @@ jobs:
           )
           print("candidate="+auth["candidate_product_sha"])
           PY
-          echo "candidate_sha=dacf41f99e1371197917e520e5faffa037aed9b3" >> "$GITHUB_OUTPUT"
+          echo "candidate_sha=537dec606d8e67b20da451846e1716a50e74d5e2" >> "$GITHUB_OUTPUT"
           echo "case_id=$(python -c 'import json; print(json.load(open("backend/lab/metabase/brain_v2/spec_closure_live_authorization.json"))["case_id"])')" >> "$GITHUB_OUTPUT"
           test -n "$DIMA_OPENROUTER_API_KEY"
 
@@ -343,7 +343,7 @@ jobs:
           r=json.loads(p.read_text())
           assert r["schema_version"]=="dima_brain_v2_1_recovery_live_v1"
           assert r["system"]=="DIMA_BRAIN_V2_1_LANGGRAPH"
-          assert r["candidate_product_sha"]=="dacf41f99e1371197917e520e5faffa037aed9b3"
+          assert r["candidate_product_sha"]=="537dec606d8e67b20da451846e1716a50e74d5e2"
           assert r["engine_sha"]=="d5c60dc9f37a9ec9c5b0117f178146bbcb8dca88"
           assert r["engine_release"]=="v0.63.18-dima.9"
           assert r["source_case_count"]==30
