@@ -86,7 +86,10 @@ from app.v3.root_cause_candidate_contract import (
 )
 from control_plane.authorize import Principal
 
-from .completion_policy import project_material_limitation_terminals
+from .completion_policy import (
+    material_limitation_disposition,
+    project_material_limitation_terminals,
+)
 from .discovery_candidate_design import (
     project_candidate_set,
     remaining_discovery_mechanism_refs,
@@ -889,7 +892,9 @@ class DimaBrainV2Activities(BrainActivities):
             return MaterialGroupActivityResult(
                 material_group_id=group.material_group_id,
                 consumer_requirement_ids=group.consumer_requirement_ids,
-                disposition=MaterialActivityDisposition.LIMITED,
+                disposition=material_limitation_disposition(
+                    obligation_state=response.obligation_state,
+                ),
                 limitation_code=response.limitation_code,
                 activity_fingerprint=request_key.fingerprint,
             )
@@ -991,7 +996,9 @@ class DimaBrainV2Activities(BrainActivities):
                 )
             return MaterialActivityResult(
                 material_requirement_ids=(goal.goal_id,),
-                disposition=MaterialActivityDisposition.LIMITED,
+                disposition=material_limitation_disposition(
+                    obligation_state=response.obligation_state,
+                ),
                 limitation_code=response.limitation_code,
                 activity_fingerprint=request_key.fingerprint,
             )
