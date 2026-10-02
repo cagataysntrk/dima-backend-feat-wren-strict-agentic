@@ -1388,3 +1388,61 @@ The next legal action is one surgical F06_M live recovery probe only:
 - STOP on mechanical or Product-quality RED;
 - manually adjudicate against correctness, scope fidelity, task completion,
   Evidence/provenance, causal restraint and useful synthesis.
+
+
+### Step 12 — recovered F06_M surgical live: mechanical RED, paid panel closed
+
+One surgical post-closure probe was executed after the current provider-free freeze.
+
+Live run:
+
+- case: `F06_M` only;
+- run: `37069226925`;
+- artifact: `11253604592`;
+- semantic Product: `537dec606d8e67b20da451846e1716a50e74d5e2`;
+- engine: dima.9 exact digest;
+- model: Luna / Luna / no cascade;
+- broad paid: false;
+- 30-case: false.
+
+Mechanical result:
+
+- workflow RED during the single frozen counterexample;
+- exception: `BRAIN_V2_COMPLETION_EVIDENCE_REQUIRED`;
+- last valid boundary: `dima.material.group`;
+- first invalid boundary: `dima.completion.evaluate`;
+- duplicate native = 0;
+- stale Evidence = 0;
+- blocked provider requests = 0;
+- provider requests = 11;
+- provider cost ~= $0.02296.
+
+Interpretation:
+
+- this is not authorization/engine/bootstrap drift;
+- the provider-free and Phase-2 gates were GREEN before live;
+- the recovered typed ranking/result-dependency path progressed far enough to reach material-group /
+  completion accounting;
+- the first observable invalid boundary is completion consuming a material-group terminal that has
+  neither governed Evidence nor a terminal P14 material limitation.
+
+Paid authorization is now CLOSED again. No second live case is legal.
+
+Provider-free root-cause split required before Product change:
+
+1. **Retryable is not terminal**
+   - P14 retryable/waiting outcomes must never be projected as a terminal LIMITED MaterialGroup.
+   - a group must not enter `completed_material_group_ids` without Evidence or a true terminal
+     material limitation.
+
+2. **Shared source occurrence consistency**
+   - graph dependency readiness and P14 result-dependency resolution must agree on the same durable
+     source occurrence when a source requirement consumes shared/co-origin material;
+   - a downstream dependency may not become runnable merely because a source group completed if the
+     resolver cannot identify the governed source result without replay/guessing.
+
+Next legal sequence:
+
+`reference-pattern research -> independent provider-free reproducers -> classify first failing law ->
+generic owner fix -> semantic conformance -> aggregate Phase-1 -> Phase-2 -> only then consider one
+new surgical F06_M probe`.
