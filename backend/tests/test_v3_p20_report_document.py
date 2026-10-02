@@ -8,7 +8,7 @@ from uuid import UUID
 import pytest
 from sqlalchemy.pool import StaticPool
 from sqlmodel import SQLModel, Session, create_engine, select
-from app.v3.research_contracts import RankingSurface, ResearchBrief, ResearchBriefStatus, ResearchGoalKind, ResearchGoalStatus, ResearchQuestion, ResearchScope, ResearchSemanticRef, SemanticTargetKind
+from app.v3.research_contracts import PresentationKind, RankingSurface, ResearchBrief, ResearchBriefStatus, ResearchDeliverableRequirement, ResearchGoalKind, ResearchGoalStatus, ResearchQuestion, ResearchScope, ResearchSemanticRef, SemanticTargetKind
 from app.v3.business_relationship_policy import BusinessRelationshipPolicyStore, RelationshipPolicyRequirement
 from app.v3.business_relationship_v1 import project_relationship_result
 from app.v3.claim_lineage import ClaimEvidenceRelation, ClaimFreshness, ClaimLineageStore
@@ -41,12 +41,29 @@ def db_engine():
 def principal() -> Principal:
     return Principal(user_id=str(USER), tenant_id=str(TENANT), tenant_slug='p20', roles=['analyst'])
 
-def brief(suffix: str='base') -> ResearchBrief:
+def brief(suffix: str='base', *, report: bool=False) -> ResearchBrief:
     metric = ResearchSemanticRef(source_mention='siparişler', candidate_id='native.sales_order_count', target_kind=SemanticTargetKind.METRIC, canonical_name='Sales Order Count', cube_names=('satis_siparisleri',))
     question = ResearchQuestion(goal_id='g1', kind=ResearchGoalKind.PERFORMANCE, source_text='Kanal farkını yönetişimli biçimde raporla.', subject_refs=(metric,), status=ResearchGoalStatus.RESOLVED)
-    return ResearchBrief(brief_id=f'rb-p20-{suffix}', objective=question.source_text, scope=ResearchScope(semantic_refs=(metric,)), questions=(question,), must_requirement_ids=('g1',), context_version='ctx-p20-v1', status=ResearchBriefStatus.READY_FOR_RESEARCH)
+    deliverables = (
+        ResearchDeliverableRequirement(
+            requirement_id='d1',
+            kind=PresentationKind.REPORT,
+            source_text='Governed report requested.',
+        ),
+    ) if report else ()
+    must_ids = ('g1', 'd1') if report else ('g1',)
+    return ResearchBrief(
+        brief_id=f'rb-p20-{suffix}',
+        objective=question.source_text,
+        scope=ResearchScope(semantic_refs=(metric,)),
+        questions=(question,),
+        deliverables=deliverables,
+        must_requirement_ids=must_ids,
+        context_version='ctx-p20-v1',
+        status=ResearchBriefStatus.READY_FOR_RESEARCH,
+    )
 
-def make_state(db, suffix: str='base', result_override=None):
+def make_state(db, suffix: str='base', result_override=None, *, report: bool=False, minimal: bool=False):
     SQLModel.metadata.create_all(db)
     with Session(db) as s:
         s.add(Tenant(id=TENANT, slug='p20', name='P20', created_at=STAMP))
@@ -54,7 +71,7 @@ def make_state(db, suffix: str='base', result_override=None):
         s.commit()
     p = principal()
     store = ResearchSessionStore(db)
-    session = ResearchAskOrchestrator(store=store).start_from_brief(brief=brief(suffix), request_ref=f'p20-{suffix}', source_message_hash=hashlib.sha256(f'p20-{suffix}'.encode()).hexdigest(), principal=p)
+    session = ResearchAskOrchestrator(store=store).start_from_brief(brief=brief(suffix, report=report), request_ref=f'p20-{suffix}', source_message_hash=hashlib.sha256(f'p20-{suffix}'.encode()).hexdigest(), principal=p)
     prepared = ResearchManager.prepare_native_delegation(session, obligation_id='g1')
     session = store.save(prepared.session, expected_revision=session.revision)
     link = store.begin_delegation(session=session, obligation_id='g1', dima_request_id=prepared.request.dima_request_id, dima_trace_id=prepared.request.dima_trace_id, native_conversation_id=prepared.request.conversation_id)
@@ -70,6 +87,15 @@ def make_state(db, suffix: str='base', result_override=None):
     session = ResearchManager.advance(session, obligations=ResearchManager.replace(session, item), evidence_refs=(EvidenceRef(evidence_id=evidence_id, receipt_id=receipt_id, authority_id=session.authority_id, obligation_id='g1'),), now=STAMP + timedelta(minutes=1))
     session = store.save(session, expected_revision=session.revision - 1)
     link = store.execution_link(link.id)
+    if minimal:
+        return {
+            'principal': p,
+            'store': store,
+            'session': session,
+            'link': link,
+            'evidence_id': evidence_id,
+            'receipt_id': receipt_id,
+        }
     material = ResearchExplorationStore(db).persist(session_id=session.session_id, obligation_id='g1', execution_link_id=link.id, native_conversation_id=link.native_conversation_id, native_query_id=link.native_query_id, query_fingerprint=link.native_query_fingerprint, source_evidence_refs=(evidence_id,), material={'name': 'P20 governed material', 'observations': [{'channel': 'Web', 'orders': 34}], 'statistics': {'association': 0.72}}, now=STAMP + timedelta(minutes=2))
     claims = ClaimLineageStore(research_store=store, db_engine=db)
     claim = claims.create_claim(session_id=session.session_id, obligation_id='g1', principal=p, claim_text='Web kanalı gözlenen kapsamda daha yüksek sipariş sayısına sahip.', proposition={'subject': 'channel:Web', 'predicate': 'has_higher_order_count_than', 'object': 'channel:Partner'}, scope={'period': '2026-06', 'population': 'sales_orders'}, freshness=ClaimFreshness(as_of=STAMP, stale_after=STAMP + timedelta(days=30)), origin_material_refs=(material.lead_id,))
@@ -685,6 +711,52 @@ def test_auto_report_projects_one_governed_observation_per_source_row():
         rows=(('entity.e1', 11, 22.5, 33),),
     )
     assert (actual,) == expected
+
+
+
+
+def test_report_with_only_governed_observations_declares_epistemic_limitation():
+    db = db_engine()
+    state = make_state(
+        db,
+        suffix='observation-only-report',
+        report=True,
+        minimal=True,
+    )
+    store = ReportDocumentStore(
+        research_store=state['store'],
+        db_engine=db,
+    )
+    draft = store.draft_from_governed_research(
+        research_session_id=state['session'].session_id,
+        report_key='observation-only-report',
+        principal=state['principal'],
+    )
+    assert {
+        item.statement_kind
+        for item in draft.statements
+    } == {ReportStatementKind.OBSERVATION}
+
+    report = store.seal(
+        draft=draft,
+        principal=state['principal'],
+        now=STAMP + timedelta(minutes=30),
+    )
+
+    limitation = next(
+        item
+        for item in report.limitations
+        if item.code == 'P20_REPORT_OBSERVATION_ONLY'
+    )
+    assert limitation.obligation_id == 'g1'
+    visible = tuple(
+        item
+        for item in report.statements
+        if item.statement_kind == ReportStatementKind.LIMITATION
+        and limitation.limitation_id in item.limitation_refs
+    )
+    assert len(visible) == 1
+    assert 'descriptive evidence' in (visible[0].text or '').lower()
 
 
 
