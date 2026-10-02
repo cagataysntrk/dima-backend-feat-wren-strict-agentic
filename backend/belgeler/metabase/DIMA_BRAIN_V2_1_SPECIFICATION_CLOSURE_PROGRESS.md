@@ -1446,3 +1446,113 @@ Next legal sequence:
 `reference-pattern research -> independent provider-free reproducers -> classify first failing law ->
 generic owner fix -> semantic conformance -> aggregate Phase-1 -> Phase-2 -> only then consider one
 new surgical F06_M probe`.
+
+
+### Step 12A — retryable material terminality closure
+
+The F06_M completion RED was first reproduced as an independent lifecycle law before changing
+Product behavior.
+
+Reference patterns consulted:
+
+- LangGraph durable execution / interrupt semantics: persisted execution may pause in a nonterminal
+  state and later resume from checkpoint;
+- Temporal workflow/task failure semantics: retryable task failure does not make the durable
+  workflow terminal and already-recorded side effects are not replayed merely because execution
+  resumes.
+
+Adopted:
+
+- P14 retryable material is an open WAITING workflow state;
+- only canonical P14 `ObligationState.LIMITED` is terminal material limitation authority;
+- WAITING never enters `completed_material_group_ids`;
+- completion evaluation is not invoked from WAITING;
+- both MaterialGroup and single-material/legacy paths use the same terminality classifier.
+
+Deliberately NOT adopted:
+
+- no new workflow runtime;
+- no Temporal dependency;
+- no exception-string heuristics;
+- no case-specific F06 branch;
+- no prompt or provider change.
+
+Provider-free proof on the lifecycle candidate:
+
+- focused Brain V2 `37071486115` = SUCCESS / 101 passed, 1 skipped;
+- semantic conformance `37071486250` = SUCCESS / 148 passed;
+- aggregate Phase-1 `37071486337` = SUCCESS.
+
+Classification:
+**RETRYABLE MATERIAL TERMINALITY — GENERIC LAW GREEN / CLOSED**.
+
+
+### Step 12B — shared source occurrence consistency closure
+
+The second completion-adjacent defect was reduced independently to an execution-identity primitive.
+
+Independent RED:
+
+- run `37071911224`;
+- Brain V2 deterministic closure: 140 passed / exactly 1 failed;
+- only failure:
+  `test_shared_requirement_resolves_to_exact_material_execution_anchor`;
+- missing primitive: exact analytical requirement -> shared MaterialGroup durable execution anchor.
+
+Root cause:
+
+- exact-material groups may legitimately merge several analytical requirements;
+- the merged group owns one deterministic P14 execution anchor;
+- a declared semantic dependency source may be a consumer of that group without itself being the
+  durable `ResearchExecutionLink.obligation_id`;
+- graph readiness could therefore know the source MaterialGroup was complete while the P14 resolver
+  looked up a different obligation id and observed false PENDING.
+
+Generic closure:
+
+- `material_execution_anchor_for_requirement()` resolves exact unique MaterialGroup membership to
+  the durable execution anchor and fails closed on absent/ambiguous membership;
+- `result_dependency_execution_anchor()` maps the child's declared semantic dependency to that
+  actual execution occurrence;
+- Brain passes only this exact occurrence identity into P14;
+- P14 preserves the declared semantic `source_goal_id` separately from
+  `source_execution_obligation_id`;
+- verified parent result loading uses the actual durable execution anchor;
+- both identities participate in dependency provenance/material identity;
+- no native parent query is replayed and no source value is guessed.
+
+Architecture ownership preserved:
+
+- MaterialGroup/execution identity remains Brain execution metadata;
+- P14 remains durable native occurrence/result owner;
+- ResultSelectionDependency remains semantic authority;
+- Metabase/Metabot still own analytical cognition and execution;
+- no SQL/MBQL, re-ranking, business calculation, engine build or case-specific production branch
+  was added.
+
+Provider-free current candidate:
+
+- semantic Product SHA: `a5f920782c599180d5a32feb939dacf4161f1d8e`;
+- later commits are test/proof only;
+- focused Brain V2 on Product SHA: `37072210423` = SUCCESS;
+- semantic conformance on Product SHA: `37072210385` = SUCCESS;
+- final focused proof on test HEAD: `37072619805` = SUCCESS / 101 passed, 1 skipped;
+- final aggregate Phase-1 `37072619817` = **SUCCESS**:
+  - Brain V2 deterministic closure: 141 passed;
+  - Research/scope/P14 authority regressions: 253 passed;
+  - P17 investigation regressions: 145 passed;
+  - P19 epistemic regressions: 53 passed;
+  - P20/Core-B semantic regressions: 56 passed;
+  - security/repository hygiene: 26 passed;
+  - architecture invariants + single migration head: GREEN.
+
+Classification:
+**F06_M COMPLETION + SHARED OCCURRENCE ROOT FAMILY — PHASE-1 PROVIDER-FREE GREEN**.
+
+Paid live remains CLOSED.
+
+Next gate:
+
+- Phase-2/headless/metamorphic certification on the same semantic Product bytes;
+- no Product change before that result;
+- only after Phase-2 GREEN may one F06_M surgical live recovery probe be considered.
