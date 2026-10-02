@@ -25,6 +25,7 @@ from app.v3.research_contracts import (
     ComparisonRole,
     ComparisonSurface,
     PresentationKind,
+    RankingBasis,
     RankingSurface,
     RelationshipIntent,
     ResearchBrief,
@@ -197,6 +198,7 @@ class DraftRanking(Frozen):
     limit: int | None = Field(default=None, ge=1, le=1000)
     measure_semantic_id: str | None = Field(default=None, min_length=1)
     source_text: str = Field(min_length=1)
+    basis: RankingBasis = RankingBasis.LEVEL
 
 
 class ModelCausalCompetitionDraft(Frozen):
@@ -2516,6 +2518,7 @@ class ResearchIntakeCompiler:
                     direction=goal.ranking.direction,
                     limit=goal.ranking.limit,
                     measure_semantic_id=ranking_measure,
+                    basis=goal.ranking.basis,
                 )
             if goal.comparisons and goal.comparison_texts:
                 raise ResearchIntakeError(
