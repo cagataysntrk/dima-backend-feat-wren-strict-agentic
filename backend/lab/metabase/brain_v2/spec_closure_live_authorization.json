@@ -1,0 +1,17 @@
+{
+  "schema_version": "dima_brain_v2_1_spec_closure_live_authorization_v1",
+  "enabled": true,
+  "case_count": 1,
+  "case_id": "F06_M",
+  "candidate_product_sha": "dacf41f99e1371197917e520e5faffa037aed9b3",
+  "provider_free_phase1_run_id": 37059975136,
+  "provider_free_phase2_run_id": 37060243625,
+  "semantic_conformance_run_id": 37057450859,
+  "engine_sha": "d5c60dc9f37a9ec9c5b0117f178146bbcb8dca88",
+  "engine_release": "0.63.18-dima.9",
+  "model_policy": "LUNA_LUNA_NO_CASCADE",
+  "broad_paid_allowed": false,
+  "thirty_case_allowed": false,
+  "automatic_retry_allowed": false,
+  "purpose": "Verify the F06_M provider/NLU boundary after generic comparison-material repair closure; stop on mechanical/contract RED."
+}
