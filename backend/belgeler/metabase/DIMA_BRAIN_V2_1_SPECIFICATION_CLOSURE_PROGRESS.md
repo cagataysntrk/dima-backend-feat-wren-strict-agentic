@@ -551,3 +551,80 @@ Next legal action:
 - preserve exactly: absent facet = unchanged, explicit set/clear only changes that facet,
   independent facets commute, repeated identical patch is idempotent, stale Evidence never
   becomes current again.
+
+
+### Step 5 — comparison material totality + bounded P14 repair closure
+
+Frozen F06_M counterexample forensics established that the first wrong boundary was
+**before governed Evidence admission**, not in adaptive P17/P19 re-entry:
+
+- no admitted Evidence;
+- no native acquisition counted as successful;
+- generated native material omitted required comparison reference-period coverage;
+- validator failed closed with `R1_RESULT_COMPARISON_COVERAGE_INCOMPLETE`.
+
+Law check:
+
+- the accepted comparison contract already carries baseline/candidate periods and the governed
+  time dimension;
+- result coverage correctly requires both comparison periods;
+- therefore Evidence admission was **not** weakened.
+
+Generic totality closure:
+
+- `MaterialActivityResult` / `MaterialGroupActivityResult` now distinguish typed
+  `EVIDENCE | LIMITED`;
+- canonical P14 material limitations are preserved through Brain routing instead of being
+  converted into internal Product exceptions;
+- completion projects terminal P14 material limitations to their consumers while independent
+  material groups remain runnable;
+- provider-free gate `37046358634` = SUCCESS.
+
+Generic material-repair closure:
+
+- new P14-owner module: `research_material_repair.py`;
+- only analytical material-shape validation misses are repairable;
+- principal/tenant/scope/currentness/provenance/integrity failures are never repaired;
+- one failed exact native occurrence remains durable and LIMITED;
+- at most one new `P14_REPAIR` occurrence is opened;
+- accepted scope identity and analytical material contract remain unchanged;
+- structured validation code/detail are fed back to the **same Metabot** as context;
+- continuation state/history come only from durable/source-backed Metabot provenance;
+- Dima does not generate SQL/MBQL or implement a second planner;
+- repair must emit a different native query fingerprint;
+- repeated query fingerprint or a second material-shape miss terminalizes LIMITED;
+- no third native attempt is opened.
+
+Reference patterns applied:
+
+- Wren: validation/retry as an explicit primitive around the analytics planner.
+  Adopted the validation-feedback boundary; did **not** adopt Wren runtime/planner.
+- Temporal: do not overwrite/replay a completed external side effect; represent retry as a new
+  durable occurrence with explicit lineage/idempotency.
+  Did **not** adopt Temporal runtime.
+- Metabase/Metabot remains the sole analytics/query cognition owner.
+
+Provider-free end-to-end proof:
+
+- first repairable miss -> one durable same-conversation repair -> VERIFIED Evidence;
+- second repairable miss -> terminal LIMITED with exactly two Metabot turns;
+- repeated native query fingerprint -> `P14_REPAIR_REPEATED_NATIVE_QUERY` terminal limitation;
+- semantic/unit + P14 durable orchestration + continuation tests run
+  `37048412146` = SUCCESS.
+
+Owner status:
+**P14 MATERIAL TOTALITY + BOUNDED MATERIAL REPAIR — GREEN / FREEZE**.
+
+No engine change. No broad paid run. No prompt/regex/fuzzy/case-specific production authority.
+
+### Current stop point
+
+Next owner family: **LAW 6 — temporal role separation / F07_M seed**.
+
+Required next sequence:
+
+`frozen counterexample -> first invalid temporal boundary -> independent symbolic law ->
+provider-free reproducer + siblings -> smallest owner fix -> wider provider-free`.
+
+Do not reopen the now-GREEN ranking, P20 completion, adaptive-totality or P14 material-repair
+owners without a new reproducer.
