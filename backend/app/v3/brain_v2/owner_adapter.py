@@ -97,6 +97,7 @@ from .activities import (
     CompletionActivityResult,
     EvidenceActivityResult,
     IntakeActivityResult,
+    MaterialActivityDisposition,
     MaterialActivityResult,
     MaterialGroupActivityResult,
     P18ActivityResult,
@@ -879,9 +880,24 @@ class DimaBrainV2Activities(BrainActivities):
                 obligation_id=group.anchor_requirement_id,
                 native_session_token=self._native_session_token,
             )
+        if response.limitation_code is not None:
+            if response.evidence_id is not None or response.receipt_id is not None:
+                raise BrainV2OwnerError(
+                    "BRAIN_V2_LIMITED_MATERIAL_CANNOT_CARRY_EVIDENCE",
+                    group.material_group_id,
+                    requirement_id=group.anchor_requirement_id,
+                    material_group_id=group.material_group_id,
+                )
+            return MaterialGroupActivityResult(
+                material_group_id=group.material_group_id,
+                consumer_requirement_ids=group.consumer_requirement_ids,
+                disposition=MaterialActivityDisposition.LIMITED,
+                limitation_code=response.limitation_code,
+                activity_fingerprint=request_key.fingerprint,
+            )
         if not response.evidence_id or not response.receipt_id:
             raise BrainV2OwnerError(
-                response.limitation_code or "BRAIN_V2_NATIVE_EVIDENCE_REQUIRED",
+                "BRAIN_V2_NATIVE_EVIDENCE_REQUIRED",
                 response.limitation_detail or group.material_group_id,
                 last_valid_boundary=response.last_valid_boundary,
                 first_invalid_boundary=response.first_invalid_boundary,
@@ -969,9 +985,21 @@ class DimaBrainV2Activities(BrainActivities):
                 obligation_id=goal.goal_id,
                 native_session_token=self._native_session_token,
             )
+        if response.limitation_code is not None:
+            if response.evidence_id is not None or response.receipt_id is not None:
+                raise BrainV2OwnerError(
+                    "BRAIN_V2_LIMITED_MATERIAL_CANNOT_CARRY_EVIDENCE",
+                    goal.goal_id,
+                )
+            return MaterialActivityResult(
+                material_requirement_ids=(goal.goal_id,),
+                disposition=MaterialActivityDisposition.LIMITED,
+                limitation_code=response.limitation_code,
+                activity_fingerprint=request_key.fingerprint,
+            )
         if not response.evidence_id or not response.receipt_id:
             raise BrainV2OwnerError(
-                response.limitation_code or "BRAIN_V2_NATIVE_EVIDENCE_REQUIRED",
+                "BRAIN_V2_NATIVE_EVIDENCE_REQUIRED",
                 response.limitation_detail or goal.goal_id,
                 last_valid_boundary=response.last_valid_boundary,
                 first_invalid_boundary=response.first_invalid_boundary,
