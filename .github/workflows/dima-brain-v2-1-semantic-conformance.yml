@@ -9,10 +9,15 @@ on:
       - "backend/tests/semantic_spec/**"
       - "backend/tests/test_v3_brain_v2_semantic_conformance.py"
       - "backend/tests/test_v3_brain_v2_semantic_stateful.py"
+      - "backend/tests/test_v3_brain_v2_adaptive_material_delta.py"
       - "backend/tests/__init__.py"
       - "backend/app/v3/analytical_request_contract.py"
       - "backend/app/v3/research_analytical_scope.py"
       - "backend/app/v3/report_document.py"
+      - "backend/app/v3/brain_v2/activities.py"
+      - "backend/app/v3/brain_v2/graph.py"
+      - "backend/app/v3/brain_v2/adaptive_test_design.py"
+      - "backend/app/v3/brain_v2/adaptive_owner_adapter.py"
       - "backend/app/v3/research_scope_patch.py"
       - "backend/app/v3/research_contracts.py"
       - "backend/app/v3/substrate/metabase/native_models.py"
@@ -68,7 +73,7 @@ jobs:
 
       - name: Semantic conformance
         working-directory: backend
-        run: pytest -q tests/test_v3_brain_v2_semantic_conformance.py tests/test_v3_brain_v2_semantic_stateful.py
+        run: pytest -q tests/test_v3_brain_v2_semantic_conformance.py tests/test_v3_brain_v2_semantic_stateful.py tests/test_v3_brain_v2_adaptive_material_delta.py
 
       - name: Upload semantic coverage
         if: always()
