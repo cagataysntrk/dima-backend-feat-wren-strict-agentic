@@ -81,6 +81,11 @@ def test_relationship_report_requires_zero_second_turn_reanalysis():
         same_research_session=True,
         same_scope_version=True,
         checkpoint_roundtrip=True,
+        legacy_composer_calls=0,
+        agent_api_request_count=0,
+        stale_evidence_count=0,
+        cross_tenant_violation_count=0,
+        causal_overclaim_count=0,
     )
     assert result["mechanical_green"] is True
     assert result["report_turn_native_delta"] == 0
@@ -106,6 +111,11 @@ def test_relationship_report_rejects_hidden_report_turn_analytics():
         same_research_session=True,
         same_scope_version=True,
         checkpoint_roundtrip=True,
+        legacy_composer_calls=0,
+        agent_api_request_count=0,
+        stale_evidence_count=0,
+        cross_tenant_violation_count=0,
+        causal_overclaim_count=0,
     )
     assert result["mechanical_green"] is False
     assert result["checks"]["report_only_native_delta_zero"] is False
@@ -131,7 +141,65 @@ def test_multi_intent_requires_one_shared_material_and_full_terminal_accounting(
         same_research_session=True,
         same_scope_version=True,
         checkpoint_roundtrip=True,
+        legacy_composer_calls=0,
+        agent_api_request_count=0,
+        stale_evidence_count=0,
+        cross_tenant_violation_count=0,
+        causal_overclaim_count=0,
     )
     assert result["mechanical_green"] is True
     assert result["checks"]["one_shared_material_group"] is True
     assert result["checks"]["one_native_acquisition"] is True
+
+
+def test_phase2_mechanical_rejects_agent_api_or_legacy_runtime_usage():
+    state = _state(report=True, multi=True)
+    result = phase2_mechanical(
+        probe_id=MULTI_INTENT,
+        state=state,
+        first_state=None,
+        native_occurrences=_native(),
+        first_native_count=None,
+        p18_uses=(_use(),),
+        report_present=True,
+        budget_before_report=None,
+        budget_after={"metabase": 1},
+        same_research_session=True,
+        same_scope_version=True,
+        checkpoint_roundtrip=True,
+        legacy_composer_calls=1,
+        agent_api_request_count=1,
+        stale_evidence_count=0,
+        cross_tenant_violation_count=0,
+        causal_overclaim_count=0,
+    )
+    assert result["mechanical_green"] is False
+    assert result["checks"]["legacy_calls_zero"] is False
+    assert result["checks"]["agent_api_calls_zero"] is False
+
+
+def test_phase2_mechanical_rejects_stale_cross_tenant_or_causal_drift():
+    state = _state(report=True, multi=True)
+    result = phase2_mechanical(
+        probe_id=MULTI_INTENT,
+        state=state,
+        first_state=None,
+        native_occurrences=_native(),
+        first_native_count=None,
+        p18_uses=(_use(),),
+        report_present=True,
+        budget_before_report=None,
+        budget_after={"metabase": 1},
+        same_research_session=True,
+        same_scope_version=True,
+        checkpoint_roundtrip=True,
+        legacy_composer_calls=0,
+        agent_api_request_count=0,
+        stale_evidence_count=1,
+        cross_tenant_violation_count=1,
+        causal_overclaim_count=1,
+    )
+    assert result["mechanical_green"] is False
+    assert result["checks"]["stale_evidence_zero"] is False
+    assert result["checks"]["cross_tenant_zero"] is False
+    assert result["checks"]["causal_overclaim_zero"] is False

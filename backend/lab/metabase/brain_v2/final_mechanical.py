@@ -41,6 +41,11 @@ def phase2_mechanical(
     same_research_session: bool,
     same_scope_version: bool,
     checkpoint_roundtrip: bool,
+    legacy_composer_calls: int,
+    agent_api_request_count: int,
+    stale_evidence_count: int,
+    cross_tenant_violation_count: int,
+    causal_overclaim_count: int,
 ) -> dict[str, Any]:
     if probe_id not in {RELATIONSHIP_REPORT, MULTI_INTENT}:
         raise ValueError(f"unsupported final phase2 probe:{probe_id}")
@@ -60,6 +65,10 @@ def phase2_mechanical(
         and getattr(item, "policy_id", None) is None
         for item in p18_uses
     )
+    relationship_fulfilled = bool(p18_uses) and all(
+        _policy_value(item, "resolution_status") in {"NOT_REQUIRED", "SATISFIED"}
+        for item in p18_uses
+    )
     analytical = set(
         (
             *state.direct_requirement_ids,
@@ -69,11 +78,24 @@ def phase2_mechanical(
     )
     terminal = set(state.terminal_requirement_ids)
     all_terminal = set(state.open_requirement_ids).issubset(terminal)
+    hidden_must_count = len(set(state.open_requirement_ids) - terminal)
+    requirement_complete = (
+        all_terminal
+        and analytical.issubset(terminal)
+        and relationship_fulfilled
+        and report_present
+        and not state.root_cause_requirement_ids
+    )
 
     common = {
         "runtime": "BRAIN_V2_LANGGRAPH",
-        "legacy_composer_calls": 0,
-        "agent_api_request_count": 0,
+        "legacy_composer_calls": int(legacy_composer_calls),
+        "agent_api_request_count": int(agent_api_request_count),
+        "stale_evidence_count": int(stale_evidence_count),
+        "cross_tenant_violation_count": int(cross_tenant_violation_count),
+        "causal_overclaim_count": int(causal_overclaim_count),
+        "hidden_must_count": hidden_must_count,
+        "requirement_complete": requirement_complete,
         "terminal_complete": state.workflow_status == BrainWorkflowStatus.COMPLETE,
         "checkpoint_roundtrip": checkpoint_roundtrip,
         "material_group_count": len(state.material_group_ids),
@@ -93,6 +115,11 @@ def phase2_mechanical(
         "one_forward_runtime": common["runtime"] == "BRAIN_V2_LANGGRAPH",
         "legacy_calls_zero": common["legacy_composer_calls"] == 0,
         "agent_api_calls_zero": common["agent_api_request_count"] == 0,
+        "stale_evidence_zero": common["stale_evidence_count"] == 0,
+        "cross_tenant_zero": common["cross_tenant_violation_count"] == 0,
+        "causal_overclaim_zero": common["causal_overclaim_count"] == 0,
+        "hidden_must_zero": common["hidden_must_count"] == 0,
+        "requirement_complete": bool(common["requirement_complete"]),
         "terminal_complete": bool(common["terminal_complete"]),
         "checkpoint_roundtrip": bool(common["checkpoint_roundtrip"]),
         "duplicate_native_zero": common["duplicate_native"] == 0,

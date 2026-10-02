@@ -745,6 +745,40 @@ def main() -> int:
             {"method": method, "path": path}
             for method, path in request_audit.requests
         ]
+        current_evidence_ids = {
+            item.evidence_id for item in session.evidence_refs
+        }
+        stale_evidence_count = len(
+            set(state.evidence_ids) - current_evidence_ids
+        )
+        expected_tenant_binding = ResearchAskOrchestrator.tenant_binding_for(
+            current_principal
+        )
+        cross_tenant_violation_count = int(
+            state.tenant_binding != expected_tenant_binding
+            or session.tenant_binding != expected_tenant_binding
+            or state.principal_ref != str(current_principal.user_id)
+        )
+        causal_overclaim_count = (
+            sum(
+                1
+                for statement in getattr(report_doc, "statements", ())
+                if str(
+                    getattr(
+                        getattr(statement, "statement_kind", None),
+                        "value",
+                        getattr(statement, "statement_kind", ""),
+                    )
+                )
+                in {"CAUSAL", "ROOT_CAUSE"}
+            )
+            if args.probe_id in {RELATIONSHIP_REPORT, MULTI_INTENT}
+            and report_doc is not None
+            else 0
+        )
+        report["stale_evidence_count"] = stale_evidence_count
+        report["cross_tenant_violation_count"] = cross_tenant_violation_count
+        report["causal_overclaim_count"] = causal_overclaim_count
         native_occurrences = _native_occurrence_projection(links)
 
         report["research"] = {
@@ -805,6 +839,15 @@ def main() -> int:
                 checkpoint_roundtrip=bool(
                     report.get("checkpoint_roundtrip_equal")
                 ),
+                legacy_composer_calls=int(
+                    report.get("legacy_composer_calls") or 0
+                ),
+                agent_api_request_count=int(
+                    report.get("agent_api_request_count") or 0
+                ),
+                stale_evidence_count=stale_evidence_count,
+                cross_tenant_violation_count=cross_tenant_violation_count,
+                causal_overclaim_count=causal_overclaim_count,
             )
             report["boundary_trace"] = {
                 "runtime": "BRAIN_V2_LANGGRAPH",
