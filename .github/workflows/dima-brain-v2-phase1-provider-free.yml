@@ -61,6 +61,11 @@ jobs:
           ! grep -R -nE 'DEV80|Validation50|Hidden50|30-case|F0[0-9]|F10|T[1-7]' backend/app/v3/brain_v2
           ! grep -R -nE 'sqlalchemy|sqlmodel|app\.v3\.substrate\.metabase\.(compiler|execution_adapter)' backend/app/v3/brain_v2
           python -m compileall -q backend/app/v3/brain_v2
+          python -m py_compile \
+            backend/lab/metabase/brain_v2/phase1_live.py \
+            backend/lab/metabase/brain_v2/live_support.py \
+            backend/lab/metabase/brain_v2/final_probes.py \
+            backend/lab/metabase/brain_v2/final_mechanical.py
 
       - name: Brain V2 deterministic closure
         working-directory: backend

@@ -369,26 +369,12 @@ jobs:
               raise SystemExit(0)
           r=json.loads(p.read_text())
           projection={
-                "probe_id":r.get("probe_id"),
-                "candidate_product_sha":r.get("candidate_product_sha"),
-                "engine_sha":r.get("engine_sha"),
-                "engine_runtime_tag":r.get("engine_runtime_tag"),
-                "turns":r.get("turns"),
-                "mechanical_observations":r.get("mechanical_observations"),
-                "mechanical_verdict":r.get("mechanical_verdict"),
-                "provider_receipt":r.get("provider_receipt"),
-                "total_latency_ms":r.get("total_latency_ms"),
-                "probe_contract":r.get("probe_contract"),
-                "exception":r.get("exception"),
-              }
-              print("DIMA_BRAIN_V2_PHASE2_ADJUDICATION="+json.dumps(projection,ensure_ascii=False,sort_keys=True))
-              raise SystemExit(0)
-          projection={
             "probe_id":r.get("probe_id"),
             "candidate_product_sha":r.get("candidate_product_sha"),
             "engine_sha":r.get("engine_sha"),
             "engine_release":r.get("engine_release"),
             "brain_state":r.get("brain_state"),
+            "first_brain_state":r.get("first_brain_state"),
             "accepted_intent":r.get("accepted_intent"),
             "research":r.get("research"),
             "p17":r.get("p17"),
@@ -404,6 +390,7 @@ jobs:
             "runtime":r.get("runtime"),
             "legacy_composer_calls":r.get("legacy_composer_calls"),
             "agent_api_request_count":r.get("agent_api_request_count"),
+            "boundary_trace":r.get("boundary_trace"),
             "exception":r.get("exception"),
           }
           print("DIMA_BRAIN_V2_ADJUDICATION="+json.dumps(projection,ensure_ascii=False,sort_keys=True))

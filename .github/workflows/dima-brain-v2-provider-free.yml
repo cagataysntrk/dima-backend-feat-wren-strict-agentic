@@ -54,6 +54,11 @@ jobs:
           print("Brain V2 contracts import OK")
           PY
           python -m compileall -q app/v3/brain_v2
+          python -m py_compile \
+            lab/metabase/brain_v2/phase1_live.py \
+            lab/metabase/brain_v2/live_support.py \
+            lab/metabase/brain_v2/final_probes.py \
+            lab/metabase/brain_v2/final_mechanical.py
 
       - name: Brain V2 focused provider-free contracts
         working-directory: backend
