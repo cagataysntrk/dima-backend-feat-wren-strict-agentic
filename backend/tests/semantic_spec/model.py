@@ -199,6 +199,46 @@ def entity_filter_admission_allowed(spec: EntityFilterAdmissionSpec) -> bool:
 
 
 @dataclass(frozen=True)
+class ReferencePresentationFact:
+    """Independent Law 7 identity for one source-backed tabular numeric fact."""
+
+    source_path: str
+    label: str
+    context: tuple[tuple[str, str], ...]
+    value: int | float
+
+
+def reference_tabular_numeric_facts(
+    *,
+    column_labels: tuple[str, ...],
+    rows: tuple[tuple[object, ...], ...],
+) -> tuple[ReferencePresentationFact, ...]:
+    """Preserve source-backed row/column meaning without doing analytics."""
+
+    facts: list[ReferencePresentationFact] = []
+    for row_index, row in enumerate(rows):
+        if len(row) != len(column_labels):
+            raise ValueError("reference row/column cardinality mismatch")
+        context = tuple(
+            (column_labels[index], value)
+            for index, value in enumerate(row)
+            if isinstance(value, str) and value.strip()
+        )
+        for column_index, value in enumerate(row):
+            if isinstance(value, bool) or not isinstance(value, (int, float)):
+                continue
+            facts.append(
+                ReferencePresentationFact(
+                    source_path=f"data.rows.{row_index}.{column_index}",
+                    label=column_labels[column_index],
+                    context=context,
+                    value=value,
+                )
+            )
+    return tuple(facts)
+
+
+@dataclass(frozen=True)
 class CompletionSpec:
     required_owner_ids: FrozenSet[str]
     terminal_owner_ids: FrozenSet[str]
