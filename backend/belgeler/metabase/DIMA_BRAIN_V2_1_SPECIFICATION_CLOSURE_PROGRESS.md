@@ -803,3 +803,45 @@ Required aggregate proof now:
 - engine gitlink unchanged at dima.9.
 
 Only after aggregate GREEN may one surgical paid recovery panel be frozen.
+
+
+### Step 10A — legacy provider-free oracle reconciliation
+
+Initial aggregate certification:
+
+- Phase-1 run `37057036570` reached the deterministic closure and exposed two legacy
+  test-oracle/fixture drifts;
+- focused run `37057054426` independently reproduced the adaptive oracle drift.
+
+Failure A — completion state-machine fixture:
+
+- production completion now reads canonical P14 limitation authority from
+  `ResearchSession.obligations`;
+- the old state-machine harness constructed a `SimpleNamespace` that omitted the mandatory
+  `obligations` contract entirely;
+- the real ResearchSession contract always requires obligations.
+- resolution: restore typed `ResearchObligation` fixtures for the symbolic ranking and
+  relationship requirements;
+- no production completion behavior changed.
+
+Failure B — adaptive repeated-result oracle:
+
+- legacy integration expected
+  `BRAIN_V2_NEXT_TEST_NO_INFORMATION_GAIN` to escape as an internal exception;
+- Law 5 now requires a legal no-information-gain outcome to consume bounded P17 capacity and
+  return authority to P19 for a governed terminal;
+- duplicate native result remains durable history but is not admitted as new Brain Evidence.
+- resolution: update the legacy oracle to assert terminal completion, no fake Evidence gain,
+  bounded re-entry exhaustion, and P19 reassessment;
+- no production adaptive behavior changed.
+
+Reconciliation proof:
+
+- focused provider-free `37057450986` = SUCCESS (100 passed, 1 skipped);
+- semantic/full P20+scope gate `37057450859` = SUCCESS (131 passed).
+
+Classification:
+**existing invariant/test-oracle reconciliation**, not a new semantic primitive and not a
+special-case patch.
+
+Next: rerun the aggregate Phase-1 provider-free certification on the same Product/runtime code.
