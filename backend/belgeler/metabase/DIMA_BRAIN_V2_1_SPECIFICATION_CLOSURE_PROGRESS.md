@@ -1170,3 +1170,37 @@ Ranking-basis status:
 
 Next:
 run aggregate Phase-1 provider-free on the exact current HEAD. Paid live remains closed.
+
+
+### Step 11B — ranking-basis aggregate seal
+
+Aggregate Phase-1 provider-free run `37063857709` = **SUCCESS**.
+
+Exact blocks:
+
+- Brain V2 deterministic closure: 138 passed;
+- Research/scope/P14 authority regressions: 247 passed;
+- P17 investigation regressions: 145 passed;
+- P19 epistemic regressions: 53 passed;
+- P20/Core-B semantic regressions: 56 passed;
+- security/repository hygiene: 26 passed;
+- architecture invariants + single migration head: GREEN.
+
+This aggregate includes the new change-ranking intake and Metabot-boundary proofs.
+
+Ranking-basis status:
+**GENERIC PRIMITIVE GREEN / FREEZE**.
+
+Paid live remains closed.
+
+Next owner family:
+**governed parent-result dependency for downstream material**.
+
+Required law before Product change:
+
+- dependent material is not runnable until the declared parent material is VERIFIED;
+- selected runtime value must come exactly from the parent governed result;
+- the binding is execution-local and MUST NOT mutate accepted ScopeVersion/user scope;
+- parent native work is never replayed merely to recover the selected value;
+- missing/empty/ambiguous parent result yields bounded LIMITED/INCONCLUSIVE behavior, not
+  a hidden scope guess or internal exception.
