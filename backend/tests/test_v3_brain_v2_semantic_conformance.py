@@ -1007,8 +1007,9 @@ def test_change_ranking_cannot_be_admitted_from_level_metric_ordering() -> None:
         )
     }
 
-    with pytest.raises(ResearchAnalyticalScopeError):
+    with pytest.raises(ResearchAnalyticalScopeError) as exc:
         _assert_material_ranking_scope(contract, observation, bindings)
+    assert exc.value.code == "R1_NATIVE_RANKING_BASIS_UNOBSERVABLE"
 
 
 def test_native_ranking_admission_allows_extra_nonrestrictive_stability_order() -> None:
