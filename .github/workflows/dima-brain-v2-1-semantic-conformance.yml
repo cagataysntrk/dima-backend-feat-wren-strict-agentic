@@ -19,6 +19,7 @@ on:
       - "backend/tests/test_v3_research_scope_patch_stateful.py"
       - "backend/tests/test_v3_p14_product.py"
       - "backend/tests/test_v3_p17_native_continuation_history.py"
+      - "backend/tests/test_v3_p20_report_document.py"
       - "backend/tests/__init__.py"
       - "backend/app/v3/analytical_request_contract.py"
       - "backend/app/v3/research_analytical_scope.py"
@@ -90,7 +91,7 @@ jobs:
 
       - name: Semantic conformance
         working-directory: backend
-        run: pytest -q tests/test_v3_brain_v2_semantic_conformance.py tests/test_v3_brain_v2_semantic_stateful.py tests/test_v3_brain_v2_adaptive_material_delta.py tests/test_v3_brain_v2_graph.py tests/test_v3_brain_v2_completion_policy.py tests/test_v3_brain_v2_material_repair.py tests/test_v3_brain_v2_temporal_roles.py tests/test_v3_research_scope_patch.py tests/test_v3_research_scope_patch_stateful.py tests/test_v3_p14_product.py tests/test_v3_p17_native_continuation_history.py tests/test_v3_brain_v2_owner_integration.py::test_real_owner_adaptive_runs_one_typed_followup_without_duplicate_native
+        run: pytest -q tests/test_v3_brain_v2_semantic_conformance.py tests/test_v3_brain_v2_semantic_stateful.py tests/test_v3_brain_v2_adaptive_material_delta.py tests/test_v3_brain_v2_graph.py tests/test_v3_brain_v2_completion_policy.py tests/test_v3_brain_v2_material_repair.py tests/test_v3_brain_v2_temporal_roles.py tests/test_v3_research_scope_patch.py tests/test_v3_research_scope_patch_stateful.py tests/test_v3_p14_product.py tests/test_v3_p17_native_continuation_history.py tests/test_v3_p20_report_document.py::test_auto_numeric_projection_preserves_source_backed_tabular_fact_meaning tests/test_v3_brain_v2_owner_integration.py::test_real_owner_adaptive_runs_one_typed_followup_without_duplicate_native
 
       - name: Upload semantic coverage
         if: always()
