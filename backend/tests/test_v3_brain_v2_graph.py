@@ -10,6 +10,7 @@ from app.v3.brain_v2.activities import (
     EvidenceActivityResult,
     IntakeActivityResult,
     CompletionActivityResult,
+    MaterialActivityDisposition,
     MaterialActivityResult,
     MaterialGroupActivityResult,
     P18ActivityResult,
@@ -131,6 +132,13 @@ class FakeActivities:
 
     def acquire_material(self, state: BrainGraphState) -> MaterialActivityResult:
         self.calls["material"] += 1
+        if self.mode == "material_limited":
+            return MaterialActivityResult(
+                material_requirement_ids=state.material_requirement_ids,
+                disposition=MaterialActivityDisposition.LIMITED,
+                limitation_code="R1_SYMBOLIC_MATERIAL_INCOMPLETE",
+                activity_fingerprint=self._fp("material-limited", state),
+            )
         ordinal = self.calls["material"]
         return MaterialActivityResult(
             material_requirement_ids=state.material_requirement_ids,
@@ -284,6 +292,18 @@ def test_adaptive_runs_exactly_one_discriminating_reentry() -> None:
     assert activities.calls["p17_next_test"] == 1
     assert activities.calls["p19"] == 2
     assert result.adaptive_reentries == 1
+
+
+def test_terminal_material_limitation_bypasses_evidence_and_reaches_completion() -> None:
+    result, activities = _run("material_limited")
+
+    assert result.workflow_status == BrainWorkflowStatus.COMPLETE
+    assert activities.calls["material"] == 1
+    assert activities.calls["evidence"] == 0
+    assert activities.calls["p19"] == 0
+    assert activities.calls["completion"] == 1
+    assert result.evidence_ids == ()
+    assert result.pending_evidence_ids == ()
 
 
 def test_unexecutable_adaptive_delta_returns_to_p19_without_native_work() -> None:
