@@ -145,6 +145,7 @@ class CompletionOwnerStateMachine(RuleBasedStateMachine):
         self.report_done = False
         self.revision = 0
         self.last = None
+        self.normal_relationship_p17_calls = 0
 
     def state(self) -> BrainGraphState:
         p18 = self.p18_done
@@ -202,6 +203,10 @@ class CompletionOwnerStateMachine(RuleBasedStateMachine):
     def seal_report(self):
         self.report_done = True
         self.evaluate()
+
+    @invariant()
+    def normal_observational_relationship_never_uses_p17(self):
+        assert self.normal_relationship_p17_calls == 0
 
     @invariant()
     def terminal_accounting_never_impersonates_fulfillment(self):
