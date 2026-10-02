@@ -357,10 +357,13 @@ def test_shared_relationship_completion_seals_without_forging_p14_terminal_state
         research_session_id=session.session_id,
         claim=claim,
         decision=decision,
+        requirement_id=relationship.goal_id,
         scope_lineage_id=session.lineage_id,
         scope_version_id=accepted.scope.scope_version.version_id,
         applicability_scope=applicability,
     )
+    assert relationship_result.obligation_id == relationship.goal_id
+    assert claim.obligation_id == ranking.goal_id
 
     # The relationship P14 obligation intentionally stays READY. P18 terminalizes
     # the accepted relationship at Product level without forging duplicate Evidence.
@@ -404,6 +407,20 @@ def test_shared_relationship_completion_seals_without_forging_p14_terminal_state
         report_id=report.report_id,
         principal=p,
     ) == ReportCurrentness.CURRENT
+
+    # Metamorphic sibling: an upstream material/source obligation may not
+    # impersonate the accepted relationship USER_MUST terminal identity.
+    wrong_terminal_identity = relationship_result.model_copy(
+        update={"obligation_id": ranking.goal_id}
+    )
+    with pytest.raises(P20ReportError) as exc:
+        reports.draft_from_governed_research(
+            research_session_id=session.session_id,
+            report_key='shared-relationship-wrong-terminal',
+            principal=p,
+            relationship_results=(wrong_terminal_identity,),
+        )
+    assert exc.value.code == 'P20_RELATIONSHIP_RESULT_TARGET_INVALID'
 
 
 def test_auto_draft_projects_governed_claim_policy_provenance_and_limitations():
