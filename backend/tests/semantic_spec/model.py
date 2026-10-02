@@ -239,6 +239,54 @@ def reference_tabular_numeric_facts(
 
 
 @dataclass(frozen=True)
+class ReferencePresentationMetric:
+    source_path: str
+    label: str
+    value: int | float
+
+
+@dataclass(frozen=True)
+class ReferencePresentationRow:
+    context: tuple[tuple[str, str], ...]
+    metrics: tuple[ReferencePresentationMetric, ...]
+
+
+def reference_tabular_rows(
+    *,
+    column_labels: tuple[str, ...],
+    rows: tuple[tuple[object, ...], ...],
+) -> tuple[ReferencePresentationRow, ...]:
+    """One source row remains one presentation observation; no analytics."""
+
+    projected: list[ReferencePresentationRow] = []
+    for row_index, row in enumerate(rows):
+        if len(row) != len(column_labels):
+            raise ValueError("reference row/column cardinality mismatch")
+        context = tuple(
+            (column_labels[index], value)
+            for index, value in enumerate(row)
+            if isinstance(value, str) and value.strip()
+        )
+        metrics = tuple(
+            ReferencePresentationMetric(
+                source_path=f"data.rows.{row_index}.{index}",
+                label=column_labels[index],
+                value=value,
+            )
+            for index, value in enumerate(row)
+            if not isinstance(value, bool) and isinstance(value, (int, float))
+        )
+        if metrics:
+            projected.append(
+                ReferencePresentationRow(
+                    context=context,
+                    metrics=metrics,
+                )
+            )
+    return tuple(projected)
+
+
+@dataclass(frozen=True)
 class CompletionSpec:
     required_owner_ids: FrozenSet[str]
     terminal_owner_ids: FrozenSet[str]
