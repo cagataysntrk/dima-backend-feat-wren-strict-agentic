@@ -21,7 +21,10 @@ from app.v3.product.contracts import (
 )
 from app.v3.research import ObligationState
 from app.v3.research_manager import InvestigationIntent
-from app.v3.research_analytical_scope import analytical_scope_contract
+from app.v3.research_analytical_scope import (
+    analytical_scope_contract,
+    coorigin_material_requirements,
+)
 from app.v3.root_cause_candidate_contract import (
     RootCauseCandidateRelation,
     RootCauseCandidateSemantics,
@@ -1252,6 +1255,87 @@ def test_r3_missing_evidence_does_not_create_p19_candidate():
     )
     assert candidate is None
 
+
+
+def test_distinct_clauses_share_unbounded_compatible_material_requirement():
+    ranking = ResearchQuestion(
+        goal_id="g_shared_rank",
+        kind=ResearchGoalKind.RANKING,
+        source_text="Rank downtime by department.",
+        source_fragment_identity="fragment-sha256:" + "1" * 64,
+        subject_refs=(DEPT, DOWNTIME),
+        related_refs=(),
+        ranking=RankingSurface(
+            text="rank downtime",
+            direction="desc",
+            limit=None,
+            measure_semantic_id=DOWNTIME.candidate_id,
+        ),
+        status=ResearchGoalStatus.RESOLVED,
+    )
+    relationship = ResearchQuestion(
+        goal_id="g_shared_relationship",
+        kind=ResearchGoalKind.RELATIONSHIP,
+        source_text="Assess downtime with faults by department.",
+        source_fragment_identity="fragment-sha256:" + "2" * 64,
+        subject_refs=(DOWNTIME, FAULTS),
+        related_refs=(DEPT,),
+        status=ResearchGoalStatus.RESOLVED,
+    )
+    b = brief(ranking, relationship)
+    session = SimpleNamespace(
+        accepted_brief=b,
+        context_version=b.context_version,
+    )
+
+    requirements = coorigin_material_requirements(session)
+
+    assert len(requirements) == 1
+    requirement = requirements[0]
+    assert requirement.anchor_goal_id == ranking.goal_id
+    assert requirement.source_goal_ids == (
+        ranking.goal_id,
+        relationship.goal_id,
+    )
+    assert requirement.required_metric_refs == (
+        DOWNTIME.candidate_id,
+        FAULTS.candidate_id,
+    )
+    assert requirement.required_dimension_refs == (DEPT.candidate_id,)
+
+
+def test_distinct_clauses_do_not_share_bounded_ranking_material():
+    ranking = ResearchQuestion(
+        goal_id="g_bounded_rank",
+        kind=ResearchGoalKind.RANKING,
+        source_text="Show the top two downtime departments.",
+        source_fragment_identity="fragment-sha256:" + "3" * 64,
+        subject_refs=(DEPT, DOWNTIME),
+        related_refs=(),
+        ranking=RankingSurface(
+            text="top two downtime",
+            direction="desc",
+            limit=2,
+            measure_semantic_id=DOWNTIME.candidate_id,
+        ),
+        status=ResearchGoalStatus.RESOLVED,
+    )
+    relationship = ResearchQuestion(
+        goal_id="g_all_relationship",
+        kind=ResearchGoalKind.RELATIONSHIP,
+        source_text="Assess downtime with faults by department.",
+        source_fragment_identity="fragment-sha256:" + "4" * 64,
+        subject_refs=(DOWNTIME, FAULTS),
+        related_refs=(DEPT,),
+        status=ResearchGoalStatus.RESOLVED,
+    )
+    b = brief(ranking, relationship)
+    session = SimpleNamespace(
+        accepted_brief=b,
+        context_version=b.context_version,
+    )
+
+    assert coorigin_material_requirements(session) == ()
 
 
 def test_r8_a_coorigin_relationship_reuses_verified_sibling_material_without_second_p14_turn():
