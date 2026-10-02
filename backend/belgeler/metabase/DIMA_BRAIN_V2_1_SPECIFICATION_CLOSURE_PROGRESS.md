@@ -845,3 +845,74 @@ Classification:
 special-case patch.
 
 Next: rerun the aggregate Phase-1 provider-free certification on the same Product/runtime code.
+
+
+### Step 9A — P20 governed presentation semantics closure
+
+Reference patterns consulted:
+
+- Metabase official result contract: `data.rows[i]` is the preserved source row and
+  `data.cols` carries column/display/semantic metadata.
+- Wren architecture: correctness remains explicit across context, planning, validation
+  and execution primitives; adopted only the visible governed-boundary principle.
+- Deliberately NOT adopted: Wren runtime/planner, Metabase UI computation, any new
+  analytical engine inside P20.
+
+First wrong boundary:
+
+- generic P14 auto-report projection discarded row/column meaning;
+- one governed numeric cell became only `{"value": X}`;
+- canonical P20 rendering therefore collapsed to `Numeric result: X`;
+- source-backed entity/time/column context already present in the terminal native result
+  was lost before presentation.
+
+Independent RED #1:
+
+- symbolic table fixture only; no benchmark vocabulary;
+- required `source_path + column label + same-row categorical context + exact value`;
+- run `37054156636` = 99 passed / exactly 1 failed;
+- production had correct source path/value but empty label/context.
+
+Generic closure #1:
+
+- new read-only owner module `report_projection.py`;
+- projects exact terminal `data.rows/data.cols` material only;
+- no aggregation, ranking, delta, arithmetic, prompt or provider call;
+- P20 validator independently re-loads the source payload and rejects invented
+  label/context;
+- full gate `37054634646` = SUCCESS, 126 passed.
+
+Independent RED #2:
+
+- one source row containing multiple governed metrics must remain one presentation
+  observation rather than N unrelated numeric statements;
+- run `37055703715` = 126 passed / exactly 1 failed;
+- failure: source row was split into three P14 statements.
+
+Generic closure #2:
+
+- typed `GovernedTabularRowObservation` groups the exact source-backed categorical
+  context with its exact numeric cells;
+- each metric retains its original `data.rows.i.j` path;
+- auto-report uses `ReportStatementKind.OBSERVATION`;
+- seal-time validation reprojects the same terminal result and rejects payload/source
+  divergence;
+- manual low-level `NUMERIC` statements remain backward-compatible and exact;
+- full semantic/scope/P20 gate `37056027108` = SUCCESS, 127 passed.
+
+Owner status:
+**P20 SOURCE-BACKED TABULAR PRESENTATION — GREEN / FREEZE**.
+
+Important non-closure:
+
+- P20 does NOT sum arbitrary rows;
+- P20 does NOT compute new deltas, percentages, rankings or top contributors unless a
+  future typed governed terminal artifact explicitly owns those semantics;
+- Metabot remains the sole analytical cognition owner.
+
+Next Law-7 audit:
+
+- distinguish presentation information already present in terminal artifacts from
+  analytical derivations that must be owned upstream;
+- classify F01_H, F04_H, F05 variants and F08 variants by first missing typed semantic
+  boundary before any further Product change.
