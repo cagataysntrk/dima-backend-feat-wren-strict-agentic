@@ -1957,10 +1957,22 @@ def _assert_material_ranking_scope(
         and item.direction == ranking.direction
         and item.limit == ranking.limit
     ]
-    if len(matches) != 1 or len(observation.ranking) != 1:
+    if len(matches) != 1:
         raise ResearchAnalyticalScopeError(
             "R1_NATIVE_RANKING_SCOPE_MISMATCH",
             "material ranking target/direction/limit differs from accepted scope",
+        )
+
+    authorized = matches[0]
+    unauthorized_restrictive = tuple(
+        item
+        for item in observation.ranking
+        if item is not authorized and item.limit is not None
+    )
+    if unauthorized_restrictive:
+        raise ResearchAnalyticalScopeError(
+            "R1_NATIVE_RANKING_SCOPE_MISMATCH",
+            "native occurrence introduced an additional row-limiting ranking",
         )
 
 
