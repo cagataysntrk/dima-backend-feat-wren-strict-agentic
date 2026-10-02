@@ -202,9 +202,11 @@ def _receipt(
 
 
 class BridgeFactory:
-    def __init__(self) -> None:
+    def __init__(self, *, repeat_query_on_repair: bool = False) -> None:
         self.metabot_posts = 0
         self.query_ids: list[str] = []
+        self.metabot_bodies: list[dict] = []
+        self.repeat_query_on_repair = repeat_query_on_repair
 
     def open(
         self,
@@ -231,15 +233,21 @@ class BridgeFactory:
             ):
                 self.metabot_posts += 1
                 body = json.loads(request.content.decode("utf-8"))
+                self.metabot_bodies.append(body)
                 assert session.native_conversation is not None
                 assert body["conversation_id"] == str(
                     session.native_conversation.conversation_id
                 )
                 self.query_ids.append(query_id)
+                source_table = (
+                    10
+                    if self.repeat_query_on_repair and self.metabot_posts > 1
+                    else 10 + self.metabot_posts - 1
+                )
                 native_query = {
                     "database": 1,
                     "type": "query",
-                    "query": {"source-table": 10},
+                    "query": {"source-table": source_table},
                 }
                 generated = {
                     "type": "generated_entity",
@@ -250,14 +258,40 @@ class BridgeFactory:
                         }
                     },
                 }
+                state = {
+                    "type": "state",
+                    "value": {"queries": {query_id: native_query}},
+                }
                 return httpx.Response(
                     202,
                     text=(
                         "2:"
                         + json.dumps(generated, separators=(",", ":"))
+                        + "\n2:"
+                        + json.dumps(state, separators=(",", ":"))
                         + "\n"
                         + 'd:{"finishReason":"stop"}\n'
                     ),
+                )
+            if (
+                request.method == "GET"
+                and request.url.path.startswith("/api/metabot/conversations/")
+            ):
+                assert session.native_conversation is not None
+                return httpx.Response(
+                    200,
+                    json={
+                        "conversation_id": str(
+                            session.native_conversation.conversation_id
+                        ),
+                        "chat_messages": [
+                            {
+                                "role": "user",
+                                "type": "text",
+                                "message": "prior governed material turn",
+                            }
+                        ],
+                    },
                 )
             raise AssertionError(
                 f"unexpected native call: {request.method} {request.url.path}"
@@ -281,9 +315,11 @@ class MaterialExecutor:
         *,
         crash_once: bool = False,
         limit_first: bool = False,
+        repairable_failures: int = 0,
     ) -> None:
         self.crash_once = crash_once
         self.limit_first = limit_first
+        self.repairable_failures = repairable_failures
         self.calls: list[tuple[str, str, dict, str]] = []
 
     def execute(
@@ -317,6 +353,12 @@ class MaterialExecutor:
             raise ResearchMaterialLimitation(
                 "NATIVE_QUERY_RUNTIME_REPRESENTATION_UNSUPPORTED",
                 "captured native representation is unavailable",
+            )
+        if self.repairable_failures > 0:
+            self.repairable_failures -= 1
+            raise ResearchMaterialLimitation(
+                "R1_RESULT_COMPARISON_COVERAGE_INCOMPLETE",
+                "symbolic_reference_period",
             )
         suffix = "4" if obligation_id == "g1" else "5"
         receipt = _receipt(
@@ -597,6 +639,103 @@ def test_product_research_runs_native_turn_and_persists_receipted_evidence():
     assert restored.stopping.status == StoppingStatus.COMPLETE
     assert restored.native_conversation is not None
     assert response.native_conversation_id == restored.native_conversation.conversation_id
+
+
+def test_repairable_material_miss_uses_one_durable_same_metabot_repair():
+    engine = _db_engine()
+    factory = BridgeFactory()
+    executor = MaterialExecutor(repairable_failures=1)
+    product = _product(engine, factory, executor)
+    session = _start(product, two=False)
+
+    response = product.run_next(
+        session_id=session.session_id,
+        principal=_principal(),
+    )
+    restored = product.resume_state(
+        session_id=session.session_id,
+        principal=_principal(),
+    )
+    store = ResearchSessionStore(engine)
+
+    assert response.evidence_id is not None
+    assert response.limitation_code is None
+    assert restored.obligations[0].state == ObligationState.VERIFIED
+    assert factory.metabot_posts == 2
+    assert len(executor.calls) == 2
+    assert executor.calls[0][3] != executor.calls[1][3]
+    assert store.material_repair_attempt_count(
+        session_id=session.session_id,
+        obligation_id="g1",
+    ) == 1
+    verified = store.verified_link(
+        session_id=session.session_id,
+        obligation_id="g1",
+    )
+    assert verified.execution_kind == "P14_REPAIR"
+
+    first, second = factory.metabot_bodies
+    assert second["conversation_id"] == first["conversation_id"]
+    assert second["history"]
+    assert second["state"]
+    assert (
+        second["context"]["dima_analytical_scope"]
+        == first["context"]["dima_analytical_scope"]
+    )
+    assert second["context"]["dima_material_repair_feedback"] == {
+        "schema": "dima_material_repair_feedback_v1",
+        "validation_code": "R1_RESULT_COMPARISON_COVERAGE_INCOMPLETE",
+        "validation_detail": "symbolic_reference_period",
+        "repair_attempt": 1,
+        "required_action": "REGENERATE_NATIVE_QUERY",
+        "require_new_query_fingerprint": True,
+        "preserve_scope_identity": True,
+        "preserve_material_contract": True,
+    }
+
+
+def test_second_repairable_material_miss_is_terminal_without_third_turn():
+    engine = _db_engine()
+    factory = BridgeFactory()
+    executor = MaterialExecutor(repairable_failures=2)
+    product = _product(engine, factory, executor)
+    session = _start(product, two=False)
+
+    response = product.run_next(
+        session_id=session.session_id,
+        principal=_principal(),
+    )
+    restored = product.resume_state(
+        session_id=session.session_id,
+        principal=_principal(),
+    )
+
+    assert response.evidence_id is None
+    assert (
+        response.limitation_code
+        == "R1_RESULT_COMPARISON_COVERAGE_INCOMPLETE"
+    )
+    assert restored.obligations[0].state == ObligationState.LIMITED
+    assert factory.metabot_posts == 2
+    assert len(executor.calls) == 2
+
+
+def test_repair_must_generate_new_query_fingerprint():
+    engine = _db_engine()
+    factory = BridgeFactory(repeat_query_on_repair=True)
+    executor = MaterialExecutor(repairable_failures=1)
+    product = _product(engine, factory, executor)
+    session = _start(product, two=False)
+
+    response = product.run_next(
+        session_id=session.session_id,
+        principal=_principal(),
+    )
+
+    assert response.evidence_id is None
+    assert response.limitation_code == "P14_REPAIR_REPEATED_NATIVE_QUERY"
+    assert factory.metabot_posts == 2
+    assert len(executor.calls) == 1
 
 
 def test_restart_resumes_exact_occurrence_without_replaying_metabot_turn():
