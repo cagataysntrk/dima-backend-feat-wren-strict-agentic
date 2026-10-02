@@ -12,6 +12,10 @@ from sqlmodel import SQLModel, Session, create_engine, select
 
 import app.v3.research_analytical_scope as scope_module
 import app.v3.research_native_gateway as gateway_module
+from app.v3.analytical_request_contract import (
+    AnalyticalRequestContract,
+    AnalyticalScopeIdentity,
+)
 from app.v3.native_standard.contracts import NativeAttestationEnvelope
 from app.v3.research_contracts import (
     ResearchBrief,
