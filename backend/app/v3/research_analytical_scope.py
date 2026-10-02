@@ -225,6 +225,8 @@ def _provenance_identity(question: ResearchQuestion) -> str:
 def _cross_fragment_material_compatible(
     anchor: ResearchQuestion,
     relationship: ResearchQuestion,
+    *,
+    temporal_dimension_ids: frozenset[str] = frozenset(),
 ) -> bool:
     """Prove one safe cross-clause material-sharing class from typed authority.
 
@@ -260,15 +262,22 @@ def _cross_fragment_material_compatible(
         if item.target_kind
         in {SemanticTargetKind.METRIC, SemanticTargetKind.KPI}
     }
+    # Scope temporal identity is period/filter authority unless the accepted
+    # material contract explicitly promotes it to analytical grain. Raw intake
+    # refs may carry the date dimension on only one clause, so treating every
+    # temporal ref as a Group By dimension would split otherwise identical
+    # material needs and duplicate native acquisition.
     anchor_dimensions = {
         item.candidate_id
         for item in anchor_refs
         if item.target_kind == SemanticTargetKind.DIMENSION
+        and item.candidate_id not in temporal_dimension_ids
     }
     relationship_dimensions = {
         item.candidate_id
         for item in relationship_refs
         if item.target_kind == SemanticTargetKind.DIMENSION
+        and item.candidate_id not in temporal_dimension_ids
     }
     if (
         not anchor_metrics
@@ -455,7 +464,13 @@ def coorigin_material_requirements(
         relationship.goal_id: tuple(
             anchor
             for anchor in cross_anchors
-            if _cross_fragment_material_compatible(anchor, relationship)
+            if _cross_fragment_material_compatible(
+                anchor,
+                relationship,
+                temporal_dimension_ids=frozenset(
+                    brief.scope.temporal_dimension_ids
+                ),
+            )
         )
         for relationship in cross_relationships
     }
