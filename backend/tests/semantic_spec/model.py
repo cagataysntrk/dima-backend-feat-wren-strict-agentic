@@ -179,6 +179,26 @@ def semantic_admission_allowed(spec: AdmissionSpec) -> bool:
 
 
 @dataclass(frozen=True)
+class EntityFilterAdmissionSpec:
+    """Independent Law 2/3 model for one governed entity-filter field."""
+
+    required_values: FrozenSet[str]
+    observed_values: FrozenSet[str]
+    same_governed_field: bool = True
+    exact_membership_operator: bool = True
+
+
+def entity_filter_admission_allowed(spec: EntityFilterAdmissionSpec) -> bool:
+    """Physical predicate count is not authority; exact governed value-set is."""
+
+    return (
+        spec.same_governed_field
+        and spec.exact_membership_operator
+        and spec.observed_values == spec.required_values
+    )
+
+
+@dataclass(frozen=True)
 class CompletionSpec:
     required_owner_ids: FrozenSet[str]
     terminal_owner_ids: FrozenSet[str]
