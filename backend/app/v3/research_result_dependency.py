@@ -31,6 +31,7 @@ class ResultDependencyProjectionError(RuntimeError):
 
 class ResultSelectionResolution(FrozenModel):
     source_goal_id: str = Field(min_length=1)
+    source_execution_obligation_id: str = Field(min_length=1)
     source_evidence_id: str = Field(min_length=1)
     source_receipt_id: str = Field(min_length=1)
     source_result_hash: str = Field(pattern=r"^[a-f0-9]{64}$")
@@ -76,8 +77,11 @@ def resolve_first_ranked_entity(
     native_field_id: int,
     parent_result: dict[str, Any],
     dimension_name: str | None = None,
+    source_execution_obligation_id: str | None = None,
 ) -> ResultSelectionResolution:
     """Bind the first source-backed ranked row without re-ranking or recalculation."""
+
+    execution_obligation_id = source_execution_obligation_id or source_goal_id
 
     data = parent_result.get("data")
     if not isinstance(data, dict):
@@ -138,6 +142,7 @@ def resolve_first_ranked_entity(
     if not any(item.value == selected for item in same_dimension):
         provenance = {
             "source_goal_id": source_goal_id,
+            "source_execution_obligation_id": execution_obligation_id,
             "source_evidence_id": source_evidence_id,
             "source_receipt_id": source_receipt_id,
             "source_result_hash": source_result_hash,
@@ -169,6 +174,7 @@ def resolve_first_ranked_entity(
 
     return ResultSelectionResolution(
         source_goal_id=source_goal_id,
+        source_execution_obligation_id=execution_obligation_id,
         source_evidence_id=source_evidence_id,
         source_receipt_id=source_receipt_id,
         source_result_hash=source_result_hash,
