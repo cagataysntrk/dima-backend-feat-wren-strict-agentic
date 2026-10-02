@@ -48,6 +48,25 @@ def transport(stream_lines: list[str], *, runtime_tag: str = "v0.63.18-dima.0"):
     return httpx.MockTransport(handler)
 
 
+def test_c2_request_observer_receives_exact_native_http_paths():
+    seen = []
+
+    with NativeEngineBridge(
+        base_url="http://metabase",
+        session_token="fixture-session",
+        expected_identity=IDENTITY,
+        transport=transport(['d:{"finishReason":"stop"}']),
+        request_observer=lambda method, path: seen.append((method, path)),
+    ) as bridge:
+        bridge.invoke(req())
+
+    assert seen == [
+        ("GET", "/api/session/properties"),
+        ("POST", "/api/metabot/agent-streaming"),
+    ]
+    assert all(not path.startswith("/api/agent") for _, path in seen)
+
+
 def test_c2_request_requires_dima_correlation_ids():
     with pytest.raises(ValidationError):
         NativeEngineRequest(

@@ -17,7 +17,7 @@ import hashlib
 import uuid
 from contextlib import contextmanager
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Callable
 
 from sqlmodel import Session, select
 
@@ -94,10 +94,12 @@ class NativeSubjectSessionProvider:
         base_url: str,
         expected_identity: NativeEngineIdentity,
         db_engine=None,
+        request_observer: Callable[[str, str], None] | None = None,
     ) -> None:
         self._base_url = base_url.rstrip("/")
         self._expected = expected_identity
         self._engine = db_engine or control_plane_engine
+        self._request_observer = request_observer
         if not self._base_url:
             raise ValueError("native Metabase base_url is required")
 
@@ -175,6 +177,7 @@ class NativeSubjectSessionProvider:
             base_url=self._base_url,
             session_token=token,
             expected_identity=self._expected,
+            request_observer=self._request_observer,
         )
         try:
             current = bridge.current_user()

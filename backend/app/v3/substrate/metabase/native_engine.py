@@ -10,7 +10,7 @@ import hashlib
 import json
 import time
 from urllib.parse import quote_plus
-from typing import Any
+from typing import Any, Callable
 from uuid import UUID
 
 import httpx
@@ -69,17 +69,24 @@ class NativeEngineBridge:
         expected_identity: NativeEngineIdentity,
         timeout_seconds: float = 240.0,
         transport: httpx.BaseTransport | None = None,
+        request_observer: Callable[[str, str], None] | None = None,
     ) -> None:
         if not base_url.strip():
             raise ValueError("base_url is required")
         if not session_token.strip():
             raise ValueError("session_token is required")
         self._expected = expected_identity
+        event_hooks = None
+        if request_observer is not None:
+            def observe_request(request: httpx.Request) -> None:
+                request_observer(request.method, request.url.path)
+            event_hooks = {"request": [observe_request]}
         self._client = httpx.Client(
             base_url=base_url.rstrip("/"),
             timeout=timeout_seconds,
             transport=transport,
             headers={"X-Metabase-Session": session_token},
+            event_hooks=event_hooks,
         )
 
     def close(self) -> None:
