@@ -737,3 +737,69 @@ Next legal action:
 - prove final-report epistemic transparency: when a REPORT presentation reaches final P20 with
   only governed observations and no governed P16/P18/P19 interpretation, the sealed report must
   explicitly remain observation-only instead of implying higher-order analysis.
+
+
+### Step 9 closure — final REPORT epistemic transparency
+
+Independent law:
+
+- a requested REPORT that reaches final P20 with exact governed observations but no governed
+  P16/P18/P19 interpretation must expose that epistemic ceiling;
+- the presentation layer must not make descriptive Evidence look like a higher-order finding.
+
+Intentional RED:
+
+- run `37056396326` = 127 passed / exactly 1 failed;
+- only failure: no `P20_REPORT_OBSERVATION_ONLY` limitation existed.
+
+Generic root fix:
+
+- the rule runs on the **final composed P20 draft**, after any P16/P18/P19 statements could
+  already have been added;
+- REPORT + observation/numeric material + no analytical/relationship/RCA interpretation
+  => one deterministic `P20_REPORT_OBSERVATION_ONLY` limitation + visible LIMITATION statement;
+- no REPORT deliverable => no such limitation;
+- any governed analytical/relationship/RCA interpretation => no observation-only limitation;
+- restart is idempotent and produces the same report identity;
+- P20 still creates no upstream truth and performs no analytics.
+
+Provider-free proof:
+
+- root fix run `37056723598` = 128 passed;
+- negative/idempotency sibling run `37056774752` = 131 passed.
+
+Owner status:
+**P20 GOVERNED SYNTHESIS / PRESENTATION SAFETY — GREEN / FREEZE**.
+
+Law 7 closure statement:
+
+- source-backed row/column meaning is preserved;
+- multi-metric rows remain coherent observations;
+- P16/P18/P19 findings retain their existing epistemic owners;
+- missing higher-order interpretation is made explicit instead of invented;
+- no Metabot call is opened for prose;
+- no arithmetic/ranking/causal cognition was moved into P20.
+
+The remaining F01_H-style request for derived absolute/percentage/contributor outputs is not
+silently reimplemented in P20 because those requested derived output semantics are not separately
+encoded in the accepted typed authority. This is an intake/material-specification boundary, not
+permission for prompt parsing or a second analytics engine.
+
+### Step 10 — mandatory provider-free closure certification
+
+No further Product behavior change is authorized before certification unless a required gate
+produces a new reproducer.
+
+Required aggregate proof now:
+
+- existing Brain V2/2.1 provider-free suites;
+- security/currentness;
+- existing high-volume Hypothesis floors;
+- new semantic conformance suite;
+- checkpoint/resume;
+- P14 continuation/repair;
+- P18/P19/P20 regressions;
+- repository/forbidden-authority hygiene;
+- engine gitlink unchanged at dima.9.
+
+Only after aggregate GREEN may one surgical paid recovery panel be frozen.
