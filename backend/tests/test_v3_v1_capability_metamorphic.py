@@ -762,7 +762,7 @@ def test_alt_reporting_second_variant_keeps_deliverable_separate_from_analytics(
     )
     assert ledger.process_complete is True
     assert ledger.requirement_complete is True
-    assert len(ledger.fulfillments) == 2
+    assert len(ledger.entries) == 2
 
 
 def test_alt_multi_intent_second_variant_shares_material_independent_of_requirement_order():
