@@ -1225,3 +1225,31 @@ Runtime/planner RED now required independently:
 The focused Brain V2 workflow does not include
 `test_v3_brain_v2_material_groups.py`; therefore the canonical aggregate Phase-1 suite is
 triggered specifically to obtain the runtime RED before Product planner changes.
+
+
+### Step 11D — execution-local result overlay RED
+
+Planner RED `37065586587`:
+
+- 138 passed / exactly 1 failed;
+- failure was only the missing dependency-aware MaterialGroup selector.
+
+Generic planner closure:
+
+- dependent child groups now retain `dependency_requirement_ids`;
+- result-dependent child cannot co-origin-merge with its parent occurrence;
+- a deterministic readiness selector maps requirement dependencies to completed MaterialGroups;
+- `owner_adapter.py` contains no new semantic branch; it delegates readiness to
+  `material_groups.py`.
+
+Next independent RED is P14 execution binding:
+
+- parent result exposes exact source field identity + ranked rows;
+- FIRST_RANKED_ENTITY must select the exact first row value for the governed dimension;
+- the derived filter is execution-local;
+- accepted scope identity/fingerprint must remain unchanged;
+- source result/evidence/receipt/hash provenance must bind the derived material identity;
+- no SQL/MBQL/delta/business calculation is introduced.
+
+Canonical Phase-1 is triggered before implementing this resolver so the RED is observed in the
+existing provider-free gate.
