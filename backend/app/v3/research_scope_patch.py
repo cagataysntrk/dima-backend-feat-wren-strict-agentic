@@ -114,12 +114,57 @@ class TurnScopePatch(FrozenModel):
     operations: tuple[ScopePatchOperation, ...] = ()
 
     @model_validator(mode="after")
-    def one_operation_per_facet(self):
-        facets = tuple(item.facet for item in self.operations)
-        if len(facets) != len(set(facets)):
-            raise ValueError(
-                "one follow-up turn may carry at most one operation per scope facet"
+    def same_facet_operations_have_one_net_meaning(self):
+        by_facet: dict[ScopePatchFacet, list[ScopePatchOperation]] = {}
+        for item in self.operations:
+            by_facet.setdefault(item.facet, []).append(item)
+
+        for facet, items in by_facet.items():
+            replacements = tuple(
+                item
+                for item in items
+                if item.operation
+                in {ScopePatchOperationKind.SET, ScopePatchOperationKind.CLEAR}
             )
+            if len(replacements) > 1:
+                raise ValueError(
+                    f"{facet.value} patch carries multiple replacement authorities"
+                )
+
+            def identities(item: ScopePatchOperation) -> set[tuple | str]:
+                if facet == ScopePatchFacet.PERIOD:
+                    return {
+                        _period_identity(value)
+                        for value in item.periods
+                    }
+                return {
+                    value.candidate_id
+                    for value in item.semantic_refs
+                }
+
+            added: set[tuple | str] = set()
+            removed: set[tuple | str] = set()
+            binding_by_id: dict[str, ResearchNativeVerificationBinding] = {}
+            for item in items:
+                values = identities(item)
+                if item.operation == ScopePatchOperationKind.ADD:
+                    added.update(values)
+                elif item.operation == ScopePatchOperationKind.REMOVE:
+                    removed.update(values)
+                for binding in item.native_verification_bindings:
+                    prior = binding_by_id.get(binding.candidate_id)
+                    if prior is not None and prior != binding:
+                        raise ValueError(
+                            "scope patch carries conflicting native bindings "
+                            f"for {binding.candidate_id}"
+                        )
+                    binding_by_id[binding.candidate_id] = binding
+
+            overlap = added & removed
+            if overlap:
+                raise ValueError(
+                    f"{facet.value} patch both adds and removes the same identity"
+                )
         return self
 
 
@@ -263,6 +308,41 @@ def _apply_period_operation(
     raise AssertionError(operation.operation)
 
 
+_OPERATION_PRIORITY = {
+    ScopePatchOperationKind.SET: 0,
+    ScopePatchOperationKind.CLEAR: 0,
+    ScopePatchOperationKind.ADD: 1,
+    ScopePatchOperationKind.REMOVE: 2,
+}
+
+
+def _operation_semantic_key(
+    operation: ScopePatchOperation,
+) -> tuple:
+    if operation.facet == ScopePatchFacet.PERIOD:
+        values = tuple(
+            sorted(_period_identity(item) for item in operation.periods)
+        )
+    else:
+        values = tuple(
+            sorted(item.candidate_id for item in operation.semantic_refs)
+        )
+    return (
+        operation.facet.value,
+        _OPERATION_PRIORITY[operation.operation],
+        operation.operation.value,
+        values,
+    )
+
+
+def _canonical_patch_operations(
+    operations: tuple[ScopePatchOperation, ...],
+) -> tuple[ScopePatchOperation, ...]:
+    """Order explicit operations by semantic role, never provider tuple order."""
+
+    return tuple(sorted(operations, key=_operation_semantic_key))
+
+
 def _derive_mutation_kind(
     *,
     changed_facets: tuple[ScopePatchFacet, ...],
@@ -359,8 +439,9 @@ def resolve_scope_patch(
     old_breakdowns = set(breakdowns)
     old_periods = set(periods)
 
+    canonical_operations = _canonical_patch_operations(patch.operations)
     operation_bindings: dict[str, ResearchNativeVerificationBinding] = {}
-    for operation in patch.operations:
+    for operation in canonical_operations:
         operation_bindings.update(
             _binding_map(operation.native_verification_bindings)
         )
@@ -463,7 +544,7 @@ def resolve_scope_patch(
     )
     assert kind is not None
     reason = " | ".join(
-        item.source_fragment for item in patch.operations
+        item.source_fragment for item in canonical_operations
     )
     mutation = ScopeMutation(
         kind=kind,
