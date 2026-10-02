@@ -1293,6 +1293,55 @@ def test_request_scoped_intake_schema_closes_authority_ids_before_domain_executi
     ) == legal_ids
 
 
+def test_provider_schema_keeps_temporal_comparison_out_of_stochastic_comparison_items():
+    schema = _intake_provider_schema(_r6_temporal_catalog())
+    comparison = schema["$defs"]["ModelComparisonDraft"]
+    roles = set(comparison["properties"]["role"]["enum"])
+
+    assert ComparisonRole.TEMPORAL_PERIOD.value not in roles
+    assert roles == {
+        ComparisonRole.ENTITY_OR_MEASURE.value,
+        ComparisonRole.CAUSAL_CANDIDATE.value,
+    }
+
+
+def test_standalone_temporal_comparison_is_derived_from_role_bound_periods():
+    payload = ready_payload(
+        kind="comparison",
+        subject=("metric.downtime", "metric.fault_count"),
+    )
+    payload["goals"][0]["comparisons"] = []
+    payload["time_periods"] = [
+        _r6_period(
+            "May 2026",
+            "2026-05-01",
+            "2026-06-01",
+            role="baseline_period",
+        ),
+        _r6_period(
+            "June 2026",
+            "2026-06-01",
+            "2026-07-01",
+            role="comparison_period",
+        ),
+    ]
+
+    result = ResearchIntakeCompiler(
+        transport=FakeTransport(payload)
+    ).compile(
+        question="Compare May and June 2026 downtime and faults.",
+        catalog=_r6_temporal_catalog(),
+    )
+
+    assert result.brief is not None
+    assert len(result.brief.questions) == 1
+    question = result.brief.questions[0]
+    assert question.kind == ResearchGoalKind.COMPARISON
+    assert tuple(item.role for item in question.comparisons) == (
+        ComparisonRole.TEMPORAL_PERIOD,
+    )
+
+
 def test_provider_intake_schema_is_terminal_payload_not_domain_kitchen_sink():
     schema = _intake_provider_schema(catalog())
     assert set(schema["properties"]) == {"result"}
