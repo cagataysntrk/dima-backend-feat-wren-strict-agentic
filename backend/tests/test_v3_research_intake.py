@@ -237,8 +237,8 @@ def test_change_ranking_intake_preserves_basis_and_role_bound_periods():
 
 def test_result_dependency_dimension_can_constrain_child_without_child_breakout():
     question = (
-        "Rank governed departments, then inspect the selected department "
-        "using a different governed breakdown."
+        "Rank governed departments. "
+        "Inspect the selected department by machine."
     )
     payload = ready_payload(
         kind="ranking",
