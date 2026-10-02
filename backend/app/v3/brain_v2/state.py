@@ -50,6 +50,13 @@ class BrainGraphState(BaseModel):
 
     open_requirement_ids: tuple[str, ...] = ()
     material_requirement_ids: tuple[str, ...] = ()
+    material_group_ids: tuple[str, ...] = ()
+    completed_material_group_ids: tuple[str, ...] = ()
+    active_material_group_id: str | None = Field(
+        default=None, pattern=r"^mg_[a-f0-9]{24}$"
+    )
+    active_requirement_id: str | None = Field(default=None, min_length=1)
+    terminal_requirement_ids: tuple[str, ...] = ()
     investigation_requirement_ids: tuple[str, ...] = ()
     follow_verified_material_goal_ids: tuple[str, ...] = ()
     pending_evidence_ids: tuple[str, ...] = ()
@@ -75,6 +82,11 @@ class BrainGraphState(BaseModel):
     adaptive_reentries: int = Field(default=0, ge=0)
     max_adaptive_reentries: int = Field(default=1, ge=0, le=4)
 
+    p18_requirement_ids: tuple[str, ...] = ()
+    p18_claim_refs: tuple[str, ...] = ()
+    p18_policy_use_refs: tuple[str, ...] = ()
+    completion_revision: int = Field(default=0, ge=0)
+
     report_ref: str | None = Field(
         default=None, pattern=r"^p20r_[a-f0-9]{24}$"
     )
@@ -90,6 +102,12 @@ class BrainGraphState(BaseModel):
         unique_fields = {
             "open_requirement_ids": self.open_requirement_ids,
             "material_requirement_ids": self.material_requirement_ids,
+            "material_group_ids": self.material_group_ids,
+            "completed_material_group_ids": self.completed_material_group_ids,
+            "terminal_requirement_ids": self.terminal_requirement_ids,
+            "p18_requirement_ids": self.p18_requirement_ids,
+            "p18_claim_refs": self.p18_claim_refs,
+            "p18_policy_use_refs": self.p18_policy_use_refs,
             "investigation_requirement_ids": self.investigation_requirement_ids,
             "follow_verified_material_goal_ids": (
                 self.follow_verified_material_goal_ids
@@ -109,6 +127,26 @@ class BrainGraphState(BaseModel):
             raise ValueError("open requirement refs must be non-empty")
         if any(not value for value in self.material_requirement_ids):
             raise ValueError("material requirement refs must be non-empty")
+        if any(not value.startswith("mg_") for value in self.material_group_ids):
+            raise ValueError("material group refs must use canonical identity")
+        if any(
+            value not in set(self.material_group_ids)
+            for value in self.completed_material_group_ids
+        ):
+            raise ValueError("completed material group must belong to current plan")
+        if (
+            self.active_material_group_id is not None
+            and self.active_material_group_id not in set(self.material_group_ids)
+        ):
+            raise ValueError("active material group must belong to current plan")
+        if len(self.p18_requirement_ids) != len(self.p18_claim_refs):
+            raise ValueError("P18 requirement/claim refs must be paired")
+        if len(self.p18_requirement_ids) != len(self.p18_policy_use_refs):
+            raise ValueError("P18 requirement/policy-use refs must be paired")
+        if any(not value.startswith("clm_") for value in self.p18_claim_refs):
+            raise ValueError("P18 claim refs must use canonical identity")
+        if any(not value.startswith("bru_") for value in self.p18_policy_use_refs):
+            raise ValueError("P18 policy-use refs must use canonical identity")
         if len(self.pending_evidence_ids) != len(self.pending_receipt_refs):
             raise ValueError("pending Evidence/receipt refs must be paired")
         if any(not value.startswith("evi_") for value in self.evidence_ids):
@@ -141,6 +179,11 @@ class BrainStatePayload(TypedDict, total=False):
     scope_version_id: str | None
     open_requirement_ids: tuple[str, ...]
     material_requirement_ids: tuple[str, ...]
+    material_group_ids: tuple[str, ...]
+    completed_material_group_ids: tuple[str, ...]
+    active_material_group_id: str | None
+    active_requirement_id: str | None
+    terminal_requirement_ids: tuple[str, ...]
     investigation_requirement_ids: tuple[str, ...]
     follow_verified_material_goal_ids: tuple[str, ...]
     pending_evidence_ids: tuple[str, ...]
@@ -158,6 +201,10 @@ class BrainStatePayload(TypedDict, total=False):
     latest_p19_route: BrainP19Route | None
     adaptive_reentries: int
     max_adaptive_reentries: int
+    p18_requirement_ids: tuple[str, ...]
+    p18_claim_refs: tuple[str, ...]
+    p18_policy_use_refs: tuple[str, ...]
+    completion_revision: int
     report_ref: str | None
     workflow_status: BrainWorkflowStatus
     last_completed_node: str | None
