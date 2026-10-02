@@ -9,6 +9,10 @@ import hashlib
 import json
 from typing import Any
 
+from app.v3.business_relationship_policy import (
+    BusinessRelationshipPolicyStore,
+    RelationshipPolicyRequirement,
+)
 from app.v3.hypothesis_root_cause import (
     AggregateOutcome,
     ContributionClass,
@@ -36,6 +40,7 @@ from app.v3.report_document import (
     stable_statement_id,
 )
 from app.v3.research_contracts import (
+    RelationshipIntent,
     ResearchGoalKind,
     ResearchQuestion,
     SemanticTargetKind,
@@ -72,6 +77,7 @@ from .activities import (
     IntakeActivityResult,
     MaterialActivityResult,
     MaterialGroupActivityResult,
+    P18ActivityResult,
     RequirementPlanActivityResult,
     P17ActivityResult,
     P19ActivityResult,
@@ -126,6 +132,29 @@ def _canonical(value: Any) -> str:
 
 def _fingerprint(value: Any) -> str:
     return hashlib.sha256(_canonical(value).encode("utf-8")).hexdigest()
+
+
+class _RelationshipInterpretationProposalManager:
+    """One bounded FORM_CLAIM interpretation over already VERIFIED Evidence."""
+
+    def __init__(
+        self,
+        *,
+        inner,
+        target_parent_obligation: str,
+        allowed_evidence_refs: tuple[str, ...],
+    ) -> None:
+        self._inner = inner
+        self._target_parent_obligation = target_parent_obligation
+        self._allowed_evidence_refs = allowed_evidence_refs
+
+    def propose(self, snapshot):
+        return self._inner.propose_for_obligation_with_constraints(
+            snapshot,
+            target_parent_obligation=self._target_parent_obligation,
+            allowed_evidence_refs=self._allowed_evidence_refs,
+            allowed_intents=(InvestigationIntent.FORM_CLAIM,),
+        )
 
 
 class _DiscoveryProposalManager:
@@ -260,6 +289,7 @@ class DimaBrainV2Activities(BrainActivities):
         epistemics: HypothesisRootCauseStore,
         epistemic_manager,
         reports: ReportDocumentStore,
+        relationships: BusinessRelationshipPolicyStore | None = None,
         native_session_token: str | None,
         engine_identity: str,
         model_profile: str = "openai/gpt-5.6-luna",
@@ -275,6 +305,7 @@ class DimaBrainV2Activities(BrainActivities):
         self._epistemics = epistemics
         self._epistemic_manager = epistemic_manager
         self._reports = reports
+        self._relationships = relationships
         self._native_session_token = native_session_token
         self._engine_identity = str(engine_identity or "").strip()
         self._model_profile = str(model_profile or "").strip()
@@ -1013,6 +1044,185 @@ class DimaBrainV2Activities(BrainActivities):
                     "session": session.session_id,
                     "scope": state.scope_version_id,
                     "pairs": list(pending),
+                }
+            ),
+        )
+
+    @staticmethod
+    def _relationship_refs(
+        goal: ResearchQuestion,
+    ) -> tuple[str, str, tuple[str, ...]]:
+        refs = tuple(dict.fromkeys((*goal.subject_refs, *goal.related_refs)))
+        measures = tuple(
+            item.candidate_id
+            for item in refs
+            if item.target_kind
+            in {SemanticTargetKind.METRIC, SemanticTargetKind.KPI}
+        )
+        if len(measures) < 2:
+            raise BrainV2OwnerError(
+                "BRAIN_V2_RELATIONSHIP_MEASURE_PAIR_REQUIRED",
+                goal.goal_id,
+            )
+        dimensions = tuple(
+            item.candidate_id
+            for item in refs
+            if item.target_kind == SemanticTargetKind.DIMENSION
+        )
+        return measures[0], measures[1], dimensions
+
+    def adjudicate_relationship(
+        self,
+        state: BrainGraphState,
+    ) -> P18ActivityResult:
+        if self._relationships is None:
+            raise BrainV2OwnerError(
+                "BRAIN_V2_P18_OWNER_REQUIRED",
+                state.active_requirement_id or "relationship",
+            )
+        session = self._session(state)
+        brief = session.accepted_brief
+        assert brief is not None
+        requirement_id = state.active_requirement_id
+        if requirement_id is None:
+            raise BrainV2OwnerError(
+                "BRAIN_V2_ACTIVE_REQUIREMENT_REQUIRED",
+                "P18",
+            )
+        goal = next(
+            (
+                item
+                for item in brief.questions
+                if item.goal_id == requirement_id
+            ),
+            None,
+        )
+        if goal is None or goal.kind != ResearchGoalKind.RELATIONSHIP:
+            raise BrainV2OwnerError(
+                "BRAIN_V2_P18_REQUIREMENT_INVALID",
+                requirement_id,
+            )
+
+        group = next(
+            (
+                item
+                for item in project_material_groups(session)
+                if requirement_id in set(item.consumer_requirement_ids)
+            ),
+            None,
+        )
+        if group is None or group.material_group_id not in set(
+            state.completed_material_group_ids
+        ):
+            raise BrainV2OwnerError(
+                "BRAIN_V2_P18_MATERIAL_NOT_COMPLETE",
+                requirement_id,
+            )
+        material_goal = next(
+            item
+            for item in brief.questions
+            if item.goal_id == group.anchor_requirement_id
+        )
+        evidence_pairs = self._evidence_pairs(
+            session,
+            material_goal.goal_id,
+        )
+        if not evidence_pairs:
+            raise BrainV2OwnerError(
+                "BRAIN_V2_P18_EVIDENCE_REQUIRED",
+                requirement_id,
+            )
+
+        before = self._investigation.snapshot(
+            session_id=session.session_id,
+            principal=self._principal,
+        )
+        before_evidence = tuple(before.evidence_refs)
+        step, _ = self._investigation.run_one(
+            session_id=session.session_id,
+            principal=self._principal,
+            manager=_RelationshipInterpretationProposalManager(
+                inner=self._investigation_manager,
+                target_parent_obligation=material_goal.goal_id,
+                allowed_evidence_refs=tuple(item[0] for item in evidence_pairs),
+            ),
+            # FORM_CLAIM must interpret already governed material only.
+            native_session_token=None,
+            downstream_reentry_intent=InvestigationIntent.FORM_CLAIM,
+            downstream_reentry_obligation_id=material_goal.goal_id,
+        )
+        after = self._investigation.snapshot(
+            session_id=session.session_id,
+            principal=self._principal,
+        )
+        if tuple(after.evidence_refs) != before_evidence:
+            raise BrainV2OwnerError(
+                "BRAIN_V2_P18_INTERPRETATION_OPENED_ANALYTICS",
+                requirement_id,
+                last_valid_boundary="dima.evidence.admit",
+                first_invalid_boundary="dima.p18.adjudicate",
+            )
+        before_claim_ids = {item.claim_id for item in before.claims}
+        new_claims = tuple(
+            item for item in after.claims
+            if item.claim_id not in before_claim_ids
+            and item.obligation_id == material_goal.goal_id
+        )
+        if len(new_claims) != 1:
+            raise BrainV2OwnerError(
+                "BRAIN_V2_P18_INTERPRETATION_CLAIM_REQUIRED",
+                requirement_id,
+            )
+        claim = new_claims[0]
+        source_ref, target_ref, dimensions = self._relationship_refs(goal)
+        applicability_scope = {
+            "accepted_relationship_goal_id": goal.goal_id,
+            "semantic_ref_ids": sorted(
+                {
+                    item.candidate_id
+                    for item in (*goal.subject_refs, *goal.related_refs)
+                }
+            ),
+            "dimension_ref_ids": list(dimensions),
+        }
+        policy_key = "relationship:" + hashlib.sha256(
+            _canonical(
+                {
+                    "source": source_ref,
+                    "target": target_ref,
+                    "scope": applicability_scope,
+                }
+            ).encode("utf-8")
+        ).hexdigest()[:24]
+        decision = self._relationships.resolve(
+            requirement=RelationshipPolicyRequirement(
+                research_session_id=session.session_id,
+                obligation_id=material_goal.goal_id,
+                claim_id=claim.claim_id,
+                reasoning_step_id=step.step_id,
+                policy_key=policy_key,
+                source_business_ref=source_ref,
+                target_business_ref=target_ref,
+                semantic_context_version=session.context_version,
+                applicability_scope=applicability_scope,
+                required=(
+                    goal.relationship_intent
+                    != RelationshipIntent.OBSERVATIONAL
+                ),
+            ),
+            principal=self._principal,
+        )
+        return P18ActivityResult(
+            requirement_id=goal.goal_id,
+            claim_ref=claim.claim_id,
+            policy_use_ref=decision.policy_use_id,
+            activity_fingerprint=_fingerprint(
+                {
+                    "activity": "P18_ADJUDICATE",
+                    "requirement": goal.goal_id,
+                    "material_group": group.material_group_id,
+                    "claim": claim.claim_id,
+                    "policy_use": decision.policy_use_id,
                 }
             ),
         )
