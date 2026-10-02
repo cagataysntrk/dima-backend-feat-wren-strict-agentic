@@ -114,6 +114,7 @@ from .keys import CognitionPurpose, CognitionRequestKey, NativeMaterialRequestKe
 from .material_groups import (
     MaterialGroupDependencyError,
     project_material_groups,
+    result_dependency_execution_anchor,
     select_pending_material_group,
 )
 from .requirement_dispatch import RequirementOwner, dispatch_requirements
@@ -867,6 +868,22 @@ class DimaBrainV2Activities(BrainActivities):
                 activity_fingerprint=request_key.fingerprint,
             )
 
+        try:
+            dependency_source_obligation_id = result_dependency_execution_anchor(
+                session=session,
+                groups=tuple(groups.values()),
+                requirement_id=group.anchor_requirement_id,
+            )
+        except MaterialGroupDependencyError as exc:
+            raise BrainV2OwnerError(
+                exc.code,
+                exc.detail,
+                last_valid_boundary="dima.requirements.plan",
+                first_invalid_boundary="dima.material.group",
+                requirement_id=group.anchor_requirement_id,
+                material_group_id=group.material_group_id,
+            ) from exc
+
         with self._otel_bridge.operation(
             BoundaryName.NATIVE_EXECUTE,
             state=state,
@@ -880,6 +897,9 @@ class DimaBrainV2Activities(BrainActivities):
                 principal=self._principal,
                 obligation_id=group.anchor_requirement_id,
                 native_session_token=self._native_session_token,
+                result_dependency_source_obligation_id=(
+                    dependency_source_obligation_id
+                ),
             )
         if response.limitation_code is not None:
             if response.evidence_id is not None or response.receipt_id is not None:
