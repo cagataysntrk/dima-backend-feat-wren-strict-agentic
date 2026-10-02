@@ -1451,6 +1451,7 @@ def test_request_scoped_intake_schema_closes_authority_ids_before_domain_executi
         "source_fragment_text",
         "ranking",
         "comparisons",
+        "result_dependency",
         "kind",
         "allowed_relationship_id",
         "relationship_intent",
@@ -1520,6 +1521,12 @@ def test_request_scoped_intake_schema_closes_authority_ids_before_domain_executi
     assert set(
         breakdown["properties"]["related_semantic_ids"]["items"]["enum"]
     ) == legal_ids
+    dependency_ref = breakdown["properties"]["result_dependency"]["anyOf"][0]["$ref"]
+    dependency = schema["$defs"][dependency_ref.rsplit("/", 1)[-1]]
+    assert set(dependency["properties"]["dimension_semantic_id"]["enum"]) == {
+        "dimension.department",
+        "dimension.machine_id",
+    }
 
 
 def test_provider_schema_keeps_temporal_comparison_out_of_stochastic_comparison_items():
