@@ -68,6 +68,7 @@ def test_one_pass_mechanical_gate_reads_canonical_native_fingerprint() -> None:
         evidence_ids=("evi_" + "2" * 24,),
         hypothesis_ids=("p19h_" + "3" * 24, "p19h_" + "4" * 24),
         latest_p19_assessment_ref="p19a_" + "5" * 24,
+        report_requirement_ids=("d_report",),
         report_ref="p20r_" + "6" * 24,
         workflow_status=BrainWorkflowStatus.COMPLETE,
         last_completed_node="REPORT",
@@ -108,6 +109,55 @@ def test_one_pass_mechanical_gate_reads_canonical_native_fingerprint() -> None:
 
 
 
+def test_one_pass_without_presentation_requirement_does_not_require_report() -> None:
+    state = BrainGraphState(
+        thread_id="live:one-pass-no-report",
+        tenant_binding="id:tenant",
+        principal_ref="user-1",
+        research_session_id="rs_" + "2" * 24,
+        accepted_brief_ref="rb_no_report",
+        scope_version_id="scope_v1",
+        evidence_revision=1,
+        evidence_ids=("evi_" + "2" * 24,),
+        hypothesis_ids=("p19h_" + "3" * 24, "p19h_" + "4" * 24),
+        latest_p19_assessment_ref="p19a_" + "5" * 24,
+        report_ref=None,
+        report_requirement_ids=(),
+        workflow_status=BrainWorkflowStatus.COMPLETE,
+        last_completed_node="COMPLETE",
+    )
+    provider = {
+        "provider_requests_by_source": {
+            "research_intake": 1,
+            "metabase": 1,
+            "p17_manager": 0,
+            "p19_manager": 1,
+        },
+        "actual_provider_request_count": 3,
+        "prompt_tokens": 1000,
+        "blocked_request_count": 0,
+    }
+    result = _mechanical(
+        probe_id="R_LIVE_1_ONE_PASS",
+        state=state,
+        provider=provider,
+        links=(_link(),),
+        p17_snapshot=SimpleNamespace(
+            investigation=SimpleNamespace(nodes=()),
+            claims=(),
+        ),
+        p19_snapshot=SimpleNamespace(
+            hypotheses=(_grounded_hypothesis(), _grounded_hypothesis()),
+        ),
+        report_doc=None,
+    )
+
+    assert result["presentation_required"] is False
+    assert result["report_exists"] is False
+    assert result["report_contract_coherent"] is True
+    assert result["mechanical_green"] is True
+
+
 def test_discovery_mechanical_gate_accepts_governed_candidate_path() -> None:
     state = BrainGraphState(
         thread_id="live:discovery-candidates",
@@ -121,6 +171,7 @@ def test_discovery_mechanical_gate_accepts_governed_candidate_path() -> None:
         hypothesis_ids=("p19h_" + "3" * 24, "p19h_" + "4" * 24),
         candidate_semantic_ids=("metric.a", "metric.b"),
         latest_p19_assessment_ref="p19a_" + "5" * 24,
+        report_requirement_ids=("d_report",),
         report_ref="p20r_" + "6" * 24,
         workflow_status=BrainWorkflowStatus.COMPLETE,
         last_completed_node="REPORT",
@@ -289,6 +340,7 @@ def test_scope_resume_mechanical_gate_requires_new_scope_and_disjoint_evidence()
         evidence_ids=("evi_" + "9" * 24,),
         hypothesis_ids=("p19h_" + "3" * 24, "p19h_" + "4" * 24),
         latest_p19_assessment_ref="p19a_" + "5" * 24,
+        report_requirement_ids=("d_report",),
         report_ref="p20r_" + "6" * 24,
         workflow_status=BrainWorkflowStatus.COMPLETE,
         last_completed_node="REPORT",

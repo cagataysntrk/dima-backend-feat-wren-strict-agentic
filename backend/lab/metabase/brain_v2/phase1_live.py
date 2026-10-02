@@ -240,6 +240,9 @@ def _mechanical(
         )
     )
     candidate_ids = tuple(state.candidate_semantic_ids)
+    presentation_required = bool(state.report_requirement_ids)
+    report_exists = report_doc is not None
+    report_contract_coherent = report_exists == presentation_required
     p17_provider_requests = int(sources.get("p17_manager") or 0)
     p19_provider_requests = int(sources.get("p19_manager") or 0)
     candidate_projection_coherent = (
@@ -254,7 +257,7 @@ def _mechanical(
         and p17_provider_requests == 0
         and p19_provider_requests == 1
         and state.latest_p19_assessment_ref is not None
-        and report_doc is not None
+        and report_contract_coherent
     )
     zero_candidate_stop = (
         not candidate_ids
@@ -284,7 +287,9 @@ def _mechanical(
         ),
         "governed_evidence_present": bool(state.evidence_ids),
         "p19_assessment_exists": state.latest_p19_assessment_ref is not None,
-        "report_exists": report_doc is not None,
+        "presentation_required": presentation_required,
+        "report_exists": report_exists,
+        "report_contract_coherent": report_contract_coherent,
         "blocked_provider_requests_zero": int(provider.get("blocked_request_count") or 0) == 0,
         "duplicate_native_execution_zero": duplicate_native == 0,
         "provider_requests": int(provider.get("actual_provider_request_count") or 0),
@@ -319,7 +324,7 @@ def _mechanical(
             {
                 "terminal_complete": bool(common["terminal_complete"]),
                 "p19_assessment_exists": bool(common["p19_assessment_exists"]),
-                "report_exists": bool(common["report_exists"]),
+                "report_contract_coherent": bool(common["report_contract_coherent"]),
             }
         )
 
@@ -355,6 +360,9 @@ def _mechanical(
                 ),
                 "candidate_projection_coherent": bool(
                     common["candidate_projection_coherent"]
+                ),
+                "report_contract_coherent": bool(
+                    common["report_contract_coherent"]
                 ),
                 "p19_initial_assessment_cardinality": (
                     common["p19_provider_requests"] == expected_p19_calls
