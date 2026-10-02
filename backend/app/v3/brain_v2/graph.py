@@ -288,6 +288,17 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
                 current.model_dump(mode="json")
             ).result()
         )
+        if result.disposition == MaterialActivityDisposition.WAITING:
+            return {
+                "active_material_group_id": None,
+                "pending_evidence_ids": (),
+                "pending_receipt_refs": (),
+                "workflow_status": BrainWorkflowStatus.WAITING,
+                "last_completed_node": "MATERIAL_GROUP_WAITING",
+                "activity_fingerprints": _append_fingerprint(
+                    current, result.activity_fingerprint
+                ),
+            }
         if result.disposition == MaterialActivityDisposition.LIMITED:
             completed = current.completed_material_group_ids
             if result.material_group_id not in completed:
@@ -324,6 +335,17 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
         result = MaterialActivityResult.model_validate(
             material_activity(current.model_dump(mode="json")).result()
         )
+        if result.disposition == MaterialActivityDisposition.WAITING:
+            return {
+                "material_requirement_ids": result.material_requirement_ids,
+                "pending_evidence_ids": (),
+                "pending_receipt_refs": (),
+                "workflow_status": BrainWorkflowStatus.WAITING,
+                "last_completed_node": "MATERIAL_WAITING",
+                "activity_fingerprints": _append_fingerprint(
+                    current, result.activity_fingerprint
+                ),
+            }
         if result.disposition == MaterialActivityDisposition.LIMITED:
             return {
                 "material_requirement_ids": result.material_requirement_ids,
@@ -574,6 +596,8 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
 
     def after_material_group(state: BrainStatePayload) -> str:
         current = _snapshot(state)
+        if current.last_completed_node == "MATERIAL_GROUP_WAITING":
+            return "wait"
         if current.last_completed_node != "MATERIAL_GROUP_LIMITED":
             return "admit_evidence"
         if set(current.completed_material_group_ids) != set(
@@ -584,6 +608,8 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
 
     def after_material(state: BrainStatePayload) -> str:
         current = _snapshot(state)
+        if current.last_completed_node == "MATERIAL_WAITING":
+            return "wait"
         if current.last_completed_node == "MATERIAL_LIMITED":
             return "completion_evaluate"
         return "admit_evidence"
@@ -732,6 +758,7 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
             "admit_evidence": "admit_evidence",
             "acquire_material_group": "acquire_material_group",
             "completion_evaluate": "completion_evaluate",
+            "wait": END,
         },
     )
     builder.add_conditional_edges(
@@ -740,6 +767,7 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
         {
             "admit_evidence": "admit_evidence",
             "completion_evaluate": "completion_evaluate",
+            "wait": END,
         },
     )
     builder.add_conditional_edges(
