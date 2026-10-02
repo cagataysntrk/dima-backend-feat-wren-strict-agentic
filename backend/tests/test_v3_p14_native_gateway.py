@@ -245,6 +245,66 @@ def seed(engine):
         db.commit()
 
 
+def test_result_dependency_projects_exact_parent_row_as_execution_local_filter():
+    import importlib
+
+    dependency_module = importlib.import_module(
+        "app.v3.research_result_dependency"
+    )
+    base = AnalyticalRequestContract(
+        authority_id="authority-result-dependency",
+        request_ref="request-result-dependency",
+        semantic_context_version=CONTEXT,
+        scope_identity=AnalyticalScopeIdentity(
+            lineage_id="atl-result-dependency",
+            version_id="scope_v1",
+        ),
+        scope_fingerprint="a" * 64,
+        metric_refs=("cand_sales_order_count",),
+        dimension_refs=("cand_sales_order_channel",),
+    )
+    parent_result = {
+        "data": {
+            "cols": [
+                {
+                    "id": 20,
+                    "table_id": 10,
+                    "name": "sales_order_channel",
+                    "field_ref": ["field", 20, None],
+                },
+                {
+                    "name": "sum",
+                    "field_ref": ["aggregation", 0],
+                },
+            ],
+            "rows": [["Web", 41], ["Direct", 33]],
+        }
+    }
+    resolution = dependency_module.resolve_first_ranked_entity(
+        base_contract=base,
+        source_goal_id="g-parent",
+        source_evidence_id="evidence-parent",
+        source_receipt_id="receipt-parent",
+        source_result_hash="b" * 64,
+        dimension_semantic_id="cand_sales_order_channel",
+        native_field_id=20,
+        parent_result=parent_result,
+    )
+
+    assert resolution.selected_value == "Web"
+    assert resolution.contract.scope_identity == base.scope_identity
+    assert resolution.contract.scope_fingerprint == base.scope_fingerprint
+    assert resolution.contract.metric_refs == base.metric_refs
+    assert resolution.contract.filters[-1].source_candidate_id == (
+        "cand_sales_order_channel"
+    )
+    assert resolution.contract.filters[-1].value == "Web"
+    assert resolution.contract.filters[-1].semantic_ref.startswith(
+        "result-selection:"
+    )
+    assert resolution.contract.material_fingerprint != base.material_fingerprint
+
+
 def test_native_request_context_preloads_only_required_governed_metrics():
     engine = db_engine()
     seed(engine)
