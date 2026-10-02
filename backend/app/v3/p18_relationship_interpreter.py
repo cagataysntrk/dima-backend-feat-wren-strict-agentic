@@ -166,12 +166,32 @@ def _schema(view: P18RelationshipView) -> dict[str, Any]:
             "enum": evidence_ids,
         }
     salient = defs.get("P18SalientCell")
+    legal_salient_cells = [
+        {
+            "evidence_id": evidence.evidence_id,
+            "row_index": row_index,
+            "column_index": column_index,
+        }
+        for evidence in view.evidence
+        for row_index, row in enumerate(evidence.rows)
+        for column_index, value in enumerate(row)
+        if isinstance(value, (int, float)) and not isinstance(value, bool)
+    ]
     if isinstance(salient, dict):
         salient_props = salient.get("properties") or {}
         salient_props["evidence_id"] = {
             "type": "string",
             "enum": evidence_ids,
         }
+        if legal_salient_cells:
+            # Salience is a pointer into existing governed material, never a
+            # provider-authored coordinate. Constrain the structured output to
+            # the finite set of exact numeric Evidence cells before validation.
+            salient["enum"] = legal_salient_cells
+        else:
+            salient_cells = props.get("salient_cells")
+            if isinstance(salient_cells, dict):
+                salient_cells["maxItems"] = 0
     return schema
 
 
