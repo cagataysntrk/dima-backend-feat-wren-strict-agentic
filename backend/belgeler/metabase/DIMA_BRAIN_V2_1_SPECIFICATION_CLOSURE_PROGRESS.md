@@ -1683,3 +1683,33 @@ Classification:
 
 Next gate:
 Phase-2/headless/metamorphic certification on the same Product bytes. Paid live remains CLOSED.
+
+
+### Step 12E — role-aware temporal identity Phase-2 seal
+
+Phase-2/headless certification on the same semantic Product bytes:
+
+- run `37077327997` = **SUCCESS**;
+- T1-T7 headless Product contracts/composition: 96 passed;
+- current T1-T4 owner proofs: 4 passed;
+- P18 observational owner proofs: 28 passed;
+- P20 ReportDocument owner proofs: 32 passed;
+- independent T1-T7 metamorphic suite: 15 passed;
+- security/repository hygiene: 26 passed;
+- forbidden-surface audit: GREEN.
+
+Frozen semantic Product candidate:
+
+`400ae37b4804c8fee35325eea85fabc852b55214`
+
+Provider-free evidence:
+
+- semantic conformance `37077097037` = SUCCESS / 156 passed;
+- aggregate Phase-1 `37077120286` = SUCCESS;
+- Phase-2/headless/metamorphic `37077327997` = SUCCESS;
+- engine remains exact frozen dima.9.
+
+Classification:
+**ROLE-AWARE TEMPORAL IDENTITY — PROVIDER-FREE GREEN / FROZEN CANDIDATE**.
+
+The next legal action is one surgical `F06_M` live probe only. Broad/30-case remain closed.
