@@ -419,8 +419,8 @@ def test_presentation_other_covered_by_governed_relationship_is_not_analytical()
         ResearchGoalKind.RANKING,
         ResearchGoalKind.RELATIONSHIP,
     )
-    assert tuple(item.kind for item in result.brief.deliverables) == (
-        PresentationKind.REPORT,
+    assert tuple(item.kind.value for item in result.brief.deliverables) == (
+        "report",
     )
 
 
