@@ -12,6 +12,8 @@ from app.v3.analytical_request_contract import (
 )
 from app.v3.brain_v2.adaptive_test_design import (
     AdaptiveTestDesignError,
+    NextTestMaterialDisposition,
+    evaluate_next_test_material_delta,
     typed_child_material_delta_for_next_test,
     typed_child_scope_for_next_test,
 )
@@ -222,3 +224,62 @@ def test_typed_child_material_delta_rejects_scope_version_drift():
             governed_semantic_refs=_governed_refs(),
         )
 
+
+
+@pytest.mark.parametrize(
+    "surface",
+    (
+        NextTestEvidenceSurface.GOVERNED_EVIDENCE,
+        NextTestEvidenceSurface.COUNTER_EVIDENCE,
+        NextTestEvidenceSurface.MECHANISM_DISCRIMINATION,
+    ),
+)
+def test_unprojectable_next_test_surface_is_governed_inconclusive_not_exception(
+    surface: NextTestEvidenceSurface,
+) -> None:
+    parent = _base()
+    request = _request().model_copy(
+        update={
+            "required_evidence_surface": surface,
+            "ambiguity_code": "SYMBOLIC_UNRESOLVED_DISCRIMINATION",
+        }
+    )
+
+    decision = evaluate_next_test_material_delta(
+        parent=parent,
+        request=request,
+        governed_semantic_refs=_governed_refs(),
+    )
+
+    assert decision.disposition == NextTestMaterialDisposition.INCONCLUSIVE
+    assert decision.delta is None
+    assert decision.reason_code == "NO_LEGAL_MATERIAL_DELTA"
+
+
+def test_temporal_order_surface_remains_executable_when_real_delta_exists() -> None:
+    parent = _base()
+
+    decision = evaluate_next_test_material_delta(
+        parent=parent,
+        request=_request(),
+        governed_semantic_refs=_governed_refs(),
+    )
+
+    assert decision.disposition == NextTestMaterialDisposition.EXECUTABLE
+    assert decision.delta is not None
+    assert decision.delta.parent_material_fingerprint == parent.material_fingerprint
+    assert decision.delta.child_material_fingerprint != parent.material_fingerprint
+
+
+def test_scope_identity_drift_remains_fail_closed_not_inconclusive() -> None:
+    parent = _base()
+    request = _request().model_copy(
+        update={"scope_version_id": "scope_v2"}
+    )
+
+    with pytest.raises(AdaptiveTestDesignError, match="scope"):
+        evaluate_next_test_material_delta(
+            parent=parent,
+            request=request,
+            governed_semantic_refs=_governed_refs(),
+        )
