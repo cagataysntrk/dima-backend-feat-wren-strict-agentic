@@ -10,9 +10,13 @@ from .activities import (
     BrainActivities,
     CandidateProjectionActivityResult,
     CanonicalizeActivityResult,
+    CompletionActivityResult,
     EvidenceActivityResult,
     IntakeActivityResult,
     MaterialActivityResult,
+    MaterialGroupActivityResult,
+    P18ActivityResult,
+    RequirementPlanActivityResult,
     P17ActivityResult,
     P19ActivityResult,
     ReportActivityResult,
@@ -72,6 +76,22 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
             activities.canonicalize,
         )
 
+    @task(name="brain_v2_requirement_plan_activity")
+    def requirement_plan_activity(payload: dict[str, Any]) -> dict[str, Any]:
+        return run_activity(
+            BoundaryName.REQUIREMENTS_PLAN,
+            payload,
+            activities.plan_requirements,
+        )
+
+    @task(name="brain_v2_material_group_activity")
+    def material_group_activity(payload: dict[str, Any]) -> dict[str, Any]:
+        return run_activity(
+            BoundaryName.MATERIAL_GROUP,
+            payload,
+            activities.acquire_material_group,
+        )
+
     @task(name="brain_v2_material_activity")
     def material_activity(payload: dict[str, Any]) -> dict[str, Any]:
         return run_activity(
@@ -94,6 +114,22 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
             BoundaryName.DISCOVERY_PROJECT_CANDIDATES,
             payload,
             activities.project_candidates,
+        )
+
+    @task(name="brain_v2_p18_activity")
+    def p18_activity(payload: dict[str, Any]) -> dict[str, Any]:
+        return run_activity(
+            BoundaryName.P18_ADJUDICATE,
+            payload,
+            activities.adjudicate_relationship,
+        )
+
+    @task(name="brain_v2_completion_activity")
+    def completion_activity(payload: dict[str, Any]) -> dict[str, Any]:
+        return run_activity(
+            BoundaryName.COMPLETION_EVALUATE,
+            payload,
+            activities.evaluate_completion,
         )
 
     @task(name="brain_v2_p19_activity")
@@ -141,6 +177,19 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
             "scope_version_id": result.scope_version_id,
             "open_requirement_ids": result.open_requirement_ids,
             "material_requirement_ids": result.material_requirement_ids,
+            "material_group_ids": (),
+            "completed_material_group_ids": (),
+            "active_material_group_id": None,
+            "active_requirement_id": None,
+            "terminal_requirement_ids": (),
+            "direct_requirement_ids": (),
+            "relationship_requirement_ids": (),
+            "root_cause_requirement_ids": (),
+            "report_requirement_ids": (),
+            "p18_requirement_ids": (),
+            "p18_claim_refs": (),
+            "p18_policy_use_refs": (),
+            "completion_revision": 0,
             "investigation_requirement_ids": result.investigation_requirement_ids,
             "follow_verified_material_goal_ids": (
                 result.follow_verified_material_goal_ids
@@ -188,6 +237,54 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
             ),
         }
 
+    def requirement_plan_node(state: BrainStatePayload):
+        current = _snapshot(state)
+        result = RequirementPlanActivityResult.model_validate(
+            requirement_plan_activity(
+                current.model_dump(mode="json")
+            ).result()
+        )
+        return {
+            "material_group_ids": result.material_group_ids,
+            "completed_material_group_ids": (),
+            "active_material_group_id": None,
+            "active_requirement_id": None,
+            "terminal_requirement_ids": (),
+            "direct_requirement_ids": result.direct_requirement_ids,
+            "relationship_requirement_ids": (
+                result.relationship_requirement_ids
+            ),
+            "root_cause_requirement_ids": (
+                result.root_cause_requirement_ids
+            ),
+            "report_requirement_ids": result.report_requirement_ids,
+            "p18_requirement_ids": (),
+            "p18_claim_refs": (),
+            "p18_policy_use_refs": (),
+            "completion_revision": 0,
+            "last_completed_node": "REQUIREMENTS_PLAN",
+            "activity_fingerprints": _append_fingerprint(
+                current, result.activity_fingerprint
+            ),
+        }
+
+    def material_group_node(state: BrainStatePayload):
+        current = _snapshot(state)
+        result = MaterialGroupActivityResult.model_validate(
+            material_group_activity(
+                current.model_dump(mode="json")
+            ).result()
+        )
+        return {
+            "active_material_group_id": result.material_group_id,
+            "pending_evidence_ids": result.produced_evidence_ids,
+            "pending_receipt_refs": result.produced_receipt_refs,
+            "last_completed_node": "MATERIAL_GROUP",
+            "activity_fingerprints": _append_fingerprint(
+                current, result.activity_fingerprint
+            ),
+        }
+
     def material_node(state: BrainStatePayload):
         current = _snapshot(state)
         # P17's sealed follow-up executor may already have performed the exact
@@ -215,6 +312,10 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
         result = EvidenceActivityResult.model_validate(
             evidence_activity(current.model_dump(mode="json")).result()
         )
+        completed_groups = current.completed_material_group_ids
+        active_group = current.active_material_group_id
+        if active_group is not None and active_group not in completed_groups:
+            completed_groups = (*completed_groups, active_group)
         return {
             "evidence_revision": result.evidence_revision,
             "evidence_ids": result.evidence_ids,
@@ -223,7 +324,67 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
             "discovery_required": result.discovery_required,
             "pending_evidence_ids": (),
             "pending_receipt_refs": (),
+            "completed_material_group_ids": completed_groups,
+            "active_material_group_id": None,
             "last_completed_node": "ADMIT_EVIDENCE",
+            "activity_fingerprints": _append_fingerprint(
+                current, result.activity_fingerprint
+            ),
+        }
+
+    def requirement_dispatch_node(state: BrainStatePayload):
+        current = _snapshot(state)
+        with otel.operation(
+            BoundaryName.REQUIREMENT_DISPATCH,
+            state=current,
+        ):
+            done = set(current.p18_requirement_ids)
+            pending = tuple(
+                item
+                for item in current.relationship_requirement_ids
+                if item not in done
+            )
+            active = pending[0] if pending else None
+        return {
+            "active_requirement_id": active,
+            "last_completed_node": "REQUIREMENT_DISPATCH",
+        }
+
+    def p18_node(state: BrainStatePayload):
+        current = _snapshot(state)
+        result = P18ActivityResult.model_validate(
+            p18_activity(current.model_dump(mode="json")).result()
+        )
+        if (
+            current.active_requirement_id is not None
+            and result.requirement_id != current.active_requirement_id
+        ):
+            raise ValueError("P18 returned a different requirement identity")
+        return {
+            "p18_requirement_ids": (
+                *current.p18_requirement_ids,
+                result.requirement_id,
+            ),
+            "p18_claim_refs": (*current.p18_claim_refs, result.claim_ref),
+            "p18_policy_use_refs": (
+                *current.p18_policy_use_refs,
+                result.policy_use_ref,
+            ),
+            "active_requirement_id": None,
+            "last_completed_node": "P18_ADJUDICATE",
+            "activity_fingerprints": _append_fingerprint(
+                current, result.activity_fingerprint
+            ),
+        }
+
+    def completion_node(state: BrainStatePayload):
+        current = _snapshot(state)
+        result = CompletionActivityResult.model_validate(
+            completion_activity(current.model_dump(mode="json")).result()
+        )
+        return {
+            "completion_revision": result.completion_revision,
+            "terminal_requirement_ids": result.terminal_requirement_ids,
             "activity_fingerprints": _append_fingerprint(
                 current, result.activity_fingerprint
             ),
@@ -314,11 +475,17 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
         )
         return {
             "report_ref": result.report_ref,
-            "workflow_status": BrainWorkflowStatus.COMPLETE,
+            "workflow_status": BrainWorkflowStatus.RUNNING,
             "last_completed_node": "REPORT",
             "activity_fingerprints": _append_fingerprint(
                 current, result.activity_fingerprint
             ),
+        }
+
+    def complete_node(state: BrainStatePayload):
+        _snapshot(state)
+        return {
+            "workflow_status": BrainWorkflowStatus.COMPLETE,
         }
 
     def honest_stop_node(state: BrainStatePayload):
@@ -329,8 +496,66 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
             "pending_next_test_ref": current.pending_next_test_ref,
         }
 
+    def is_pure_rca(state: BrainGraphState) -> bool:
+        return (
+            len(state.root_cause_requirement_ids) == 1
+            and not state.direct_requirement_ids
+            and not state.relationship_requirement_ids
+        )
+
+    def after_plan(state: BrainStatePayload) -> str:
+        current = _snapshot(state)
+        if is_pure_rca(current):
+            return "acquire_material"
+        if current.material_group_ids:
+            return "acquire_material_group"
+        return "requirement_dispatch"
+
+    def after_material_group_evidence(state: BrainGraphState) -> str:
+        if set(state.completed_material_group_ids) != set(
+            state.material_group_ids
+        ):
+            return "acquire_material_group"
+        return "requirement_dispatch"
+
+    def after_dispatch(state: BrainStatePayload) -> str:
+        current = _snapshot(state)
+        if current.active_requirement_id is not None:
+            return "p18_adjudicate"
+        if current.root_cause_requirement_ids:
+            # Mixed RCA orchestration is intentionally fail-closed until a
+            # generic multi-RCA owner contract exists. RCA + report is pure RCA
+            # and never reaches this branch.
+            raise ValueError(
+                "mixed ROOT_CAUSE requirements require an explicit forward owner"
+            )
+        return "completion_evaluate"
+
+    def after_completion(state: BrainStatePayload) -> str:
+        current = _snapshot(state)
+        terminal = set(current.terminal_requirement_ids)
+        analytical = set(
+            (
+                *current.direct_requirement_ids,
+                *current.relationship_requirement_ids,
+                *current.root_cause_requirement_ids,
+            )
+        )
+        analytical_complete = analytical.issubset(terminal)
+        report_pending = bool(
+            set(current.report_requirement_ids) - terminal
+        )
+        all_terminal = set(current.open_requirement_ids).issubset(terminal)
+        if analytical_complete and report_pending:
+            return "report"
+        if all_terminal or (analytical_complete and not current.report_requirement_ids):
+            return "complete"
+        return "honest_stop"
+
     def after_evidence(state: BrainStatePayload) -> str:
         current = _snapshot(state)
+        if not is_pure_rca(current) and current.material_group_ids:
+            return after_material_group_evidence(current)
         if current.discovery_required:
             if current.hypothesis_ids:
                 raise ValueError("discovery route cannot coexist with hypotheses")
@@ -370,24 +595,60 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
 
     builder.add_node("intake", intake_node)
     builder.add_node("canonicalize", canonicalize_node)
+    builder.add_node("requirements_plan", requirement_plan_node)
+    builder.add_node("acquire_material_group", material_group_node)
     builder.add_node("acquire_material", material_node)
     builder.add_node("admit_evidence", evidence_node)
+    builder.add_node("requirement_dispatch", requirement_dispatch_node)
+    builder.add_node("p18_adjudicate", p18_node)
+    builder.add_node("completion_evaluate", completion_node)
     builder.add_node("project_candidates", project_candidates_node)
     builder.add_node("p19_assess", p19_node)
     builder.add_node("p17_next_test", next_test_node)
     builder.add_node("report", report_node)
+    builder.add_node("complete", complete_node)
     builder.add_node("honest_stop", honest_stop_node)
 
     builder.add_edge(START, "intake")
     builder.add_edge("intake", "canonicalize")
-    builder.add_edge("canonicalize", "acquire_material")
+    builder.add_edge("canonicalize", "requirements_plan")
+    builder.add_conditional_edges(
+        "requirements_plan",
+        after_plan,
+        {
+            "acquire_material": "acquire_material",
+            "acquire_material_group": "acquire_material_group",
+            "requirement_dispatch": "requirement_dispatch",
+        },
+    )
+    builder.add_edge("acquire_material_group", "admit_evidence")
     builder.add_edge("acquire_material", "admit_evidence")
     builder.add_conditional_edges(
         "admit_evidence",
         after_evidence,
         {
+            "acquire_material_group": "acquire_material_group",
+            "requirement_dispatch": "requirement_dispatch",
             "project_candidates": "project_candidates",
             "p19_assess": "p19_assess",
+        },
+    )
+    builder.add_conditional_edges(
+        "requirement_dispatch",
+        after_dispatch,
+        {
+            "p18_adjudicate": "p18_adjudicate",
+            "completion_evaluate": "completion_evaluate",
+        },
+    )
+    builder.add_edge("p18_adjudicate", "requirement_dispatch")
+    builder.add_conditional_edges(
+        "completion_evaluate",
+        after_completion,
+        {
+            "report": "report",
+            "complete": "complete",
+            "honest_stop": "honest_stop",
         },
     )
     builder.add_conditional_edges(
@@ -408,7 +669,8 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
         },
     )
     builder.add_edge("p17_next_test", "acquire_material")
-    builder.add_edge("report", END)
+    builder.add_edge("report", "completion_evaluate")
+    builder.add_edge("complete", END)
     builder.add_edge("honest_stop", END)
 
     return builder.compile(checkpointer=checkpointer)
