@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from uuid import UUID
 
+import pytest
 from hypothesis import given, settings, strategies as st
 
 from app.v3.analytical_request_contract import (
@@ -11,6 +12,7 @@ from app.v3.analytical_request_contract import (
 )
 from app.v3.research_analytical_scope import (
     NativeMaterialBinding,
+    ResearchAnalyticalScopeError,
     _assert_material_ranking_scope,
 )
 from app.v3.research_contracts import (
@@ -309,3 +311,81 @@ def test_native_ranking_admission_allows_extra_nonrestrictive_stability_order() 
     }
 
     _assert_material_ranking_scope(contract, observation, bindings)
+
+
+@given(
+    extra_direction=st.sampled_from(("asc", "desc")),
+    extra_field_id=st.integers(min_value=1, max_value=10000).filter(
+        lambda value: value != 9999
+    ),
+)
+@settings(max_examples=80, deadline=None)
+def test_native_ranking_admission_generated_nonrestrictive_siblings_are_legal(
+    extra_direction: str,
+    extra_field_id: int,
+) -> None:
+    contract = _ranking_contract()
+    base = _ranking_observation_with_legal_nonrestrictive_order()
+    authorized = base.ranking[0]
+    extra = NativeMaterialRanking(
+        stage_number=0,
+        order_index=1,
+        target=NativeMaterialRankingTarget(
+            kind="field",
+            field_id=extra_field_id,
+            table_id=10,
+        ),
+        direction=extra_direction,
+        limit=None,
+    )
+    observation = base.model_copy(update={"ranking": (authorized, extra)})
+    bindings = {
+        "metric.m1": NativeMaterialBinding(
+            candidate_id="metric.m1",
+            candidate_kind="metric",
+            database_id=1,
+            metric_id=101,
+            metric_entity_id="metric-entity-m1",
+        )
+    }
+
+    _assert_material_ranking_scope(contract, observation, bindings)
+
+
+@given(
+    extra_limit=st.integers(min_value=1, max_value=50),
+    extra_direction=st.sampled_from(("asc", "desc")),
+)
+@settings(max_examples=80, deadline=None)
+def test_native_ranking_admission_generated_restrictive_siblings_fail_closed(
+    extra_limit: int,
+    extra_direction: str,
+) -> None:
+    contract = _ranking_contract()
+    base = _ranking_observation_with_legal_nonrestrictive_order()
+    authorized = base.ranking[0]
+    unauthorized = NativeMaterialRanking(
+        stage_number=0,
+        order_index=1,
+        target=NativeMaterialRankingTarget(
+            kind="field",
+            field_id=9999,
+            table_id=10,
+        ),
+        direction=extra_direction,
+        limit=extra_limit,
+    )
+    observation = base.model_copy(update={"ranking": (authorized, unauthorized)})
+    bindings = {
+        "metric.m1": NativeMaterialBinding(
+            candidate_id="metric.m1",
+            candidate_kind="metric",
+            database_id=1,
+            metric_id=101,
+            metric_entity_id="metric-entity-m1",
+        )
+    }
+
+    with pytest.raises(ResearchAnalyticalScopeError) as exc:
+        _assert_material_ranking_scope(contract, observation, bindings)
+    assert exc.value.code == "R1_NATIVE_RANKING_SCOPE_MISMATCH"
