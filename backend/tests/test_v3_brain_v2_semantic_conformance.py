@@ -23,8 +23,15 @@ from app.v3.research_analytical_scope import (
 )
 from app.v3.research_contracts import (
     RankingBasis as ProductRankingBasis,
+    RankingSurface,
+    ResearchBrief,
+    ResearchBriefStatus,
+    ResearchGoalKind,
+    ResearchGoalStatus,
+    ResearchQuestion,
     ResearchScope,
     ResearchSemanticRef,
+    ResultSelectionDependency,
     ScopeVersion,
     SemanticTargetKind,
 )
@@ -62,6 +69,7 @@ from tests.semantic_spec.model import (
     pair_coverage,
     material_group_may_complete,
     ranking_basis_is_coherent,
+    result_dependency_dimension_roles_are_coherent,
     result_dependency_disposition,
     semantic_matrix,
 )
@@ -329,6 +337,71 @@ def test_goal_can_declare_typed_parent_result_selection_dependency() -> None:
     assert goal.result_dependency is not None
     assert goal.result_dependency.source_goal_key == "g-parent"
     assert goal.result_dependency.dimension_semantic_id == "dimension.d1"
+
+
+def test_result_dependency_dimension_may_be_filter_only_in_child() -> None:
+    assert result_dependency_dimension_roles_are_coherent(
+        source_material_has_dimension=True,
+        accepted_scope_has_dimension=True,
+        child_projects_dimension=False,
+    )
+
+    metric_parent = _metric("metric.m1")
+    metric_child = _metric("metric.m2")
+    selector_dimension = _breakdown("dimension.d1")
+    child_breakout = _breakdown("dimension.d2")
+
+    parent = ResearchQuestion(
+        goal_id="g-parent",
+        kind=ResearchGoalKind.RANKING,
+        source_text="Rank governed entities.",
+        subject_refs=(metric_parent,),
+        related_refs=(selector_dimension,),
+        ranking=RankingSurface(
+            text="rank governed entities",
+            direction="desc",
+            limit=1,
+            measure_semantic_id=metric_parent.candidate_id,
+        ),
+        status=ResearchGoalStatus.RESOLVED,
+    )
+    child = ResearchQuestion(
+        goal_id="g-child",
+        kind=ResearchGoalKind.BREAKDOWN,
+        source_text="Break down the selected entity by another dimension.",
+        subject_refs=(metric_child,),
+        related_refs=(child_breakout,),
+        result_dependency=ResultSelectionDependency(
+            source_goal_id=parent.goal_id,
+            dimension_semantic_id=selector_dimension.candidate_id,
+        ),
+        status=ResearchGoalStatus.RESOLVED,
+    )
+    brief = ResearchBrief(
+        brief_id="rb-symbolic-filter-role",
+        objective="symbolic dependency filter-role separation",
+        scope=ResearchScope(
+            semantic_refs=(
+                metric_parent,
+                metric_child,
+                selector_dimension,
+                child_breakout,
+            ),
+        ),
+        questions=(parent, child),
+        must_requirement_ids=(parent.goal_id, child.goal_id),
+        context_version="ctx-symbolic-filter-role",
+        status=ResearchBriefStatus.READY_FOR_RESEARCH,
+    )
+
+    assert brief.questions[1].result_dependency is not None
+    assert selector_dimension.candidate_id not in {
+        item.candidate_id
+        for item in (
+            *brief.questions[1].subject_refs,
+            *brief.questions[1].related_refs,
+        )
+    }
 
 
 def test_retryable_material_is_not_a_terminal_group_outcome() -> None:
