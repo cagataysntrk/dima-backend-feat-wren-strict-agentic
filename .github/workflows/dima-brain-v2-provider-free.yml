@@ -5,6 +5,7 @@ on:
     branches:
       - feat/dima-brain-v2
       - feat/dima-brain-v2-1-discovery-simplification
+      - feat/dima-brain-v2-1-specification-closure
     paths:
       - ".github/workflows/dima-brain-v2-provider-free.yml"
       - "backend/pyproject.toml"
