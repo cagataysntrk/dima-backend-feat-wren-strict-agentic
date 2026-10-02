@@ -20,6 +20,7 @@ from app.v3.research_product import ResearchAskOrchestrator
 from app.v3.research_store import ResearchSessionStore
 from control_plane.authorize import Principal
 from control_plane.models import BusinessRelationshipPolicyUseRecord, ClaimEvidenceLinkRecord, HypothesisGroundingLink, HypothesisRecord, ReportDocumentRecord, ResearchClaimRecord, ResearchExecutionLink, ResearchExplorationMaterial, ResearchReasoningStepRecord, RootCauseAssessment, Tenant, User
+from tests.semantic_spec.model import ReferencePresentationFact, reference_tabular_numeric_facts
 TENANT = UUID('00000000-0000-4000-8000-000000002001')
 USER = UUID('00000000-0000-4000-8000-000000002002')
 STAMP = datetime(2026, 9, 25, 21, 0, tzinfo=timezone.utc)
@@ -54,7 +55,7 @@ def make_state(db, suffix: str='base'):
     query = {'database': 1, 'type': 'query', 'query': {'source-table': 10, 'aggregation': [['count']], 'breakout': [['field', 20, None]]}}
     link = store.mark_candidate(link.id, native_query_id=f'p20-{suffix}-query', native_query=query, query_fingerprint=h(query))
     store.mark_execution_started(link.id, native_subject_ref='metabase-user:20')
-    result = {'database_id': 1, 'row_count': 2, 'data': {'rows': [['Web', 34], ['Partner', 12]]}, 'statistics': {'association': 0.72}, 'identification': {'kind': 'NATIVE_CAUSAL_IDENTIFICATION'}}
+    result = {'database_id': 1, 'row_count': 2, 'data': {'cols': [{'display_name': 'Channel'}, {'display_name': 'Sales Order Count'}], 'rows': [['Web', 34], ['Partner', 12]]}, 'statistics': {'association': 0.72}, 'identification': {'kind': 'NATIVE_CAUSAL_IDENTIFICATION'}}
     store.mark_executed(link.id, native_subject_ref='metabase-user:20', runtime_identity={'substrate': 'metabase-native', 'runtime_version': 'v0.63.18-dima.6', 'image_digest': 'sha256:' + 'd' * 64, 'database_id': 'metabase:1'}, result_payload=result, result_hash=h(result), executed_at=STAMP)
     evidence_id = 'evi_' + h({'suffix': suffix, 'kind': 'evidence'})[:24]
     receipt_id = 'dqr_' + h({'suffix': suffix, 'kind': 'receipt'})[:24]
@@ -507,6 +508,50 @@ def test_auto_draft_projects_governed_claim_policy_provenance_and_limitations():
     texts = {item.text for item in report.statements}
     assert state["claim"].claim_text in texts
     assert limited.claim_text in texts
+
+
+
+def test_auto_numeric_projection_preserves_source_backed_tabular_fact_meaning():
+    db = db_engine()
+    state = make_state(db, suffix='presentation-law')
+    store = ReportDocumentStore(
+        research_store=state['store'],
+        db_engine=db,
+    )
+    draft = store.draft_from_governed_research(
+        research_session_id=state['session'].session_id,
+        report_key='presentation-law',
+        principal=state['principal'],
+    )
+
+    actual = []
+    for item in draft.statements:
+        if item.statement_kind != ReportStatementKind.NUMERIC:
+            continue
+        source = next(
+            ref
+            for ref in item.source_refs
+            if ref.source_kind == ReportSourceKind.P14_EVIDENCE
+        )
+        context = tuple(
+            (str(entry['label']), str(entry['value']))
+            for entry in item.payload.get('context', ())
+        )
+        actual.append(
+            ReferencePresentationFact(
+                source_path=source.source_path or '',
+                label=str(item.payload.get('label') or ''),
+                context=context,
+                value=item.payload['value'],
+            )
+        )
+
+    expected = reference_tabular_numeric_facts(
+        column_labels=('Channel', 'Sales Order Count'),
+        rows=(('Web', 34), ('Partner', 12)),
+    )
+    assert tuple(actual) == expected
+
 
 
 def test_user_must_is_100_percent_accounted_and_seals_one_report():
