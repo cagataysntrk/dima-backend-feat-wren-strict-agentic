@@ -4,6 +4,7 @@ import hashlib
 import inspect
 import json
 from datetime import datetime, timezone
+from types import SimpleNamespace
 from uuid import UUID
 
 import pytest
@@ -13,6 +14,7 @@ from sqlmodel import SQLModel, Session, create_engine, select
 import app.v3.research_analytical_scope as scope_module
 import app.v3.research_native_gateway as gateway_module
 from app.v3.analytical_request_contract import (
+    AnalyticalFilterInvariant,
     AnalyticalRequestContract,
     AnalyticalScopeIdentity,
 )
@@ -26,6 +28,7 @@ from app.v3.research_contracts import (
     ResearchQuestion,
     ResearchScope,
     ResearchSemanticRef,
+    ResultSelectionDependency,
     SemanticTargetKind,
 )
 from app.v3.execution_identity import (
@@ -43,7 +46,7 @@ from app.v3.research_product import (
     ResearchMaterialLimitation,
     ResearchMaterialObservationUnavailable,
 )
-from app.v3.research_store import ResearchSessionStore
+from app.v3.research_store import ResearchPersistenceError, ResearchSessionStore
 from app.v3.substrate.metabase.native_engine import (
     NativeDatasetExecutionError,
     NativeEngineBridgeError,
@@ -307,6 +310,162 @@ def test_result_dependency_projects_exact_parent_row_as_execution_local_filter()
         "result-selection:"
     )
     assert resolution.contract.material_fingerprint != base.material_fingerprint
+
+
+def test_verified_parent_result_dependency_resolves_through_p14_executor(monkeypatch):
+    base_brief = brief()
+    metric, channel = base_brief.scope.semantic_refs
+    child = ResearchQuestion(
+        goal_id="g-child",
+        kind=ResearchGoalKind.BREAKDOWN,
+        source_text="Inspect the selected governed channel.",
+        subject_refs=(metric,),
+        related_refs=(channel,),
+        result_dependency=ResultSelectionDependency(
+            source_goal_id="g-parent",
+            dimension_semantic_id=channel.candidate_id,
+            selection="first_ranked_entity",
+        ),
+        status=ResearchGoalStatus.RESOLVED,
+    )
+    session = SimpleNamespace(
+        session_id="rs-result-dependency",
+        accepted_brief=SimpleNamespace(
+            questions=(child,),
+            scope=base_brief.scope,
+        ),
+    )
+    parent_result = {
+        "data": {
+            "cols": [
+                {
+                    "id": 20,
+                    "table_id": 10,
+                    "name": "sales_order_channel",
+                    "field_ref": ["field", 20, None],
+                },
+                {"name": "count", "field_ref": ["aggregation", 0]},
+            ],
+            "rows": [["Web", 41], ["Direct", 33]],
+        }
+    }
+    parent_link = SimpleNamespace(
+        evidence_id="evidence-parent",
+        receipt_id="receipt-parent",
+        result_hash="b" * 64,
+    )
+
+    class ParentStore:
+        def __init__(self):
+            self.calls = 0
+
+        def verified_material_result(self, *, session_id, obligation_id):
+            self.calls += 1
+            assert session_id == "rs-result-dependency"
+            assert obligation_id == "g-parent"
+            return parent_link, parent_result
+
+    store = ParentStore()
+    executor = NativeResearchMaterialExecutor(
+        subject_provider=SimpleNamespace(db_engine=None),
+        store=store,
+        expected_identity=expected_identity(),
+    )
+    monkeypatch.setattr(
+        executor,
+        "_material_bindings",
+        lambda **_: {
+            channel.candidate_id: scope_module.NativeMaterialBinding(
+                candidate_id=channel.candidate_id,
+                candidate_kind="dimension",
+                database_id=1,
+                table_id=10,
+                field_id=20,
+            )
+        },
+    )
+    base = AnalyticalRequestContract(
+        authority_id="authority-result-dependency",
+        request_ref="request-result-dependency",
+        semantic_context_version=CONTEXT,
+        scope_identity=AnalyticalScopeIdentity(
+            lineage_id="atl-result-dependency",
+            version_id="scope_v1",
+        ),
+        scope_fingerprint=base_brief.scope_fingerprint,
+        metric_refs=(metric.candidate_id,),
+        dimension_refs=(channel.candidate_id,),
+    )
+
+    resolution = executor.resolve_result_dependency(
+        principal=principal(),
+        session=session,
+        obligation_id=child.goal_id,
+        analytical_scope=base,
+    )
+
+    assert resolution is not None
+    assert store.calls == 1
+    assert resolution.selected_value == "Web"
+    assert resolution.contract.scope_identity == base.scope_identity
+    assert resolution.contract.scope_fingerprint == base.scope_fingerprint
+    assert resolution.contract.filters[-1].value == "Web"
+    assert resolution.contract.filters[-1].source_candidate_id == channel.candidate_id
+
+
+def test_execution_local_overlay_reaches_metabot_contract_projection():
+    engine = db_engine()
+    seed(engine)
+    store = ResearchSessionStore(engine)
+    product = ResearchAskOrchestrator(store=store)
+    session = product.start_from_brief(
+        brief=brief(),
+        request_ref="p14-result-overlay-message",
+        source_message_hash=hashlib.sha256(b"result overlay message").hexdigest(),
+        principal=principal(),
+    )
+    base = scope_module.analytical_scope_contract(
+        session=session,
+        obligation_id="g1",
+    )
+    overlay = base.model_copy(
+        update={
+            "filters": (
+                *base.filters,
+                AnalyticalFilterInvariant(
+                    semantic_ref="result-selection:" + "c" * 64,
+                    source_candidate_id="cand_sales_order_channel",
+                    dimension_name="Sales Order Channel",
+                    value="Web",
+                ),
+            )
+        }
+    )
+
+    prepared = ResearchManager.prepare_native_delegation(
+        session,
+        obligation_id="g1",
+        analytical_scope=overlay,
+    )
+
+    projected = prepared.request.context["dima_analytical_scope"]
+    assert projected["scope_identity"] == base.scope_identity.model_dump(mode="json")
+    assert projected["scope_fingerprint"] == base.scope_fingerprint
+    assert projected["filters"][-1]["value"] == "Web"
+    assert projected["filters"][-1]["source_candidate_id"] == "cand_sales_order_channel"
+    assert "Sales Order Channel = \"Web\"" in prepared.request.message
+
+
+def test_verified_material_result_reports_parent_pending_without_replay():
+    store = ResearchSessionStore(db_engine())
+
+    with pytest.raises(ResearchPersistenceError) as exc:
+        store.verified_material_result(
+            session_id="rs-pending-parent",
+            obligation_id="g-parent",
+        )
+
+    assert exc.value.code == "P14_RESULT_DEPENDENCY_PARENT_PENDING"
 
 
 def test_native_request_context_preloads_only_required_governed_metrics():
