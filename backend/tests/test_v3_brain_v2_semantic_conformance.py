@@ -409,16 +409,8 @@ def test_same_patch_replay_from_same_source_is_idempotent() -> None:
     assert first.scope_fingerprint == second.scope_fingerprint
 
 
-def test_multi_value_entity_filter_matches_exact_governed_value_set() -> None:
+def _entity_filter_contract_and_bindings():
     required = frozenset({"entity.e1", "entity.e2"})
-    observed = frozenset({"entity.e2", "entity.e1"})
-    assert entity_filter_admission_allowed(
-        EntityFilterAdmissionSpec(
-            required_values=required,
-            observed_values=observed,
-        )
-    )
-
     contract = AnalyticalRequestContract(
         authority_id="auth-semantic-spec",
         request_ref="req-filter-set",
@@ -428,19 +420,14 @@ def test_multi_value_entity_filter_matches_exact_governed_value_set() -> None:
             version_id="scope_v2",
         ),
         metric_refs=("metric.m1",),
-        filters=(
+        filters=tuple(
             AnalyticalFilterInvariant(
-                semantic_ref="entity.e1",
-                source_candidate_id="entity.e1",
+                semantic_ref=candidate_id,
+                source_candidate_id=candidate_id,
                 dimension_name="dimension.entity",
-                value="entity.e1",
-            ),
-            AnalyticalFilterInvariant(
-                semantic_ref="entity.e2",
-                source_candidate_id="entity.e2",
-                dimension_name="dimension.entity",
-                value="entity.e2",
-            ),
+                value=candidate_id,
+            )
+            for candidate_id in sorted(required)
         ),
     )
     bindings = {
@@ -453,11 +440,27 @@ def test_multi_value_entity_filter_matches_exact_governed_value_set() -> None:
         )
         for candidate_id in required
     }
+    return required, contract, bindings
+
+
+@pytest.mark.parametrize("operator", ("=", "in"))
+def test_multi_value_entity_filter_matches_exact_governed_value_set(
+    operator: str,
+) -> None:
+    required, contract, bindings = _entity_filter_contract_and_bindings()
+    observed = frozenset({"entity.e2", "entity.e1"})
+    assert entity_filter_admission_allowed(
+        EntityFilterAdmissionSpec(
+            required_values=required,
+            observed_values=observed,
+        )
+    )
+
     observation = SimpleNamespace(
         filters=(
             NativeMaterialFilter(
                 stage_number=0,
-                operator="=",
+                operator=operator,
                 values=("entity.e2", "entity.e1"),
                 field_id=20,
                 table_id=10,
@@ -466,6 +469,108 @@ def test_multi_value_entity_filter_matches_exact_governed_value_set() -> None:
     )
 
     _assert_material_filter_scope(contract, observation, bindings)
+
+
+@pytest.mark.parametrize(
+    "values",
+    (
+        ("entity.e1",),
+        ("entity.e1", "entity.e2", "entity.e3"),
+    ),
+)
+def test_entity_filter_value_set_must_remain_exact(values) -> None:
+    required, contract, bindings = _entity_filter_contract_and_bindings()
+    observed = frozenset(values)
+    assert not entity_filter_admission_allowed(
+        EntityFilterAdmissionSpec(
+            required_values=required,
+            observed_values=observed,
+        )
+    )
+
+    observation = SimpleNamespace(
+        filters=(
+            NativeMaterialFilter(
+                stage_number=0,
+                operator="=",
+                values=values,
+                field_id=20,
+                table_id=10,
+            ),
+        )
+    )
+    with pytest.raises(
+        ResearchAnalyticalScopeError,
+        match="membership values differ",
+    ):
+        _assert_material_filter_scope(contract, observation, bindings)
+
+
+def test_entity_filter_foreign_field_remains_fail_closed() -> None:
+    _, contract, bindings = _entity_filter_contract_and_bindings()
+    observation = SimpleNamespace(
+        filters=(
+            NativeMaterialFilter(
+                stage_number=0,
+                operator="=",
+                values=("entity.e1", "entity.e2"),
+                field_id=21,
+                table_id=10,
+            ),
+        )
+    )
+    with pytest.raises(
+        ResearchAnalyticalScopeError,
+        match="filter fields differ",
+    ):
+        _assert_material_filter_scope(contract, observation, bindings)
+
+
+def test_entity_filter_non_membership_operator_remains_fail_closed() -> None:
+    _, contract, bindings = _entity_filter_contract_and_bindings()
+    observation = SimpleNamespace(
+        filters=(
+            NativeMaterialFilter(
+                stage_number=0,
+                operator="contains",
+                values=("entity.e1", "entity.e2"),
+                field_id=20,
+                table_id=10,
+            ),
+        )
+    )
+    with pytest.raises(
+        ResearchAnalyticalScopeError,
+        match="not exact membership",
+    ):
+        _assert_material_filter_scope(contract, observation, bindings)
+
+
+def test_multiple_atomic_filters_on_same_field_remain_ambiguous() -> None:
+    _, contract, bindings = _entity_filter_contract_and_bindings()
+    observation = SimpleNamespace(
+        filters=(
+            NativeMaterialFilter(
+                stage_number=0,
+                operator="=",
+                values=("entity.e1",),
+                field_id=20,
+                table_id=10,
+            ),
+            NativeMaterialFilter(
+                stage_number=0,
+                operator="=",
+                values=("entity.e2",),
+                field_id=20,
+                table_id=10,
+            ),
+        )
+    )
+    with pytest.raises(
+        ResearchAnalyticalScopeError,
+        match="boolean composition is not observable",
+    ):
+        _assert_material_filter_scope(contract, observation, bindings)
 
 
 def _ranking_contract() -> AnalyticalRequestContract:
