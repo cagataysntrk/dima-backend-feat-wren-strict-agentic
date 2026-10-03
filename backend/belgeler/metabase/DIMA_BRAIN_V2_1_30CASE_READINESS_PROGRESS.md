@@ -3611,3 +3611,124 @@ One real A3 development proof on the certified dima.11 runtime after the identit
 
 Run **A3 / F06_M only**, once, on Luna/Luna/no-cascade. Do not run A1, A2 or A4. If A3 scores
 below `3/4`, STOP paid and classify the exact first invalid boundary before any further development.
+
+
+---
+
+## EMERGENCY FINAL CONVERGENCE — PHASE 2 A3 REAL DIMA.11 PROOF
+
+**STATUS: RED — PAID STOP**
+
+### Product / engine
+
+- semantic Product: `afb4191d78d205b8f6985dc7227de4db2637a058`
+- engine: `f8ba5cf32d265f1d4210ac8513bf273df7f44e60`
+- release: `0.63.18-dima.11`
+- digest: `sha256:34976af8210f70c683518941a1a85b67e47e2df24ef2b5eb4054727e521c64a9`
+- topology: `LUNA_LUNA_NO_CASCADE`
+
+### Live run
+
+- case: `F06_M`
+- run: `37137373412`
+- artifact: `11279550610`
+- artifact digest:
+  `sha256:2a83acef166b9992d42ba51e8ad458069d3dc967fb409eb09abb6b065417cc31`
+- manual Product score: `2/4 = PARTIAL`
+- terminal: `PARTIAL`
+- workflow: `WAITING`
+- requirement_complete: `false`
+
+### Provider / economics
+
+- provider requests: `10`
+- prompt tokens: `201,194`
+- completion tokens: `5,437`
+- reasoning tokens: `2,602`
+- cost: `$0.03012691`
+- case latency: `71,350 ms`
+- exception: `0`
+- duplicate native: `0`
+- stale Evidence: `0`
+
+### BASE / REPAIR outcome
+
+BASE ranking occurrence:
+
+- native query captured and executed;
+- material = department x month x downtime LEVEL;
+- status = `LIMITED`;
+- no ranking Evidence admitted.
+
+REPAIR occurrence:
+
+- exactly one `P14_REPAIR` opened;
+- same governed conversation/authority retained;
+- `native_query_id = null`;
+- `native_result = null`;
+- status = `LIMITED`.
+
+Therefore no legal repaired query reached dima.11 observation. This run does **not** authorize engine
+work.
+
+### A-E classification
+
+**A — Metabot failed to create the required material.**
+
+Live Metabot tool errors show planner/resource-resolution churn:
+
+- unresolved portable table FK followed by resource discovery;
+- invalid stage-column reference (`max`) while available machine names were
+  `department, event_date, sum`;
+- provider ceiling exhausted at request 10;
+- requests 11-13 were blocked locally.
+
+Not B:
+
+- certified dima.11 started successfully;
+- no legal repaired native query existed for dima.11 to observe.
+
+### First invalid boundary
+
+`accepted CHANGE repair contract -> Metabot resource/query construction -> no repaired native query capture`
+
+### Exact owner
+
+Planner-facing native resource context at the Product/Metabot delegation boundary.
+
+The durable control-plane `NativeResourceBinding` already owns exact
+`metabase_database_id / metabase_table_id` for accepted semantic candidates. Metabase natively
+supports `user_is_viewing=[{type:"table", id:...}]`, which injects governed table/field details into
+the agent system context.
+
+### Generic law
+
+> Metabot should not spend cognition rediscovering a table that Dima has already resolved through a
+> tenant-scoped durable native resource binding. Dima may project that exact resource identity as
+> read-only viewing context, but must not generate SQL/MBQL or decide analytical HOW.
+
+### Explicitly rejected
+
+- dima.12;
+- exploratory engine branch;
+- same-SHA paid retry;
+- request ceiling increase;
+- SQL/MBQL generation in Dima;
+- benchmark/case wording;
+- fuzzy/regex/morph planner authority;
+- A4.
+
+### What remains
+
+Provider-free root fix only:
+
+1. project accepted unique table IDs from durable native bindings into Metabase-native
+   `user_is_viewing` context for BASE and REPAIR;
+2. preserve all existing typed material requirements;
+3. prove foreign/ambiguous resource bindings still fail closed;
+4. full provider-free recertification;
+5. rerun A3 only.
+
+### 30-case readiness
+
+**NO — CLOSER. PAID STOP.**
