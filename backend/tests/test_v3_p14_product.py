@@ -682,6 +682,15 @@ def test_repairable_material_miss_uses_one_durable_same_metabot_repair():
         second["context"]["dima_analytical_scope"]
         == first["context"]["dima_analytical_scope"]
     )
+    assert (
+        second["context"]["dima_material_requirement"]
+        == first["context"]["dima_material_requirement"]
+    )
+    assert "[DIMA MATERIAL REQUIREMENT JSON]" in first["message"]
+    assert "[DIMA MATERIAL REQUIREMENT JSON]" in second["message"]
+    assert "[DIMA MATERIAL REPAIR FEEDBACK JSON]" in second["message"]
+    assert "[DIMA MATERIAL REPAIR BOUNDARY]" in second["message"]
+    assert "R1_RESULT_COMPARISON_COVERAGE_INCOMPLETE" in second["message"]
     assert second["context"]["dima_material_repair_feedback"] == {
         "schema": "dima_material_repair_feedback_v1",
         "validation_code": "R1_RESULT_COMPARISON_COVERAGE_INCOMPLETE",
