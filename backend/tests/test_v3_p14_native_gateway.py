@@ -2933,7 +2933,10 @@ def test_change_material_requirement_projection_is_exact_and_planner_visible() -
     assert requirement["material_fingerprint"] == contract.material_fingerprint
     assert requirement["metric_refs"] == ["metric.downtime"]
     assert requirement["required_metric_refs"] == ["metric.downtime"]
-    assert requirement["required_breakout_refs"] == ["dimension.department"]
+    assert requirement["required_breakout_refs"] == [
+        "dimension.department",
+        "time.event_date",
+    ]
     assert requirement["required_temporal_dimension"] == "time.event_date"
     assert requirement["ranking"] == {
         "kind": "native_metric",

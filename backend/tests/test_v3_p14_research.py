@@ -408,7 +408,8 @@ def test_p14_durable_state_delegates_objective_to_real_native_bridge_without_que
         now=NOW,
     )
 
-    assert prepared.request.message.startswith("[DIMA ACCEPTED ANALYTICAL CONTRACT]\n")
+    assert prepared.request.message.startswith("[DIMA MATERIAL REQUIREMENT JSON]\n")
+    assert "[DIMA ACCEPTED ANALYTICAL CONTRACT]\n" in prepared.request.message
     assert (
         "metrics:\n- metric.sales_order_count :: Sales Order Count"
         in prepared.request.message
