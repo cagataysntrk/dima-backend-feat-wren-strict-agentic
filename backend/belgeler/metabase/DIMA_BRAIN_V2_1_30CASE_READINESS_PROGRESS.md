@@ -1036,3 +1036,126 @@ PHASE 6A — surgical paid mechanical panel, sequential and STOP-on-first-RED:
 Only one case may be armed at a time. The broad 30-case workflow remains closed. The live harness may
 be updated only to consume the frozen dima.10 identity and the approved Luna/Luna/no-cascade topology;
 no semantic code change is permitted.
+
+
+---
+
+## PHASE 6A — SURGICAL LIVE MECHANICAL RECOVERY PANEL
+
+**STATUS = IN PROGRESS**
+
+### Frozen identities
+
+- Semantic Product SHA: `dd969add8fe7e210ec67905221316d037ce1c002`
+- Live candidate base SHA: `13d1c37983d970516e2278f76c0dcfe847490ca7`
+- Engine SHA: `468643040c74959ffaad6e378b110d5841567f7c`
+- Engine release: `0.63.18-dima.10`
+- Engine digest: `sha256:34ce02396908e109aabcac9de6bedc3c832c79baa5450b7235c629f05455af17`
+- Model topology: `LUNA_LUNA_NO_CASCADE`
+- Broad 30-case authorization: **CLOSED**
+
+### A1 first live attempt — harness RED, Product mechanically safe
+
+Case:
+
+- `F02_H` — ranking/context mechanical recovery.
+- run: `37110067159`;
+- artifact: `11269631054`;
+- artifact digest:
+  `sha256:3870929248eab69d26845646845b0bb26f7c83f1e8c073bd2b658c18120ad5c5`.
+
+Observed Product state:
+
+- exception: `0`;
+- duplicate native: `0`;
+- stale Evidence: `0`;
+- scope violation observed: `0`;
+- terminal: `REPORT`;
+- workflow status: `COMPLETE`;
+- `requirement_complete=true`;
+- native acquisitions: `1`;
+- one VERIFIED Evidence contains all three requested governed metrics and the top-3 grouped rows:
+  - Assembly: downtime `612`, faults `40`, performance `67.75`;
+  - Packaging: downtime `365`, faults `21`, performance `78.25`;
+  - Utilities: downtime `291`, faults `16`, performance `83.0`.
+- P20 preserves exact source paths/numeric provenance and emits the observation-only ceiling.
+- provider requests: `3`;
+- prompt tokens: `44,251`;
+- completion tokens: `1,118`;
+- reasoning tokens: `161`;
+- provider-reported cost: `$0.01040727`;
+- case latency: `14,109 ms`.
+
+The workflow returned RED only because the legacy benchmark field `min_evidence=2` was interpreted as
+"at least two Evidence objects". That is not a valid material-coverage invariant for Metabase: one
+summarized query may contain multiple metrics and grouped rows.
+
+### First invalid boundary
+
+`live readiness harness -> legacy Evidence-object cardinality proxy`.
+
+This is not a Product semantic failure. The governed Product had already reached a mechanically safe,
+complete REPORT.
+
+### Pattern research
+
+Metabase official summarize/metric behavior confirms that one summarize result may legally contain
+multiple metrics and one or more groupings. Evidence-object count therefore cannot stand in for
+metric/material coverage.
+
+Adopted Dima law:
+
+- Evidence cardinality remains diagnostic only;
+- supported `ANSWER` / `REPORT` requires governed mandatory-requirement completion;
+- explicitly accepted `PARTIAL` / `CLARIFY` / `UNSUPPORTED` terminal classes are judged by their
+  typed terminal state and mechanical safety;
+- no benchmark `min_evidence` number becomes runtime or Product authority.
+
+### Provider-free reproducer
+
+Commit `c025ff6a833c3cb48ac75632eb22a94782896162` extracted the existing gate without
+changing behavior and added three generic laws.
+
+Run `37110374457` = intentional RED:
+
+- deterministic closure: `141 passed, 3 failed`;
+- all three failures were the new harness-law tests:
+  1. one multi-metric Evidence must not fail solely because legacy minimum is 2;
+  2. incomplete REPORT must not pass merely because evidence count is high;
+  3. accepted CLARIFY must not require artificial Evidence cardinality.
+
+### Generic fix
+
+Commit `bd93d0743ec96f739d32900009b8bdba2ddc300f`:
+
+- makes Evidence-object cardinality legacy diagnostic only;
+- gates ANSWER/REPORT on `requirement_complete`;
+- preserves typed accepted non-answer terminal classes;
+- records `legacy_min_evidence` and `legacy_min_evidence_met` for forensic comparison;
+- does not change Product semantics, engine, graph, prompt, model or provider budget.
+
+Provider-free aggregate run `37110504423` = SUCCESS:
+
+- architecture invariants: GREEN;
+- deterministic closure including the new harness tests: GREEN;
+- migration single-head: GREEN;
+- research/scope: GREEN;
+- P17: GREEN;
+- P19: GREEN;
+- P20/Core-B: GREEN;
+- security/repository hygiene: GREEN.
+
+### Paid stop discipline
+
+The paid panel was disabled immediately after the RED. A2 was **not** started. The failed checkout is
+not retried. A1 may run once on the new harness-fix checkout because the checkout bytes changed while
+the frozen semantic Product, engine and model topology remain identical.
+
+### 30-case readiness
+
+**CLOSER — Gate A not yet passed**
+
+### Next legal action
+
+Re-arm only A1 `F02_H` on the harness-fix checkout. If it is mechanically GREEN, manually score it.
+Only a score `>=3/4` permits A2. Any genuine Product RED stops the paid panel again.
