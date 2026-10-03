@@ -372,6 +372,48 @@ class NativeResearchMaterialExecutor:
                 )
         return output
 
+    def planner_resource_context(
+        self,
+        *,
+        principal: Principal,
+        session: ResearchSession,
+        contract: AnalyticalRequestContract,
+    ) -> dict[str, Any]:
+        """Project accepted native resource identity into Metabot viewing context.
+
+        This is resource anchoring only. It never generates or rewrites a query,
+        and it is derived exclusively from tenant-scoped durable native bindings
+        already required for material observation.
+        """
+
+        bindings = self._material_bindings(
+            principal=principal,
+            session=session,
+            contract=contract,
+        )
+        table_ids = sorted(
+            {
+                int(binding.table_id)
+                for binding in bindings.values()
+                if binding.table_id is not None
+            }
+        )
+        if not table_ids:
+            raise ResearchMaterialLimitation(
+                "R1_NATIVE_PLANNER_TABLE_BINDING_REQUIRED",
+                "accepted analytical material has no governed native table anchor",
+                last_valid_boundary="dima.scope.resolve",
+                first_invalid_boundary="dima.material.compile",
+                scope_fingerprint=contract.scope_fingerprint,
+                material_fingerprint=contract.material_fingerprint,
+            )
+        return {
+            "user_is_viewing": [
+                {"type": "table", "id": table_id}
+                for table_id in table_ids
+            ]
+        }
+
     def resolve_result_dependency(
         self,
         *,
