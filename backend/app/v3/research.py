@@ -13,6 +13,7 @@ from app.v3.research_contracts import ResearchBrief, ResearchBriefStatus
 from app.v3.research_analytical_scope import (
     analytical_scope_contract,
     material_coverage_period,
+    native_material_requirement,
     native_request_context,
 )
 from app.v3.authority import AcceptedResearchAuthority
@@ -299,7 +300,15 @@ class ResearchManager:
             )
 
         coverage = material_coverage_contract(analytical_scope)
+        requirement = native_material_requirement(analytical_scope)
         lines = [
+            "[DIMA MATERIAL REQUIREMENT JSON]",
+            json.dumps(
+                {"dima_material_requirement": requirement},
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            ),
             "[DIMA ACCEPTED ANALYTICAL CONTRACT]",
             f"scope_version: {analytical_scope.scope_identity.version_id}",
             *section(
