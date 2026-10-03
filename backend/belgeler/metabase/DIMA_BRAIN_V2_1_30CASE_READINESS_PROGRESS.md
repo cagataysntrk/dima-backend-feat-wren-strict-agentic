@@ -244,9 +244,13 @@ The observer must also prove a leading temporal breakout with a real temporal bu
 6. Generic fix: `change-ranking-index` is now enabled only when the same stage has a leading
    temporal breakout with a native temporal bucket. No query execution or rewrite is introduced.
 7. Bounded verification run `37105780578` = SUCCESS after the temporal-axis fix.
-8. Final immutable release candidate SHA:
-   `2ea17785fdd0e2817895b3c7b82474b9c1b13543`.
-   Certification run `37105969980` is currently in progress.
+8. Breakout-order ambiguity sibling was added after the first release candidate:
+   category-first + temporal-second + `metric - Offset(metric,-1)` must remain fail-closed.
+9. Ambiguity proof run `37106620709` = SUCCESS.
+10. Prior candidate `2ea17785...` is **superseded**; it was never pinned into Product.
+11. Final immutable release candidate SHA:
+    `468643040c74959ffaad6e378b110d5841567f7c`.
+    Certification run `37106817330` is queued/running.
 
 ### Adopted principle
 
@@ -298,7 +302,7 @@ complete.
 ### What remains unproven
 
 - final dima.10 digest;
-- final certification job conclusion for `2ea17785...`;
+- final certification job conclusion for `468643040c74...`;
 - exact Product gitlink pin;
 - Phase-2 provider-free recertification.
 
