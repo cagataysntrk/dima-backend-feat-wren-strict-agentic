@@ -3458,3 +3458,156 @@ Freeze this development candidate and run **A3 `F06_M` only** on
 
 Do not rerun A1/A2. Do not run A4 unless A3 is at least `3/4`. STOP paid immediately on a genuine
 A3 RED.
+
+
+---
+
+## EMERGENCY FINAL CONVERGENCE — PHASE 0 CURRENT STATE LOCK
+
+**STATUS: GREEN**
+
+- canonical branch: `feat/dima-brain-v2-1-specification-closure`
+- directive repository HEAD: `7c3b43977b3eb425193d732897d40e3d723a3141`
+- semantic Product: `afb4191d78d205b8f6985dc7227de4db2637a058`
+- certified engine SHA: `f8ba5cf32d265f1d4210ac8513bf273df7f44e60`
+- release: `0.63.18-dima.11`
+- runtime tag: `v0.63.18-dima.11`
+- digest: `sha256:34976af8210f70c683518941a1a85b67e47e2df24ef2b5eb4054727e521c64a9`
+- certification: `37127030946 = SUCCESS`
+- model topology: `LUNA_LUNA_NO_CASCADE`
+- exploratory `feat/dima11-conditional-change-observer`: **FROZEN / NOT AUTHORITY**
+- 30-case: **CLOSED**
+- frontend: **FORBIDDEN**
+
+First invalid boundary at directive reset:
+
+`engine gitlink/runtime lock identity mismatch`
+
+No Product or engine semantic development is authorized for this boundary.
+
+---
+
+## EMERGENCY FINAL CONVERGENCE — PHASE 1 EXACT RUNTIME IDENTITY REPAIR
+
+**STATUS: GREEN**
+
+### Product SHA
+
+Semantic Product unchanged:
+
+`afb4191d78d205b8f6985dc7227de4db2637a058`
+
+### Engine SHA / tag / digest
+
+- SHA: `f8ba5cf32d265f1d4210ac8513bf273df7f44e60`
+- release: `0.63.18-dima.11`
+- runtime: `v0.63.18-dima.11`
+- digest: `sha256:34976af8210f70c683518941a1a85b67e47e2df24ef2b5eb4054727e521c64a9`
+- certification: `37127030946`
+- build identity: `github-actions:37127030946:f8ba5cf32d265f1d4210ac8513bf273df7f44e60`
+
+### Objective
+
+Remove the stale dima.10 runtime identity/configuration defect and make the canonical runtime lock,
+gitlink, active workflow receipt and certified dima.11 image refer to one exact immutable engine.
+
+### First invalid boundary
+
+Before fix:
+
+`engine/metabase gitlink=f8ba5cf... -> runtime lock=468643... -> live preflight STOP`
+
+### Exact owner
+
+Runtime identity/configuration only:
+
+- `backend/lab/metabase/core_b/runtime/engine_runtime_lock.json`
+- `.github/workflows/dima-brain-v2-1-spec-closure-live.yml`
+- provider-free identity proof in
+  `.github/workflows/dima-brain-v2-phase1-provider-free.yml`
+
+### Generic law
+
+> A live analytical run may start only when the Product gitlink, canonical runtime lock, workflow
+> receipt and immutable container identity all name the same certified engine SHA/tag/digest.
+
+### Runtime lock before
+
+- engine SHA: `468643040c74959ffaad6e378b110d5841567f7c`
+- runtime tag: `v0.63.18-dima.10`
+- certification: `37106817330`
+- digest: `sha256:34ce02396908e109aabcac9de6bedc3c832c79baa5450b7235c629f05455af17`
+
+### Runtime lock after
+
+- engine SHA: `f8ba5cf32d265f1d4210ac8513bf273df7f44e60`
+- upstream SHA: `2ba2485c78d7e00a9a25f82c00fc201da71590c4`
+- runtime tag: `v0.63.18-dima.11`
+- certification: `37127030946`
+- immutable image:
+  `ghcr.io/upcytech/dima-metabase-engine@sha256:34976af8210f70c683518941a1a85b67e47e2df24ef2b5eb4054727e521c64a9`
+- registry digest:
+  `sha256:34976af8210f70c683518941a1a85b67e47e2df24ef2b5eb4054727e521c64a9`
+
+### Changes
+
+- runtime lock aligned to certified dima.11;
+- live workflow stale certification receipt aligned to `37127030946`;
+- cosmetic dima.10 step names renamed to dima.11;
+- aggregate Phase-1 gained an exact runtime-identity provider-free assertion.
+
+Semantic Product diff: **0**.
+
+Engine diff: **0**.
+
+### Identity proof
+
+Provider-free run:
+
+- `37137110951 = SUCCESS`
+
+The run proves:
+
+- gitlink SHA = `f8ba5cf...`;
+- runtime lock engine SHA = `f8ba5cf...`;
+- runtime tag = `v0.63.18-dima.11`;
+- certification run = `37127030946`;
+- digest = certified dima.11 digest;
+- Brain V2 deterministic closure = GREEN;
+- migration graph single-head = GREEN;
+- research/scope/P14 authority = GREEN;
+- P17 = GREEN;
+- P19 = GREEN;
+- P20/Core-B = GREEN;
+- security/repository hygiene = GREEN.
+
+Certified image runtime revision is independently sealed by engine certification
+`37127030946`, which pulled the immutable digest and verified
+`/api/dima/engine/v1/identity` against revision `f8ba5cf...`, runtime tag and build identity.
+
+### Provider / cost
+
+- provider calls: `0`
+- prompt tokens: `0`
+- completion tokens: `0`
+- reasoning tokens: `0`
+- cost: `$0`
+- paid latency: `0`
+
+### What is now proven
+
+The stale runtime-lock failure that prevented the previous A3 attempt from reaching Product execution
+is closed without any Product semantic or engine change.
+
+### What remains unproven
+
+One real A3 development proof on the certified dima.11 runtime after the identity repair.
+
+### 30-case readiness
+
+**NO — CLOSER. 30-case remains CLOSED.**
+
+### NEXT LEGAL ACTION
+
+Run **A3 / F06_M only**, once, on Luna/Luna/no-cascade. Do not run A1, A2 or A4. If A3 scores
+below `3/4`, STOP paid and classify the exact first invalid boundary before any further development.
