@@ -3902,3 +3902,143 @@ On `8a1ab66c...`:
 Run aggregate Phase-1 and Phase-2/headless provider-free on the exact current candidate. If both are
 GREEN, bind one A3 development authorization to the recertified candidate and run **A3 only** once.
 A4 remains unauthorized until A3 >= `3/4`.
+
+
+---
+
+## EMERGENCY CONVERGENCE — A3 METABOT TRANSPORT CONTRACT RCA
+
+**STATUS: PROVIDER-FREE RECERTIFICATION IN PROGRESS**
+
+### Product / engine
+
+- semantic Product change: `ff92fe8f717c2cf30827c1f6b56f92b6682017d5`
+- exact repository candidate before aggregate recertification: `011e6ee830cb18035906d47245c738b296c3bf91`
+- certified engine: `f8ba5cf32d265f1d4210ac8513bf273df7f44e60`
+- release/runtime: `0.63.18-dima.11 / v0.63.18-dima.11`
+- digest: `sha256:34976af8210f70c683518941a1a85b67e47e2df24ef2b5eb4054727e521c64a9`
+- engine code diff: `0`
+- model/prompt diff: `0`
+
+### Development proof that exposed the boundary
+
+- A3 / F06_M run: `37146675675`
+- artifact: `11283020421`
+- artifact digest:
+  `sha256:1636d46ed9085c792a805bac309a34a6786a9408d57969127b2491cd45f341ff`
+- provider requests: `1` — source `research_intake` only
+- prompt tokens: `14,646`
+- completion tokens: `718`
+- provider cost: `$0.00452295`
+- latency: `5,966 ms`
+- exception: `0`
+- duplicate native: `0`
+- stale Evidence: `0`
+- accepted typed periods:
+  - May = `BASELINE_PERIOD`
+  - June = `COMPARISON_PERIOD`
+- native acquisitions: `0`
+- ranking/comparison P14_BASE links: `LIMITED`, no native query id/fingerprint.
+
+### First invalid boundary
+
+`accepted AnalyticalRequestContract -> Product Metabot request transport -> /api/metabot/agent-streaming schema validation`
+
+The live server log proves:
+
+- restricted `/api/user/current` = HTTP 200;
+- certified `/api/dima/engine/v1/identity` = HTTP 200;
+- `POST /api/metabot/agent-streaming` = HTTP 400 for both P14_BASE attempts;
+- no Metabot provider request occurred.
+
+Therefore this is **not** engine cognition, observer, Evidence admission or resource-binding absence.
+
+### Exact owner
+
+`backend/app/v3/research_native_gateway.py::NativeResearchMaterialExecutor.enrich_native_request`
+
+### Reference pattern consulted
+
+Certified dima.11 Metabase source:
+
+- `metabase.metabot.api /agent-streaming` validates `context` against
+  `::metabot.context/context`;
+- `metabase.metabot.context/ViewingItemSchema` accepts types including
+  `metric`, `question`, `model`, `adhoc`, `dashboard`, etc.;
+- `table` is **not** an accepted request-side `user_is_viewing` type;
+- `metabase.metabot.agent.user-context` can format tables internally, but that does not make
+  `type=table` legal at the API boundary.
+
+The previous Product resource-anchor projection automatically injected both:
+
+- `{"type":"table","id":...}`
+- `{"type":"metric","id":...}`
+
+The unsupported table item made the entire request fail schema validation before provider cognition.
+
+### Generic law
+
+> Dima may correlate a native analytical request only through Metabot viewing-context primitives
+> accepted by the certified Metabase API. Durable table bindings remain verifier authority; Product
+> must not invent an unsupported request-side table viewing item. Because every native analytical
+> contract has governed metric authority, exact metric IDs are sufficient as the planner-facing
+> resource anchor while physical table/field locators stay in the durable binding layer.
+
+### Changes
+
+Production:
+
+- removed automatic `type=table` injection from `enrich_native_request`;
+- retained exact accepted governed `type=metric` anchors;
+- no SQL/MBQL, filter, join, grouping or calculation generation.
+
+Tests:
+
+- resource-anchor expectation now requires metric-only Metabot context;
+- repair feedback/state/history idempotence remains covered;
+- durable table/field bindings remain used for verifier/material admission.
+
+### Provider-free proof
+
+- frozen-family closure:
+  `37147475131 = SUCCESS`;
+- provider calls: `0`;
+- Product/engine identity unchanged except this transport projection.
+
+### Explicitly rejected
+
+- dima.12;
+- exploratory engine branch;
+- engine patch;
+- prompt wording patch;
+- case-specific F06_M branch;
+- Dima SQL/MBQL generation;
+- dropping durable table/field verification;
+- provider-budget increase;
+- same-SHA paid retry;
+- A4;
+- broad/30-case execution.
+
+### What is now proven
+
+- runtime lock and certified dima.11 identity are correct;
+- typed CHANGE period roles are correct;
+- durable native bindings are seeded;
+- engine identity/current-user correlation succeeds;
+- latest A3 RED is a Product transport-schema defect before Metabot cognition;
+- the root fix is owner-scoped and API-contract-derived.
+
+### What remains unproven
+
+- aggregate Phase-1 GREEN on the exact transport candidate;
+- Phase-2/headless GREEN on the exact transport candidate;
+- A3 >= `3/4`.
+
+### 30-case readiness
+
+**NO — CLOSER. Broad 30-case remains CLOSED.**
+
+### NEXT LEGAL ACTION
+
+Run aggregate Phase-1 and Phase-2/headless provider-free. If both GREEN, run **A3 only once** on the
+recertified candidate. A4 remains unauthorized until A3 >= `3/4`.
