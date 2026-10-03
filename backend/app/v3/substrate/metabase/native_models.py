@@ -161,6 +161,7 @@ class NativeMaterialRanking(BaseModel):
     target: NativeMaterialRankingTarget
     direction: Literal["asc", "desc"]
     limit: int | None = Field(default=None, ge=0)
+    basis: Literal["level", "change"]
 
 
 class NativeMaterialObservation(BaseModel):
