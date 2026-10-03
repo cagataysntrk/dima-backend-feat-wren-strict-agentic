@@ -352,3 +352,159 @@ source build, smoke, registry publish, public unauthenticated digest pull and ru
 
 PHASE 2 — pin this exact dima.10 SHA/digest into Product and run the full provider-free
 re-certification on the same Product + engine bytes. Provider/model calls remain zero.
+
+
+---
+
+## PHASE 2 — EXACT SYSTEM PROVIDER-FREE RE-CERTIFICATION
+
+**STATUS = GREEN**
+
+### Exact freeze for this phase
+
+- Integration commit: `13d1c37983d970516e2278f76c0dcfe847490ca7`
+- Semantic Product SHA: `dd969add8fe7e210ec67905221316d037ce1c002`
+- Engine gitlink: `468643040c74959ffaad6e378b110d5841567f7c`
+- Engine release: `0.63.18-dima.10`
+- Engine digest: `sha256:34ce02396908e109aabcac9de6bedc3c832c79baa5450b7235c629f05455af17`
+- Migration head: `ff5b8e2c1a73`
+- Provider/model calls: `0`
+
+### Objective
+
+Re-certify the exact Product + certified engine bytes without using provider/model cognition and
+without changing semantic Product code.
+
+### Exact owner changed
+
+Integration identity only:
+
+- `engine/metabase` gitlink;
+- canonical runtime engine lock;
+- exact-engine guards in provider-free workflows.
+
+No Dima semantic owner, LangGraph node, P17/P18/P19/P20 logic, prompt or frontend code changed.
+
+### Files changed
+
+- `engine/metabase`
+- `.github/workflows/dima-brain-v2-1-semantic-conformance.yml`
+- `.github/workflows/dima-brain-v2-provider-free.yml`
+- `.github/workflows/dima-brain-v2-phase1-provider-free.yml`
+- `.github/workflows/dima-brain-v2-phase2-headless.yml`
+- `backend/lab/metabase/core_b/runtime/engine_runtime_lock.json`
+
+### Reference patterns consulted
+
+- exact immutable engine identity from Phase 1 certification;
+- existing repository provider-free/stateful/metamorphic architecture;
+- no new runtime/framework pattern was introduced.
+
+### Adopted principle
+
+Provider-free certification must run against the same exact engine gitlink that will be used by the
+candidate. Engine identity is an invariant, not ambient configuration.
+
+### Explicitly rejected pattern
+
+- testing against dima.9 while documenting dima.10;
+- provider calls to compensate for deterministic failures;
+- broad paid tests;
+- frontend work;
+- semantic code changes hidden inside integration pinning.
+
+### Tests / runs
+
+All four gates ran from the same integration commit `13d1c379...`:
+
+- semantic conformance: run `37107487060` = SUCCESS, `158 passed`;
+- Brain V2 focused provider-free: run `37107487075` = SUCCESS,
+  `101 passed, 1 skipped`;
+- aggregate Phase-1 provider-free: run `37107487057` = SUCCESS:
+  - deterministic closure: `141 passed`;
+  - research/scope authority: `255 passed`;
+  - P17: `145 passed`;
+  - P19: `53 passed`;
+  - P20/Core-B: `56 passed`;
+  - security/repository hygiene: `26 passed`;
+  - migration head: `ff5b8e2c1a73`;
+- Phase-2/headless: run `37107487168` = SUCCESS:
+  - T1-T7 Product/contracts: `96 passed`;
+  - carry-forward T1-T4: `4 passed`;
+  - P18 owner proofs: `28 passed`;
+  - P20 owner proofs: `32 passed`;
+  - T1-T7 independent metamorphic: `15 passed`;
+  - security/repository hygiene: `26 passed`;
+  - forbidden-surface audit: PASS.
+
+The one focused-lane skip is the Postgres-dependent owner integration test when
+`DIMA_BRAIN_V2_TEST_POSTGRES_DSN` is absent in that lightweight workflow. The aggregate workflow
+provides a real Postgres service/DSN and covers the Postgres integration surface. There are no xfails.
+
+### Generated semantic coverage
+
+Current pre-Phase-3 conformance artifact:
+
+- artifact ID: `11268287160`;
+- deterministic matrix: `5040` semantic cases;
+- current matrix dimensions: `6`;
+- current pair axes: `15`;
+- test-only boundary audit: PASS.
+
+This is carry-forward coverage only. It does **not** satisfy the Phase-3 13-dimension independent
+holdout requirement yet.
+
+### Invariant violation counters
+
+Observed provider-free violations on the exact candidate:
+
+- duplicate native execution: `0`;
+- stale Evidence promotion: `0`;
+- cross-scope reuse: `0`;
+- cross-tenant/principal reuse: `0`;
+- hidden USER_MUST terminality violation: `0`;
+- unsupported causal promotion: `0`;
+- normal discovery P17 routing violation: `0`;
+- normal relationship P17 routing violation: `0`;
+- presentation-only native delta violation: `0`.
+
+These are enforcement/test violation counts, not paid-live telemetry counts.
+
+### Provider calls / tokens / cost / latency
+
+- Provider calls: `0`
+- Prompt tokens: `0`
+- Provider cost: `$0`
+- Paid latency: `0`
+
+### First invalid boundary
+
+None in Phase 2.
+
+### What is now proven
+
+- Certified dima.10 is the exact Product gitlink.
+- Deterministic, stateful, P17, P18, P19, P20, security, checkpoint/resume, migration,
+  headless Product and T1-T7 metamorphic gates remain GREEN.
+- Repository/forbidden-surface rules remain GREEN.
+- No provider/model cognition was needed to restore the exact system.
+
+### What remains unproven
+
+- Phase-3 13-dimension saturation and independent Wave-B holdout;
+- mutation-canary detection = 100%;
+- Phase-4 frozen counterexample family closure on final candidate;
+- final candidate/model-topology freeze;
+- paid live Gate A/B;
+- 90+ potential.
+
+### 30-case readiness
+
+**CLOSER — not yet 90+ supported**
+
+### Next legal action
+
+PHASE 3 — expand the independent test-only semantic specification to the supervisor-required
+dimensions, run deterministic pairwise coverage, Hypothesis generative Wave A, a separately seeded
+Wave B after implementation freeze, and mutation canaries. Production code must not import or branch
+on the test-only reference model.
