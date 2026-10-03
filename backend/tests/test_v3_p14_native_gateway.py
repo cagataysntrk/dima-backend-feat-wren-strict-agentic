@@ -2134,6 +2134,7 @@ def test_r5_unranked_material_still_blocks_unaccepted_row_limiting_order():
                 },
                 "direction": "desc",
                 "limit": 2,
+                "basis": "level",
             },
         ]
     )
