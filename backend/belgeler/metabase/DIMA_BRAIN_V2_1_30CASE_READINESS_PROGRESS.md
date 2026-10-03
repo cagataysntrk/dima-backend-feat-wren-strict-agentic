@@ -1541,3 +1541,94 @@ semantic Product SHA. It does **not** count toward the final Gate-A score.
 Update only the surgical-live identity guard from the superseded Product to this frozen semantic
 Product, then restart Gate A at **A1 F02_H**. One case only, STOP-on-first-RED. Broad 30-case remains
 forbidden.
+
+
+### Final same-SHA Gate A1 `F02_H` — GREEN / FULL 4/4
+
+This is the first score that counts toward the **refrozen** final Gate-A panel.
+
+Freeze identities:
+
+- semantic Product SHA: `a4a2c00a92a1f2f7b52379cfdbb55a654b4b0e8b`;
+- engine SHA: `468643040c74959ffaad6e378b110d5841567f7c`;
+- engine digest:
+  `sha256:34ce02396908e109aabcac9de6bedc3c832c79baa5450b7235c629f05455af17`;
+- model topology: `LUNA_LUNA_NO_CASCADE`.
+
+Run receipt:
+
+- run: `37113615269` = SUCCESS;
+- checkout SHA: `8d292a203c3b0ceb185c471d8584d869251b44d7`;
+- artifact: `11270251922`;
+- artifact digest:
+  `sha256:88cd27f4bb1d54ed0757486fb877b15fbb2daa6ad2b16c9b12574f965232df09`;
+- terminal: `REPORT`;
+- workflow: `COMPLETE`;
+- requirement_complete: `true`;
+- exception: `0`;
+- duplicate native: `0`;
+- stale Evidence: `0`;
+- raw mechanical gate: PASS;
+- native acquisitions: `2` distinct governed occurrences, with no duplicate execution;
+- provider requests: `6`;
+  - research intake: `1`;
+  - Metabase / Metabot: `5`;
+  - P17: `0`;
+  - P18: `0`;
+  - P19: `0`;
+- prompt tokens: `86,204`;
+- completion tokens: `1,914`;
+- reasoning tokens: `420`;
+- provider cost: `$0.01624126`;
+- case latency: `24,110 ms`;
+- blocked provider requests: `0`.
+
+Material adjudication:
+
+- exact June-2026 scope was preserved;
+- the department breakdown returned downtime, fault count and average performance together;
+- the ranking obligation returned exactly the top three departments by downtime in descending order;
+- the requested fault/performance context was represented with source-backed rows;
+- the new Completion -> P20 terminal-source seam was exercised: the shared direct context requirement
+  remained lower-level P14 `READY`, while Completion owned its terminal accounting and P20 consumed
+  the exact typed source bridge without forging duplicate P14 VERIFIED state;
+- every published numeric statement retained exact source Evidence / receipt / row path;
+- no hidden arithmetic, causal claim, stale promotion, cross-scope reuse or unsupported interpretation
+  was introduced.
+
+Manual Product score:
+
+- `4 / 4 = FULL`.
+
+Reason: the complete material user request is correctly and governedly satisfied. The two native
+acquisitions correspond to distinct material needs rather than duplicate execution. Provider count
+`6` is below the hard ceiling and materially below the explicitly rejected 16–18-call regime.
+
+Paid stop discipline:
+
+- authorization disabled immediately after A1;
+- temporary push trigger removed immediately after A1;
+- no A2 call has been made under this final freeze yet.
+
+Final Gate-A running score:
+
+- A1 F02_H = `4/4`;
+- completed = `1/6`;
+- FULL = `1/6`;
+- exception = `0`;
+- silent wrong = `0`;
+- security violation = `0`;
+- scope violation = `0`;
+- causal overclaim = `0`;
+- duplicate native = `0`.
+
+### 30-case readiness
+
+**CLOSER — final same-SHA Gate A has started GREEN; broad 30-case remains CLOSED.**
+
+### Next legal action
+
+Arm **only A2 `F03_H`** against the same frozen semantic Product SHA, engine SHA/digest and model
+topology. A2 must specifically prove the repaired Completion -> P20 shared terminal-source path in live
+execution. STOP immediately on a genuine Product RED. A3 remains unauthorized until A2 is mechanically
+GREEN and manually scores at least `3/4`.
