@@ -2643,12 +2643,20 @@ class DimaBrainV2Activities(BrainActivities):
             state=state,
             session=session,
         )
+        completion_evidence_terminals = project_completion_evidence_terminals(
+            session=session,
+            material_groups=project_material_groups(session),
+            completed_material_group_ids=state.completed_material_group_ids,
+            terminal_requirement_ids=state.terminal_requirement_ids,
+            direct_requirement_ids=state.direct_requirement_ids,
+        )
         try:
             base = self._reports.draft_from_governed_research(
                 research_session_id=session.session_id,
                 report_key=report_key,
                 principal=self._principal,
                 relationship_results=relationship_results,
+                completion_evidence_terminals=completion_evidence_terminals,
             )
             draft = (
                 self._report_with_epistemic_projection(
