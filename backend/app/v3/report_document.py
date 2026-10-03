@@ -13,6 +13,7 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from sqlmodel import Session, select
 from app.v3.business_relationship_v1 import RelationshipResultProjection
+from app.v3.completion_authority import CompletionEvidenceTerminal
 from app.v3.claim_lineage import ClaimEpistemicState, ClaimLineageStore
 from app.v3.hypothesis_root_cause import AggregateOutcome, CausalQualification, ContributionClass, EvidenceStrength, GroundingSourceKind, HypothesisDisposition, HypothesisRootCauseStore
 from app.v3.research import ObligationState
@@ -1111,6 +1112,7 @@ class ReportDocumentStore:
         report_key: str,
         principal: Principal,
         relationship_results: tuple[RelationshipResultProjection, ...] = (),
+        completion_evidence_terminals: tuple[CompletionEvidenceTerminal, ...] = (),
         explicit_limitations: tuple[ReportLimitation, ...] = (),
     ) -> ReportDraft:
         """Project report content from terminal analytical authority only.
@@ -1122,6 +1124,10 @@ class ReportDocumentStore:
             research_session_id,
             principal,
         )
+        # Typed seam only. Completion remains the terminal authority; this
+        # parameter is intentionally not consumed until the provider-free RED
+        # proves the downstream source-projection gap.
+        _ = completion_evidence_terminals
         relationship_by_goal: dict[
             str,
             tuple[
