@@ -13,6 +13,7 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from sqlmodel import Session, select
 from app.v3.business_relationship_v1 import RelationshipResultProjection
+from app.v3.brain_v2.material_groups import project_material_groups
 from app.v3.completion_authority import CompletionEvidenceTerminal
 from app.v3.claim_lineage import ClaimEpistemicState, ClaimLineageStore
 from app.v3.hypothesis_root_cause import AggregateOutcome, CausalQualification, ContributionClass, EvidenceStrength, GroundingSourceKind, HypothesisDisposition, HypothesisRootCauseStore
@@ -416,50 +417,29 @@ class ReportClaimGate:
                 'P20_COMPLETION_EVIDENCE_OWNER_INVALID',
                 terminal.requirement_id,
             )
-        if terminal.scope_version_id != brief.scope.scope_version.version_id:
+
+        groups = {
+            item.material_group_id: item
+            for item in project_material_groups(session)
+        }
+        group = groups.get(terminal.material_group_id)
+        if group is None:
             raise P20ReportError(
-                'P20_COMPLETION_EVIDENCE_SCOPE_MISMATCH',
+                'P20_COMPLETION_EVIDENCE_GROUP_INVALID',
+                terminal.material_group_id,
+            )
+        if (
+            group.anchor_requirement_id != terminal.source_obligation_id
+            or terminal.requirement_id not in set(group.consumer_requirement_ids)
+            or group.scope_version_id != terminal.scope_version_id
+            or group.material_fingerprint != terminal.material_fingerprint
+            or terminal.scope_version_id
+            != brief.scope.scope_version.version_id
+        ):
+            raise P20ReportError(
+                'P20_COMPLETION_EVIDENCE_AUTHORITY_MISMATCH',
                 terminal.requirement_id,
             )
-        # Completion provides the terminal decision. P20 validates only that the
-        # supplied source is one exact shared-material occurrence admitted by the
-        # accepted analytical authority.
-        matches = tuple(
-            item
-            for item in coorigin_material_requirements(session)
-            if item.anchor_goal_id == terminal.source_obligation_id
-            and terminal.requirement_id in set(item.source_goal_ids)
-        )
-        if matches:
-            requirement = matches[0]
-            source_contract = analytical_scope_contract(
-                session=session,
-                obligation_id=terminal.source_obligation_id,
-            ).model_copy(update={'requested_output_surfaces': ()})
-            if source_contract.material_fingerprint != terminal.material_fingerprint:
-                raise P20ReportError(
-                    'P20_COMPLETION_EVIDENCE_MATERIAL_MISMATCH',
-                    terminal.requirement_id,
-                )
-        else:
-            source_contract = analytical_scope_contract(
-                session=session,
-                obligation_id=terminal.source_obligation_id,
-            ).model_copy(update={'requested_output_surfaces': ()})
-            target_contract = analytical_scope_contract(
-                session=session,
-                obligation_id=terminal.requirement_id,
-            ).model_copy(update={'requested_output_surfaces': ()})
-            if (
-                source_contract.material_fingerprint
-                != target_contract.material_fingerprint
-                or source_contract.material_fingerprint
-                != terminal.material_fingerprint
-            ):
-                raise P20ReportError(
-                    'P20_COMPLETION_EVIDENCE_MATERIAL_MISMATCH',
-                    terminal.requirement_id,
-                )
         return {
             'bridge_kind': 'COMPLETION_P14_EVIDENCE',
             'source_obligation_id': terminal.source_obligation_id,
