@@ -3747,3 +3747,58 @@ Root fix candidate:
 - New provider-free sibling asserts idempotent table context and repair-feedback preservation.
 
 Next gate: aggregate Phase-1 + Phase-2/headless on these exact bytes.
+
+
+### A3 planner-resource RCA — provider-free closure
+
+**STATUS: GREEN**
+
+Development Product candidate:
+
+`7a5947f3a061f937bf0025f6f0136860fda2609d`
+
+Semantic authority remains:
+
+`afb4191d78d205b8f6985dc7227de4db2637a058`
+
+Engine remains:
+
+`f8ba5cf32d265f1d4210ac8513bf273df7f44e60 / 0.63.18-dima.11`
+
+Generic root fix:
+
+- existing `NativeResearchMaterialExecutor.enrich_native_request` remains the single enrichment path;
+- accepted tenant-scoped `NativeResourceBinding.metabase_table_id` values are projected as
+  Metabase-native `user_is_viewing` table context;
+- existing governed metric context remains;
+- BASE and bounded REPAIR both pass the same runner/enrichment path;
+- duplicate table context is deduplicated;
+- foreign table bindings are excluded by accepted-contract resource resolution;
+- repair feedback is preserved unchanged.
+
+Provider-free receipts:
+
+- aggregate Phase-1: `37138169319 = SUCCESS`;
+- Phase-2/headless: `37138169335 = SUCCESS`;
+- provider calls: `0`;
+- cost: `$0`.
+
+Reference pattern:
+
+Certified Metabase dima.11
+`metabase.metabot.agent.user-context/format-viewing-context`
+uses `user_is_viewing=[{type:"table", id:...}]` to load and render exact table/field details into
+the agent system context. This is native resource context, not a Dima query planner.
+
+What is now proven:
+
+- stale runtime identity is closed;
+- dima.11 is the only engine authority;
+- A3's latest RED is classified as Metabot resource/query construction, not engine observation;
+- the resource-resolution churn has a generic provider-free fix;
+- exact Product/headless invariants remain GREEN.
+
+NEXT LEGAL ACTION:
+
+Freeze this development candidate operationally and rerun **A3 only**. If A3 is still below `3/4`,
+STOP paid and classify the next exact boundary. A4 remains unauthorized.
