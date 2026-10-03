@@ -46,7 +46,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "468643040c74959ffaad6e378b110d5841567f7c"
+          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "f8ba5cf32d265f1d4210ac8513bf273df7f44e60"
 
       - name: Frozen seeds are test-only
         shell: bash

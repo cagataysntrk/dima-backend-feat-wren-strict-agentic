@@ -57,7 +57,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "468643040c74959ffaad6e378b110d5841567f7c"
+          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "f8ba5cf32d265f1d4210ac8513bf273df7f44e60"
           test -d backend/app/v3/brain_v2
           ! grep -R -nE 'DEV80|Validation50|Hidden50|30-case|F0[0-9]|F10|T[1-7]' backend/app/v3/brain_v2
           ! grep -R -nE 'sqlalchemy|sqlmodel|app\.v3\.substrate\.metabase\.(compiler|execution_adapter)' backend/app/v3/brain_v2
