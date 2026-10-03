@@ -186,3 +186,128 @@ PHASE 1 — close R5 CHANGE-ranking observability in the engine only:
 8. only after GREEN, create one immutable engine release and record exact SHA/tag/digest.
 
 No Product integration is legal before Phase 1 is GREEN.
+
+---
+
+## PHASE 1 — R5 CHANGE-RANKING OBSERVABILITY CLOSURE
+
+**STATUS = IN PROGRESS**
+
+### Objective
+
+Close the first blocker at the real analytics owner without adding a Dima-side planner or benchmark
+branch. A ranking may be emitted as `basis=change` only when Metabase's normalized query structure
+proves period-over-period change for one stable governed metric identity.
+
+### Exact owner changed
+
+Engine R5 read-only native material observation only:
+
+- `src/metabase/dima/native_material_observation.clj`
+- owner tests in `test/metabase/dima/native_material_observation_test.clj`
+
+No Product semantic owner, LangGraph node, P17/P18/P19/P20 owner, prompt, Metabot behavior,
+query execution path or frontend surface is changed.
+
+### Pattern research
+
+Metabase official Offset semantics were re-checked before accepting the fix:
+
+- `Offset(expression, -1)` means the previous **row**, not inherently the previous period.
+- breakout order is material because Metabase sorts by the first breakout and partitions by later
+  breakouts;
+- period-over-period examples place the temporal breakout first;
+- Metabase's own examples derive absolute and percentage change from a current aggregation and
+  `Offset(...,-1)`.
+
+Therefore `metric - Offset(metric,-1)` alone is insufficient proof of period-over-period CHANGE.
+The observer must also prove a leading temporal breakout with a real temporal bucket.
+
+### Candidate history
+
+1. Independent frozen-dima.9 RED already existed: run `37094418753`.
+2. First generic candidate recognized:
+   - absolute change;
+   - percentage change;
+   - delta/previous;
+   - scalar × change;
+   - stable metric identity;
+   - ordinary metric/field ranking remains `basis=level`;
+   - unknown derived ranking remains fail-closed.
+3. Bounded candidate run `37095320430` was GREEN:
+   `202 tests / 977 assertions / 0 failures / 0 errors`.
+4. Pattern audit then found the candidate was still too broad: Metabase Offset means previous row.
+   A non-temporal breakout sibling was added.
+5. Run `37105618994` became the required intentional RED:
+   `203 tests / 978 assertions / 1 failure / 0 errors`.
+   The observer incorrectly accepted the non-temporal previous-row expression.
+6. Generic fix: `change-ranking-index` is now enabled only when the same stage has a leading
+   temporal breakout with a native temporal bucket. No query execution or rewrite is introduced.
+7. Bounded verification run `37105780578` = SUCCESS after the temporal-axis fix.
+8. Final immutable release candidate SHA:
+   `2ea17785fdd0e2817895b3c7b82474b9c1b13543`.
+   Certification run `37105969980` is currently in progress.
+
+### Adopted principle
+
+`Offset` proves row-relative semantics. Period-over-period CHANGE additionally requires structurally
+observable temporal ordering. The engine may report that observed meaning; Dima may not infer or
+recalculate it.
+
+### Explicitly rejected pattern
+
+- treating every `Offset(metric,-1)` expression as period-over-period;
+- Dima-side arithmetic or ranking reconstruction;
+- SQL/MBQL generation;
+- query execution in the observer;
+- prompt-, language-, fuzzy-, regex- or benchmark-case routing;
+- retry-until-green;
+- second analytics engine.
+
+### Positive / negative / ambiguous siblings
+
+Positive:
+
+- temporal breakout + governed metric + `metric - Offset(metric,-1)` + derived ORDER BY;
+- percentage-change form with the same governed metric;
+- stable metric identity preserved.
+
+Negative / fail-closed:
+
+- ordinary metric ranking remains `basis=level`;
+- unrelated derived expression remains unsupported;
+- `metric - Offset(metric,-1)` under a non-temporal leading breakout remains unsupported;
+- ambiguous/non-stable metric identity remains unsupported.
+
+### Provider calls / tokens / cost / latency
+
+- Provider calls: `0`
+- Prompt tokens: `0`
+- Cost: `$0`
+- Paid latency: `0`
+
+### First invalid boundary
+
+The first candidate's first invalid boundary was:
+`R5 observation -> period-over-period classification`.
+
+The generic temporal-axis fix closes that boundary in the focused suite. Full Phase-1 certification
+is not GREEN until the final candidate's single-shot build, digest pull and runtime identity checks
+complete.
+
+### What remains unproven
+
+- final dima.10 digest;
+- final certification job conclusion for `2ea17785...`;
+- exact Product gitlink pin;
+- Phase-2 provider-free recertification.
+
+### 30-case readiness
+
+**NO**
+
+### Next legal action
+
+Wait only for the already-running single-shot dima.10 certification. If GREEN, record exact
+release/digest and close Phase 1. If RED, do not rebuild/retry blindly: return to the first failing
+certification boundary. Product integration remains forbidden until Phase 1 is GREEN.
