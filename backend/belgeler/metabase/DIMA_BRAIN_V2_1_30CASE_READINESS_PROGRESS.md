@@ -3732,3 +3732,18 @@ Provider-free root fix only:
 ### 30-case readiness
 
 **NO — CLOSER. PAID STOP.**
+
+
+### A3 planner-resource RCA — provider-free recertification started
+
+Root fix candidate:
+
+- Metabot native request enrichment now projects unique tenant-scoped governed table IDs as
+  `user_is_viewing=[{type:"table", id:...}]` alongside the already-governed metric resource.
+- The projection is derived only from accepted `NativeResourceBinding` rows.
+- BASE and the one bounded REPAIR share the same existing `enrich_native_request` hook.
+- No SQL/MBQL generation, no semantic reinterpretation, no engine change.
+- Foreign table binding remains excluded by the accepted contract/resource-binding filter.
+- New provider-free sibling asserts idempotent table context and repair-feedback preservation.
+
+Next gate: aggregate Phase-1 + Phase-2/headless on these exact bytes.
