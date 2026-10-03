@@ -4253,3 +4253,110 @@ Until that authority is supplied:
 - no paid A3 retry;
 - no A4;
 - no broad/30-case run.
+
+
+---
+
+## EMERGENCY CONVERGENCE — A3 OBSERVER BLOCKER OPERATIONAL STOP
+
+**STATUS: BLOCKED BY AUTHORITY — PAID STOP ENFORCED**
+
+### Current repository state
+
+- repository HEAD before this report: `303e37b07a5faedce109cfc3d84c37f2a7059101`
+- semantic Product: `ff92fe8f717c2cf30827c1f6b56f92b6682017d5`
+- certified engine SHA: `f8ba5cf32d265f1d4210ac8513bf273df7f44e60`
+- engine release/runtime: `0.63.18-dima.11 / v0.63.18-dima.11`
+- digest: `sha256:34976af8210f70c683518941a1a85b67e47e2df24ef2b5eb4054727e521c64a9`
+- certification: `37127030946 = SUCCESS`
+- model topology: `LUNA_LUNA_NO_CASCADE`
+- broad 30-case: **CLOSED**
+- frontend: **FORBIDDEN**
+
+### First invalid boundary
+
+`P14_REPAIR successful native execution -> certified dima.11 native material observation`
+
+A3 live proof `37147847496` scored `2/4 PARTIAL`. The repair produced legal period-pair derived
+CHANGE rows, but certified dima.11 did not certify the equality-selected monthly period representation,
+so no Evidence/receipt was minted and downstream result dependency/reporting could not proceed.
+
+Independent provider-free reproducer on the certified dima.11 base proved the same observer failure
+with zero production source diff.
+
+### Owner / generic law
+
+Owner: Metabase dima read-only native material observation.
+
+Law:
+
+> A legal period-pair CHANGE representation must be certified only when the observer can structurally
+> prove stable governed metric lineage, baseline/comparison temporal separation, derived delta
+> direction/limit and fail-closed ambiguity. Product must not infer query meaning outside the engine.
+
+### Operational changes
+
+- live authorization set to `enabled=false`;
+- `automatic_retry_allowed=false`;
+- `broad_paid_allowed=false`;
+- `thirty_case_allowed=false`;
+- last A3 score recorded as `2/4`;
+- stale single-case live trigger removed;
+- no Product semantic code change;
+- no engine code change;
+- no model/prompt change;
+- provider calls for these operations: `0`.
+
+Commits:
+
+- `b8969ed03f8489f0e9ede5bc53743df5f28b7de3`
+  — enforce paid stop;
+- `303e37b07a5faedce109cfc3d84c37f2a7059101`
+  — remove stale A3 live trigger.
+
+### Reference pattern check
+
+Metabase official semantics confirm that legal custom temporal expressions can have structurally
+different representations; `Offset` is previous-row semantics and breakout ordering determines
+period meaning. Therefore accepting this shape in Product without engine observation would recreate a
+shadow query-semantic owner and is rejected.
+
+### What is proven
+
+- runtime identity defect is closed;
+- certified dima.11 is the sole runtime authority;
+- Product transport, BASE, bounded REPAIR and native execution all work;
+- the exact remaining A3 blocker is one independently reproduced observer primitive;
+- paid retry/A4/broad execution are closed;
+- no speculative dima.12 work was performed.
+
+### What remains unproven
+
+- authority-approved closure of the certified dima.11 observer gap;
+- A3 >= `3/4`;
+- A4/A5/A6 development proofs;
+- B1/B2/B3 quality proofs;
+- Phase-5 final saturation;
+- final same-SHA readiness panel >= `33/36`.
+
+### 30-case readiness
+
+**NO — one proven observer primitive remains blocking.**
+
+### NEXT LEGAL ACTION
+
+The current emergency directive both:
+
+1. permits engine investigation only after classification B is independently reproduced on certified
+   dima.11 — this condition is satisfied; and
+2. forbids continuing the exploratory engine branch, creating dima.12, or changing the certified
+   runtime without new authority.
+
+Therefore no further production change is legal under current authority. The next action requires an
+explicit supervisor decision authorizing either:
+
+- one narrowly scoped immutable observer release for equality-selected period-pair CHANGE, with
+  positive/negative/ambiguous siblings and no execution/rewrite; or
+- another architecture-approved closure that leaves certified dima.11 unchanged.
+
+Until then: **no A3 retry, no A4, no broad/30-case execution.**
