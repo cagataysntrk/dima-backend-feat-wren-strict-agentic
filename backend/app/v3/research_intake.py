@@ -2677,22 +2677,71 @@ class ResearchIntakeCompiler:
                 )
             )
 
-        dependency_edges = {
-            goal.goal_key: goal.result_dependency.source_goal_key
-            for goal in draft.goals
-            if goal.result_dependency is not None
+        question_by_key = {
+            goal.goal_key: question
+            for goal, question in zip(draft.goals, questions, strict=True)
         }
-        for child_key, source_key in dependency_edges.items():
-            if source_key not in goal_id_by_key:
+
+        def dependency_parent_dimensions(question: ResearchQuestion) -> set[str]:
+            return {
+                item.candidate_id
+                for item in (*question.subject_refs, *question.related_refs)
+                if item.target_kind == SemanticTargetKind.DIMENSION
+            }
+
+        resolved_dependency_source_keys: dict[str, str] = {}
+        for goal in draft.goals:
+            dependency = goal.result_dependency
+            if dependency is None:
+                continue
+            declared_source_key = dependency.source_goal_key
+            if declared_source_key not in goal_id_by_key:
                 raise ResearchIntakeError(
                     "INTAKE_RESULT_DEPENDENCY_SOURCE_UNKNOWN",
-                    source_key,
+                    declared_source_key,
                 )
-            if source_key == child_key:
+            if declared_source_key == goal.goal_key:
                 raise ResearchIntakeError(
                     "INTAKE_RESULT_DEPENDENCY_SELF_REFERENCE",
-                    child_key,
+                    goal.goal_key,
                 )
+
+            declared_parent = question_by_key[declared_source_key]
+            if declared_parent.ranking is not None:
+                # A structurally valid typed reference is authoritative. Do not
+                # redirect it merely because another ranking goal also exists.
+                resolved_source_key = declared_source_key
+            else:
+                compatible_ranking_keys = tuple(
+                    candidate_goal.goal_key
+                    for candidate_goal, candidate_question in zip(
+                        draft.goals,
+                        questions,
+                        strict=True,
+                    )
+                    if (
+                        candidate_goal.goal_key != goal.goal_key
+                        and candidate_question.ranking is not None
+                        and dependency.dimension_semantic_id
+                        in dependency_parent_dimensions(candidate_question)
+                    )
+                )
+                if len(compatible_ranking_keys) == 0:
+                    raise ResearchIntakeError(
+                        "INTAKE_RESULT_DEPENDENCY_SOURCE_NOT_RANKING",
+                        declared_source_key,
+                    )
+                if len(compatible_ranking_keys) > 1:
+                    raise ResearchIntakeError(
+                        "INTAKE_RESULT_DEPENDENCY_SOURCE_AMBIGUOUS",
+                        ",".join(sorted(compatible_ranking_keys)),
+                    )
+                resolved_source_key = compatible_ranking_keys[0]
+
+            resolved_dependency_source_keys[goal.goal_key] = resolved_source_key
+
+        dependency_edges = dict(resolved_dependency_source_keys)
+        for child_key, source_key in dependency_edges.items():
             seen: set[str] = set()
             current_key = child_key
             while current_key in dependency_edges:
@@ -2711,17 +2760,18 @@ class ResearchIntakeCompiler:
             if dependency is None:
                 resolved_questions.append(question)
                 continue
-            source_goal_id = goal_id_by_key[dependency.source_goal_key]
+            source_key = resolved_dependency_source_keys[goal.goal_key]
+            source_goal_id = goal_id_by_key[source_key]
             parent = question_by_id.get(source_goal_id)
             if parent is None or parent.ranking is None:
                 raise ResearchIntakeError(
                     "INTAKE_RESULT_DEPENDENCY_SOURCE_NOT_RANKING",
-                    dependency.source_goal_key,
+                    source_key,
                 )
             if parent.ranking.direction == "unspecified":
                 raise ResearchIntakeError(
                     "INTAKE_RESULT_DEPENDENCY_RANKING_DIRECTION_REQUIRED",
-                    dependency.source_goal_key,
+                    source_key,
                 )
             dimension = by_id.get(dependency.dimension_semantic_id)
             if (
@@ -2734,11 +2784,7 @@ class ResearchIntakeCompiler:
                     "INTAKE_RESULT_DEPENDENCY_DIMENSION_INVALID",
                     dependency.dimension_semantic_id,
                 )
-            parent_dimensions = {
-                item.candidate_id
-                for item in (*parent.subject_refs, *parent.related_refs)
-                if item.target_kind == SemanticTargetKind.DIMENSION
-            }
+            parent_dimensions = dependency_parent_dimensions(parent)
             if dependency.dimension_semantic_id not in parent_dimensions:
                 raise ResearchIntakeError(
                     "INTAKE_RESULT_DEPENDENCY_PARENT_DIMENSION_MISSING",
