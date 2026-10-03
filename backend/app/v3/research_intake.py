@@ -1709,6 +1709,93 @@ class ResearchIntakeCompiler:
         )
 
     @staticmethod
+    def _canonicalize_change_ranking_period_roles(
+        draft: ModelResearchBriefDraft,
+    ) -> ModelResearchBriefDraft:
+        """Bind CHANGE ranking authority to exactly two typed period roles.
+
+        RankingBasis.CHANGE is itself typed temporal-comparison authority. When
+        the provider has already resolved exactly two same-dimension bounded
+        periods but left both with the neutral MATERIAL_WINDOW role, Dima may
+        deterministically assign earlier/later baseline/comparison roles. No
+        wording, benchmark identity, metric name, tuple order, or prompt
+        heuristic participates.
+        """
+
+        if draft.terminal != ResearchIntakeTerminal.READY:
+            return draft
+        change_goals = tuple(
+            goal
+            for goal in draft.goals
+            if (
+                goal.ranking is not None
+                and goal.ranking.basis == RankingBasis.CHANGE
+            )
+        )
+        if not change_goals:
+            return draft
+        if len(draft.time_periods) != 2:
+            return draft
+
+        left, right = draft.time_periods
+        if (
+            left.time_dimension_semantic_id
+            != right.time_dimension_semantic_id
+        ):
+            raise ResearchIntakeError(
+                "INTAKE_CHANGE_RANKING_TIME_DIMENSION_DRIFT",
+                "CHANGE ranking periods must use one governed time dimension",
+            )
+        existing = {left.role, right.role}
+        if existing == {
+            TemporalRole.BASELINE_PERIOD,
+            TemporalRole.COMPARISON_PERIOD,
+        }:
+            return draft
+        if existing != {TemporalRole.MATERIAL_WINDOW}:
+            raise ResearchIntakeError(
+                "INTAKE_CHANGE_RANKING_PERIOD_ROLE_CONFLICT",
+                "CHANGE ranking conflicts with non-comparison period roles",
+            )
+
+        ordered = sorted(
+            (left, right),
+            key=lambda item: (item.start, item.end, item.source_text),
+        )
+        baseline = ordered[0].model_copy(
+            update={"role": TemporalRole.BASELINE_PERIOD}
+        )
+        comparison = ordered[1].model_copy(
+            update={"role": TemporalRole.COMPARISON_PERIOD}
+        )
+        by_identity = {
+            (
+                baseline.time_dimension_semantic_id,
+                baseline.start,
+                baseline.end,
+                baseline.source_text,
+            ): baseline,
+            (
+                comparison.time_dimension_semantic_id,
+                comparison.start,
+                comparison.end,
+                comparison.source_text,
+            ): comparison,
+        }
+        canonical = tuple(
+            by_identity[
+                (
+                    item.time_dimension_semantic_id,
+                    item.start,
+                    item.end,
+                    item.source_text,
+                )
+            ]
+            for item in draft.time_periods
+        )
+        return draft.model_copy(update={"time_periods": canonical})
+
+    @staticmethod
     def _canonicalize_typed_temporal_comparison(
         draft: ModelResearchBriefDraft,
     ) -> ModelResearchBriefDraft:
@@ -2339,6 +2426,7 @@ class ResearchIntakeCompiler:
         draft = self._canonicalize_root_temporal_material(draft)
         draft = self._canonicalize_exact_period_repeats(draft)
         draft = self._derive_standalone_temporal_comparison(draft)
+        draft = self._canonicalize_change_ranking_period_roles(draft)
         draft = self._canonicalize_typed_temporal_comparison(draft)
         duplicate_root_keys = self._duplicate_root_cause_goal_keys(draft)
         if duplicate_root_keys:
