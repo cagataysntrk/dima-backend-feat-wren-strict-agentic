@@ -377,18 +377,21 @@ def _raw_harness_gate(
     evidence_count: int,
     legacy_min_evidence: int,
 ) -> bool:
-    """Mechanical live gate.
+    """Mechanical live gate derived from governed terminal semantics.
 
-    This first extraction intentionally preserves the legacy evidence-cardinality
-    behavior so the provider-free reproducer can prove the false-negative before
-    the generic fix.
+    Evidence-object cardinality is retained only as a legacy diagnostic: one
+    Metabase query may legally carry several governed metrics in one Evidence
+    artifact.  ANSWER/REPORT must therefore prove mandatory-requirement
+    terminality, while CLARIFY/UNSUPPORTED/PARTIAL remain governed terminal
+    classes when the frozen case explicitly accepts them.
     """
-    del requirement_complete, terminal_state
-    return bool(
-        mechanical_safety
-        and accepted_terminal
-        and evidence_count >= legacy_min_evidence
+    del evidence_count, legacy_min_evidence
+    completion_ok = (
+        requirement_complete
+        if terminal_state in {"ANSWER", "REPORT"}
+        else True
     )
+    return bool(mechanical_safety and accepted_terminal and completion_ok)
 
 
 def _run_case(
@@ -502,6 +505,8 @@ def _run_case(
         "terminal_state": final["derived_terminal"] if final else "EXCEPTION",
         "workflow_status": final["workflow_status"] if final else None,
         "evidence_count": evidence_count,
+        "legacy_min_evidence": min_evidence,
+        "legacy_min_evidence_met": evidence_count >= min_evidence,
         "native_acquisitions": sum(int(x["native_acquisitions"]) for x in turn_records),
         "duplicate_native": sum(int(x["duplicate_native"]) for x in turn_records),
         "stale_evidence_count": sum(int(x["stale_evidence_count"]) for x in turn_records),
