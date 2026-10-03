@@ -2263,3 +2263,166 @@ Paid authorization was disabled after adjudication.
 Arm only **A3 `F06_M`** on the same frozen semantic Product. This is the first live retest of the
 generic dima.10 ranking-basis transport closure. STOP on any mechanical RED or Product score below
 `3/4`; A4 remains unauthorized until A3 passes.
+
+
+---
+
+## DIRECTIVE RESET — PHASE 0 CURRENT STATE LOCK & ORIENTATION
+
+**STATUS: GREEN**
+
+### Product / engine identity
+
+- Branch: `feat/dima-brain-v2-1-specification-closure`
+- Repository HEAD at directive reset:
+  `106dc9ff9b69ce8988c0cf2537ec44c5252ad326`
+- Current semantic Product:
+  `4570babe0053a2779f71db7643cb44e5fb017460`
+- Engine SHA:
+  `468643040c74959ffaad6e378b110d5841567f7c`
+- Engine release:
+  `0.63.18-dima.10`
+- Engine digest:
+  `sha256:34ce02396908e109aabcac9de6bedc3c832c79baa5450b7235c629f05455af17`
+- Migration head:
+  `ff5b8e2c1a73`
+- Model topology:
+  `LUNA_LUNA_NO_CASCADE`
+- Immutable broad baseline:
+  run `37027548693`, score `60.5/100`
+- Broad 30-case:
+  **CLOSED / FORBIDDEN**
+- Frontend:
+  **FORBIDDEN**
+
+### Objective
+
+Re-orient from the updated Final 30-Case Readiness Directive. The current objective is not to rerun
+the final panel. It is to close the generic CHANGE material-acquisition / planner-output-conformance
+family provider-free, then use only A3 as the next development proof.
+
+### Known live diagnostics
+
+- A1 `F02_H` = `4/4 FULL`
+- A2 `F03_H` = `3/4 STRONG_PARTIAL`
+- A3 `F06_M` = `2/4 PARTIAL -> STOP`
+- latest A3 run: `37117140949`
+- provider requests: `6`
+- provider cost: `$0.01296423`
+- exception: `0`
+- duplicate native: `0`
+- stale Evidence: `0`
+
+These are development diagnostics only. They are not the final same-SHA readiness panel.
+
+### Open first-invalid-boundary
+
+Current blocker:
+
+`CHANGE material acquisition / planner-output conformance`
+
+Observed legal contract:
+
+- governed metric = machine downtime;
+- ranking basis = `CHANGE`;
+- direction = `DESC`;
+- entity/breakout = department;
+- baseline/comparison = May/June 2026;
+- temporal dimension = event date.
+
+Observed native material:
+
+- department breakout;
+- month breakout;
+- downtime LEVEL aggregation;
+- no structurally certified derived CHANGE ranking.
+
+Therefore Product correctly refuses ranking Evidence admission.
+
+### Phase-0 trace finding
+
+`AnalyticalRequestContract -> ResearchManager.prepare_native_delegation -> NativeEngineRequest`
+already creates two projections:
+
+1. deterministic accepted-contract text inside the Metabot user message;
+2. `context["dima_analytical_scope"]` containing the typed contract dump.
+
+However, source inspection of certified Metabase dima.10 shows that raw arbitrary context keys are not
+automatically planner-visible. Metabase's `user-context/enrich-context-for-template` projects only
+known fields such as current time, `user_is_viewing`, recent views and user information into the
+system/user prompt. Therefore `dima_analytical_scope` exists on the transport object but is not a
+reliable structured planner-visible primitive.
+
+This answers the directive question:
+
+> Does Metabot receive the accepted CHANGE-ranking requirement in a structured, unambiguous
+> planner-visible form?
+
+**Not reliably.** The human-readable message carries the requirement, but the structured typed
+context is dropped by Metabase's prompt-context projection. The next legal fix must project the
+existing contract read-only onto a surface Metabot actually sees, without adding a Dima query planner
+or a second semantic truth.
+
+### Reference patterns consulted
+
+- Metabase dima.10 source:
+  - `metabase.metabot.agent.user-context/enrich-context-for-template`
+  - `metabase.metabot.agent.messages/messages-with-injected-context`
+  - `metabase.metabot.agent.messages/build-system-message`
+  - `construct_notebook_query` prompt contract.
+- Metabase official Offset/time-over-time documentation:
+  `Offset(expr,-1)` is previous-row semantics and breakout ordering determines period-over-period
+  meaning.
+- Wren OSS architecture/context guidance:
+  semantic meaning should be explicit governed context; validation/repair should be structured
+  primitives rather than hidden prompt heuristics.
+
+### Adopted principle
+
+**Dima says WHAT once; Metabot decides HOW; Product validates the produced material.**
+
+The same `AnalyticalRequestContract` remains sole semantic authority. Any planner-facing
+representation is a deterministic read-only projection of it.
+
+### Explicitly rejected
+
+- dima.10 modification merely because A3 is red;
+- Dima SQL/MBQL generation;
+- Dima-side CHANGE arithmetic;
+- benchmark/case wording branch;
+- fuzzy/regex/morph semantic routing;
+- model/provider budget increase;
+- broad paid test;
+- A4 before A3 is acceptable.
+
+### What is now proven
+
+- current branch/semantic Product/engine/freeze identities are exact;
+- the dima.10 observation/typed-transport defect is already closed;
+- current failure is upstream of Evidence admission: the generated native occurrence does not express
+  the accepted CHANGE material;
+- raw `dima_analytical_scope` context is not reliably rendered into Metabot's planner prompt.
+
+### What remains unproven
+
+- planner-visible structured material-requirement projection;
+- bounded one-repair behavior for legal CHANGE material misses;
+- successful repair to a dima.10-certifiable CHANGE ranking;
+- full provider-free Phase-1 gate;
+- A3 >= `3/4`.
+
+### 30-case readiness
+
+**NO — CLOSER, broad run remains CLOSED.**
+
+### NEXT LEGAL ACTION
+
+PHASE 1 only:
+
+1. create one deterministic read-only material-requirement projection from the existing
+   `AnalyticalRequestContract` and put it on an actually planner-visible request surface;
+2. extend the existing one-shot P14 material repair only for safe CHANGE-ranking material misses;
+3. keep target/direction/limit, foreign resource, security/currentness and ambiguous semantics
+   fail-closed;
+4. prove all positive/negative siblings provider-free;
+5. run the complete Phase-1 provider-free gate before any A3 paid development proof.
