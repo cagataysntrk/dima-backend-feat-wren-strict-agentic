@@ -912,6 +912,52 @@ def material_coverage_period(
     )
 
 
+def native_material_requirement(
+    contract: AnalyticalRequestContract,
+) -> dict[str, Any]:
+    """Read-only planner-facing WHAT projection of accepted analytical authority.
+
+    This is not a query plan. It contains only semantic material requirements
+    already owned by AnalyticalRequestContract and MaterialCoverageContract.
+    """
+
+    coverage = material_coverage_contract(contract)
+    coverage_period = material_coverage_period(contract)
+    return {
+        "schema": "dima_material_requirement_v1",
+        "scope_version_id": contract.scope_identity.version_id,
+        "material_fingerprint": contract.material_fingerprint,
+        "metric_refs": list(contract.metric_refs),
+        "required_metric_refs": list(coverage.required_metric_refs),
+        "required_breakout_refs": list(coverage.required_breakout_refs),
+        "accepted_filters": [
+            item.model_dump(mode="json")
+            for item in contract.filters
+        ],
+        "period": (
+            contract.period.model_dump(mode="json")
+            if contract.period is not None
+            else None
+        ),
+        "comparison": (
+            contract.comparison.model_dump(mode="json")
+            if contract.comparison is not None
+            else None
+        ),
+        "required_temporal_dimension": coverage.time_dimension_ref,
+        "material_coverage_period": (
+            coverage_period.model_dump(mode="json")
+            if coverage_period is not None
+            else None
+        ),
+        "ranking": (
+            contract.ranking.model_dump(mode="json")
+            if contract.ranking is not None
+            else None
+        ),
+    }
+
+
 def native_request_context(contract: AnalyticalRequestContract) -> dict[str, Any]:
     """Semantic-only context given to Metabot; physical verifier bindings stay out."""
 
@@ -929,7 +975,10 @@ def native_request_context(contract: AnalyticalRequestContract) -> dict[str, Any
         # Preserve the sealed context shape for capabilities that do not carry
         # the new CHANGE authority. Only the affected family gets a new field.
         scope.pop("temporal_observation", None)
-    return {"dima_analytical_scope": scope}
+    return {
+        "dima_analytical_scope": scope,
+        "dima_material_requirement": native_material_requirement(contract),
+    }
 
 
 def _refs(session: ResearchSession) -> dict[str, ResearchSemanticRef]:
