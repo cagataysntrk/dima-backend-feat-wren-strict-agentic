@@ -3241,3 +3241,220 @@ Provider-free only:
 6. then pin exact bytes, fully provider-free recertify Product, and rerun **A3 only**.
 
 A4 remains unauthorized.
+
+
+---
+
+## PHASE 2 OWNER RCA — DIMA.11 PERIOD-PAIR CHANGE OBSERVABILITY CLOSURE
+
+**STATUS: GREEN**
+
+### Product SHA
+
+Semantic Product remains unchanged:
+
+`afb4191d78d205b8f6985dc7227de4db2637a058`
+
+Exact dima.11 integration / provider-free candidate:
+
+`ebeb43de8ad0c25f400e90efa70d67187c5955ad`
+
+### Engine SHA / tag / digest
+
+- engine SHA:
+  `f8ba5cf32d265f1d4210ac8513bf273df7f44e60`
+- release:
+  `0.63.18-dima.11`
+- runtime tag:
+  `v0.63.18-dima.11`
+- registry digest:
+  `sha256:34976af8210f70c683518941a1a85b67e47e2df24ef2b5eb4054727e521c64a9`
+- immutable image:
+  `ghcr.io/upcytech/dima-metabase-engine@sha256:34976af8210f70c683518941a1a85b67e47e2df24ef2b5eb4054727e521c64a9`
+- engine certification:
+  `37127030946 = SUCCESS`
+- certified image artifact:
+  `11275519965`
+- certified-image artifact digest:
+  `sha256:721138e637b80c55f87a451312c722940017e88206582780306e9e747b574fca`
+
+### Objective
+
+Close the one remaining A3 post-repair boundary without adding Product business semantics:
+
+`P14_REPAIR successful native execution -> read-only Metabase material observation -> Evidence admission`
+
+The legal repaired query already existed and was source-backed. The missing primitive was read-only
+engine observation of the structural period-pair CHANGE form.
+
+### First invalid boundary
+
+Before dima.11:
+
+`P14_REPAIR successful dataset execution -> dima.10 R5 observer`
+
+dima.10 certified the Offset/previous-row CHANGE family but could not certify the distinct legal
+multi-stage family produced by Metabot:
+
+- same governed metric;
+- baseline half-open temporal aggregate;
+- comparison half-open temporal aggregate;
+- later-stage `comparison - baseline`;
+- ORDER BY the derived delta.
+
+### Exact owner
+
+Metabase / Dima engine R5:
+
+`src/metabase/dima/native_material_observation.clj`
+
+No Product semantic owner changed in this closure.
+
+### Generic law
+
+> A ranking is observable as CHANGE only when Metabase Lib structure proves that the ordered value is
+> a later-period aggregate minus an earlier-period aggregate of the same governed metric on the same
+> temporal axis. Previous-stage references are resolved with Metabase Lib equality, not display-name,
+> prompt, benchmark text, SQL parsing or Dima-side arithmetic. Reverse subtraction, non-change
+> expressions, mixed governed metrics and ambiguous lineage fail closed.
+
+### Reference pattern consulted
+
+- Metabase Lib `expression-parts` and canonical ref/metadata APIs;
+- Metabase Lib `find-matching-column` / equality semantics for cross-stage references;
+- Metabase previous-stage returned-column lineage;
+- existing dima.10 read-only R5 observer boundary.
+
+The adopted pattern follows Metabase's own representation/lineage machinery rather than introducing a
+parallel semantic resolver.
+
+### Engine diff
+
+Certified dima.10 -> dima.11 production behavior change is bounded to:
+
+`src/metabase/dima/native_material_observation.clj`
+
+Release metadata and certification workflows/tests changed as release surfaces only.
+
+### Positive / negative / ambiguous proof
+
+Certified dima.11 tests cover:
+
+- valid governed period-pair derived CHANGE ranking -> observed as `basis=change`;
+- non-change derived expression -> unsupported;
+- reversed temporal delta -> unsupported;
+- mixed governed metrics -> unsupported;
+- previous Offset-based dima.10 CHANGE family remains covered;
+- non-temporal / ambiguous derived ranking remains fail closed.
+
+### Provider-free exact-system recertification
+
+On Product integration commit
+`ebeb43de8ad0c25f400e90efa70d67187c5955ad`:
+
+- focused Brain V2:
+  `37134496440 = SUCCESS`
+  - `101 passed, 1 skipped`;
+- frozen-family closure:
+  `37134496411 = SUCCESS`
+  - ranking/completion/dependency/adaptive: `68 passed`;
+  - temporal/scope: `14 passed`;
+  - P18/P19/P20: `89 passed`;
+  - artifact `11278735506`;
+  - artifact digest
+    `sha256:a39c77e2b53513eaff506c377462ede79356e36e037465926c267f5cbb068b04`;
+- semantic conformance:
+  `37134496433 = SUCCESS`
+  - deterministic conformance: `166 passed`;
+  - Wave A: `8 passed`;
+  - Wave B: `9 passed`;
+  - generated Wave-A floor includes `1200` passing examples;
+  - independent Wave-B floor includes `1800` passing examples;
+  - mutation canaries: GREEN;
+  - artifact `11278645825`;
+  - artifact digest
+    `sha256:575ca30717e9b625c93f03b14665881e7c2a39f1e954aed7e9c900844369a91c`;
+- aggregate Phase-1:
+  `37134496430 = SUCCESS`
+  - Brain V2 deterministic closure: `144 passed`;
+  - Research/intake/scope/P14/R5: `270 passed`;
+  - P17: `145 passed`;
+  - P19: `53 passed`;
+  - P20/Core-B: `57 passed`;
+  - security/hygiene: `26 passed`;
+- Phase-2/headless:
+  `37134496590 = SUCCESS`
+  - Product/headless: `96 passed`;
+  - owner carry-forward: `4 passed`;
+  - P18: `28 passed`;
+  - P20: `33 passed`;
+  - metamorphic: `15 passed`;
+  - security/hygiene: `26 passed`;
+  - forbidden-surface audit: PASS.
+
+### Provider / tokens / cost / latency
+
+Provider/model calls during engine/Product recertification:
+
+- provider calls: `0`
+- prompt tokens: `0`
+- completion tokens: `0`
+- reasoning tokens: `0`
+- cost: `$0`
+- paid latency: `0`
+
+### New-family count
+
+No new Product semantic family was added.
+
+This closes the already-open
+`CHANGE material acquisition / planner-output-conformance / observer admission`
+family at its true engine owner.
+
+### What was adopted
+
+- one immutable dima.11 release;
+- read-only Metabase structural observation;
+- exact engine gitlink and digest pin;
+- same Luna/Luna/no-cascade topology;
+- full provider-free re-certification before live.
+
+### What was explicitly rejected
+
+- another Product semantic patch;
+- Dima SQL/MBQL generation;
+- Dima-side subtraction/ranking;
+- expression-name or benchmark-word matching;
+- fuzzy/regex/morph routing;
+- same-SHA paid retry;
+- provider-budget increase;
+- broad/30-case execution;
+- frontend work.
+
+### What is now proven
+
+- the exact legal repaired period-pair CHANGE shape has a certified read-only engine observer;
+- dima.11 is immutable and digest-verified;
+- the unchanged Product semantics remain fully provider-free GREEN with dima.11;
+- security/hygiene, Wave A/B, frozen families and headless composition remain GREEN;
+- A3 may legally be re-run once as the next development proof.
+
+### What remains unproven
+
+- A3 >= `3/4` on the dima.11 exact-system candidate;
+- A4-A6;
+- B1-B3;
+- final semantic saturation;
+- final same-SHA nine-case readiness panel.
+
+### 30-case readiness
+
+**NO — CLOSER. 30-case remains CLOSED.**
+
+### NEXT LEGAL ACTION
+
+Freeze this development candidate and run **A3 `F06_M` only** on
+`LUNA_LUNA_NO_CASCADE`.
+
+Do not rerun A1/A2. Do not run A4 unless A3 is at least `3/4`. STOP paid immediately on a genuine
+A3 RED.
