@@ -3441,3 +3441,130 @@ def test_relationship_fixture_without_new_intent_defaults_fail_conservative_busi
     goal = result.brief.questions[0]
     assert goal.relationship_intent.value == "business_policy"
 
+
+
+
+def test_change_ranking_two_neutral_periods_canonicalize_by_chronology() -> None:
+    payload = ready_payload(
+        kind="ranking",
+        subject=("metric.downtime",),
+        related=("dimension.department",),
+    )
+    payload["goals"][0]["ranking"] = {
+        "source_text": "rank governed period change",
+        "direction": "desc",
+        "limit": 1,
+        "measure_semantic_id": "metric.downtime",
+        "basis": "change",
+    }
+    payload["time_periods"] = [
+        _r6_period(
+            "later neutral window",
+            "2026-06-01",
+            "2026-07-01",
+            role="material_window",
+        ),
+        _r6_period(
+            "earlier neutral window",
+            "2026-05-01",
+            "2026-06-01",
+            role="material_window",
+        ),
+    ]
+
+    result = ResearchIntakeCompiler(
+        transport=FakeTransport(payload)
+    ).compile(
+        question="Rank the governed metric by change between the two periods.",
+        catalog=_r6_temporal_catalog(),
+    )
+
+    assert result.brief is not None
+    by_start = {
+        item.start: item.role for item in result.brief.scope.periods
+    }
+    assert by_start == {
+        "2026-05-01": TemporalRole.BASELINE_PERIOD,
+        "2026-06-01": TemporalRole.COMPARISON_PERIOD,
+    }
+
+
+def test_level_ranking_two_neutral_periods_remain_material_windows() -> None:
+    payload = ready_payload(
+        kind="ranking",
+        subject=("metric.downtime",),
+        related=("dimension.department",),
+    )
+    payload["goals"][0]["ranking"] = {
+        "source_text": "rank governed level",
+        "direction": "desc",
+        "limit": 1,
+        "measure_semantic_id": "metric.downtime",
+        "basis": "level",
+    }
+    payload["time_periods"] = [
+        _r6_period(
+            "later neutral window",
+            "2026-06-01",
+            "2026-07-01",
+            role="material_window",
+        ),
+        _r6_period(
+            "earlier neutral window",
+            "2026-05-01",
+            "2026-06-01",
+            role="material_window",
+        ),
+    ]
+
+    result = ResearchIntakeCompiler(
+        transport=FakeTransport(payload)
+    ).compile(
+        question="Rank the governed metric level across accepted windows.",
+        catalog=_r6_temporal_catalog(),
+    )
+
+    assert result.brief is not None
+    assert tuple(item.role for item in result.brief.scope.periods) == (
+        TemporalRole.MATERIAL_WINDOW,
+        TemporalRole.MATERIAL_WINDOW,
+    )
+
+
+def test_change_ranking_conflicting_period_role_fails_closed() -> None:
+    payload = ready_payload(
+        kind="ranking",
+        subject=("metric.downtime",),
+        related=("dimension.department",),
+    )
+    payload["goals"][0]["ranking"] = {
+        "source_text": "rank governed period change",
+        "direction": "desc",
+        "limit": 1,
+        "measure_semantic_id": "metric.downtime",
+        "basis": "change",
+    }
+    payload["time_periods"] = [
+        _r6_period(
+            "neutral material window",
+            "2026-05-01",
+            "2026-06-01",
+            role="material_window",
+        ),
+        _r6_period(
+            "typed evidence window",
+            "2026-06-01",
+            "2026-07-01",
+            role="evidence_window",
+        ),
+    ]
+
+    with pytest.raises(ResearchIntakeError) as exc:
+        ResearchIntakeCompiler(
+            transport=FakeTransport(payload)
+        ).compile(
+            question="Rank the governed metric by change between the two periods.",
+            catalog=_r6_temporal_catalog(),
+        )
+
+    assert exc.value.code == "INTAKE_CHANGE_RANKING_PERIOD_ROLE_CONFLICT"
