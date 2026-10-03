@@ -73,6 +73,16 @@ class SourceReference(Frozen):
     source_receipt_id: str | None = None
     source_path: str | None = Field(default=None, max_length=512)
     source_unit_path: str | None = Field(default=None, max_length=512)
+    source_obligation_id: str | None = Field(default=None, min_length=1)
+    completion_material_group_id: str | None = Field(
+        default=None, pattern=r"^mg_[a-f0-9]{24}$"
+    )
+    completion_material_fingerprint: str | None = Field(
+        default=None, pattern=r"^[a-f0-9]{64}$"
+    )
+    completion_scope_version_id: str | None = Field(
+        default=None, pattern=r"^scope_v[1-9][0-9]*$"
+    )
 
     @model_validator(mode='after')
     def coherent(self):
@@ -81,6 +91,19 @@ class SourceReference(Frozen):
                 raise ValueError('P14 Evidence source requires exact receipt identity')
         elif self.source_receipt_id is not None:
             raise ValueError('receipt identity is legal only for P14 Evidence source')
+        bridge_values = (
+            self.source_obligation_id,
+            self.completion_material_group_id,
+            self.completion_material_fingerprint,
+            self.completion_scope_version_id,
+        )
+        if any(value is not None for value in bridge_values):
+            if self.source_kind != ReportSourceKind.P14_EVIDENCE:
+                raise ValueError('completion source bridge is legal only for P14 Evidence')
+            if not all(value is not None for value in bridge_values):
+                raise ValueError('completion source bridge identity must be complete')
+            if self.source_obligation_id == self.obligation_id:
+                raise ValueError('completion source bridge requires distinct source obligation')
         if self.source_unit_path is not None and self.source_path is None:
             raise ValueError('unit provenance requires numeric source path')
         return self
@@ -367,15 +390,104 @@ class ReportClaimGate:
         }
 
     @staticmethod
+    def _completion_evidence_coverage_bridge(
+        session,
+        terminal: CompletionEvidenceTerminal,
+    ) -> dict[str, str]:
+        brief = session.accepted_brief
+        if brief is None:
+            raise P20ReportError(
+                'P20_ACCEPTED_BRIEF_REQUIRED',
+                session.session_id,
+            )
+        mandatory = {item.goal_id: item for item in brief.questions}
+        target = mandatory.get(terminal.requirement_id)
+        source = mandatory.get(terminal.source_obligation_id)
+        if target is None or source is None:
+            raise P20ReportError(
+                'P20_COMPLETION_EVIDENCE_REQUIREMENT_INVALID',
+                terminal.requirement_id,
+            )
+        if target.kind in {
+            ResearchGoalKind.RELATIONSHIP,
+            ResearchGoalKind.ROOT_CAUSE,
+        }:
+            raise P20ReportError(
+                'P20_COMPLETION_EVIDENCE_OWNER_INVALID',
+                terminal.requirement_id,
+            )
+        if terminal.scope_version_id != brief.scope.scope_version.version_id:
+            raise P20ReportError(
+                'P20_COMPLETION_EVIDENCE_SCOPE_MISMATCH',
+                terminal.requirement_id,
+            )
+        # Completion provides the terminal decision. P20 validates only that the
+        # supplied source is one exact shared-material occurrence admitted by the
+        # accepted analytical authority.
+        matches = tuple(
+            item
+            for item in coorigin_material_requirements(session)
+            if item.anchor_goal_id == terminal.source_obligation_id
+            and terminal.requirement_id in set(item.source_goal_ids)
+        )
+        if matches:
+            requirement = matches[0]
+            source_contract = analytical_scope_contract(
+                session=session,
+                obligation_id=terminal.source_obligation_id,
+            ).model_copy(update={'requested_output_surfaces': ()})
+            if source_contract.material_fingerprint != terminal.material_fingerprint:
+                raise P20ReportError(
+                    'P20_COMPLETION_EVIDENCE_MATERIAL_MISMATCH',
+                    terminal.requirement_id,
+                )
+        else:
+            source_contract = analytical_scope_contract(
+                session=session,
+                obligation_id=terminal.source_obligation_id,
+            ).model_copy(update={'requested_output_surfaces': ()})
+            target_contract = analytical_scope_contract(
+                session=session,
+                obligation_id=terminal.requirement_id,
+            ).model_copy(update={'requested_output_surfaces': ()})
+            if (
+                source_contract.material_fingerprint
+                != target_contract.material_fingerprint
+                or source_contract.material_fingerprint
+                != terminal.material_fingerprint
+            ):
+                raise P20ReportError(
+                    'P20_COMPLETION_EVIDENCE_MATERIAL_MISMATCH',
+                    terminal.requirement_id,
+                )
+        return {
+            'bridge_kind': 'COMPLETION_P14_EVIDENCE',
+            'source_obligation_id': terminal.source_obligation_id,
+            'coverage_obligation_id': terminal.requirement_id,
+            'material_group_id': terminal.material_group_id,
+            'material_fingerprint': terminal.material_fingerprint,
+            'scope_version_id': terminal.scope_version_id,
+        }
+
+    @staticmethod
     def _downstream_terminal_ids(
         snapshots: tuple[dict[str, Any], ...],
     ) -> set[str]:
         by_target: dict[str, dict[str, set[str]]] = {}
+        completion_terminal: set[str] = set()
         for snapshot in snapshots:
             bridge = snapshot.get('coverage_bridge')
             if not bridge:
                 continue
             target = bridge['coverage_obligation_id']
+            if bridge.get('bridge_kind') == 'COMPLETION_P14_EVIDENCE':
+                if snapshot.get('source_kind') != ReportSourceKind.P14_EVIDENCE.value:
+                    raise P20ReportError(
+                        'P20_COMPLETION_EVIDENCE_SOURCE_KIND_INVALID',
+                        target,
+                    )
+                completion_terminal.add(target)
+                continue
             bucket = by_target.setdefault(
                 target,
                 {'claims': set(), 'policy_claims': set()},
@@ -390,11 +502,12 @@ class ReportClaimGate:
                 bucket['policy_claims'].add(
                     str(snapshot.get('claim_id') or '')
                 )
-        return {
+        relationship_terminal = {
             target
             for target, bucket in by_target.items()
             if (bucket['claims'] & bucket['policy_claims']) - {''}
         }
+        return completion_terminal | relationship_terminal
 
     @staticmethod
     def _source_key(ref: SourceReference) -> str:
@@ -408,15 +521,30 @@ class ReportClaimGate:
         source_meta: dict[str, Any] = {}
         with Session(self._engine) as db:
             if ref.source_kind == ReportSourceKind.P14_EVIDENCE:
-                rows = tuple(db.exec(select(ResearchExecutionLink).where(ResearchExecutionLink.session_id == session.session_id).where(ResearchExecutionLink.obligation_id == ref.obligation_id).where(ResearchExecutionLink.evidence_id == ref.source_ref).where(ResearchExecutionLink.status == 'VERIFIED')).all())
+                source_obligation_id = ref.source_obligation_id or ref.obligation_id
+                rows = tuple(db.exec(select(ResearchExecutionLink).where(ResearchExecutionLink.session_id == session.session_id).where(ResearchExecutionLink.obligation_id == source_obligation_id).where(ResearchExecutionLink.evidence_id == ref.source_ref).where(ResearchExecutionLink.status == 'VERIFIED')).all())
                 if len(rows) != 1:
                     raise P20ReportError('P20_EVIDENCE_SOURCE_NOT_FOUND', ref.source_ref)
                 row = rows[0]
                 if row.receipt_id != ref.source_receipt_id:
                     raise P20ReportError('P20_EVIDENCE_RECEIPT_MISMATCH', ref.source_ref)
-                if not any((item.evidence_id == ref.source_ref and item.receipt_id == ref.source_receipt_id and (item.obligation_id == ref.obligation_id) for item in session.evidence_refs)):
+                if not any((item.evidence_id == ref.source_ref and item.receipt_id == ref.source_receipt_id and (item.obligation_id == source_obligation_id) for item in session.evidence_refs)):
                     raise P20ReportError('P20_EVIDENCE_NOT_IN_RESEARCH_AUTHORITY', ref.source_ref)
-                authority_fingerprint = _canonical_json({'evidence_id': row.evidence_id, 'receipt_id': row.receipt_id, 'query_fingerprint': row.native_query_fingerprint, 'result_hash': row.result_hash, 'status': row.status}, code='P20_EVIDENCE_SOURCE_NOT_CANONICAL')[1]
+                if ref.source_obligation_id is not None:
+                    terminal = CompletionEvidenceTerminal(
+                        requirement_id=ref.obligation_id,
+                        source_obligation_id=ref.source_obligation_id,
+                        evidence_id=ref.source_ref,
+                        receipt_id=str(ref.source_receipt_id),
+                        material_group_id=str(ref.completion_material_group_id),
+                        material_fingerprint=str(ref.completion_material_fingerprint),
+                        scope_version_id=str(ref.completion_scope_version_id),
+                    )
+                    bridge = self._completion_evidence_coverage_bridge(
+                        session,
+                        terminal,
+                    )
+                authority_fingerprint = _canonical_json({'evidence_id': row.evidence_id, 'receipt_id': row.receipt_id, 'query_fingerprint': row.native_query_fingerprint, 'result_hash': row.result_hash, 'status': row.status, 'source_obligation_id': source_obligation_id}, code='P20_EVIDENCE_SOURCE_NOT_CANONICAL')[1]
             elif ref.source_kind == ReportSourceKind.P15_MATERIAL:
                 row = db.get(ResearchExplorationMaterial, ref.source_ref)
                 if row is None:
@@ -512,7 +640,8 @@ class ReportClaimGate:
     def _payload_for_numeric_source(self, *, session, ref: SourceReference) -> Any:
         with Session(self._engine) as db:
             if ref.source_kind == ReportSourceKind.P14_EVIDENCE:
-                rows = tuple(db.exec(select(ResearchExecutionLink).where(ResearchExecutionLink.session_id == session.session_id).where(ResearchExecutionLink.obligation_id == ref.obligation_id).where(ResearchExecutionLink.evidence_id == ref.source_ref).where(ResearchExecutionLink.status == 'VERIFIED')).all())
+                source_obligation_id = ref.source_obligation_id or ref.obligation_id
+                rows = tuple(db.exec(select(ResearchExecutionLink).where(ResearchExecutionLink.session_id == session.session_id).where(ResearchExecutionLink.obligation_id == source_obligation_id).where(ResearchExecutionLink.evidence_id == ref.source_ref).where(ResearchExecutionLink.status == 'VERIFIED')).all())
                 if len(rows) != 1 or rows[0].receipt_id != ref.source_receipt_id:
                     raise P20ReportError('P20_NUMERIC_SOURCE_NOT_FOUND', ref.source_ref)
                 return _json_object(rows[0].native_result_json, code='P20_NUMERIC_SOURCE_PAYLOAD_INVALID')
@@ -1124,10 +1253,31 @@ class ReportDocumentStore:
             research_session_id,
             principal,
         )
-        # Typed seam only. Completion remains the terminal authority; this
-        # parameter is intentionally not consumed until the provider-free RED
-        # proves the downstream source-projection gap.
-        _ = completion_evidence_terminals
+        completion_by_goal: dict[str, SourceReference] = {}
+        bridge_snapshots: list[dict[str, Any]] = []
+        for terminal in completion_evidence_terminals:
+            if terminal.requirement_id in completion_by_goal:
+                raise P20ReportError(
+                    'P20_COMPLETION_EVIDENCE_DUPLICATE',
+                    terminal.requirement_id,
+                )
+            ref = SourceReference(
+                source_kind=ReportSourceKind.P14_EVIDENCE,
+                source_ref=terminal.evidence_id,
+                source_receipt_id=terminal.receipt_id,
+                obligation_id=terminal.requirement_id,
+                source_obligation_id=terminal.source_obligation_id,
+                completion_material_group_id=terminal.material_group_id,
+                completion_material_fingerprint=terminal.material_fingerprint,
+                completion_scope_version_id=terminal.scope_version_id,
+            )
+            snapshot = self._gate._source_snapshot(
+                session=session,
+                ref=ref,
+                principal=principal,
+            )
+            completion_by_goal[terminal.requirement_id] = ref
+            bridge_snapshots.append(snapshot)
         relationship_by_goal: dict[
             str,
             tuple[
@@ -1136,7 +1286,6 @@ class ReportDocumentStore:
                 SourceReference,
             ],
         ] = {}
-        bridge_snapshots: list[dict[str, Any]] = []
         for result in relationship_results:
             if result.research_session_id != session.session_id:
                 raise P20ReportError(
@@ -1322,6 +1471,66 @@ class ReportDocumentStore:
                         obligation_id=obligation_id,
                         coverage_status=CoverageStatus.REPRESENTED,
                         statement_ids=(statement_id,),
+                    )
+                )
+                continue
+
+            completion_source = completion_by_goal.get(obligation_id)
+            if completion_source is not None:
+                payload = self._gate._payload_for_numeric_source(
+                    session=session,
+                    ref=completion_source,
+                )
+                projected_ids: list[str] = []
+                for observation in project_governed_tabular_rows(payload):
+                    sources = tuple(
+                        completion_source.model_copy(
+                            update={'source_path': metric.source_path}
+                        )
+                        for metric in observation.metrics
+                    )
+                    observation_payload = {
+                        'context': [
+                            item.model_dump(mode='json')
+                            for item in observation.context
+                        ],
+                        'metrics': [
+                            item.model_dump(mode='json')
+                            for item in observation.metrics
+                        ],
+                    }
+                    statement_id = stable_statement_id(
+                        {
+                            'kind': ReportStatementKind.OBSERVATION.value,
+                            'sources': [
+                                source.model_dump(mode='json')
+                                for source in sources
+                            ],
+                            'observation': observation_payload,
+                            'completion_requirement_id': obligation_id,
+                        }
+                    )
+                    statements.append(
+                        ReportStatement(
+                            statement_id=statement_id,
+                            statement_kind=ReportStatementKind.OBSERVATION,
+                            source_refs=sources,
+                            obligation_refs=(obligation_id,),
+                            upstream_epistemic_ceiling='EXACT_GOVERNED_OBSERVATION',
+                            payload=observation_payload,
+                        )
+                    )
+                    projected_ids.append(statement_id)
+                if not projected_ids:
+                    raise P20ReportError(
+                        'P20_COMPLETION_EVIDENCE_NOT_PUBLISHABLE',
+                        obligation_id,
+                    )
+                coverage.append(
+                    CoverageEntry(
+                        obligation_id=obligation_id,
+                        coverage_status=CoverageStatus.REPRESENTED,
+                        statement_ids=tuple(projected_ids),
                     )
                 )
                 continue
