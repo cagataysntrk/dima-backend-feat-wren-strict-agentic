@@ -1,6 +1,11 @@
 name: dima-brain-v2-1-spec-closure-live
 
 on:
+  push:
+    branches:
+      - feat/dima-brain-v2-1-specification-closure
+    paths:
+      - ".github/BRAIN_V21_SPEC_CLOSURE_LIVE_TRIGGER"
   workflow_dispatch:
 
 permissions:
@@ -54,7 +59,7 @@ jobs:
           assert auth["automatic_retry_allowed"] is False
           assert auth["case_count"] == 1
           assert auth["candidate_product_sha"]=="13d1c37983d970516e2278f76c0dcfe847490ca7"
-          assert auth["provider_free_phase1_run_id"]==37108989346
+          assert auth["provider_free_phase1_run_id"]==37110504423
           assert auth["provider_free_phase2_run_id"]==37108989336
           assert auth["semantic_conformance_run_id"]==37108989394
           assert isinstance(auth["case_id"],str) and auth["case_id"]

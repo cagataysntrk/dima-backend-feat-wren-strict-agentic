@@ -1,6 +1,6 @@
 {
   "schema_version": "dima_brain_v2_1_spec_closure_live_authorization_v1",
-  "enabled": false,
+  "enabled": true,
   "readiness_phase": "6A",
   "gate": "A",
   "sequence_position": 1,
@@ -8,7 +8,7 @@
   "case_id": "F02_H",
   "candidate_product_sha": "13d1c37983d970516e2278f76c0dcfe847490ca7",
   "semantic_product_sha": "dd969add8fe7e210ec67905221316d037ce1c002",
-  "provider_free_phase1_run_id": 37108989346,
+  "provider_free_phase1_run_id": 37110504423,
   "provider_free_phase2_run_id": 37108989336,
   "semantic_conformance_run_id": 37108989394,
   "semantic_holdout_run_id": 37109327233,
@@ -20,10 +20,11 @@
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
   "automatic_retry_allowed": false,
-  "purpose": "Gate A STOPPED after A1 run 37110067159. Harness cardinality proxy under provider-free RCA; no paid run authorized.",
+  "purpose": "Gate A1 one-shot re-run after provider-free generic harness cardinality fix. Same semantic Product/engine/model topology; new checkout only. STOP on Product RED.",
   "last_run_id": 37110067159,
   "last_artifact_id": 11269631054,
   "last_manual_quality_status": "HARNESS_RED_PRODUCT_MECHANICALLY_SAFE_PROVIDER_FREE_RCA",
   "last_provider_request_count": 3,
-  "last_provider_cost": 0.01040727
+  "last_provider_cost": 0.01040727,
+  "harness_fix_sha": "bd93d0743ec96f739d32900009b8bdba2ddc300f"
 }
