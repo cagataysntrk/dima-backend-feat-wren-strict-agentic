@@ -300,6 +300,200 @@ def test_result_dependency_dimension_can_constrain_child_without_child_breakout(
     }
 
 
+
+
+def _typed_dependency_payload(
+    *,
+    declared_source: str = "g-comparison",
+    second_ranking: bool = False,
+    ranking_dimension: str = "dimension.department",
+):
+    payload = ready_payload(
+        kind="comparison",
+        subject=("metric.downtime",),
+        related=("dimension.event_date",),
+    )
+    payload["goals"][0].update(
+        {
+            "goal_key": "g-comparison",
+            "source_text": "Compare the governed metric across the accepted period.",
+            "source_fragment_text": None,
+            "ranking": None,
+            "result_dependency": None,
+        }
+    )
+    payload["goals"].append(
+        {
+            "goal_key": "g-ranking",
+            "kind": "ranking",
+            "source_text": "Rank the governed entities.",
+            "source_fragment_text": None,
+            "subject_semantic_ids": ["metric.downtime"],
+            "related_semantic_ids": [ranking_dimension],
+            "ranking": {
+                "source_text": "Rank the governed entities.",
+                "direction": "desc",
+                "limit": 1,
+                "measure_semantic_id": "metric.downtime",
+                "basis": "level",
+            },
+            "comparisons": [],
+            "result_dependency": None,
+            "causal_competition": None,
+        }
+    )
+    if second_ranking:
+        payload["goals"].append(
+            {
+                "goal_key": "g-ranking-2",
+                "kind": "ranking",
+                "source_text": "Rank the governed entities by the second metric.",
+                "source_fragment_text": None,
+                "subject_semantic_ids": ["metric.fault_count"],
+                "related_semantic_ids": ["dimension.department"],
+                "ranking": {
+                    "source_text": "Rank the governed entities by the second metric.",
+                    "direction": "desc",
+                    "limit": 1,
+                    "measure_semantic_id": "metric.fault_count",
+                    "basis": "level",
+                },
+                "comparisons": [],
+                "result_dependency": None,
+                "causal_competition": None,
+            }
+        )
+    payload["goals"].append(
+        {
+            "goal_key": "g-child",
+            "kind": "breakdown",
+            "source_text": "Inspect the selected entity by machine.",
+            "source_fragment_text": None,
+            "subject_semantic_ids": ["metric.fault_count"],
+            "related_semantic_ids": ["dimension.machine_id"],
+            "ranking": None,
+            "comparisons": [],
+            "result_dependency": {
+                "source_goal_key": declared_source,
+                "dimension_semantic_id": "dimension.department",
+                "selection": "first_ranked_entity",
+            },
+            "causal_competition": None,
+        }
+    )
+    return payload
+
+
+def test_nonranking_dependency_pointer_canonicalizes_to_unique_typed_ranking_parent():
+    payload = _typed_dependency_payload()
+    result = ResearchIntakeCompiler(
+        transport=FakeTransport(payload)
+    ).compile(
+        question="Inspect governed comparison, ranking, and dependent breakdown.",
+        catalog=catalog().model_copy(
+            update={"temporal_dimension_ids": ("dimension.event_date",)}
+        ),
+    )
+
+    assert result.terminal == ResearchIntakeTerminal.READY
+    assert result.brief is not None
+    by_kind = {item.kind: item for item in result.brief.questions}
+    ranking = by_kind[ResearchGoalKind.RANKING]
+    child = by_kind[ResearchGoalKind.BREAKDOWN]
+    assert child.result_dependency is not None
+    assert child.result_dependency.source_goal_id == ranking.goal_id
+    assert child.result_dependency.dimension_semantic_id == "dimension.department"
+
+
+def test_nonranking_dependency_pointer_without_compatible_ranking_fails_closed():
+    payload = _typed_dependency_payload(ranking_dimension="dimension.machine_id")
+
+    with pytest.raises(ResearchIntakeError) as exc:
+        ResearchIntakeCompiler(
+            transport=FakeTransport(payload)
+        ).compile(
+            question="Inspect governed comparison, ranking, and dependent breakdown.",
+            catalog=catalog().model_copy(
+                update={"temporal_dimension_ids": ("dimension.event_date",)}
+            ),
+        )
+
+    assert exc.value.code == "INTAKE_RESULT_DEPENDENCY_SOURCE_NOT_RANKING"
+
+
+def test_nonranking_dependency_pointer_with_two_compatible_rankings_fails_ambiguous():
+    payload = _typed_dependency_payload(second_ranking=True)
+
+    with pytest.raises(ResearchIntakeError) as exc:
+        ResearchIntakeCompiler(
+            transport=FakeTransport(payload)
+        ).compile(
+            question="Inspect governed comparison, rankings, and dependent breakdown.",
+            catalog=catalog().model_copy(
+                update={"temporal_dimension_ids": ("dimension.event_date",)}
+            ),
+        )
+
+    assert exc.value.code == "INTAKE_RESULT_DEPENDENCY_SOURCE_AMBIGUOUS"
+    assert exc.value.detail == "g-ranking,g-ranking-2"
+
+
+def test_valid_declared_ranking_dependency_is_never_redirected():
+    payload = _typed_dependency_payload(
+        declared_source="g-ranking",
+        second_ranking=True,
+    )
+    result = ResearchIntakeCompiler(
+        transport=FakeTransport(payload)
+    ).compile(
+        question="Inspect governed comparison, rankings, and dependent breakdown.",
+        catalog=catalog().model_copy(
+            update={"temporal_dimension_ids": ("dimension.event_date",)}
+        ),
+    )
+
+    assert result.brief is not None
+    ranking_questions = [
+        item
+        for item in result.brief.questions
+        if item.kind == ResearchGoalKind.RANKING
+    ]
+    child = next(
+        item
+        for item in result.brief.questions
+        if item.kind == ResearchGoalKind.BREAKDOWN
+    )
+    assert child.result_dependency is not None
+    assert child.result_dependency.source_goal_id == ranking_questions[0].goal_id
+    assert child.result_dependency.source_goal_id != ranking_questions[1].goal_id
+
+
+@pytest.mark.parametrize(
+    ("declared_source", "expected_code"),
+    (
+        ("g-missing", "INTAKE_RESULT_DEPENDENCY_SOURCE_UNKNOWN"),
+        ("g-child", "INTAKE_RESULT_DEPENDENCY_SELF_REFERENCE"),
+    ),
+)
+def test_dependency_canonicalization_does_not_relax_unknown_or_self_reference(
+    declared_source,
+    expected_code,
+):
+    payload = _typed_dependency_payload(declared_source=declared_source)
+
+    with pytest.raises(ResearchIntakeError) as exc:
+        ResearchIntakeCompiler(
+            transport=FakeTransport(payload)
+        ).compile(
+            question="Inspect governed comparison, ranking, and dependent breakdown.",
+            catalog=catalog().model_copy(
+                update={"temporal_dimension_ids": ("dimension.event_date",)}
+            ),
+        )
+
+    assert exc.value.code == expected_code
+
+
 def test_causal_competition_is_one_root_cause_goal_not_relationship_query_plan():
     payload = ready_payload(
         kind="root_cause",
