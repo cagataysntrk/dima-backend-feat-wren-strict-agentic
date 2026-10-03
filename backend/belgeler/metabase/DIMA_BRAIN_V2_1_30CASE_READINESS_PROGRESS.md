@@ -3060,3 +3060,39 @@ This family was exposed only after the previous R5 boundary was removed.
 
 Provider-free only: aggregate Phase-1 and Phase-2/headless on the exact intake-fix candidate. If fully
 GREEN, freeze one candidate and rerun only A3. No A1/A2, no A4.
+
+
+### INTAKE RCA — FULL PROVIDER-FREE RECERTIFICATION GREEN
+
+Semantic Product:
+
+`afb4191d78d205b8f6985dc7227de4db2637a058`
+
+Exact repo recertification candidate:
+
+`952890cfd90f8fe3b128f6fc34fab0613adccd23`
+
+Receipts:
+
+- semantic conformance: `37122101602 = SUCCESS`;
+- frozen-family: `37122101647 = SUCCESS`;
+- aggregate Phase-1: `37122236339 = SUCCESS`
+  - Brain V2 deterministic closure: `144 passed`;
+  - migration head: `ff5b8e2c1a73`;
+  - Research/intake/scope/P14/R5: `270 passed`;
+  - P17: `145 passed`;
+  - P19: `53 passed`;
+  - P20/Core-B: `57 passed`;
+  - security/hygiene: `26 passed`;
+- Phase-2/headless: `37122236353 = SUCCESS`
+  - Product/headless: `96 passed`;
+  - owner carry-forward: `4 passed`;
+  - P18: `28 passed`;
+  - P20: `33 passed`;
+  - metamorphic: `15 passed`;
+  - security/hygiene: `26 passed`;
+  - forbidden-surface audit: PASS.
+
+Provider calls during recertification: `0`.
+
+**NEXT LEGAL ACTION:** one A3 `F06_M` development proof only. A1/A2 and A4 remain unauthorized.
