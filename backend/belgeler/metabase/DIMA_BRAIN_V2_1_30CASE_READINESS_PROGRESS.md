@@ -2689,3 +2689,202 @@ PHASE 2 only:
 Freeze this development candidate and run **exactly A3 F06_M** under
 `LUNA_LUNA_NO_CASCADE`. Do not rerun A1/A2. If A3 is below `3/4`, STOP paid and return to
 provider-free owner RCA. If A3 is at least `3/4`, Phase 2 is GREEN and only then proceed to A4.
+
+
+---
+
+## PHASE 2 — ONE A3 DEVELOPMENT PROOF
+
+**STATUS: RED / PAID STOP**
+
+### Product SHA
+
+`4036bb4c10d98277c12ee1842e62b0c0370f909b`
+
+Repository paid-trigger commit:
+
+`92c33e9823c81976578eb80cf0ce95e775203ab8`
+
+Temporary push trigger removal:
+
+`47686723ac059670c99d0dc96cc8a7d4392f3b2b`
+
+### Engine SHA/tag/digest
+
+- SHA: `468643040c74959ffaad6e378b110d5841567f7c`
+- tag/release: `v0.63.18-dima.10 / 0.63.18-dima.10`
+- digest:
+  `sha256:34ce02396908e109aabcac9de6bedc3c832c79baa5450b7235c629f05455af17`
+- topology: `LUNA_LUNA_NO_CASCADE`
+
+### Objective
+
+Run exactly one post-Phase-1 A3 development proof, with no A1/A2 restart, to verify that the accepted
+CHANGE-ranking requirement produces a source-backed selected department and can unlock the dependent
+one-level drill-down.
+
+### Live run
+
+- case: `F06_M`
+- run: `37119763707` = workflow SUCCESS, Product quality RED
+- artifact: `11272209373`
+- artifact digest:
+  `sha256:f4667f386ea5d00d205df0ef5fcf0d7d231a20e5dc095dcd0f6db5c970560236`
+- raw harness pass: `true`
+- terminal: `PARTIAL`
+- requirement_complete: `false`
+- workflow status: `WAITING`
+- last completed node: `MATERIAL_GROUP_WAITING`
+
+### Manual score
+
+`2/4 = PARTIAL`
+
+The baseline/comparison material is VERIFIED. The governed CHANGE-ranking obligation is LIMITED; the
+dependent child breakdown remains READY and the report requirement cannot terminally complete.
+
+### Provider / tokens / cost / latency
+
+- provider requests: `6`
+- prompt tokens: `80,531`
+- completion tokens: `2,985`
+- reasoning tokens: `1,271`
+- provider cost: `$0.0168679`
+- case latency: `33,178 ms`
+- total harness latency: `33,445 ms`
+- provider request ceiling: `10`
+- native acquisitions: `1` verified acquisition before the blocked ranking continuation
+- native occurrences persisted:
+  - baseline/comparison `P14_BASE` = VERIFIED;
+  - ranking `P14_BASE` = LIMITED.
+
+### Mechanical invariants
+
+- exception: `0`
+- silent wrong: `0`
+- duplicate native: `0`
+- stale Evidence: `0`
+- security violation: `0` observed
+- causal overclaim: `0` observed
+
+### First invalid boundary
+
+`dima.native.observe -> R5 required-ranking presence classification -> dima.evidence.admit`
+
+Exact live ranking occurrence remained:
+
+- department breakout;
+- month breakout;
+- governed downtime LEVEL aggregation;
+- non-restrictive presentation ordering on event-date/department;
+- no governed metric CHANGE ranking.
+
+Certified dima.10 source emits stable field `ORDER BY` clauses as ranking observations even when
+`LIMIT` is absent. Product R5 had been testing only `not observation.ranking` to decide whether the
+required metric ranking was missing. Therefore presentation-only field ordering made the ranking
+observation tuple non-empty and masked the true condition: **required governed metric ranking absent**.
+That sent the occurrence down the structural mismatch path instead of the one bounded repair family.
+
+### Exact owner
+
+`backend/app/v3/research_analytical_scope.py::_assert_material_ranking_scope`
+
+This is a Product admission-classification defect. dima.10 is behaving according to its certified
+observation contract and remains frozen.
+
+### Generic law
+
+> Non-restrictive field ordering does not satisfy the presence of an accepted governed metric ranking.
+> If an accepted metric ranking is absent and the only observed orderings are field orderings without
+> rowset restriction, classify it as missing required ranking so the existing bounded material repair
+> policy may act once. If field ordering is row-limiting, or a conflicting metric ranking exists, fail
+> closed as structural scope mismatch.
+
+### Reference pattern consulted
+
+- certified dima.10 `native_material_observation.clj`:
+  every Metabase `ORDER BY` is observed with stable target, direction, optional limit and LEVEL/CHANGE
+  basis; field targets remain field targets;
+- Metabase official `Offset` documentation:
+  previous-row CHANGE semantics depend on time/breakout ordering; ordinary sort order alone is not
+  derived CHANGE material;
+- Wren OSS architecture:
+  retry/repair is a structured validation primitive and must not become hidden query-planning logic.
+
+### Root fix
+
+Production:
+
+- `8d41f17bc6ed8a61320af819552691699aa4ce2f`
+  `fix(r5): ignore presentation ordering for required ranking presence`
+
+Provider-free sibling tests:
+
+- `0eea68e4c23aa0de666c691737023c92338100d6`
+  `test(r5): classify presentation ordering around required ranking`
+
+The fix does not generate SQL/MBQL, does not infer CHANGE from arbitrary ordering, does not alter the
+engine, and does not expand repair eligibility for target/direction/limit or row-limiting field-order
+mismatches.
+
+### What was adopted
+
+- distinguish **metric ordering presence** from generic observed ordering presence;
+- allow `R1_NATIVE_RANKING_REQUIRED_MISSING` only when:
+  - no governed metric ranking is observed; and
+  - no row-limiting ordering is present;
+- preserve structural mismatch for row-limiting field order and wrong metric target/direction/limit.
+
+### What was explicitly rejected
+
+- same-SHA paid retry;
+- A4;
+- dima.10 modification;
+- ignoring all field ordering;
+- treating field `ORDER BY` as CHANGE;
+- Dima-side arithmetic;
+- prompt/wording patch;
+- provider budget increase.
+
+### Provider-free status after RCA
+
+- frozen-family closure on production-fix SHA `8d41f17...`:
+  run `37121290562` = SUCCESS;
+- semantic conformance on production-fix SHA:
+  run `37121290569` = running at the time of this receipt;
+- affected P14 sibling tests and aggregate Phase-1/Phase-2 still require exact-candidate recertification.
+
+### New-family count
+
+`0`.
+
+This remains the existing CHANGE material-acquisition / planner-output-conformance family; the new
+finding is a narrower first-invalid-boundary inside the R5 classifier.
+
+### What is now proven
+
+- Phase-1 planner-visible contract alone was not enough because the bounded repair classifier did not
+  recognize the exact live presentation-order shape;
+- live paid retry is not justified;
+- the defect is reproducible as a generic typed observation shape without F06 vocabulary;
+- dima.10 observation behavior is internally coherent and need not change.
+
+### What remains unproven
+
+- complete provider-free recertification of the R5 classifier fix;
+- live one-repair activation on A3;
+- A3 >= `3/4`;
+- A4-A6, B1-B3 and final saturation/freeze/readiness panel.
+
+### 30-case readiness
+
+**NO — CLOSER, but A3 remains RED. Broad 30-case remains CLOSED.**
+
+### NEXT LEGAL ACTION
+
+Provider-free only:
+
+1. finish semantic/frozen gates;
+2. run affected P14/R5 tests;
+3. run aggregate Phase-1 + Phase-2/headless on the exact new semantic Product;
+4. only after all are GREEN, freeze one new development candidate and rerun **A3 only**.
