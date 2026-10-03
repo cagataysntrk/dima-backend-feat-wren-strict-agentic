@@ -1555,6 +1555,7 @@ def test_r5_unranked_material_allows_non_limiting_presentation_ordering():
                 },
                 "direction": "asc",
                 "limit": None,
+                "basis": "level",
             },
             {
                 "stage_number": 0,
@@ -1566,6 +1567,7 @@ def test_r5_unranked_material_allows_non_limiting_presentation_ordering():
                 },
                 "direction": "asc",
                 "limit": None,
+                "basis": "level",
             },
         ]
     )
@@ -2298,6 +2300,7 @@ def test_dima10_level_basis_cannot_satisfy_typed_change_ranking() -> None:
                         },
                         "direction": "desc",
                         "limit": 5,
+                        "basis": "level",
                     }
                 ]
             },
@@ -2316,6 +2319,7 @@ def test_dima10_level_basis_cannot_satisfy_typed_change_ranking() -> None:
                         },
                         "direction": "asc",
                         "limit": 5,
+                        "basis": "level",
                     }
                 ]
             },
@@ -2334,6 +2338,7 @@ def test_dima10_level_basis_cannot_satisfy_typed_change_ranking() -> None:
                         },
                         "direction": "desc",
                         "limit": 10,
+                        "basis": "level",
                     }
                 ]
             },
