@@ -2591,3 +2591,101 @@ Symbolic owner siblings prove:
 Run aggregate Phase-1 and Phase-2/headless provider-free on the exact candidate. If both GREEN,
 seal Phase 1. Then freeze one development candidate and run **only A3 F06_M**. A1/A2 are not rerun
 during development.
+
+
+### PHASE 1 FINAL GATE — GREEN
+
+Final exact provider-free candidate:
+
+- semantic Product SHA: `4036bb4c10d98277c12ee1842e62b0c0370f909b`
+- repository candidate used by the final aggregate recertification:
+  `486023b6e1fca2b20cffeb527f6b30522def5995`
+- engine SHA: `468643040c74959ffaad6e378b110d5841567f7c`
+- engine release: `0.63.18-dima.10`
+- engine digest:
+  `sha256:34ce02396908e109aabcac9de6bedc3c832c79baa5450b7235c629f05455af17`
+- migration head: `ff5b8e2c1a73`
+- model topology remains `LUNA_LUNA_NO_CASCADE`.
+- engine diff: `0`.
+- provider/model calls: `0`.
+
+Final full-gate receipts:
+
+- focused Brain V2: `37119079023` = SUCCESS
+  - `101 passed, 1 skipped`;
+- frozen-family closure: `37119079022` = SUCCESS;
+- semantic conformance / Wave A / Wave B / mutation:
+  `37119079032` = SUCCESS;
+- aggregate Phase-1: `37119525493` = SUCCESS:
+  - deterministic closure: `144 passed`;
+  - migration graph: single head `ff5b8e2c1a73`;
+  - research/scope/P14/R5: `262 passed`;
+  - P17: `145 passed`;
+  - P19: `53 passed`;
+  - P20/Core-B: `57 passed`;
+  - security/repository hygiene: `26 passed`;
+- Phase-2/headless: `37119525492` = SUCCESS:
+  - T1-T7 Product/contracts: `96 passed`;
+  - carry-forward T1-T4: `4 passed`;
+  - P18: `28 passed`;
+  - P20: `33 passed`;
+  - independent metamorphic confidence: `15 passed`;
+  - security/repository hygiene: `26 passed`;
+  - forbidden-surface audit: PASS.
+
+All intermediate aggregate REDs were test-oracle drift after the new planner-visible preamble; no
+production semantic patch was added to clear them.
+
+#### First invalid boundary — CLOSED provider-free
+
+The prior live A3 boundary:
+
+`accepted CHANGE contract -> planner output LEVEL material -> Evidence admission`
+
+is now closed at the generic Product/planner contract seam:
+
+- accepted WHAT is structurally visible to Metabot;
+- missing ranking and exact basis mismatch are separately observable;
+- one bounded same-conversation repair is legal;
+- wrong structural ranking and foreign authority remain terminal fail-closed.
+
+#### New-family count
+
+`0`.
+
+#### Provider / tokens / cost / latency
+
+- provider requests: `0`
+- prompt tokens: `0`
+- completion tokens: `0`
+- reasoning tokens: `0`
+- cost: `$0`
+- paid latency: `0`.
+
+#### What is now proven
+
+- planner-facing contract incompleteness is closed without a second planner;
+- bounded repair is generic, typed and one-shot;
+- dima.10 remains frozen;
+- no broad/case-specific/prompt-specific semantic path was added;
+- all required Phase-1 provider-free gates are GREEN on the candidate.
+
+#### What remains unproven
+
+- live A3 development proof after this fix;
+- selected worst-change entity and child result-dependency projection in real Metabot execution;
+- A4-A6;
+- B1-B3;
+- final saturation/freeze/same-SHA readiness panel.
+
+#### 30-case readiness
+
+**CLOSER — PHASE 1 GREEN; 30-case remains CLOSED.**
+
+#### NEXT LEGAL ACTION
+
+PHASE 2 only:
+
+Freeze this development candidate and run **exactly A3 F06_M** under
+`LUNA_LUNA_NO_CASCADE`. Do not rerun A1/A2. If A3 is below `3/4`, STOP paid and return to
+provider-free owner RCA. If A3 is at least `3/4`, Phase 2 is GREEN and only then proceed to A4.
