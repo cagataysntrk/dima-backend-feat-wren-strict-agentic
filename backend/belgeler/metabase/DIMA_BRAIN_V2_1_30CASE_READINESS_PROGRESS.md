@@ -925,3 +925,114 @@ None in Phase 4.
 PHASE 5 — freeze one final candidate: semantic Product SHA, exact repository HEAD, engine
 SHA/release/digest, migration head, Luna/Luna/no-cascade model topology and semantic-spec digest.
 After that freeze, no semantic code may change before or during the live panel.
+
+
+---
+
+## PHASE 5 — FINAL CANDIDATE FREEZE
+
+**STATUS = GREEN**
+
+### Freeze receipt
+
+- Freeze reference HEAD: `08ceecf7f02ff2ce06ff22acaf8357a91a9fbf22`
+- Semantic Product SHA: `dd969add8fe7e210ec67905221316d037ce1c002`
+- Engine SHA: `468643040c74959ffaad6e378b110d5841567f7c`
+- Engine release: `0.63.18-dima.10`
+- Engine runtime tag: `v0.63.18-dima.10`
+- Engine digest: `sha256:34ce02396908e109aabcac9de6bedc3c832c79baa5450b7235c629f05455af17`
+- Migration head: `ff5b8e2c1a73`
+- Semantic-spec Git tree digest: `133db6d3a04c79a5342d12ee4a287a774a1f9d79`
+- Semantic conformance artifact digest:
+  `sha256:57597cc545e87384ad357a09a8c0c561732a9e14d22a3179aaab74ac8703bfea`
+- Semantic-spec version family:
+  - coverage schema `dima_brain_v2_1_semantic_conformance_coverage_v2`;
+  - mutation canary schema `dima_brain_v2_1_mutation_canary_v1`;
+  - frozen-family closure schema `dima_brain_v2_1_frozen_family_closure_v1`.
+- Model topology:
+  - Dima cognition: `openai/gpt-5.6-luna`;
+  - Metabot: `openrouter/openai/gpt-5.6-luna`;
+  - cascade: `NONE`;
+  - policy label: `LUNA_LUNA_NO_CASCADE`.
+- Broad 30-case authorization: **CLOSED**.
+- Frontend implementation authorization: **CLOSED**.
+
+### Objective
+
+Freeze one architecture-equivalent candidate after provider-free semantic saturation and frozen-family
+closure so the paid readiness panel measures the same Product/engine/model topology throughout.
+
+### Exact owner changed
+
+Documentation only. No semantic Product code, engine code, model topology, migration, graph or owner
+logic changed in Phase 5.
+
+### Reference patterns consulted
+
+No new design pattern is needed for this phase. This is an immutable-identity and reproducibility
+freeze using the repository's exact engine/runtime locks and the already certified semantic-spec tree.
+
+### Adopted principle
+
+Live evidence is comparable only when semantic Product bytes, engine bytes and model topology are
+stable. Operational harness/authorization metadata may select the next approved case, but must not
+change Product semantics after the freeze.
+
+### Explicitly rejected pattern
+
+- semantic fixes after the first final live case;
+- changing models between cases;
+- changing engine digest between cases;
+- broad 30-case execution;
+- retrying a failed live case on the same SHA until lucky;
+- frontend work.
+
+### Pre-freeze evidence
+
+- Phase 1 engine observability: GREEN;
+- Phase 2 exact-system provider-free: GREEN;
+- Phase 3 independent holdout: GREEN;
+- Phase 4 frozen-family closure: GREEN;
+- new-family discovery: `0`;
+- mutation canaries: `5/5 = 100%`;
+- provider/model calls through Phase 5: `0`.
+
+### Provider calls / tokens / cost / latency
+
+- Provider calls: `0`
+- Prompt tokens: `0`
+- Provider cost: `$0`
+- Paid latency: `0`
+
+### First invalid boundary
+
+None in Phase 5.
+
+### What is now proven
+
+- one semantic Product is frozen;
+- one exact dima.10 SHA/digest is frozen;
+- migration head is frozen;
+- semantic-spec content identity is frozen;
+- Luna/Luna/no-cascade topology is frozen;
+- deterministic blocker families and independent holdouts are GREEN before paid evaluation.
+
+### What remains unproven
+
+- Gate A live mechanical recovery;
+- Gate B live synthesis quality;
+- aggregate readiness score `>= 33/36`;
+- 90+ potential.
+
+### 30-case readiness
+
+**CLOSER — FINAL CANDIDATE FROZEN; LIVE READINESS PANEL NOT YET PROVEN**
+
+### Next legal action
+
+PHASE 6A — surgical paid mechanical panel, sequential and STOP-on-first-RED:
+`F02_H -> F03_H -> F06_M -> F06_H -> F07_M -> F10_H`.
+
+Only one case may be armed at a time. The broad 30-case workflow remains closed. The live harness may
+be updated only to consume the frozen dima.10 identity and the approved Luna/Luna/no-cascade topology;
+no semantic code change is permitted.
