@@ -1632,3 +1632,99 @@ Arm **only A2 `F03_H`** against the same frozen semantic Product SHA, engine SHA
 topology. A2 must specifically prove the repaired Completion -> P20 shared terminal-source path in live
 execution. STOP immediately on a genuine Product RED. A3 remains unauthorized until A2 is mechanically
 GREEN and manually scores at least `3/4`.
+
+
+### Final same-SHA Gate A2 `F03_H` — GREEN / STRONG_PARTIAL 3/4
+
+Freeze identities are unchanged from final A1:
+
+- semantic Product SHA: `a4a2c00a92a1f2f7b52379cfdbb55a654b4b0e8b`;
+- engine SHA: `468643040c74959ffaad6e378b110d5841567f7c`;
+- engine digest:
+  `sha256:34ce02396908e109aabcac9de6bedc3c832c79baa5450b7235c629f05455af17`;
+- model topology: `LUNA_LUNA_NO_CASCADE`.
+
+Run receipt:
+
+- run: `37113877785` = SUCCESS;
+- checkout SHA: `88fbcce1618c84409983d10870563f14c4099f24`;
+- artifact: `11271112112`;
+- artifact digest:
+  `sha256:42b5d9ba32356dd3f08ce3036a6a8a4358254a257fe8a1f328b33f65e27c02e8`;
+- terminal: `REPORT`;
+- workflow: `COMPLETE`;
+- requirement_complete: `true`;
+- exception: `0`;
+- duplicate native: `0`;
+- stale Evidence: `0`;
+- native acquisitions: `1`;
+- provider requests: `4`;
+  - research intake: `1`;
+  - Metabase / Metabot: `3`;
+  - P17/P18/P19: `0`;
+- prompt tokens: `64,198`;
+- completion tokens: `1,326`;
+- reasoning tokens: `317`;
+- provider cost: `$0.00866412`;
+- case latency: `16,568 ms`;
+- blocked provider requests: `0`.
+
+Mechanical recovery adjudication:
+
+- the historical `P20_RESEARCH_SESSION_NOT_SEALED` failure is gone;
+- the repaired Completion -> P20 authority path survives live execution;
+- one native analytical occurrence returns the full May/June matrix for all five departments and all
+  three governed metrics;
+- exact monthly row context and numeric source paths are preserved;
+- there is no duplicate native execution, stale Evidence, scope drift or hidden analytics;
+- all mandatory Product requirements terminate and the workflow reaches REPORT/COMPLETE.
+
+Quality adjudication:
+
+- the report exposes the complete source-backed May/June comparison matrix;
+- from the rows, all five departments have downtime increase, fault-count increase and performance
+  non-improvement between May and June;
+- however P20 remains at the observation-only ceiling and does **not explicitly synthesize** the
+  requested conclusion identifying those departments as having all three indicators worsen in the
+  same direction;
+- therefore the run is useful and substantially correct, but one important requested synthesis is
+  missing.
+
+Manual Product score:
+
+- `3 / 4 = STRONG_PARTIAL`.
+
+This is deliberately not upgraded to 4/4 merely because the answer can be derived by a human from
+the rows. The frozen rubric requires the material user request itself to be completed for FULL.
+
+Paid stop discipline:
+
+- authorization disabled immediately after A2;
+- temporary push trigger removed immediately after A2;
+- no A3 paid call has been made yet.
+
+Final Gate-A running score:
+
+- A1 F02_H = `4/4`;
+- A2 F03_H = `3/4`;
+- subtotal = `7/8`;
+- completed = `2/6`;
+- FULL = `1/6`;
+- exception = `0`;
+- silent wrong = `0`;
+- security violation = `0`;
+- scope violation = `0`;
+- causal overclaim = `0`;
+- duplicate native = `0`.
+
+### 30-case readiness
+
+**CLOSER — final Gate A is 7/8 through A2; broad 30-case remains CLOSED.**
+
+### Next legal action
+
+Arm **only A3 `F06_M`** on the same frozen Product/engine/model topology. This is the
+comparison/result-dependency case and must prove that a VERIFIED parent result is projected into the
+child material through the governed execution-local dependency binding without replaying or
+re-ranking the parent. STOP on any genuine Product RED. A4 remains unauthorized until A3 scores
+at least `3/4`.
