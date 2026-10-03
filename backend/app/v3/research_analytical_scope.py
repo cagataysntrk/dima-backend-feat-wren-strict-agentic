@@ -2192,10 +2192,17 @@ def _assert_material_ranking_scope(
             "R1_NATIVE_RANKING_RESOURCE_BINDING_REQUIRED",
             ranking.measure,
         )
-    if not observation.ranking:
+    metric_ordering = tuple(
+        item for item in observation.ranking
+        if item.target.kind == "metric"
+    )
+    if not metric_ordering and not restrictive_ordering:
         raise ResearchAnalyticalScopeError(
             "R1_NATIVE_RANKING_REQUIRED_MISSING",
-            "accepted native ranking is absent from the observed material",
+            (
+                "accepted governed metric ranking is absent; observed "
+                "non-restrictive field ordering is presentation-only"
+            ),
             last_valid_boundary="dima.native.observe",
             first_invalid_boundary="dima.evidence.admit",
             scope_fingerprint=contract.scope_fingerprint,
@@ -2203,7 +2210,12 @@ def _assert_material_ranking_scope(
             expected_semantic_shape={
                 "ranking": ranking.model_dump(mode="json"),
             },
-            observed_semantic_shape={"ranking": []},
+            observed_semantic_shape={
+                "ranking": [
+                    item.model_dump(mode="json")
+                    for item in observation.ranking
+                ]
+            },
         )
 
     structural_matches = [
