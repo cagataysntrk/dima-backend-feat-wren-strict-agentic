@@ -922,6 +922,7 @@ def _ranking_contract() -> AnalyticalRequestContract:
             measure="metric.m1",
             direction="desc",
             limit=3,
+                basis="level",
         ),
     )
 
@@ -948,6 +949,7 @@ def _ranking_observation_with_legal_nonrestrictive_order() -> NativeMaterialObse
                 ),
                 direction="desc",
                 limit=3,
+                basis="level",
             ),
             NativeMaterialRanking(
                 stage_number=0,
@@ -959,6 +961,7 @@ def _ranking_observation_with_legal_nonrestrictive_order() -> NativeMaterialObse
                 ),
                 direction="asc",
                 limit=None,
+                basis="level",
             ),
         ),
     )
@@ -1058,6 +1061,7 @@ def test_native_ranking_admission_generated_nonrestrictive_siblings_are_legal(
         ),
         direction=extra_direction,
         limit=None,
+        basis="level",
     )
     observation = base.model_copy(update={"ranking": (authorized, extra)})
     bindings = {
