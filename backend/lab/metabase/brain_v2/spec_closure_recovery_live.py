@@ -368,6 +368,29 @@ def _collect_turn(
     }
 
 
+def _raw_harness_gate(
+    *,
+    mechanical_safety: bool,
+    accepted_terminal: bool,
+    requirement_complete: bool,
+    terminal_state: str | None,
+    evidence_count: int,
+    legacy_min_evidence: int,
+) -> bool:
+    """Mechanical live gate.
+
+    This first extraction intentionally preserves the legacy evidence-cardinality
+    behavior so the provider-free reproducer can prove the false-negative before
+    the generic fix.
+    """
+    del requirement_complete, terminal_state
+    return bool(
+        mechanical_safety
+        and accepted_terminal
+        and evidence_count >= legacy_min_evidence
+    )
+
+
 def _run_case(
     *,
     case: dict[str, Any],
@@ -456,10 +479,13 @@ def _run_case(
         and all((x["duplicate_native"] == 0 and x["stale_evidence_count"] == 0) for x in turn_records)
         and int(provider.get("blocked_request_count") or 0) == 0
     )
-    raw_harness_pass = bool(
-        mechanical_safety
-        and accepted_status
-        and evidence_count >= min_evidence
+    raw_harness_pass = _raw_harness_gate(
+        mechanical_safety=mechanical_safety,
+        accepted_terminal=accepted_status,
+        requirement_complete=bool(final and final["requirement_complete"]),
+        terminal_state=(final["derived_terminal"] if final else None),
+        evidence_count=evidence_count,
+        legacy_min_evidence=min_evidence,
     )
     return {
         "id": case["id"],
