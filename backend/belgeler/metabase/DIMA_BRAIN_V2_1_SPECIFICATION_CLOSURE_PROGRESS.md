@@ -1713,3 +1713,58 @@ Classification:
 **ROLE-AWARE TEMPORAL IDENTITY — PROVIDER-FREE GREEN / FROZEN CANDIDATE**.
 
 The next legal action is one surgical `F06_M` live probe only. Broad/30-case remain closed.
+
+
+### Step 12F — CHANGE-ranking native observability defect independently proven
+
+The post-temporal surgical F06_M probe reached a new Law-2 boundary:
+
+- Product requires typed ranking basis `CHANGE`;
+- current dima.9 R5 observation can certify ranking target/direction/limit;
+- it cannot certify that the ordered quantity is a period-over-period CHANGE rather than LEVEL;
+- Product therefore fails closed with `R1_NATIVE_RANKING_BASIS_UNOBSERVABLE`.
+
+The fail-closed Product behavior is intentional and remains correct until native semantics can be
+observed.
+
+Reference patterns consulted:
+
+- Metabase official Offset/window-function semantics: period-over-period derived quantities are
+  first-class analytical query semantics and may be used as ordered aggregations;
+- Wren OSS architecture: semantic/context authority and validation are explicit primitives;
+  analytical HOW remains in the analytics engine.
+
+Independent engine proof:
+
+- engine base: `d5c60dc9f37a9ec9c5b0117f178146bbcb8dca88` / dima.9;
+- test branch: `test/dima9-change-ranking-observability`;
+- production engine diff before the proof: **0**;
+- legal Metabase Lib query:
+  governed saved metric + temporal breakout +
+  `metric - Offset(metric, -1)` + order-by derived aggregation;
+- proof run `37094418753` = intentional RED;
+- existing R5 suite: 13 tests, 51 passed assertions, exactly one new error;
+- exact error:
+  `NATIVE_MATERIAL_RANKING_TARGET_UNSUPPORTED`;
+- first invalid engine boundary:
+  R5 ranking observation cannot map a legal derived aggregation back to stable governed metric
+  identity/basis.
+
+Classification:
+**INDEPENDENT ENGINE OBSERVABILITY DEFECT PROVEN**.
+
+This satisfies the master directive's only legal engine-diff exception. The engine remains frozen
+for all Product-owned problems; the authorized change is bounded to R5 read-only semantic
+observation only.
+
+Required engine closure:
+
+- recognize only structurally provable period-over-period CHANGE ranking expressions;
+- preserve stable governed metric identity;
+- emit `basis=change`;
+- keep ordinary metric/field ranking `basis=level`;
+- fail closed for ambiguous/unsupported derived ranking expressions;
+- do not execute analytics, rewrite queries, add planner behavior, or change Metabot cognition;
+- run focused R5/Dima engine regression before any backend integration.
+
+Paid live remains CLOSED.
