@@ -191,7 +191,7 @@ No Product integration is legal before Phase 1 is GREEN.
 
 ## PHASE 1 — R5 CHANGE-RANKING OBSERVABILITY CLOSURE
 
-**STATUS = IN PROGRESS**
+**STATUS = GREEN**
 
 ### Objective
 
@@ -250,7 +250,7 @@ The observer must also prove a leading temporal breakout with a real temporal bu
 10. Prior candidate `2ea17785...` is **superseded**; it was never pinned into Product.
 11. Final immutable release candidate SHA:
     `468643040c74959ffaad6e378b110d5841567f7c`.
-    Certification run `37106817330` is queued/running.
+    Certification run `37106817330` = **SUCCESS**.
 
 ### Adopted principle
 
@@ -281,7 +281,8 @@ Negative / fail-closed:
 - ordinary metric ranking remains `basis=level`;
 - unrelated derived expression remains unsupported;
 - `metric - Offset(metric,-1)` under a non-temporal leading breakout remains unsupported;
-- ambiguous/non-stable metric identity remains unsupported.
+- ambiguous/non-stable metric identity remains unsupported;
+- category-first + temporal-second breakout ordering remains unsupported as period-over-period CHANGE.
 
 ### Provider calls / tokens / cost / latency
 
@@ -295,23 +296,59 @@ Negative / fail-closed:
 The first candidate's first invalid boundary was:
 `R5 observation -> period-over-period classification`.
 
-The generic temporal-axis fix closes that boundary in the focused suite. Full Phase-1 certification
-is not GREEN until the final candidate's single-shot build, digest pull and runtime identity checks
-complete.
+The generic temporal-axis fix closes that boundary. Final single-shot certification also proved
+source build, smoke, registry publish, public unauthenticated digest pull and runtime identity.
+
+### Final immutable engine receipt
+
+- Engine SHA: `468643040c74959ffaad6e378b110d5841567f7c`
+- Release: `0.63.18-dima.10`
+- Runtime tag: `v0.63.18-dima.10`
+- Upstream base: `2ba2485c78d7e00a9a25f82c00fc201da71590c4`
+- Registry digest: `sha256:34ce02396908e109aabcac9de6bedc3c832c79baa5450b7235c629f05455af17`
+- Immutable image: `ghcr.io/upcytech/dima-metabase-engine@sha256:34ce02396908e109aabcac9de6bedc3c832c79baa5450b7235c629f05455af17`
+- Build identity: `github-actions:37106817330:468643040c74959ffaad6e378b110d5841567f7c`
+- Certification run: `37106817330` = SUCCESS
+- Certified-image artifact: `11267778978`
+- Public unauthenticated digest pull: PASS
+- Pulled-by-digest verification: PASS
+- Smoke: PASS
+- Runtime identity verification: PASS
+- Focused/patch-surface/source-build/certification jobs: all SUCCESS
+
+### Tests / runs
+
+- independent original RED: `37094418753`;
+- first structural candidate: `37095320430` = 202 tests / 977 assertions / 0 failures / 0 errors;
+- negative sibling intentional RED: `37105618994` = 203 tests / 978 assertions / 1 expected discovery failure / 0 errors;
+- temporal-axis generic fix: `37105780578` = SUCCESS;
+- ambiguity sealing: `37106620709` = 204 tests / 979 assertions / 0 failures / 0 errors;
+- final certification: `37106817330` = SUCCESS.
+
+### What is now proven
+
+- R5 can observe structurally provable period-over-period CHANGE without executing or rewriting analytics.
+- Ordinary ranking remains LEVEL.
+- Non-temporal previous-row expressions remain fail-closed.
+- Temporal breakout in a non-leading position remains fail-closed for period-over-period classification.
+- Production delta from dima.9 to dima.10 is limited to the R5 material observer.
+- The exact dima.10 bytes are immutable, publicly pullable by digest and runtime-identity verified.
+- No Product-side planner/calculation, Metabot behavior change, prompt patch or benchmark branch was introduced.
 
 ### What remains unproven
 
-- final dima.10 digest;
-- final certification job conclusion for `468643040c74...`;
 - exact Product gitlink pin;
-- Phase-2 provider-free recertification.
+- Phase-2 provider-free recertification;
+- Phase-3 independent semantic saturation/holdout and mutation canaries;
+- Phase-4 frozen diagnostic family closure;
+- surgical live Gate A/B;
+- 90+ potential.
 
 ### 30-case readiness
 
-**NO**
+**CLOSER — not yet 90+ supported**
 
 ### Next legal action
 
-Wait only for the already-running single-shot dima.10 certification. If GREEN, record exact
-release/digest and close Phase 1. If RED, do not rebuild/retry blindly: return to the first failing
-certification boundary. Product integration remains forbidden until Phase 1 is GREEN.
+PHASE 2 — pin this exact dima.10 SHA/digest into Product and run the full provider-free
+re-certification on the same Product + engine bytes. Provider/model calls remain zero.
