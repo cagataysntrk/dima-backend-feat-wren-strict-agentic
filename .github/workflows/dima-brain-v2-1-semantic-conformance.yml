@@ -9,6 +9,7 @@ on:
       - "engine/metabase"
       - "backend/tests/semantic_spec/**"
       - "backend/tests/test_v3_brain_v2_semantic_saturation_wave_a.py"
+      - "backend/tests/test_v3_brain_v2_semantic_saturation_wave_b.py"
       - "backend/tests/test_v3_brain_v2_semantic_conformance.py"
       - "backend/tests/test_v3_brain_v2_semantic_stateful.py"
       - "backend/tests/test_v3_brain_v2_adaptive_material_delta.py"
@@ -111,6 +112,18 @@ jobs:
             tests/test_v3_brain_v2_material_stateful.py \
             tests/test_v3_brain_v2_completion_stateful.py \
             tests/test_v3_research_scope_patch_stateful.py \
+            --hypothesis-show-statistics
+
+      - name: Semantic saturation Wave B holdout
+        working-directory: backend
+        run: |
+          pytest -q \
+            tests/test_v3_brain_v2_semantic_saturation_wave_b.py \
+            tests/test_v3_brain_v2_semantic_stateful.py \
+            tests/test_v3_brain_v2_material_stateful.py \
+            tests/test_v3_brain_v2_completion_stateful.py \
+            tests/test_v3_research_scope_patch_stateful.py \
+            --hypothesis-seed=2026100302 \
             --hypothesis-show-statistics
 
       - name: Mutation canary report
