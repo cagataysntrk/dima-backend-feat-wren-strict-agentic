@@ -1424,3 +1424,120 @@ Before any new paid call:
 
 Run aggregate Phase-1 and Phase-2/headless provider-free on these exact Product bytes. If both GREEN,
 issue a new Phase-5 freeze. Do not arm paid A1 before the new freeze.
+
+
+---
+
+## PHASE 5 — FINAL CANDIDATE RE-FREEZE AFTER A2 RCA
+
+**STATUS = GREEN**
+
+The previous Phase-5 freeze is superseded. A2 exposed a genuine Completion -> P20 authority gap,
+which was closed generically and fully re-certified provider-free before this freeze.
+
+### Exact freeze
+
+- Semantic Product SHA:
+  `a4a2c00a92a1f2f7b52379cfdbb55a654b4b0e8b`
+- Re-certified repository candidate before this freeze receipt:
+  `000ac11b87cb8b5ca7a1f1ea5c40bc46324afcb2`
+- Engine SHA:
+  `468643040c74959ffaad6e378b110d5841567f7c`
+- Engine release:
+  `0.63.18-dima.10`
+- Engine runtime tag:
+  `v0.63.18-dima.10`
+- Engine digest:
+  `sha256:34ce02396908e109aabcac9de6bedc3c832c79baa5450b7235c629f05455af17`
+- Migration head:
+  `ff5b8e2c1a73`
+- Model topology:
+  `LUNA_LUNA_NO_CASCADE`
+  - Dima cognition: `openai/gpt-5.6-luna`
+  - Metabot: `openrouter/openai/gpt-5.6-luna`
+  - cascade: `NONE`
+- semantic-spec tree:
+  `133db6d3a04c79a5342d12ee4a287a774a1f9d79`
+- Wave-A test blob:
+  `5365d3e81275bae23fab76dea892bcea3f8869ce`
+- Wave-B holdout test blob:
+  `1b2a15cbd3296996bdb13e019d86e9be28d1a661`
+- semantic-conformance artifact:
+  `11270736363`
+- semantic-conformance artifact digest:
+  `sha256:5ce146fe672deae8205298aecfcbd93fb4e298b19db064f030961ecc3c7b2f7b`
+- frozen-family artifact:
+  `11270411066`
+- frozen-family artifact digest:
+  `sha256:2eafc9026bf53355756f1cdc2ef59551f07c3211476c3c640856dc4d0e2158fb`
+
+### Re-certification receipts on the new semantic Product
+
+- Brain V2 focused: `37112742831` = SUCCESS.
+- semantic conformance + Wave A + Wave B + mutation:
+  `37113072755` = SUCCESS.
+- frozen Round-2 family closure:
+  `37113072748` = SUCCESS.
+- aggregate Phase-1:
+  `37113235091` = SUCCESS:
+  - deterministic closure: `144 passed`;
+  - research/scope authority: `255 passed`;
+  - P17: `145 passed`;
+  - P19: `53 passed`;
+  - P20/Core-B: `57 passed`;
+  - security/repository hygiene: `26 passed`;
+  - migration graph remains single-head.
+- Phase-2/headless:
+  `37113235027` = SUCCESS:
+  - T1-T7 Product/contracts: `96 passed`;
+  - carry-forward T1-T4: `4 passed`;
+  - P18 owner proofs: `28 passed`;
+  - P20 owner proofs: `33 passed`;
+  - independent metamorphic confidence: `15 passed`;
+  - security/repository hygiene: `26 passed`;
+  - forbidden-surface audit: PASS.
+
+### Provider / cost
+
+All re-certification above is provider-free:
+
+- provider calls: `0`;
+- prompt tokens: `0`;
+- provider cost: `$0`;
+- paid latency: `0`.
+
+### Freeze law
+
+From this point, the final paid readiness panel must use this semantic Product SHA, engine SHA/digest
+and model topology. Any further semantic Product change invalidates the live panel and requires a new
+provider-free re-certification + Phase-5 freeze.
+
+The prior A1 `F02_H = 4/4` run is retained as diagnostic evidence only because it predates this
+semantic Product SHA. It does **not** count toward the final Gate-A score.
+
+### What is now proven
+
+- the A2 completion/sealing failure was a generic authority-boundary defect, not a benchmark prompt issue;
+- Completion remains the single USER_MUST terminal owner;
+- P20 consumes typed terminal-source authority without forging P14 terminal state;
+- shared direct material reuses one native occurrence with exact provenance;
+- wrong material identity / receipt / target and incomplete/non-terminal projections fail closed;
+- all required provider-free, holdout, mutation and frozen-family gates remain GREEN after the fix.
+
+### What remains unproven
+
+- final same-SHA Gate A (A1-A6);
+- final same-SHA Gate B (B1-B3);
+- live score >= `33/36`;
+- final exception/silent-wrong/security/causal/duplicate-native counters = `0`;
+- final 90+ readiness adjudication.
+
+### 30-case readiness
+
+**CLOSER — new Phase-5 freeze complete; 30-case remains CLOSED.**
+
+### Next legal action
+
+Update only the surgical-live identity guard from the superseded Product to this frozen semantic
+Product, then restart Gate A at **A1 F02_H**. One case only, STOP-on-first-RED. Broad 30-case remains
+forbidden.
