@@ -2154,6 +2154,7 @@ def test_r5_unranked_material_still_blocks_unaccepted_row_limiting_order():
 
 # Provider-free A3 RCA: dima.10 ranking basis must survive transport unchanged.
 # Candidate verification: exact dima.10 basis is now typed and admission-checked.
+# Verification rerun uses explicit dima.10 basis on every ranking fixture.
 def _change_ranking_contract():
     return rich_material_contract().model_copy(
         update={
