@@ -93,7 +93,8 @@ def _message(contract):
 def test_r7_delivers_exact_governed_contract_on_visible_native_message():
     message = _message(_contract())
 
-    assert message.startswith("[DIMA ACCEPTED ANALYTICAL CONTRACT]\n")
+    assert message.startswith("[DIMA MATERIAL REQUIREMENT JSON]\n")
+    assert "[DIMA ACCEPTED ANALYTICAL CONTRACT]\n" in message
     assert "scope_version: scope_v1" in message
     assert "metrics:\n- metric.machine_downtime_minutes\n- metric.fault_count" in message
     assert "dimensions:\n- dimension.department" in message
