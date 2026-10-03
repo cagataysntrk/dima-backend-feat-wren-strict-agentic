@@ -1159,3 +1159,61 @@ the frozen semantic Product, engine and model topology remain identical.
 
 Re-arm only A1 `F02_H` on the harness-fix checkout. If it is mechanically GREEN, manually score it.
 Only a score `>=3/4` permits A2. Any genuine Product RED stops the paid panel again.
+
+
+### A1 final adjudication — GREEN / FULL 4/4
+
+Re-run after the provider-free harness fix:
+
+- case: `F02_H`;
+- run: `37110733017` = SUCCESS;
+- checkout SHA: `e223bcc1ed4dc5ffe7bbc45862028a9e79af3b19`;
+- artifact: `11269692345`;
+- artifact digest: `sha256:8c2e1c31caf0cd48684801a273b03e9674119c91d7fd628fcb832131ee10fe81`;
+- exception: `0`;
+- duplicate native: `0`;
+- stale Evidence: `0`;
+- scope violation: `0`;
+- terminal: `REPORT`;
+- workflow status: `COMPLETE`;
+- requirement_complete: `true`;
+- native acquisitions: `1`;
+- provider requests: `3`;
+- prompt tokens: `44,672`;
+- provider cost: `$0.00720864`;
+- case latency: `12,810 ms`.
+
+Material Product result:
+
+- exact June-2026 department breakdown;
+- downtime, fault count and average performance returned together;
+- exactly the top three departments by downtime, in descending downtime order;
+- Assembly: downtime `612`, faults `40`, performance `67.75`;
+- Packaging: downtime `365`, faults `21`, performance `78.25`;
+- Utilities: downtime `291`, faults `16`, performance `83.0`;
+- P20 preserved row context and exact source paths for every numeric fact;
+- observation-only ceiling remained explicit; no hidden arithmetic or unsupported interpretation was introduced.
+
+Manual Product score:
+
+- `4 / 4 = FULL`.
+
+Reason: the material user request is correctly and governedly completed. No important requested
+sub-requirement is missing. Latency/cost are tracked separately and do not reduce Product-quality
+score under the frozen adjudication rubric.
+
+Gate-A running score:
+
+- A1 = `4/4`;
+- completed cases = `1/6`;
+- FULL cases = `1/6`;
+- exceptions = `0`;
+- silent wrong = `0`;
+- scope violations = `0`;
+- causal overclaim = `0`.
+
+### Next legal action
+
+Arm **only A2 `F03_H`** on the same semantic Product SHA, engine SHA/digest and
+`LUNA_LUNA_NO_CASCADE` topology. STOP immediately on any genuine Product RED. A3 remains
+unauthorized until A2 is mechanically GREEN and manually scores at least `3/4`.
