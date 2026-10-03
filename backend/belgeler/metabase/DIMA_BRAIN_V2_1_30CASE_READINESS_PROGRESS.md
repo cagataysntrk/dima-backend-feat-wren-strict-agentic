@@ -508,3 +508,243 @@ PHASE 3 — expand the independent test-only semantic specification to the super
 dimensions, run deterministic pairwise coverage, Hypothesis generative Wave A, a separately seeded
 Wave B after implementation freeze, and mutation canaries. Production code must not import or branch
 on the test-only reference model.
+
+
+---
+
+## PHASE 3 — SEMANTIC SATURATION / INDEPENDENT HOLDOUT
+
+**STATUS = GREEN**
+
+### Exact freeze for this phase
+
+- Semantic Product SHA: `dd969add8fe7e210ec67905221316d037ce1c002`
+- Exact-system restore SHA: `140393f7c1b95db6e3da2946e147ce97e2804835`
+- Wave-B holdout HEAD: `38aa9c9218860ea1d881eb27a3127f0e7fe7c963`
+- Engine SHA: `468643040c74959ffaad6e378b110d5841567f7c`
+- Engine release: `0.63.18-dima.10`
+- Engine digest: `sha256:34ce02396908e109aabcac9de6bedc3c832c79baa5450b7235c629f05455af17`
+- Migration head: `ff5b8e2c1a73`
+- Provider/model calls: `0`
+
+### Objective
+
+Challenge the frozen semantic Product with an independent test-only specification rather than replaying
+the broad benchmark. The phase must cross the supervisor-required 13 semantic dimensions, exercise
+finite pair coverage, Hypothesis generative properties and RuleBasedStateMachine sequences, then prove
+that deliberate semantic mutants are detected.
+
+### Exact owner changed
+
+Test-only semantic specification and CI only:
+
+- `backend/tests/semantic_spec/saturation.py`
+- `backend/tests/semantic_spec/strategies.py`
+- `backend/tests/semantic_spec/coverage_report.py`
+- `backend/tests/semantic_spec/mutation_canaries.py`
+- `backend/tests/test_v3_brain_v2_semantic_saturation_wave_a.py`
+- `backend/tests/test_v3_brain_v2_semantic_saturation_wave_b.py`
+- `.github/workflows/dima-brain-v2-1-semantic-conformance.yml`
+
+No production semantic owner, graph node, prompt, analytics path, engine behavior or frontend surface
+changed in Phase 3.
+
+### Reference patterns consulted
+
+- Hypothesis stateful testing: sequences carry state across rules and invariants are checked after
+  transitions; adopted for scope/currentness, material, completion and dedup-style lifecycle churn.
+- Google AIP-134 / partial-update semantics: omitted facets are unchanged; only explicitly addressed
+  facets own mutation.
+- RFC 7396 merge-patch semantics: omission and explicit removal are distinct.
+- Metabase query semantics carried forward from Phase 1 for LEVEL vs CHANGE authority.
+
+These patterns are used only as test-law references; no external runtime/framework is added.
+
+### Adopted principle
+
+A holdout is useful only when it can disagree with implementation assumptions. Wave B therefore uses
+a different deterministic seed/configuration and probes multiple production owners directly rather
+than repeating the Wave-A ranking differential.
+
+### Explicitly rejected pattern
+
+- rerunning old 30 benchmark prompts;
+- benchmark vocabulary in production;
+- a second semantic/runtime implementation;
+- more provider calls as a correctness oracle;
+- special-case patching after a generated failure;
+- treating raw test count as sufficient evidence.
+
+### Semantic dimensions
+
+The independent saturation model crosses all 13 required dimensions:
+
+1. intent;
+2. metric cardinality;
+3. entity cardinality;
+4. period role;
+5. comparison type;
+6. ranking basis `LEVEL | CHANGE`;
+7. ranking direction;
+8. top-k;
+9. breakout;
+10. result dependency;
+11. scope mutation;
+12. adaptive decision;
+13. presentation requirement.
+
+Finite pairwise matrix:
+
+- dimension count: `13`;
+- dimension pairs: `78`;
+- expected value-pair coverage: complete for every pair;
+- pair-complete assertion: PASS;
+- new-family flag across deterministic matrix: `0`.
+
+### Wave A
+
+Commit sequence:
+
+- `dd5b134cbe8b1265b0ef7ba70ca868e2d3f8297c` — 13-dimension model;
+- `c673fe5e593b232000fe76cc5ab99c297130d236` — Wave A + mutation canaries;
+- `84e2d3fd83a0318d674c79ef4f5e7bf2d8dfbbcc` — CI activation.
+
+Run `37108084390` = SUCCESS:
+
+- existing semantic conformance: `158 passed`;
+- Wave-A/state-machine step: `8 passed`;
+- generated Wave-A saturation: `1200` examples;
+- scope semantic state machine: `200` examples;
+- completion semantic state machine: `200` examples;
+- analytical material state machine: `1000` examples;
+- completion owner state machine: `200` examples;
+- scope-patch state machine: `1000` examples.
+
+### Wave B independent holdout
+
+Commits:
+
+- `2a1eab08642c15c0c9a618e1748f00e44b5aaccd` — independent Wave-B test surface;
+- `38aa9c9218860ea1d881eb27a3127f0e7fe7c963` — CI activation.
+
+Wave B intentionally differs from Wave A:
+
+- deterministic Hypothesis seed: `2026100302`;
+- generated combinations: `1800`;
+- differential probes span:
+  - typed ranking contract;
+  - scope-patch locality;
+  - adaptive NextTest material delta;
+  - P20 terminal-owner completion;
+  - result-dependency execution-local projection and conflict/ambiguity fail-closed behavior;
+- existing state machines are rerun under the distinct holdout seed.
+
+Run `37109327233` = SUCCESS:
+
+- existing semantic conformance: `158 passed`;
+- Wave A on the final exact-system state: `8 passed`;
+- Wave B holdout/state-machine step: `9 passed`;
+- generated Wave B: `1800` examples;
+- holdout scope semantic state machine: `200` examples;
+- holdout completion semantic state machine: `200` examples;
+- holdout analytical material state machine: `1000` examples;
+- holdout completion owner state machine: `200` examples;
+- holdout scope-patch state machine: `1000` examples.
+
+### Mutation canaries
+
+Required deliberate mutants:
+
+- wrong LEVEL admission when CHANGE is required;
+- stale Evidence promoted as current;
+- no-op NextTest accepted;
+- nonterminal completion accepted;
+- scope patch erases an unrelated facet.
+
+Result:
+
+- detected/killed: `5 / 5`;
+- mutation detection: `100%`;
+- mutation-report step: SUCCESS.
+
+### Generated semantic coverage artifact
+
+- run: `37109327233`;
+- artifact: `11269460520`;
+- artifact digest:
+  `sha256:57597cc545e87384ad357a09a8c0c561732a9e14d22a3179aaab74ac8703bfea`.
+
+### Exact-system revalidation after integration-state recovery
+
+A stale duplicate engine-pin attempt briefly pointed two exact-gitlink guards at a noncanonical dima.10
+candidate. It failed **before semantic tests** at the exact-engine guard and was not admitted as a
+candidate. The certified Phase-2 state was restored without rewriting history or changing semantic
+Product code.
+
+Restore commit:
+
+- `140393f7c1b95db6e3da2946e147ce97e2804835`.
+
+Same exact certified bytes then revalidated GREEN:
+
+- Phase-2/headless: `37108989336` = SUCCESS;
+- semantic conformance: `37108989394` = SUCCESS;
+- aggregate Phase-1: `37108989346` = SUCCESS;
+- Brain V2 focused: `37108989416` = SUCCESS.
+
+This recovery demonstrates that engine identity is enforced rather than inferred from documentation.
+
+### New-family count
+
+`0`.
+
+No generated or stateful failure required a new semantic primitive, production branch or benchmark
+special case.
+
+### Shrunk counterexamples
+
+`0` surviving counterexamples.
+
+No Wave-A or Wave-B failure survived to shrinking because both independent waves are GREEN.
+
+### Provider calls / tokens / cost / latency
+
+- Provider calls: `0`
+- Prompt tokens: `0`
+- Provider cost: `$0`
+- Paid latency: `0`
+
+### First invalid boundary
+
+None in the final Phase-3 candidate.
+
+### What is now proven
+
+- all 13 required semantic dimensions exist in the independent test model;
+- deterministic pair coverage is complete across 78 dimension pairs;
+- Wave A and separately seeded Wave B are GREEN;
+- stateful scope/material/completion laws survive long generated transition sequences;
+- five required mutation canaries are detected at 100%;
+- new-family discovery is zero;
+- production code does not import the test-only semantic specification;
+- exact dima.10 identity remains enforced and GREEN.
+
+### What remains unproven
+
+- final-candidate provider-free adjudication of every frozen Round-2 blocker family;
+- final candidate/model-topology freeze;
+- surgical live Gate A;
+- surgical live Gate B;
+- 90+ potential.
+
+### 30-case readiness
+
+**CLOSER — not yet 90+ supported**
+
+### Next legal action
+
+PHASE 4 — use the immutable Round-2 artifacts/fixtures only as diagnostic seeds. Do **not** rerun the
+30-case benchmark. Map every former hard blocker to its current generic owner path and prove on the
+final exact-system bytes that legal representations terminate through governed Product states rather
+than deterministic internal exceptions. Re-certify the P20 synthesis ceilings without adding hidden
+analytics.
