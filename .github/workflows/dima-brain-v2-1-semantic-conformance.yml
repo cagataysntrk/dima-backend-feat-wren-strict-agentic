@@ -8,6 +8,7 @@ on:
       - ".github/workflows/dima-brain-v2-1-semantic-conformance.yml"
       - "engine/metabase"
       - "backend/tests/semantic_spec/**"
+      - "backend/tests/test_v3_brain_v2_semantic_saturation_wave_a.py"
       - "backend/tests/test_v3_brain_v2_semantic_conformance.py"
       - "backend/tests/test_v3_brain_v2_semantic_stateful.py"
       - "backend/tests/test_v3_brain_v2_adaptive_material_delta.py"
@@ -101,10 +102,25 @@ jobs:
         working-directory: backend
         run: pytest -q tests/test_v3_brain_v2_semantic_conformance.py tests/test_v3_brain_v2_semantic_stateful.py tests/test_v3_brain_v2_adaptive_material_delta.py tests/test_v3_brain_v2_graph.py tests/test_v3_brain_v2_completion_policy.py tests/test_v3_brain_v2_material_repair.py tests/test_v3_brain_v2_temporal_roles.py tests/test_v3_research_scope_patch.py tests/test_v3_research_scope_patch_stateful.py tests/test_v3_p14_product.py tests/test_v3_p17_native_continuation_history.py tests/test_v3_p20_report_document.py tests/test_v3_brain_v2_owner_integration.py::test_real_owner_adaptive_runs_one_typed_followup_without_duplicate_native
 
+      - name: Semantic saturation Wave A
+        working-directory: backend
+        run: |
+          pytest -q \
+            tests/test_v3_brain_v2_semantic_saturation_wave_a.py \
+            tests/test_v3_brain_v2_semantic_stateful.py \
+            tests/test_v3_brain_v2_material_stateful.py \
+            tests/test_v3_brain_v2_completion_stateful.py \
+            tests/test_v3_research_scope_patch_stateful.py \
+            --hypothesis-show-statistics
+
+      - name: Mutation canary report
+        working-directory: backend
+        run: python -m tests.semantic_spec.mutation_canaries > artifacts/semantic-mutation-canaries.json
+
       - name: Upload semantic coverage
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: semantic-conformance-coverage
-          path: backend/artifacts/semantic-conformance-coverage.json
+          path: backend/artifacts/
           if-no-files-found: error
