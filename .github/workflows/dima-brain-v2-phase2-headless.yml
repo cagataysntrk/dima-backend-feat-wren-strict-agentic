@@ -49,7 +49,7 @@ jobs:
         run: |
           set -euo pipefail
           git cat-file -e "$PHASE2_BASE_SHA^{commit}" 2>/dev/null ||             git fetch --no-tags origin "$PHASE2_BASE_SHA"
-          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" =             "d5c60dc9f37a9ec9c5b0117f178146bbcb8dca88"
+          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" =             "468643040c74959ffaad6e378b110d5841567f7c"
           if [ "$GITHUB_REF_NAME" != "feat/dima-brain-v2-1-discovery-simplification" ] && \
              [ "$GITHUB_REF_NAME" != "feat/dima-brain-v2-1-specification-closure" ]; then
             git diff --quiet "$PHASE2_BASE_SHA"..HEAD --             engine/metabase             backend/app/v3/brain_v2             backend/app/v3/research.py             backend/app/v3/research_intake.py             backend/app/v3/research_product.py             backend/app/v3/research_native_gateway.py             backend/app/v3/research_material_coverage.py             backend/app/v3/research_analytical_scope.py             backend/app/v3/substrate/metabase             backend/app/v3/hypothesis_root_cause.py             backend/app/v3/hypothesis_root_cause_v1.py             backend/app/v3/hypothesis_root_cause_provider.py             backend/app/v3/business_relationship_policy.py             backend/app/v3/business_relationship_v1.py

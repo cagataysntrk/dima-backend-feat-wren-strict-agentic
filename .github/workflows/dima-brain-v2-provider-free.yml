@@ -8,6 +8,7 @@ on:
       - feat/dima-brain-v2-1-specification-closure
     paths:
       - ".github/workflows/dima-brain-v2-provider-free.yml"
+      - "engine/metabase"
       - "backend/pyproject.toml"
       - "backend/app/v3/brain_v2/**"
       - "backend/app/v3/business_relationship_v1.py"
@@ -34,6 +35,12 @@ jobs:
         with:
           fetch-depth: 1
           submodules: false
+
+      - name: Exact certified engine gitlink
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "468643040c74959ffaad6e378b110d5841567f7c"
 
       - uses: actions/setup-python@v5
         with:

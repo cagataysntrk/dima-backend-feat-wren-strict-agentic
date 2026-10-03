@@ -1,10 +1,10 @@
 {
   "schema_version": "dima_engine_runtime_lock_v1",
-  "engine_sha": "d5c60dc9f37a9ec9c5b0117f178146bbcb8dca88",
+  "engine_sha": "468643040c74959ffaad6e378b110d5841567f7c",
   "upstream_sha": "2ba2485c78d7e00a9a25f82c00fc201da71590c4",
-  "runtime_tag": "v0.63.18-dima.9",
-  "certification_run_id": "36812902584",
-  "immutable_image_ref": "ghcr.io/upcytech/dima-metabase-engine@sha256:22c384198740274bbbba78fb6d41aa63a6d204dfe708b19a6ca9bc322b458ba7",
-  "registry_digest": "sha256:22c384198740274bbbba78fb6d41aa63a6d204dfe708b19a6ca9bc322b458ba7",
-  "build_identity": "github-actions:36812902584:d5c60dc9f37a9ec9c5b0117f178146bbcb8dca88"
+  "runtime_tag": "v0.63.18-dima.10",
+  "certification_run_id": "37106817330",
+  "immutable_image_ref": "ghcr.io/upcytech/dima-metabase-engine@sha256:34ce02396908e109aabcac9de6bedc3c832c79baa5450b7235c629f05455af17",
+  "registry_digest": "sha256:34ce02396908e109aabcac9de6bedc3c832c79baa5450b7235c629f05455af17",
+  "build_identity": "github-actions:37106817330:468643040c74959ffaad6e378b110d5841567f7c"
 }
