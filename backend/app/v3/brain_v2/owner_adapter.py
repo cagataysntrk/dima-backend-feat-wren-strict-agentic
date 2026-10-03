@@ -22,6 +22,7 @@ from app.v3.business_relationship_v1 import (
     project_relationship_result,
 )
 from app.v3.claim_lineage import ClaimFreshness, ClaimLineageStore
+from app.v3.completion_authority import project_completion_evidence_terminals
 from app.v3.p18_relationship_interpreter import (
     P18RelationshipView,
     RelationshipMaterialMode,
