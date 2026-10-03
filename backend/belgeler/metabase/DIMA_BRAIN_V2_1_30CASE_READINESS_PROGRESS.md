@@ -1947,3 +1947,202 @@ cannot count toward the eventual same-SHA panel.
 
 Run aggregate Phase-1 and Phase-2/headless provider-free on these exact semantic Product bytes.
 If both are GREEN, issue a new Phase-5 freeze. No paid/live call before that freeze.
+
+
+---
+
+## PHASE 5 — FINAL CANDIDATE RE-FREEZE AFTER A3 R5 TRANSPORT RCA
+
+**STATUS = GREEN**
+
+The post-A2 freeze is superseded. Final Gate A3 exposed a generic dima.10 -> Product typed transport
+gap for ranking basis. That gap was closed without adding analytics ownership to Dima and the exact
+system was fully re-certified provider-free before this freeze.
+
+### Product / engine identity
+
+- Semantic Product SHA:
+  `4570babe0053a2779f71db7643cb44e5fb017460`
+- Re-certified repository candidate:
+  `79364bbe91c67278af46ed9941cbb76fc751e0dd`
+- Engine SHA:
+  `468643040c74959ffaad6e378b110d5841567f7c`
+- Engine release:
+  `0.63.18-dima.10`
+- Engine runtime tag:
+  `v0.63.18-dima.10`
+- Engine digest:
+  `sha256:34ce02396908e109aabcac9de6bedc3c832c79baa5450b7235c629f05455af17`
+- Migration head:
+  `ff5b8e2c1a73`
+- Model topology:
+  `LUNA_LUNA_NO_CASCADE`
+  - Dima cognition: `openai/gpt-5.6-luna`
+  - Metabot: `openrouter/openai/gpt-5.6-luna`
+  - cascade: `NONE`
+- Semantic-spec tree:
+  `133db6d3a04c79a5342d12ee4a287a774a1f9d79`
+- Wave-A blob:
+  `5365d3e81275bae23fab76dea892bcea3f8869ce`
+- Wave-B holdout blob:
+  `1b2a15cbd3296996bdb13e019d86e9be28d1a661`
+
+### Objective
+
+Freeze the generic A3 repair only after the same semantic Product is proven through deterministic,
+stateful, holdout, frozen-family, security and repository-hygiene gates. The final live panel must
+restart at A1 because semantic Product bytes changed after the previous panel.
+
+### Exact owner changed
+
+Only the true R5 Product integration seam changed:
+
+- `backend/app/v3/substrate/metabase/native_models.py`
+  transports certified `ranking.basis`;
+- `backend/app/v3/research_analytical_scope.py`
+  admission requires exact observed basis.
+
+No new planner, analytics execution, prompt semantic branch, fuzzy/regex/morph routing, provider
+cascade or frontend surface was added.
+
+### Reference patterns consulted
+
+Metabase official Offset/time-over-time semantics were used as the implementation authority:
+
+- Offset is previous-row semantics;
+- temporal/change meaning depends on the structurally governed query shape and breakout ordering;
+- therefore the certified engine owns CHANGE observation;
+- Product transports the typed observation and compares it to the accepted contract.
+
+### Adopted principle
+
+**Observe at the analytics owner; transport without loss; admit by exact typed equality.**
+
+Dima must not reconstruct query meaning that dima.10 has already structurally certified.
+
+### Explicitly rejected pattern
+
+- Dima-side CHANGE calculation;
+- SQL/MBQL query rewrite or planner;
+- case-id / benchmark / wording branches;
+- fuzzy, regex or morph semantic routing;
+- model/provider ceiling increase;
+- same-SHA paid retry;
+- broad paid benchmark;
+- frontend work.
+
+### Provider-free certification
+
+Focused Brain V2:
+
+- run `37116105627` = SUCCESS;
+- `101 passed, 1 skipped`;
+- skip is the existing environment-dependent test carried by the focused workflow, not a newly
+  introduced xfail or semantic bypass.
+
+Semantic conformance / independent holdout:
+
+- run `37116105631` = SUCCESS;
+- semantic conformance: `159 passed`;
+- Wave A/state-machine surface: `8 passed`;
+- Wave B independent holdout/state-machine surface: `9 passed`;
+- mutation canary step: SUCCESS;
+- new-family discovery remains `0`;
+- artifact `11271870737`;
+- digest:
+  `sha256:d0482a99b29071923233bdf9a59936d600c36fe192319b1ade87e4550a1efd3c`.
+
+Frozen Round-2 family closure:
+
+- run `37116105606` = SUCCESS;
+- ranking/completion/dependency/adaptive: `68 passed`;
+- temporal + multi-turn scope: `14 passed`;
+- P18/P19/P20 synthesis ceilings: `89 passed`;
+- artifact `11271810799`;
+- digest:
+  `sha256:8b63014077230e6ae54574140efc26e4320de8bccae1444b792e70b1ee31f591`.
+
+Aggregate Phase-1:
+
+- run `37116278414` = SUCCESS;
+- architecture invariants: PASS;
+- deterministic closure: `144 passed`;
+- migration graph: single head `ff5b8e2c1a73`;
+- research/scope authority: `258 passed`;
+- P17: `145 passed`;
+- P19: `53 passed`;
+- P20/Core-B: `57 passed`;
+- security/repository hygiene: `26 passed`.
+
+Phase-2/headless:
+
+- run `37116278415` = SUCCESS;
+- frozen-owner/engine guard: PASS;
+- T1-T7 Product/contracts: `96 passed`;
+- carry-forward T1-T4: `4 passed`;
+- P18 owner proofs: `28 passed`;
+- P20 owner proofs: `33 passed`;
+- independent metamorphic confidence: `15 passed`;
+- security/repository hygiene: `26 passed`;
+- forbidden-surface audit: PASS.
+
+### Generated semantic coverage
+
+Carry-forward final saturation evidence is unchanged and GREEN:
+
+- semantic dimensions: `13`;
+- dimension pairs: `78`;
+- ranking basis includes `LEVEL | CHANGE`;
+- Wave A: GREEN;
+- Wave B independent holdout: GREEN;
+- state-machine coverage: GREEN;
+- mutation canaries: `5/5 = 100%`;
+- new-family discovery: `0`.
+
+### Provider calls / tokens / cost / latency
+
+All A3 RCA and re-certification:
+
+- provider/model calls: `0`;
+- prompt tokens: `0`;
+- provider cost: `$0`;
+- paid latency: `0`.
+
+### First invalid boundary
+
+The A3 boundary
+`dima.native.observe -> dima.evidence.admit`
+is closed by typed transport + exact basis admission.
+
+No invalid boundary remains in provider-free certification.
+
+### What is now proven
+
+- dima.10 CHANGE/LEVEL observation survives Product transport unchanged;
+- typed CHANGE cannot be satisfied by observed LEVEL;
+- ambiguous/incorrect structural ranking remains fail-closed;
+- all deterministic, holdout, mutation and frozen-family gates remain GREEN;
+- engine, migration and model topology remain fixed;
+- no production benchmark branch was introduced;
+- paid panel is still stopped during the entire RCA/re-certification.
+
+### What remains unproven
+
+- final same-SHA Gate A A1-A6 on this semantic Product;
+- final same-SHA Gate B B1-B3;
+- live aggregate score `>=33/36`;
+- final live exception/silent-wrong/security/causal/duplicate-native counters = `0`;
+- 90+ readiness adjudication.
+
+### 30-case readiness
+
+**CLOSER — post-A3 final candidate frozen; broad 30-case remains CLOSED.**
+
+### Next legal action
+
+Bind only the surgical-live identity guard to semantic Product
+`4570babe0053a2779f71db7643cb44e5fb017460`
+and the new provider-free receipts, then restart final Gate A at **A1 F02_H**.
+
+One case at a time. STOP on first genuine RED. Any semantic Product change invalidates this freeze and
+requires provider-free re-certification plus another Phase-5 freeze.
