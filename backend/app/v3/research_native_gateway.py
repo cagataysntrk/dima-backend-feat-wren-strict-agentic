@@ -492,10 +492,13 @@ class NativeResearchMaterialExecutor:
     ) -> NativeEngineRequest:
         """Preload accepted governed native resources through Metabot context.
 
-        This is native resource correlation, not analytical planning. Exact table
-        and metric ids already required by the accepted AnalyticalRequestContract
-        are projected to Metabot's supported user_is_viewing context. SQL, MBQL,
-        filters, joins, grouping and query-repair strategy remain entirely native.
+        This is native resource correlation, not analytical planning. Exact
+        governed metric ids already required by the accepted
+        AnalyticalRequestContract are projected to Metabot's supported
+        user_is_viewing context. Certified Metabase does not accept "table" as a
+        user_is_viewing item type, so table bindings remain durable verifier
+        authority rather than transport payload. SQL, MBQL, filters, joins,
+        grouping and query-repair strategy remain entirely native.
         """
 
         contract = analytical_scope or analytical_scope_contract(
@@ -527,20 +530,6 @@ class NativeResearchMaterialExecutor:
             (str(item.get("type") or ""), str(item.get("id") or ""))
             for item in viewing
         }
-
-        table_ids = sorted(
-            {
-                int(binding.table_id)
-                for binding in bindings.values()
-                if binding.table_id is not None
-            }
-        )
-        for table_id in table_ids:
-            identity = ("table", str(table_id))
-            if identity in seen:
-                continue
-            viewing.append({"type": "table", "id": table_id})
-            seen.add(identity)
 
         for candidate_id in contract.metric_refs:
             binding = bindings[candidate_id]
