@@ -3096,3 +3096,148 @@ Receipts:
 Provider calls during recertification: `0`.
 
 **NEXT LEGAL ACTION:** one A3 `F06_M` development proof only. A1/A2 and A4 remain unauthorized.
+
+
+---
+
+## PHASE 2 — A3 ATTEMPT 3 POST-REPAIR OBSERVATION RCA
+
+**STATUS: RED / PAID STOP**
+
+### Product SHA
+
+`afb4191d78d205b8f6985dc7227de4db2637a058`
+
+Repository trigger commit:
+
+`b80e66957e1ba9ff105fac55eca1015797439f18`
+
+Paid-stop enforcement commit:
+
+`c9002de533b036b347546445f1b6e78f344117f2`
+
+### Engine SHA/tag/digest
+
+- SHA: `468643040c74959ffaad6e378b110d5841567f7c`
+- release/tag: `0.63.18-dima.10 / v0.63.18-dima.10`
+- digest:
+  `sha256:34ce02396908e109aabcac9de6bedc3c832c79baa5450b7235c629f05455af17`
+- topology: `LUNA_LUNA_NO_CASCADE`
+
+### Live run
+
+- case: `F06_M`
+- run: `37122442399` = workflow SUCCESS, Product quality RED
+- artifact: `11274066582`
+- artifact digest:
+  `sha256:c5808e3fd7415e76f10586da4ddcf5b3d7da4942c1b6c158581b545b0020997c`
+- manual Product score: `2/4 = PARTIAL`
+- requirement_complete: `false`
+- workflow: `WAITING`
+- terminal: `PARTIAL`
+- exception: `0`
+- duplicate native: `0`
+- stale Evidence: `0`
+
+### Provider / tokens / cost / latency
+
+- provider requests: `10`
+- prompt tokens: `188,187`
+- completion tokens: `5,455`
+- reasoning tokens: `2,135`
+- provider cost: `$0.02713527`
+- case latency: `77,425 ms`
+- total harness latency: `77,621 ms`
+
+The request count is exactly the hard ceiling. It does not violate the directive's `>10` hard RED,
+but it leaves no efficiency margin and must not increase.
+
+### What improved
+
+This run exercises the bounded repair path end to end:
+
+1. ranking `P14_BASE` produced a legal authority-preserving but nonconformant LEVEL shape and was
+   LIMITED;
+2. exactly one `P14_REPAIR` occurred in the same governed conversation;
+3. the repair produced a new query fingerprint;
+4. the repaired query computes explicit baseline and comparison aggregates, a derived
+   `Downtime Change = comparison - baseline` expression, and orders that expression DESC;
+5. source-backed rows are:
+   - Assembly: `345 -> 612 -> +267`
+   - Packaging: `291 -> 365 -> +74`
+   - Utilities: `257 -> 291 -> +34`
+   - Maintenance: `212 -> 230 -> +18`
+   - Quality: `119 -> 127 -> +8`.
+
+Therefore planner-facing WHAT + one-shot repair is now live-proven. The repaired native analytical
+material itself is economically/analytically correct and source-backed.
+
+### First invalid boundary
+
+`P14_REPAIR successful dataset execution -> dima.10 read-only material observation -> Evidence admission`
+
+The repaired execution link remains `EXECUTED` rather than `VERIFIED`; it receives no
+receipt/evidence and the ranking obligation remains `DELEGATED`. The dependent child therefore
+remains `READY`.
+
+Current certified dima.10 CHANGE observation recognizes the Offset/previous-period family. The live
+repair uses another legal native shape:
+
+- two conditional period aggregations over the same governed metric;
+- a later-stage subtraction expression;
+- final ORDER BY over that derived expression.
+
+The observer's current change-ranking index does not structurally map this later-stage derived
+expression back to the governed metric identity. This must be proven provider-free at the engine
+owner before any engine change is authorized.
+
+### Exact owner status
+
+**UNRESOLVED pending provider-free engine reproducer.**
+
+The next task is not another Product prompt or paid retry. It is to determine whether the exact live
+legal query shape is outside dima.10's certified read-only observation language.
+
+### Generic law under investigation
+
+> A native ranking can be certified as CHANGE only when the engine can prove, from Metabase Lib
+> structure and stable metric lineage, that the ordered derived value is the comparison-period
+> aggregation minus the baseline-period aggregation of the same governed metric. Display names,
+> benchmark text and arbitrary expression names are never authority.
+
+### Explicitly rejected
+
+- paid A3 retry;
+- A4;
+- hardcoding `Downtime Change`;
+- expression-name matching;
+- SQL text parsing;
+- Dima-side subtraction or ranking;
+- modifying dima.10 in place;
+- provider-budget increase;
+- broad/30-case execution.
+
+### New-family count
+
+No new Product semantic family is declared yet. This is an owner-classification investigation inside
+the existing CHANGE material-observability family. A new engine primitive may be declared only after
+a generic engine RED proves the boundary.
+
+### 30-case readiness
+
+**NO — CLOSER, PAID STOP.**
+
+### NEXT LEGAL ACTION
+
+Provider-free only:
+
+1. reproduce the exact conditional-period-aggregate + derived-delta ranking structure in the
+   Metabase engine test surface;
+2. require stable governed metric identity without relying on names/text;
+3. prove the current dima.10 observer fails at the expected structural boundary;
+4. add positive, negative and ambiguous siblings;
+5. only if the engine is proven to be the true owner, implement a read-only generic observer
+   extension as a new immutable engine release;
+6. then pin exact bytes, fully provider-free recertify Product, and rerun **A3 only**.
+
+A4 remains unauthorized.
