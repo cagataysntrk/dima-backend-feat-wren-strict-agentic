@@ -12,7 +12,10 @@ from app.v3.research_contracts import PresentationKind, RankingSurface, Research
 from app.v3.business_relationship_policy import BusinessRelationshipPolicyStore, RelationshipPolicyRequirement
 from app.v3.business_relationship_v1 import project_relationship_result
 from app.v3.brain_v2.material_groups import project_material_groups
-from app.v3.completion_authority import CompletionEvidenceTerminal
+from app.v3.completion_authority import (
+    CompletionEvidenceTerminal,
+    project_completion_evidence_terminals,
+)
 from app.v3.claim_lineage import ClaimEvidenceRelation, ClaimFreshness, ClaimLineageStore
 from app.v3.hypothesis_root_cause import AggregateOutcome, CandidateAssessment, CausalQualification, ContributionClass, EvidenceStrength, GroundingRelation, GroundingSourceKind, HypothesisDisposition, HypothesisEpistemicClass, HypothesisRootCauseStore, IdentificationLimitation, NumericAnalyticalKind, NumericProvenanceRef, RootCauseAssessmentDraft
 from app.v3.report_document import CoverageEntry, CoverageStatus, P20ReportError, ReportCurrentness, ReportDocumentStore, ReportDraft, ReportLimitation, ReportSourceKind, ReportStatement, ReportStatementKind, SourceReference, stable_limitation_id, stable_statement_id
@@ -443,6 +446,42 @@ def test_shared_relationship_completion_seals_without_forging_p14_terminal_state
         principal=p,
     ) == ReportCurrentness.CURRENT
 
+    bad_material = completion_terminal.model_copy(
+        update={'material_fingerprint': 'f' * 64}
+    )
+    with pytest.raises(P20ReportError) as exc:
+        reports.draft_from_governed_research(
+            research_session_id=session.session_id,
+            report_key='shared-direct-wrong-material',
+            principal=p,
+            completion_evidence_terminals=(bad_material,),
+        )
+    assert exc.value.code == 'P20_COMPLETION_EVIDENCE_AUTHORITY_MISMATCH'
+
+    bad_receipt = completion_terminal.model_copy(
+        update={'receipt_id': 'dqr_' + 'f' * 24}
+    )
+    with pytest.raises(P20ReportError) as exc:
+        reports.draft_from_governed_research(
+            research_session_id=session.session_id,
+            report_key='shared-direct-wrong-receipt',
+            principal=p,
+            completion_evidence_terminals=(bad_receipt,),
+        )
+    assert exc.value.code == 'P20_EVIDENCE_RECEIPT_MISMATCH'
+
+    foreign_target = completion_terminal.model_copy(
+        update={'requirement_id': 'g_foreign'}
+    )
+    with pytest.raises(P20ReportError) as exc:
+        reports.draft_from_governed_research(
+            research_session_id=session.session_id,
+            report_key='shared-direct-foreign-target',
+            principal=p,
+            completion_evidence_terminals=(foreign_target,),
+        )
+    assert exc.value.code == 'P20_SOURCE_OBLIGATION_INVALID'
+
     # Metamorphic sibling: an upstream material/source obligation may not
     # impersonate the accepted relationship USER_MUST terminal identity.
     wrong_terminal_identity = relationship_result.model_copy(
@@ -614,15 +653,32 @@ def test_shared_direct_completion_projects_anchor_evidence_without_forging_p14_s
     consumer = ResearchManager.obligation(session, second.goal_id)
     assert consumer.state == ObligationState.READY
 
-    completion_terminal = CompletionEvidenceTerminal(
-        requirement_id=second.goal_id,
-        source_obligation_id=group.anchor_requirement_id,
-        evidence_id=evidence_id,
-        receipt_id=receipt_id,
-        material_group_id=group.material_group_id,
-        material_fingerprint=group.material_fingerprint,
-        scope_version_id=group.scope_version_id,
+    projected = project_completion_evidence_terminals(
+        session=session,
+        material_groups=groups,
+        completed_material_group_ids=(group.material_group_id,),
+        terminal_requirement_ids=(first.goal_id, second.goal_id),
+        direct_requirement_ids=(first.goal_id, second.goal_id),
     )
+    assert len(projected) == 1
+    completion_terminal = projected[0]
+    assert completion_terminal.requirement_id == second.goal_id
+    assert completion_terminal.source_obligation_id == first.goal_id
+
+    assert project_completion_evidence_terminals(
+        session=session,
+        material_groups=groups,
+        completed_material_group_ids=(),
+        terminal_requirement_ids=(first.goal_id, second.goal_id),
+        direct_requirement_ids=(first.goal_id, second.goal_id),
+    ) == ()
+    assert project_completion_evidence_terminals(
+        session=session,
+        material_groups=groups,
+        completed_material_group_ids=(group.material_group_id,),
+        terminal_requirement_ids=(first.goal_id,),
+        direct_requirement_ids=(first.goal_id, second.goal_id),
+    ) == ()
 
     reports = ReportDocumentStore(research_store=store, db_engine=db)
     draft = reports.draft_from_governed_research(
