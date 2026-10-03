@@ -2973,6 +2973,79 @@ def test_dima10_missing_required_change_ranking_is_distinct_material_miss() -> N
     assert exc.value.observed_semantic_shape == {"ranking": []}
 
 
+def test_dima10_nonrestrictive_field_order_is_presentation_not_required_ranking() -> None:
+    observation = rich_material_observation(
+        ranking=[
+            {
+                "stage_number": 0,
+                "order_index": 0,
+                "target": {
+                    "kind": "field",
+                    "field_id": 30,
+                    "table_id": 10,
+                },
+                "direction": "asc",
+                "limit": None,
+                "basis": "level",
+            },
+            {
+                "stage_number": 0,
+                "order_index": 1,
+                "target": {
+                    "kind": "field",
+                    "field_id": 20,
+                    "table_id": 10,
+                },
+                "direction": "asc",
+                "limit": None,
+                "basis": "level",
+            },
+        ]
+    )
+
+    with pytest.raises(scope_module.ResearchAnalyticalScopeError) as exc:
+        scope_module._assert_material_ranking_scope(
+            _change_ranking_contract(),
+            observation,
+            rich_material_bindings(),
+        )
+
+    assert exc.value.code == "R1_NATIVE_RANKING_REQUIRED_MISSING"
+    assert exc.value.expected_semantic_shape["ranking"]["basis"] == "change"
+    assert {
+        item["target"]["kind"]
+        for item in exc.value.observed_semantic_shape["ranking"]
+    } == {"field"}
+
+
+def test_dima10_row_limiting_field_order_remains_nonrepairable_scope_mismatch() -> None:
+    observation = rich_material_observation(
+        ranking=[
+            {
+                "stage_number": 0,
+                "order_index": 0,
+                "target": {
+                    "kind": "field",
+                    "field_id": 20,
+                    "table_id": 10,
+                },
+                "direction": "desc",
+                "limit": 5,
+                "basis": "level",
+            }
+        ]
+    )
+
+    with pytest.raises(scope_module.ResearchAnalyticalScopeError) as exc:
+        scope_module._assert_material_ranking_scope(
+            _change_ranking_contract(),
+            observation,
+            rich_material_bindings(),
+        )
+
+    assert exc.value.code == "R1_NATIVE_RANKING_SCOPE_MISMATCH"
+
+
 def test_dima10_wrong_direction_remains_nonrepairable_structural_mismatch() -> None:
     observation = rich_material_observation(
         ranking=[
