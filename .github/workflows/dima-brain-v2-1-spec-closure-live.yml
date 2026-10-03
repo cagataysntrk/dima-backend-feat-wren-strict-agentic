@@ -135,12 +135,12 @@ jobs:
             --gitlink-sha "$GITLINK_SHA" \
             --github-env "$GITHUB_ENV"
 
-      - name: Pull exact certified dima.10 digest
+      - name: Pull exact certified dima.11 digest
         shell: bash
         run: |
           set -euo pipefail
           test "$ENGINE_SHA" = "f8ba5cf32d265f1d4210ac8513bf273df7f44e60"
-          test "$CERTIFICATION_RUN_ID" = "37106817330"
+          test "$CERTIFICATION_RUN_ID" = "37127030946"
           test "$RUNTIME_TAG" = "v0.63.18-dima.11"
           test "$REGISTRY_DIGEST" = "sha256:34976af8210f70c683518941a1a85b67e47e2df24ef2b5eb4054727e521c64a9"
           docker pull "$IMMUTABLE_IMAGE_REF"
@@ -204,7 +204,7 @@ jobs:
           python lab/metabase/core_b/runtime/seed_round2_fixture.py \
             --fixture eval/round2_neutral_machine_fixture.json
 
-      - name: Start exact certified dima.10 engine
+      - name: Start exact certified dima.11 engine
         shell: bash
         run: |
           set -euo pipefail
