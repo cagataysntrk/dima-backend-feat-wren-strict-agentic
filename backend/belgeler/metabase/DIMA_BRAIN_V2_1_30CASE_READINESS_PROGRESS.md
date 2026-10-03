@@ -1835,3 +1835,115 @@ Provider-free only:
 
 Because semantic Product bytes will change, a successful fix requires full provider-free
 re-certification, a new freeze receipt, and a restart of the final Gate-A panel from A1.
+
+
+### A3 provider-free R5 transport closure candidate — GREEN before aggregate re-certification
+
+Semantic Product after the generic R5 transport fix:
+
+- semantic Product SHA: `4570babe0053a2779f71db7643cb44e5fb017460`;
+- current repository HEAD before aggregate recert trigger:
+  `3a286b6c2db6a0874d77d4df7036d3ab805abab5`;
+- engine SHA remains:
+  `468643040c74959ffaad6e378b110d5841567f7c`;
+- engine release remains: `0.63.18-dima.10`;
+- engine digest remains:
+  `sha256:34ce02396908e109aabcac9de6bedc3c832c79baa5450b7235c629f05455af17`;
+- provider/model calls during RCA: `0`.
+
+Generic owner law closed:
+
+> The certified engine owns structural ranking meaning. Product transport must preserve the observed
+> `basis = level | change` without reinterpretation, and material admission must require exact
+> target/direction/limit/basis equality with the accepted typed ranking contract.
+
+Owner-scoped production changes:
+
+- `backend/app/v3/substrate/metabase/native_models.py`
+  - `NativeMaterialRanking.basis` is now required and typed as `level | change`;
+- `backend/app/v3/research_analytical_scope.py`
+  - stale dima.9 unconditional CHANGE rejection removed;
+  - structural ranking match remains exact;
+  - observed basis must equal accepted typed basis;
+  - mismatch fails closed as `R1_NATIVE_RANKING_BASIS_MISMATCH`.
+
+Reference pattern research:
+
+- Metabase official `Offset` documentation confirms that `Offset(expr,-1)` means the previous row,
+  not inherently the previous period;
+- breakout ordering/time grouping determines whether row-relative material is period-over-period;
+- therefore Dima does not compute CHANGE and does not infer it from wording: dima.10 observes it
+  structurally and Product only transports/admission-checks the typed result.
+
+Explicitly rejected:
+
+- Dima-side CHANGE arithmetic;
+- SQL/MBQL rewrite;
+- accepting arbitrary Offset expressions as CHANGE;
+- prompt/fuzzy/regex/case-specific ranking inference;
+- provider-budget escalation;
+- same-SHA paid retry.
+
+Provider-free RED / GREEN sequence:
+
+- A3 live first-invalid boundary:
+  `dima.native.observe -> dima.evidence.admit`;
+- intentional transport reproducer:
+  `05d63bf6055d32e68bb76ff42344820067f9e43f`;
+- typed transport fix:
+  `13964a8b7bfc5ad61db07a1569b05ab500f8d692`;
+- exact observed-basis admission:
+  `4570babe0053a2779f71db7643cb44e5fb017460`;
+- aggregate Phase-1 after native-gateway fixture closure:
+  run `37115937521` = SUCCESS;
+- focused Brain V2:
+  run `37116105627` = SUCCESS;
+- frozen-family closure:
+  run `37116105606` = SUCCESS;
+  artifact `11271810799`,
+  digest `sha256:8b63014077230e6ae54574140efc26e4320de8bccae1444b792e70b1ee31f591`;
+- semantic conformance + Wave A + independent Wave B + mutation:
+  run `37116105631` = SUCCESS;
+  artifact `11271870737`,
+  digest `sha256:d0482a99b29071923233bdf9a59936d600c36fe192319b1ade87e4550a1efd3c`.
+
+Test-contract cleanup after the production fix was test-only:
+
+- all dima.10 ranking fixtures now carry explicit `basis`;
+- old `BASIS_UNOBSERVABLE` oracle was updated to the new exact `BASIS_MISMATCH` law;
+- no runtime semantic branch was added by these fixture commits.
+
+### Freeze impact
+
+The post-A2 Phase-5 freeze is superseded because A3 changed semantic Product code.
+
+Paid remains **STOPPED**. Final Gate-A scores from the superseded Product remain diagnostic only and
+cannot count toward the eventual same-SHA panel.
+
+### What is now proven
+
+- dima.10 ranking basis survives the typed Product boundary;
+- CHANGE is admitted only when the engine observed exact CHANGE;
+- LEVEL cannot satisfy a CHANGE contract;
+- ranking target/direction/limit mismatch remains fail-closed;
+- independent holdout, mutation and frozen-family coverage are GREEN after the fix;
+- no provider/model calls were used for the RCA.
+
+### What remains unproven
+
+- aggregate Phase-1 and Phase-2/headless on the final exact repository candidate after all test-oracle
+  cleanup;
+- new Phase-5 freeze receipt;
+- final same-SHA Gate A restart from A1;
+- Gate B;
+- final `>=33/36` live readiness score;
+- 90+ readiness adjudication.
+
+### 30-case readiness
+
+**CLOSER — A3 root cause generically closed provider-free; broad 30-case remains CLOSED.**
+
+### Next legal action
+
+Run aggregate Phase-1 and Phase-2/headless provider-free on these exact semantic Product bytes.
+If both are GREEN, issue a new Phase-5 freeze. No paid/live call before that freeze.
