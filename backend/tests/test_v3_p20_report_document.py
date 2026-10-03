@@ -446,42 +446,6 @@ def test_shared_relationship_completion_seals_without_forging_p14_terminal_state
         principal=p,
     ) == ReportCurrentness.CURRENT
 
-    bad_material = completion_terminal.model_copy(
-        update={'material_fingerprint': 'f' * 64}
-    )
-    with pytest.raises(P20ReportError) as exc:
-        reports.draft_from_governed_research(
-            research_session_id=session.session_id,
-            report_key='shared-direct-wrong-material',
-            principal=p,
-            completion_evidence_terminals=(bad_material,),
-        )
-    assert exc.value.code == 'P20_COMPLETION_EVIDENCE_AUTHORITY_MISMATCH'
-
-    bad_receipt = completion_terminal.model_copy(
-        update={'receipt_id': 'dqr_' + 'f' * 24}
-    )
-    with pytest.raises(P20ReportError) as exc:
-        reports.draft_from_governed_research(
-            research_session_id=session.session_id,
-            report_key='shared-direct-wrong-receipt',
-            principal=p,
-            completion_evidence_terminals=(bad_receipt,),
-        )
-    assert exc.value.code == 'P20_EVIDENCE_RECEIPT_MISMATCH'
-
-    foreign_target = completion_terminal.model_copy(
-        update={'requirement_id': 'g_foreign'}
-    )
-    with pytest.raises(P20ReportError) as exc:
-        reports.draft_from_governed_research(
-            research_session_id=session.session_id,
-            report_key='shared-direct-foreign-target',
-            principal=p,
-            completion_evidence_terminals=(foreign_target,),
-        )
-    assert exc.value.code == 'P20_SOURCE_OBLIGATION_INVALID'
-
     # Metamorphic sibling: an upstream material/source obligation may not
     # impersonate the accepted relationship USER_MUST terminal identity.
     wrong_terminal_identity = relationship_result.model_copy(
@@ -696,6 +660,43 @@ def test_shared_direct_completion_projects_anchor_evidence_without_forging_p14_s
         report_id=report.report_id,
         principal=p,
     ) == ReportCurrentness.CURRENT
+
+    bad_material = completion_terminal.model_copy(
+        update={'material_fingerprint': 'f' * 64}
+    )
+    with pytest.raises(P20ReportError) as exc:
+        reports.draft_from_governed_research(
+            research_session_id=session.session_id,
+            report_key='shared-direct-wrong-material',
+            principal=p,
+            completion_evidence_terminals=(bad_material,),
+        )
+    assert exc.value.code == 'P20_COMPLETION_EVIDENCE_AUTHORITY_MISMATCH'
+
+    bad_receipt = completion_terminal.model_copy(
+        update={'receipt_id': 'dqr_' + 'f' * 24}
+    )
+    with pytest.raises(P20ReportError) as exc:
+        reports.draft_from_governed_research(
+            research_session_id=session.session_id,
+            report_key='shared-direct-wrong-receipt',
+            principal=p,
+            completion_evidence_terminals=(bad_receipt,),
+        )
+    assert exc.value.code == 'P20_EVIDENCE_RECEIPT_MISMATCH'
+
+    foreign_target = completion_terminal.model_copy(
+        update={'requirement_id': 'g_foreign'}
+    )
+    with pytest.raises(P20ReportError) as exc:
+        reports.draft_from_governed_research(
+            research_session_id=session.session_id,
+            report_key='shared-direct-foreign-target',
+            principal=p,
+            completion_evidence_terminals=(foreign_target,),
+        )
+    assert exc.value.code == 'P20_SOURCE_OBLIGATION_INVALID'
+
 
 
 def test_auto_draft_projects_governed_claim_policy_provenance_and_limitations():
