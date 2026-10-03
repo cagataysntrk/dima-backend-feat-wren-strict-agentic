@@ -2888,3 +2888,17 @@ Provider-free only:
 2. run affected P14/R5 tests;
 3. run aggregate Phase-1 + Phase-2/headless on the exact new semantic Product;
 4. only after all are GREEN, freeze one new development candidate and rerun **A3 only**.
+
+
+### PHASE 2 RCA — PROVIDER-FREE RECERTIFICATION ARM
+
+- semantic Product under recertification:
+  `8d41f17bc6ed8a61320af819552691699aa4ce2f`
+- frozen-family:
+  `37121290562 = SUCCESS`
+- semantic conformance:
+  `37121290569 = SUCCESS`
+- paid calls since A3 RED:
+  `0`
+- next:
+  aggregate Phase-1 + Phase-2/headless, exact candidate only.
