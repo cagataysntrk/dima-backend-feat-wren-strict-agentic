@@ -7,6 +7,7 @@ regeneration under the unchanged typed analytical contract.
 from __future__ import annotations
 
 from enum import StrEnum
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -28,6 +29,8 @@ class MaterialRepairDecision(Frozen):
     require_new_query_fingerprint: bool = True
     preserve_scope_identity: bool = True
     preserve_material_contract: bool = True
+    expected_semantic_shape: dict[str, Any] | None = None
+    observed_semantic_shape: dict[str, Any] | None = None
 
 
 # These failures say the generated analytical occurrence did not expose material
@@ -39,6 +42,8 @@ _REPAIRABLE_MATERIAL_VALIDATION_CODES = frozenset(
         "R1_RESULT_CHANGE_COVERAGE_INCOMPLETE",
         "R1_RESULT_TEMPORAL_COLUMN_MISMATCH",
         "R1_RESULT_CHANGE_TEMPORAL_COLUMN_REQUIRED",
+        "R1_NATIVE_RANKING_REQUIRED_MISSING",
+        "R1_NATIVE_RANKING_BASIS_MISMATCH",
     }
 )
 
@@ -48,6 +53,8 @@ def decide_material_repair(
     validation_code: str,
     prior_repair_attempts: int,
     validation_detail: str | None = None,
+    expected_semantic_shape: dict[str, Any] | None = None,
+    observed_semantic_shape: dict[str, Any] | None = None,
 ) -> MaterialRepairDecision:
     if prior_repair_attempts < 0:
         raise ValueError("prior repair attempts cannot be negative")
@@ -65,6 +72,8 @@ def decide_material_repair(
         validation_code=validation_code,
         validation_detail=validation_detail,
         repair_attempt=1 if repairable else min(prior_repair_attempts, 1),
+        expected_semantic_shape=expected_semantic_shape,
+        observed_semantic_shape=observed_semantic_shape,
     )
 
 
@@ -87,4 +96,8 @@ def material_repair_feedback(decision: MaterialRepairDecision) -> dict[str, obje
     }
     if decision.validation_detail is not None:
         feedback["validation_detail"] = decision.validation_detail
+    if decision.expected_semantic_shape is not None:
+        feedback["expected_semantic_shape"] = decision.expected_semantic_shape
+    if decision.observed_semantic_shape is not None:
+        feedback["observed_semantic_shape"] = decision.observed_semantic_shape
     return feedback
