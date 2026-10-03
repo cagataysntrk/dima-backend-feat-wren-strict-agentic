@@ -1728,3 +1728,110 @@ comparison/result-dependency case and must prove that a VERIFIED parent result i
 child material through the governed execution-local dependency binding without replaying or
 re-ranking the parent. STOP on any genuine Product RED. A4 remains unauthorized until A3 scores
 at least `3/4`.
+
+
+### Final same-SHA Gate A3 `F06_M` — RED / PARTIAL 2/4 — PAID PANEL STOPPED
+
+Run receipt:
+
+- semantic Product SHA: `a4a2c00a92a1f2f7b52379cfdbb55a654b4b0e8b`;
+- engine SHA: `468643040c74959ffaad6e378b110d5841567f7c`;
+- engine digest:
+  `sha256:34ce02396908e109aabcac9de6bedc3c832c79baa5450b7235c629f05455af17`;
+- model topology: `LUNA_LUNA_NO_CASCADE`;
+- run: `37114176136` = mechanically SUCCESS;
+- checkout SHA: `6947ff815baf902ba03eb56c6162f3f11c113fce`;
+- artifact: `11270738198`;
+- artifact digest:
+  `sha256:9dbc1ac6977d03dbd5f671b6f170c8850c5a850c5f15b75e03fbd3056c2f963c`;
+- terminal: `PARTIAL`;
+- workflow: `WAITING`;
+- requirement_complete: `false`;
+- exception: `0`;
+- duplicate native: `0`;
+- stale Evidence: `0`;
+- provider requests: `7`;
+- prompt tokens: `93,069`;
+- completion tokens: `2,479`;
+- reasoning tokens: `962`;
+- provider cost: `$0.01316642`;
+- case latency: `29,484 ms`.
+
+Observed obligation state:
+
+1. May/June downtime comparison = `VERIFIED`; governed Evidence exists.
+2. CHANGE ranking “en çok bozulan bölümü bul” = `LIMITED`.
+3. Result-dependent child drill-down = `READY`, because the ranking parent never produced a
+   selectable VERIFIED result.
+4. Final report requirement remains open.
+
+Manual Product score:
+
+- `2 / 4 = PARTIAL`.
+
+Useful governed progress exists, but two material MUST steps — selecting the worst-change department
+and proving the child drill-down — are not completed. This is below the Gate-A minimum `3/4`.
+
+Paid stop discipline:
+
+- paid authorization was disabled immediately after A3;
+- temporary push trigger was removed immediately after A3;
+- **A4 is NOT authorized**;
+- no same-SHA paid retry is permitted.
+
+### A3 first-invalid-boundary RCA
+
+The live query for the ranking obligation produced a governed Metabase result with department/month
+breakouts and the downtime metric, but no structurally proven CHANGE ranking. The first invalid
+boundary is:
+
+`dima.native.observe -> dima.evidence.admit`.
+
+Repository/source inspection found a stale dima.9 integration contract:
+
+- certified dima.10 emits `ranking[].basis = "level" | "change"`;
+- dima.10 proves `change` only from structurally provable period-over-period expressions and fails
+  closed on non-temporal/ambiguous derived ordering;
+- Product transport model `NativeMaterialRanking` currently has no `basis` field, so the certified
+  observation is discarded at the typed boundary;
+- Product material admission then unconditionally raises
+  `R1_NATIVE_RANKING_BASIS_UNOBSERVABLE` for every accepted CHANGE ranking, preserving the old
+  dima.9 assumption even when dima.10 can prove the basis.
+
+This is a generic Product/engine integration seam defect, not an F06_M case rule.
+
+### Pattern research
+
+Metabase's official Offset contract confirms that `Offset(expr,-1)` means the previous **row** and
+that breakout ordering determines whether row-relative material represents period-over-period
+semantics. Metabase's documented time-over-time pattern derives change with a summarize expression
+such as `current - Offset(current,-1)`.
+
+Adopted principle:
+
+- Metabase/dima.10 remains the owner of structural query meaning;
+- Dima transports and compares the typed observed `basis`;
+- Dima does not calculate CHANGE, rewrite MBQL, inspect prompt wording, or infer ranking semantics.
+
+Explicitly rejected:
+
+- Dima-side arithmetic;
+- converting plain monthly rows to CHANGE inside Dima;
+- accepting any Offset as CHANGE;
+- benchmark/case-specific routing;
+- same-SHA paid retry;
+- increasing provider budget.
+
+### Next legal action
+
+Provider-free only:
+
+1. add the dima.10 `basis` field to the typed native material transport;
+2. prove positive CHANGE, ordinary LEVEL and basis-mismatch siblings;
+3. remove the stale unconditional dima.9 CHANGE rejection and require exact observed basis;
+4. re-run focused R5/P14/Product regressions;
+5. only after that GREEN, expose the next underlying material-shape failure (if any) and solve it
+   generically before any new paid call.
+
+Because semantic Product bytes will change, a successful fix requires full provider-free
+re-certification, a new freeze receipt, and a restart of the final Gate-A panel from A1.
