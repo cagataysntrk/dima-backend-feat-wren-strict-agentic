@@ -1217,3 +1217,108 @@ Gate-A running score:
 Arm **only A2 `F03_H`** on the same semantic Product SHA, engine SHA/digest and
 `LUNA_LUNA_NO_CASCADE` topology. STOP immediately on any genuine Product RED. A3 remains
 unauthorized until A2 is mechanically GREEN and manually scores at least `3/4`.
+
+
+### A2 `F03_H` — RED / PAID PANEL STOPPED
+
+Run:
+
+- case: `F03_H`;
+- run: `37111497176` = FAILURE;
+- checkout SHA: `b803b92b1c82003b618ec0da8a6511659a02d7ec`;
+- artifact: `11270062898`;
+- artifact digest: `sha256:e9ab49197b781c1ad1010af43bc353a364d902f0f0ca0e7d5bd211bf554a3c78`;
+- provider requests: `5`;
+- prompt tokens: `85,613`;
+- provider cost: `$0.00997991`;
+- case latency: `29,063 ms`;
+- duplicate native: `0`;
+- stale Evidence: `0`;
+- blocked provider requests: `0`.
+
+Observed failure:
+
+- exception: `P20_RESEARCH_SESSION_NOT_SEALED`;
+- detail: `analytical Research obligation remains non-terminal`;
+- last valid boundary: `dima.completion.evaluate`;
+- first invalid boundary: `dima.p20.report`;
+- terminal state: `EXCEPTION`;
+- requirement_complete: `false`.
+
+This is not treated as a harness false-RED. The paid panel was stopped immediately. A3 is not
+authorized and there is no same-SHA paid retry.
+
+Paid shutdown receipts:
+
+- authorization disabled: `c25593b6ca724e5b16ab92ce308f66e854dc891e`;
+- temporary push trigger removed: `bc81cd0b96448b8c9dd4f17899709225bd061c98`.
+
+### Provider-free RCA
+
+The first structural mismatch is between the canonical Completion owner and P20 publication gating.
+
+Current generic path:
+
+1. one exact MaterialGroup may have one execution anchor and multiple typed consumers;
+2. the anchor performs the only native acquisition;
+3. Completion can mark a direct consumer terminal from that completed shared MaterialGroup and bind
+   it to the anchor Evidence ref;
+4. P20 still calls `_assert_sealed` using P14 obligation states, except for its existing P16/P18
+   relationship bridge;
+5. therefore a direct shared-material consumer can be terminal in the Completion Ledger while its
+   P14 obligation remains READY;
+6. P20 re-derives terminality from the lower-level P14 state and rejects the already-terminal
+   requirement.
+
+This violates the canonical owner law: Completion owns USER_MUST terminal accounting; P20 consumes
+terminal governed state and must not become a second completion authority.
+
+### Reference patterns consulted
+
+Repository authority:
+
+- MaterialGroup is transient execution metadata, not semantic truth;
+- shared material does not imply shared fulfillment;
+- Completion consumes each owner's terminal ref;
+- P20 may run only after Completion says required analytics are terminal;
+- P20 is forbidden from deciding upstream fulfillment itself.
+
+External pattern check:
+
+- LangGraph persistence documents checkpointed graph state as the durable thread-scoped state used
+  for continuity and failure recovery;
+- therefore the already-checkpointed Completion projection should be forwarded across the
+  Completion -> P20 boundary rather than independently re-derived from another owner;
+- OpenTelemetry event/error guidance supports keeping the recorded first wrong transition at the
+  meaningful state boundary rather than relabeling the downstream exception.
+
+### Adopted principle for the fix
+
+**Terminal authority and source provenance are separate typed facts.**
+
+Completion must remain the owner of terminality. P20 must receive an explicit typed terminal-source
+projection for shared direct material and independently validate the referenced governed Evidence
+without re-deciding whether the requirement is complete.
+
+### Explicitly rejected alternatives
+
+- mutating every non-anchor P14 consumer to VERIFIED merely because material was shared;
+- replaying native analytics for each consumer;
+- letting P20 infer completion by scanning MaterialGroups;
+- accepting arbitrary terminal ids without exact Evidence/receipt/source provenance;
+- special-casing `F03_H`, comparison wording, May/June or any benchmark vocabulary;
+- increasing provider calls or retrying the paid case.
+
+### Next legal action
+
+Create an owner-generic provider-free reproducer for:
+
+- two direct requirements sharing one completed MaterialGroup;
+- one native acquisition at the anchor;
+- Completion marks both direct requirements terminal;
+- non-anchor consumer P14 state remains non-terminal;
+- P20 must consume the Completion terminal projection plus exact anchor Evidence provenance and
+  synthesize without reopening analytics.
+
+Add negative siblings for unrelated requirement/source, incomplete MaterialGroup, stale/unverified
+Evidence and cross-scope authority before changing production code.
