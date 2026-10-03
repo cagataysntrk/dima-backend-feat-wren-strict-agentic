@@ -4042,3 +4042,214 @@ Tests:
 
 Run aggregate Phase-1 and Phase-2/headless provider-free. If both GREEN, run **A3 only once** on the
 recertified candidate. A4 remains unauthorized until A3 >= `3/4`.
+
+
+---
+
+## PHASE 2 — A3 POST-TRANSPORT LIVE PROOF / CERTIFIED DIMA.11 CLASSIFICATION
+
+**STATUS: RED — ENGINE OBSERVATION GAP PROVEN; FURTHER ENGINE RELEASE NOT AUTHORIZED**
+
+### Product / engine identity
+
+- repository HEAD used by the latest A3 transport proof chain:
+  `fbf41550df9da63f3e047172fbd77b96a0ed65f7`
+- semantic Product:
+  `ff92fe8f717c2cf30827c1f6b56f92b6682017d5`
+- certified engine:
+  `f8ba5cf32d265f1d4210ac8513bf273df7f44e60`
+- release/runtime:
+  `0.63.18-dima.11 / v0.63.18-dima.11`
+- digest:
+  `sha256:34976af8210f70c683518941a1a85b67e47e2df24ef2b5eb4054727e521c64a9`
+- certification:
+  `37127030946 = SUCCESS`
+- exploratory engine branch:
+  **FROZEN / NOT AUTHORITY**
+- 30-case:
+  **CLOSED**
+
+### Provider-free recertification before live proof
+
+Exact transport candidate recertification was GREEN:
+
+- aggregate Phase-1: `37147606109 = SUCCESS`;
+- Phase-2/headless: `37147606131 = SUCCESS`.
+
+No broad paid run was executed.
+
+### A3 live proof
+
+- case: `F06_M`;
+- run: `37147847496 = SUCCESS` at workflow/harness level;
+- artifact: `11283181595`;
+- artifact digest:
+  `sha256:2f7483f2d6b9148f06cb33783437e44505bec0ccefbb9c3b11fe82580edb7abe`;
+- manual Product score: **2/4 PARTIAL**;
+- terminal state: `PARTIAL`;
+- workflow status: `WAITING`;
+- requirement_complete: `false`;
+- exception: `0`;
+- stale Evidence: `0`;
+- duplicate native: `0`;
+- scope violation observed: `0`;
+- causal overclaim observed: `0`;
+- provider requests: `8`;
+- prompt tokens: `151,038`;
+- completion tokens: `3,901`;
+- reasoning tokens: `1,474`;
+- provider cost: `$0.02411862`;
+- case latency: `42,759 ms`.
+
+The request-count gate is within the directive ceiling (`8 <= 10`), but Product quality is below the
+required `3/4`, therefore paid development is stopped and A4 remains unauthorized.
+
+### BASE / REPAIR outcome
+
+BASE:
+
+- legal comparison obligation became VERIFIED;
+- ranking BASE occurrence produced LEVEL-style department/date/downtime material;
+- ranking occurrence became LIMITED;
+- bounded repair was correctly opened exactly once.
+
+REPAIR:
+
+- same Metabot conversation;
+- new query fingerprint;
+- legal period-pair derived CHANGE material was generated and executed;
+- result rows:
+  - Assembly: `267.0`
+  - Packaging: `74.0`
+  - Utilities: `34.0`
+  - Maintenance: `18.0`
+  - Quality: `8.0`
+- repair execution link reached `EXECUTED`;
+- no Evidence/receipt was minted;
+- ranking obligation remained `DELEGATED`;
+- result-dependent child remained `READY`;
+- P20 report remained absent.
+
+### First invalid boundary
+
+`P14_REPAIR successful native execution -> certified dima.11 native material observation`
+
+The failure occurs before Evidence admission. Product code proves that a returned
+`ResearchMaterialOutcome` is immediately admitted and the link is marked VERIFIED. Because the live repair link
+remains EXECUTED, the occurrence did not return from the material executor after post-execution observation.
+
+### A-E classification
+
+- A — Metabot failed to create required material: **NO**. Repair produced a legal period-pair derived CHANGE query.
+- B — certified dima.11 failed to observe legal material: **YES, independently proven**.
+- C — Product transport lost the observation: not supported by current evidence.
+- D — Evidence admission rejected valid observation: **NO**; admission was never reached.
+- E — result dependency failed after VERIFIED ranking: **NO**; ranking never reached VERIFIED.
+
+### Exact live structural family
+
+The live repair query is:
+
+1. governed downtime metric;
+2. department breakout plus month-bucketed event date;
+3. two `sum-where` period aggregates selected by equality on the monthly bucket:
+   - `event_date = 2026-05-01`;
+   - `event_date = 2026-06-01`;
+4. comparison minus baseline expression;
+5. DESC ORDER BY that derived expression.
+
+This is semantically the same period-pair CHANGE family already certified for dima.11, but the certified observer
+parser only certifies half-open temporal predicates (`>= start`, `< end`) for its period-pair lineage.
+
+### Independent certified-runtime reproducer
+
+Per the emergency directive, no production engine code was changed before classification.
+
+A test-only branch was created directly from certified dima.11:
+
+- branch: `test/dima11-live-equality-period-reproducer`;
+- certified base: `f8ba5cf32d265f1d4210ac8513bf273df7f44e60`;
+- production `src/**` diff: **NONE**;
+- reproducer run: `37149800544`;
+- result: **RED**;
+- exact error:
+  `NATIVE_MATERIAL_RANKING_TARGET_UNSUPPORTED`;
+- stage: `2`;
+- order index: `0`;
+- message:
+  `Ranking target has no stable native field or metric identity`.
+
+The reproducer uses the same generic structural family as the live query:
+month-bucketed previous-stage date + equality-selected period aggregates + comparison-minus-baseline + DESC derived
+ranking. It contains no benchmark/case text and no Product-specific branch.
+
+Therefore the emergency directive's condition for classification B is satisfied:
+
+`exact live native query family -> provider-free certified dima.11 reproducer -> certified dima.11 fails`.
+
+### Reference pattern conclusion
+
+Metabase semantics permit legal custom/derived expressions and bucketed temporal material. The dima.11 gap is not
+that the query is invalid; it is that the read-only observer's current period-pair proof recognizes half-open range
+predicates but not the equivalent equality selector over a month-bucketed temporal column.
+
+### Explicitly rejected
+
+- continuing `feat/dima11-conditional-change-observer`;
+- merging/cherry-picking the exploratory branch;
+- creating dima.12;
+- changing certified dima.11 in place;
+- Dima SQL/MBQL planner logic;
+- case-specific F06_M branch;
+- regex/fuzzy/morph/prompt wording patch;
+- a second repair attempt;
+- provider-budget increase;
+- another A3 paid retry on the same semantic state;
+- A4;
+- broad/30-case execution.
+
+### What is now proven
+
+- runtime identity is correct and certified dima.11 is actually running;
+- Metabot can generate the required legal CHANGE material after one bounded repair;
+- Product transport reaches native execution;
+- the current blocker is specifically certified dima.11 read-only observation of the equality-period representation;
+- this is independently reproduced provider-free on the certified engine with zero production diff;
+- Product/Evidence/child/report layers have not yet been exercised past that boundary.
+
+### What remains unproven
+
+- a legal authority-approved closure for the certified observer gap;
+- A3 >= `3/4`;
+- A4/A5/A6 development proofs;
+- B1/B2/B3 quality proofs;
+- final provider-free saturation;
+- final freeze;
+- same-SHA 9-case readiness panel.
+
+### 30-case readiness
+
+**NO — BLOCKED AT ONE PROVEN OBSERVER PRIMITIVE.**
+
+### NEXT LEGAL ACTION
+
+The emergency directive simultaneously:
+
+1. authorizes engine investigation only after classification B is independently proven; and
+2. freezes certified dima.11 as the sole engine authority and forbids dima.12/new engine work.
+
+Condition (1) is now satisfied, but condition (2) still forbids a production engine release.
+
+No supervisor escalation tool is available in this environment. Therefore the next legal action is an explicit
+supervisor/user authority decision on this single point:
+
+- authorize one narrowly scoped immutable observer release that adds **only** equality-period recognition for the
+  already-certified period-pair CHANGE law, with positive/negative siblings and no analytics execution/rewrite; or
+- provide another architecture-approved closure that preserves certified dima.11 unchanged.
+
+Until that authority is supplied:
+
+- no engine production code;
+- no paid A3 retry;
+- no A4;
+- no broad/30-case run.
