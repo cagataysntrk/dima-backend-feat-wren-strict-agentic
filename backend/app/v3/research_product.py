@@ -7,6 +7,7 @@ lineage, receipt/Evidence correlation, and durable resume.
 from __future__ import annotations
 
 import hashlib
+import json
 from contextlib import AbstractContextManager
 from datetime import datetime, timezone
 from typing import Any, Protocol
@@ -728,6 +729,8 @@ class ResearchAskOrchestrator:
             validation_code=failure.code,
             validation_detail=failure.detail,
             prior_repair_attempts=attempts,
+            expected_semantic_shape=failure.expected_semantic_shape,
+            observed_semantic_shape=failure.observed_semantic_shape,
         )
         if decision.disposition != MaterialRepairDisposition.REPAIR:
             return None
@@ -748,7 +751,26 @@ class ResearchAskOrchestrator:
         feedback = material_repair_feedback(decision)
         context = dict(prepared.request.context)
         context["dima_material_repair_feedback"] = feedback
-        request = prepared.request.model_copy(update={"context": context})
+        repair_message = "\n".join(
+            (
+                prepared.request.message,
+                "[DIMA MATERIAL REPAIR FEEDBACK JSON]",
+                json.dumps(
+                    {"dima_material_repair_feedback": feedback},
+                    ensure_ascii=False,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                ),
+                "[DIMA MATERIAL REPAIR BOUNDARY]",
+                "- regenerate exactly one new native analytical query",
+                "- preserve the accepted material requirement, ScopeVersion, principal, tenant, filters, and periods",
+                "- correct only the validation mismatch described above",
+                "- do not broaden scope or perform downstream investigation/reporting",
+            )
+        )
+        request = prepared.request.model_copy(
+            update={"context": context, "message": repair_message}
+        )
         updated = self._store.save(
             prepared.session,
             expected_revision=before,
