@@ -2426,3 +2426,168 @@ PHASE 1 only:
    fail-closed;
 4. prove all positive/negative siblings provider-free;
 5. run the complete Phase-1 provider-free gate before any A3 paid development proof.
+
+
+---
+
+## PHASE 1 — CHANGE-RANKING MATERIAL ACQUISITION CLOSURE
+
+**STATUS: GATE RECERTIFICATION IN PROGRESS**
+
+### Product / engine identity
+
+- semantic Product SHA: `4036bb4c10d98277c12ee1842e62b0c0370f909b`
+- current repository candidate before aggregate recertification:
+  `b4ce33c51c21f0a980372e0baa884d6f904e2c94`
+- engine SHA: `468643040c74959ffaad6e378b110d5841567f7c`
+- engine release/tag: `0.63.18-dima.10 / v0.63.18-dima.10`
+- engine digest:
+  `sha256:34ce02396908e109aabcac9de6bedc3c832c79baa5450b7235c629f05455af17`
+- engine diff in this phase: **NONE**
+- provider/model calls: `0`
+
+### Objective
+
+Make the already-accepted CHANGE material requirement unambiguous to Metabot, then permit at most one
+contract-preserving P14 regeneration when the first native occurrence fails only at the safe
+planner-output/material-shape boundary.
+
+### First invalid boundary
+
+Live A3 diagnosis:
+
+`accepted AnalyticalRequestContract -> Metabot planner output -> native material observation`
+
+The Product correctly rejected the first occurrence because it contained department x month x
+downtime LEVEL material rather than the accepted derived CHANGE ranking.
+
+### Exact owners changed
+
+1. `research_analytical_scope.py`
+   - deterministic read-only `dima_material_requirement_v1` projection;
+   - separates missing required native ranking from structural target/direction/limit mismatch.
+2. `research.py`
+   - emits the same typed requirement JSON on the actual Metabot-visible user-message surface.
+3. `research_material_repair.py`
+   - allows one repair for missing required ranking or exact basis mismatch only;
+   - carries expected/observed semantic shape in structured repair feedback.
+4. `research_product.py`
+   - preserves same conversation/contract/scope;
+   - emits structured repair feedback on the actual Metabot-visible user-message surface;
+   - existing one-repair ceiling and new-fingerprint invariant remain unchanged.
+
+No `owner_adapter.py` semantic growth. No dima.10 change.
+
+### Generic law
+
+> Dima declares WHAT material must result from the accepted AnalyticalRequestContract. Metabot remains
+> the sole planner for HOW to express it. If a generated occurrence preserves authority but omits the
+> required ranking or returns the wrong LEVEL/CHANGE basis, P14 may request exactly one same-conversation
+> regeneration with structured validation feedback. Wrong target/direction/limit, foreign resources,
+> security/currentness failures and ambiguous semantics remain fail-closed.
+
+### Reference patterns consulted
+
+- certified Metabase dima.10 source:
+  `user-context/enrich-context-for-template`,
+  `messages/messages-with-injected-context`,
+  `messages/build-system-message`;
+- Metabase native query/Offset contract: previous-row semantics and breakout ordering define whether
+  row-relative material is period-over-period;
+- Wren governed-context / validation pattern: explicit semantic requirement plus structured
+  validation feedback, without a second query planner.
+
+### What was adopted
+
+- one read-only material-requirement projection derived only from existing typed authority;
+- dual carriage of the same projection:
+  - request context for transport/inspection;
+  - actual Metabot-visible message for planner cognition;
+- one bounded same-conversation repair;
+- exact expected/observed semantic-shape feedback;
+- new native query fingerprint required.
+
+### What was explicitly rejected
+
+- modifying dima.10;
+- Dima SQL/MBQL generation;
+- Dima-side change calculation;
+- arbitrary Offset => CHANGE inference;
+- target/direction/limit repair;
+- foreign metric/time/scope repair;
+- regex/fuzzy/morph/case-id/prompt-specific logic;
+- provider ceiling increase;
+- paid retry before provider-free closure.
+
+### Provider-free proof added
+
+Symbolic owner siblings prove:
+
+- CHANGE + first LEVEL basis -> one repair disposition;
+- repaired exact CHANGE basis -> R5 admission succeeds;
+- second basis miss -> terminal limit;
+- missing required ranking -> distinct repairable
+  `R1_NATIVE_RANKING_REQUIRED_MISSING`;
+- wrong target/direction/limit -> `R1_NATIVE_RANKING_SCOPE_MISMATCH`, no repair;
+- ordinary LEVEL remains valid;
+- repeated native fingerprint remains terminal;
+- repair keeps same conversation/state/history and exact material requirement;
+- repair feedback is present both in context and on the planner-visible message surface.
+
+### Pre-aggregate GREEN receipts
+
+- focused Brain V2: run `37119079023` = SUCCESS
+  - `101 passed, 1 skipped`;
+- frozen-family closure: run `37119079022` = SUCCESS
+  - ranking/completion/dependency/adaptive: `68 passed`;
+  - temporal/scope: `14 passed`;
+  - P18/P19/P20: `89 passed`;
+  - artifact `11272746165`;
+  - artifact digest
+    `sha256:00b3e2b7c5957b323e95ef97325ac1ec7d44af2ae6ef580b7f9dd0463569c5db`;
+- semantic conformance: run `37119079032` = SUCCESS
+  - deterministic semantic conformance: `166 passed`;
+  - Wave A: `8 passed` with generated floors;
+  - independent Wave B: `9 passed` with seed `2026100302`;
+  - mutation canaries: GREEN;
+  - artifact `11273230379`;
+  - artifact digest
+    `sha256:5adbe98e37f5a90d64d26b2b088093a81a59baab1ae094529ddd6cb1813b53aa`.
+
+### New-family count
+
+`0` so far. The A3 failure maps to the existing planner-output/material-conformance family.
+
+### Provider / cost
+
+- provider calls: `0`
+- prompt tokens: `0`
+- completion tokens: `0`
+- reasoning tokens: `0`
+- cost: `$0`
+- paid latency: `0`
+
+### What is now proven
+
+- dima.10 remains the single owner of observed native query meaning;
+- accepted CHANGE semantics can reach the planner in deterministic structured form;
+- missing/wrong-basis material is distinguishable from forbidden structural scope mismatch;
+- repair remains bounded and contract-preserving;
+- focused, frozen-family, Wave A/B and mutation confidence survive the change.
+
+### What remains unproven
+
+- aggregate Phase-1 on the exact candidate;
+- Phase-2/headless on the exact candidate;
+- final provider-free Phase-1 closure receipt;
+- A3 development live proof >= `3/4`.
+
+### 30-case readiness
+
+**NO — CLOSER. Broad 30-case remains CLOSED.**
+
+### NEXT LEGAL ACTION
+
+Run aggregate Phase-1 and Phase-2/headless provider-free on the exact candidate. If both GREEN,
+seal Phase 1. Then freeze one development candidate and run **only A3 F06_M**. A1/A2 are not rerun
+during development.
