@@ -658,7 +658,6 @@ def test_native_request_context_preloads_only_required_governed_resources():
         prepared.request.context["dima_analytical_scope"]
     )
     assert enriched.context["user_is_viewing"] == [
-        {"type": "table", "id": 10},
         {"type": "metric", "id": 501},
     ]
     assert 20 not in {
@@ -670,7 +669,7 @@ def test_native_request_context_preloads_only_required_governed_resources():
     assert enriched.history == prepared.request.history
 
 
-def test_native_request_table_anchor_is_idempotent_and_preserves_repair_feedback():
+def test_native_request_metric_anchor_is_idempotent_and_preserves_repair_feedback():
     engine = db_engine()
     seed(engine)
     store = ResearchSessionStore(engine)
@@ -694,7 +693,7 @@ def test_native_request_table_anchor_is_idempotent_and_preserves_repair_feedback
         update={
             "context": {
                 **prepared.request.context,
-                "user_is_viewing": [{"type": "table", "id": 10}],
+                "user_is_viewing": [{"type": "metric", "id": 501}],
                 "dima_material_repair_feedback": repair_feedback,
             }
         }
@@ -718,7 +717,6 @@ def test_native_request_table_anchor_is_idempotent_and_preserves_repair_feedback
     )
 
     assert enriched.context["user_is_viewing"] == [
-        {"type": "table", "id": 10},
         {"type": "metric", "id": 501},
     ]
     assert enriched.context["dima_material_repair_feedback"] == repair_feedback
