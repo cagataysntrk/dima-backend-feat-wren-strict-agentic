@@ -11,6 +11,8 @@ from sqlmodel import SQLModel, Session, create_engine, select
 from app.v3.research_contracts import PresentationKind, RankingSurface, ResearchBrief, ResearchBriefStatus, ResearchDeliverableRequirement, ResearchGoalKind, ResearchGoalStatus, ResearchQuestion, ResearchScope, ResearchSemanticRef, SemanticTargetKind
 from app.v3.business_relationship_policy import BusinessRelationshipPolicyStore, RelationshipPolicyRequirement
 from app.v3.business_relationship_v1 import project_relationship_result
+from app.v3.brain_v2.material_groups import project_material_groups
+from app.v3.completion_authority import CompletionEvidenceTerminal
 from app.v3.claim_lineage import ClaimEvidenceRelation, ClaimFreshness, ClaimLineageStore
 from app.v3.hypothesis_root_cause import AggregateOutcome, CandidateAssessment, CausalQualification, ContributionClass, EvidenceStrength, GroundingRelation, GroundingSourceKind, HypothesisDisposition, HypothesisEpistemicClass, HypothesisRootCauseStore, IdentificationLimitation, NumericAnalyticalKind, NumericProvenanceRef, RootCauseAssessmentDraft
 from app.v3.report_document import CoverageEntry, CoverageStatus, P20ReportError, ReportCurrentness, ReportDocumentStore, ReportDraft, ReportLimitation, ReportSourceKind, ReportStatement, ReportStatementKind, SourceReference, stable_limitation_id, stable_statement_id
@@ -454,6 +456,190 @@ def test_shared_relationship_completion_seals_without_forging_p14_terminal_state
             relationship_results=(wrong_terminal_identity,),
         )
     assert exc.value.code == 'P20_RELATIONSHIP_RESULT_TARGET_INVALID'
+
+
+
+def test_shared_direct_completion_projects_anchor_evidence_without_forging_p14_state():
+    db = db_engine()
+    SQLModel.metadata.create_all(db)
+    with Session(db) as s:
+        s.add(Tenant(id=TENANT, slug='p20', name='P20', created_at=STAMP))
+        s.add(User(id=USER, tenant_id=TENANT, email='p20@example.test', password_hash='unused', created_at=STAMP))
+        s.commit()
+
+    p = principal()
+    metric = ResearchSemanticRef(
+        source_mention='metric',
+        candidate_id='metric.symbolic',
+        target_kind=SemanticTargetKind.METRIC,
+        canonical_name='Symbolic Metric',
+        cube_names=('symbolic_cube',),
+    )
+    dimension = ResearchSemanticRef(
+        source_mention='entity',
+        candidate_id='dimension.entity',
+        target_kind=SemanticTargetKind.DIMENSION,
+        canonical_name='Entity',
+        cube_names=('symbolic_cube',),
+    )
+    fragment = 'fragment-sha256:' + 'd' * 64
+
+    def direct(goal_id: str) -> ResearchQuestion:
+        return ResearchQuestion(
+            goal_id=goal_id,
+            kind=ResearchGoalKind.RANKING,
+            source_text='Rank one governed metric by one governed entity dimension.',
+            source_fragment_identity=fragment,
+            subject_refs=(dimension, metric),
+            ranking=RankingSurface(
+                text='rank governed metric',
+                direction='desc',
+                limit=None,
+                measure_semantic_id=metric.candidate_id,
+            ),
+            status=ResearchGoalStatus.RESOLVED,
+        )
+
+    first = direct('g_direct_a')
+    second = direct('g_direct_b')
+    accepted = ResearchBrief(
+        brief_id='rb-p20-shared-direct',
+        objective='Reuse one exact governed material occurrence across direct requirements.',
+        scope=ResearchScope(semantic_refs=(dimension, metric)),
+        questions=(first, second),
+        must_requirement_ids=(first.goal_id, second.goal_id),
+        context_version='ctx-p20-v1',
+        status=ResearchBriefStatus.READY_FOR_RESEARCH,
+    )
+    store = ResearchSessionStore(db)
+    session = ResearchAskOrchestrator(store=store).start_from_brief(
+        brief=accepted,
+        request_ref='p20-shared-direct',
+        source_message_hash='d' * 64,
+        principal=p,
+    )
+
+    groups = project_material_groups(session)
+    assert len(groups) == 1
+    group = groups[0]
+    assert group.anchor_requirement_id == first.goal_id
+    assert set(group.consumer_requirement_ids) == {first.goal_id, second.goal_id}
+
+    prepared = ResearchManager.prepare_native_delegation(
+        session,
+        obligation_id=group.anchor_requirement_id,
+    )
+    session = store.save(prepared.session, expected_revision=session.revision)
+    link = store.begin_delegation(
+        session=session,
+        obligation_id=group.anchor_requirement_id,
+        dima_request_id=prepared.request.dima_request_id,
+        dima_trace_id=prepared.request.dima_trace_id,
+        native_conversation_id=prepared.request.conversation_id,
+    )
+    query = {
+        'database': 1,
+        'type': 'query',
+        'query': {
+            'source-table': 10,
+            'aggregation': [['sum', ['field', 20, None]]],
+            'breakout': [['field', 21, None]],
+        },
+    }
+    link = store.mark_candidate(
+        link.id,
+        native_query_id='p20-shared-direct-query',
+        native_query=query,
+        query_fingerprint=h(query),
+    )
+    store.mark_execution_started(
+        link.id,
+        native_subject_ref='metabase-user:20',
+    )
+    result_payload = {
+        'database_id': 1,
+        'row_count': 2,
+        'data': {
+            'cols': [
+                {'id': 21, 'display_name': 'Entity'},
+                {'id': 20, 'display_name': 'Symbolic Metric'},
+            ],
+            'rows': [
+                ['entity.e1', 100],
+                ['entity.e2', 50],
+            ],
+        },
+    }
+    store.mark_executed(
+        link.id,
+        native_subject_ref='metabase-user:20',
+        runtime_identity={
+            'substrate': 'metabase-native',
+            'runtime_version': 'v0.63.18-dima.10',
+            'image_digest': 'sha256:' + 'e' * 64,
+            'database_id': 'metabase:1',
+        },
+        result_payload=result_payload,
+        result_hash=h(result_payload),
+        executed_at=STAMP,
+    )
+    evidence_id = 'evi_' + h({'shared-direct': 'evidence'})[:24]
+    receipt_id = 'dqr_' + h({'shared-direct': 'receipt'})[:24]
+    store.mark_verified(link.id, receipt_id=receipt_id, evidence_id=evidence_id)
+
+    anchor_obligation = ResearchManager.obligation(
+        session,
+        group.anchor_requirement_id,
+    ).model_copy(
+        update={
+            'state': ObligationState.VERIFIED,
+            'evidence_refs': (evidence_id,),
+        }
+    )
+    session = ResearchManager.advance(
+        session,
+        obligations=ResearchManager.replace(session, anchor_obligation),
+        evidence_refs=(
+            EvidenceRef(
+                evidence_id=evidence_id,
+                receipt_id=receipt_id,
+                authority_id=session.authority_id,
+                obligation_id=group.anchor_requirement_id,
+            ),
+        ),
+        now=STAMP + timedelta(minutes=1),
+    )
+    session = store.save(session, expected_revision=session.revision - 1)
+
+    consumer = ResearchManager.obligation(session, second.goal_id)
+    assert consumer.state == ObligationState.READY
+
+    completion_terminal = CompletionEvidenceTerminal(
+        requirement_id=second.goal_id,
+        source_obligation_id=group.anchor_requirement_id,
+        evidence_id=evidence_id,
+        receipt_id=receipt_id,
+        material_group_id=group.material_group_id,
+        material_fingerprint=group.material_fingerprint,
+        scope_version_id=group.scope_version_id,
+    )
+
+    reports = ReportDocumentStore(research_store=store, db_engine=db)
+    draft = reports.draft_from_governed_research(
+        research_session_id=session.session_id,
+        report_key='shared-direct-report',
+        principal=p,
+        completion_evidence_terminals=(completion_terminal,),
+    )
+    report = reports.seal(draft=draft, principal=p)
+
+    coverage = {item.obligation_id: item for item in report.coverage}
+    assert coverage[first.goal_id].coverage_status == CoverageStatus.REPRESENTED
+    assert coverage[second.goal_id].coverage_status == CoverageStatus.REPRESENTED
+    assert reports.currentness(
+        report_id=report.report_id,
+        principal=p,
+    ) == ReportCurrentness.CURRENT
 
 
 def test_auto_draft_projects_governed_claim_policy_provenance_and_limitations():
