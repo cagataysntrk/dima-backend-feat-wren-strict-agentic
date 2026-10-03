@@ -1,12 +1,13 @@
 DIMA BRAIN V2.1 FINAL READINESS GATE A
 phase=6A
 gate=A
-sequence=2
-case_id=F03_H
+sequence=3
+case_id=F06_M
 attempt=1
-prior_final_case=F02_H
-prior_final_run=37113615269
-prior_final_score=4
+prior_final_a1_run=37113615269
+prior_final_a1_score=4
+prior_final_a2_run=37113877785
+prior_final_a2_score=3
 candidate_product_sha=a4a2c00a92a1f2f7b52379cfdbb55a654b4b0e8b
 semantic_product_sha=a4a2c00a92a1f2f7b52379cfdbb55a654b4b0e8b
 engine_sha=468643040c74959ffaad6e378b110d5841567f7c
@@ -16,6 +17,6 @@ provider_free_phase1_run=37113235091
 provider_free_phase2_run=37113235027
 semantic_holdout_run=37113072755
 frozen_family_run=37113072748
-purpose=prove_generic_completion_to_p20_shared_terminal_source_fix
+purpose=prove_governed_result_dependency_projection_without_parent_replay
 broad_30_case=false
 automatic_retry=false
