@@ -3802,3 +3802,103 @@ NEXT LEGAL ACTION:
 
 Freeze this development candidate operationally and rerun **A3 only**. If A3 is still below `3/4`,
 STOP paid and classify the next exact boundary. A4 remains unauthorized.
+
+
+---
+
+## EMERGENCY CONVERGENCE — A3 INTAKE PERIOD-ROLE RCA
+
+**STATUS: PROVIDER-FREE RECERTIFICATION IN PROGRESS**
+
+### Product / engine
+
+- semantic Product candidate: `8a1ab66c0c5bbac5936a55d0e8e29c0aae9d03a0`
+- exact repository candidate: `76c8420c817f58ce15ee050b9e17f5a8f3a45104`
+- certified engine: `f8ba5cf32d265f1d4210ac8513bf273df7f44e60`
+- release: `0.63.18-dima.11`
+- digest: `sha256:34976af8210f70c683518941a1a85b67e47e2df24ef2b5eb4054727e521c64a9`
+- model topology: `LUNA_LUNA_NO_CASCADE`
+
+### Development proof that exposed the boundary
+
+- A3 / F06_M run: `37138535015`
+- result: workflow RED before Metabot/native execution
+- provider requests: `1`
+- prompt tokens: `14,646`
+- provider cost: `$0.00102666`
+- latency: `5,325 ms`
+- exception: `R1_CHANGE_RANKING_COMPARISON_REQUIRED`
+- duplicate native: `0`
+- stale Evidence: `0`
+
+### First invalid boundary
+
+`typed intake CHANGE ranking -> neutral two-period role assignment -> AnalyticalRequestContract`
+
+The provider returned an otherwise legal typed CHANGE ranking plus exactly two bounded periods on one
+governed temporal dimension, but both periods retained the neutral `MATERIAL_WINDOW` role. The
+analytical contract correctly requires exactly one baseline/comparison pair for CHANGE authority.
+
+### Exact owner
+
+`backend/app/v3/research_intake.py`
+
+No engine change. No P14/query generation change. No prompt/model change.
+
+### Generic law
+
+> When an accepted READY draft contains a typed `RankingBasis.CHANGE` goal and exactly two bounded
+> periods on the same governed temporal dimension, and both periods are still neutral
+> `MATERIAL_WINDOW`, Dima may deterministically bind the earlier interval as
+> `BASELINE_PERIOD` and the later interval as `COMPARISON_PERIOD`. Existing typed roles are
+> preserved. Any conflicting non-comparison role or temporal-dimension drift fails closed.
+
+No wording, case ID, metric name, tuple order or benchmark phrase participates.
+
+### Changes
+
+- `_canonicalize_change_ranking_period_roles` added to the typed intake canonicalization pipeline;
+- applied on initial provider output and reconsideration output before typed temporal-comparison
+  compilation;
+- explicit siblings added:
+  - CHANGE + two neutral windows -> chronological baseline/comparison;
+  - LEVEL + same windows -> unchanged material windows;
+  - CHANGE + conflicting typed role -> fail closed.
+
+### Existing independent confidence on production candidate
+
+On `8a1ab66c...`:
+
+- semantic conformance `37138840035 = SUCCESS`;
+- frozen-family closure `37138840083 = SUCCESS`;
+- provider calls for those gates: `0`.
+
+### Provider / cost for this RCA
+
+- provider/model calls during fix/recertification: `0`
+- cost: `$0`
+- paid retry: none.
+
+### What is proven
+
+- runtime identity defect is closed;
+- dima.11 remains the sole engine authority;
+- resource anchoring survives independent conformance/frozen-family gates;
+- the latest A3 failure is an intake typed-role normalization defect, not engine observation;
+- the fix is a typed chronological law with negative siblings.
+
+### What remains unproven
+
+- aggregate Phase-1 on the exact current bytes;
+- Phase-2/headless on the exact current bytes;
+- A3 >= `3/4`.
+
+### 30-case readiness
+
+**NO — CLOSER. Broad 30-case remains CLOSED.**
+
+### NEXT LEGAL ACTION
+
+Run aggregate Phase-1 and Phase-2/headless provider-free on the exact current candidate. If both are
+GREEN, bind one A3 development authorization to the recertified candidate and run **A3 only** once.
+A4 remains unauthorized until A3 >= `3/4`.
