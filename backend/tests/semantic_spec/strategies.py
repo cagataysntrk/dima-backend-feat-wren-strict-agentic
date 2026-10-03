@@ -112,3 +112,38 @@ def adaptive_specs():
         produces_newer_evidence_on_success=st.booleans(),
         duplicate_material=st.booleans(),
     )
+
+
+
+def saturation_cases():
+    from .saturation import (
+        AdaptiveDecisionKind,
+        BreakoutKind,
+        ComparisonType,
+        MetricCardinality,
+        PeriodRole,
+        PresentationRequirement,
+        RankingDirection,
+        ResultDependencyKind,
+        SaturationCase,
+        ScopeMutationKind,
+        TopK,
+    )
+    from .model import RankingBasis
+
+    return st.builds(
+        SaturationCase,
+        intent=st.sampled_from(tuple(GoalKind)),
+        metric_cardinality=st.sampled_from(tuple(MetricCardinality)),
+        entity_cardinality=st.sampled_from(tuple(EntityCardinality)),
+        period_role=st.sampled_from(tuple(PeriodRole)),
+        comparison_type=st.sampled_from(tuple(ComparisonType)),
+        ranking_basis=st.sampled_from(tuple(RankingBasis)),
+        ranking_direction=st.sampled_from(tuple(RankingDirection)),
+        top_k=st.sampled_from(tuple(TopK)),
+        breakout=st.sampled_from(tuple(BreakoutKind)),
+        result_dependency=st.sampled_from(tuple(ResultDependencyKind)),
+        scope_mutation=st.sampled_from(tuple(ScopeMutationKind)),
+        adaptive_decision=st.sampled_from(tuple(AdaptiveDecisionKind)),
+        presentation_requirement=st.sampled_from(tuple(PresentationRequirement)),
+    )
