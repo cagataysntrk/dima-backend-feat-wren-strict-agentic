@@ -1322,3 +1322,105 @@ Create an owner-generic provider-free reproducer for:
 
 Add negative siblings for unrelated requirement/source, incomplete MaterialGroup, stale/unverified
 Evidence and cross-scope authority before changing production code.
+
+
+### A2 provider-free RCA closure candidate — GREEN at owner/family/holdout layers
+
+Semantic Product bytes after the generic fix:
+
+- semantic Product SHA: `a4a2c00a92a1f2f7b52379cfdbb55a654b4b0e8b`;
+- current test/docs candidate HEAD before aggregate recertification:
+  `90ae2482e3f1a4034d931c73e86a8f623c32ad3e`;
+- engine remains `468643040c74959ffaad6e378b110d5841567f7c`;
+- engine digest remains
+  `sha256:34ce02396908e109aabcac9de6bedc3c832c79baa5450b7235c629f05455af17`;
+- provider/model calls during RCA: `0`.
+
+Generic law closed:
+
+> A direct USER_MUST may become terminal from one completed shared MaterialGroup without forging a
+> duplicate P14 VERIFIED obligation. Completion owns terminality; P20 consumes a typed terminal-source
+> projection and validates the exact anchor Evidence / receipt / MaterialGroup / material fingerprint /
+> ScopeVersion before publication and currentness.
+
+Owner-scoped production changes:
+
+- `backend/app/v3/completion_authority.py`
+  - immutable `CompletionEvidenceTerminal`;
+  - `project_completion_evidence_terminals` projects only already-terminal direct consumers from
+    completed exact MaterialGroups;
+- `backend/app/v3/report_document.py`
+  - P20 accepts typed Completion terminals;
+  - P14 source refs may carry an explicit Completion source bridge;
+  - source lookup remains anchored to the exact VERIFIED P14 execution occurrence;
+  - exact MaterialGroup anchor/consumer/fingerprint/scope identity is revalidated;
+  - currentness revalidates the persisted source bridge;
+- `backend/app/v3/brain_v2/owner_adapter.py`
+  - orchestration glue only: forwards the Completion projection to P20;
+  - no new semantic decision branch.
+
+Explicitly rejected:
+
+- marking non-anchor P14 consumers VERIFIED just because material was shared;
+- duplicate native execution;
+- P20 scanning MaterialGroups to decide terminality;
+- trusting arbitrary terminal ids without exact provenance;
+- case/prompt/May/June/F03-specific branches;
+- paid retry before provider-free closure.
+
+Provider-free RED / GREEN sequence:
+
+- reproducer commit: `c744ae171fbdc06e8b364a4c97896b3445933cac`;
+- intentional RED: run `37112356543`
+  - all earlier frozen-family groups GREEN;
+  - P18/P19/P20 lane: `1 failed, 88 passed`;
+  - only failure:
+    `test_shared_direct_completion_projects_anchor_evidence_without_forging_p14_state`;
+  - exact failure: `P20_RESEARCH_SESSION_NOT_SEALED`;
+- focused Brain V2 after fix/import: run `37112742831` = SUCCESS;
+- frozen-family closure with the generic fix: run `37112742884` = SUCCESS;
+- final symbolic positive + negative siblings at HEAD `90ae2482...`:
+  - incomplete MaterialGroup -> no projection;
+  - non-terminal consumer -> no projection;
+  - wrong material fingerprint -> fail closed;
+  - wrong receipt -> fail closed;
+  - foreign target requirement -> fail closed;
+- final frozen-family run: `37113072748` = SUCCESS;
+  - artifact `11270411066`;
+  - artifact digest
+    `sha256:2eafc9026bf53355756f1cdc2ef59551f07c3211476c3c640856dc4d0e2158fb`;
+- semantic conformance / Wave A / independent Wave B / mutation:
+  run `37113072755` = SUCCESS;
+  - artifact `11270736363`;
+  - artifact digest
+    `sha256:5ce146fe672deae8205298aecfcbd93fb4e298b19db064f030961ecc3c7b2f7b`;
+  - Wave A = GREEN;
+  - Wave B = GREEN;
+  - mutation canaries = GREEN;
+  - new-family discovery = `0`.
+
+First invalid boundary is now closed provider-free:
+
+`dima.completion.evaluate -> dima.p20.report`
+
+### Freeze impact
+
+The old Phase-5 freeze is superseded because semantic Product code changed after A1/A2.
+Therefore prior A1 `4/4` remains a useful diagnostic receipt but **cannot count toward the final
+same-SHA Gate-A panel**.
+
+Before any new paid call:
+
+1. aggregate Phase-1 provider-free must re-certify;
+2. Phase-2/headless must re-certify;
+3. a new Phase-5 freeze receipt must be issued;
+4. the final Gate-A panel must restart at A1 on that new frozen Product SHA.
+
+### Current readiness
+
+**CLOSER — paid panel remains STOPPED.**
+
+### Next legal action
+
+Run aggregate Phase-1 and Phase-2/headless provider-free on these exact Product bytes. If both GREEN,
+issue a new Phase-5 freeze. Do not arm paid A1 before the new freeze.
