@@ -2920,3 +2920,81 @@ def test_execution_started_unknown_outcome_never_blind_retries_dataset():
     assert exc.value.code == "P14_NATIVE_EXECUTION_OUTCOME_UNKNOWN"
     assert bridge.calls == []
     assert store.execution_link(link.id).status == "EXECUTION_STARTED"
+
+
+
+def test_change_material_requirement_projection_is_exact_and_planner_visible() -> None:
+    contract = _change_ranking_contract()
+    context = scope_module.native_request_context(contract)
+    requirement = context["dima_material_requirement"]
+
+    assert requirement["schema"] == "dima_material_requirement_v1"
+    assert requirement["scope_version_id"] == contract.scope_identity.version_id
+    assert requirement["material_fingerprint"] == contract.material_fingerprint
+    assert requirement["metric_refs"] == ["metric.downtime"]
+    assert requirement["required_metric_refs"] == ["metric.downtime"]
+    assert requirement["required_breakout_refs"] == ["dimension.department"]
+    assert requirement["required_temporal_dimension"] == "time.event_date"
+    assert requirement["ranking"] == {
+        "kind": "native_metric",
+        "measure": "metric.downtime",
+        "direction": "desc",
+        "limit": 5,
+        "basis": "change",
+    }
+    assert requirement["comparison"] == contract.comparison.model_dump(mode="json")
+
+    message = ResearchManager.native_material_message(
+        objective="symbolic period-over-period ranking",
+        analytical_scope=contract,
+    )
+    marker = "[DIMA MATERIAL REQUIREMENT JSON]\n"
+    assert marker in message
+    encoded = message.split(marker, 1)[1].splitlines()[0]
+    visible = json.loads(encoded)["dima_material_requirement"]
+    assert visible == requirement
+
+
+def test_dima10_missing_required_change_ranking_is_distinct_material_miss() -> None:
+    observation = rich_material_observation(ranking=[])
+
+    with pytest.raises(scope_module.ResearchAnalyticalScopeError) as exc:
+        scope_module._assert_material_ranking_scope(
+            _change_ranking_contract(),
+            observation,
+            rich_material_bindings(),
+        )
+
+    assert exc.value.code == "R1_NATIVE_RANKING_REQUIRED_MISSING"
+    assert exc.value.expected_semantic_shape["ranking"]["basis"] == "change"
+    assert exc.value.observed_semantic_shape == {"ranking": []}
+
+
+def test_dima10_wrong_direction_remains_nonrepairable_structural_mismatch() -> None:
+    observation = rich_material_observation(
+        ranking=[
+            {
+                "stage_number": 0,
+                "order_index": 0,
+                "target": {
+                    "kind": "metric",
+                    "metabase_metric_id": 501,
+                    "metabase_metric_entity_id": "metric-downtime-v1",
+                },
+                "direction": "asc",
+                "limit": 5,
+                "basis": "change",
+            }
+        ]
+    )
+
+    with pytest.raises(scope_module.ResearchAnalyticalScopeError) as exc:
+        scope_module._assert_material_ranking_scope(
+            _change_ranking_contract(),
+            observation,
+            rich_material_bindings(),
+        )
+
+    assert exc.value.code == "R1_NATIVE_RANKING_SCOPE_MISMATCH"
+    assert exc.value.expected_semantic_shape["ranking"]["direction"] == "desc"
+    assert exc.value.observed_semantic_shape["ranking"][0]["direction"] == "asc"
