@@ -2150,6 +2150,7 @@ def test_r5_unranked_material_still_blocks_unaccepted_row_limiting_order():
     assert exc.value.code == "R1_NATIVE_RANKING_SCOPE_MISMATCH"
 
 
+# Provider-free A3 RCA: dima.10 ranking basis must survive transport unchanged.
 def _change_ranking_contract():
     return rich_material_contract().model_copy(
         update={
