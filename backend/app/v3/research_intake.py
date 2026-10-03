@@ -2487,6 +2487,7 @@ class ResearchIntakeCompiler:
         draft = self._canonicalize_root_temporal_material(draft)
         draft = self._canonicalize_exact_period_repeats(draft)
         draft = self._derive_standalone_temporal_comparison(draft)
+        draft = self._canonicalize_change_ranking_period_roles(draft)
         draft = self._canonicalize_typed_temporal_comparison(draft)
         duplicate_root_keys = self._duplicate_root_cause_goal_keys(draft)
         if duplicate_root_keys:
