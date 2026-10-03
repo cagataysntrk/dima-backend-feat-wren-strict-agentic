@@ -2146,3 +2146,63 @@ and the new provider-free receipts, then restart final Gate A at **A1 F02_H**.
 
 One case at a time. STOP on first genuine RED. Any semantic Product change invalidates this freeze and
 requires provider-free re-certification plus another Phase-5 freeze.
+
+
+### Post-A3 final Gate A1 — GREEN / FULL 4/4
+
+- case: `F02_H`;
+- run: `37116625990` = SUCCESS;
+- live checkout: `3732d83259cbe9d5ba4405552fc9878c6e6fd5e8`;
+- semantic Product: `4570babe0053a2779f71db7643cb44e5fb017460`;
+- artifact: `11271910927`;
+- artifact digest:
+  `sha256:45edfa8c68490e8eeb0e3aec2898a848dcf8901df91549f8b43c9e4512142c74`;
+- terminal: `REPORT`;
+- workflow: `COMPLETE`;
+- requirement_complete: `true`;
+- exceptions: `0`;
+- duplicate native: `0`;
+- stale Evidence: `0`;
+- blocked provider requests: `0`;
+- provider requests: `7`;
+- prompt tokens: `110,438`;
+- provider cost: `$0.01793495`;
+- case latency: `27,685 ms`.
+
+Material adjudication:
+
+- requirement 1, June department-level downtime/fault/performance table: VERIFIED;
+- requirement 2, top-three downtime ranking with fault/performance context: VERIFIED;
+- two native acquisitions correspond to the two distinct accepted material obligations;
+- no duplicate acquisition is recorded;
+- ranked result is:
+  1. Assembly — downtime `612`, faults `40`, performance `67.75`;
+  2. Packaging — downtime `365`, faults `21`, performance `78.25`;
+  3. Utilities — downtime `291`, faults `16`, performance `83.0`;
+- exact P14 source paths and numeric provenance are preserved into P20;
+- no unsupported causal or analytical interpretation is introduced.
+
+Manual Product score:
+
+- `4/4 = FULL`.
+
+Running final same-SHA Gate-A score:
+
+- A1 = `4/4`;
+- completed = `1/6`;
+- FULL = `1/6`;
+- exception = `0`;
+- silent wrong = `0`;
+- scope violation = `0`;
+- causal overclaim = `0`;
+- duplicate native = `0`.
+
+Paid authorization was disabled immediately after the run. The temporary push trigger had already been
+removed before adjudication.
+
+### Next legal action
+
+Arm only **A2 `F03_H`** on the same semantic Product
+`4570babe0053a2779f71db7643cb44e5fb017460`, engine digest and Luna/Luna/no-cascade topology.
+
+A3 remains unauthorized until A2 is mechanically GREEN and manually scores at least `3/4`.
