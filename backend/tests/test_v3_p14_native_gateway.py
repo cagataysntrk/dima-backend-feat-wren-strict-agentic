@@ -1367,6 +1367,7 @@ def rich_material_observation(**updates):
                 },
                 "direction": "desc",
                 "limit": 5,
+                "basis": "level",
             }
         ],
     }
@@ -2147,6 +2148,108 @@ def test_r5_unranked_material_still_blocks_unaccepted_row_limiting_order():
         )
 
     assert exc.value.code == "R1_NATIVE_RANKING_SCOPE_MISMATCH"
+
+
+def _change_ranking_contract():
+    return rich_material_contract().model_copy(
+        update={
+            "period": None,
+            "comparison": scope_module.AnalyticalComparisonInvariant(
+                mode="explicit_periods",
+                reference_period=scope_module.AnalyticalPeriodInvariant(
+                    kind="explicit_half_open",
+                    time_dimension="time.event_date",
+                    start="2026-05-01",
+                    end="2026-06-01",
+                ),
+                base_period=scope_module.AnalyticalPeriodInvariant(
+                    kind="explicit_half_open",
+                    time_dimension="time.event_date",
+                    start="2026-06-01",
+                    end="2026-07-01",
+                ),
+            ),
+            "ranking": scope_module.AnalyticalRankingInvariant(
+                measure="metric.downtime",
+                direction="desc",
+                limit=5,
+                basis=scope_module.RankingBasis.CHANGE,
+            ),
+        }
+    )
+
+
+def test_dima10_material_transport_preserves_observed_change_ranking_basis() -> None:
+    observation = rich_material_observation(
+        ranking=[
+            {
+                "stage_number": 0,
+                "order_index": 0,
+                "target": {
+                    "kind": "metric",
+                    "metabase_metric_id": 501,
+                    "metabase_metric_entity_id": "metric-downtime-v1",
+                },
+                "direction": "desc",
+                "limit": 5,
+                "basis": "change",
+            }
+        ]
+    )
+
+    assert observation.ranking[0].basis == "change"
+
+
+def test_dima10_observed_change_basis_satisfies_typed_change_ranking() -> None:
+    observation = rich_material_observation(
+        ranking=[
+            {
+                "stage_number": 0,
+                "order_index": 0,
+                "target": {
+                    "kind": "metric",
+                    "metabase_metric_id": 501,
+                    "metabase_metric_entity_id": "metric-downtime-v1",
+                },
+                "direction": "desc",
+                "limit": 5,
+                "basis": "change",
+            }
+        ]
+    )
+
+    scope_module._assert_material_ranking_scope(
+        _change_ranking_contract(),
+        observation,
+        rich_material_bindings(),
+    )
+
+
+def test_dima10_level_basis_cannot_satisfy_typed_change_ranking() -> None:
+    observation = rich_material_observation(
+        ranking=[
+            {
+                "stage_number": 0,
+                "order_index": 0,
+                "target": {
+                    "kind": "metric",
+                    "metabase_metric_id": 501,
+                    "metabase_metric_entity_id": "metric-downtime-v1",
+                },
+                "direction": "desc",
+                "limit": 5,
+                "basis": "level",
+            }
+        ]
+    )
+
+    with pytest.raises(scope_module.ResearchAnalyticalScopeError) as exc:
+        scope_module._assert_material_ranking_scope(
+            _change_ranking_contract(),
+            observation,
+            rich_material_bindings(),
+        )
+    assert exc.value.code == "R1_NATIVE_RANKING_BASIS_MISMATCH"
 
 
 @pytest.mark.parametrize(
