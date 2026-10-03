@@ -2206,3 +2206,60 @@ Arm only **A2 `F03_H`** on the same semantic Product
 `4570babe0053a2779f71db7643cb44e5fb017460`, engine digest and Luna/Luna/no-cascade topology.
 
 A3 remains unauthorized until A2 is mechanically GREEN and manually scores at least `3/4`.
+
+
+### Post-A3 final Gate A2 — GREEN / STRONG_PARTIAL 3/4
+
+- case: `F03_H`;
+- run: `37116905604` = SUCCESS;
+- artifact: `11271772227`;
+- artifact digest:
+  `sha256:1e3ff9686036ff1d9e1ef0ac24e80c0706971feb835df10b61f78c88f57d6016`;
+- semantic Product: `4570babe0053a2779f71db7643cb44e5fb017460`;
+- terminal: `REPORT`;
+- workflow: `COMPLETE`;
+- requirement_complete: `true`;
+- exception: `0`;
+- duplicate native: `0`;
+- stale Evidence: `0`;
+- provider requests: `3`;
+- prompt tokens: `44,151`;
+- provider cost: `$0.00813853`;
+- latency: `19,143 ms`.
+
+Material result:
+
+- exact May and June rows exist for Assembly, Maintenance, Packaging, Quality and Utilities;
+- downtime, fault count and performance are source-backed for both months;
+- the data supports the expected qualitative result that all five departments worsen across the
+  requested three indicators, with Assembly the strongest deterioration;
+- however P20 remains observation-only and does not explicitly state the requested derived management
+  sentence identifying those departments as the jointly worsening set.
+
+Manual Product score:
+
+- `3/4 = STRONG_PARTIAL`.
+
+Reason: the core comparison is complete and exactly grounded, but one important requested
+sub-requirement — explicit identification/synthesis of the jointly worsening departments — is not
+materialized in the final report.
+
+Running final same-SHA Gate A:
+
+- A1 = `4/4`;
+- A2 = `3/4`;
+- score = `7/8`;
+- FULL cases = `1/2`;
+- exception = `0`;
+- silent wrong = `0`;
+- scope violation = `0`;
+- causal overclaim = `0`;
+- duplicate native = `0`.
+
+Paid authorization was disabled after adjudication.
+
+### Next legal action
+
+Arm only **A3 `F06_M`** on the same frozen semantic Product. This is the first live retest of the
+generic dima.10 ranking-basis transport closure. STOP on any mechanical RED or Product score below
+`3/4`; A4 remains unauthorized until A3 passes.
