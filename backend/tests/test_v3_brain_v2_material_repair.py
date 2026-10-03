@@ -15,12 +15,13 @@ _REPAIRABLE = (
     "R1_RESULT_CHANGE_COVERAGE_INCOMPLETE",
     "R1_RESULT_TEMPORAL_COLUMN_MISMATCH",
     "R1_RESULT_CHANGE_TEMPORAL_COLUMN_REQUIRED",
+    "R1_NATIVE_RANKING_REQUIRED_MISSING",
+    "R1_NATIVE_RANKING_BASIS_MISMATCH",
 )
 
 _NON_REPAIRABLE = (
     "R1_NATIVE_FILTER_SCOPE_MISMATCH",
     "R1_NATIVE_RANKING_SCOPE_MISMATCH",
-    "R1_NATIVE_RANKING_BASIS_UNOBSERVABLE",
     "R1_RESULT_TEMPORAL_BINDING_REQUIRED",
     "P14_NATIVE_RESULT_FINGERPRINT_MISMATCH",
     "P14_NATIVE_EXECUTION_PROVENANCE_INVALID",
@@ -92,3 +93,47 @@ def test_terminal_limit_has_no_planner_feedback() -> None:
 
     with pytest.raises(ValueError, match="no repair feedback"):
         material_repair_feedback(decision)
+
+
+
+def test_ranking_repair_feedback_carries_exact_expected_and_observed_shape() -> None:
+    decision = decide_material_repair(
+        validation_code="R1_NATIVE_RANKING_BASIS_MISMATCH",
+        prior_repair_attempts=0,
+        validation_detail="observed native ranking basis differs",
+        expected_semantic_shape={
+            "ranking_basis": "change",
+            "direction": "desc",
+        },
+        observed_semantic_shape={
+            "ranking_basis": "level",
+            "direction": "desc",
+        },
+    )
+
+    feedback = material_repair_feedback(decision)
+
+    assert feedback["expected_semantic_shape"] == {
+        "ranking_basis": "change",
+        "direction": "desc",
+    }
+    assert feedback["observed_semantic_shape"] == {
+        "ranking_basis": "level",
+        "direction": "desc",
+    }
+
+
+@pytest.mark.parametrize(
+    "code",
+    (
+        "R1_NATIVE_RANKING_SCOPE_MISMATCH",
+        "R1_NATIVE_FILTER_SCOPE_MISMATCH",
+        "R1_NATIVE_RESOURCE_DATABASE_MISMATCH",
+    ),
+)
+def test_ranking_or_authority_mismatch_never_becomes_repairable(code: str) -> None:
+    decision = decide_material_repair(
+        validation_code=code,
+        prior_repair_attempts=0,
+    )
+    assert decision.disposition == MaterialRepairDisposition.TERMINAL_LIMIT
