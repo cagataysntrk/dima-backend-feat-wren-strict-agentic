@@ -2192,6 +2192,20 @@ def _assert_material_ranking_scope(
             "R1_NATIVE_RANKING_RESOURCE_BINDING_REQUIRED",
             ranking.measure,
         )
+    if not observation.ranking:
+        raise ResearchAnalyticalScopeError(
+            "R1_NATIVE_RANKING_REQUIRED_MISSING",
+            "accepted native ranking is absent from the observed material",
+            last_valid_boundary="dima.native.observe",
+            first_invalid_boundary="dima.evidence.admit",
+            scope_fingerprint=contract.scope_fingerprint,
+            material_fingerprint=contract.material_fingerprint,
+            expected_semantic_shape={
+                "ranking": ranking.model_dump(mode="json"),
+            },
+            observed_semantic_shape={"ranking": []},
+        )
+
     structural_matches = [
         item
         for item in observation.ranking
@@ -2209,6 +2223,15 @@ def _assert_material_ranking_scope(
             first_invalid_boundary="dima.evidence.admit",
             scope_fingerprint=contract.scope_fingerprint,
             material_fingerprint=contract.material_fingerprint,
+            expected_semantic_shape={
+                "ranking": ranking.model_dump(mode="json"),
+            },
+            observed_semantic_shape={
+                "ranking": [
+                    item.model_dump(mode="json")
+                    for item in observation.ranking
+                ]
+            },
         )
 
     authorized = structural_matches[0]
