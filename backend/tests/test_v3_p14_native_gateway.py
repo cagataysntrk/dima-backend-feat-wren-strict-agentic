@@ -621,7 +621,7 @@ def test_result_dependency_provenance_changes_execution_material_identity():
     assert first.contract.material_fingerprint != second.contract.material_fingerprint
 
 
-def test_native_request_context_preloads_only_required_governed_metrics():
+def test_native_request_context_preloads_only_required_governed_resources():
     engine = db_engine()
     seed(engine)
     store = ResearchSessionStore(engine)
@@ -658,7 +658,8 @@ def test_native_request_context_preloads_only_required_governed_metrics():
         prepared.request.context["dima_analytical_scope"]
     )
     assert enriched.context["user_is_viewing"] == [
-        {"type": "metric", "id": 501}
+        {"type": "table", "id": 10},
+        {"type": "metric", "id": 501},
     ]
     assert 20 not in {
         item.get("id")
@@ -668,6 +669,59 @@ def test_native_request_context_preloads_only_required_governed_metrics():
     assert enriched.state == prepared.request.state
     assert enriched.history == prepared.request.history
 
+
+def test_native_request_table_anchor_is_idempotent_and_preserves_repair_feedback():
+    engine = db_engine()
+    seed(engine)
+    store = ResearchSessionStore(engine)
+    product = ResearchAskOrchestrator(store=store)
+    session = product.start_from_brief(
+        brief=brief(),
+        request_ref="p14-native-repair-anchor-test",
+        source_message_hash=hashlib.sha256(b"native repair anchor").hexdigest(),
+        principal=principal(),
+    )
+    prepared = ResearchManager.prepare_native_delegation(
+        session,
+        obligation_id="g1",
+    )
+    repair_feedback = {
+        "schema": "dima_material_repair_feedback_v1",
+        "validation_code": "R1_NATIVE_RANKING_BASIS_MISMATCH",
+        "repair_attempt": 1,
+    }
+    request = prepared.request.model_copy(
+        update={
+            "context": {
+                **prepared.request.context,
+                "user_is_viewing": [{"type": "table", "id": 10}],
+                "dima_material_repair_feedback": repair_feedback,
+            }
+        }
+    )
+    subjects = NativeSubjectSessionProvider(
+        base_url="http://metabase.test",
+        expected_identity=expected_identity(),
+        db_engine=engine,
+    )
+    executor = NativeResearchMaterialExecutor(
+        subject_provider=subjects,
+        store=store,
+        expected_identity=expected_identity(),
+    )
+
+    enriched = executor.enrich_native_request(
+        principal=principal(),
+        session=session,
+        obligation_id="g1",
+        request=request,
+    )
+
+    assert enriched.context["user_is_viewing"] == [
+        {"type": "table", "id": 10},
+        {"type": "metric", "id": 501},
+    ]
+    assert enriched.context["dima_material_repair_feedback"] == repair_feedback
 
 
 def test_native_request_rejects_scope_fingerprint_drift_before_native_work():
