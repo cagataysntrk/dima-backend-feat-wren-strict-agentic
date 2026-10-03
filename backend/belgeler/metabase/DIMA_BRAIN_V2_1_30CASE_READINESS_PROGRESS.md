@@ -748,3 +748,180 @@ PHASE 4 — use the immutable Round-2 artifacts/fixtures only as diagnostic seed
 final exact-system bytes that legal representations terminate through governed Product states rather
 than deterministic internal exceptions. Re-certify the P20 synthesis ceilings without adding hidden
 analytics.
+
+
+---
+
+## PHASE 4 — FROZEN ROUND-2 COUNTEREXAMPLE CLOSURE
+
+**STATUS = GREEN**
+
+### Exact candidate
+
+- Semantic Product SHA: `dd969add8fe7e210ec67905221316d037ce1c002`
+- Phase-4 certification HEAD: `0b077896da6106b2212e0cb11f84bedc7858d853`
+- Engine SHA: `468643040c74959ffaad6e378b110d5841567f7c`
+- Engine release: `0.63.18-dima.10`
+- Engine digest: `sha256:34ce02396908e109aabcac9de6bedc3c832c79baa5450b7235c629f05455af17`
+- Migration head: `ff5b8e2c1a73`
+- Immutable historical broad benchmark: run `37027548693` / artifact `11235884317`
+- Historical broad benchmark re-executed: **NO**
+- Provider/model calls: `0`
+
+### Objective
+
+Re-adjudicate the known Round-2 blocker families against the final exact-system bytes without
+replaying benchmark prompts. Frozen cases are diagnostic seed identities only. Product behavior is
+certified through the generic owners that replaced each former invalid boundary.
+
+### Exact owner changed
+
+No production owner changed.
+
+Phase 4 added only:
+
+- `backend/tests/semantic_spec/frozen_family_closure.py`;
+- `.github/workflows/dima-brain-v2-1-frozen-family-closure.yml`.
+
+### Reference patterns consulted
+
+The Phase-4 adjudication reuses the already proven generic laws and their original references:
+
+- Metabase native query/material ownership and R5 observation for ranking;
+- Temporal/LangGraph distinction between retryable workflow state and terminal domain truth;
+- Google AIP-134 and RFC 7396 locality/explicitness for scope mutation;
+- Wren-style explicit governed context/artifact separation without adopting Wren runtime;
+- Dima's typed P18/P19/P20 epistemic ownership boundaries.
+
+No new runtime pattern was needed.
+
+### Adopted principle
+
+A frozen counterexample is evidence of a missing law, not runtime routing authority. The final
+candidate is ready for a family only when the old invalid boundary maps to a generic owner path and
+the owner tests are GREEN without benchmark identifiers in production.
+
+### Explicitly rejected pattern
+
+- rerunning the old 30-case benchmark;
+- production branches on `F02_H`, `F06_M`, `F10_H` or any other case id;
+- prompt/text matching;
+- weakening Evidence/currentness/security admission to make an old seed pass;
+- hidden analytics inside P20;
+- provider calls in deterministic closure.
+
+### Frozen seed -> generic owner path
+
+| Frozen seed | Historical first invalid boundary | Current generic owner path | Expected governed terminal class | Generic law |
+|---|---|---|---|---|
+| F02_H | `R1_NATIVE_RANKING_SCOPE_MISMATCH` | typed ranking basis -> Metabot -> dima.10 R5 -> material admission | FULFILLED or governed limit | CHANGE is typed; R5 emits `basis=change` only for structurally proven period-over-period material; ambiguous derived ranking fails closed |
+| F03_H / F04_M | `P20_RESEARCH_SESSION_NOT_SEALED` | terminal USER_MUST owner artifacts -> P20 claim gate | FULFILLED or governed limit | completion truth comes from terminal mandatory owners, not an incidental process flag |
+| F06_M | comparison coverage / dependency / completion family | typed comparison -> bounded P14 repair -> durable source execution anchor -> execution-local dependency filter | FULFILLED / LIMITED / INCONCLUSIVE | result dependency preserves scope, reuses VERIFIED source material and never replays/re-ranks parent analytics |
+| F06_H | `BRAIN_V2_NEXT_TEST_DESIGN_INVALID` | P19 NextTestRequest -> P17 typed material delta -> P19 reassessment | FULFILLED or INCONCLUSIVE | no legal information gain is governed INCONCLUSIVE, not an exception |
+| F07_M | `INTAKE_CAUSAL_CHANGE_TEMPORAL_MATERIAL_REQUIRED` | temporal authority -> governed observation -> P19 | FULFILLED / LIMITED / INCONCLUSIVE | time observation and explicit calendar comparison are separate; temporal material cannot manufacture causal authority |
+| F10_S/M/H | scope patch / native filter scope mismatch | partial ScopePatch -> ScopeVersion/currentness -> exact entity-filter admission -> fresh Evidence | FULFILLED or governed limit | absent facets unchanged; explicit mutation local; stale Evidence never becomes current; exact value sets may be one native membership predicate |
+| F01_H / F04_H / F05_M/H / F08_M/H | synthesis quality ceiling | terminal P14/P18/P19 artifacts -> source-backed projection -> P20 | FULFILLED or LIMITED | exact row/numeric provenance preserved; no hidden analytics; observation-only ceiling explicit; governed interpretation may be synthesized |
+
+### Product totality adjudication
+
+The frozen-family map requires every accepted/supported family to terminate through governed Product
+states rather than a legal-representation internal exception.
+
+Allowed terminal classes are combinations of:
+
+- `FULFILLED`;
+- `LIMITED`;
+- `INCONCLUSIVE`;
+- genuine external blocking where applicable.
+
+An internal exception caused only by a legal semantic representation is not an accepted terminal.
+
+### P20 correctness re-certified
+
+The final focused suite re-ran the generic P20/P18/P19 owners that protect:
+
+- source-backed row context;
+- exact numeric provenance;
+- no invented arithmetic;
+- no hidden analytics;
+- visible observation-only ceiling;
+- useful synthesis only from governed interpretation;
+- causal restraint.
+
+### Provider-free certification
+
+Workflow:
+
+- `dima-brain-v2-1-frozen-family-closure`;
+- run `37109748115` = SUCCESS.
+
+Gates:
+
+- exact certified engine gitlink: PASS;
+- frozen seed ids absent from production runtime: PASS;
+- adjudication manifest generation: PASS;
+- ranking/completion/dependency/adaptive closure: `68 passed`;
+- temporal + multi-turn scope closure: `14 passed`;
+- P18/P19/P20 synthesis ceilings: `88 passed`;
+- focused total: `170 passed`.
+
+Artifact:
+
+- id: `11268899479`;
+- digest: `sha256:0db81151f49db96b7c46eb1dccb90787b45614e65fc4b0f9af9be2858a2e157c`.
+
+### Generated semantic coverage
+
+Carry-forward Phase-3 independent holdout remains GREEN:
+
+- 13 dimensions;
+- 78 dimension pairs;
+- Wave A GREEN;
+- Wave B GREEN;
+- mutation canaries 5/5;
+- new-family discovery 0.
+
+Phase 4 adds family-level final-candidate coverage rather than another random generator.
+
+### New-family count
+
+`0`.
+
+No frozen family required a new semantic primitive during Phase 4.
+
+### Provider calls / tokens / cost / latency
+
+- Provider calls: `0`
+- Prompt tokens: `0`
+- Provider cost: `$0`
+- Paid latency: `0`
+
+### First invalid boundary
+
+None in Phase 4.
+
+### What is now proven
+
+- all historical answer-blocking seed families map to generic current owners;
+- synthesis-ceiling families map to governed P20/P18/P19 presentation semantics;
+- all mapped owner suites are GREEN on the certified dima.10 exact system;
+- frozen benchmark ids do not leak into production runtime;
+- no known hard seed remains dependent on its historical deterministic internal-exception boundary;
+- the old 30-case benchmark was not rerun.
+
+### What remains unproven
+
+- final freeze receipt and semantic-spec digest;
+- live mechanical Gate A;
+- live quality Gate B;
+- 90+ potential.
+
+### 30-case readiness
+
+**CLOSER — deterministic blocker families generically closed; not yet 90+ supported**
+
+### Next legal action
+
+PHASE 5 — freeze one final candidate: semantic Product SHA, exact repository HEAD, engine
+SHA/release/digest, migration head, Luna/Luna/no-cascade model topology and semantic-spec digest.
+After that freeze, no semantic code may change before or during the live panel.
