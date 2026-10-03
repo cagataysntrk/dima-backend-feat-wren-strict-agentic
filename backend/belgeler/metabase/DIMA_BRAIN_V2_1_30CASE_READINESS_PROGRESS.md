@@ -2902,3 +2902,161 @@ Provider-free only:
   `0`
 - next:
   aggregate Phase-1 + Phase-2/headless, exact candidate only.
+
+
+---
+
+## PHASE 2 — A3 ATTEMPT 2 INTAKE REFERENTIAL-INTEGRITY RCA
+
+**STATUS: RED / PAID STOP**
+
+### Semantic Product
+
+`afb4191d78d205b8f6985dc7227de4db2637a058`
+
+The preceding R5 classifier Product
+`8d41f17bc6ed8a61320af819552691699aa4ce2f`
+was fully provider-free recertified before this live attempt:
+
+- aggregate Phase-1: `37121487554 = SUCCESS`;
+- Phase-2/headless: `37121487597 = SUCCESS`;
+- frozen-family: `37121290562 = SUCCESS`;
+- semantic conformance: `37121290569 = SUCCESS`.
+
+### Live run
+
+- case: `F06_M`
+- run: `37121733148` = FAILURE
+- candidate at run start: `8d41f17bc6ed8a61320af819552691699aa4ce2f`
+- provider requests: `1`
+- prompt tokens: `14,646`
+- completion tokens: `751`
+- reasoning tokens: `0`
+- provider cost: `$0.00456255`
+- latency: `6,811 ms`
+- duplicate native: `0`
+- stale Evidence: `0`
+- raw harness pass: `false`
+- terminal: `EXCEPTION`
+- no Metabot analytical request was reached.
+
+Exception:
+
+`INTAKE_RESULT_DEPENDENCY_SOURCE_NOT_RANKING: goal_downtime_change_comparison`
+
+The model-produced child result dependency pointed at a typed COMPARISON goal instead of the typed
+RANKING goal whose first ranked department is required by the child.
+
+### First invalid boundary
+
+`Research Intake structured draft -> result-dependency referential integrity`
+
+This is earlier than the R5 material-acquisition boundary. The R5 repair fix was therefore not
+exercised by this run.
+
+### Exact owner
+
+`backend/app/v3/research_intake.py`
+
+### Generic law
+
+> A result dependency is a typed foreign key into the current goal graph. If the declared source key
+> already names a ranking goal, preserve it exactly. If it names a known non-ranking goal, canonicalize
+> only when exactly one typed ranking goal is structurally compatible with the governed dependency
+> dimension. Zero compatible targets remains invalid. More than one is ambiguous and must fail closed.
+> Unknown keys, self references and cycles remain terminal.
+
+This is referential-integrity canonicalization, not semantic text inference.
+
+### Why provider schema alone cannot close it
+
+The provider schema can close ranking metric IDs and dependency dimension IDs to catalog enums, but
+the source goal key is generated inside the same structured response. Standard JSON Schema dependency
+keywords condition validation on property presence; they do not express a dynamic sibling foreign-key
+constraint of the form “this string must equal the key of exactly one sibling object whose ranking
+surface is present”.
+
+### Production root fix
+
+- `afb4191d78d205b8f6985dc7227de4db2637a058`
+  `fix(intake): canonicalize unique typed ranking dependency`
+
+Behavior:
+
+- valid ranking pointer -> preserved exactly;
+- known non-ranking pointer + exactly one compatible ranking parent -> deterministic canonicalization;
+- zero compatible ranking -> `INTAKE_RESULT_DEPENDENCY_SOURCE_NOT_RANKING`;
+- multiple compatible rankings -> `INTAKE_RESULT_DEPENDENCY_SOURCE_AMBIGUOUS`;
+- unknown/self/cycle -> unchanged fail-closed behavior;
+- compatibility is based only on typed ranking presence and governed dependency dimension.
+
+### Provider-free siblings
+
+- `a84c10d3f45d1116594837091d59fc736e1f2c78`
+  `test(intake): cover typed ranking dependency canonicalization`
+
+Covers:
+
+- unique legal ranking target;
+- zero compatible ranking;
+- two compatible rankings;
+- valid declared ranking is never redirected;
+- unknown source remains rejected;
+- self reference remains rejected;
+- wrong dependency dimension cannot make an incompatible ranking eligible.
+
+### Reference patterns consulted
+
+- JSON Schema object dependency semantics: useful for presence constraints, insufficient for dynamic
+  sibling foreign-key integrity;
+- Wren governed-context / structured validation pattern: explicit typed authority plus deterministic
+  validation/canonicalization, never fuzzy wording repair.
+
+### What was explicitly rejected
+
+- retrying the same paid SHA;
+- regex/fuzzy/source-text matching between goals;
+- selecting “nearest” goal by wording;
+- silently choosing the first ranking when multiple candidates exist;
+- provider budget increase;
+- engine change;
+- A4.
+
+### Provider-free status
+
+- semantic conformance on production fix:
+  `37122101602 = SUCCESS`;
+- frozen-family closure:
+  `37122101647 = SUCCESS`;
+- provider calls during RCA: `0`.
+
+### New-family count
+
+`1` for this development cycle:
+
+`INTAKE_TYPED_RESULT_DEPENDENCY_REFERENTIAL_INTEGRITY`
+
+This family was exposed only after the previous R5 boundary was removed.
+
+### What is now proven
+
+- the second A3 RED is not stochastic and not a reason to retry;
+- the failure occurs before Metabot analytics;
+- a generic typed-only reproducer exists;
+- production canonicalization does not rely on benchmark wording.
+
+### What remains unproven
+
+- aggregate provider-free recertification including the new intake siblings;
+- A3 >= `3/4`;
+- bounded R5 repair in the live A3 path;
+- A4-A6 / B1-B3 / final saturation and freeze.
+
+### 30-case readiness
+
+**NO — CLOSER. Broad 30-case remains CLOSED.**
+
+### NEXT LEGAL ACTION
+
+Provider-free only: aggregate Phase-1 and Phase-2/headless on the exact intake-fix candidate. If fully
+GREEN, freeze one candidate and rerun only A3. No A1/A2, no A4.
