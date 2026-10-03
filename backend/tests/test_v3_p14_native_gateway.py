@@ -2998,3 +2998,75 @@ def test_dima10_wrong_direction_remains_nonrepairable_structural_mismatch() -> N
     assert exc.value.code == "R1_NATIVE_RANKING_SCOPE_MISMATCH"
     assert exc.value.expected_semantic_shape["ranking"]["direction"] == "desc"
     assert exc.value.observed_semantic_shape["ranking"][0]["direction"] == "asc"
+
+
+
+def test_change_level_first_result_allows_one_repair_then_change_admits() -> None:
+    from app.v3.research_material_repair import (
+        MaterialRepairDisposition,
+        decide_material_repair,
+    )
+
+    contract = _change_ranking_contract()
+    level_observation = rich_material_observation(
+        ranking=[
+            {
+                "stage_number": 0,
+                "order_index": 0,
+                "target": {
+                    "kind": "metric",
+                    "metabase_metric_id": 501,
+                    "metabase_metric_entity_id": "metric-downtime-v1",
+                },
+                "direction": "desc",
+                "limit": 5,
+                "basis": "level",
+            }
+        ]
+    )
+
+    with pytest.raises(scope_module.ResearchAnalyticalScopeError) as first:
+        scope_module._assert_material_ranking_scope(
+            contract,
+            level_observation,
+            rich_material_bindings(),
+        )
+    assert first.value.code == "R1_NATIVE_RANKING_BASIS_MISMATCH"
+
+    decision = decide_material_repair(
+        validation_code=first.value.code,
+        validation_detail=first.value.detail,
+        prior_repair_attempts=0,
+        expected_semantic_shape=first.value.expected_semantic_shape,
+        observed_semantic_shape=first.value.observed_semantic_shape,
+    )
+    assert decision.disposition == MaterialRepairDisposition.REPAIR
+    assert decision.repair_attempt == 1
+
+    repaired_observation = rich_material_observation(
+        ranking=[
+            {
+                "stage_number": 0,
+                "order_index": 0,
+                "target": {
+                    "kind": "metric",
+                    "metabase_metric_id": 501,
+                    "metabase_metric_entity_id": "metric-downtime-v1",
+                },
+                "direction": "desc",
+                "limit": 5,
+                "basis": "change",
+            }
+        ]
+    )
+    scope_module._assert_material_ranking_scope(
+        contract,
+        repaired_observation,
+        rich_material_bindings(),
+    )
+
+    exhausted = decide_material_repair(
+        validation_code="R1_NATIVE_RANKING_BASIS_MISMATCH",
+        prior_repair_attempts=1,
+    )
+    assert exhausted.disposition == MaterialRepairDisposition.TERMINAL_LIMIT
