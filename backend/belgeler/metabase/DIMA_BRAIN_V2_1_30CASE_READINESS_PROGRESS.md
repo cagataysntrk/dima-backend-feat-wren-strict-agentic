@@ -5173,3 +5173,17 @@ scores at least `3/4`.
 **30-case readiness:** CLOSER, NOT READY.
 
 **NEXT LEGAL ACTION:** update the hard-pinned A3 live workflow through an approved GitHub Actions write/dispatch surface, then execute exactly F06_M original. Do not change Product semantics while this operational gate is unresolved. Broad/30-case and frontend remain CLOSED.
+
+
+### Operational tooling note — protected GitHub surfaces
+
+After provider-free GREEN, two repository surfaces required for the next legal paid step were tested through the connected GitHub write capability:
+
+1. `.github/workflows/dima-brain-v2-1-spec-closure-live.yml` must be repinned from the prior semantic candidate to `34d0bbd461222e2a0859ed196a5a950e362c8622` and the exact GREEN PF run IDs. The workflow-file write was rejected by the platform safety control.
+2. `backend/CLAUDE.md` still carries a stale current-engine banner for dima.9. A direct correction was likewise rejected by the protected-file safety control.
+
+No low-level Git blob/tree/ref mutation was used to evade either control. No Product semantic code was changed to work around CI. The current canonical README, AGENTS contract, handoff, architecture and playbook have been refreshed to dima.11.1 and the active candidate; the protected stale CLAUDE banner is explicitly non-authoritative relative to those documents and this progress log.
+
+The semantic candidate remains `34d0bbd461222e2a0859ed196a5a950e362c8622`; all commits after it are documentation/disabled-authorization receipts only. Paid authorization remains OFF and the temporary trigger is absent.
+
+**Operational next gate remains unchanged:** approved workflow-write/dispatch surface -> repin exact candidate/PF receipts -> one F06_M original live run. No A4+, broad, 30-case, frontend, engine rebuild, or Product semantic patch is legal before that.
