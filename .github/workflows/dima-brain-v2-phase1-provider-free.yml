@@ -6,6 +6,7 @@ on:
       - feat/dima-brain-v2
       - feat/dima-brain-v2-1-discovery-simplification
       - feat/dima-brain-v2-1-specification-closure
+      - feat/dima-brain-v2-1-final-readiness
   workflow_dispatch:
 
 permissions:
@@ -58,19 +59,19 @@ jobs:
         run: |
           set -euo pipefail
           GITLINK_SHA="$(git ls-tree HEAD engine/metabase | awk '{print $3}')"
-          test "$GITLINK_SHA" = "4c49b8da6b424b0fa4d8ef340ca1b238d12980c1"
+          test "$GITLINK_SHA" = "72992664803783ef437be8d944c0555a30ef211b"
           python - <<'PY'
           import json
           from pathlib import Path
           lock = json.loads(Path("backend/lab/metabase/core_b/runtime/engine_runtime_lock.json").read_text())
           expected = {
-              "engine_sha": "4c49b8da6b424b0fa4d8ef340ca1b238d12980c1",
+              "engine_sha": "72992664803783ef437be8d944c0555a30ef211b",
               "upstream_sha": "2ba2485c78d7e00a9a25f82c00fc201da71590c4",
-              "runtime_tag": "v0.63.18-dima.11.1.1",
-              "certification_run_id": "37176179588",
-              "immutable_image_ref": "ghcr.io/upcytech/dima-metabase-engine@sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d",
-              "registry_digest": "sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d",
-              "build_identity": "github-actions:37176179588:4c49b8da6b424b0fa4d8ef340ca1b238d12980c1",
+              "runtime_tag": "v0.63.18-dima.11.1.2.2",
+              "certification_run_id": "37189616635",
+              "immutable_image_ref": "ghcr.io/upcytech/dima-metabase-engine@sha256:42d591b14c6affe2e45b5525564f9c220bd0d2c93f38edba4000cf83985c419b",
+              "registry_digest": "sha256:42d591b14c6affe2e45b5525564f9c220bd0d2c93f38edba4000cf83985c419b",
+              "build_identity": "github-actions:37189616635:72992664803783ef437be8d944c0555a30ef211b",
           }
           for key, value in expected.items():
               assert lock.get(key) == value, (key, lock.get(key), value)
@@ -81,7 +82,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "4c49b8da6b424b0fa4d8ef340ca1b238d12980c1"
+          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "72992664803783ef437be8d944c0555a30ef211b"
           test -d backend/app/v3/brain_v2
           ! grep -R -nE 'DEV80|Validation50|Hidden50|30-case|F0[0-9]|F10|T[1-7]' backend/app/v3/brain_v2
           ! grep -R -nE 'sqlalchemy|sqlmodel|app\.v3\.substrate\.metabase\.(compiler|execution_adapter)' backend/app/v3/brain_v2

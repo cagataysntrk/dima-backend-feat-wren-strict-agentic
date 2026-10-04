@@ -6,6 +6,7 @@ on:
       - feat/dima-brain-v2
       - feat/dima-brain-v2-1-discovery-simplification
       - feat/dima-brain-v2-1-specification-closure
+      - feat/dima-brain-v2-1-final-readiness
     paths:
       - ".github/workflows/dima-brain-v2-provider-free.yml"
       - "engine/metabase"
@@ -40,7 +41,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "4c49b8da6b424b0fa4d8ef340ca1b238d12980c1"
+          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "72992664803783ef437be8d944c0555a30ef211b"
 
       - uses: actions/setup-python@v5
         with:

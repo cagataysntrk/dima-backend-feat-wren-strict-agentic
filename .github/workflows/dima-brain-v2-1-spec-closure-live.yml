@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - feat/dima-brain-v2-1-specification-closure
+      - feat/dima-brain-v2-1-final-readiness
     paths:
       - ".github/BRAIN_V21_SPEC_CLOSURE_LIVE_TRIGGER"
 
@@ -65,8 +66,8 @@ jobs:
           assert auth["semantic_holdout_run_id"]==37196605612
           assert auth["frozen_family_run_id"]==37196605603
           assert isinstance(auth["case_id"],str) and auth["case_id"]
-          assert auth["engine_sha"]=="4c49b8da6b424b0fa4d8ef340ca1b238d12980c1"
-          assert auth["engine_release"]=="0.63.18-dima.11.1"
+          assert auth["engine_sha"]=="72992664803783ef437be8d944c0555a30ef211b"
+          assert auth["engine_release"]=="0.63.18-dima.11.1.2"
           assert auth["model_policy"]=="LUNA_LUNA_NO_CASCADE"
           subprocess.run(["git","cat-file","-e",auth["candidate_product_sha"]+"^{commit}"],check=True)
           subprocess.run(
@@ -140,14 +141,14 @@ jobs:
             --gitlink-sha "$GITLINK_SHA" \
             --github-env "$GITHUB_ENV"
 
-      - name: Pull exact certified dima.11.1 digest
+      - name: Pull exact certified dima.11.1.2 digest
         shell: bash
         run: |
           set -euo pipefail
-          test "$ENGINE_SHA" = "4c49b8da6b424b0fa4d8ef340ca1b238d12980c1"
-          test "$CERTIFICATION_RUN_ID" = "37176179588"
-          test "$RUNTIME_TAG" = "v0.63.18-dima.11.1.1"
-          test "$REGISTRY_DIGEST" = "sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d"
+          test "$ENGINE_SHA" = "72992664803783ef437be8d944c0555a30ef211b"
+          test "$CERTIFICATION_RUN_ID" = "37189616635"
+          test "$RUNTIME_TAG" = "v0.63.18-dima.11.1.2.2"
+          test "$REGISTRY_DIGEST" = "sha256:42d591b14c6affe2e45b5525564f9c220bd0d2c93f38edba4000cf83985c419b"
           docker pull "$IMMUTABLE_IMAGE_REF"
           docker image inspect -f '{{range .RepoDigests}}{{println .}}{{end}}' "$IMMUTABLE_IMAGE_REF" | grep -Fx "$IMMUTABLE_IMAGE_REF"
 
@@ -209,7 +210,7 @@ jobs:
           python lab/metabase/core_b/runtime/seed_round2_fixture.py \
             --fixture eval/round2_neutral_machine_fixture.json
 
-      - name: Start exact certified dima.11.1 engine
+      - name: Start exact certified dima.11.1.2 engine
         shell: bash
         run: |
           set -euo pipefail
@@ -348,8 +349,8 @@ jobs:
           assert r["schema_version"]=="dima_brain_v2_1_recovery_live_v1"
           assert r["system"]=="DIMA_BRAIN_V2_1_LANGGRAPH"
           assert r["candidate_product_sha"]=="43da71811370cce931d08a3bf0561c09652f632a"
-          assert r["engine_sha"]=="4c49b8da6b424b0fa4d8ef340ca1b238d12980c1"
-          assert r["engine_release"]=="v0.63.18-dima.11.1.1"
+          assert r["engine_sha"]=="72992664803783ef437be8d944c0555a30ef211b"
+          assert r["engine_release"]=="v0.63.18-dima.11.1.2.2"
           assert r["source_case_count"]==30
           assert r["case_count"]==1 and len(r["cases"])==1
           assert r["selected_case_ids"]==["${{ steps.auth.outputs.case_id }}"]
