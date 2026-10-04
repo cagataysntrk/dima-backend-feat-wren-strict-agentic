@@ -9,7 +9,7 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
-from datetime import date
+from datetime import date, datetime, timezone
 from enum import StrEnum
 from typing import Any, Literal, Protocol
 
@@ -464,6 +464,41 @@ class ModelRankingBasisReconsiderationEnvelope(Frozen):
     result: ModelResolvedRankingBasis | ModelClarifyResearchIntake
 
 
+class ModelResolvedChangePeriodPair(Frozen):
+    """Narrow provider DTO: only accepted temporal pair bounds may change."""
+
+    terminal: Literal["RESOLVED"]
+    baseline_period: ModelTimePeriodDraft
+    comparison_period: ModelTimePeriodDraft
+
+    @model_validator(mode="after")
+    def coherent(self):
+        if self.baseline_period.role != TemporalRole.BASELINE_PERIOD:
+            raise ValueError("baseline_period must keep BASELINE_PERIOD role")
+        if self.comparison_period.role != TemporalRole.COMPARISON_PERIOD:
+            raise ValueError("comparison_period must keep COMPARISON_PERIOD role")
+        if (
+            self.baseline_period.time_dimension_semantic_id
+            != self.comparison_period.time_dimension_semantic_id
+        ):
+            raise ValueError("change period pair must use one governed time dimension")
+        for item in (self.baseline_period, self.comparison_period):
+            ResearchTimePeriod(
+                source_text=item.source_text,
+                time_dimension_candidate_id=item.time_dimension_semantic_id,
+                start=item.start,
+                end=item.end,
+                role=item.role,
+            )
+        return self
+
+
+class ModelChangePeriodReconsiderationEnvelope(Frozen):
+    """Narrow provider DTO: no non-temporal authority is writable."""
+
+    result: ModelResolvedChangePeriodPair | ModelClarifyResearchIntake
+
+
 class ResearchIntakeResult(Frozen):
     terminal: ResearchIntakeTerminal
     brief: ResearchBrief | None = None
@@ -621,6 +656,28 @@ Authority rules:
 - Do not plan a query, calculate a delta, write SQL/MBQL, choose an entity, or inspect results.
 - The supplied baseline/comparison periods are typed accepted context, not evidence of a CHANGE request.
 - If the exact user fragments do not deliberately distinguish LEVEL from CHANGE, return CLARIFY.
+- Never use keyword lists, regex, morphology rules, benchmark identity, or hidden defaults.
+"""
+
+
+_CHANGE_PERIOD_RECONSIDERATION_SYSTEM = """You are Dima's bounded temporal-authority resolver.
+You receive only an already-grounded CHANGE ranking, its exact verbatim user fragments, one governed
+time dimension, calendar context, and the current typed baseline/comparison pair.
+
+Return exactly one of:
+- RESOLVED with one BASELINE_PERIOD and one COMPARISON_PERIOD, or
+- CLARIFY with one bounded clarification question.
+
+Authority rules:
+- Decide only the two accepted half-open [start,end) period bounds.
+- Keep the supplied governed time dimension and period roles exactly.
+- Do not change goals, metrics, ranking basis/direction/limit, dependencies, deliverables, scope refs,
+  source fragments, or any other semantic state.
+- Overlap is not globally illegal: preserve overlapping windows only when the exact user fragments
+  deliberately establish an overlapping/rolling comparison. Otherwise resolve the exact period pair
+  established by the user and calendar context, or return CLARIFY.
+- Calendar context resolves calendar references only; it never proves data availability.
+- Do not plan a query, calculate a delta, write SQL/MBQL, choose an entity, or inspect results.
 - Never use keyword lists, regex, morphology rules, benchmark identity, or hidden defaults.
 """
 
@@ -951,6 +1008,33 @@ def _ranking_basis_reconsideration_schema() -> dict[str, Any]:
     """Provider contract exposing only the one authority field being reconsidered."""
 
     schema = strict_json_schema(ModelRankingBasisReconsiderationEnvelope)
+    validate_provider_strict_schema(schema)
+    return schema
+
+
+def _change_period_reconsideration_schema(
+    time_dimension_semantic_id: str,
+) -> dict[str, Any]:
+    """Provider contract exposing only the temporal pair being reconsidered."""
+
+    schema = strict_json_schema(ModelChangePeriodReconsiderationEnvelope)
+    definitions = schema.get("$defs") or {}
+    period_definition = definitions.get("ModelTimePeriodDraft")
+    if not isinstance(period_definition, dict):
+        raise ResearchIntakeError(
+            "INTAKE_CHANGE_PERIOD_SCHEMA_INVALID",
+            "ModelTimePeriodDraft definition is absent",
+        )
+    period_properties = period_definition.get("properties")
+    if not isinstance(period_properties, dict):
+        raise ResearchIntakeError(
+            "INTAKE_CHANGE_PERIOD_SCHEMA_INVALID",
+            "ModelTimePeriodDraft properties are absent",
+        )
+    period_properties["time_dimension_semantic_id"] = {
+        "type": "string",
+        "enum": [time_dimension_semantic_id],
+    }
     validate_provider_strict_schema(schema)
     return schema
 
@@ -1877,6 +1961,136 @@ class ResearchIntakeCompiler:
         }
 
     @staticmethod
+    def _change_ranking_period_reconsideration_issue(
+        draft: ModelResearchBriefDraft,
+        *,
+        current: str,
+        calendar_reference_date: str,
+    ) -> dict[str, Any] | None:
+        """Detect a structurally suspicious CHANGE pair without calendar guessing.
+
+        Exact collapse is always invalid. Partial overlap is not automatically
+        invalid because rolling comparisons are legitimate; one narrow model
+        adjudication decides only period bounds from exact user fragments.
+        """
+
+        if draft.terminal != ResearchIntakeTerminal.READY:
+            return None
+        change_goals = tuple(
+            goal
+            for goal in draft.goals
+            if (
+                goal.ranking is not None
+                and goal.ranking.basis == RankingBasis.CHANGE
+            )
+        )
+        if len(change_goals) != 1:
+            return None
+        baselines = tuple(
+            item
+            for item in draft.time_periods
+            if item.role == TemporalRole.BASELINE_PERIOD
+        )
+        comparisons = tuple(
+            item
+            for item in draft.time_periods
+            if item.role == TemporalRole.COMPARISON_PERIOD
+        )
+        if len(baselines) != 1 or len(comparisons) != 1:
+            return None
+        baseline, comparison = baselines[0], comparisons[0]
+        if (
+            baseline.time_dimension_semantic_id
+            != comparison.time_dimension_semantic_id
+        ):
+            return None
+
+        collapsed = (
+            baseline.start,
+            baseline.end,
+        ) == (
+            comparison.start,
+            comparison.end,
+        )
+
+        def parse_bound(value: str):
+            if "T" not in value:
+                return ("date", date.fromisoformat(value))
+            normalized = value[:-1] + "+00:00" if value.endswith("Z") else value
+            parsed = datetime.fromisoformat(normalized)
+            if parsed.tzinfo is not None:
+                parsed = parsed.astimezone(timezone.utc).replace(tzinfo=None)
+            return ("datetime", parsed)
+
+        overlap = False
+        if not collapsed:
+            try:
+                b_start_kind, b_start = parse_bound(baseline.start)
+                b_end_kind, b_end = parse_bound(baseline.end)
+                c_start_kind, c_start = parse_bound(comparison.start)
+                c_end_kind, c_end = parse_bound(comparison.end)
+            except (TypeError, ValueError):
+                return None
+            kinds = {
+                b_start_kind,
+                b_end_kind,
+                c_start_kind,
+                c_end_kind,
+            }
+            if len(kinds) == 1:
+                overlap = max(b_start, c_start) < min(b_end, c_end)
+        if not collapsed and not overlap:
+            return None
+
+        ranking_goal = change_goals[0]
+        ranking_fragment = ranking_goal.source_fragment_text
+        if (
+            ranking_fragment is None
+            or ranking_fragment != ranking_fragment.strip()
+            or ranking_fragment not in current
+        ):
+            raise ResearchIntakeError(
+                "INTAKE_CHANGE_PERIOD_SOURCE_FRAGMENT_REQUIRED",
+                "temporal deliberation requires an exact ranking source fragment",
+            )
+
+        measure = ranking_goal.ranking.measure_semantic_id
+        comparison_fragments = tuple(
+            goal.source_fragment_text
+            for goal in draft.goals
+            if (
+                goal.kind == ResearchGoalKind.COMPARISON
+                and measure is not None
+                and measure
+                in {
+                    *goal.subject_semantic_ids,
+                    *goal.related_semantic_ids,
+                }
+            )
+        )
+        if any(
+            fragment is None
+            or fragment != fragment.strip()
+            or fragment not in current
+            for fragment in comparison_fragments
+        ):
+            raise ResearchIntakeError(
+                "INTAKE_CHANGE_PERIOD_SOURCE_FRAGMENT_REQUIRED",
+                "temporal deliberation requires exact comparison source fragments",
+            )
+
+        return {
+            "kind": "CHANGE_PERIOD_PAIR_DELIBERATION",
+            "reason": "COLLAPSED" if collapsed else "OVERLAPPING",
+            "time_dimension_semantic_id": baseline.time_dimension_semantic_id,
+            "calendar_reference_date": calendar_reference_date,
+            "ranking_source_fragment": ranking_fragment,
+            "comparison_source_fragments": list(comparison_fragments),
+            "baseline_period": baseline.model_dump(mode="json"),
+            "comparison_period": comparison.model_dump(mode="json"),
+        }
+
+    @staticmethod
     def _assert_change_ranking_temporal_contract(
         draft: ModelResearchBriefDraft,
     ) -> None:
@@ -2747,6 +2961,96 @@ class ResearchIntakeCompiler:
                 )
             return draft.model_copy(update={"goals": tuple(goals)})
 
+        def reconsider_change_period_pair(
+            draft: ModelResearchBriefDraft,
+            issue: dict[str, Any],
+        ) -> ModelResearchBriefDraft:
+            time_dimension = str(issue["time_dimension_semantic_id"])
+            raw = self._transport.structured_json(
+                _CHANGE_PERIOD_RECONSIDERATION_SYSTEM,
+                _canonical(
+                    {
+                        "reconsideration": issue,
+                        "instruction": (
+                            "Return only typed baseline/comparison period authority "
+                            "or CLARIFY. All omitted semantic state is immutable."
+                        ),
+                    }
+                ),
+                schema=_change_period_reconsideration_schema(time_dimension),
+                schema_name=self._schema_name + "_change_period_pair",
+            )
+            try:
+                envelope = (
+                    ModelChangePeriodReconsiderationEnvelope.model_validate_json(
+                        raw
+                    )
+                )
+            except Exception as exc:
+                raise ResearchIntakeError(
+                    "INTAKE_CHANGE_PERIOD_MODEL_OUTPUT_INVALID",
+                    "change-period output failed the narrow typed contract",
+                ) from exc
+            provider_result = envelope.result
+            if isinstance(provider_result, ModelClarifyResearchIntake):
+                return ModelResearchBriefDraft(
+                    terminal=ResearchIntakeTerminal.CLARIFY,
+                    clarification_question=(
+                        provider_result.clarification_question
+                    ),
+                )
+
+            if (
+                provider_result.baseline_period.time_dimension_semantic_id
+                != time_dimension
+                or provider_result.comparison_period.time_dimension_semantic_id
+                != time_dimension
+            ):
+                raise ResearchIntakeError(
+                    "INTAKE_CHANGE_PERIOD_TIME_DIMENSION_DRIFT",
+                    time_dimension,
+                )
+
+            original_baselines = tuple(
+                item
+                for item in draft.time_periods
+                if item.role == TemporalRole.BASELINE_PERIOD
+            )
+            original_comparisons = tuple(
+                item
+                for item in draft.time_periods
+                if item.role == TemporalRole.COMPARISON_PERIOD
+            )
+            if len(original_baselines) != 1 or len(original_comparisons) != 1:
+                raise ResearchIntakeError(
+                    "INTAKE_CHANGE_RANKING_COMPARISON_REQUIRED",
+                    "narrow temporal reconsideration lost the accepted pair",
+                )
+            original_baseline = original_baselines[0]
+            original_comparison = original_comparisons[0]
+            replacement_by_role = {
+                TemporalRole.BASELINE_PERIOD: original_baseline.model_copy(
+                    update={
+                        "start": provider_result.baseline_period.start,
+                        "end": provider_result.baseline_period.end,
+                    }
+                ),
+                TemporalRole.COMPARISON_PERIOD: original_comparison.model_copy(
+                    update={
+                        "start": provider_result.comparison_period.start,
+                        "end": provider_result.comparison_period.end,
+                    }
+                ),
+            }
+            return draft.model_copy(
+                update={
+                    "time_periods": tuple(
+                        replacement_by_role.get(item.role, item)
+                        for item in draft.time_periods
+                    )
+                }
+            )
+
         draft = invoke_provider(
             instruction=(
                 "Return the complete CURRENT intent only. Prior brief is context, "
@@ -2783,8 +3087,10 @@ class ResearchIntakeCompiler:
             current=current,
             catalog=catalog,
         )
-        change_period_issue = self._change_ranking_collapsed_period_issue(
-            draft
+        change_period_issue = self._change_ranking_period_reconsideration_issue(
+            draft,
+            current=current,
+            calendar_reference_date=self._calendar_reference_date,
         )
         if (
             prior_brief is None
@@ -2797,16 +3103,9 @@ class ResearchIntakeCompiler:
             and self.call_count < 2
             and change_period_issue is not None
         ):
-            draft = invoke_provider(
-                instruction=(
-                    "Reconsider once because the READY output violates the typed "
-                    "CHANGE ranking temporal contract: baseline and comparison "
-                    "cannot be the exact same bounded period. Preserve all "
-                    "non-temporal authority. Return two distinct exact governed "
-                    "periods only if current user intent establishes them; "
-                    "otherwise return CLARIFY. Do not invent dates."
-                ),
-                reconsideration=change_period_issue,
+            draft = reconsider_change_period_pair(
+                draft,
+                change_period_issue,
             )
         elif (
             prior_brief is None
