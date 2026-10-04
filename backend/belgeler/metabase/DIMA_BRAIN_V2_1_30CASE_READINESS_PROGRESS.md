@@ -4423,3 +4423,162 @@ Frozen-family on the production change:
 
 Run aggregate Phase-1 and Phase-2/headless on the exact candidate. If GREEN, run A3 only once.
 A4 remains closed until A3 >= 3/4.
+
+
+---
+
+## A3 TYPED CHANGE — DURABLE OBSERVATION RESUME CLOSURE
+
+**STATUS: PROVIDER-FREE RECERTIFICATION IN PROGRESS**
+
+### Product / engine
+
+- semantic Product change: `b16bc56e405b9517355ae3842076684d71800f06`
+- repository candidate before aggregate recertification: `ee3e88bd590371b1e3d3ba3bb9276dc848db8058`
+- certified engine SHA: `4c49b8da6b424b0fa4d8ef340ca1b238d12980c1`
+- release family: `0.63.18-dima.11.1`
+- runtime tag: `v0.63.18-dima.11.1.1`
+- digest: `sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d`
+- certification: `37176179588 = SUCCESS`
+- provider/model change: `0`
+- engine production change in this RCA: `0`
+
+### Development proof
+
+Latest A3 typed-CHANGE run:
+
+- run: `37185807659 = SUCCESS` at workflow/harness level;
+- artifact: `11296987789`;
+- artifact digest:
+  `sha256:8d979a73708043d4a70e094ec8331396a14281963dbf4cd15ee7ae0e2bc95ccf`;
+- manual Product score: **2/4 PARTIAL**;
+- terminal: `PARTIAL`;
+- workflow status: `WAITING`;
+- requirement_complete: `false`;
+- provider requests: `8`;
+- prompt tokens: `151,947`;
+- completion tokens: `4,432`;
+- reasoning tokens: `1,997`;
+- cost: `$0.02487497`;
+- latency: `49,024 ms`;
+- exception: `0`;
+- duplicate native: `0`;
+- stale Evidence: `0`.
+
+BASE comparison Evidence was VERIFIED. Ranking BASE was correctly LIMITED and exactly one
+`P14_REPAIR` was opened. The repair generated and executed legal period-pair derived CHANGE
+material, but the repair link remained `EXECUTED`; no receipt/Evidence was minted, ranking remained
+`DELEGATED`, the result-dependent child remained READY, and no report was produced.
+
+### Reclassification of the first invalid boundary
+
+A fresh independent test-only reproducer was run directly from the current certified engine:
+
+- engine base: `4c49b8da6b424b0fa4d8ef340ca1b238d12980c1`;
+- branch: `test/dima11p1-live-persisted-shape`;
+- production source diff: **NONE**;
+- exact persisted equality-period CHANGE reproducer:
+  run `37194029037 = SUCCESS`.
+
+Therefore the current certified observer can classify the exact serialized legal CHANGE family.
+No new engine release is authorized or needed.
+
+The remaining boundary is:
+
+`durable P14_REPAIR EXECUTED occurrence -> retryable native observation -> same-run durable resume`.
+
+### Exact owner
+
+`backend/app/v3/research_product.py::ResearchAskOrchestrator.run_next`
+
+The canonical P14 executor already preserves the native result before observation and can resume an
+`EXECUTED` occurrence without replaying Metabot or dataset execution. However, the orchestrator
+returned the first retryable observation-unavailable condition to Brain V2; Brain V2 correctly mapped
+the still-DELEGATED obligation to WAITING, which ended the one-shot development proof before a durable
+observation resume.
+
+### Generic law
+
+> A retryable post-execution observation failure may be resumed once immediately from the exact
+> durable EXECUTED occurrence. The resume must not replay Metabot cognition, must not execute the
+> dataset again, and must not change query/scope/material identity. If the second observation attempt
+> also fails, the existing DELEGATED/WAITING semantics remain authoritative.
+
+This is durability/recovery, not analytical semantics.
+
+### Reference pattern
+
+Temporal durable-execution/replay pattern: previously completed external work is resumed from recorded
+history/state rather than re-executed; retryable infrastructure/activity boundaries may be retried while
+preserving durable progress and idempotency.
+
+### Changes
+
+Production:
+
+- `run_next` now performs at most one immediate observation-only resume when
+  `ResearchMaterialObservationUnavailable` occurs and the exact link is durably `EXECUTED`;
+- the second call uses `request=None` and the same native occurrence;
+- no provider call, Metabot turn, dataset execution, query rewrite, prompt change, or semantic branch
+  is introduced;
+- repeated observation failure still returns the existing retryable WAITING state.
+
+Tests:
+
+- transient observation unavailable -> same occurrence recovers to VERIFIED Evidence;
+- repeated observation unavailable -> remains DELEGATED/WAITING;
+- both siblings assert one Metabot turn and identical query identity across the resume.
+
+Commits:
+
+- `b16bc56e405b9517355ae3842076684d71800f06`
+  — lifecycle root fix;
+- `0e9fe2467ac0f5119deb5254663aecb186c6980c`
+  — bounded resume siblings;
+- `ee3e88bd590371b1e3d3ba3bb9276dc848db8058`
+  — paid STOP remains enforced.
+
+### Provider-free proof so far
+
+- exact certified-engine serialized observer reproducer:
+  `37194029037 = SUCCESS`;
+- semantic conformance + Wave A + independent Wave B + mutation:
+  `37194522599 = SUCCESS`;
+- provider calls: `0`.
+
+### Explicitly rejected
+
+- another engine release;
+- dima.12;
+- exploratory engine branch;
+- Product-side query meaning inference;
+- SQL/MBQL generation;
+- another repair attempt;
+- provider/model budget increase;
+- A4;
+- broad/30-case execution.
+
+### What is proven
+
+- legal repaired CHANGE material is generated;
+- current certified engine can observe the exact serialized CHANGE family;
+- durable native result survives post-execution observation failure;
+- the P14 owner can resume that exact occurrence without replaying external work;
+- the fix is lifecycle-only and bounded.
+
+### What remains unproven
+
+- aggregate Phase-1 GREEN on the exact lifecycle candidate;
+- Phase-2/headless GREEN on the exact lifecycle candidate;
+- A3 >= `3/4`;
+- A4/A5/A6 and B1/B2/B3 development proofs;
+- final saturation and final same-SHA readiness panel.
+
+### 30-case readiness
+
+**NO — CLOSER. Broad 30-case remains CLOSED.**
+
+### NEXT LEGAL ACTION
+
+Run aggregate Phase-1 and Phase-2/headless provider-free on the exact lifecycle candidate. If both
+GREEN, arm **A3 only once**. A4 remains closed until A3 >= `3/4`.
