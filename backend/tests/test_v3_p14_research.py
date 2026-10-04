@@ -353,7 +353,8 @@ def test_native_material_contract_projects_change_ranking_without_owning_query_p
     assert "- basis: change" in message
     assert "- reference: dimension.event_date [2026-01-01, 2026-02-01)" in message
     assert "- base: dimension.event_date [2026-02-01, 2026-03-01)" in message
-    assert "rank by the accepted baseline-to-comparison change" in message
+    assert "accepted PAIR change frame" in message
+    assert "rank by the governed CHANGE quantity" in message
     assert context["ranking"]["basis"] == "change"
     assert context["comparison"] is not None
     assert "SQL" not in message
