@@ -33,7 +33,7 @@ jobs:
           --health-retries 20
 
     env:
-      PHASE2_BASE_SHA: 9b761e923b9a5bc86b560b7a7f22600a15df9887
+      PHASE2_BASE_SHA: 5bb2bc2f1b40377e354c9e20fa14aaf729fb4cd0
       DIMA_VQR_EMBEDDER: "off"
       DIMA_SCHEDULER_ENABLED: "false"
       DIMA_INTERACTION_LOG: "false"
