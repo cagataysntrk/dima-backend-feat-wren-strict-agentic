@@ -5073,3 +5073,46 @@ scores at least `3/4`.
 **30-case readiness:** CLOSER, NOT READY.
 
 **NEXT LEGAL ACTION:** paid window stays OFF. Prove the frozen engine can execute one legal CHANGE representation without an LLM and audit the exact semantic-to-native request surface. If deterministic representability and Product projection are both GREEN, classify the remaining defect as native query-cognition/model reliability rather than adding Product semantic code. Only then choose the narrowest authorized diagnostic; broad and 30-case remain CLOSED.
+
+
+---
+
+## PHASE 3 A3.1 RECOVERY — OBLIGATION-LOCAL AUTHORITY CONSOLIDATION — 2026-10-04
+
+**PHASE:** 3 recovery / provider-free
+
+**STATUS:** ROOT FIX IMPLEMENTED; FULL RECERTIFICATION REQUESTED
+
+**Semantic Product SHA:** `34d0bbd461222e2a0859ed196a5a950e362c8622`
+
+**Engine SHA/tag/digest:** `4c49b8da6b424b0fa4d8ef340ca1b238d12980c1` / `0.63.18-dima.11.1` / `sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d`
+
+**Objective:** Remove duplicated wording authority from P14 material acquisition without adding query-planning knowledge, phrase matching, MBQL templates, or an engine patch.
+
+**First invalid boundary from prior live RED:** accepted typed CHANGE material was correct; the first native acquisition never produced a runnable Metabot query.
+
+**Exact Product-side owner audited:** `ResearchIntakeCompiler -> ResearchQuestion.source_text -> ResearchAskOrchestrator.start_from_brief -> ResearchObligation.objective -> ResearchManager.native_material_message`.
+
+**Was this law already implemented elsewhere?** YES. Intake already requires an exact verbatim `source_fragment_text` for each current goal and stores its provenance hash. That grounded fragment is the existing goal-local authority. Retaining broader provider-authored `goal.source_text` as the runtime obligation wording duplicated the same semantic concept with a weaker source.
+
+**Canonical semantic owner:** exact verbatim Intake goal fragment for obligation-local natural-language context; typed AnalyticalRequestContract remains material authority; Metabase/Metabot remains analytical HOW/query owner.
+
+**Files changed:**
+- `backend/app/v3/research_intake.py`
+- `backend/tests/test_v3_research_intake.py`
+
+**Generic law:** when a validated verbatim goal fragment exists, the durable `ResearchQuestion.source_text` must equal that fragment. Historical fixtures without a fragment retain `goal.source_text` as compatibility fallback. No user phrase is interpreted by production code.
+
+**Provider-free reproducer:** a multi-goal request whose provider `goal.source_text` is the entire combined request while each exact `source_fragment_text` is local. The compiled ranking and dependent-breakdown obligations must retain only their own exact fragments.
+
+**Certified-engine representability evidence:** exact dima.11.1 tests already contain legal period-pair CHANGE representations using two governed period aggregations, comparison-minus-baseline, and DESC ordering; the observer classifies them as `basis=change`. The engine query-shape law therefore already exists and was not copied into Dima.
+
+**Live run:** none after this fix; paid authorization remains OFF.
+
+**What is proven so far:** the correction is semantic provenance consolidation, not a prompt workaround; no graph/engine/query-planner owner changed.
+
+**What remains unproven:** full provider-free recertification on this semantic SHA and the affected F06_M live rerun.
+
+**30-case readiness:** CLOSER, NOT READY.
+
+**NEXT LEGAL ACTION:** require semantic/frozen + full Phase-1 + Phase-2 provider-free GREEN. Then temporarily authorize exactly one F06_M original rerun. No broad/30-case.
