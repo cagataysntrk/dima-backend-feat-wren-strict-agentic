@@ -5205,3 +5205,56 @@ The semantic candidate remains `34d0bbd461222e2a0859ed196a5a950e362c8622`; all c
 - Provider-free reproducers cover corrected overlap, deliberate rolling overlap, and unresolved exact collapse.
 - Certified engine remains frozen at `4c49b8da6b424b0fa4d8ef340ca1b238d12980c1` / `0.63.18-dima.11.1`.
 - Broad paid = CLOSED. Actual 30-case = CLOSED. Frontend = FORBIDDEN.
+
+
+---
+
+## PHASE 3 A3.1 TEMPORAL ROOT CANDIDATE — FULL PF RECERT LAUNCH — 2026-10-04
+
+**PHASE:** 3 / A3.1 root recovery
+
+**STATUS:** TEMPORAL ROOT FIX IS THE ONLY ACTIVE PRODUCT DELTA; FULL PROVIDER-FREE RECERTIFICATION LAUNCHED
+
+**Product SHA:** `156eb41e3469c852d725501cea1d2a724e08f851`
+
+**Repository HEAD before this receipt:** `1cbb11ef19b9a3811a9724f798a0449a89ecec37`
+
+**Engine SHA/tag/digest:** `4c49b8da6b424b0fa4d8ef340ca1b238d12980c1` / `0.63.18-dima.11.1` / `sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d`
+
+**Objective:** close the actual first-invalid A3 boundary found in live run `37216154655`: an ambiguous overlapping baseline/comparison pair crossing Intake into native CHANGE material.
+
+**First invalid boundary:** Research Intake temporal authority. The live pair was baseline `[2026-05-01,2026-06-30)` and comparison `[2026-06-01,2026-07-01)`; those half-open windows overlap.
+
+**Exact owner:** `ResearchIntakeCompiler` bounded CHANGE-period reconsideration.
+
+**Was this law already implemented elsewhere?** PARTIALLY. Exact-collapse rejection existed, but ambiguous overlap did not have a bounded typed adjudication seam. No downstream engine/query owner can repair this upstream temporal authority.
+
+**Canonical semantic owner:** Research Intake typed temporal authority. Metabase/Metabot remains analytical HOW; dima.11.1 remains frozen.
+
+**Files changed in the active Product fix:** `backend/app/v3/research_intake.py` plus provider-free Intake tests.
+
+**Generic law:** one narrow reconsideration may change only baseline/comparison bounds, preserve the governed time dimension and period roles, preserve every non-temporal semantic field, and return CLARIFY when exact user fragments do not establish a legitimate pair. Deliberate rolling overlap remains legal. No regex/fuzzy/morph/benchmark logic; no SQL/MBQL; no engine change.
+
+**Scope correction:** a later transport-authority hypothesis was reviewed after reconstructing branch history and was reverted before recertification. It is not part of the candidate. The active semantic Product remains `156eb41e...`.
+
+**Provider-free evidence already GREEN on the root fix:**
+- semantic conformance: `37217757017 = SUCCESS`;
+- frozen-family closure: `37217757037 = SUCCESS`.
+
+**Provider-free runs launched by this receipt:** aggregate Phase-1 and Phase-2/headless on the current repository with the semantic Product pinned to `156eb41e...`.
+
+**Live run:** none after the temporal root fix.
+
+**Manual score:** pending exact F06_M original rerun after full PF GREEN.
+
+**Provider requests / Tokens / Cost / Latency:** 0 for this recovery step.
+
+**Exception / Silent wrong / Duplicate native / Stale Evidence:** no new live claim; deterministic suites must remain GREEN before paid re-entry.
+
+**What is proven:** the previous A3 RED had an upstream temporal-authority defect independent of native query cognition; the fix is narrow, typed and owner-correct.
+
+**What remains unproven:** full Phase-1/Phase-2 recertification on the repaired branch; then A3 original 4/4 and semantic sibling 4/4.
+
+**30-case readiness:** CLOSER, NOT READY.
+
+**NEXT LEGAL ACTION:** wait only for the launched provider-free suites. If GREEN, repin the one-shot live workflow to Product `156eb41e...` and the new PF run receipts, arm exactly F06_M original, then disarm immediately. No broad, no 30-case, no frontend.
