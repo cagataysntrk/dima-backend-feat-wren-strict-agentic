@@ -3762,3 +3762,141 @@ def test_change_ranking_conflicting_period_role_fails_closed() -> None:
         )
 
     assert exc.value.code == "INTAKE_CHANGE_RANKING_PERIOD_ROLE_CONFLICT"
+
+
+
+def _temporal_comparison_with_level_ranking_payload() -> dict:
+    payload = {
+        "terminal": "READY",
+        "objective": "Compare one governed metric across two periods and rank one entity dimension.",
+        "goals": [
+            {
+                "goal_key": "g-compare",
+                "kind": "comparison",
+                "source_text": "Compare the governed metric across the accepted periods.",
+                "subject_semantic_ids": ["metric.downtime"],
+                "related_semantic_ids": ["dimension.department"],
+                "ranking": None,
+                "comparisons": [],
+            },
+            {
+                "goal_key": "g-rank",
+                "kind": "ranking",
+                "source_text": "Rank the requested entity dimension.",
+                "subject_semantic_ids": ["metric.downtime"],
+                "related_semantic_ids": ["dimension.department"],
+                "ranking": {
+                    "source_text": "Rank the requested entity dimension.",
+                    "direction": "desc",
+                    "limit": None,
+                    "measure_semantic_id": "metric.downtime",
+                    "basis": "level",
+                },
+                "comparisons": [],
+            },
+        ],
+        "deliverables": [],
+        "investigation_directives": [],
+        "time_periods": [
+            _r6_period(
+                "baseline",
+                "2026-05-01",
+                "2026-06-01",
+                role="baseline_period",
+            ),
+            _r6_period(
+                "comparison",
+                "2026-06-01",
+                "2026-07-01",
+                role="comparison_period",
+            ),
+        ],
+        "required_domains": ["machine_operations"],
+    }
+    return payload
+
+
+def test_temporal_comparison_level_ranking_gets_one_basis_reconsideration() -> None:
+    first = _temporal_comparison_with_level_ranking_payload()
+    second = json.loads(json.dumps(first))
+    second["goals"][1]["ranking"]["basis"] = "change"
+    transport = SequenceTransport([first, second])
+
+    result = ResearchIntakeCompiler(
+        transport=transport,
+        calendar_reference_date="2026-10-04",
+    ).compile(
+        question="Compare the metric across two periods and rank the entity by the requested basis.",
+        catalog=_r6_temporal_catalog(),
+    )
+
+    assert result.terminal == ResearchIntakeTerminal.READY
+    assert result.model_calls == 2
+    assert result.brief is not None
+    ranking = next(
+        goal.ranking
+        for goal in result.brief.questions
+        if goal.kind == ResearchGoalKind.RANKING
+    )
+    assert ranking is not None
+    assert ranking.basis.value == "change"
+    reconsideration = transport.calls[1]["user"]["reconsideration"]
+    assert reconsideration["kind"] == "TEMPORAL_COMPARISON_RANKING_BASIS_REVIEW"
+    assert reconsideration["ranking_goal_key"] == "g-rank"
+    assert reconsideration["measure_semantic_id"] == "metric.downtime"
+    assert reconsideration["comparison_goal_keys"] == ["g-compare"]
+
+
+def test_temporal_comparison_level_ranking_reconsideration_is_bounded() -> None:
+    level = _temporal_comparison_with_level_ranking_payload()
+    transport = SequenceTransport([level, level])
+
+    result = ResearchIntakeCompiler(
+        transport=transport,
+        calendar_reference_date="2026-10-04",
+    ).compile(
+        question="Compare the metric across two periods and independently rank its level.",
+        catalog=_r6_temporal_catalog(),
+    )
+
+    assert result.terminal == ResearchIntakeTerminal.READY
+    assert result.model_calls == 2
+    assert result.brief is not None
+    ranking = next(
+        goal.ranking
+        for goal in result.brief.questions
+        if goal.kind == ResearchGoalKind.RANKING
+    )
+    assert ranking is not None
+    assert ranking.basis.value == "level"
+
+
+def test_single_period_level_ranking_does_not_trigger_basis_reconsideration() -> None:
+    payload = ready_payload(
+        kind="ranking",
+        subject=("metric.downtime",),
+        related=("dimension.department",),
+    )
+    payload["goals"][0]["ranking"] = {
+        "source_text": "Rank the metric level.",
+        "direction": "desc",
+        "limit": None,
+        "measure_semantic_id": "metric.downtime",
+        "basis": "level",
+    }
+    payload["time_periods"] = [
+        _r6_period("current", "2026-06-01", "2026-07-01")
+    ]
+    transport = FakeTransport(payload)
+
+    result = ResearchIntakeCompiler(
+        transport=transport,
+        calendar_reference_date="2026-10-04",
+    ).compile(
+        question="Rank the governed metric level for the current period.",
+        catalog=_r6_temporal_catalog(),
+    )
+
+    assert result.terminal == ResearchIntakeTerminal.READY
+    assert result.model_calls == 1
+    assert result.brief is not None
