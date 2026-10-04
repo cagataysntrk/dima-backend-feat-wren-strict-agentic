@@ -453,14 +453,18 @@ def test_wave_b_generated_combinations_match_multiple_product_owners(
     _completion_probe(case, outcome.presentation_callable)
 
 
-@settings(max_examples=350, deadline=None, database=None)
+@settings(max_examples=500, deadline=None, database=None)
 @given(
     selected=st.sampled_from(("entity.e1", "entity.e2", "entity.e3")),
     existing=st.sampled_from(("none", "same", "conflict")),
+    dependency_role=st.sampled_from(("filter_only", "filter_and_breakout")),
+    parent_state=st.sampled_from(("valid", "empty")),
 )
 def test_wave_b_result_dependency_is_execution_local_and_fail_closed(
     selected: str,
     existing: str,
+    dependency_role: str,
+    parent_state: str,
 ) -> None:
     filters: tuple[AnalyticalFilterInvariant, ...] = ()
     if existing != "none":
@@ -473,6 +477,11 @@ def test_wave_b_result_dependency_is_execution_local_and_fail_closed(
                 value=value,
             ),
         )
+    dimensions = (
+        ()
+        if dependency_role == "filter_only"
+        else ("dimension.entity",)
+    )
     base = AnalyticalRequestContract(
         authority_id="auth-wave-b-dependency",
         request_ref="req-wave-b-dependency",
@@ -483,8 +492,13 @@ def test_wave_b_result_dependency_is_execution_local_and_fail_closed(
         ),
         scope_fingerprint="d" * 64,
         metric_refs=("metric.m1",),
-        dimension_refs=("dimension.entity",),
+        dimension_refs=dimensions,
         filters=filters,
+    )
+    rows = (
+        [[selected, 42.0], ["entity.tail", 1.0]]
+        if parent_state == "valid"
+        else []
     )
     parent_result = {
         "data": {
@@ -492,9 +506,25 @@ def test_wave_b_result_dependency_is_execution_local_and_fail_closed(
                 {"id": 501, "name": "entity"},
                 {"id": 777, "name": "metric"},
             ],
-            "rows": [[selected, 42.0], ["entity.tail", 1.0]],
+            "rows": rows,
         }
     }
+
+    if parent_state == "empty":
+        with pytest.raises(ResultDependencyProjectionError) as exc:
+            resolve_first_ranked_entity(
+                base_contract=base,
+                source_goal_id="goal.parent",
+                source_evidence_id="ev-parent",
+                source_receipt_id="rcpt-parent",
+                source_result_hash="e" * 64,
+                dimension_semantic_id="dimension.entity",
+                native_field_id=501,
+                parent_result=parent_result,
+                dimension_name="dimension.entity",
+            )
+        assert exc.value.code == "R1_RESULT_DEPENDENCY_PARENT_EMPTY"
+        return
 
     if existing == "conflict":
         with pytest.raises(ResultDependencyProjectionError) as exc:
@@ -527,6 +557,7 @@ def test_wave_b_result_dependency_is_execution_local_and_fail_closed(
     assert resolution.contract.scope_identity == base.scope_identity
     assert resolution.contract.scope_fingerprint == base.scope_fingerprint
     assert resolution.contract.metric_refs == base.metric_refs
+    assert resolution.contract.dimension_refs == dimensions
     selected_filters = tuple(
         item
         for item in resolution.contract.filters
