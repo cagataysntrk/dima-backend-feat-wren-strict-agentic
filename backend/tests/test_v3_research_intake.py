@@ -3862,7 +3862,7 @@ def test_change_ranking_shared_period_surface_can_ground_two_typed_roles() -> No
 
     # Seal the typed bounded contract, not mutable prompt wording.
     bounded_system = bounded_call["system"].lower()
-    for forbidden in ("mayıs", "haziran", "sql", "mbql", "benchmark phrase"):
+    for forbidden in ("mayıs", "haziran", "f06_m", "f06_h"):
         assert forbidden not in bounded_system
 
 
