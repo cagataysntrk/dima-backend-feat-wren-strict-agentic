@@ -5,9 +5,9 @@ branch = feat/dima-brain-v2-1-specification-closure
 architecture = Brain V2.1 frozen
 analytics = Metabase / Metabot only
 orchestrator = LangGraph / BrainV2Service
-engine = dima.9 frozen
+engine = dima.11.1 certified / frozen for readiness
 frontend = forbidden
-broad benchmark = sealed counterexample corpus
+broad benchmark = historical sealed counterexample corpus; rerun closed
 ```
 
 ## Owner purity
@@ -56,4 +56,10 @@ During specification closure:
 Only after aggregate provider-free GREEN may a small stop-on-first-real-RED paid recovery panel be
 used to verify provider/NLU boundaries.
 
-Engine authority: `d5c60dc9f37a9ec9c5b0117f178146bbcb8dca88` / `0.63.18-dima.9`.
+Engine authority: `4c49b8da6b424b0fa4d8ef340ca1b238d12980c1` / `0.63.18-dima.11.1` /
+`sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d`.
+
+Current readiness execution authority is
+`belgeler/metabase/DIMA_BRAIN_V2_1_30CASE_READINESS_PROGRESS.md`.
+The active semantic recovery candidate is `34d0bbd461222e2a0859ed196a5a950e362c8622`;
+it is provider-free GREEN but is not a final frozen Product until the ordered live/holdout gates pass.
