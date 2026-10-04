@@ -5157,3 +5157,40 @@ Run exactly one paid A3/F06_M development proof bound to semantic Product
 `37200654330 / 37200654260`.
 
 A1, A2, A4, broad 30-case and automatic retry remain closed.
+
+
+---
+
+## FINAL READINESS — A3 INTAKE MISSING PERIOD PAIR RCA
+
+**STATUS: INTENTIONAL PROVIDER-FREE RED STARTING**
+
+- live run: `37201852051`;
+- artifact: `11303585415`;
+- Product score: `0/4`;
+- provider requests: `1`;
+- prompt tokens: `14,646`;
+- completion tokens: `568`;
+- reasoning tokens: `0`;
+- cost: `$0.00434295`;
+- latency: `5,152 ms`;
+- exception: `R1_CHANGE_RANKING_COMPARISON_REQUIRED`;
+- duplicate native: `0`;
+- stale Evidence: `0`;
+- native execution: **not reached**.
+
+First invalid boundary:
+`typed CHANGE ranking intake -> required exact baseline/comparison period pair`.
+
+Owner:
+`research_intake.py`.
+
+Pattern decision:
+reuse the existing bounded one-call structured reconsideration already used for an exact collapsed
+CHANGE period pair. No new retry loop, parser, prompt hack, engine release or case branch.
+
+Intentional test-first siblings:
+- missing pair -> one structured reconsideration -> exact pair may recover;
+- second missing pair -> fail closed with a typed intake error.
+
+Paid is STOPPED. A4/broad remain CLOSED.
