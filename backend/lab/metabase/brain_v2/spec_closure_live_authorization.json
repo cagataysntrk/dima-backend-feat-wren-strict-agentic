@@ -1,6 +1,6 @@
 {
   "schema_version": "dima_brain_v2_1_spec_closure_live_authorization_v1",
-  "enabled": true,
+  "enabled": false,
   "readiness_phase": "2",
   "gate": "DEVELOPMENT_A3",
   "sequence_position": 3,
@@ -23,7 +23,7 @@
   "purpose": "Single A3 F06_M development proof after bounded durable observation-resume closure and full provider-free recertification. STOP on Product RED; A4 and broad remain closed.",
   "last_run_id": 37185807659,
   "last_artifact_id": 11296987789,
-  "last_manual_quality_status": "A3_OBSERVATION_RESUME_ARMED",
+  "last_manual_quality_status": "A3_OBSERVATION_RESUME_RUNNING_PAID_STOP",
   "last_provider_request_count": 8,
   "last_provider_cost": 0.02487497,
   "harness_fix_sha": "bd93d0743ec96f739d32900009b8bdba2ddc300f",
