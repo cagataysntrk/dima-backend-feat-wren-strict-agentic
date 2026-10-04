@@ -217,15 +217,21 @@ class AnalyticalRequestContract(FrozenModel):
     @model_validator(mode="after")
     def coherent_ranking_basis(self):
         ranking = self.ranking
-        if (
+        if not (
             isinstance(ranking, AnalyticalRankingInvariant)
             and ranking.basis == RankingBasis.CHANGE
-            and self.comparison is None
         ):
-            raise ValueError(
-                "change ranking requires typed baseline/comparison authority"
-            )
-        return self
+            return self
+        if self.temporal_change_frame is not None:
+            return self
+        # Compatibility for older deterministic fixtures: accepted temporal
+        # authority may still be represented directly as comparison/period.
+        # Forward Research construction always projects TemporalChangeFrame.
+        if self.comparison is not None or self.period is not None:
+            return self
+        raise ValueError(
+            "change ranking requires typed PAIR or bounded SPAN authority"
+        )
 
     @model_validator(mode="after")
     def coherent_temporal_change_frame(self):
