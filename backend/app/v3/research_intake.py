@@ -1709,6 +1709,43 @@ class ResearchIntakeCompiler:
         )
 
     @staticmethod
+    def _change_ranking_missing_period_issue(
+        draft: ModelResearchBriefDraft,
+    ) -> dict[str, Any] | None:
+        """Detect a READY CHANGE ranking that lacks its exact period pair.
+
+        This is typed contract validation only. It does not parse user wording
+        or manufacture calendar authority; the existing bounded reconsideration
+        may ask the provider to resolve the pair once from already-grounded
+        user/catalog context.
+        """
+
+        if draft.terminal != ResearchIntakeTerminal.READY:
+            return None
+        if not any(
+            goal.ranking is not None
+            and goal.ranking.basis == RankingBasis.CHANGE
+            for goal in draft.goals
+        ):
+            return None
+        if len(draft.time_periods) >= 2:
+            return None
+
+        return {
+            "kind": "CHANGE_PERIOD_PAIR_REQUIRED",
+            "observed_period_count": len(draft.time_periods),
+            "observed_periods": [
+                {
+                    "time_dimension_semantic_id": item.time_dimension_semantic_id,
+                    "start": item.start,
+                    "end": item.end,
+                    "role": item.role.value,
+                }
+                for item in draft.time_periods
+            ],
+        }
+
+    @staticmethod
     def _change_ranking_collapsed_period_issue(
         draft: ModelResearchBriefDraft,
     ) -> dict[str, Any] | None:
@@ -2491,10 +2528,29 @@ class ResearchIntakeCompiler:
         # It is not a retry loop: the provider ceiling remains two calls. The
         # second pass receives no new authority, only deterministic calendar /
         # single-domain context already present in this request.
+        missing_change_period_issue = self._change_ranking_missing_period_issue(
+            draft
+        )
         change_period_issue = self._change_ranking_collapsed_period_issue(
             draft
         )
         if (
+            prior_brief is None
+            and self.call_count < 2
+            and missing_change_period_issue is not None
+        ):
+            draft = invoke_provider(
+                instruction=(
+                    "Reconsider once because the READY output violates the typed "
+                    "CHANGE ranking temporal contract: CHANGE requires exactly one "
+                    "bounded BASELINE_PERIOD and one bounded COMPARISON_PERIOD over "
+                    "one governed time dimension. Preserve all non-temporal authority. "
+                    "Return two distinct exact governed periods only if current user "
+                    "intent establishes them; otherwise return CLARIFY. Do not invent dates."
+                ),
+                reconsideration=missing_change_period_issue,
+            )
+        elif (
             prior_brief is None
             and self.call_count < 2
             and change_period_issue is not None
@@ -2562,6 +2618,18 @@ class ResearchIntakeCompiler:
             raise ResearchIntakeError(
                 "INTAKE_DUPLICATE_ANALYTICAL_GOAL",
                 ",".join(duplicate_root_keys),
+            )
+
+        final_missing_change_period_issue = (
+            self._change_ranking_missing_period_issue(draft)
+        )
+        if final_missing_change_period_issue is not None:
+            raise ResearchIntakeError(
+                "INTAKE_CHANGE_RANKING_PERIOD_PAIR_REQUIRED",
+                (
+                    "CHANGE ranking requires exactly one bounded baseline and "
+                    "one bounded comparison period"
+                ),
             )
 
         final_change_period_issue = (
