@@ -31,6 +31,7 @@ from app.v3.research import ObligationState, ResearchManager, StoppingStatus
 from app.v3.research_product import (
     ResearchAskOrchestrator,
     ResearchMaterialLimitation,
+    ResearchMaterialObservationUnavailable,
     ResearchMaterialOutcome,
     ResearchProductRuntimeUnavailable,
 )
@@ -316,10 +317,14 @@ class MaterialExecutor:
         crash_once: bool = False,
         limit_first: bool = False,
         repairable_failures: int = 0,
+        observation_unavailable_failures: int = 0,
+        store: ResearchSessionStore | None = None,
     ) -> None:
         self.crash_once = crash_once
         self.limit_first = limit_first
         self.repairable_failures = repairable_failures
+        self.observation_unavailable_failures = observation_unavailable_failures
+        self.store = store
         self.calls: list[tuple[str, str, dict, str]] = []
 
     def execute(
@@ -359,6 +364,14 @@ class MaterialExecutor:
             raise ResearchMaterialLimitation(
                 "R1_RESULT_COMPARISON_COVERAGE_INCOMPLETE",
                 "symbolic_reference_period",
+            )
+        if self.observation_unavailable_failures > 0:
+            self.observation_unavailable_failures -= 1
+            if self.store is not None:
+                self.store._update_link(execution_link_id, status="EXECUTED")
+            raise ResearchMaterialObservationUnavailable(
+                "R1_NATIVE_MATERIAL_OBSERVATION_UNAVAILABLE",
+                "symbolic transient observer unavailable",
             )
         suffix = "4" if obligation_id == "g1" else "5"
         receipt = _receipt(
@@ -774,6 +787,73 @@ def test_restart_resumes_exact_occurrence_without_replaying_metabot_turn():
     assert response.resumed_exact_occurrence is True
     assert response.evidence_id is not None
 
+
+
+
+def test_transient_observation_unavailable_resumes_same_occurrence_without_replaying_metabot():
+    engine = _db_engine()
+    store = ResearchSessionStore(engine)
+    factory = BridgeFactory()
+    executor = MaterialExecutor(
+        observation_unavailable_failures=1,
+        store=store,
+    )
+    product = ResearchAskOrchestrator(
+        store=store,
+        bridge_factory=factory,
+        material_executor=executor,
+    )
+    session = _start(product, two=False)
+
+    response = product.run_next(
+        session_id=session.session_id,
+        principal=_principal(),
+    )
+    restored = product.resume_state(
+        session_id=session.session_id,
+        principal=_principal(),
+    )
+
+    assert response.evidence_id is not None
+    assert response.limitation_code is None
+    assert restored.obligations[0].state == ObligationState.VERIFIED
+    assert factory.metabot_posts == 1
+    assert len(executor.calls) == 2
+    assert executor.calls[0][1] == executor.calls[1][1]
+    assert executor.calls[0][2] == executor.calls[1][2]
+
+
+def test_repeated_observation_unavailable_stays_waiting_without_replaying_metabot():
+    engine = _db_engine()
+    store = ResearchSessionStore(engine)
+    factory = BridgeFactory()
+    executor = MaterialExecutor(
+        observation_unavailable_failures=2,
+        store=store,
+    )
+    product = ResearchAskOrchestrator(
+        store=store,
+        bridge_factory=factory,
+        material_executor=executor,
+    )
+    session = _start(product, two=False)
+
+    response = product.run_next(
+        session_id=session.session_id,
+        principal=_principal(),
+    )
+    restored = product.resume_state(
+        session_id=session.session_id,
+        principal=_principal(),
+    )
+
+    assert response.evidence_id is None
+    assert response.limitation_code == "R1_NATIVE_MATERIAL_OBSERVATION_UNAVAILABLE"
+    assert restored.obligations[0].state == ObligationState.DELEGATED
+    assert factory.metabot_posts == 1
+    assert len(executor.calls) == 2
+    assert executor.calls[0][1] == executor.calls[1][1]
+    assert executor.calls[0][2] == executor.calls[1][2]
 
 def test_material_limitation_is_scoped_and_independent_work_continues():
     engine = _db_engine()
