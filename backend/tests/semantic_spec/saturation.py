@@ -199,8 +199,14 @@ def top_k_value(case: SaturationCase) -> int | None:
 def ranking_period_structure(case: SaturationCase) -> PeriodStructure:
     if case.comparison_type == ComparisonType.PERIOD:
         return PeriodStructure.BASELINE_CANDIDATE
-    if case.period_role != PeriodRole.NONE:
+    if case.period_role == PeriodRole.MATERIAL_WINDOW:
         return PeriodStructure.SINGLE_WINDOW
+    if case.period_role == PeriodRole.EFFECT:
+        return PeriodStructure.EFFECT_PERIOD
+    if case.period_role == PeriodRole.EVIDENCE:
+        return PeriodStructure.EVIDENCE_WINDOW
+    # A lone BASELINE or COMPARISON role is not a complete PAIR and must not
+    # silently become SPAN authority.
     return PeriodStructure.NONE
 
 
