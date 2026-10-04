@@ -624,10 +624,15 @@ Authority rules:
   parentage records semantic obligation ownership only; it never specifies SQL, MBQL or query shape.
 - ranking.limit is null unless the user explicitly requested a bounded top-N/result count. Never invent top-N.
 - ranking.basis=LEVEL means rank the accepted metric level or magnitude.
-- ranking.basis=CHANGE means rank baseline-to-comparison change of one accepted metric. CHANGE
-  requires one explicit ranking.measure_semantic_id plus exactly one BASELINE_PERIOD and one
-  COMPARISON_PERIOD over the same governed time dimension. Never encode CHANGE as one pooled
-  MATERIAL_WINDOW; intake records semantic authority only and performs no calculation.
+- ranking.basis=CHANGE means rank change/deterioration/movement of one accepted governed metric.
+  CHANGE requires one explicit ranking.measure_semantic_id plus one safe typed temporal shape:
+  (a) PAIR: exactly one BASELINE_PERIOD and one COMPARISON_PERIOD over the same governed time
+  dimension when the user semantics explicitly establish two role-bound periods; or
+  (b) SPAN: exactly one bounded MATERIAL_WINDOW over one governed time dimension when the user
+  requests change over that accepted interval without explicit baseline/comparison roles.
+  A SPAN is not permission to invent hidden baseline/comparison roles. Do not CLARIFY merely because
+  PAIR roles are absent when one bounded SPAN safely preserves the accepted CHANGE request.
+  Intake records semantic authority only and performs no calculation.
 - ranking.measure_semantic_id is set only when the user explicitly identifies one governed metric/KPI
   as the ranking basis. With multiple metrics and no explicit single basis, keep it null; do not pick
   the first metric or manufacture a composite score.
@@ -2122,6 +2127,13 @@ class ResearchIntakeCompiler:
     def _assert_change_ranking_temporal_contract(
         draft: ModelResearchBriefDraft,
     ) -> None:
+        """Require one safe typed CHANGE frame without inventing temporal roles.
+
+        PAIR is explicit baseline+comparison authority.
+        SPAN is one bounded MATERIAL_WINDOW carrying CHANGE over the accepted interval.
+        The analytical realization remains Metabot-owned.
+        """
+
         if draft.terminal != ResearchIntakeTerminal.READY:
             return
         if not any(
@@ -2130,6 +2142,7 @@ class ResearchIntakeCompiler:
             for goal in draft.goals
         ):
             return
+
         baselines = tuple(
             item
             for item in draft.time_periods
@@ -2140,31 +2153,49 @@ class ResearchIntakeCompiler:
             for item in draft.time_periods
             if item.role == TemporalRole.COMPARISON_PERIOD
         )
-        if len(baselines) != 1 or len(comparisons) != 1:
-            raise ResearchIntakeError(
-                "INTAKE_CHANGE_RANKING_COMPARISON_REQUIRED",
-                "CHANGE ranking requires exactly one baseline and one comparison period",
-            )
-        baseline, comparison = baselines[0], comparisons[0]
+        windows = tuple(
+            item
+            for item in draft.time_periods
+            if item.role == TemporalRole.MATERIAL_WINDOW
+        )
+
         if (
-            baseline.time_dimension_semantic_id
-            != comparison.time_dimension_semantic_id
+            len(draft.time_periods) == 2
+            and len(baselines) == 1
+            and len(comparisons) == 1
         ):
-            raise ResearchIntakeError(
-                "INTAKE_CHANGE_RANKING_TIME_DIMENSION_DRIFT",
-                "CHANGE ranking periods must use one governed time dimension",
-            )
-        if (
-            baseline.start,
-            baseline.end,
-        ) == (
-            comparison.start,
-            comparison.end,
-        ):
-            raise ResearchIntakeError(
-                "INTAKE_CHANGE_RANKING_PERIOD_PAIR_COLLAPSED",
-                "CHANGE ranking baseline and comparison periods must be distinct bounded spans",
-            )
+            baseline, comparison = baselines[0], comparisons[0]
+            if (
+                baseline.time_dimension_semantic_id
+                != comparison.time_dimension_semantic_id
+            ):
+                raise ResearchIntakeError(
+                    "INTAKE_CHANGE_RANKING_TIME_DIMENSION_DRIFT",
+                    "CHANGE PAIR periods must use one governed time dimension",
+                )
+            if (
+                baseline.start,
+                baseline.end,
+            ) == (
+                comparison.start,
+                comparison.end,
+            ):
+                raise ResearchIntakeError(
+                    "INTAKE_CHANGE_RANKING_PERIOD_PAIR_COLLAPSED",
+                    "CHANGE PAIR baseline and comparison periods must be distinct bounded spans",
+                )
+            return
+
+        if len(draft.time_periods) == 1 and len(windows) == 1:
+            return
+
+        raise ResearchIntakeError(
+            "INTAKE_CHANGE_RANKING_TEMPORAL_FRAME_REQUIRED",
+            (
+                "CHANGE ranking requires either one explicit baseline/comparison "
+                "PAIR or one bounded MATERIAL_WINDOW SPAN"
+            ),
+        )
 
     @staticmethod
     def _change_ranking_collapsed_period_issue(
