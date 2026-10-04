@@ -5541,3 +5541,136 @@ The semantic candidate remains `34d0bbd461222e2a0859ed196a5a950e362c8622`; all c
 **30-case readiness:** CLOSER, NOT READY.
 
 **NEXT LEGAL ACTION:** do not run another identical F06_M merely hoping for a different model sample; do not add another prompt/regex/morph/benchmark guard; do not advance to A3 sibling or A4+. A supervisor-level decision is required on the remaining raw-language temporal authority/topology boundary before another Product semantic change or qualifying paid run. Broad paid, actual 30-case and frontend remain CLOSED.
+
+
+---
+
+## PHASE 1 — TEMPORAL CHANGE FRAME ROOT CLOSURE — 2026-10-05
+
+**PHASE:** 1
+
+**STATUS:** GREEN
+
+**Product SHA:** `447847e4b1161ee7a4fc34b7d3f861872f9c0564`
+
+**Engine SHA/tag/digest:** `4c49b8da6b424b0fa4d8ef340ca1b238d12980c1` / `0.63.18-dima.11.1` / `sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d`
+
+**Objective:** remove the false pair-only CHANGE law at Research Intake without inventing hidden calendar roles or moving analytics/query cognition into Dima.
+
+**Old semantic law:** `RankingBasis.CHANGE` required exactly one `BASELINE_PERIOD` plus one `COMPARISON_PERIOD` at Intake. A bounded change/deterioration request represented as one accepted interval could therefore CLARIFY/fail before Metabot even when no meaning invention was required.
+
+**New semantic law:** CHANGE requires one safe typed temporal-change frame:
+- `PAIR` when user semantics explicitly establish one baseline and one comparison period;
+- `SPAN` when the request asks for change/deterioration/movement over one bounded `MATERIAL_WINDOW` without explicit pair roles.
+SPAN preserves one bounded interval and never asserts hidden baseline/comparison roles. No month-name branch, regex, morphology, language-specific parser, prompt phrase list or benchmark ID participates.
+
+**First invalid boundary after fix:** none provider-free. The next legal boundary is the paid A3 original proof.
+
+**Exact owner:** `ResearchIntakeCompiler` owns raw-language temporal WHAT -> typed period/frame authority. `AnalyticalRequestContract` exposes a read-only frame view. Metabase/Metabot remains analytical HOW.
+
+**Files changed:**
+- `backend/app/v3/research_contracts.py`
+- `backend/app/v3/research_intake.py`
+- `backend/app/v3/analytical_request_contract.py`
+- `backend/tests/test_v3_research_intake.py`
+- `backend/tests/semantic_spec/model.py`
+- `backend/tests/semantic_spec/saturation.py`
+- `backend/tests/test_v3_brain_v2_semantic_conformance.py`
+- `backend/tests/test_v3_brain_v2_semantic_saturation_wave_a.py`
+- `backend/tests/test_v3_brain_v2_semantic_saturation_wave_b.py`
+
+**Generated semantic siblings:** symbolic bounded SPAN families include `P1-P2`, `Q1-Q2`, `R7-R8`, and bounded yearly movement with distinct normalized spans. These are test semantics only, not production wording authority.
+
+**Negative siblings:** LEVEL + one bounded window stays LEVEL; CHANGE with neither explicit PAIR nor bounded MATERIAL_WINDOW fails closed; non-material period roles are not promoted to SPAN; existing ambiguous temporal clarification families remain fail-closed/CLARIFY.
+
+**Provider-free runs:**
+- semantic conformance + Wave A + independent Wave B + mutation canaries: `37237559953 = SUCCESS`;
+- frozen-family closure: `37237559916 = SUCCESS`;
+- full Phase-1 provider-free: `37237559926 = SUCCESS`;
+- Phase-2/headless: `37237559952 = SUCCESS`.
+
+**Paid run:** none in Phase 1.
+
+**Score / provider requests / tokens / cost / latency:** provider-free only; provider calls = `0`; paid score/tokens/cost/latency = N/A.
+
+**Exception:** 0 provider-free gate failures on the final Product SHA.
+
+**Silent wrong:** 0 admitted.
+
+**Duplicate native:** N/A provider-free live execution.
+
+**Stale Evidence:** 0.
+
+**Security violation:** 0.
+
+**What is proven:** PAIR and SPAN are distinct typed CHANGE frames; SPAN preserves metric, entity/breakout, scope, ranking basis, direction, limit and bounded time authority without manufacturing PAIR roles. Independent semantic oracles and holdouts agree with Product behavior.
+
+**What remains unproven:** live A3 original and semantic sibling.
+
+**30-case readiness:** NOT READY; Phase 1 GREEN.
+
+**NEXT LEGAL ACTION:** Phase 2 material projection is certified below, then execute exactly one A3 original F06_M under Luna/Luna/no-cascade. No broad, no 30-case, no frontend.
+
+---
+
+## PHASE 2 — TYPED MATERIAL CONTRACT → METABOT + ONE BOUNDED REPAIR — 2026-10-05
+
+**PHASE:** 2
+
+**STATUS:** GREEN
+
+**Product SHA:** `447847e4b1161ee7a4fc34b7d3f861872f9c0564`
+
+**Engine SHA/tag/digest:** `4c49b8da6b424b0fa4d8ef340ca1b238d12980c1` / `0.63.18-dima.11.1` / `sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d`
+
+**Objective:** project accepted PAIR/SPAN semantic material into the existing Metabot context without creating a Dima query planner, and certify the already-existing one-repair runtime.
+
+**First invalid boundary:** none provider-free.
+
+**Exact owner:** Dima owns accepted WHAT/material contract; Metabot owns HOW/native query realization. Existing `ResearchAskOrchestrator._prepare_material_repair` owns one bounded P14 repair occurrence.
+
+**Planner-facing material fields:** metric refs; required entity/breakout refs; governed time dimension; `temporal_change_frame.mode = PAIR|SPAN`; accepted period/comparison material; ranking basis `CHANGE`; ranking direction; top-k/limit; scope/material fingerprints. PAIR carries accepted baseline/comparison periods; SPAN carries one accepted bounded span. No SQL/MBQL/native query shape is authored by Dima.
+
+**Repair eligibility:** only material-validation defects such as `R1_NATIVE_RANKING_BASIS_MISMATCH` are eligible. Security/principal/tenant/foreign-metric/stale-scope mismatches remain non-repairable.
+
+**Repair attempt count:** maximum one P14 material repair. A second material miss becomes terminal LIMIT; no third attempt.
+
+**Dedup behavior:** repair requires a new native query fingerprint. Repeating the prior native query is rejected as `P14_REPAIR_REPEATED_NATIVE_QUERY`. The accepted principal, tenant, ScopeVersion, material contract and semantic authority remain unchanged.
+
+**Files changed:**
+- `backend/app/v3/research_analytical_scope.py`
+- `backend/app/v3/research.py`
+- `backend/app/v3/analytical_request_contract.py`
+- `backend/tests/test_v3_p14_native_gateway.py`
+- independent semantic probes listed in Phase 1.
+
+**Generic law changed:** material projection now preserves the typed PAIR/SPAN distinction as a read-only view. PAIR may be realized by Metabot as period-vs-period CHANGE. SPAN delegates analytical realization of change over the bounded interval to Metabot and explicitly forbids Dima from inventing hidden pair roles.
+
+**Provider-free siblings:** PAIR material projection; SPAN material projection; LEVEL negative; wrong-basis SPAN -> one repair; repair exhaustion -> terminal LIMIT; duplicate repaired query fingerprint -> terminal limitation.
+
+**Provider-free runs:**
+- full Phase-2/headless + metamorphic confidence + forbidden-surface audit: `37237559952 = SUCCESS`;
+- full Phase-1 cross-owner regression: `37237559926 = SUCCESS`;
+- semantic/frozen evidence: `37237559953 = SUCCESS`, `37237559916 = SUCCESS`.
+
+**Paid run:** none in Phase 2.
+
+**Score / provider requests / tokens / cost / latency:** provider-free only; provider calls = `0`; paid score/tokens/cost/latency = N/A.
+
+**Exception:** 0 on final provider-free gate.
+
+**Silent wrong:** 0 admitted.
+
+**Duplicate native:** provider-free dedup law GREEN.
+
+**Stale Evidence:** 0.
+
+**Security violation:** 0.
+
+**What is proven:** the existing Metabot path receives the complete semantic requirement without a second analytics engine; one bounded repair already exists and preserves authority; PAIR/SPAN do not create a new planner or engine owner.
+
+**What remains unproven:** paid A3 original must reach Metabot and produce verified CHANGE material and useful terminal output; then one semantic sibling must also be FULL.
+
+**30-case readiness:** NOT READY; Phase 2 GREEN.
+
+**NEXT LEGAL ACTION:** authorize exactly one A3 original `F06_M` on Product `447847e4...` with Luna/Luna/no-cascade, then immediately disarm and manually adjudicate. Stop on RED. No broad, no 30-case, no frontend.
