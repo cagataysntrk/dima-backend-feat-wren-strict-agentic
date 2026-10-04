@@ -74,15 +74,32 @@ class RankingBasis(StrEnum):
     CHANGE = "CHANGE"
 
 
+class TemporalChangeFrameMode(StrEnum):
+    PAIR = "PAIR"
+    SPAN = "SPAN"
+
+
+def temporal_change_frame_mode(
+    period: PeriodStructure,
+) -> TemporalChangeFrameMode | None:
+    """Independent law: CHANGE may use explicit PAIR or bounded material SPAN."""
+
+    if period == PeriodStructure.BASELINE_CANDIDATE:
+        return TemporalChangeFrameMode.PAIR
+    if period == PeriodStructure.SINGLE_WINDOW:
+        return TemporalChangeFrameMode.SPAN
+    return None
+
+
 def ranking_basis_is_coherent(
     *,
     basis: RankingBasis,
     period: PeriodStructure,
 ) -> bool:
-    """Independent law: CHANGE ranking needs typed baseline/candidate authority."""
+    """Independent law: CHANGE requires one safe typed temporal-change frame."""
 
     if basis == RankingBasis.CHANGE:
-        return period == PeriodStructure.BASELINE_CANDIDATE
+        return temporal_change_frame_mode(period) is not None
     return True
 
 
