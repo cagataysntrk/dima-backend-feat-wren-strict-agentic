@@ -3268,3 +3268,236 @@ def test_basis_mismatch_feedback_carries_full_change_semantics() -> None:
     assert change["metric_ref"] == "metric.downtime"
     assert change["entity_breakout_refs"] == ["dimension.department"]
     assert change["time_dimension"] == "time.event_date"
+
+
+# Phase-1A 30-case readiness: result dependency is execution-local FILTER authority.
+def test_result_dependency_filter_only_loads_binding_from_accepted_scope() -> None:
+    engine = db_engine()
+    seed(engine)
+    base_brief = brief()
+    metric, dependency_dimension = base_brief.scope.semantic_refs
+    child = ResearchQuestion(
+        goal_id="g-child-filter-only",
+        kind=ResearchGoalKind.BREAKDOWN,
+        source_text="Inspect the selected governed channel without returning channel.",
+        subject_refs=(metric,),
+        related_refs=(),
+        result_dependency=ResultSelectionDependency(
+            source_goal_id="g-parent-ranking",
+            dimension_semantic_id=dependency_dimension.candidate_id,
+            selection="first_ranked_entity",
+        ),
+        status=ResearchGoalStatus.RESOLVED,
+    )
+    session = SimpleNamespace(
+        session_id="rs-result-dependency-filter-only",
+        context_version=CONTEXT,
+        accepted_brief=SimpleNamespace(
+            questions=(child,),
+            scope=base_brief.scope,
+        ),
+    )
+    parent_link = SimpleNamespace(
+        evidence_id="evidence-filter-only",
+        receipt_id="receipt-filter-only",
+        result_hash="a" * 64,
+    )
+    parent_result = {
+        "data": {
+            "cols": [
+                {
+                    "id": 20,
+                    "table_id": 10,
+                    "name": "sales_order_channel",
+                    "field_ref": ["field", 20, None],
+                },
+                {"name": "count", "field_ref": ["aggregation", 0]},
+            ],
+            "rows": [["Web", 41], ["Direct", 33]],
+        }
+    }
+
+    class ParentStore:
+        def verified_material_result(self, *, session_id, obligation_id):
+            assert session_id == session.session_id
+            assert obligation_id == "g-parent-ranking"
+            return parent_link, parent_result
+
+    executor = NativeResearchMaterialExecutor(
+        subject_provider=SimpleNamespace(db_engine=engine),
+        store=ParentStore(),
+        expected_identity=expected_identity(),
+    )
+    base = AnalyticalRequestContract(
+        authority_id="authority-filter-only",
+        request_ref="request-filter-only",
+        semantic_context_version=CONTEXT,
+        scope_identity=AnalyticalScopeIdentity(
+            lineage_id="atl-filter-only",
+            version_id="scope_v1",
+        ),
+        scope_fingerprint=base_brief.scope_fingerprint,
+        metric_refs=(metric.candidate_id,),
+        dimension_refs=(),
+    )
+
+    resolution = executor.resolve_result_dependency(
+        principal=principal(),
+        session=session,
+        obligation_id=child.goal_id,
+        analytical_scope=base,
+    )
+
+    assert resolution is not None
+    assert resolution.selected_value == "Web"
+    assert resolution.contract.dimension_refs == ()
+    assert resolution.contract.filters[-1].source_candidate_id == (
+        dependency_dimension.candidate_id
+    )
+    assert resolution.contract.filters[-1].value == "Web"
+    assert resolution.contract.scope_identity == base.scope_identity
+    assert resolution.contract.scope_fingerprint == base.scope_fingerprint
+
+
+def test_result_dependency_parent_empty_fails_closed() -> None:
+    import app.v3.research_result_dependency as dependency_module
+
+    base = AnalyticalRequestContract(
+        authority_id="authority-parent-empty",
+        request_ref="request-parent-empty",
+        semantic_context_version=CONTEXT,
+        scope_identity=AnalyticalScopeIdentity(
+            lineage_id="atl-parent-empty",
+            version_id="scope_v1",
+        ),
+        scope_fingerprint="c" * 64,
+        metric_refs=("cand_sales_order_count",),
+        dimension_refs=(),
+    )
+    with pytest.raises(dependency_module.ResultDependencyProjectionError) as exc:
+        dependency_module.resolve_first_ranked_entity(
+            base_contract=base,
+            source_goal_id="g-parent",
+            source_evidence_id="e-parent",
+            source_receipt_id="r-parent",
+            source_result_hash="d" * 64,
+            dimension_semantic_id="cand_sales_order_channel",
+            native_field_id=20,
+            parent_result={
+                "data": {
+                    "cols": [{"id": 20, "field_ref": ["field", 20, None]}],
+                    "rows": [],
+                }
+            },
+        )
+    assert exc.value.code == "R1_RESULT_DEPENDENCY_PARENT_EMPTY"
+
+
+def test_result_dependency_missing_governed_column_fails_closed() -> None:
+    import app.v3.research_result_dependency as dependency_module
+
+    base = AnalyticalRequestContract(
+        authority_id="authority-column-missing",
+        request_ref="request-column-missing",
+        semantic_context_version=CONTEXT,
+        scope_identity=AnalyticalScopeIdentity(
+            lineage_id="atl-column-missing",
+            version_id="scope_v1",
+        ),
+        scope_fingerprint="e" * 64,
+        metric_refs=("cand_sales_order_count",),
+        dimension_refs=(),
+    )
+    with pytest.raises(dependency_module.ResultDependencyProjectionError) as exc:
+        dependency_module.resolve_first_ranked_entity(
+            base_contract=base,
+            source_goal_id="g-parent",
+            source_evidence_id="e-parent",
+            source_receipt_id="r-parent",
+            source_result_hash="f" * 64,
+            dimension_semantic_id="cand_sales_order_channel",
+            native_field_id=20,
+            parent_result={
+                "data": {
+                    "cols": [{"id": 21, "field_ref": ["field", 21, None]}],
+                    "rows": [["Web"]],
+                }
+            },
+        )
+    assert exc.value.code == "R1_RESULT_DEPENDENCY_DIMENSION_COLUMN_AMBIGUOUS"
+
+
+def test_result_dependency_non_string_selected_value_fails_closed() -> None:
+    import app.v3.research_result_dependency as dependency_module
+
+    base = AnalyticalRequestContract(
+        authority_id="authority-value-invalid",
+        request_ref="request-value-invalid",
+        semantic_context_version=CONTEXT,
+        scope_identity=AnalyticalScopeIdentity(
+            lineage_id="atl-value-invalid",
+            version_id="scope_v1",
+        ),
+        scope_fingerprint="1" * 64,
+        metric_refs=("cand_sales_order_count",),
+        dimension_refs=(),
+    )
+    with pytest.raises(dependency_module.ResultDependencyProjectionError) as exc:
+        dependency_module.resolve_first_ranked_entity(
+            base_contract=base,
+            source_goal_id="g-parent",
+            source_evidence_id="e-parent",
+            source_receipt_id="r-parent",
+            source_result_hash="2" * 64,
+            dimension_semantic_id="cand_sales_order_channel",
+            native_field_id=20,
+            parent_result={
+                "data": {
+                    "cols": [{"id": 20, "field_ref": ["field", 20, None]}],
+                    "rows": [[123]],
+                }
+            },
+        )
+    assert exc.value.code == "R1_RESULT_DEPENDENCY_ENTITY_VALUE_INVALID"
+
+
+def test_result_dependency_conflicting_child_filter_fails_closed() -> None:
+    import app.v3.research_result_dependency as dependency_module
+
+    base = AnalyticalRequestContract(
+        authority_id="authority-filter-conflict",
+        request_ref="request-filter-conflict",
+        semantic_context_version=CONTEXT,
+        scope_identity=AnalyticalScopeIdentity(
+            lineage_id="atl-filter-conflict",
+            version_id="scope_v1",
+        ),
+        scope_fingerprint="3" * 64,
+        metric_refs=("cand_sales_order_count",),
+        dimension_refs=(),
+        filters=(
+            AnalyticalFilterInvariant(
+                semantic_ref="accepted-filter",
+                source_candidate_id="cand_sales_order_channel",
+                dimension_name="Sales Order Channel",
+                value="Direct",
+            ),
+        ),
+    )
+    with pytest.raises(dependency_module.ResultDependencyProjectionError) as exc:
+        dependency_module.resolve_first_ranked_entity(
+            base_contract=base,
+            source_goal_id="g-parent",
+            source_evidence_id="e-parent",
+            source_receipt_id="r-parent",
+            source_result_hash="4" * 64,
+            dimension_semantic_id="cand_sales_order_channel",
+            native_field_id=20,
+            parent_result={
+                "data": {
+                    "cols": [{"id": 20, "field_ref": ["field", 20, None]}],
+                    "rows": [["Web"]],
+                }
+            },
+        )
+    assert exc.value.code == "R1_RESULT_DEPENDENCY_SCOPE_CONFLICT"
