@@ -2998,6 +2998,16 @@ def test_change_material_requirement_projection_is_exact_and_planner_visible() -
         "basis": "change",
     }
     assert requirement["comparison"] == contract.comparison.model_dump(mode="json")
+    assert requirement["change_semantics"] == {
+        "operation": "comparison_minus_baseline",
+        "metric_ref": "metric.downtime",
+        "entity_breakout_refs": ["dimension.department"],
+        "time_dimension": "time.event_date",
+        "baseline_period": contract.comparison.reference_period.model_dump(mode="json"),
+        "comparison_period": contract.comparison.base_period.model_dump(mode="json"),
+        "ranking_direction": "desc",
+        "ranking_limit": 5,
+    }
 
     message = ResearchManager.native_material_message(
         objective="symbolic period-over-period ranking",
@@ -3198,3 +3208,54 @@ def test_change_level_first_result_allows_one_repair_then_change_admits() -> Non
         prior_repair_attempts=1,
     )
     assert exhausted.disposition == MaterialRepairDisposition.TERMINAL_LIMIT
+
+
+
+def test_level_material_requirement_has_no_change_semantics() -> None:
+    contract = _change_ranking_contract().model_copy(
+        update={
+            "ranking": AnalyticalRankingInvariant(
+                measure="metric.downtime",
+                direction="desc",
+                limit=5,
+                basis=RankingBasis.LEVEL,
+            ),
+            "temporal_observation": None,
+        }
+    )
+    requirement = scope_module.native_material_requirement(contract)
+    assert requirement["ranking"]["basis"] == "level"
+    assert requirement["change_semantics"] is None
+
+
+def test_basis_mismatch_feedback_carries_full_change_semantics() -> None:
+    observation = rich_material_observation(
+        ranking=[
+            {
+                "stage_number": 0,
+                "order_index": 0,
+                "target": {
+                    "kind": "metric",
+                    "metabase_metric_id": 501,
+                    "metabase_metric_entity_id": "metric-downtime-v1",
+                },
+                "direction": "desc",
+                "limit": 5,
+                "basis": "level",
+            }
+        ]
+    )
+
+    with pytest.raises(scope_module.ResearchAnalyticalScopeError) as exc:
+        scope_module._assert_material_ranking_scope(
+            _change_ranking_contract(),
+            observation,
+            rich_material_bindings(),
+        )
+
+    assert exc.value.code == "R1_NATIVE_RANKING_BASIS_MISMATCH"
+    change = exc.value.expected_semantic_shape["change_semantics"]
+    assert change["operation"] == "comparison_minus_baseline"
+    assert change["metric_ref"] == "metric.downtime"
+    assert change["entity_breakout_refs"] == ["dimension.department"]
+    assert change["time_dimension"] == "time.event_date"
