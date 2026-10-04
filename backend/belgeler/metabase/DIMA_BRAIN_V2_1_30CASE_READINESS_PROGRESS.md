@@ -5739,3 +5739,35 @@ SPAN preserves one bounded interval and never asserts hidden baseline/comparison
 **30-case readiness:** NOT READY.
 
 **NEXT LEGAL ACTION:** keep paid authorization OFF. Reproduce the exact Evidence-admission failure provider-free. Verify whether final derived CHANGE ranking output may omit the governed time column only when the same native occurrence has already passed exact material-scope validation for the accepted temporal frame and CHANGE basis. If proven, apply one generic Evidence-admission fix, recertify all provider-free gates, then run exactly one new A3 original. No sibling/A4, no engine change, no broad, no 30-case, no frontend.
+
+
+---
+
+## PHASE 3 A3 EVIDENCE-ADMISSION RECOVERY — PROVIDER-FREE RECERT LAUNCH — 2026-10-05
+
+**PHASE:** 3 / A3 original recovery
+
+**STATUS:** ROOT FIX IMPLEMENTED; PROVIDER-FREE RECERTIFICATION RUNNING; PAID OFF
+
+**Product semantic delta:** `50ec2011ff95863fce7e36e224eaaada242dc489` + proof propagation `957fea9876cfa4cdf8ee3a4f5701c0b6cfc2a40e`.
+
+**Engine SHA/tag/digest:** `4c49b8da6b424b0fa4d8ef340ca1b238d12980c1` / `0.63.18-dima.11.1` / `sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d`.
+
+**Objective:** close the new A3 first-invalid boundary without changing Intake, Metabot planning, engine semantics, provider budget, or query representation.
+
+**First invalid boundary:** a correctly executed and material-attested native CHANGE ranking final projection omitted the intermediate governed time column and was blocked before receipt/Evidence sealing.
+
+**Exact owner:** `research_material_coverage.py` result-level Evidence admission, with proof propagation from `research_native_gateway.py`.
+
+**Generic law changed:** final derived CHANGE ranking projections may omit the governed time column only after that exact native occurrence has already passed material-scope validation for the accepted temporal frame and CHANGE basis. Unattested CHANGE results, duplicate/ambiguous time columns, and plain comparison Evidence remain strict/fail-closed.
+
+**Files changed:**
+- `backend/tests/test_v3_research_material_coverage.py` — generic provider-free reproducer/negative controls;
+- `backend/app/v3/research_material_coverage.py` — attested derived-projection admission rule;
+- `backend/app/v3/research_native_gateway.py` — propagate proof only after `_observe_scope` succeeds.
+
+**Provider calls:** 0 during this recovery/recertification phase.
+
+**Paid authorization:** OFF.
+
+**NEXT LEGAL ACTION:** require semantic/frozen + full Phase-1 + Phase-2/headless GREEN on the recovery candidate. Only then repin and run exactly one A3 original. No sibling/A4+, broad, 30-case, engine change, or frontend before A3 original FULL.
