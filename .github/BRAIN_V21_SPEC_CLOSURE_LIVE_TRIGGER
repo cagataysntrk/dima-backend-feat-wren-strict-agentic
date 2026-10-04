@@ -1,8 +1,9 @@
-A3 F06_M sealed trigger CONSUMED
-run=37201852051
-artifact=11303585415
-score=0/4
-exception=R1_CHANGE_RANKING_COMPARISON_REQUIRED
-paid=false
+A3 F06_M intake-pair sealed trigger
+candidate=5bb2bc2f1b40377e354c9e20fa14aaf729fb4cd0
+phase1=37202641985
+phase2=37202813200
+semantic=37202479248
+frozen=37202479233
+engine=72992664803783ef437be8d944c0555a30ef211b
 broad=false
-next=provider-free-intake-rca-only
+automatic_retry=false
