@@ -4910,3 +4910,94 @@ What remains:
 30-case readiness: **NO — PHASE 2 A3 PROOF AUTHORIZED.**
 
 NEXT LEGAL ACTION: run **A3/F06_M exactly once**. A1/A2/A4 remain closed.
+
+
+---
+
+## FINAL READINESS — PHASE 2 A3 / F06_M
+
+**STATUS: RED — PAID STOP / PROVIDER-FREE RCA**
+
+### Exact candidate
+
+- repository candidate: `c462db7d958760780c92753ebd1c183878764322`
+- semantic Product: `43da71811370cce931d08a3bf0561c09652f632a`
+- engine SHA: `72992664803783ef437be8d944c0555a30ef211b`
+- release/runtime: `0.63.18-dima.11.1.2 / v0.63.18-dima.11.1.2`
+- digest: `sha256:42d591b14c6affe2e45b5525564f9c220bd0d2c93f38edba4000cf83985c419b`
+- model topology: `LUNA_LUNA_NO_CASCADE`
+
+### Live run
+
+- case: `F06_M`
+- run: `37199906654 = SUCCESS` at workflow/harness level
+- artifact: `11302548264`
+- artifact digest: `sha256:9a24116aae451f395487ae2b08823efa41968eee98a9e3e86d3e5587cbd7634f`
+- Product score: **2/4 PARTIAL**
+- terminal: `PARTIAL / WAITING`
+- requirement_complete: `false`
+- provider requests: `7`
+- prompt tokens: `99,522`
+- completion tokens: `4,191`
+- reasoning tokens: `2,006`
+- provider cost: `$0.01881184`
+- case latency: `45,975 ms`
+- exception: `0`
+- duplicate native: `0`
+- stale Evidence: `0`
+- scope violation observed: `0`
+- causal overclaim observed: `0`
+
+### BASE / derived CHANGE outcome
+
+- May/June comparison Evidence reached VERIFIED.
+- The ranking request remained `DELEGATED`.
+- A legal derived CHANGE query executed with rows:
+  - Assembly `267`
+  - Packaging `74`
+  - Utilities `34`
+  - Maintenance `18`
+  - Quality `8`
+- The query is ordered DESC on `comparison - baseline`.
+- That native occurrence remained `EXECUTED` with no receipt/Evidence.
+- selected entity: **not committed**
+- result-dependent child: `READY`
+- report: **absent**
+
+### First invalid boundary
+
+`legal derived CHANGE native EXECUTED -> governed ranking Evidence / obligation VERIFIED`
+
+No new engine release is authorized. dima.12 remains forbidden.
+
+### Classification / next RCA order
+
+Per the final directive, inspect existing typed primitives before creating anything new:
+
+1. verify whether current dima.11.1.2 observation is unavailable versus merely not required for this obligation;
+2. inspect existing `AnalyticalEvidenceSynthesisRankingInvariant` legality for satisfying ranking from already-governed comparative Evidence;
+3. inspect bounded repair/lifecycle only if the existing primitive cannot close the law;
+4. do not run A3 again until provider-free closure is GREEN.
+
+### What is proven
+
+- Phase 1 exact dima.11.1.2 seal is GREEN;
+- A3 now fits within the efficiency target: `7 <= 8` requests;
+- legal CHANGE material is produced;
+- safety counters remain zero;
+- current failure is downstream of query generation and upstream of result-dependent child/report.
+
+### What remains
+
+- generic ranking Evidence closure on legal material;
+- A3 >= `3/4`;
+- A4/A5/A6/B2/B3 development probes;
+- final provider-free saturation and one final same-SHA 9-case panel.
+
+### 30-case readiness
+
+**NO — A3 remains the single development blocker.**
+
+### NEXT LEGAL ACTION
+
+Provider-free RCA only. No A4, no same-SHA A3 retry, no broad/30-case run.
