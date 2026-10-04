@@ -9,7 +9,7 @@ Brain V2.1 = frozen architecture
 Metabase / Metabot = single analytical cognition engine
 LangGraph / BrainV2Service = single forward orchestrator
 Dima = intent + scope + material + Evidence + epistemics + completion + synthesis
-engine = dima.9 (frozen)
+engine = dima.11.1 (certified / frozen for readiness)
 frontend = forbidden during this recovery
 ```
 
@@ -57,5 +57,5 @@ Provider/model calls are forbidden during deterministic specification closure. O
 recovery panel is legal only after all required provider-free gates are GREEN. Broad paid testing
 remains forbidden.
 
-Engine: `d5c60dc9f37a9ec9c5b0117f178146bbcb8dca88` / `0.63.18-dima.9`.
+Engine: `4c49b8da6b424b0fa4d8ef340ca1b238d12980c1` / `0.63.18-dima.11.1`.
 Do not build a new engine for a Product-owned problem.
