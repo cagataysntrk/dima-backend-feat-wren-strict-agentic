@@ -1709,6 +1709,55 @@ class ResearchIntakeCompiler:
         )
 
     @staticmethod
+    def _change_ranking_collapsed_period_issue(
+        draft: ModelResearchBriefDraft,
+    ) -> dict[str, Any] | None:
+        """Detect only the proven invalid CHANGE pair collapse.
+
+        A role-bound baseline/comparison pair cannot denote CHANGE when both
+        periods have the exact same governed time dimension and half-open span.
+        This check does not parse wording or manufacture calendar authority.
+        """
+
+        if draft.terminal != ResearchIntakeTerminal.READY:
+            return None
+        if not any(
+            goal.ranking is not None
+            and goal.ranking.basis == RankingBasis.CHANGE
+            for goal in draft.goals
+        ):
+            return None
+        if len(draft.time_periods) != 2:
+            return None
+
+        left, right = draft.time_periods
+        if {left.role, right.role} != {
+            TemporalRole.BASELINE_PERIOD,
+            TemporalRole.COMPARISON_PERIOD,
+        }:
+            return None
+        if (
+            left.time_dimension_semantic_id
+            != right.time_dimension_semantic_id
+        ):
+            return None
+        if (left.start, left.end) != (right.start, right.end):
+            return None
+
+        return {
+            "kind": "CHANGE_PERIOD_PAIR_COLLAPSED",
+            "time_dimension_semantic_id": left.time_dimension_semantic_id,
+            "baseline": {
+                "start": left.start,
+                "end": left.end,
+            },
+            "comparison": {
+                "start": right.start,
+                "end": right.end,
+            },
+        }
+
+    @staticmethod
     def _canonicalize_change_ranking_period_roles(
         draft: ModelResearchBriefDraft,
     ) -> ModelResearchBriefDraft:
@@ -2442,7 +2491,26 @@ class ResearchIntakeCompiler:
         # It is not a retry loop: the provider ceiling remains two calls. The
         # second pass receives no new authority, only deterministic calendar /
         # single-domain context already present in this request.
+        change_period_issue = self._change_ranking_collapsed_period_issue(
+            draft
+        )
         if (
+            prior_brief is None
+            and self.call_count < 2
+            and change_period_issue is not None
+        ):
+            draft = invoke_provider(
+                instruction=(
+                    "Reconsider once because the READY output violates the typed "
+                    "CHANGE ranking temporal contract: baseline and comparison "
+                    "cannot be the exact same bounded period. Preserve all "
+                    "non-temporal authority. Return two distinct exact governed "
+                    "periods only if current user intent establishes them; "
+                    "otherwise return CLARIFY. Do not invent dates."
+                ),
+                reconsideration=change_period_issue,
+            )
+        elif (
             prior_brief is None
             and self.call_count < 2
             and draft.terminal == ResearchIntakeTerminal.CLARIFY
@@ -2494,6 +2562,18 @@ class ResearchIntakeCompiler:
             raise ResearchIntakeError(
                 "INTAKE_DUPLICATE_ANALYTICAL_GOAL",
                 ",".join(duplicate_root_keys),
+            )
+
+        final_change_period_issue = (
+            self._change_ranking_collapsed_period_issue(draft)
+        )
+        if final_change_period_issue is not None:
+            raise ResearchIntakeError(
+                "INTAKE_CHANGE_RANKING_PERIOD_PAIR_COLLAPSED",
+                (
+                    "CHANGE ranking baseline and comparison periods must be "
+                    "distinct bounded spans"
+                ),
             )
 
         change_observation_temporal_ids: list[str] = []
