@@ -173,7 +173,7 @@ def ready_payload(
 
 
 def test_change_ranking_intake_preserves_basis_and_role_bound_periods():
-    question = "Compare the governed metric between two periods and rank its change."
+    question = "Compare January and February governed downtime and rank its change."
     payload = ready_payload(
         kind="ranking",
         subject=("metric.downtime",),
@@ -194,14 +194,14 @@ def test_change_ranking_intake_preserves_basis_and_role_bound_periods():
     )
     payload["time_periods"] = [
         {
-            "source_text": "baseline",
+            "source_text": "January",
             "time_dimension_semantic_id": "dimension.event_date",
             "start": "2026-01-01",
             "end": "2026-02-01",
             "role": "baseline_period",
         },
         {
-            "source_text": "comparison",
+            "source_text": "February",
             "time_dimension_semantic_id": "dimension.event_date",
             "start": "2026-02-01",
             "end": "2026-03-01",
@@ -3450,7 +3450,7 @@ def test_relationship_fixture_without_new_intent_defaults_fail_conservative_busi
 
 
 def test_change_ranking_two_neutral_periods_canonicalize_by_chronology() -> None:
-    question = "Rank the governed metric by change between the two periods."
+    question = "Rank the governed metric by change from May to June."
     payload = ready_payload(
         kind="ranking",
         subject=("metric.downtime",),
@@ -3467,13 +3467,13 @@ def test_change_ranking_two_neutral_periods_canonicalize_by_chronology() -> None
     }
     payload["time_periods"] = [
         _r6_period(
-            "later neutral window",
+            "June",
             "2026-06-01",
             "2026-07-01",
             role="material_window",
         ),
         _r6_period(
-            "earlier neutral window",
+            "May",
             "2026-05-01",
             "2026-06-01",
             role="material_window",
@@ -3516,13 +3516,13 @@ def _collapsed_change_period_payload(
     }
     payload["time_periods"] = [
         _r6_period(
-            "baseline pair",
+            "May",
             "2026-05-01",
             "2026-07-01",
             role="baseline_period",
         ),
         _r6_period(
-            "comparison pair",
+            "June",
             "2026-05-01",
             "2026-07-01",
             role="comparison_period",
@@ -3532,18 +3532,18 @@ def _collapsed_change_period_payload(
 
 
 def test_change_ranking_collapsed_pair_gets_one_structured_reconsideration() -> None:
-    question = "Rank the governed metric by change between the two periods."
+    question = "Compare May and June governed metric change."
     first = _collapsed_change_period_payload(question)
     resolved = {
         "terminal": "RESOLVED",
         "baseline_period": _r6_period(
-            "ignored provider text",
+            "May",
             "2026-05-01",
             "2026-06-01",
             role="baseline_period",
         ),
         "comparison_period": _r6_period(
-            "ignored provider text",
+            "June",
             "2026-06-01",
             "2026-07-01",
             role="comparison_period",
@@ -3583,12 +3583,12 @@ def test_change_ranking_collapsed_pair_gets_one_structured_reconsideration() -> 
     assert reconsideration["time_dimension_semantic_id"] == (
         "dimension.event_date"
     )
-    assert result.brief.scope.periods[0].source_text == "baseline pair"
-    assert result.brief.scope.periods[1].source_text == "comparison pair"
+    assert result.brief.scope.periods[0].source_text == "May"
+    assert result.brief.scope.periods[1].source_text == "June"
 
 
 def test_change_ranking_collapsed_pair_fails_closed_after_one_reconsideration() -> None:
-    question = "Compare the governed earlier and later periods, then rank departments by change."
+    question = "Compare May and June, then rank departments by change."
     collapsed = _collapsed_change_period_payload(question)
     unresolved = {
         "terminal": "RESOLVED",
@@ -3682,13 +3682,13 @@ def test_change_ranking_overlapping_pair_gets_narrow_temporal_reconsideration() 
     resolved = {
         "terminal": "RESOLVED",
         "baseline_period": _r6_period(
-            "provider text is not new authority",
+            "May",
             "2026-05-01",
             "2026-06-01",
             role="baseline_period",
         ),
         "comparison_period": _r6_period(
-            "provider text is not new authority",
+            "June",
             "2026-06-01",
             "2026-07-01",
             role="comparison_period",
@@ -3852,13 +3852,13 @@ def test_change_ranking_deliberate_rolling_overlap_is_not_canonicalized_away() -
     deliberate = {
         "terminal": "RESOLVED",
         "baseline_period": _r6_period(
-            "ignored text",
+            "May",
             "2026-05-01",
             "2026-06-30",
             role="baseline_period",
         ),
         "comparison_period": _r6_period(
-            "ignored text",
+            "June",
             "2026-06-01",
             "2026-07-01",
             role="comparison_period",
@@ -3880,8 +3880,8 @@ def test_change_ranking_deliberate_rolling_overlap_is_not_canonicalized_away() -
         ("2026-05-01", "2026-06-30"),
         ("2026-06-01", "2026-07-01"),
     ]
-    assert result.brief.scope.periods[0].source_text == "May baseline"
-    assert result.brief.scope.periods[1].source_text == "June comparison"
+    assert result.brief.scope.periods[0].source_text == "May"
+    assert result.brief.scope.periods[1].source_text == "June"
 
 
 def test_level_ranking_two_neutral_periods_remain_material_windows() -> None:
