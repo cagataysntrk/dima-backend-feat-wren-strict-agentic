@@ -3853,6 +3853,13 @@ def test_change_ranking_shared_period_surface_can_ground_two_typed_roles() -> No
         ("May and June", "2026-06-01", "2026-07-01", "comparison_period"),
     ]
 
+    bounded_system = transport.calls[1]["system"]
+    assert "one shared source span does not imply one continuous interval" in bounded_system.lower()
+    assert "two distinct calendar periods" in bounded_system.lower()
+    assert "earlier one to baseline_period" in bounded_system.lower()
+    assert "later one to comparison_period" in bounded_system.lower()
+    assert "mayıs" not in bounded_system.lower()
+
 
 def test_change_ranking_shared_period_surface_may_clarify_when_pair_unresolved() -> None:
     question, first = _shared_surface_change_period_payload()
