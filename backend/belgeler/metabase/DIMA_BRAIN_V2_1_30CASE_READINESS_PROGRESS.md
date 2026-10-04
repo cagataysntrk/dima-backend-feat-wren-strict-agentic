@@ -5001,3 +5001,57 @@ Per the final directive, inspect existing typed primitives before creating anyth
 ### NEXT LEGAL ACTION
 
 Provider-free RCA only. No A4, no same-SHA A3 retry, no broad/30-case run.
+
+
+### A3 PROVIDER-FREE RCA — OBSERVER VISIBILITY RESUME
+
+**STATUS: PRE-GATES GREEN / FULL SEAL STARTING**
+
+- semantic root-fix SHA: `9b761e923b9a5bc86b560b7a7f22600a15df9887`
+- engine unchanged: `72992664803783ef437be8d944c0555a30ef211b`
+- provider calls: `0`
+
+First invalid boundary:
+
+`durable native EXECUTED -> persisted Metabot occurrence visibility -> material observation`
+
+Pattern research:
+
+- certified engine observation is a read-only lookup over one already-persisted occurrence;
+- the exact dataset result is already durable before observation;
+- Temporal durable-execution guidance supports bounded retry/backoff for idempotent external reads while
+  keeping completed side effects fixed.
+
+Generic fix:
+
+- no Metabot replay;
+- no dataset replay;
+- same execution-link/query identity;
+- read-only observer resume backoff expanded from `0.2s + 0.6s` to
+  `0.2s + 0.6s + 1.2s + 2.0s`;
+- total bounded visibility budget: `4.0s`;
+- after exhaustion Product remains WAITING/fail-closed.
+
+Provider-free siblings:
+
+- 1 transient miss -> same occurrence VERIFIED;
+- 2 misses -> same occurrence VERIFIED;
+- 3 misses -> same occurrence VERIFIED;
+- 4 misses -> same occurrence VERIFIED;
+- 5 misses -> WAITING;
+- Metabot posts remain `1`;
+- native query identity remains exactly one value;
+- native query payload remains byte-equivalent across observation resumes.
+
+Pre-gates:
+
+- frozen-family closure: `37200492425 = SUCCESS`;
+- semantic conformance + Wave A + independent Wave B + mutation:
+  `37200492408 = SUCCESS`;
+- new-family discovery: `0`.
+
+Existing evidence-synthesis ranking primitive was inspected and **rejected for A3** because A3 is an
+explicit single-governed-metric CHANGE ranking; converting it to evidence-synthesis would weaken
+accepted ranking authority.
+
+NEXT LEGAL ACTION: full provider-free seal on exact root-fix bytes. No paid A3 retry until GREEN.
