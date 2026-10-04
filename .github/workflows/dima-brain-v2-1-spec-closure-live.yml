@@ -60,8 +60,8 @@ jobs:
           assert auth["semantic_holdout_run_id"]==37138840035
           assert auth["frozen_family_run_id"]==37147475131
           assert isinstance(auth["case_id"],str) and auth["case_id"]
-          assert auth["engine_sha"]=="f8ba5cf32d265f1d4210ac8513bf273df7f44e60"
-          assert auth["engine_release"]=="0.63.18-dima.11"
+          assert auth["engine_sha"]=="4c49b8da6b424b0fa4d8ef340ca1b238d12980c1"
+          assert auth["engine_release"]=="0.63.18-dima.11.1"
           assert auth["model_policy"]=="LUNA_LUNA_NO_CASCADE"
           subprocess.run(["git","cat-file","-e",auth["candidate_product_sha"]+"^{commit}"],check=True)
           subprocess.run(
@@ -139,10 +139,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$ENGINE_SHA" = "f8ba5cf32d265f1d4210ac8513bf273df7f44e60"
-          test "$CERTIFICATION_RUN_ID" = "37127030946"
-          test "$RUNTIME_TAG" = "v0.63.18-dima.11"
-          test "$REGISTRY_DIGEST" = "sha256:34976af8210f70c683518941a1a85b67e47e2df24ef2b5eb4054727e521c64a9"
+          test "$ENGINE_SHA" = "4c49b8da6b424b0fa4d8ef340ca1b238d12980c1"
+          test "$CERTIFICATION_RUN_ID" = "37176179588"
+          test "$RUNTIME_TAG" = "v0.63.18-dima.11.1"
+          test "$REGISTRY_DIGEST" = "sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d"
           docker pull "$IMMUTABLE_IMAGE_REF"
           docker image inspect -f '{{range .RepoDigests}}{{println .}}{{end}}' "$IMMUTABLE_IMAGE_REF" | grep -Fx "$IMMUTABLE_IMAGE_REF"
 
@@ -343,8 +343,8 @@ jobs:
           assert r["schema_version"]=="dima_brain_v2_1_recovery_live_v1"
           assert r["system"]=="DIMA_BRAIN_V2_1_LANGGRAPH"
           assert r["candidate_product_sha"]=="ff92fe8f717c2cf30827c1f6b56f92b6682017d5"
-          assert r["engine_sha"]=="f8ba5cf32d265f1d4210ac8513bf273df7f44e60"
-          assert r["engine_release"]=="v0.63.18-dima.11"
+          assert r["engine_sha"]=="4c49b8da6b424b0fa4d8ef340ca1b238d12980c1"
+          assert r["engine_release"]=="v0.63.18-dima.11.1"
           assert r["source_case_count"]==30
           assert r["case_count"]==1 and len(r["cases"])==1
           assert r["selected_case_ids"]==["${{ steps.auth.outputs.case_id }}"]

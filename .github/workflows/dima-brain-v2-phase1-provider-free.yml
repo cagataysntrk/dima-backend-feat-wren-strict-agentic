@@ -58,19 +58,19 @@ jobs:
         run: |
           set -euo pipefail
           GITLINK_SHA="$(git ls-tree HEAD engine/metabase | awk '{print $3}')"
-          test "$GITLINK_SHA" = "f8ba5cf32d265f1d4210ac8513bf273df7f44e60"
+          test "$GITLINK_SHA" = "4c49b8da6b424b0fa4d8ef340ca1b238d12980c1"
           python - <<'PY'
           import json
           from pathlib import Path
           lock = json.loads(Path("backend/lab/metabase/core_b/runtime/engine_runtime_lock.json").read_text())
           expected = {
-              "engine_sha": "f8ba5cf32d265f1d4210ac8513bf273df7f44e60",
+              "engine_sha": "4c49b8da6b424b0fa4d8ef340ca1b238d12980c1",
               "upstream_sha": "2ba2485c78d7e00a9a25f82c00fc201da71590c4",
-              "runtime_tag": "v0.63.18-dima.11",
-              "certification_run_id": "37127030946",
-              "immutable_image_ref": "ghcr.io/upcytech/dima-metabase-engine@sha256:34976af8210f70c683518941a1a85b67e47e2df24ef2b5eb4054727e521c64a9",
-              "registry_digest": "sha256:34976af8210f70c683518941a1a85b67e47e2df24ef2b5eb4054727e521c64a9",
-              "build_identity": "github-actions:37127030946:f8ba5cf32d265f1d4210ac8513bf273df7f44e60",
+              "runtime_tag": "v0.63.18-dima.11.1",
+              "certification_run_id": "37176179588",
+              "immutable_image_ref": "ghcr.io/upcytech/dima-metabase-engine@sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d",
+              "registry_digest": "sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d",
+              "build_identity": "github-actions:37176179588:4c49b8da6b424b0fa4d8ef340ca1b238d12980c1",
           }
           for key, value in expected.items():
               assert lock.get(key) == value, (key, lock.get(key), value)
@@ -81,7 +81,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "f8ba5cf32d265f1d4210ac8513bf273df7f44e60"
+          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "4c49b8da6b424b0fa4d8ef340ca1b238d12980c1"
           test -d backend/app/v3/brain_v2
           ! grep -R -nE 'DEV80|Validation50|Hidden50|30-case|F0[0-9]|F10|T[1-7]' backend/app/v3/brain_v2
           ! grep -R -nE 'sqlalchemy|sqlmodel|app\.v3\.substrate\.metabase\.(compiler|execution_adapter)' backend/app/v3/brain_v2
