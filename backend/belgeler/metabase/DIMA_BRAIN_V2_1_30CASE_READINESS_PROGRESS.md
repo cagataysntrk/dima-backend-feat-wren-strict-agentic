@@ -4906,3 +4906,72 @@ scores at least `3/4`.
 - Root correction: fixture now carries \`tenant_binding=id:<tenant UUID>\`; no production authority was weakened or bypassed.
 - Evidence before failure: Brain V2 deterministic closure \`144 passed\`; migration single-head GREEN; Research regression batch reached \`289 passed / 1 fixture failure\`.
 - NEXT LEGAL ACTION: rerun full Phase-1 provider-free on the corrected fixture; do not spend paid calls.
+
+
+---
+
+## PHASE 2 — A3 SEMANTIC SATURATION — GREEN — 2026-10-04
+
+**PHASE:** 2
+
+**STATUS:** GREEN; FINAL FULL PF RECERTIFICATION LAUNCHED
+
+**Semantic Product SHA:** \`e39c2f566c1b2a97ccb840cd01e55913cd2a7662\`
+
+**Repository proof HEAD before final recert:** \`720c1f1f0f9fd39df3a934942a76e075826a4bbb\`
+
+**Engine SHA/tag/digest:** \`4c49b8da6b424b0fa4d8ef340ca1b238d12980c1\` / \`0.63.18-dima.11.1\` / \`sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d\`
+
+**Objective:** Saturate the two repaired A3 semantic laws across independent dimensions without paid calls and verify that no new semantic family appears.
+
+**First invalid boundary:** none in Phase-2 proof.
+
+**Exact owner:** unchanged canonical owners: Research Intake for ranking authority; accepted Research scope + NativeResourceBinding for dependency binding; \`research_result_dependency.py\` for transient filter projection.
+
+**Was this law already implemented elsewhere?** YES; Phase 2 tests the consolidated laws rather than introducing another validator.
+
+**Canonical semantic owner:** unchanged.
+
+**Semantic combinations exercised:**
+- existing 13-dimension pairwise saturation matrix;
+- generated RankingBasis combinations across LEVEL/CHANGE and period structures;
+- result dependency crossed across FILTER_ONLY / FILTER_AND_BREAKOUT;
+- parent VERIFIED result valid / empty plus existing-filter none / same / conflict;
+- ambiguous native dependency column fail closed;
+- binding cardinality 0 / 2 fail closed plus foreign-scope candidate fail closed;
+- scope mutation, adaptive NextTest, completion/report and period roles remain in the existing generated/stateful matrix.
+
+**Required invariants:** FILTER_ONLY does not require an output/breakout column; CHANGE does not silently degrade to LEVEL; dependency projection preserves ScopeVersion/scope fingerprint; parent Evidence is read-only; selected governed value is projected once; conflicting filters fail closed.
+
+**Provider-free runs:**
+- Phase-1 full PF: \`37210567433 = SUCCESS\`
+- Phase-2/headless: \`37210415326 = SUCCESS\`
+- semantic conformance + Wave A/B: \`37210732045 = SUCCESS\`
+- frozen-family closure: \`37210732062 = SUCCESS\`
+- focused Brain V2 provider-free: \`37210732053 = SUCCESS\`
+
+**Semantic conformance counts:** core semantic conformance \`169 passed\`; Wave A \`8 passed\`; Wave B \`9 passed\` including generated dependency role/state crossings.
+
+**State transitions:** existing generated/stateful scope/currentness, adaptive and completion machines remain GREEN.
+
+**New family count:** \`0\` by Wave A/B generic-family assertions.
+
+**Mutation-canary detection:** GREEN / all mutation-canary step assertions passed.
+
+**Live run:** none; paid window remains OFF.
+
+**Exception:** \`0\` in provider-free adjudication.
+
+**Silent wrong:** \`0\` detected by semantic/frozen suites.
+
+**Duplicate native:** \`0\` in covered Brain V2 owner proofs.
+
+**Stale Evidence:** \`0\` in covered currentness/scope proofs.
+
+**What is proven:** A3 deterministic Product contracts and generated siblings are GREEN without engine rebuild or provider calls; no new semantic family emerged.
+
+**What remains unproven:** A3 original + semantic sibling 4/4 live proofs; A4/A5/A6; B1/B2/B3; final post-freeze Wave C; same-SHA 34/36+ readiness panel.
+
+**30-case readiness:** CLOSER.
+
+**NEXT LEGAL ACTION:** one final full Phase-1 + Phase-2 provider-free recertification on the latest proof HEAD. If GREEN, temporarily authorize only A3 original, then the semantic sibling. Broad/30-case stays CLOSED.
