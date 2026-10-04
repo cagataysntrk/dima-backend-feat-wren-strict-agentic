@@ -5,10 +5,12 @@ import pytest
 from app.v3.analytical_request_contract import (
     AnalyticalComparisonInvariant,
     AnalyticalPeriodInvariant,
+    AnalyticalRankingInvariant,
     AnalyticalRequestContract,
     AnalyticalScopeIdentity,
 )
 from app.v3.research_analytical_scope import NativeMaterialBinding
+from app.v3.research_contracts import RankingBasis
 from app.v3.research_material_coverage import (
     ResearchMaterialCoverageError,
     assert_material_result_coverage,
@@ -107,6 +109,70 @@ def test_comparison_result_covering_only_one_accepted_period_fails_closed() -> N
 
     assert exc.value.code == "R1_RESULT_COMPARISON_COVERAGE_INCOMPLETE"
     assert exc.value.detail == "reference_period"
+
+
+def _change_ranking_contract() -> AnalyticalRequestContract:
+    return _contract().model_copy(
+        update={
+            "ranking": AnalyticalRankingInvariant(
+                measure="metric.effect",
+                direction="desc",
+                limit=5,
+                basis=RankingBasis.CHANGE,
+            )
+        }
+    )
+
+
+def _derived_change_payload() -> dict:
+    return {
+        "data": {
+            "cols": [
+                {"display_name": "Entity"},
+                {"display_name": "Derived Change"},
+            ],
+            "rows": [
+                ["entity-a", 17.0],
+                ["entity-b", 4.0],
+            ],
+        }
+    }
+
+
+def test_attested_change_ranking_final_projection_may_omit_time_column() -> None:
+    coverage = assert_material_result_coverage(
+        contract=_change_ranking_contract(),
+        result_payload=_derived_change_payload(),
+        bindings=_bindings(),
+        attested_native_material=True,
+    )
+
+    assert coverage.status == "FULL"
+    assert coverage.result_row_count == 2
+    assert coverage.time_field_id is None
+
+
+def test_unattested_change_ranking_projection_without_time_fails_closed() -> None:
+    with pytest.raises(ResearchMaterialCoverageError) as exc:
+        assert_material_result_coverage(
+            contract=_change_ranking_contract(),
+            result_payload=_derived_change_payload(),
+            bindings=_bindings(),
+        )
+
+    assert exc.value.code == "R1_RESULT_TEMPORAL_COLUMN_MISMATCH"
+
+
+def test_attested_plain_comparison_still_requires_time_column() -> None:
+    with pytest.raises(ResearchMaterialCoverageError) as exc:
+        assert_material_result_coverage(
+            contract=_contract(),
+            result_payload=_derived_change_payload(),
+            bindings=_bindings(),
+            attested_native_material=True,
+        )
+
+    assert exc.value.code == "R1_RESULT_TEMPORAL_COLUMN_MISMATCH"
 
 
 def test_comparison_result_covering_both_accepted_periods_is_full() -> None:
