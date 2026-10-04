@@ -5055,3 +5055,105 @@ explicit single-governed-metric CHANGE ranking; converting it to evidence-synthe
 accepted ranking authority.
 
 NEXT LEGAL ACTION: full provider-free seal on exact root-fix bytes. No paid A3 retry until GREEN.
+
+
+---
+
+## FINAL READINESS — A3 OBSERVER-RESUME FULL SEAL
+
+**STATUS: GREEN — ONE A3 DEVELOPMENT PROOF AUTHORIZED**
+
+### Product / engine
+
+- semantic Product SHA: `9b761e923b9a5bc86b560b7a7f22600a15df9887`
+- repository seal receipt: `4fca2081910ab2b6865b53046962abe0944184a7`
+- engine SHA: `72992664803783ef437be8d944c0555a30ef211b`
+- release/runtime: `0.63.18-dima.11.1.2 / v0.63.18-dima.11.1.2`
+- digest: `sha256:42d591b14c6affe2e45b5525564f9c220bd0d2c93f38edba4000cf83985c419b`
+- certification: `37189616635 = SUCCESS`
+- model topology: `LUNA_LUNA_NO_CASCADE`
+
+### Objective
+
+Close only the proven post-execution read-only observation-visibility boundary without replaying
+Metabot cognition or native dataset execution.
+
+### First invalid boundary / owner / generic law
+
+- first invalid boundary:
+  `durable native EXECUTED -> persisted Metabot occurrence visibility -> material observation`
+- owner:
+  `research_product.py::ResearchAskOrchestrator.run_next`
+- generic law:
+  an already-executed durable native occurrence may receive a small bounded read-only observation
+  visibility retry budget while preserving exactly one Metabot/native execution identity. Exhaustion
+  remains WAITING/fail-closed.
+
+### Production changes
+
+Exactly one semantic root-fix commit in this RCA family:
+
+- `9b761e923b9a5bc86b560b7a7f22600a15df9887`
+  — bounded observer visibility resume.
+
+No engine change. No prompt change. No model change. No SQL/MBQL generation. No new semantic owner.
+
+### Provider-free proof
+
+Pre-gates:
+
+- frozen-family closure: `37200492425 = SUCCESS`;
+- semantic conformance + Wave A + independent Wave B + mutation:
+  `37200492408 = SUCCESS`;
+- new-family discovery: `0`.
+
+Full exact-candidate seal:
+
+- aggregate Phase-1: `37200654330 = SUCCESS`;
+- Phase-2/headless: `37200654260 = SUCCESS`;
+- provider/model calls: `0`.
+
+Required lifecycle siblings remain covered:
+
+- 1–4 transient observer misses -> same durable occurrence may recover;
+- 5 misses -> WAITING/fail-closed;
+- Metabot posts remain exactly one;
+- query identity/payload remain fixed;
+- duplicate native remains zero.
+
+### Live score / cost
+
+No paid call in this seal phase.
+
+- requests: `0`
+- tokens: `0`
+- cost: `$0`
+- latency: `0`
+
+### What is proven
+
+- dima.11.1.2 remains the exact frozen engine;
+- legal CHANGE material generation is already proven;
+- the remaining lifecycle fix is provider-free GREEN across independent semantic, frozen-family,
+  aggregate Phase-1 and Phase-2/headless gates;
+- semantic root-fix budget for this family has not exceeded the emergency directive ceiling.
+
+### What remains unproven
+
+- A3/F06_M score >= `3/4` on these exact semantic bytes;
+- A4/A5/A6 and B2/B3 development probes;
+- final provider-free saturation/freeze;
+- final same-SHA 9-case readiness panel >= `34/36`.
+
+### 30-case readiness
+
+**NO — A3 ONLY AUTHORIZED. BROAD 30-CASE REMAINS CLOSED.**
+
+### NEXT LEGAL ACTION
+
+Run exactly one paid A3/F06_M development proof bound to semantic Product
+`9b761e923b9a5bc86b560b7a7f22600a15df9887`, engine
+`72992664803783ef437be8d944c0555a30ef211b`, provider-free receipts
+`37200654330 / 37200654260`.
+
+A1, A2, A4, broad 30-case and automatic retry remain closed.
