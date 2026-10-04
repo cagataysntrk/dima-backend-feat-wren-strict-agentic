@@ -676,13 +676,10 @@ Authority rules:
   source surface from the supplied user fragments. It may be a more atomic substring, but it may also
   remain one shared exact span when that single span jointly denotes the two-period comparison.
 - BASELINE_PERIOD and COMPARISON_PERIOD are distinct semantic authorities because of their typed role
-  and normalized half-open bounds, not because they must have different source_text strings.
-- One shared source span does not imply one continuous interval. For an already-established CHANGE
-  comparison, when one exact shared source span names two distinct calendar periods at the same
-  calendar grain, resolve the earlier one to BASELINE_PERIOD and the later one to COMPARISON_PERIOD
-  with exact half-open bounds while preserving the shared source provenance.
-- Do not invent a second period. If the shared source surface establishes only one calendar period or
-  one continuous interval rather than two distinct calendar periods, return CLARIFY.
+  and normalized half-open bounds, not because they must have different source_text strings. When one
+  shared source span genuinely establishes both periods, preserve that provenance and deliberately
+  resolve the two role-bound spans. If the shared surface does not establish an unambiguous pair,
+  return CLARIFY rather than inventing distinct wording.
 - Do not change goals, metrics, ranking basis/direction/limit, dependencies, deliverables, scope refs,
   or any other semantic state.
 - Overlap is not globally illegal: preserve overlapping windows only when the exact user fragments
