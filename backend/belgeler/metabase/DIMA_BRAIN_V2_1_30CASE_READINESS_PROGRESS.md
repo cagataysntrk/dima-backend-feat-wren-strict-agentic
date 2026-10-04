@@ -4768,3 +4768,62 @@ Paid surface is disabled and temporary trigger removed.
 
 Run aggregate Phase-1 + Phase-2/headless. If GREEN, run **A3 only once**. A4 stays closed until A3
 scores at least `3/4`.
+
+
+---
+
+## PHASE 0 REFRESH / A3 LIVE SEMANTIC ADJUDICATION — 2026-10-04
+
+**PHASE:** 0 refresh + Phase 3 A3 proof adjudication
+
+**STATUS:** PAID STOP GREEN; A3 SEMANTIC RED RECLASSIFIED TO PHASE 1B
+
+**Product SHA:** `43da71811370cce931d08a3bf0561c09652f632a`
+
+**Repository HEAD before stop:** `db8ce44f9c6fb0360260c70d1657938655b01c27`
+
+**Engine SHA/tag/digest:** `4c49b8da6b424b0fa4d8ef340ca1b238d12980c1` / `0.63.18-dima.11.1` / `sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d`
+
+**Objective:** Keep the certified engine frozen, close the consumed paid trigger, and classify the latest A3 proof at the first semantic boundary before any further Product work.
+
+**First invalid boundary:** `Research Intake -> DraftRanking -> RankingSurface`. The user obligation is baseline-to-comparison deterioration ranking, but the accepted ranking authority remained `basis=LEVEL`. The run completed mechanically only because the same department also happened to be a plausible level winner; that coincidence is not semantic proof.
+
+**Exact owner:** `backend/app/v3/research_intake.py`
+
+**Was this law already implemented elsewhere?** YES — typed `RankingBasis.LEVEL | CHANGE`, typed baseline/comparison periods, and the bounded Intake reconsideration ceiling already exist. The missing law is deliberate resolution of ranking basis when temporal comparison material and ranking over the same governed measure coexist.
+
+**Canonical semantic owner:** Research Intake typed ranking authority. Metabase/engine must not repair this upstream NLU choice.
+
+**Files changed:** paid authorization + consumed trigger + this canonical progress receipt only.
+
+**Generic law:** A temporal-comparison ranking may not silently inherit default LEVEL. It must deliberately resolve LEVEL vs CHANGE under the existing bounded Intake reconsideration architecture; ambiguous meaning must CLARIFY. No wording parser, fuzzy/regex/morph routing, SQL/MBQL, engine semantic patch, or benchmark-case branch is legal.
+
+**Provider-free runs:** existing exact candidate recertification remains GREEN: Phase-1 `37196825485`, Phase-2/headless `37196825478`, semantic/holdout `37196605612`, frozen-family `37196605603`.
+
+**Live run:** `37197046966 = SUCCESS` at harness level, artifact `11301498023`, artifact digest `sha256:eb25c72e5f247ecd41717fbaac08957b6b5f4b546da4c3c3942204ddba7d5ba9`.
+
+**Manual score:** `2/4 PARTIAL` — semantic A3 is not closed.
+
+**Provider requests:** `7`
+
+**Tokens:** prompt `93,941`; completion `1,985`; reasoning `627`.
+
+**Cost:** `$0.01204711`
+
+**Latency:** `25,968 ms`
+
+**Exception:** `0`
+
+**Silent wrong:** `1 semantic authority defect detected during manual adjudication` — LEVEL accepted where CHANGE must be deliberately resolved.
+
+**Duplicate native:** `0`
+
+**Stale Evidence:** `0`
+
+**What is proven:** mechanical path can reach REPORT within 7 provider requests on frozen dima.11.1; engine rebuild is not implicated; paid window can remain closed; the first semantic defect is Intake ranking-basis authority.
+
+**What remains unproven:** Phase 1B root closure; Phase 1A result-dependency filter-only authority on current code; A3 original 4/4; A3 semantic sibling 4/4; A4/A5/A6; B1/B2/B3; final holdout; same-SHA 34/36+ readiness panel.
+
+**30-case readiness:** CLOSER, NOT READY.
+
+**NEXT LEGAL ACTION:** provider-free Phase 1A + 1B root closure in canonical owners, generated/frozen siblings, aggregate recertification; only then one authorized A3 original and one semantic sibling. Broad/30-case remains CLOSED. Frontend remains FORBIDDEN.
