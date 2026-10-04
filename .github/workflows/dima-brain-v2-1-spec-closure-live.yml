@@ -1,6 +1,11 @@
 name: dima-brain-v2-1-spec-closure-live
 
 on:
+  push:
+    branches:
+      - feat/dima-brain-v2-1-specification-closure
+    paths:
+      - ".github/BRAIN_V21_SPEC_CLOSURE_LIVE_TRIGGER"
   workflow_dispatch:
 
 permissions:
@@ -53,12 +58,12 @@ jobs:
           assert auth["thirty_case_allowed"] is False
           assert auth["automatic_retry_allowed"] is False
           assert auth["case_count"] == 1
-          assert auth["candidate_product_sha"]=="c760e896a2afd3aac6a2e3bd7f44a4022968f973"
-          assert auth["provider_free_phase1_run_id"]==37184931956
-          assert auth["provider_free_phase2_run_id"]==37184931907
-          assert auth["semantic_conformance_run_id"]==37184804395
-          assert auth["semantic_holdout_run_id"]==37184804395
-          assert auth["frozen_family_run_id"]==37184931912
+          assert auth["candidate_product_sha"]=="b0a536dee06f123513d57bf488ec3165a7809858"
+          assert auth["provider_free_phase1_run_id"]==37185633394
+          assert auth["provider_free_phase2_run_id"]==37185633393
+          assert auth["semantic_conformance_run_id"]==37185478916
+          assert auth["semantic_holdout_run_id"]==37185478916
+          assert auth["frozen_family_run_id"]==37185478871
           assert isinstance(auth["case_id"],str) and auth["case_id"]
           assert auth["engine_sha"]=="4c49b8da6b424b0fa4d8ef340ca1b238d12980c1"
           assert auth["engine_release"]=="0.63.18-dima.11.1"
@@ -71,7 +76,7 @@ jobs:
           )
           print("candidate="+auth["candidate_product_sha"])
           PY
-          echo "candidate_sha=c760e896a2afd3aac6a2e3bd7f44a4022968f973" >> "$GITHUB_OUTPUT"
+          echo "candidate_sha=b0a536dee06f123513d57bf488ec3165a7809858" >> "$GITHUB_OUTPUT"
           echo "case_id=$(python -c 'import json; print(json.load(open("backend/lab/metabase/brain_v2/spec_closure_live_authorization.json"))["case_id"])')" >> "$GITHUB_OUTPUT"
           test -n "$DIMA_OPENROUTER_API_KEY"
 
@@ -342,7 +347,7 @@ jobs:
           r=json.loads(p.read_text())
           assert r["schema_version"]=="dima_brain_v2_1_recovery_live_v1"
           assert r["system"]=="DIMA_BRAIN_V2_1_LANGGRAPH"
-          assert r["candidate_product_sha"]=="c760e896a2afd3aac6a2e3bd7f44a4022968f973"
+          assert r["candidate_product_sha"]=="b0a536dee06f123513d57bf488ec3165a7809858"
           assert r["engine_sha"]=="4c49b8da6b424b0fa4d8ef340ca1b238d12980c1"
           assert r["engine_release"]=="v0.63.18-dima.11.1.1"
           assert r["source_case_count"]==30
