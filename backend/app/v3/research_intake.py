@@ -672,11 +672,14 @@ Authority rules:
 - Decide only the two accepted period authorities: each period's exact verbatim source_text plus its
   half-open [start,end) normalized bounds.
 - Keep the supplied governed time dimension and period roles exactly.
-- Goal source fragments are immutable. A returned period.source_text may only become a more atomic
-  exact verbatim substring of those supplied user fragments that directly grounds that one period.
-- BASELINE_PERIOD and COMPARISON_PERIOD are distinct semantic authorities. They must not silently
-  share one undifferentiated period source_text. If the exact user fragments cannot separately ground
-  the two periods, return CLARIFY.
+- Goal source fragments are immutable. A returned period.source_text must remain an exact verbatim
+  source surface from the supplied user fragments. It may be a more atomic substring, but it may also
+  remain one shared exact span when that single span jointly denotes the two-period comparison.
+- BASELINE_PERIOD and COMPARISON_PERIOD are distinct semantic authorities because of their typed role
+  and normalized half-open bounds, not because they must have different source_text strings. When one
+  shared source span genuinely establishes both periods, preserve that provenance and deliberately
+  resolve the two role-bound spans. If the shared surface does not establish an unambiguous pair,
+  return CLARIFY rather than inventing distinct wording.
 - Do not change goals, metrics, ranking basis/direction/limit, dependencies, deliverables, scope refs,
   or any other semantic state.
 - Overlap is not globally illegal: preserve overlapping windows only when the exact user fragments
@@ -2162,11 +2165,6 @@ class ResearchIntakeCompiler:
                 "INTAKE_CHANGE_RANKING_PERIOD_PAIR_COLLAPSED",
                 "CHANGE ranking baseline and comparison periods must be distinct bounded spans",
             )
-        if baseline.source_text == comparison.source_text:
-            raise ResearchIntakeError(
-                "INTAKE_CHANGE_PERIOD_SOURCE_SURFACES_AMBIGUOUS",
-                "CHANGE ranking baseline and comparison require distinct grounded source surfaces",
-            )
 
     @staticmethod
     def _change_ranking_collapsed_period_issue(
@@ -3053,12 +3051,6 @@ class ResearchIntakeCompiler:
                     "INTAKE_CHANGE_PERIOD_SOURCE_FRAGMENT_NOT_VERBATIM",
                     "resolved temporal authority must retain exact user source provenance",
                 )
-            if resolved_sources[0] == resolved_sources[1]:
-                raise ResearchIntakeError(
-                    "INTAKE_CHANGE_PERIOD_SOURCE_SURFACES_AMBIGUOUS",
-                    "baseline and comparison require distinct grounded period source surfaces",
-                )
-
             original_baselines = tuple(
                 item
                 for item in draft.time_periods
