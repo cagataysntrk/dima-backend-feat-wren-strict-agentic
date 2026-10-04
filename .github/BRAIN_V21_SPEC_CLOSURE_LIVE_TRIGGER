@@ -1,0 +1,11 @@
+dima-brain-v2.1-spec-closure-live-trigger-v1
+gate=A3_DOUBLE_LIVE_ORIGINAL
+case_id=F06_M
+candidate_product_sha=34d0bbd461222e2a0859ed196a5a950e362c8622
+provider_free_phase1_run_id=37212785825
+provider_free_phase2_run_id=37212785872
+semantic_conformance_run_id=37212706802
+frozen_family_run_id=37212706702
+automatic_retry_allowed=false
+broad_paid_allowed=false
+thirty_case_allowed=false
