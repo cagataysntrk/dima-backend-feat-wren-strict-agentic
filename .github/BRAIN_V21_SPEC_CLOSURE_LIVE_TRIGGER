@@ -1,7 +1,7 @@
-A3 F06_M final-readiness trigger CONSUMED
-run=37199906654
-artifact=11302548264
-score=2/4
-paid=false
+A3 F06_M observer-resume sealed trigger
+candidate=9b761e923b9a5bc86b560b7a7f22600a15df9887
+phase1=37200654330
+phase2=37200654260
+engine=72992664803783ef437be8d944c0555a30ef211b
 broad=false
-next=provider-free-rca-only
+automatic_retry=false
