@@ -3018,6 +3018,15 @@ def test_change_material_requirement_projection_is_exact_and_planner_visible() -
     encoded = message.split(marker, 1)[1].splitlines()[0]
     visible = json.loads(encoded)["dima_material_requirement"]
     assert visible == requirement
+    assert "CHANGE output law" in message
+    assert "compute the governed metric separately for the accepted baseline period" in message
+    assert "comparison-minus-baseline value" in message
+    assert "order by the derived comparison-minus-baseline value" in message
+    assert "do not order by the raw metric level" in message
+    assert "dimension.department" in message
+    lowered = message.lower()
+    for forbidden in ("select ", "group by", "sum-where", "aggregation-options", "lib/uuid"):
+        assert forbidden not in lowered
 
 
 def test_dima10_missing_required_change_ranking_is_distinct_material_miss() -> None:
