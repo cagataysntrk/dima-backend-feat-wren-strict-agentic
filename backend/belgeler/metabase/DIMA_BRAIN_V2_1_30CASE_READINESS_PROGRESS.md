@@ -5417,3 +5417,60 @@ The semantic candidate remains `34d0bbd461222e2a0859ed196a5a950e362c8622`; all c
 **30-case readiness:** CLOSER, NOT READY.
 
 **NEXT LEGAL ACTION:** complete full provider-free recertification. If GREEN, execute exactly one F06_M original on Product `a347b6db...`, then immediately disarm. No broad, no 30-case, no frontend.
+
+
+---
+
+## PHASE 3 A3.1 — MODEL CEILING DIAGNOSTIC + PROMPT-PATCH ROLLBACK — 2026-10-04
+
+**PHASE:** 3 / A3 original recovery
+
+**STATUS:** DETERMINISTIC PRODUCT GREEN; MODEL_CEILING NOT CONFIRMED; PROMPT-ONLY DELTA REMOVED; FULL AGGREGATE PF RECERTIFICATION LAUNCHED
+
+**Product SHA:** `6656533fb9a86580db9617709bb5331ba4d031ab`
+
+**Engine SHA/tag/digest:** `4c49b8da6b424b0fa4d8ef340ca1b238d12980c1` / `0.63.18-dima.11.1` / `sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d`
+
+**Objective:** determine whether the remaining F06_M original failure is a deterministic Product-law defect or stochastic Intake ceiling, without adding regex/fuzzy/morph/benchmark branches, prompt-only behavior patches, query planning, engine changes, or provider-budget increases.
+
+**First invalid boundary:** Research Intake bounded temporal authority. On Luna, qualifying run `37228054088` failed closed with `BRAIN_V2_INTAKE_CLARIFY` before any Metabot call. A single controlled Terra Intake diagnostic `37230532868` also failed closed, this time with `INTAKE_CHANGE_RANKING_COMPARISON_REQUIRED` after one Intake call.
+
+**Exact owner:** `ResearchIntakeCompiler`. `research_temporal_authority.py` owns only explicit-bounded-vs-governed-time-axis disposition; it does not reinterpret a two-period pair. Scope patch consumes already-typed periods. No second canonical owner already implements the missing language interpretation.
+
+**Was this law already implemented elsewhere?** NO for shared-span natural-language-to-two-period interpretation. YES for the durable typed law: CHANGE requires one BASELINE_PERIOD + one COMPARISON_PERIOD, same governed time dimension, distinct normalized spans; source provenance remains separate from typed period identity.
+
+**Canonical semantic owner:** Research Intake owns raw-language temporal WHAT -> typed period authority. Metabase/Metabot remains analytical HOW/query cognition. Certified dima.11.1 remains frozen.
+
+**Files changed:**
+- `backend/app/v3/research_intake.py`: removed the later prompt-only shared-span wording delta and restored the typed/provenance implementation state.
+- live workflow/auth/trigger were changed only for the one controlled Terra diagnostic and then restored/disarmed.
+- this canonical progress receipt.
+
+**Generic law:** no new semantic branch was added. The prior `a347b6db...` delta was rejected because it changed only resolver prompt wording rather than closing a typed generic law. Product now retains the earlier bounded typed temporal reconsideration + provenance invariants without that prompt-only patch.
+
+**Provider-free runs on current clean Product:**
+- frozen-family closure: `37230925285 = SUCCESS`;
+- semantic conformance + Wave A + Wave B + mutation canaries: `37230925331 = SUCCESS`;
+- aggregate Phase-1 + Phase-2/headless: launched by this receipt.
+
+**Qualifying Luna live run:** `37228054088`, F06_M original, `0/4`, exception `BRAIN_V2_INTAKE_CLARIFY`, 2 provider requests, prompt/completion `15649/719`, cost `$0.00135686`, latency `8293 ms`; no Metabot call, duplicate native `0`, stale Evidence `0`, no admitted silent-wrong result.
+
+**Controlled Terra diagnostic:** `37230532868`, NOT qualifying readiness evidence. Exception `INTAKE_CHANGE_RANKING_COMPARISON_REQUIRED`; 1 Research Intake provider request; prompt/completion `14646/686`; cost `$0.00448455`; latency `5702 ms`; duplicate native `0`; stale Evidence `0`.
+
+**Model-ceiling adjudication:** `MODEL_CEILING_NOT_CONFIRMED`. Terra did not consistently resolve the typed authority that Luna failed to resolve, so topology change is not justified.
+
+**Exception:** qualifying Luna run = 1 fail-closed Intake exception; Terra diagnostic = 1 fail-closed Intake exception.
+
+**Silent wrong:** 0 admitted.
+
+**Duplicate native:** 0.
+
+**Stale Evidence:** 0.
+
+**What is proven:** the remaining current A3 first-invalid boundary is upstream Intake, not engine/query cognition; certified engine was never reached in the latest qualifying run. The prompt-only attempt did not solve the issue and has been removed. Deterministic semantic/frozen families remain GREEN.
+
+**What remains unproven:** A3 original `4/4 FULL`; therefore A3 semantic sibling, A4/A5/A6, B1/B2/B3, final Wave C/freeze, same-SHA 34/36+ and 30-CASE READY remain legally closed.
+
+**30-case readiness:** CLOSER, NOT READY.
+
+**NEXT LEGAL ACTION:** finish aggregate Phase-1/Phase-2 recertification on this clean Product. Do not repeat the same F06_M wording without a new root-level semantic change; do not add another prompt/regex/morph guard; do not advance to sibling/A4+. If aggregate PF is GREEN, this checkpoint is the correct escalation boundary for a supervisor-level semantic/topology decision. Broad, actual 30-case, and frontend remain CLOSED.
