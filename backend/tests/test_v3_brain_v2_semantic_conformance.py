@@ -12,6 +12,7 @@ from app.v3.analytical_request_contract import (
     AnalyticalPeriodInvariant,
     AnalyticalRankingInvariant,
     AnalyticalRequestContract,
+    AnalyticalTemporalChangeFrame,
     AnalyticalScopeIdentity,
 )
 from app.v3.research_intake import DraftRanking, ModelGoalDraft
@@ -36,6 +37,7 @@ from app.v3.research_contracts import (
     ScopeVersion,
     SemanticTargetKind,
     TemporalRole,
+    TemporalChangeFrameMode,
 )
 from app.v3.report_document import P20ReportError, ReportClaimGate
 from app.v3.research import ObligationState, StoppingStatus
@@ -191,14 +193,18 @@ def _production_patch(
     )
 
 
-def test_change_ranking_has_explicit_typed_basis_and_comparison_authority() -> None:
+def test_change_ranking_has_explicit_typed_pair_or_span_authority() -> None:
     assert ranking_basis_is_coherent(
         basis=RankingBasis.CHANGE,
         period=PeriodStructure.BASELINE_CANDIDATE,
     )
-    assert not ranking_basis_is_coherent(
+    assert ranking_basis_is_coherent(
         basis=RankingBasis.CHANGE,
         period=PeriodStructure.SINGLE_WINDOW,
+    )
+    assert not ranking_basis_is_coherent(
+        basis=RankingBasis.CHANGE,
+        period=PeriodStructure.NONE,
     )
 
     ranking = DraftRanking(
@@ -254,6 +260,21 @@ def test_product_ranking_basis_matches_independent_period_law(
             end="2026-03-01",
         )
 
+    temporal_change_frame = None
+    if basis == RankingBasis.CHANGE and comparison is not None:
+        temporal_change_frame = AnalyticalTemporalChangeFrame(
+            mode=TemporalChangeFrameMode.PAIR,
+            time_dimension=comparison.reference_period.time_dimension,
+            baseline_period=comparison.reference_period,
+            comparison_period=comparison.base_period,
+        )
+    elif basis == RankingBasis.CHANGE and single is not None:
+        temporal_change_frame = AnalyticalTemporalChangeFrame(
+            mode=TemporalChangeFrameMode.SPAN,
+            time_dimension=single.time_dimension,
+            span_period=single,
+        )
+
     payload = dict(
         authority_id="auth-ranking-basis",
         request_ref="req-ranking-basis",
@@ -266,6 +287,7 @@ def test_product_ranking_basis_matches_independent_period_law(
         metric_refs=("metric.m1",),
         period=single,
         comparison=comparison,
+        temporal_change_frame=temporal_change_frame,
         ranking=AnalyticalRankingInvariant(
             measure="metric.m1",
             direction="desc",
@@ -278,7 +300,7 @@ def test_product_ranking_basis_matches_independent_period_law(
         assert contract.ranking is not None
         assert contract.ranking.basis.value == basis.value.lower()
     else:
-        with pytest.raises(ValueError, match="baseline/comparison"):
+        with pytest.raises(ValueError, match="PAIR or bounded SPAN"):
             AnalyticalRequestContract(**payload)
 
 
