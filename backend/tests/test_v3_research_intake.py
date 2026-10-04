@@ -233,6 +233,7 @@ def test_change_ranking_intake_preserves_basis_and_role_bound_periods():
     basis_schema = ranking_schema["properties"]["basis"]
     assert basis_schema["$ref"] == "#/$defs/RankingBasis"
     assert set(schema["$defs"]["RankingBasis"]["enum"]) == {"level", "change"}
+    assert "basis" in ranking_schema["required"]
 
 
 def test_result_dependency_dimension_can_constrain_child_without_child_breakout():
