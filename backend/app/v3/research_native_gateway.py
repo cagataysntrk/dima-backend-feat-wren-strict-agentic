@@ -819,6 +819,12 @@ class NativeResearchMaterialExecutor:
                 contract=contract,
                 result_payload=result_payload,
                 bindings=coverage_bindings,
+                # _observe_scope above already proved the exact persisted
+                # occurrence against accepted native material semantics.
+                # Result coverage may therefore accept a derived CHANGE
+                # projection that no longer repeats the intermediate time
+                # column; this is proof propagation, not relaxed planning.
+                attested_native_material=True,
             )
         except ResearchMaterialCoverageError as exc:
             raise ResearchMaterialLimitation(exc.code, exc.detail) from exc
