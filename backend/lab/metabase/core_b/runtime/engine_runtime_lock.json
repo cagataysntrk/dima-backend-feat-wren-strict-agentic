@@ -2,7 +2,7 @@
   "schema_version": "dima_engine_runtime_lock_v1",
   "engine_sha": "4c49b8da6b424b0fa4d8ef340ca1b238d12980c1",
   "upstream_sha": "2ba2485c78d7e00a9a25f82c00fc201da71590c4",
-  "runtime_tag": "v0.63.18-dima.11.1",
+  "runtime_tag": "v0.63.18-dima.11.1.1",
   "certification_run_id": "37176179588",
   "immutable_image_ref": "ghcr.io/upcytech/dima-metabase-engine@sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d",
   "registry_digest": "sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d",

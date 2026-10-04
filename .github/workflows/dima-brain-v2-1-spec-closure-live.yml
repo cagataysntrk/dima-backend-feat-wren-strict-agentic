@@ -135,13 +135,13 @@ jobs:
             --gitlink-sha "$GITLINK_SHA" \
             --github-env "$GITHUB_ENV"
 
-      - name: Pull exact certified dima.11 digest
+      - name: Pull exact certified dima.11.1 digest
         shell: bash
         run: |
           set -euo pipefail
           test "$ENGINE_SHA" = "4c49b8da6b424b0fa4d8ef340ca1b238d12980c1"
           test "$CERTIFICATION_RUN_ID" = "37176179588"
-          test "$RUNTIME_TAG" = "v0.63.18-dima.11.1"
+          test "$RUNTIME_TAG" = "v0.63.18-dima.11.1.1"
           test "$REGISTRY_DIGEST" = "sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d"
           docker pull "$IMMUTABLE_IMAGE_REF"
           docker image inspect -f '{{range .RepoDigests}}{{println .}}{{end}}' "$IMMUTABLE_IMAGE_REF" | grep -Fx "$IMMUTABLE_IMAGE_REF"
@@ -204,7 +204,7 @@ jobs:
           python lab/metabase/core_b/runtime/seed_round2_fixture.py \
             --fixture eval/round2_neutral_machine_fixture.json
 
-      - name: Start exact certified dima.11 engine
+      - name: Start exact certified dima.11.1 engine
         shell: bash
         run: |
           set -euo pipefail
@@ -344,7 +344,7 @@ jobs:
           assert r["system"]=="DIMA_BRAIN_V2_1_LANGGRAPH"
           assert r["candidate_product_sha"]=="ff92fe8f717c2cf30827c1f6b56f92b6682017d5"
           assert r["engine_sha"]=="4c49b8da6b424b0fa4d8ef340ca1b238d12980c1"
-          assert r["engine_release"]=="v0.63.18-dima.11.1"
+          assert r["engine_release"]=="v0.63.18-dima.11.1.1"
           assert r["source_case_count"]==30
           assert r["case_count"]==1 and len(r["cases"])==1
           assert r["selected_case_ids"]==["${{ steps.auth.outputs.case_id }}"]
