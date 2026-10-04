@@ -3723,8 +3723,10 @@ def test_change_ranking_overlapping_pair_gets_narrow_temporal_reconsideration() 
     assert reconsideration["kind"] == "CHANGE_PERIOD_PAIR_DELIBERATION"
     assert reconsideration["reason"] == "OVERLAPPING"
     assert reconsideration["time_dimension_semantic_id"] == "dimension.event_date"
-    assert reconsideration["ranking_source_fragment"] == ranking_fragment
-    assert reconsideration["comparison_source_fragments"] == [comparison_fragment]
+    assert reconsideration["ranking_source_fragment"] == first["goals"][1]["source_fragment_text"]
+    assert reconsideration["comparison_source_fragments"] == [
+        first["goals"][0]["source_fragment_text"]
+    ]
     assert set(second_call["schema"]["properties"]["result"]["anyOf"][0]["required"]) >= {
         "terminal",
         "baseline_period",
