@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import time
 from contextlib import AbstractContextManager
 from datetime import datetime, timezone
 from typing import Any, Protocol
@@ -996,7 +997,13 @@ class ResearchAskOrchestrator:
             request,
             repair_parent_link_id=None,
         ):
-            """Retry observation once from durable EXECUTED state without replaying I/O."""
+            """Bounded observation retry over one durable EXECUTED occurrence.
+
+            Native cognition and dataset execution are never replayed. Metabase
+            occurrence persistence can become visible slightly after the exact
+            dataset result is durably captured, so retry only the read-only
+            observation lookup on the same execution link/query payload.
+            """
 
             try:
                 return runner.execute(
@@ -1009,20 +1016,33 @@ class ResearchAskOrchestrator:
                     analytical_scope=analytical_scope,
                     repair_parent_link_id=repair_parent_link_id,
                 )
-            except ResearchMaterialObservationUnavailable:
-                persisted = self._store.execution_link(link.id)
-                if persisted.status != "EXECUTED":
-                    raise
-                return runner.execute(
-                    session=session,
-                    principal=principal,
-                    obligation_id=selected,
-                    link=persisted,
-                    request=None,
-                    native_session_token=native_session_token,
-                    analytical_scope=analytical_scope,
-                    repair_parent_link_id=repair_parent_link_id,
-                )
+            except ResearchMaterialObservationUnavailable as first_exc:
+                last_exc = first_exc
+
+            persisted = self._store.execution_link(link.id)
+            if persisted.status != "EXECUTED":
+                raise last_exc
+
+            for delay_seconds in (0.2, 0.6):
+                time.sleep(delay_seconds)
+                try:
+                    return runner.execute(
+                        session=session,
+                        principal=principal,
+                        obligation_id=selected,
+                        link=persisted,
+                        request=None,
+                        native_session_token=native_session_token,
+                        analytical_scope=analytical_scope,
+                        repair_parent_link_id=repair_parent_link_id,
+                    )
+                except ResearchMaterialObservationUnavailable as retry_exc:
+                    last_exc = retry_exc
+                    persisted = self._store.execution_link(link.id)
+                    if persisted.status != "EXECUTED":
+                        raise
+
+            raise last_exc
 
         try:
             occurrence = execute_occurrence_with_observation_resume(
