@@ -5258,3 +5258,58 @@ The semantic candidate remains `34d0bbd461222e2a0859ed196a5a950e362c8622`; all c
 **30-case readiness:** CLOSER, NOT READY.
 
 **NEXT LEGAL ACTION:** wait only for the launched provider-free suites. If GREEN, repin the one-shot live workflow to Product `156eb41e...` and the new PF run receipts, arm exactly F06_M original, then disarm immediately. No broad, no 30-case, no frontend.
+
+
+---
+
+## PHASE 3 A3.1 — TEMPORAL SOURCE-PROVENANCE ROOT CLOSURE — 2026-10-04
+
+**PHASE:** 3 / A3.1 recovery
+
+**STATUS:** SECOND LIVE RED ADJUDICATED; GENERIC ROOT FIX IMPLEMENTED; FULL PF RECERTIFICATION LAUNCHED
+
+**Product SHA:** `9e17d5ebf160591193eb377b23abf1433bc662a0`
+
+**Engine SHA/tag/digest:** `4c49b8da6b424b0fa4d8ef340ca1b238d12980c1` / `0.63.18-dima.11.1` / `sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d`
+
+**Objective:** close the remaining upstream temporal grounding defect without teaching Dima query construction, adding phrase heuristics, or rebuilding the engine.
+
+**Live run:** `37219967064`, artifact `11309543383`, F06_M original.
+
+**Manual score:** `0/4`; fail-closed WAITING, requirement_complete=false.
+
+**Provider requests:** `10` forwarded = Research Intake `1` + Metabase `9`; `3` additional Metabase attempts blocked by the local ceiling.
+
+**Tokens / Cost / Latency:** prompt `160258`, completion `5380`, reasoning `1848`; cost `$0.02621023`; case latency `65633 ms`.
+
+**Exception / Silent wrong / Duplicate native / Stale Evidence:** exception `0`; no result was admitted, so no accepted silent-wrong claim; duplicate native `0`; stale Evidence `0`.
+
+**First invalid boundary:** Research Intake temporal authority, before ranking native cognition. Intake correctly retained `basis=CHANGE`, but accepted baseline `[2026-05-01,2026-07-01)` and comparison `[2026-07-01,2026-09-01)` for the user's May-to-June comparison. Both periods shared the same undifferentiated source surface `Mayıs-Haziran`. The pair was mechanically non-overlapping but not separately source-grounded.
+
+**Exact owner:** `ResearchIntakeCompiler` temporal authority.
+
+**Was this law already implemented elsewhere?** YES. Goal authority already requires exact verbatim source fragments. The missing piece was applying the same source-provenance + normalized-value law to accepted CHANGE periods.
+
+**Canonical semantic owner:** Research Intake owns temporal WHAT and source provenance. Metabase/Metabot remains analytical HOW. Certified dima.11.1 remains frozen.
+
+**Pattern research:** temporal semantic parsers such as Duckling carry the matched source body/span together with the normalized time value and reference-time context. Dima adopts only that provenance pattern; no Duckling runtime/framework is added.
+
+**Files changed:**
+- `backend/app/v3/research_intake.py`
+- `backend/tests/test_v3_research_intake.py`
+
+**Generic law:** BASELINE_PERIOD and COMPARISON_PERIOD are distinct typed authorities. A normalized period authority is paired with an exact verbatim user source surface. A CHANGE pair with collapsed/overlapping/ungrounded/shared period provenance receives at most one existing bounded temporal reconsideration. The resolver may patch only period source_text + normalized bounds while preserving role, governed time dimension and all non-temporal state. If the two periods cannot be separately grounded, CLARIFY/fail-closed is required. No keyword list, regex, morphology, benchmark identity, SQL/MBQL, engine patch, or provider-ceiling increase.
+
+**Provider-free runs already GREEN on this Product SHA:**
+- semantic conformance + Wave A/B + mutation canaries: `37220535985 = SUCCESS`;
+- frozen-family closure: `37220535973 = SUCCESS`.
+
+**Provider-free runs launched by this receipt:** aggregate Phase-1 and Phase-2/headless.
+
+**What is proven:** the second RED was still upstream temporal authority, not an excuse for a Metabot query patch. The source-provenance law is now shared conceptually with existing goal provenance and remains within the Intake owner.
+
+**What remains unproven:** aggregate Phase-1/Phase-2 on `9e17d5eb...`; then F06_M original FULL and semantic sibling FULL.
+
+**30-case readiness:** CLOSER, NOT READY.
+
+**NEXT LEGAL ACTION:** require full PF GREEN, then execute exactly one new F06_M original on `9e17d5eb...`; immediately disarm paid trigger. No broad, no 30-case, no frontend.
