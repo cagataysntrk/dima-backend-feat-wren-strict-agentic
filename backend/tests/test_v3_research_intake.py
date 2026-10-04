@@ -3581,20 +3581,192 @@ def test_change_ranking_collapsed_pair_gets_one_structured_reconsideration() -> 
 
 
 def test_change_ranking_collapsed_pair_fails_closed_after_one_reconsideration() -> None:
+    question = "Compare the governed earlier and later periods, then rank departments by change."
     collapsed = _collapsed_change_period_payload()
-    transport = SequenceTransport([collapsed, collapsed])
+    collapsed["goals"][0]["source_text"] = question
+    collapsed["goals"][0]["source_fragment_text"] = question
+    collapsed["goals"][0]["ranking"]["source_text"] = question
+    unresolved = {
+        "terminal": "RESOLVED",
+        "baseline_period": _r6_period(
+            "baseline pair",
+            "2026-05-01",
+            "2026-07-01",
+            role="baseline_period",
+        ),
+        "comparison_period": _r6_period(
+            "comparison pair",
+            "2026-05-01",
+            "2026-07-01",
+            role="comparison_period",
+        ),
+    }
+    transport = SequenceTransport([collapsed, unresolved])
 
     with pytest.raises(ResearchIntakeError) as exc:
         ResearchIntakeCompiler(
             transport=transport,
             calendar_reference_date="2026-10-04",
         ).compile(
-            question="Rank the governed metric by change between two periods.",
+            question=question,
             catalog=_r6_temporal_catalog(),
         )
 
     assert exc.value.code == "INTAKE_CHANGE_RANKING_PERIOD_PAIR_COLLAPSED"
     assert transport.call_count == 2
+
+
+def _overlapping_change_period_payload() -> tuple[str, dict]:
+    comparison_fragment = "Compare May and June governed downtime."
+    ranking_fragment = "Rank departments by the governed downtime change."
+    question = f"{comparison_fragment} {ranking_fragment}"
+    payload = ready_payload(
+        kind="comparison",
+        subject=("metric.downtime",),
+        related=("dimension.event_date",),
+    )
+    payload["objective"] = "Compare governed downtime and rank departments by change."
+    payload["goals"][0].update(
+        {
+            "goal_key": "g-comparison-overlap",
+            "source_text": comparison_fragment,
+            "source_fragment_text": comparison_fragment,
+            "ranking": None,
+            "comparisons": [],
+            "result_dependency": None,
+        }
+    )
+    payload["goals"].append(
+        {
+            "goal_key": "g-ranking-overlap",
+            "kind": "ranking",
+            "source_text": ranking_fragment,
+            "source_fragment_text": ranking_fragment,
+            "subject_semantic_ids": ["metric.downtime"],
+            "related_semantic_ids": ["dimension.department"],
+            "ranking": {
+                "source_text": ranking_fragment,
+                "direction": "desc",
+                "limit": 1,
+                "measure_semantic_id": "metric.downtime",
+                "basis": "change",
+            },
+            "comparisons": [],
+            "result_dependency": None,
+            "causal_competition": None,
+        }
+    )
+    payload["time_periods"] = [
+        _r6_period(
+            "May baseline",
+            "2026-05-01",
+            "2026-06-30",
+            role="baseline_period",
+        ),
+        _r6_period(
+            "June comparison",
+            "2026-06-01",
+            "2026-07-01",
+            role="comparison_period",
+        ),
+    ]
+    return question, payload
+
+
+def test_change_ranking_overlapping_pair_gets_narrow_temporal_reconsideration() -> None:
+    question, first = _overlapping_change_period_payload()
+    resolved = {
+        "terminal": "RESOLVED",
+        "baseline_period": _r6_period(
+            "provider text is not new authority",
+            "2026-05-01",
+            "2026-06-01",
+            role="baseline_period",
+        ),
+        "comparison_period": _r6_period(
+            "provider text is not new authority",
+            "2026-06-01",
+            "2026-07-01",
+            role="comparison_period",
+        ),
+    }
+    transport = SequenceTransport([first, resolved])
+
+    result = ResearchIntakeCompiler(
+        transport=transport,
+        calendar_reference_date="2026-10-04",
+    ).compile(
+        question=question,
+        catalog=_r6_temporal_catalog(),
+    )
+
+    assert result.terminal == ResearchIntakeTerminal.READY
+    assert result.model_calls == 2
+    assert result.brief is not None
+    assert result.brief.objective == first["objective"]
+    assert [
+        (item.start, item.end, item.role.value)
+        for item in result.brief.scope.periods
+    ] == [
+        ("2026-05-01", "2026-06-01", "baseline_period"),
+        ("2026-06-01", "2026-07-01", "comparison_period"),
+    ]
+    comparison, ranking = result.brief.questions
+    assert comparison.source_text == first["goals"][0]["source_fragment_text"]
+    assert ranking.source_text == first["goals"][1]["source_fragment_text"]
+    assert ranking.ranking is not None
+    assert ranking.ranking.basis == RankingBasis.CHANGE
+
+    second_call = transport.calls[1]
+    assert second_call["schema_name"].endswith("_change_period_pair")
+    reconsideration = second_call["user"]["reconsideration"]
+    assert reconsideration["kind"] == "CHANGE_PERIOD_PAIR_DELIBERATION"
+    assert reconsideration["reason"] == "OVERLAPPING"
+    assert reconsideration["time_dimension_semantic_id"] == "dimension.event_date"
+    assert reconsideration["ranking_source_fragment"] == ranking_fragment
+    assert reconsideration["comparison_source_fragments"] == [comparison_fragment]
+    assert set(second_call["schema"]["properties"]["result"]["anyOf"][0]["required"]) >= {
+        "terminal",
+        "baseline_period",
+        "comparison_period",
+    }
+
+
+def test_change_ranking_deliberate_rolling_overlap_is_not_canonicalized_away() -> None:
+    question, first = _overlapping_change_period_payload()
+    deliberate = {
+        "terminal": "RESOLVED",
+        "baseline_period": _r6_period(
+            "ignored text",
+            "2026-05-01",
+            "2026-06-30",
+            role="baseline_period",
+        ),
+        "comparison_period": _r6_period(
+            "ignored text",
+            "2026-06-01",
+            "2026-07-01",
+            role="comparison_period",
+        ),
+    }
+    transport = SequenceTransport([first, deliberate])
+
+    result = ResearchIntakeCompiler(
+        transport=transport,
+        calendar_reference_date="2026-10-04",
+    ).compile(
+        question=question,
+        catalog=_r6_temporal_catalog(),
+    )
+
+    assert result.terminal == ResearchIntakeTerminal.READY
+    assert result.brief is not None
+    assert [(item.start, item.end) for item in result.brief.scope.periods] == [
+        ("2026-05-01", "2026-06-30"),
+        ("2026-06-01", "2026-07-01"),
+    ]
+    assert result.brief.scope.periods[0].source_text == "May baseline"
+    assert result.brief.scope.periods[1].source_text == "June comparison"
 
 
 def test_level_ranking_two_neutral_periods_remain_material_windows() -> None:
