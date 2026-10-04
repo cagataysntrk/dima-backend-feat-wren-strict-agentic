@@ -449,23 +449,38 @@ class ResearchManager:
             lines.append("- preserve the governed native ranking basis exactly")
             if ranking.basis.value == "change":
                 change = requirement.get("change_semantics") or {}
+                frame = requirement.get("temporal_change_frame") or {}
                 entity_refs = (
                     ", ".join(change.get("entity_breakout_refs") or ())
                     or "accepted entity grain"
                 )
-                lines.extend(
-                    (
-                        "- rank by the accepted baseline-to-comparison change, not pooled level",
-                        "- keep the accepted comparison periods distinguishable in governed material",
+                if frame.get("mode") == "PAIR":
+                    lines.extend(
                         (
-                            "- CHANGE output law: produce one comparable entity-grain result for "
-                            f"{entity_refs}; compute the governed metric separately for the accepted "
-                            "baseline period and accepted comparison period; expose the derived "
-                            "comparison-minus-baseline value for that same entity grain"
-                        ),
-                        "- order by the derived comparison-minus-baseline value in the accepted direction",
-                        "- do not order by the raw metric level and do not use time as an extra result-row breakout when the contract asks for entity CHANGE ranking",
+                            "- preserve the accepted PAIR change frame; do not collapse it into pooled level",
+                            "- keep the accepted baseline and comparison periods distinguishable in governed material",
+                            (
+                                "- CHANGE material law: produce one comparable entity-grain result for "
+                                f"{entity_refs}; the accepted metric CHANGE must reflect the governed "
+                                "baseline and comparison periods for that same entity grain"
+                            ),
+                            "- rank by the governed CHANGE quantity in the accepted direction",
+                        )
                     )
+                elif frame.get("mode") == "SPAN":
+                    lines.extend(
+                        (
+                            "- preserve the accepted SPAN change frame; do not invent hidden baseline/comparison roles",
+                            (
+                                "- CHANGE material law: produce one comparable entity-grain result for "
+                                f"{entity_refs}; analyze governed metric change over the accepted bounded "
+                                "span using Metabot-owned analytical realization"
+                            ),
+                            "- rank by the governed CHANGE quantity in the accepted direction",
+                        )
+                    )
+                lines.append(
+                    "- do not order by the raw metric level when the contract requires CHANGE"
                 )
 
         lines.extend(
