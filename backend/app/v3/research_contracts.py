@@ -31,6 +31,13 @@ class RankingBasis(StrEnum):
     CHANGE = "change"
 
 
+class TemporalChangeFrameMode(StrEnum):
+    """Typed CHANGE temporal shape; never a query-plan instruction."""
+
+    PAIR = "PAIR"
+    SPAN = "SPAN"
+
+
 class RankingSurface(FrozenModel):
     """Accepted user/product ranking obligation, not automatically native ORDER BY."""
 
