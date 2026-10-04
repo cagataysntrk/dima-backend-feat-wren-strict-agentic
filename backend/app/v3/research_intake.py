@@ -3126,7 +3126,14 @@ class ResearchIntakeCompiler:
                 ResearchQuestion(
                     goal_id=goal_id,
                     kind=goal.kind,
-                    source_text=goal.source_text,
+                    # The exact grounded fragment is the canonical local
+                    # obligation wording.  Broad provider source_text remains
+                    # compatibility-only when no verbatim fragment exists.
+                    source_text=(
+                        goal.source_fragment_text
+                        if goal.source_fragment_text is not None
+                        else goal.source_text
+                    ),
                     source_fragment_identity=source_fragment_identity,
                     subject_refs=subject,
                     related_refs=related,
