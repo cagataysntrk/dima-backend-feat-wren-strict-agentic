@@ -67,7 +67,7 @@ jobs:
           expected = {
               "engine_sha": "72992664803783ef437be8d944c0555a30ef211b",
               "upstream_sha": "2ba2485c78d7e00a9a25f82c00fc201da71590c4",
-              "runtime_tag": "v0.63.18-dima.11.1.2.2",
+              "runtime_tag": "v0.63.18-dima.11.1.2",
               "certification_run_id": "37189616635",
               "immutable_image_ref": "ghcr.io/upcytech/dima-metabase-engine@sha256:42d591b14c6affe2e45b5525564f9c220bd0d2c93f38edba4000cf83985c419b",
               "registry_digest": "sha256:42d591b14c6affe2e45b5525564f9c220bd0d2c93f38edba4000cf83985c419b",
