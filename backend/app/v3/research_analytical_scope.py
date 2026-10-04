@@ -912,6 +912,48 @@ def material_coverage_period(
     )
 
 
+def _change_material_semantics(
+    contract: AnalyticalRequestContract,
+    coverage: MaterialCoverageContract,
+) -> dict[str, Any] | None:
+    ranking = contract.ranking
+    comparison = contract.comparison
+    if (
+        not isinstance(ranking, AnalyticalRankingInvariant)
+        or ranking.basis != RankingBasis.CHANGE
+        or comparison is None
+    ):
+        return None
+
+    baseline = comparison.reference_period
+    current = comparison.base_period
+    if baseline.time_dimension != current.time_dimension:
+        raise ResearchAnalyticalScopeError(
+            "R1_CHANGE_RANKING_COMPARISON_DIMENSION_MISMATCH",
+            "change ranking baseline/comparison must use the same temporal dimension",
+            last_valid_boundary="dima.material.contract",
+            first_invalid_boundary="dima.material.requirement",
+            scope_fingerprint=contract.scope_fingerprint,
+            material_fingerprint=contract.material_fingerprint,
+        )
+
+    entity_breakouts = [
+        ref
+        for ref in coverage.required_breakout_refs
+        if ref != baseline.time_dimension
+    ]
+    return {
+        "operation": "comparison_minus_baseline",
+        "metric_ref": ranking.measure,
+        "entity_breakout_refs": entity_breakouts,
+        "time_dimension": baseline.time_dimension,
+        "baseline_period": baseline.model_dump(mode="json"),
+        "comparison_period": current.model_dump(mode="json"),
+        "ranking_direction": ranking.direction,
+        "ranking_limit": ranking.limit,
+    }
+
+
 def native_material_requirement(
     contract: AnalyticalRequestContract,
 ) -> dict[str, Any]:
@@ -955,6 +997,7 @@ def native_material_requirement(
             if contract.ranking is not None
             else None
         ),
+        "change_semantics": _change_material_semantics(contract, coverage),
     }
 
 
@@ -2209,6 +2252,10 @@ def _assert_material_ranking_scope(
             material_fingerprint=contract.material_fingerprint,
             expected_semantic_shape={
                 "ranking": ranking.model_dump(mode="json"),
+                "change_semantics": _change_material_semantics(
+                    contract,
+                    material_coverage_contract(contract),
+                ),
             },
             observed_semantic_shape={
                 "ranking": [
@@ -2258,7 +2305,13 @@ def _assert_material_ranking_scope(
             first_invalid_boundary="dima.evidence.admit",
             scope_fingerprint=contract.scope_fingerprint,
             material_fingerprint=contract.material_fingerprint,
-            expected_semantic_shape={"ranking_basis": ranking.basis.value},
+            expected_semantic_shape={
+                "ranking_basis": ranking.basis.value,
+                "change_semantics": _change_material_semantics(
+                    contract,
+                    material_coverage_contract(contract),
+                ),
+            },
             observed_semantic_shape={"ranking_basis": authorized.basis},
         )
     unauthorized_restrictive = tuple(
