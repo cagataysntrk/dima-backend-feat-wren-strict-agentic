@@ -3,7 +3,7 @@
 **Working branch:** `feat/dima-brain-v2-1-specification-closure`  
 **Architecture:** Brain V2.1 frozen  
 **Canonical analytical engine:** Metabase / Metabot  
-**Engine:** `d5c60dc9f37a9ec9c5b0117f178146bbcb8dca88` / `0.63.18-dima.9`  
+**Engine:** `4c49b8da6b424b0fa4d8ef340ca1b238d12980c1` / `0.63.18-dima.11.1`  
 **UI/Frontend:** not implemented / forbidden during specification closure
 
 ## Permanent ownership
@@ -73,7 +73,7 @@ semantic law
 -> optional surgical live recovery panel
 ```
 
-The engine stays dima.9 unless an independent engine defect is proven.
+The engine stays dima.11.1 unless an independent engine defect is proven.
 
 ## UX boundary
 
