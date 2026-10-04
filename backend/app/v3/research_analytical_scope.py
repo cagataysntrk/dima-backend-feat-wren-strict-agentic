@@ -26,6 +26,7 @@ from app.v3.analytical_request_contract import (
     AnalyticalRequestObservation,
     AnalyticalScopeIdentity,
     AnalyticalTemporalObservationInvariant,
+    AnalyticalTemporalChangeFrame,
     NativeAnalyticalRequestObservation,
     assert_request_invariants,
     material_coverage_contract,
@@ -41,6 +42,7 @@ from app.v3.research_contracts import (
     ResearchSemanticRef,
     SemanticTargetKind,
     TemporalRole,
+    TemporalChangeFrameMode,
 )
 from app.v3.substrate.metabase.native_models import (
     NativeEngineIdentity,
@@ -802,16 +804,35 @@ def analytical_scope_contract(
         )
 
     ranking = None
+    temporal_change_frame = None
     if question.ranking is not None:
         value = question.ranking
-        if value.basis == RankingBasis.CHANGE and comparison is None:
-            raise ResearchAnalyticalScopeError(
-                "R1_CHANGE_RANKING_COMPARISON_REQUIRED",
-                (
-                    "change ranking requires exactly one typed baseline/comparison "
-                    "period pair"
-                ),
-            )
+        if value.basis == RankingBasis.CHANGE:
+            if comparison is not None:
+                temporal_change_frame = AnalyticalTemporalChangeFrame(
+                    mode=TemporalChangeFrameMode.PAIR,
+                    time_dimension=comparison.reference_period.time_dimension,
+                    baseline_period=comparison.reference_period,
+                    comparison_period=comparison.base_period,
+                )
+            elif (
+                len(periods) == 1
+                and period is not None
+                and periods[0].role == TemporalRole.MATERIAL_WINDOW
+            ):
+                temporal_change_frame = AnalyticalTemporalChangeFrame(
+                    mode=TemporalChangeFrameMode.SPAN,
+                    time_dimension=period.time_dimension,
+                    span_period=period,
+                )
+            else:
+                raise ResearchAnalyticalScopeError(
+                    "R1_CHANGE_RANKING_TEMPORAL_FRAME_REQUIRED",
+                    (
+                        "change ranking requires one accepted PAIR or one "
+                        "bounded MATERIAL_WINDOW SPAN"
+                    ),
+                )
         goal_metric_ids = {item.candidate_id for item in goal_metrics}
         explicit_measure = value.measure_semantic_id
         if explicit_measure is not None and explicit_measure not in goal_metric_ids:
@@ -868,6 +889,7 @@ def analytical_scope_contract(
         period=period,
         comparison=comparison,
         temporal_observation=temporal_observation,
+        temporal_change_frame=temporal_change_frame,
         ranking=ranking,
         grain_constraints=tuple(item.candidate_id for item in dimensions),
         requested_output_surfaces=tuple(dict.fromkeys(outputs)),
@@ -912,46 +934,82 @@ def material_coverage_period(
     )
 
 
+def _effective_temporal_change_frame(
+    contract: AnalyticalRequestContract,
+) -> AnalyticalTemporalChangeFrame | None:
+    """Return the typed CHANGE view without creating new semantic authority."""
+
+    ranking = contract.ranking
+    if (
+        not isinstance(ranking, AnalyticalRankingInvariant)
+        or ranking.basis != RankingBasis.CHANGE
+    ):
+        return None
+    if contract.temporal_change_frame is not None:
+        return contract.temporal_change_frame
+    # Compatibility-only for older deterministic fixtures/contracts. Forward
+    # Research construction populates temporal_change_frame explicitly.
+    if contract.comparison is not None:
+        return AnalyticalTemporalChangeFrame(
+            mode=TemporalChangeFrameMode.PAIR,
+            time_dimension=contract.comparison.reference_period.time_dimension,
+            baseline_period=contract.comparison.reference_period,
+            comparison_period=contract.comparison.base_period,
+        )
+    if contract.period is not None and contract.period.end is not None:
+        return AnalyticalTemporalChangeFrame(
+            mode=TemporalChangeFrameMode.SPAN,
+            time_dimension=contract.period.time_dimension,
+            span_period=contract.period,
+        )
+    return None
+
+
 def _change_material_semantics(
     contract: AnalyticalRequestContract,
     coverage: MaterialCoverageContract,
 ) -> dict[str, Any] | None:
     ranking = contract.ranking
-    comparison = contract.comparison
+    frame = _effective_temporal_change_frame(contract)
     if (
         not isinstance(ranking, AnalyticalRankingInvariant)
         or ranking.basis != RankingBasis.CHANGE
-        or comparison is None
+        or frame is None
     ):
         return None
-
-    baseline = comparison.reference_period
-    current = comparison.base_period
-    if baseline.time_dimension != current.time_dimension:
-        raise ResearchAnalyticalScopeError(
-            "R1_CHANGE_RANKING_COMPARISON_DIMENSION_MISMATCH",
-            "change ranking baseline/comparison must use the same temporal dimension",
-            last_valid_boundary="dima.material.contract",
-            first_invalid_boundary="dima.material.requirement",
-            scope_fingerprint=contract.scope_fingerprint,
-            material_fingerprint=contract.material_fingerprint,
-        )
 
     entity_breakouts = [
         ref
         for ref in coverage.required_breakout_refs
-        if ref != baseline.time_dimension
+        if ref != frame.time_dimension
     ]
-    return {
-        "operation": "comparison_minus_baseline",
+    payload: dict[str, Any] = {
+        "frame_mode": frame.mode.value,
         "metric_ref": ranking.measure,
         "entity_breakout_refs": entity_breakouts,
-        "time_dimension": baseline.time_dimension,
-        "baseline_period": baseline.model_dump(mode="json"),
-        "comparison_period": current.model_dump(mode="json"),
+        "time_dimension": frame.time_dimension,
         "ranking_direction": ranking.direction,
         "ranking_limit": ranking.limit,
     }
+    if frame.mode == TemporalChangeFrameMode.PAIR:
+        assert frame.baseline_period is not None
+        assert frame.comparison_period is not None
+        payload.update(
+            {
+                "operation": "comparison_minus_baseline",
+                "baseline_period": frame.baseline_period.model_dump(mode="json"),
+                "comparison_period": frame.comparison_period.model_dump(mode="json"),
+            }
+        )
+    else:
+        assert frame.span_period is not None
+        payload.update(
+            {
+                "operation": "change_over_span",
+                "span_period": frame.span_period.model_dump(mode="json"),
+            }
+        )
+    return payload
 
 
 def native_material_requirement(
@@ -995,6 +1053,11 @@ def native_material_requirement(
         "ranking": (
             contract.ranking.model_dump(mode="json")
             if contract.ranking is not None
+            else None
+        ),
+        "temporal_change_frame": (
+            _effective_temporal_change_frame(contract).model_dump(mode="json")
+            if _effective_temporal_change_frame(contract) is not None
             else None
         ),
         "change_semantics": _change_material_semantics(contract, coverage),
