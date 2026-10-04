@@ -5228,3 +5228,17 @@ Post-fix pre-gates:
 No engine, prompt, model, SQL/MBQL, regex/fuzzy/morph or benchmark-case change.
 
 NEXT LEGAL ACTION: aggregate Phase-1 + Phase-2/headless on these exact bytes. Paid A3 remains disabled.
+
+
+### A3 INTAKE MISSING-PAIR ROOT FIX — PHASE-1 GREEN
+
+- semantic root-fix: `5bb2bc2f1b40377e354c9e20fa14aaf729fb4cd0`;
+- aggregate Phase-1: `37202641985 = SUCCESS`;
+- engine identity/migration/Brain V2/research-scope/P17/P19/P20/security-hygiene: GREEN;
+- provider calls: `0`.
+
+Phase-2 first attempt `37202642046` stopped before tests because its CI freeze base still pointed
+to prior semantic SHA `9b761e...`. This was a stale verification receipt, not a Product failure.
+The Phase-2 freeze base is now advanced to `5bb2bc2f...` without changing Product semantics.
+
+NEXT LEGAL ACTION: rerun only Phase-2/headless provider-free.
