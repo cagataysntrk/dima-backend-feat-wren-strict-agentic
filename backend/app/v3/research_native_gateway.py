@@ -285,9 +285,17 @@ class NativeResearchMaterialExecutor:
         *,
         principal: Principal,
         session: ResearchSession,
-        contract,
+        contract=None,
+        candidate_ids: tuple[str, ...] | None = None,
     ) -> dict[str, NativeMaterialBinding]:
-        """Load exact stable native ids for accepted semantic candidates only."""
+        """Load exact governed native bindings from immutable accepted scope.
+
+        candidate_ids is used for execution-local material dependencies whose
+        binding is required before that dimension is projected into the child
+        contract. Ordinary execution supplies contract and therefore keeps
+        the exact same canonical binding policy. There is one binding law;
+        only the caller material role differs.
+        """
         brief = session.accepted_brief
         if brief is None:
             raise ResearchMaterialLimitation(
@@ -298,11 +306,19 @@ class NativeResearchMaterialExecutor:
         accepted_refs = {
             item.candidate_id: item for item in brief.scope.semantic_refs
         }
-        required = self._contract_candidate_ids(contract)
+        if candidate_ids is not None:
+            required = set(candidate_ids)
+        else:
+            if contract is None:
+                raise ResearchMaterialLimitation(
+                    "R1_MATERIAL_CONTRACT_REQUIRED",
+                    "native binding resolution requires a material contract or explicit candidate ids",
+                )
+            required = self._contract_candidate_ids(contract)
         if not required.issubset(accepted_refs):
             raise ResearchMaterialLimitation(
                 "R1_SEMANTIC_REF_OUTSIDE_ACCEPTED_SCOPE",
-                "material contract references a candidate outside accepted Research scope",
+                "material binding references a candidate outside accepted Research scope",
             )
         output: dict[str, NativeMaterialBinding] = {}
         with Session(self._subjects.db_engine) as db:
@@ -425,21 +441,6 @@ class NativeResearchMaterialExecutor:
             session_id=session.session_id,
             obligation_id=execution_source,
         )
-        bindings = self._material_bindings(
-            principal=principal,
-            session=session,
-            contract=contract,
-        )
-        binding = bindings.get(dependency.dimension_semantic_id)
-        if binding is None or binding.field_id is None:
-            raise ResearchMaterialLimitation(
-                "R1_RESULT_DEPENDENCY_NATIVE_FIELD_REQUIRED",
-                dependency.dimension_semantic_id,
-                last_valid_boundary="dima.evidence.admit",
-                first_invalid_boundary="dima.material.compile",
-                scope_fingerprint=contract.scope_fingerprint,
-                material_fingerprint=contract.material_fingerprint,
-            )
         semantic_ref = next(
             (
                 item
@@ -453,6 +454,25 @@ class NativeResearchMaterialExecutor:
                 "R1_RESULT_DEPENDENCY_DIMENSION_OUTSIDE_SCOPE",
                 dependency.dimension_semantic_id,
                 last_valid_boundary="dima.scope.resolve",
+                first_invalid_boundary="dima.material.compile",
+                scope_fingerprint=contract.scope_fingerprint,
+                material_fingerprint=contract.material_fingerprint,
+            )
+
+        # A result-dependent dimension selects one VERIFIED parent entity
+        # before it becomes child execution material. It need not be a child
+        # output/breakout; accepted Research scope is its semantic authority.
+        bindings = self._material_bindings(
+            principal=principal,
+            session=session,
+            candidate_ids=(dependency.dimension_semantic_id,),
+        )
+        binding = bindings.get(dependency.dimension_semantic_id)
+        if binding is None or binding.field_id is None:
+            raise ResearchMaterialLimitation(
+                "R1_RESULT_DEPENDENCY_NATIVE_FIELD_REQUIRED",
+                dependency.dimension_semantic_id,
+                last_valid_boundary="dima.evidence.admit",
                 first_invalid_boundary="dima.material.compile",
                 scope_fingerprint=contract.scope_fingerprint,
                 material_fingerprint=contract.material_fingerprint,
