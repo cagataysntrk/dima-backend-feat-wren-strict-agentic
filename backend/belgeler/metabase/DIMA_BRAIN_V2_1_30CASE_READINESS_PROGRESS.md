@@ -5674,3 +5674,68 @@ SPAN preserves one bounded interval and never asserts hidden baseline/comparison
 **30-case readiness:** NOT READY; Phase 2 GREEN.
 
 **NEXT LEGAL ACTION:** authorize exactly one A3 original `F06_M` on Product `447847e4...` with Luna/Luna/no-cascade, then immediately disarm and manually adjudicate. Stop on RED. No broad, no 30-case, no frontend.
+
+
+---
+
+## PHASE 3 — A3 ORIGINAL PAIR/SPAN LIVE ADJUDICATION — 2026-10-05
+
+**PHASE:** 3 / A3 original
+
+**STATUS:** RED / PARTIAL — STOP-ON-RED ACTIVE
+
+**Product SHA:** `447847e4b1161ee7a4fc34b7d3f861872f9c0564`
+
+**Repository HEAD before this receipt:** `3e5ceffc148a5270daee53d88da3d7a42695e664`
+
+**Engine SHA/tag/digest:** `4c49b8da6b424b0fa4d8ef340ca1b238d12980c1` / `0.63.18-dima.11.1` / `sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d`
+
+**Objective:** adjudicate the first paid A3 original after the generic PAIR/SPAN root closure and identify the first invalid boundary without advancing to the semantic sibling or A4.
+
+**First invalid boundary:** native result/material coverage -> Evidence admission. Research Intake is READY. Metabot is reached. The comparison obligation is VERIFIED. The department CHANGE native query executes correctly and returns a valid derived CHANGE ranking, but the ranking execution remains `EXECUTED` with `receipt_id=null` and `evidence_id=null`; the ranking obligation remains `DELEGATED`, child drill-down remains `READY`, and the graph stops at `MATERIAL_GROUP_WAITING`.
+
+**Exact owner:** P14 Research material Evidence-admission boundary: `research_native_gateway.py` + `research_material_coverage.py`. This is downstream of successful Metabot planning and upstream of governed Evidence. It is not an Intake defect and not an engine-query-generation defect.
+
+**Files changed:** this canonical receipt and disabled live-authorization adjudication receipt only. No Product semantic fix yet.
+
+**Generic law changed:** none in this receipt. Investigation points to a result-coverage invariant that may incorrectly require final derived CHANGE rowsets to expose the governed time column even after the exact native material occurrence has already proven temporal scope and CHANGE ranking semantics.
+
+**Provider-free runs carried into this paid gate:**
+- semantic conformance + independent Wave A/B + mutation canaries: `37237559953 = SUCCESS`;
+- frozen-family closure: `37237559916 = SUCCESS`;
+- Phase-1 provider-free: `37237559926 = SUCCESS`;
+- Phase-2/headless: `37237559952 = SUCCESS`.
+
+**Paid run:** `37237863865`; artifact `11315439520`.
+
+**Score:** `2/4 PARTIAL`. Correct typed Intake and correct native CHANGE ranking are visible, but the required governed Evidence/continuation/child drill-down/report are incomplete. The supervisor hard closure requires `4/4 FULL`, so A3 is RED.
+
+**Provider requests:** `10` total = 1 Research Intake + 9 Metabase. This is at, not above, the Phase-3 ceiling.
+
+**Tokens:** prompt `153352`; completion `4596`; reasoning `1536`.
+
+**Cost:** `$0.02035283`.
+
+**Latency:** `50432 ms` case latency.
+
+**Native executions:** comparison occurrence VERIFIED; department CHANGE ranking occurrence EXECUTED but not admitted as Evidence. Duplicate native = `0`.
+
+**Repair count:** no governed repair closure admitted for the ranking occurrence in the final state.
+
+**Exception:** `0`.
+
+**Silent wrong:** `0` admitted. The run remains incomplete rather than promoting unverified material.
+
+**Duplicate native:** `0`.
+
+**Stale Evidence:** `0`.
+
+**Security violation:** `0`.
+
+**What is proven:** the PAIR/SPAN root fix moved A3 past Intake; Metabot can realize the accepted CHANGE semantics; the engine produced a correct department ranking (Assembly first with +267 minutes). The current failure is now strictly later at Evidence admission/continuation.
+
+**What remains unproven:** A3 original `4/4 FULL`, A3 semantic sibling, A4/A5/A6, B1/B2/B3, final saturation/freeze and same-SHA 34/36+ panel.
+
+**30-case readiness:** NOT READY.
+
+**NEXT LEGAL ACTION:** keep paid authorization OFF. Reproduce the exact Evidence-admission failure provider-free. Verify whether final derived CHANGE ranking output may omit the governed time column only when the same native occurrence has already passed exact material-scope validation for the accepted temporal frame and CHANGE basis. If proven, apply one generic Evidence-admission fix, recertify all provider-free gates, then run exactly one new A3 original. No sibling/A4, no engine change, no broad, no 30-case, no frontend.
