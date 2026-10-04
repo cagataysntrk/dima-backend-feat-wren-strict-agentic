@@ -394,6 +394,32 @@ def _raw_harness_gate(
     return bool(mechanical_safety and accepted_terminal and completion_ok)
 
 
+
+def _case_with_question_override(
+    case: dict[str, Any],
+    override: str | None,
+) -> dict[str, Any]:
+    """Return a test-only case copy with one alternate semantic wording.
+
+    The frozen 30-case manifest remains immutable. This helper exists only for
+    the supervisor-authorized A3 semantic sibling proof and never affects
+    production intake or routing.
+    """
+
+    question = str(override or "").strip()
+    if not question:
+        return dict(case)
+    turns = list(case.get("turns") or [])
+    if len(turns) > 1:
+        raise RuntimeError(
+            "question override is legal only for one-turn surgical recovery cases"
+        )
+    updated = dict(case)
+    updated["question"] = question
+    if "turns" in updated:
+        updated["turns"] = [question]
+    return updated
+
 def _run_case(
     *,
     case: dict[str, Any],
@@ -543,6 +569,7 @@ def main() -> int:
     ap.add_argument("--image-identity", required=True)
     ap.add_argument("--candidate-product-sha", required=True)
     ap.add_argument("--checkout-sha", required=True)
+    ap.add_argument("--question-override-file", type=Path)
     ap.add_argument(
         "--case-id",
         action="append",
@@ -566,7 +593,17 @@ def main() -> int:
     selected_id = str(args.case_id[0])
     if selected_id not in by_id:
         raise RuntimeError(f"unknown frozen recovery case id: {selected_id}")
-    cases = [by_id[selected_id]]
+    question_override = None
+    if args.question_override_file is not None:
+        question_override = args.question_override_file.read_text(
+            encoding="utf-8"
+        ).strip()
+    cases = [
+        _case_with_question_override(
+            by_id[selected_id],
+            question_override,
+        )
+    ]
 
     binding_manifest = load_binding_manifest(args.binding_manifest)
     catalog = build_catalog(binding_manifest)
