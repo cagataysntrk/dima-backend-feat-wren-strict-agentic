@@ -4975,3 +4975,35 @@ scores at least `3/4`.
 **30-case readiness:** CLOSER.
 
 **NEXT LEGAL ACTION:** one final full Phase-1 + Phase-2 provider-free recertification on the latest proof HEAD. If GREEN, temporarily authorize only A3 original, then the semantic sibling. Broad/30-case stays CLOSED.
+
+
+---
+
+## PHASE 2 FINAL HOLD / PHASE 3 AUTHORIZATION — 2026-10-04
+
+**PHASE:** 2 final recert -> 3 A3.1
+
+**STATUS:** PHASE 2 GREEN; A3 ORIGINAL PINPOINT LIVE AUTHORIZED
+
+**Semantic Product SHA:** \`e39c2f566c1b2a97ccb840cd01e55913cd2a7662\`
+
+**Repository proof HEAD:** \`0fb21ebfc113f450f869ef43dc05e7a86a009206\`
+
+**Engine SHA/tag/digest:** \`4c49b8da6b424b0fa4d8ef340ca1b238d12980c1\` / \`0.63.18-dima.11.1\` / \`sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d\`
+
+**Provider-free final recertification:**
+- Phase-1 full: \`37210975064 = SUCCESS\`
+- Phase-2/headless: \`37210974979 = SUCCESS\`
+- semantic conformance / generated holdout: \`37210732045 = SUCCESS\`
+- frozen-family closure: \`37210732062 = SUCCESS\`
+- focused Brain V2: \`37210732053 = SUCCESS\`
+
+**What is proven:** deterministic Product contracts, security/currentness, checkpoint/resume owner surfaces, generated saturation and frozen-family closure are GREEN with the certified engine unchanged.
+
+**Paid authorization:** exactly one \`F06_M\` original A3 run. \`broad_paid_allowed=false\`, \`thirty_case_allowed=false\`, \`automatic_retry_allowed=false\`.
+
+**A3.1 required adjudication:** accepted ranking basis CHANGE; May baseline / June comparison; selected department is the largest source-backed May->June downtime increase; selected department becomes a transient child FILTER; deeper machine/accepted operational factor Evidence VERIFIED; report explains selection and deeper finding; requirement complete; exception/duplicate native/stale Evidence/silent wrong all zero; manual quality \`4/4 FULL\`.
+
+**Efficiency gate:** target <= 8 provider requests for A3; hard ceiling remains 10.
+
+**NEXT LEGAL ACTION:** run A3.1 once. If FULL, run exactly one semantic sibling. If deterministic Product is GREEN but Luna still resolves LEVEL at Research Intake, STOP PRODUCT PATCHING and invoke only the supervisor-defined Luna-vs-Terra model-ceiling comparison.
