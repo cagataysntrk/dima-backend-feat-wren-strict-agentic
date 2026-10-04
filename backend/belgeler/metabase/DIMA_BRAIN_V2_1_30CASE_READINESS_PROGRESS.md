@@ -5187,3 +5187,21 @@ No low-level Git blob/tree/ref mutation was used to evade either control. No Pro
 The semantic candidate remains `34d0bbd461222e2a0859ed196a5a950e362c8622`; all commits after it are documentation/disabled-authorization receipts only. Paid authorization remains OFF and the temporary trigger is absent.
 
 **Operational next gate remains unchanged:** approved workflow-write/dispatch surface -> repin exact candidate/PF receipts -> one F06_M original live run. No A4+, broad, 30-case, frontend, engine rebuild, or Product semantic patch is legal before that.
+
+
+### A3.1 original rerun RED -> temporal-authority root closure (2026-10-04)
+
+- Paid run: `37216154655`, case `F06_M`, candidate before repair `34d0bbd461222e2a0859ed196a5a950e362c8622`.
+- Safety: fail-closed PARTIAL/WAITING; `requirement_complete=false`; exception/duplicate-native/stale-Evidence = `0/0/0`; paid window closed immediately and trigger removed; no same-SHA retry.
+- Provider receipt: 10 accepted requests (Research Intake 1 + Metabase 9), 3 additional Metabase attempts blocked at the local ceiling; prompt/completion/reasoning tokens = `153545/5592/2663`; cost `$0.02156086`; latency `66950 ms`.
+- Intake correctly resolved ranking `basis=CHANGE`, governed downtime measure, result dependency and goal-local source fragments. First comparison occurrence was VERIFIED.
+- First invalid upstream authority discovered during manual adjudication: accepted baseline was `[2026-05-01,2026-06-30)` while comparison was `[2026-06-01,2026-07-01)`. `ResearchTimePeriod` is explicitly half-open and the pair overlaps; no later layer normalizes it.
+- Existing validator only rejected an exactly collapsed pair, so an ambiguous overlapping CHANGE pair could cross the Intake boundary.
+- Root fix candidate: `156eb41e3469c852d725501cea1d2a724e08f851`.
+  - one narrow typed temporal reconsideration may write only baseline/comparison bounds or return CLARIFY;
+  - all non-temporal Research authority is immutable;
+  - deliberate rolling overlap remains legal when the exact user fragments establish it;
+  - no regex/fuzzy/morph/benchmark branch, calendar parser, SQL/MBQL, engine change or provider-ceiling increase.
+- Provider-free reproducers cover corrected overlap, deliberate rolling overlap, and unresolved exact collapse.
+- Certified engine remains frozen at `4c49b8da6b424b0fa4d8ef340ca1b238d12980c1` / `0.63.18-dima.11.1`.
+- Broad paid = CLOSED. Actual 30-case = CLOSED. Frontend = FORBIDDEN.
