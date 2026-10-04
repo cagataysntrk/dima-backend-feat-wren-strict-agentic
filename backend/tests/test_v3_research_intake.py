@@ -3593,13 +3593,13 @@ def test_change_ranking_collapsed_pair_fails_closed_after_one_reconsideration() 
     unresolved = {
         "terminal": "RESOLVED",
         "baseline_period": _r6_period(
-            "baseline pair",
+            "May",
             "2026-05-01",
             "2026-07-01",
             role="baseline_period",
         ),
         "comparison_period": _r6_period(
-            "comparison pair",
+            "June",
             "2026-05-01",
             "2026-07-01",
             role="comparison_period",
