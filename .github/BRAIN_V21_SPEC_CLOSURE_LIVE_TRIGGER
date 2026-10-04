@@ -1,0 +1,8 @@
+dima-brain-v2.1-spec-closure-live-trigger-v1
+gate=A3_DOUBLE_LIVE_ORIGINAL
+case_id=F06_M
+candidate_product_sha=447847e4b1161ee7a4fc34b7d3f861872f9c0564
+model_policy=LUNA_LUNA_NO_CASCADE
+automatic_retry_allowed=false
+broad_paid_allowed=false
+thirty_case_allowed=false
