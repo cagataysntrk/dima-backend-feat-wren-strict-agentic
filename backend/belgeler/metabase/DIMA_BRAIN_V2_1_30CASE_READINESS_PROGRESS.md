@@ -4827,3 +4827,69 @@ scores at least `3/4`.
 **30-case readiness:** CLOSER, NOT READY.
 
 **NEXT LEGAL ACTION:** provider-free Phase 1A + 1B root closure in canonical owners, generated/frozen siblings, aggregate recertification; only then one authorized A3 original and one semantic sibling. Broad/30-case remains CLOSED. Frontend remains FORBIDDEN.
+
+
+---
+
+## PHASE 1 — A3 ROOT COLLAPSE IMPLEMENTATION — 2026-10-04
+
+**PHASE:** 1A + 1B
+
+**STATUS:** IMPLEMENTED; FULL PROVIDER-FREE RECERTIFICATION RUNNING
+
+**Product semantic candidate SHA:** \`e39c2f566c1b2a97ccb840cd01e55913cd2a7662\`
+
+**Engine SHA/tag/digest:** \`4c49b8da6b424b0fa4d8ef340ca1b238d12980c1\` / \`0.63.18-dima.11.1\` / \`sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d\`
+
+**Objective:** Close the two supervisor-owned A3 semantic defects without engine changes, case-specific routing, prompt phrase matching, fuzzy/regex/morph logic, or child-output inflation.
+
+**First invalid boundary:** (1A) \`dima.material.compile\` previously bound the dependency dimension only from the pre-filter child contract. (1B) \`Research Intake -> DraftRanking -> RankingSurface\` previously allowed a temporal-comparison ranking to retain default LEVEL without a deliberate authority decision.
+
+**Exact owner:** (1A) \`research_native_gateway.py\` + canonical projection in \`research_result_dependency.py\`; (1B) \`research_intake.py\`.
+
+**Was this law already implemented elsewhere?** YES. Accepted Research scope + NativeResourceBinding already own exact native identity; result-dependency projection already owns transient filter semantics. RankingBasis, typed temporal periods, and the bounded two-call Intake ceiling already existed. The fix consolidates/reuses those laws instead of adding a second validator/planner.
+
+**Canonical semantic owner:** Accepted Research scope owns dependency candidate legality; NativeResourceBinding owns exact field identity; Research Intake owns LEVEL-vs-CHANGE intent; Metabase/Metabot remains query cognition/execution authority.
+
+**Files changed:**
+- \`backend/app/v3/research_native_gateway.py\`
+- \`backend/app/v3/research_intake.py\`
+- \`backend/tests/test_v3_p14_native_gateway.py\`
+- \`backend/tests/test_v3_research_intake.py\`
+
+**Generic law (1A):** A result-dependent dimension is resolved from immutable accepted scope and exact governed native binding before it is projected as an execution-local equality FILTER. It need not be a child breakout or output column. Ordinary projected execution continues through the same canonical material-binding policy.
+
+**Generic law (1B):** When one accepted turn structurally couples typed baseline/comparison material with a LEVEL ranking over the same governed measure, one existing bounded Intake reconsideration may resolve only \`ranking.basis = LEVEL | CHANGE\` or return CLARIFY. The provider cannot rewrite metric, direction, limit, periods, goals, dependencies, scope, or deliverables. CHANGE without exactly one baseline/comparison pair fails closed.
+
+**Reference pattern audit:** Metabase officially permits a field to be used in filtering while omitted from displayed results. Google AIP-134/AIP-161 and RFC 7396 support narrow partial mutation rather than whole-state replacement. Wren architecture keeps business context/meaning distinct from planning/execution. These patterns align with the existing Dima authority boundaries; none introduces a new runtime/framework.
+
+**Provider-free focused tests added:**
+- dependency dimension accepted but absent from child breakout -> legal FILTER-only projection;
+- parent ranking empty -> fail closed;
+- governed dependency column missing -> fail closed;
+- selected value non-string -> fail closed;
+- conflicting existing child filter -> fail closed;
+- typed temporal ranking with initial LEVEL -> bounded basis-only reconsideration;
+- deliberate LEVEL survives;
+- ambiguous LEVEL-vs-CHANGE -> CLARIFY;
+- CHANGE without baseline/comparison -> fail closed.
+
+**Provider-free runs:** full Phase-1 + Phase-2/headless are launched from this documentation-only recertification HEAD; semantic-conformance and frozen-family closure are running on the exact semantic candidate.
+
+**Live run:** CLOSED. No paid request is authorized during Phase 1/2.
+
+**Exception:** pending PF adjudication.
+
+**Silent wrong:** pending PF adjudication.
+
+**Duplicate native:** pending PF adjudication.
+
+**Stale Evidence:** pending PF adjudication.
+
+**What is proven so far:** the engine remains frozen; no frontend/broad workflow was opened; A3 root fixes reside at their existing semantic owners and are generic.
+
+**What remains unproven:** full PF green on the new candidate; Phase-2 saturation/new-family=0; A3 original + semantic sibling 4/4 live proof; recovery/quality panels; final holdout; same-SHA 34/36+ panel.
+
+**30-case readiness:** CLOSER.
+
+**NEXT LEGAL ACTION:** require all provider-free suites GREEN. If GREEN, proceed to generated/stateful Phase-2 siblings and only then temporarily re-arm exactly the two authorized A3 live proofs.
