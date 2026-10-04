@@ -1795,6 +1795,90 @@ class ResearchIntakeCompiler:
         }
 
     @staticmethod
+    def _temporal_comparison_level_ranking_issue(
+        draft: ModelResearchBriefDraft,
+    ) -> dict[str, Any] | None:
+        """Detect one structurally ambiguous LEVEL-vs-CHANGE ranking.
+
+        When one governed metric is already under an explicit two-period
+        temporal comparison, a separate LEVEL ranking over that same metric
+        may be intentional, or it may be a misclassified request to rank the
+        baseline-to-comparison change. The typed draft alone cannot decide
+        between those meanings, so intake may ask the existing provider once
+        to re-evaluate only ranking.basis from the original user intent.
+
+        No wording parser, case identity, metric name, query shape, or
+        analytical execution participates in this detector.
+        """
+
+        if draft.terminal != ResearchIntakeTerminal.READY:
+            return None
+        if len(draft.time_periods) != 2:
+            return None
+        left, right = draft.time_periods
+        if {left.role, right.role} != {
+            TemporalRole.BASELINE_PERIOD,
+            TemporalRole.COMPARISON_PERIOD,
+        }:
+            return None
+        if (
+            left.time_dimension_semantic_id
+            != right.time_dimension_semantic_id
+        ):
+            return None
+
+        comparison_goals = tuple(
+            goal
+            for goal in draft.goals
+            if (
+                goal.kind == ResearchGoalKind.COMPARISON
+                and any(
+                    item.role == ComparisonRole.TEMPORAL_PERIOD
+                    for item in goal.comparisons
+                )
+            )
+        )
+        if not comparison_goals:
+            return None
+
+        candidates: list[tuple[ModelGoalDraft, tuple[str, ...]]] = []
+        for goal in draft.goals:
+            ranking = goal.ranking
+            if (
+                ranking is None
+                or ranking.basis != RankingBasis.LEVEL
+                or ranking.measure_semantic_id is None
+            ):
+                continue
+            parents = tuple(
+                item.goal_key
+                for item in comparison_goals
+                if ranking.measure_semantic_id in item.subject_semantic_ids
+            )
+            if parents:
+                candidates.append((goal, parents))
+
+        if len(candidates) != 1:
+            return None
+
+        goal, parents = candidates[0]
+        ranking = goal.ranking
+        assert ranking is not None
+        assert ranking.measure_semantic_id is not None
+        return {
+            "kind": "TEMPORAL_COMPARISON_RANKING_BASIS_REVIEW",
+            "ranking_goal_key": goal.goal_key,
+            "comparison_goal_keys": list(parents),
+            "measure_semantic_id": ranking.measure_semantic_id,
+            "observed_basis": ranking.basis.value,
+            "period_roles": [
+                TemporalRole.BASELINE_PERIOD.value,
+                TemporalRole.COMPARISON_PERIOD.value,
+            ],
+            "time_dimension_semantic_id": left.time_dimension_semantic_id,
+        }
+
+    @staticmethod
     def _canonicalize_change_ranking_period_roles(
         draft: ModelResearchBriefDraft,
     ) -> ModelResearchBriefDraft:
@@ -2534,6 +2618,9 @@ class ResearchIntakeCompiler:
         change_period_issue = self._change_ranking_collapsed_period_issue(
             draft
         )
+        ranking_basis_issue = self._temporal_comparison_level_ranking_issue(
+            draft
+        )
         if (
             prior_brief is None
             and self.call_count < 2
@@ -2565,6 +2652,25 @@ class ResearchIntakeCompiler:
                     "otherwise return CLARIFY. Do not invent dates."
                 ),
                 reconsideration=change_period_issue,
+            )
+        elif (
+            prior_brief is None
+            and self.call_count < 2
+            and ranking_basis_issue is not None
+        ):
+            draft = invoke_provider(
+                instruction=(
+                    "Reconsider once because the READY output leaves ranking.basis "
+                    "semantically ambiguous against an explicit role-bound temporal "
+                    "comparison over the same governed metric. Re-evaluate only the "
+                    "ranking basis from the CURRENT user intent using the existing "
+                    "typed definitions: LEVEL is absolute metric level/magnitude; "
+                    "CHANGE is baseline-to-comparison change. Preserve goal "
+                    "decomposition, governed refs, periods, direction, limit, "
+                    "dependencies and deliverables. If the original intent does not "
+                    "establish one basis, return CLARIFY. Do not invent authority."
+                ),
+                reconsideration=ranking_basis_issue,
             )
         elif (
             prior_brief is None
