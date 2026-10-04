@@ -5116,3 +5116,60 @@ scores at least `3/4`.
 **30-case readiness:** CLOSER, NOT READY.
 
 **NEXT LEGAL ACTION:** require semantic/frozen + full Phase-1 + Phase-2 provider-free GREEN. Then temporarily authorize exactly one F06_M original rerun. No broad/30-case.
+
+
+---
+
+## PHASE 3 A3.1 RERUN GATE — PROVIDER-FREE READY / PAID WORKFLOW PIN BLOCKED — 2026-10-04
+
+**PHASE:** 3 / A3.1 rerun gate
+
+**STATUS:** PROVIDER-FREE GREEN; PAID OFF; EXECUTION BLOCKED BY CONNECTOR WORKFLOW-WRITE SURFACE
+
+**Semantic Product SHA:** `34d0bbd461222e2a0859ed196a5a950e362c8622`
+
+**Repository receipt HEAD before this append:** `c9a3322d77644cf0f80041aed387ad85b2b34977`
+
+**Engine SHA/tag/digest:** `4c49b8da6b424b0fa4d8ef340ca1b238d12980c1` / `0.63.18-dima.11.1` / `sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d`
+
+**Objective:** prove the obligation-local authority consolidation across the full deterministic stack, then rerun only F06_M original under the same frozen engine/model topology.
+
+**First invalid boundary:** no deterministic Product boundary remains on the candidate. The remaining block is operational: the live workflow pins candidate/PF SHAs in its YAML, while the connected GitHub write surface rejects workflow-file mutation. The exposed connector also has no workflow-dispatch action. Low-level Git-object mutation is deliberately not used to bypass that control.
+
+**Exact owner:** operational CI/workflow authorization surface, not Product semantics.
+
+**Was this law already implemented elsewhere?** YES for Product semantics: exact goal fragment authority, typed CHANGE material, result dependency binding, and legal native CHANGE representation are all independently proven. NO Product semantic law is missing at this gate.
+
+**Canonical semantic owner:** unchanged. Intake owns semantic WHAT; accepted scope/native bindings own governed identity; Metabase/Metabot owns analytical HOW.
+
+**Files changed since prior RED:** `research_intake.py`, its provider-free tests, canonical progress receipt, and disabled live authorization receipt. No engine, graph, query-planner, frontend, or broad-benchmark surface changed.
+
+**Generic law:** exact validated goal fragment is the obligation-local natural-language authority. Typed material remains the machine authority. No full-request text may replace a more specific grounded goal fragment merely because it is convenient for downstream cognition.
+
+**Provider-free runs on the new semantic candidate:**
+- frozen-family closure: `37212706702 = SUCCESS`;
+- semantic conformance + Wave A/B + mutation canaries: `37212706802 = SUCCESS`;
+- aggregate Phase-1: `37212785825 = SUCCESS`;
+- Phase-2/headless: `37212785872 = SUCCESS`.
+
+**Live run:** not rerun after the fix. Paid authorization remains `enabled=false`.
+
+**Manual score:** not applicable until the one authorized A3.1 rerun executes.
+
+**Provider requests / Tokens / Cost / Latency:** zero after the fix; all validation above is provider-free.
+
+**Exception:** `0` in deterministic recertification.
+
+**Silent wrong:** `0` in deterministic recertification.
+
+**Duplicate native:** provider-free invariants GREEN.
+
+**Stale Evidence:** provider-free currentness invariants GREEN.
+
+**What is proven:** the A3 semantic root fixes and obligation-local authority consolidation are stable under the complete provider-free stack; engine dima.11.1 remains frozen; new semantic-family discovery remains zero in the existing semantic saturation suites.
+
+**What remains unproven:** A3 original 4/4 and semantic sibling 4/4 live; therefore A4/A5/A6, B1/B2/B3, final Wave C, candidate freeze and same-SHA 34/36 panel are still legally closed.
+
+**30-case readiness:** CLOSER, NOT READY.
+
+**NEXT LEGAL ACTION:** update the hard-pinned A3 live workflow through an approved GitHub Actions write/dispatch surface, then execute exactly F06_M original. Do not change Product semantics while this operational gate is unresolved. Broad/30-case and frontend remain CLOSED.
