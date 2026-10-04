@@ -1,9 +1,7 @@
-A3 F06_M basis-sealed final development trigger
-candidate=e9e8df7cb545de309f11eed285da71a9275a786a
-phase1=37205354375
-phase2=37205437883
-semantic=37205123836
-frozen=37205123841
-engine=72992664803783ef437be8d944c0555a30ef211b
+A3 F06_M trigger consumed
+run=37206995270
+artifact=11305835273
+score=2
+paid=false
 broad=false
 automatic_retry=false
