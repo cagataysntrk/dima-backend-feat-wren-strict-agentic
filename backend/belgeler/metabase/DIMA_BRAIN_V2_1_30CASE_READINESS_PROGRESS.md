@@ -5364,3 +5364,56 @@ The semantic candidate remains `34d0bbd461222e2a0859ed196a5a950e362c8622`; all c
 **30-case readiness:** CLOSER, NOT READY.
 
 **NEXT LEGAL ACTION:** complete full provider-free recertification. If GREEN, run exactly one F06_M original on Product `5147e40c...`; immediately disarm. No broad, no 30-case, no frontend.
+
+
+---
+
+## PHASE 3 A3.1 — SHARED-SPAN CHANGE SEMANTIC CONTRACT — 2026-10-04
+
+**PHASE:** 3 / A3.1 recovery
+
+**STATUS:** GENERIC ROOT FIX IMPLEMENTED; SEMANTIC/FROZEN GREEN; FULL PF RECERTIFICATION LAUNCHED
+
+**Product SHA:** `a347b6db8bfe7e50aeacdfa0264458c63fcea911`
+
+**Engine SHA/tag/digest:** `4c49b8da6b424b0fa4d8ef340ca1b238d12980c1` / `0.63.18-dima.11.1` / `sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d`
+
+**Objective:** close the remaining bounded Intake interpretation gap for CHANGE comparisons expressed through one exact shared temporal source span, without language-specific parsing, benchmark branches, downstream analytics patches, or engine changes.
+
+**Prior live run:** `37227225413`, artifact `11312064555`, F06_M original on Product `5147e40ca366e54057e5dec7cdc100050fa73dff`.
+
+**Prior manual score:** `0/4`; fail-closed at Intake before any Metabot query.
+
+**Provider requests / Tokens / Cost / Latency:** 2 Research Intake calls; prompt/completion/reasoning `15593/621/0`; cost `$0.00122806`; latency `6436 ms`.
+
+**Exception:** `BRAIN_V2_INTAKE_CLARIFY`.
+
+**Silent wrong / Duplicate native / Stale Evidence:** no admitted result; duplicate native `0`; stale Evidence `0`.
+
+**First invalid boundary:** bounded CHANGE-period resolver at Research Intake. Deterministic Product contracts were GREEN, but the second structured call interpreted one exact source span that names a two-period comparison as one continuous interval and returned CLARIFY.
+
+**Exact owner:** `ResearchIntakeCompiler` bounded temporal-authority resolver.
+
+**Was this law already implemented elsewhere?** YES conceptually. Temporal parsing separates source provenance from normalized temporal values. The existing typed authority already distinguishes BASELINE_PERIOD and COMPARISON_PERIOD by role + governed time dimension + normalized half-open bounds.
+
+**Canonical semantic owner:** Research Intake. Metabase/Metabot remains the exclusive analytical HOW/query-cognition owner.
+
+**Pattern research:** Duckling-style temporal entities preserve exact matched body/span separately from normalized time values/intervals. Google AIP-134 partial-update semantics support the bounded mutation rule: only the two temporal authorities may be reconsidered; omitted semantic state remains unchanged.
+
+**Files changed:**
+- `backend/tests/test_v3_research_intake.py`
+- `backend/app/v3/research_intake.py`
+
+**Generic law:** one shared exact source span does not imply one continuous interval. For an already-established CHANGE comparison, if that span names two distinct calendar periods at the same calendar grain, the bounded resolver maps the earlier period to BASELINE_PERIOD and the later period to COMPARISON_PERIOD using exact half-open bounds, while preserving the shared verbatim provenance. If the span establishes only one period or one continuous interval, CLARIFY. No month-name list, regex, morphology, Turkish-specific rule, benchmark identity, SQL/MBQL, or engine patch.
+
+**Provider-free runs on this Product SHA:**
+- frozen-family closure: `37227671779 = SUCCESS`;
+- semantic conformance + Wave A/B + mutation canaries: `37227671781 = SUCCESS`.
+
+**What is proven:** the new law is bounded, language-independent and owner-correct; existing semantic families/frozen closure remain GREEN.
+
+**What remains unproven:** aggregate Phase-1 + Phase-2 on the exact Product, then F06_M original 4/4 and semantic sibling 4/4.
+
+**30-case readiness:** CLOSER, NOT READY.
+
+**NEXT LEGAL ACTION:** complete full provider-free recertification. If GREEN, execute exactly one F06_M original on Product `a347b6db...`, then immediately disarm. No broad, no 30-case, no frontend.
