@@ -238,9 +238,22 @@ def test_change_ranking_intake_preserves_basis_and_role_bound_periods():
 
 
 # Supervisor Phase 1/2 certification: symbolic PAIR/SPAN law, no benchmark wording authority.
-def test_change_ranking_bounded_symbolic_span_is_safe_without_pair_invention():
+@pytest.mark.parametrize(
+    ("surface", "start", "end"),
+    (
+        ("P1-P2", "2026-01-01", "2026-03-01"),
+        ("Q1-Q2", "2026-01-01", "2026-07-01"),
+        ("R7-R8", "2026-04-01", "2026-06-01"),
+        ("Y1-Y2 bounded movement", "2025-01-01", "2027-01-01"),
+    ),
+)
+def test_change_ranking_bounded_symbolic_span_is_safe_without_pair_invention(
+    surface: str,
+    start: str,
+    end: str,
+):
     question = (
-        "Across P1-P2, rank departments by governed downtime deterioration."
+        f"Across {surface}, rank departments by governed downtime deterioration."
     )
     payload = ready_payload(
         kind="ranking",
@@ -262,10 +275,10 @@ def test_change_ranking_bounded_symbolic_span_is_safe_without_pair_invention():
     )
     payload["time_periods"] = [
         {
-            "source_text": "P1-P2",
+            "source_text": surface,
             "time_dimension_semantic_id": "dimension.event_date",
-            "start": "2026-01-01",
-            "end": "2026-03-01",
+            "start": start,
+            "end": end,
             "role": "material_window",
         }
     ]
@@ -294,11 +307,19 @@ def test_change_ranking_bounded_symbolic_span_is_safe_without_pair_invention():
         item.candidate_id
         for item in result.brief.questions[0].related_refs
     } == {"dimension.department"}
+    assert {
+        item.candidate_id for item in result.brief.scope.semantic_refs
+    } >= {
+        "metric.downtime",
+        "dimension.department",
+        "dimension.event_date",
+    }
     assert len(result.brief.scope.periods) == 1
     (window,) = result.brief.scope.periods
     assert window.role == TemporalRole.MATERIAL_WINDOW
+    assert window.source_text == surface
     assert window.time_dimension_candidate_id == "dimension.event_date"
-    assert (window.start, window.end) == ("2026-01-01", "2026-03-01")
+    assert (window.start, window.end) == (start, end)
 
 
 def test_plain_bounded_window_with_level_ranking_does_not_become_span_change():
