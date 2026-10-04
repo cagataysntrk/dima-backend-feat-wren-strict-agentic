@@ -5313,3 +5313,54 @@ The semantic candidate remains `34d0bbd461222e2a0859ed196a5a950e362c8622`; all c
 **30-case readiness:** CLOSER, NOT READY.
 
 **NEXT LEGAL ACTION:** require full PF GREEN, then execute exactly one new F06_M original on `9e17d5eb...`; immediately disarm paid trigger. No broad, no 30-case, no frontend.
+
+
+---
+
+## PHASE 3 A3.1 — JOINT TEMPORAL SOURCE PROVENANCE ROOT FIX — 2026-10-04
+
+**PHASE:** 3 / A3.1 recovery
+
+**STATUS:** ROOT FIX IMPLEMENTED; SEMANTIC/FROZEN GREEN; FULL PF RECERTIFICATION LAUNCHED
+
+**Product SHA:** `5147e40ca366e54057e5dec7cdc100050fa73dff`
+
+**Engine SHA/tag/digest:** `4c49b8da6b424b0fa4d8ef340ca1b238d12980c1` / `0.63.18-dima.11.1` / `sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d`
+
+**Objective:** remove the over-strict assumption introduced by the prior temporal provenance repair: one comparison phrase may legitimately be the exact provenance surface for two typed normalized period roles.
+
+**First invalid boundary:** Research Intake temporal reconsideration. Live run `37226548724` failed before Metabot with `BRAIN_V2_INTAKE_CLARIFY` because the resolver required baseline and comparison to have different source_text strings even when the user's single exact span jointly denoted a two-period comparison.
+
+**Exact owner:** `ResearchIntakeCompiler` bounded CHANGE-period reconsideration.
+
+**Was this law already implemented elsewhere?** YES conceptually. Temporal parsing systems preserve a source body/span separately from normalized temporal values; one source span can normalize into an interval/pair. The Product already separates source provenance from typed normalized authority elsewhere.
+
+**Canonical semantic owner:** Research Intake owns temporal WHAT + provenance. Period identity is `typed role + governed time dimension + normalized half-open bounds`; source_text is provenance, not identity. Metabase/Metabot remains analytical HOW.
+
+**Pattern research:** Duckling-style temporal entities separate exact matched body/span from normalized time value/interval. Google AIP-134 supports the same narrow-patch discipline used here: only the temporal fields under reconsideration are writable; omitted semantic state remains unchanged. No new temporal framework/runtime was added.
+
+**Files changed:**
+- `backend/tests/test_v3_research_intake.py`
+- `backend/app/v3/research_intake.py`
+
+**Generic law:** a shared exact temporal source surface may ground both BASELINE_PERIOD and COMPARISON_PERIOD after one bounded typed reconsideration, provided the resolver deliberately returns coherent role-bound normalized spans. It may also return more atomic exact substrings. If the shared surface cannot establish the pair, CLARIFY remains legal. Distinct source strings are not required. Collapsed spans remain illegal; overlap remains legal only when deliberately established. No regex/fuzzy/morph/benchmark branch.
+
+**Prior live run:** `37226548724`, F06_M original, Product `9e17d5eb...`.
+
+**Prior manual score:** `0/4` because Intake terminated CLARIFY before research; exception count `1`.
+
+**Prior provider requests / tokens / cost / latency:** 2 Research Intake requests; prompt/completion/reasoning = `15557/796/0`; cost `$0.00479875`; latency `8559 ms`.
+
+**Exception / Silent wrong / Duplicate native / Stale Evidence:** exception `1`; silent wrong not admitted; duplicate native `0`; stale Evidence `0`.
+
+**Provider-free runs on this Product SHA:**
+- frozen-family closure: `37226887415 = SUCCESS`;
+- semantic conformance + saturation: `37226887447 = SUCCESS`.
+
+**What is proven:** the fix stays in the correct owner and does not alter engine, graph, query cognition, provider ceiling or benchmark-specific production logic.
+
+**What remains unproven:** aggregate Phase-1 + Phase-2 GREEN, then F06_M original 4/4 and semantic sibling 4/4.
+
+**30-case readiness:** CLOSER, NOT READY.
+
+**NEXT LEGAL ACTION:** complete full provider-free recertification. If GREEN, run exactly one F06_M original on Product `5147e40c...`; immediately disarm. No broad, no 30-case, no frontend.
