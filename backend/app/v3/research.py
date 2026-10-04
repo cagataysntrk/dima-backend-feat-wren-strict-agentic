@@ -448,10 +448,23 @@ class ResearchManager:
         elif ranking is not None:
             lines.append("- preserve the governed native ranking basis exactly")
             if ranking.basis.value == "change":
+                change = requirement.get("change_semantics") or {}
+                entity_refs = (
+                    ", ".join(change.get("entity_breakout_refs") or ())
+                    or "accepted entity grain"
+                )
                 lines.extend(
                     (
                         "- rank by the accepted baseline-to-comparison change, not pooled level",
                         "- keep the accepted comparison periods distinguishable in governed material",
+                        (
+                            "- CHANGE output law: produce one comparable entity-grain result for "
+                            f"{entity_refs}; compute the governed metric separately for the accepted "
+                            "baseline period and accepted comparison period; expose the derived "
+                            "comparison-minus-baseline value for that same entity grain"
+                        ),
+                        "- order by the derived comparison-minus-baseline value in the accepted direction",
+                        "- do not order by the raw metric level and do not use time as an extra result-row breakout when the contract asks for entity CHANGE ranking",
                     )
                 )
 
