@@ -22,6 +22,7 @@ from app.v3.research_contracts import (
     ResearchQuestion,
     ResearchScope,
     ResearchSemanticRef,
+    RankingBasis,
     SemanticTargetKind,
     TemporalRole,
 )
@@ -3449,6 +3450,7 @@ def test_relationship_fixture_without_new_intent_defaults_fail_conservative_busi
 
 
 def test_change_ranking_two_neutral_periods_canonicalize_by_chronology() -> None:
+    question = "Rank the governed metric by change between the two periods."
     payload = ready_payload(
         kind="ranking",
         subject=("metric.downtime",),
@@ -3481,7 +3483,7 @@ def test_change_ranking_two_neutral_periods_canonicalize_by_chronology() -> None
     result = ResearchIntakeCompiler(
         transport=FakeTransport(payload)
     ).compile(
-        question="Rank the governed metric by change between the two periods.",
+        question=question,
         catalog=_r6_temporal_catalog(),
     )
 
@@ -3503,8 +3505,10 @@ def _collapsed_change_period_payload(
         subject=("metric.downtime",),
         related=("dimension.department",),
     )
+    payload["goals"][0]["source_text"] = question
+    payload["goals"][0]["source_fragment_text"] = question
     payload["goals"][0]["ranking"] = {
-        "source_text": "rank governed period change",
+        "source_text": question,
         "direction": "desc",
         "limit": 1,
         "measure_semantic_id": "metric.downtime",
