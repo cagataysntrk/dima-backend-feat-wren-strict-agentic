@@ -3489,6 +3489,110 @@ def test_change_ranking_two_neutral_periods_canonicalize_by_chronology() -> None
     }
 
 
+def _collapsed_change_period_payload() -> dict:
+    payload = ready_payload(
+        kind="ranking",
+        subject=("metric.downtime",),
+        related=("dimension.department",),
+    )
+    payload["goals"][0]["ranking"] = {
+        "source_text": "rank governed period change",
+        "direction": "desc",
+        "limit": 1,
+        "measure_semantic_id": "metric.downtime",
+        "basis": "change",
+    }
+    payload["time_periods"] = [
+        _r6_period(
+            "baseline pair",
+            "2026-05-01",
+            "2026-07-01",
+            role="baseline_period",
+        ),
+        _r6_period(
+            "comparison pair",
+            "2026-05-01",
+            "2026-07-01",
+            role="comparison_period",
+        ),
+    ]
+    return payload
+
+
+def test_change_ranking_collapsed_pair_gets_one_structured_reconsideration() -> None:
+    first = _collapsed_change_period_payload()
+    second = ready_payload(
+        kind="ranking",
+        subject=("metric.downtime",),
+        related=("dimension.department",),
+    )
+    second["goals"][0]["ranking"] = dict(first["goals"][0]["ranking"])
+    second["time_periods"] = [
+        _r6_period(
+            "baseline pair",
+            "2026-05-01",
+            "2026-06-01",
+            role="baseline_period",
+        ),
+        _r6_period(
+            "comparison pair",
+            "2026-06-01",
+            "2026-07-01",
+            role="comparison_period",
+        ),
+    ]
+    transport = SequenceTransport([first, second])
+
+    result = ResearchIntakeCompiler(
+        transport=transport,
+        calendar_reference_date="2026-10-04",
+    ).compile(
+        question="Rank the governed metric by change between the two periods.",
+        catalog=_r6_temporal_catalog(),
+    )
+
+    assert result.terminal == ResearchIntakeTerminal.READY
+    assert result.model_calls == 2
+    assert result.brief is not None
+    assert [
+        (item.role, item.start, item.end)
+        for item in result.brief.scope.periods
+    ] == [
+        (
+            TemporalRole.BASELINE_PERIOD,
+            "2026-05-01",
+            "2026-06-01",
+        ),
+        (
+            TemporalRole.COMPARISON_PERIOD,
+            "2026-06-01",
+            "2026-07-01",
+        ),
+    ]
+    reconsideration = transport.calls[1]["user"]["reconsideration"]
+    assert reconsideration["kind"] == "CHANGE_PERIOD_PAIR_COLLAPSED"
+    assert reconsideration["time_dimension_semantic_id"] == (
+        "dimension.event_date"
+    )
+
+
+def test_change_ranking_collapsed_pair_fails_closed_after_one_reconsideration() -> None:
+    collapsed = _collapsed_change_period_payload()
+    transport = SequenceTransport([collapsed, collapsed])
+
+    with pytest.raises(ResearchIntakeError) as exc:
+        ResearchIntakeCompiler(
+            transport=transport,
+            calendar_reference_date="2026-10-04",
+        ).compile(
+            question="Rank the governed metric by change between two periods.",
+            catalog=_r6_temporal_catalog(),
+        )
+
+    assert exc.value.code == "INTAKE_CHANGE_RANKING_PERIOD_PAIR_COLLAPSED"
+    assert transport.call_count == 2
+
+
 def test_level_ranking_two_neutral_periods_remain_material_windows() -> None:
     payload = ready_payload(
         kind="ranking",
