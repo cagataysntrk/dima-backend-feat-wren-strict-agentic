@@ -4360,3 +4360,66 @@ explicit supervisor decision authorizing either:
 - another architecture-approved closure that leaves certified dima.11 unchanged.
 
 Until then: **no A3 retry, no A4, no broad/30-case execution.**
+
+
+---
+
+## A3 CHANGE-REPAIR MATERIAL GENERATION RCA
+
+**STATUS: PROVIDER-FREE RECERTIFICATION**
+
+- Current semantic Product change: `35a75777a4ed2f75cf208de340b37d91209b126e`
+- Exact candidate before aggregate recertification: `eae2064d9148d9592cee6b020788ef9f1d290354`
+- Engine: `4c49b8da6b424b0fa4d8ef340ca1b238d12980c1`
+- Release: `0.63.18-dima.11.1`
+- Runtime tag: `v0.63.18-dima.11.1.1`
+- Digest: `sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d`
+- Provider calls during RCA/fix: `0`
+
+### First invalid boundary
+
+`accepted CHANGE material requirement -> bounded P14_REPAIR -> Metabot-generated native material`
+
+A3 run `37185152487` remained `2/4 PARTIAL`. The certified engine patch was not the failing
+boundary: the repair query was still a pooled LEVEL query, so the engine correctly refused to mint
+CHANGE ranking Evidence.
+
+### Owner / generic law
+
+Owner: typed planner-facing material requirement and bounded repair feedback.
+
+> CHANGE ranking means comparison-period metric minus baseline-period metric at the accepted entity
+> grain, followed by the accepted direction/limit. Dima declares this WHAT deterministically from the
+> existing AnalyticalRequestContract; Metabot still owns HOW to express it in native query form.
+
+### Changes
+
+- added typed `change_semantics` to `dima_material_requirement_v1` only for CHANGE + typed comparison;
+- operation is `comparison_minus_baseline`;
+- carries governed metric, entity breakouts, temporal dimension, exact baseline/comparison periods,
+  ranking direction and limit;
+- the same typed semantic object is included in repair expected-shape feedback;
+- LEVEL ranking receives `change_semantics = null`;
+- no SQL/MBQL generation;
+- no case/prompt/regex/fuzzy/morph routing;
+- no engine code change;
+- no provider/model change.
+
+### Provider-free siblings
+
+- CHANGE projection contains exact typed operation/period/grain contract;
+- LEVEL projection has no CHANGE semantics;
+- LEVEL observed under CHANGE contract produces bounded basis-mismatch feedback carrying the same
+  typed CHANGE semantics.
+
+Frozen-family on the production change:
+`37185478871 = SUCCESS`.
+
+### 30-case readiness
+
+**NO — CLOSER. Broad 30-case remains CLOSED.**
+
+### NEXT LEGAL ACTION
+
+Run aggregate Phase-1 and Phase-2/headless on the exact candidate. If GREEN, run A3 only once.
+A4 remains closed until A3 >= 3/4.
