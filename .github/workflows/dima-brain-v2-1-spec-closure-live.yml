@@ -59,12 +59,12 @@ jobs:
           assert auth["thirty_case_allowed"] is False
           assert auth["automatic_retry_allowed"] is False
           assert auth["case_count"] == 1
-          assert auth["candidate_product_sha"]=="5bb2bc2f1b40377e354c9e20fa14aaf729fb4cd0"
-          assert auth["provider_free_phase1_run_id"]==37202641985
-          assert auth["provider_free_phase2_run_id"]==37202813200
-          assert auth["semantic_conformance_run_id"]==37202479248
-          assert auth["semantic_holdout_run_id"]==37202479248
-          assert auth["frozen_family_run_id"]==37202479233
+          assert auth["candidate_product_sha"]=="e9e8df7cb545de309f11eed285da71a9275a786a"
+          assert auth["provider_free_phase1_run_id"]==37205354375
+          assert auth["provider_free_phase2_run_id"]==37205437883
+          assert auth["semantic_conformance_run_id"]==37205123836
+          assert auth["semantic_holdout_run_id"]==37205123836
+          assert auth["frozen_family_run_id"]==37205123841
           assert isinstance(auth["case_id"],str) and auth["case_id"]
           assert auth["engine_sha"]=="72992664803783ef437be8d944c0555a30ef211b"
           assert auth["engine_release"]=="0.63.18-dima.11.1.2"
@@ -77,7 +77,7 @@ jobs:
           )
           print("candidate="+auth["candidate_product_sha"])
           PY
-          echo "candidate_sha=5bb2bc2f1b40377e354c9e20fa14aaf729fb4cd0" >> "$GITHUB_OUTPUT"
+          echo "candidate_sha=e9e8df7cb545de309f11eed285da71a9275a786a" >> "$GITHUB_OUTPUT"
           echo "case_id=$(python -c 'import json; print(json.load(open("backend/lab/metabase/brain_v2/spec_closure_live_authorization.json"))["case_id"])')" >> "$GITHUB_OUTPUT"
           test -n "$DIMA_OPENROUTER_API_KEY"
 
@@ -348,7 +348,7 @@ jobs:
           r=json.loads(p.read_text())
           assert r["schema_version"]=="dima_brain_v2_1_recovery_live_v1"
           assert r["system"]=="DIMA_BRAIN_V2_1_LANGGRAPH"
-          assert r["candidate_product_sha"]=="5bb2bc2f1b40377e354c9e20fa14aaf729fb4cd0"
+          assert r["candidate_product_sha"]=="e9e8df7cb545de309f11eed285da71a9275a786a"
           assert r["engine_sha"]=="72992664803783ef437be8d944c0555a30ef211b"
           assert r["engine_release"]=="v0.63.18-dima.11.1.2"
           assert r["source_case_count"]==30
