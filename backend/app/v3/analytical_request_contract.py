@@ -224,10 +224,11 @@ class AnalyticalRequestContract(FrozenModel):
             return self
         if self.temporal_change_frame is not None:
             return self
-        # Compatibility for older deterministic fixtures: accepted temporal
-        # authority may still be represented directly as comparison/period.
-        # Forward Research construction always projects TemporalChangeFrame.
-        if self.comparison is not None or self.period is not None:
+        # Compatibility for older deterministic PAIR fixtures: accepted
+        # comparison authority predates the explicit read-only frame view.
+        # SPAN is never inferred from an arbitrary period at this boundary;
+        # forward Research must project its explicit TemporalChangeFrame.
+        if self.comparison is not None:
             return self
         raise ValueError(
             "change ranking requires typed PAIR or bounded SPAN authority"
