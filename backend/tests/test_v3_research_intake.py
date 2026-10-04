@@ -3672,3 +3672,190 @@ def test_change_ranking_conflicting_period_role_fails_closed() -> None:
         )
 
     assert exc.value.code == "INTAKE_CHANGE_RANKING_PERIOD_ROLE_CONFLICT"
+
+
+# Phase-1B 30-case readiness: LEVEL vs CHANGE is deliberate typed Intake authority.
+def _temporal_level_ranking_reconsideration_payload() -> tuple[str, dict]:
+    comparison_fragment = "Compare May and June governed downtime."
+    ranking_fragment = "Rank departments by the requested governed downtime basis."
+    question = f"{comparison_fragment} {ranking_fragment}"
+    payload = ready_payload(
+        kind="comparison",
+        subject=("metric.downtime",),
+        related=("dimension.event_date",),
+    )
+    payload["objective"] = "Compare governed downtime and rank departments."
+    payload["goals"][0].update(
+        {
+            "goal_key": "g-comparison",
+            "source_text": comparison_fragment,
+            "source_fragment_text": comparison_fragment,
+            "ranking": None,
+            "comparisons": [],
+            "result_dependency": None,
+        }
+    )
+    payload["goals"].append(
+        {
+            "goal_key": "g-ranking",
+            "kind": "ranking",
+            "source_text": ranking_fragment,
+            "source_fragment_text": ranking_fragment,
+            "subject_semantic_ids": ["metric.downtime"],
+            "related_semantic_ids": ["dimension.department"],
+            "ranking": {
+                "source_text": ranking_fragment,
+                "direction": "desc",
+                "limit": 1,
+                "measure_semantic_id": "metric.downtime",
+                "basis": "level",
+            },
+            "comparisons": [],
+            "result_dependency": None,
+            "causal_competition": None,
+        }
+    )
+    payload["time_periods"] = [
+        _r6_period(
+            "May governed window",
+            "2026-05-01",
+            "2026-06-01",
+            role="baseline_period",
+        ),
+        _r6_period(
+            "June governed window",
+            "2026-06-01",
+            "2026-07-01",
+            role="comparison_period",
+        ),
+    ]
+    return question, payload
+
+
+def test_temporal_ranking_level_gets_bounded_typed_basis_reconsideration() -> None:
+    question, first = _temporal_level_ranking_reconsideration_payload()
+    transport = SequenceTransport(
+        [
+            first,
+            {"terminal": "RESOLVED", "basis": "change"},
+        ]
+    )
+
+    result = ResearchIntakeCompiler(
+        transport=transport,
+        calendar_reference_date="2026-10-04",
+    ).compile(
+        question=question,
+        catalog=_r6_temporal_catalog(),
+    )
+
+    assert result.terminal == ResearchIntakeTerminal.READY
+    assert result.model_calls == 2
+    assert result.brief is not None
+    comparison, ranking_question = result.brief.questions
+    assert ranking_question.ranking is not None
+    assert ranking_question.ranking.basis.value == "change"
+    assert ranking_question.ranking.measure_semantic_id == "metric.downtime"
+    assert comparison.kind == ResearchGoalKind.COMPARISON
+    assert result.brief.objective == first["objective"]
+    assert [(item.start, item.end, item.role.value) for item in result.brief.scope.periods] == [
+        ("2026-05-01", "2026-06-01", "baseline_period"),
+        ("2026-06-01", "2026-07-01", "comparison_period"),
+    ]
+    reconsideration = transport.calls[1]["user"]["reconsideration"]
+    assert reconsideration["kind"] == "RANKING_BASIS_DELIBERATION"
+    assert reconsideration["ranking_goal_key"] == "g-ranking"
+    assert reconsideration["candidate_ranking_measure"] == "metric.downtime"
+    assert reconsideration["ranking_source_fragment"] in question
+    assert reconsideration["comparison_source_fragments"] == [
+        "Compare May and June governed downtime."
+    ]
+    assert set(transport.calls[1]["schema"]["$defs"]["RankingBasis"]["enum"]) == {
+        "level",
+        "change",
+    }
+
+
+def test_temporal_ranking_deliberate_level_survives_without_other_state_mutation() -> None:
+    question, first = _temporal_level_ranking_reconsideration_payload()
+    transport = SequenceTransport(
+        [
+            first,
+            {"terminal": "RESOLVED", "basis": "level"},
+        ]
+    )
+
+    result = ResearchIntakeCompiler(
+        transport=transport,
+        calendar_reference_date="2026-10-04",
+    ).compile(
+        question=question,
+        catalog=_r6_temporal_catalog(),
+    )
+
+    assert result.terminal == ResearchIntakeTerminal.READY
+    assert result.model_calls == 2
+    assert result.brief is not None
+    ranking_question = next(
+        item for item in result.brief.questions if item.kind == ResearchGoalKind.RANKING
+    )
+    assert ranking_question.ranking is not None
+    assert ranking_question.ranking.basis.value == "level"
+    assert ranking_question.ranking.measure_semantic_id == "metric.downtime"
+    assert result.brief.objective == first["objective"]
+    assert len(result.brief.questions) == 2
+    assert len(result.brief.scope.periods) == 2
+
+
+def test_temporal_ranking_ambiguous_basis_cannot_silently_default_level() -> None:
+    question, first = _temporal_level_ranking_reconsideration_payload()
+    transport = SequenceTransport(
+        [
+            first,
+            {
+                "terminal": "CLARIFY",
+                "clarification_question": (
+                    "Should departments be ranked by June level or by May-to-June change?"
+                ),
+            },
+        ]
+    )
+
+    result = ResearchIntakeCompiler(
+        transport=transport,
+        calendar_reference_date="2026-10-04",
+    ).compile(
+        question=question,
+        catalog=_r6_temporal_catalog(),
+    )
+
+    assert result.terminal == ResearchIntakeTerminal.CLARIFY
+    assert result.brief is None
+    assert result.model_calls == 2
+    assert "ranked" in result.clarification_question.lower()
+
+
+def test_change_ranking_without_baseline_comparison_fails_closed() -> None:
+    payload = ready_payload(
+        kind="ranking",
+        subject=("metric.downtime",),
+        related=("dimension.department",),
+    )
+    payload["goals"][0]["ranking"] = {
+        "source_text": "rank governed change",
+        "direction": "desc",
+        "limit": 1,
+        "measure_semantic_id": "metric.downtime",
+        "basis": "change",
+    }
+
+    with pytest.raises(ResearchIntakeError) as exc:
+        ResearchIntakeCompiler(
+            transport=FakeTransport(payload),
+            calendar_reference_date="2026-10-04",
+        ).compile(
+            question="Rank departments by governed change.",
+            catalog=_r6_temporal_catalog(),
+        )
+
+    assert exc.value.code == "INTAKE_CHANGE_RANKING_COMPARISON_REQUIRED"
