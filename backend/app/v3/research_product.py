@@ -989,15 +989,45 @@ class ResearchAskOrchestrator:
             bridge_factory=bridge_factory,
             material_executor=material_executor,
         )
+
+        def execute_occurrence_with_observation_resume(
+            *,
+            link,
+            request,
+            repair_parent_link_id=None,
+        ):
+            """Retry observation once from durable EXECUTED state without replaying I/O."""
+
+            try:
+                return runner.execute(
+                    session=session,
+                    principal=principal,
+                    obligation_id=selected,
+                    link=link,
+                    request=request,
+                    native_session_token=native_session_token,
+                    analytical_scope=analytical_scope,
+                    repair_parent_link_id=repair_parent_link_id,
+                )
+            except ResearchMaterialObservationUnavailable:
+                persisted = self._store.execution_link(link.id)
+                if persisted.status != "EXECUTED":
+                    raise
+                return runner.execute(
+                    session=session,
+                    principal=principal,
+                    obligation_id=selected,
+                    link=persisted,
+                    request=None,
+                    native_session_token=native_session_token,
+                    analytical_scope=analytical_scope,
+                    repair_parent_link_id=repair_parent_link_id,
+                )
+
         try:
-            occurrence = runner.execute(
-                session=session,
-                principal=principal,
-                obligation_id=selected,
+            occurrence = execute_occurrence_with_observation_resume(
                 link=pending,
                 request=(prepared.request if prepared is not None else None),
-                native_session_token=native_session_token,
-                analytical_scope=analytical_scope,
             )
         except ResearchMaterialObservationUnavailable as exc:
             return self._retryable_observation_limit(
@@ -1032,14 +1062,9 @@ class ResearchAskOrchestrator:
                 )
             session, repair_request, repair_link = repair
             try:
-                occurrence = runner.execute(
-                    session=session,
-                    principal=principal,
-                    obligation_id=selected,
+                occurrence = execute_occurrence_with_observation_resume(
                     link=repair_link,
                     request=repair_request,
-                    native_session_token=native_session_token,
-                    analytical_scope=analytical_scope,
                     repair_parent_link_id=pending.id,
                 )
             except ResearchMaterialObservationUnavailable as repair_exc:
