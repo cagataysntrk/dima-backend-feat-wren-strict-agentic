@@ -15,7 +15,7 @@ permissions:
 env:
   DIMA_OPENROUTER_API_KEY: ${{ secrets.DIMA_OPENROUTER_API_KEY || secrets.OPENROUTER_API_KEY }}
   METABOT_MODEL_IDENTIFIER: openrouter/openai/gpt-5.6-luna
-  DIMA_COGNITION_MODEL: openai/gpt-5.6-luna
+  DIMA_COGNITION_MODEL: openai/gpt-5.6-terra
   MB_ADMIN_EMAIL: admin@brain-v21-recovery.local
   MB_RESTRICTED_EMAIL: restricted@brain-v21-recovery.local
   MB_RESTRICTED_GROUP: Dima Brain V2.1 Recovery Restricted
@@ -68,7 +68,7 @@ jobs:
           assert isinstance(auth.get("question_override", ""), str)
           assert auth["engine_sha"]=="4c49b8da6b424b0fa4d8ef340ca1b238d12980c1"
           assert auth["engine_release"]=="0.63.18-dima.11.1"
-          assert auth["model_policy"]=="LUNA_LUNA_NO_CASCADE"
+          assert auth["model_policy"]=="TERRA_LUNA_INTAKE_DIAGNOSTIC"
           subprocess.run(["git","cat-file","-e",auth["candidate_product_sha"]+"^{commit}"],check=True)
           subprocess.run(
               ["git","diff","--exit-code",auth["candidate_product_sha"]+"..HEAD","--",
@@ -372,7 +372,7 @@ jobs:
           assert r["duplicate_native"]==0
           assert r["stale_evidence"]==0
           assert r["agent_api_request_count"]==0
-          assert r["model_topology"]["dima_cognition"]=="openai/gpt-5.6-luna"
+          assert r["model_topology"]["dima_cognition"]=="openai/gpt-5.6-terra"
           assert r["model_topology"]["metabot"]=="openrouter/openai/gpt-5.6-luna"
           assert r["model_topology"]["cascade"]=="NONE"
           assert r["provider_total"]["blocked_request_count"]==0, r["provider_total"]
