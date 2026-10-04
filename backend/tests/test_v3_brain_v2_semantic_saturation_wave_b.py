@@ -12,6 +12,7 @@ from app.v3.analytical_request_contract import (
     AnalyticalRankingInvariant,
     AnalyticalRequestContract,
     AnalyticalScopeIdentity,
+    AnalyticalTemporalChangeFrame,
     RankingBasis as ProductRankingBasis,
 )
 from app.v3.brain_v2.adaptive_test_design import (
@@ -31,6 +32,7 @@ from app.v3.research_contracts import (
     ResearchSemanticRef,
     ScopeVersion,
     SemanticTargetKind,
+    TemporalChangeFrameMode,
 )
 from app.v3.research_result_dependency import (
     ResultDependencyProjectionError,
@@ -177,6 +179,30 @@ def _product_contract_accepts(case: SaturationCase) -> bool:
             limit=limit,
             basis=ProductRankingBasis(case.ranking_basis.value.lower()),
         )
+    temporal_change_frame = None
+    if (
+        ranking is not None
+        and ranking.basis == ProductRankingBasis.CHANGE
+        and comparison is not None
+    ):
+        temporal_change_frame = AnalyticalTemporalChangeFrame(
+            mode=TemporalChangeFrameMode.PAIR,
+            time_dimension=comparison.reference_period.time_dimension,
+            baseline_period=comparison.reference_period,
+            comparison_period=comparison.base_period,
+        )
+    elif (
+        ranking is not None
+        and ranking.basis == ProductRankingBasis.CHANGE
+        and period is not None
+        and case.period_role == PeriodRole.MATERIAL_WINDOW
+    ):
+        temporal_change_frame = AnalyticalTemporalChangeFrame(
+            mode=TemporalChangeFrameMode.SPAN,
+            time_dimension=period.time_dimension,
+            span_period=period,
+        )
+
     try:
         AnalyticalRequestContract(
             authority_id="auth-wave-b",
@@ -192,6 +218,7 @@ def _product_contract_accepts(case: SaturationCase) -> bool:
             filters=_filters(case),
             period=period,
             comparison=comparison,
+            temporal_change_frame=temporal_change_frame,
             ranking=ranking,
             requested_output_surfaces=_presentation(case),
         )
