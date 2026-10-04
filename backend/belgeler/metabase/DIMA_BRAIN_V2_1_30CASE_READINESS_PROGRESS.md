@@ -5284,3 +5284,29 @@ What remains:
 
 NEXT LEGAL ACTION:
 run exactly one A3/F06_M paid proof on Product `5bb2bc2f...`.
+
+
+---
+
+## FINAL READINESS — A3 TEMPORAL RANKING BASIS RCA
+
+**STATUS: INTENTIONAL PROVIDER-FREE RED STARTING**
+
+Latest A3 development proof `37202946250` reached `REPORT/COMPLETE` mechanically, but the accepted
+ranking authority was `basis=LEVEL` while the supervisor A3 law requires ranking baseline-to-comparison
+CHANGE. This run is therefore not accepted as final A3 readiness proof.
+
+First invalid boundary:
+`typed temporal comparison intent -> ranking basis semantic classification`.
+
+Owner: `research_intake.py`.
+
+Generic law under test:
+when one READY brief carries a role-bound temporal comparison and a LEVEL ranking over the same governed
+metric, intake must perform at most one bounded semantic reconsideration of LEVEL vs CHANGE using the
+existing typed definitions. No wording parser, regex, case branch, engine change or third provider call.
+
+Test-first commit:
+`0b681641e378b58d23e8621a8639b2dcad086855`.
+
+Paid is STOPPED. A4/broad remain CLOSED.
