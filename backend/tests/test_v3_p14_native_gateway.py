@@ -3292,6 +3292,7 @@ def test_result_dependency_filter_only_loads_binding_from_accepted_scope() -> No
     session = SimpleNamespace(
         session_id="rs-result-dependency-filter-only",
         context_version=CONTEXT,
+        tenant_binding=f"id:{TENANT}",
         accepted_brief=SimpleNamespace(
             questions=(child,),
             scope=base_brief.scope,
