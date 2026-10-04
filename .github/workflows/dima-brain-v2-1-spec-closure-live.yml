@@ -58,13 +58,14 @@ jobs:
           assert auth["thirty_case_allowed"] is False
           assert auth["automatic_retry_allowed"] is False
           assert auth["case_count"] == 1
-          assert auth["candidate_product_sha"]=="43da71811370cce931d08a3bf0561c09652f632a"
-          assert auth["provider_free_phase1_run_id"]==37196825485
-          assert auth["provider_free_phase2_run_id"]==37196825478
-          assert auth["semantic_conformance_run_id"]==37196605612
-          assert auth["semantic_holdout_run_id"]==37196605612
-          assert auth["frozen_family_run_id"]==37196605603
+          assert auth["candidate_product_sha"]=="e39c2f566c1b2a97ccb840cd01e55913cd2a7662"
+          assert auth["provider_free_phase1_run_id"]==37210975064
+          assert auth["provider_free_phase2_run_id"]==37210974979
+          assert auth["semantic_conformance_run_id"]==37210732045
+          assert auth["semantic_holdout_run_id"]==37210732045
+          assert auth["frozen_family_run_id"]==37210732062
           assert isinstance(auth["case_id"],str) and auth["case_id"]
+          assert isinstance(auth.get("question_override", ""), str)
           assert auth["engine_sha"]=="4c49b8da6b424b0fa4d8ef340ca1b238d12980c1"
           assert auth["engine_release"]=="0.63.18-dima.11.1"
           assert auth["model_policy"]=="LUNA_LUNA_NO_CASCADE"
@@ -76,7 +77,7 @@ jobs:
           )
           print("candidate="+auth["candidate_product_sha"])
           PY
-          echo "candidate_sha=43da71811370cce931d08a3bf0561c09652f632a" >> "$GITHUB_OUTPUT"
+          echo "candidate_sha=$(python -c 'import json; print(json.load(open("backend/lab/metabase/brain_v2/spec_closure_live_authorization.json"))["candidate_product_sha"])')" >> "$GITHUB_OUTPUT"
           echo "case_id=$(python -c 'import json; print(json.load(open("backend/lab/metabase/brain_v2/spec_closure_live_authorization.json"))["case_id"])')" >> "$GITHUB_OUTPUT"
           test -n "$DIMA_OPENROUTER_API_KEY"
 
@@ -316,6 +317,19 @@ jobs:
           CHECKPOINT_DSN: postgresql://metabase_app:${{ env.MB_APP_PASSWORD }}@127.0.0.1:55462/metabase_brain_v21_recovery
         run: |
           set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          auth = json.loads(
+              Path("lab/metabase/brain_v2/spec_closure_live_authorization.json").read_text(
+                  encoding="utf-8"
+              )
+          )
+          Path("eval/brain_v21_recovery/question_override.txt").write_text(
+              str(auth.get("question_override") or ""),
+              encoding="utf-8",
+          )
+          PY
           python lab/metabase/brain_v2/spec_closure_recovery_live.py \
             --base-url http://127.0.0.1:3361 \
             --email "$MB_RESTRICTED_EMAIL" \
@@ -335,7 +349,8 @@ jobs:
             --image-identity "$REGISTRY_DIGEST" \
             --candidate-product-sha "${{ steps.auth.outputs.candidate_sha }}" \
             --checkout-sha "$GITHUB_SHA" \
-            --case-id "${{ steps.auth.outputs.case_id }}"
+            --case-id "${{ steps.auth.outputs.case_id }}" \
+            --question-override-file eval/brain_v21_recovery/question_override.txt
 
       - name: Enforce surgical recovery artifact integrity
         working-directory: backend
@@ -347,7 +362,7 @@ jobs:
           r=json.loads(p.read_text())
           assert r["schema_version"]=="dima_brain_v2_1_recovery_live_v1"
           assert r["system"]=="DIMA_BRAIN_V2_1_LANGGRAPH"
-          assert r["candidate_product_sha"]=="43da71811370cce931d08a3bf0561c09652f632a"
+          assert r["candidate_product_sha"]=="e39c2f566c1b2a97ccb840cd01e55913cd2a7662"
           assert r["engine_sha"]=="4c49b8da6b424b0fa4d8ef340ca1b238d12980c1"
           assert r["engine_release"]=="v0.63.18-dima.11.1.1"
           assert r["source_case_count"]==30
