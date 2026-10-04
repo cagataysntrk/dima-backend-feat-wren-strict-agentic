@@ -236,6 +236,153 @@ def test_change_ranking_intake_preserves_basis_and_role_bound_periods():
     assert set(schema["$defs"]["RankingBasis"]["enum"]) == {"level", "change"}
 
 
+
+def test_change_ranking_bounded_symbolic_span_is_safe_without_pair_invention():
+    question = (
+        "Across P1-P2, rank departments by governed downtime deterioration."
+    )
+    payload = ready_payload(
+        kind="ranking",
+        subject=("metric.downtime",),
+        related=("dimension.department",),
+    )
+    payload["goals"][0].update(
+        {
+            "source_text": question,
+            "source_fragment_text": question,
+            "ranking": {
+                "source_text": question,
+                "direction": "desc",
+                "limit": 3,
+                "measure_semantic_id": "metric.downtime",
+                "basis": "change",
+            },
+        }
+    )
+    payload["time_periods"] = [
+        {
+            "source_text": "P1-P2",
+            "time_dimension_semantic_id": "dimension.event_date",
+            "start": "2026-01-01",
+            "end": "2026-03-01",
+            "role": "material_window",
+        }
+    ]
+    transport = FakeTransport(payload)
+
+    result = ResearchIntakeCompiler(
+        transport=transport,
+        calendar_reference_date="2026-10-04",
+    ).compile(
+        question=question,
+        catalog=catalog().model_copy(
+            update={"temporal_dimension_ids": ("dimension.event_date",)}
+        ),
+    )
+
+    assert result.terminal == ResearchIntakeTerminal.READY
+    assert result.model_calls == 1
+    assert result.brief is not None
+    ranking = result.brief.questions[0].ranking
+    assert ranking is not None
+    assert ranking.basis == RankingBasis.CHANGE
+    assert ranking.direction == "desc"
+    assert ranking.limit == 3
+    assert ranking.measure_semantic_id == "metric.downtime"
+    assert {
+        item.candidate_id
+        for item in result.brief.questions[0].related_refs
+    } == {"dimension.department"}
+    assert len(result.brief.scope.periods) == 1
+    (window,) = result.brief.scope.periods
+    assert window.role == TemporalRole.MATERIAL_WINDOW
+    assert window.time_dimension_candidate_id == "dimension.event_date"
+    assert (window.start, window.end) == ("2026-01-01", "2026-03-01")
+
+
+def test_plain_bounded_window_with_level_ranking_does_not_become_span_change():
+    question = "Across P1-P2, rank departments by governed downtime level."
+    payload = ready_payload(
+        kind="ranking",
+        subject=("metric.downtime",),
+        related=("dimension.department",),
+    )
+    payload["goals"][0].update(
+        {
+            "source_text": question,
+            "source_fragment_text": question,
+            "ranking": {
+                "source_text": question,
+                "direction": "desc",
+                "limit": 3,
+                "measure_semantic_id": "metric.downtime",
+                "basis": "level",
+            },
+        }
+    )
+    payload["time_periods"] = [
+        {
+            "source_text": "P1-P2",
+            "time_dimension_semantic_id": "dimension.event_date",
+            "start": "2026-01-01",
+            "end": "2026-03-01",
+            "role": "material_window",
+        }
+    ]
+
+    result = ResearchIntakeCompiler(
+        transport=FakeTransport(payload),
+        calendar_reference_date="2026-10-04",
+    ).compile(
+        question=question,
+        catalog=catalog().model_copy(
+            update={"temporal_dimension_ids": ("dimension.event_date",)}
+        ),
+    )
+
+    assert result.terminal == ResearchIntakeTerminal.READY
+    assert result.brief is not None
+    assert result.brief.questions[0].ranking is not None
+    assert result.brief.questions[0].ranking.basis == RankingBasis.LEVEL
+    assert len(result.brief.scope.periods) == 1
+    assert result.brief.scope.periods[0].role == TemporalRole.MATERIAL_WINDOW
+
+
+def test_change_ranking_ready_without_pair_or_bounded_span_fails_closed():
+    question = "Rank departments by governed downtime change."
+    payload = ready_payload(
+        kind="ranking",
+        subject=("metric.downtime",),
+        related=("dimension.department",),
+    )
+    payload["goals"][0].update(
+        {
+            "source_text": question,
+            "source_fragment_text": question,
+            "ranking": {
+                "source_text": question,
+                "direction": "desc",
+                "limit": 3,
+                "measure_semantic_id": "metric.downtime",
+                "basis": "change",
+            },
+        }
+    )
+
+    with pytest.raises(ResearchIntakeError) as exc:
+        ResearchIntakeCompiler(
+            transport=FakeTransport(payload),
+            calendar_reference_date="2026-10-04",
+        ).compile(
+            question=question,
+            catalog=catalog().model_copy(
+                update={"temporal_dimension_ids": ("dimension.event_date",)}
+            ),
+        )
+
+    assert exc.value.code == "INTAKE_CHANGE_RANKING_TEMPORAL_FRAME_REQUIRED"
+
+
 def test_result_dependency_dimension_can_constrain_child_without_child_breakout():
     question = (
         "Rank governed departments. "
