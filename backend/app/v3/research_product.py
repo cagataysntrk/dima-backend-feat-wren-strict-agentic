@@ -1023,7 +1023,11 @@ class ResearchAskOrchestrator:
             if persisted.status != "EXECUTED":
                 raise last_exc
 
-            for delay_seconds in (0.2, 0.6):
+            # Durable observer visibility is read-only and idempotent. Keep the
+            # exact EXECUTED occurrence/query fixed while allowing bounded
+            # persistence convergence; never replay Metabot cognition or dataset
+            # execution. Total backoff budget is 4.0s.
+            for delay_seconds in (0.2, 0.6, 1.2, 2.0):
                 time.sleep(delay_seconds)
                 try:
                     return runner.execute(

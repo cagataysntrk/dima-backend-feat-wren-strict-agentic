@@ -856,7 +856,7 @@ def test_two_transient_observation_misses_resume_same_occurrence_without_replayi
     assert len({json.dumps(item[2], sort_keys=True) for item in executor.calls}) == 1
 
 
-def test_three_observation_misses_stay_waiting_without_replaying_metabot():
+def test_three_transient_observation_misses_resume_same_occurrence_without_replaying_metabot():
     engine = _db_engine()
     store = ResearchSessionStore(engine)
     factory = BridgeFactory()
@@ -880,11 +880,77 @@ def test_three_observation_misses_stay_waiting_without_replaying_metabot():
         principal=_principal(),
     )
 
+    assert response.evidence_id is not None
+    assert response.limitation_code is None
+    assert restored.obligations[0].state == ObligationState.VERIFIED
+    assert factory.metabot_posts == 1
+    assert len(executor.calls) == 4
+    assert len({item[1] for item in executor.calls}) == 1
+    assert len({json.dumps(item[2], sort_keys=True) for item in executor.calls}) == 1
+
+
+def test_four_transient_observation_misses_resume_same_occurrence_without_replaying_metabot():
+    engine = _db_engine()
+    store = ResearchSessionStore(engine)
+    factory = BridgeFactory()
+    executor = MaterialExecutor(
+        observation_unavailable_failures=4,
+        store=store,
+    )
+    product = ResearchAskOrchestrator(
+        store=store,
+        bridge_factory=factory,
+        material_executor=executor,
+    )
+    session = _start(product, two=False)
+
+    response = product.run_next(
+        session_id=session.session_id,
+        principal=_principal(),
+    )
+    restored = product.resume_state(
+        session_id=session.session_id,
+        principal=_principal(),
+    )
+
+    assert response.evidence_id is not None
+    assert response.limitation_code is None
+    assert restored.obligations[0].state == ObligationState.VERIFIED
+    assert factory.metabot_posts == 1
+    assert len(executor.calls) == 5
+    assert len({item[1] for item in executor.calls}) == 1
+    assert len({json.dumps(item[2], sort_keys=True) for item in executor.calls}) == 1
+
+
+def test_five_observation_misses_stay_waiting_without_replaying_metabot():
+    engine = _db_engine()
+    store = ResearchSessionStore(engine)
+    factory = BridgeFactory()
+    executor = MaterialExecutor(
+        observation_unavailable_failures=5,
+        store=store,
+    )
+    product = ResearchAskOrchestrator(
+        store=store,
+        bridge_factory=factory,
+        material_executor=executor,
+    )
+    session = _start(product, two=False)
+
+    response = product.run_next(
+        session_id=session.session_id,
+        principal=_principal(),
+    )
+    restored = product.resume_state(
+        session_id=session.session_id,
+        principal=_principal(),
+    )
+
     assert response.evidence_id is None
     assert response.limitation_code == "R1_NATIVE_MATERIAL_OBSERVATION_UNAVAILABLE"
     assert restored.obligations[0].state == ObligationState.DELEGATED
     assert factory.metabot_posts == 1
-    assert len(executor.calls) == 3
+    assert len(executor.calls) == 5
     assert len({item[1] for item in executor.calls}) == 1
     assert len({json.dumps(item[2], sort_keys=True) for item in executor.calls}) == 1
 
