@@ -2237,6 +2237,32 @@ def _change_ranking_contract():
     )
 
 
+def _span_change_ranking_contract():
+    span = scope_module.AnalyticalPeriodInvariant(
+        kind="explicit_half_open",
+        time_dimension="time.event_date",
+        start="2026-05-01",
+        end="2026-07-01",
+    )
+    return rich_material_contract().model_copy(
+        update={
+            "period": span,
+            "comparison": None,
+            "temporal_change_frame": scope_module.AnalyticalTemporalChangeFrame(
+                mode=scope_module.TemporalChangeFrameMode.SPAN,
+                time_dimension="time.event_date",
+                span_period=span,
+            ),
+            "ranking": scope_module.AnalyticalRankingInvariant(
+                measure="metric.downtime",
+                direction="desc",
+                limit=5,
+                basis=scope_module.RankingBasis.CHANGE,
+            ),
+        }
+    )
+
+
 def test_dima10_material_transport_preserves_observed_change_ranking_basis() -> None:
     observation = rich_material_observation(
         ranking=[
@@ -2998,7 +3024,15 @@ def test_change_material_requirement_projection_is_exact_and_planner_visible() -
         "basis": "change",
     }
     assert requirement["comparison"] == contract.comparison.model_dump(mode="json")
+    assert requirement["temporal_change_frame"] == {
+        "mode": "PAIR",
+        "time_dimension": "time.event_date",
+        "span_period": None,
+        "baseline_period": contract.comparison.reference_period.model_dump(mode="json"),
+        "comparison_period": contract.comparison.base_period.model_dump(mode="json"),
+    }
     assert requirement["change_semantics"] == {
+        "frame_mode": "PAIR",
         "operation": "comparison_minus_baseline",
         "metric_ref": "metric.downtime",
         "entity_breakout_refs": ["dimension.department"],
@@ -3018,15 +3052,109 @@ def test_change_material_requirement_projection_is_exact_and_planner_visible() -
     encoded = message.split(marker, 1)[1].splitlines()[0]
     visible = json.loads(encoded)["dima_material_requirement"]
     assert visible == requirement
-    assert "CHANGE output law" in message
-    assert "compute the governed metric separately for the accepted baseline period" in message
-    assert "comparison-minus-baseline value" in message
-    assert "order by the derived comparison-minus-baseline value" in message
+    assert "accepted PAIR change frame" in message
+    assert "accepted baseline and comparison periods" in message
+    assert "CHANGE material law" in message
+    assert "rank by the governed CHANGE quantity" in message
     assert "do not order by the raw metric level" in message
     assert "dimension.department" in message
     lowered = message.lower()
     for forbidden in ("select ", "group by", "sum-where", "aggregation-options", "lib/uuid"):
         assert forbidden not in lowered
+
+
+def test_span_change_material_requirement_is_typed_without_hidden_pair() -> None:
+    contract = _span_change_ranking_contract()
+    requirement = scope_module.native_material_requirement(contract)
+
+    assert requirement["comparison"] is None
+    assert requirement["period"] == contract.period.model_dump(mode="json")
+    assert requirement["required_temporal_dimension"] == "time.event_date"
+    assert requirement["temporal_change_frame"] == {
+        "mode": "SPAN",
+        "time_dimension": "time.event_date",
+        "span_period": contract.period.model_dump(mode="json"),
+        "baseline_period": None,
+        "comparison_period": None,
+    }
+    assert requirement["change_semantics"] == {
+        "frame_mode": "SPAN",
+        "operation": "change_over_span",
+        "metric_ref": "metric.downtime",
+        "entity_breakout_refs": ["dimension.department"],
+        "time_dimension": "time.event_date",
+        "ranking_direction": "desc",
+        "ranking_limit": 5,
+        "span_period": contract.period.model_dump(mode="json"),
+    }
+
+    message = ResearchManager.native_material_message(
+        objective="symbolic bounded deterioration ranking",
+        analytical_scope=contract,
+    )
+    assert "accepted SPAN change frame" in message
+    assert "do not invent hidden baseline/comparison roles" in message
+    assert "Metabot-owned analytical realization" in message
+    assert "do not order by the raw metric level" in message
+    lowered = message.lower()
+    for forbidden in ("select ", "group by", "sum-where", "aggregation-options", "lib/uuid"):
+        assert forbidden not in lowered
+
+
+def test_span_change_basis_mismatch_is_one_repair_eligible_material_defect() -> None:
+    from app.v3.research_material_repair import (
+        MaterialRepairDisposition,
+        decide_material_repair,
+    )
+
+    observation = rich_material_observation(
+        ranking=[
+            {
+                "stage_number": 0,
+                "order_index": 0,
+                "target": {
+                    "kind": "metric",
+                    "metabase_metric_id": 501,
+                    "metabase_metric_entity_id": "metric-downtime-v1",
+                },
+                "direction": "desc",
+                "limit": 5,
+                "basis": "level",
+            }
+        ]
+    )
+    with pytest.raises(scope_module.ResearchAnalyticalScopeError) as exc:
+        scope_module._assert_material_ranking_scope(
+            _span_change_ranking_contract(),
+            observation,
+            rich_material_bindings(),
+        )
+
+    assert exc.value.code == "R1_NATIVE_RANKING_BASIS_MISMATCH"
+    change = exc.value.expected_semantic_shape["change_semantics"]
+    assert change["frame_mode"] == "SPAN"
+    assert change["operation"] == "change_over_span"
+    assert "baseline_period" not in change
+    assert "comparison_period" not in change
+
+    decision = decide_material_repair(
+        validation_code=exc.value.code,
+        validation_detail=exc.value.detail,
+        prior_repair_attempts=0,
+        expected_semantic_shape=exc.value.expected_semantic_shape,
+        observed_semantic_shape=exc.value.observed_semantic_shape,
+    )
+    assert decision.disposition == MaterialRepairDisposition.REPAIR
+    assert decision.repair_attempt == 1
+    assert decision.require_new_query_fingerprint
+    assert decision.preserve_scope_identity
+    assert decision.preserve_material_contract
+
+    exhausted = decide_material_repair(
+        validation_code=exc.value.code,
+        prior_repair_attempts=1,
+    )
+    assert exhausted.disposition == MaterialRepairDisposition.TERMINAL_LIMIT
 
 
 def test_dima10_missing_required_change_ranking_is_distinct_material_miss() -> None:
@@ -3234,6 +3362,7 @@ def test_level_material_requirement_has_no_change_semantics() -> None:
     )
     requirement = scope_module.native_material_requirement(contract)
     assert requirement["ranking"]["basis"] == "level"
+    assert requirement["temporal_change_frame"] is None
     assert requirement["change_semantics"] is None
 
 
