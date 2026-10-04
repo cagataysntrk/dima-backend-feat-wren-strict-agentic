@@ -356,19 +356,7 @@ class ResearchManager:
             lines.append("- none")
 
         lines.append("periods:")
-        change_semantics = requirement.get("change_semantics") or None
-        if change_semantics is not None:
-            baseline = change_semantics["baseline_period"]
-            comparison_period = change_semantics["comparison_period"]
-            lines.append(
-                f"- baseline: {baseline['time_dimension']} "
-                f"[{baseline['start']}, {baseline.get('end') or 'open'})"
-            )
-            lines.append(
-                f"- comparison: {comparison_period['time_dimension']} "
-                f"[{comparison_period['start']}, {comparison_period.get('end') or 'open'})"
-            )
-        elif analytical_scope.comparison is not None:
+        if analytical_scope.comparison is not None:
             lines.append(
                 period_line(
                     "reference",
@@ -458,11 +446,27 @@ class ResearchManager:
                 )
             )
         elif ranking is not None:
-            # Analytical HOW belongs to Metabot. The typed
-            # dima_material_requirement above is the single semantic authority
-            # for LEVEL/CHANGE and is projected verbatim; transport must not
-            # restate it as an independent query-construction recipe.
             lines.append("- preserve the governed native ranking basis exactly")
+            if ranking.basis.value == "change":
+                change = requirement.get("change_semantics") or {}
+                entity_refs = (
+                    ", ".join(change.get("entity_breakout_refs") or ())
+                    or "accepted entity grain"
+                )
+                lines.extend(
+                    (
+                        "- rank by the accepted baseline-to-comparison change, not pooled level",
+                        "- keep the accepted comparison periods distinguishable in governed material",
+                        (
+                            "- CHANGE output law: produce one comparable entity-grain result for "
+                            f"{entity_refs}; compute the governed metric separately for the accepted "
+                            "baseline period and accepted comparison period; expose the derived "
+                            "comparison-minus-baseline value for that same entity grain"
+                        ),
+                        "- order by the derived comparison-minus-baseline value in the accepted direction",
+                        "- do not order by the raw metric level and do not use time as an extra result-row breakout when the contract asks for entity CHANGE ranking",
+                    )
+                )
 
         lines.extend(
             (
