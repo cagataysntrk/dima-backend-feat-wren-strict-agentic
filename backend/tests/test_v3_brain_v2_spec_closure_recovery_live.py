@@ -1,4 +1,7 @@
-from lab.metabase.brain_v2.spec_closure_recovery_live import _raw_harness_gate
+from lab.metabase.brain_v2.spec_closure_recovery_live import (
+    _case_with_question_override,
+    _raw_harness_gate,
+)
 
 
 def test_multimetric_single_evidence_is_not_failed_by_legacy_cardinality_proxy() -> None:
@@ -32,3 +35,38 @@ def test_clarify_terminal_does_not_require_evidence_cardinality() -> None:
         evidence_count=0,
         legacy_min_evidence=2,
     )
+
+
+
+def test_semantic_sibling_override_does_not_mutate_frozen_case() -> None:
+    frozen = {
+        "id": "F06_M",
+        "question": "original governed obligation",
+        "max_model_calls": 8,
+    }
+    sibling = _case_with_question_override(
+        frozen,
+        "alternate wording of the same governed obligation",
+    )
+
+    assert frozen["question"] == "original governed obligation"
+    assert sibling["id"] == "F06_M"
+    assert sibling["max_model_calls"] == 8
+    assert sibling["question"] == (
+        "alternate wording of the same governed obligation"
+    )
+
+
+def test_semantic_sibling_override_rejects_multiturn_rewrite() -> None:
+    frozen = {
+        "id": "F10_H",
+        "question": "turn one",
+        "turns": ["turn one", "turn two"],
+    }
+
+    try:
+        _case_with_question_override(frozen, "alternate wording")
+    except RuntimeError as exc:
+        assert "one-turn" in str(exc)
+    else:
+        raise AssertionError("multi-turn sibling override must fail closed")
