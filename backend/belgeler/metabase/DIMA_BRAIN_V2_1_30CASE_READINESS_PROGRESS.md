@@ -5474,3 +5474,70 @@ The semantic candidate remains `34d0bbd461222e2a0859ed196a5a950e362c8622`; all c
 **30-case readiness:** CLOSER, NOT READY.
 
 **NEXT LEGAL ACTION:** finish aggregate Phase-1/Phase-2 recertification on this clean Product. Do not repeat the same F06_M wording without a new root-level semantic change; do not add another prompt/regex/morph guard; do not advance to sibling/A4+. If aggregate PF is GREEN, this checkpoint is the correct escalation boundary for a supervisor-level semantic/topology decision. Broad, actual 30-case, and frontend remain CLOSED.
+
+
+---
+
+## PHASE 3 A3.1 — PROMPT-CLEAN FULL PF CHECKPOINT — 2026-10-04
+
+**PHASE:** 3 / A3 original gate
+
+**STATUS:** PROMPT-CLEAN PRODUCT FULLY PROVIDER-FREE GREEN; PAID OFF; A3 ORIGINAL STILL NOT FULL
+
+**Product SHA:** `6656533fb9a86580db9617709bb5331ba4d031ab`
+
+**Repository HEAD before this receipt:** `fdf4bc2c2936d9e5e2c4ee909b79138bb23b49e4`
+
+**Engine SHA/tag/digest:** `4c49b8da6b424b0fa4d8ef340ca1b238d12980c1` / `0.63.18-dima.11.1` / `sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d`
+
+**Objective:** finish deterministic recertification after removing the prompt-only shared-span A3 delta, and prove that no benchmark/prompt wording dependency is required by the Product tests.
+
+**First invalid boundary:** no deterministic Product boundary remains. The unresolved live boundary is still Research Intake on F06_M original: Luna returned fail-closed CLARIFY before Metabot in qualifying run `37228054088`. The controlled Terra diagnostic `37230532868` also failed closed and therefore did not confirm a model-ceiling topology change.
+
+**Exact owner:** Research Intake for unresolved raw-language temporal authority. Metabase/Metabot was not reached in the latest qualifying A3 run.
+
+**Was this law already implemented elsewhere?** The durable typed law is already canonical in Research Intake/contracts: CHANGE requires one baseline and one comparison period over one governed time dimension with distinct normalized spans. No other module owns raw-language pair interpretation. `research_temporal_authority.py` only decides explicit-bounded vs governed-time-axis disposition; scope patch consumes already-typed periods.
+
+**Canonical semantic owner:** `ResearchIntakeCompiler` for raw-language -> typed temporal WHAT. Metabase/Metabot remains the sole analytical HOW/query-cognition owner.
+
+**Files changed after the prior checkpoint:**
+- `backend/app/v3/research_intake.py`: prompt-only `a347b6db...` wording delta removed at Product SHA `6656533...`.
+- `backend/tests/test_v3_research_intake.py`: tests now seal the typed bounded schema/reconsideration authority and benchmark-identity absence, not literal prompt prose.
+- live workflow/auth receipts repinned to the clean Product and exact GREEN PF evidence; authorization remains disabled.
+- no engine, graph, owner_adapter semantic family, frontend, provider ceiling, broad benchmark, or 30-case execution change.
+
+**Generic law:** tests may assert typed authority, allowed state mutation and benchmark-independence; they must not require a particular prompt sentence. No new prompt/regex/fuzzy/morph/calendar-phrase branch was added.
+
+**Provider-free runs:**
+- frozen-family closure: `37230925285 = SUCCESS`;
+- semantic conformance + Wave A + Wave B + mutation canaries: `37230925331 = SUCCESS`;
+- aggregate Phase-1: `37231420855 = SUCCESS`;
+- Phase-2/headless + independent metamorphic confidence + forbidden-surface audit: `37231420890 = SUCCESS`.
+
+**Live run:** latest qualifying Luna F06_M original remains `37228054088`; no same-semantic paid retry was performed after the rollback.
+
+**Manual score:** `0/4` on the latest qualifying A3 original because Intake failed closed before research.
+
+**Provider requests:** qualifying Luna = 2 Research Intake calls; controlled Terra diagnostic = 1 Research Intake call.
+
+**Tokens:** Luna prompt/completion = `15649/719`; Terra diagnostic prompt/completion = `14646/686`.
+
+**Cost:** Luna = `$0.00135686`; Terra diagnostic = `$0.00448455`.
+
+**Latency:** Luna = `8293 ms`; Terra diagnostic = `5702 ms`.
+
+**Exception:** Luna = `BRAIN_V2_INTAKE_CLARIFY`; Terra diagnostic = `INTAKE_CHANGE_RANKING_COMPARISON_REQUIRED`.
+
+**Silent wrong:** 0 admitted.
+
+**Duplicate native:** 0.
+
+**Stale Evidence:** 0.
+
+**What is proven:** all deterministic Product, semantic saturation, mutation-canary, frozen-family, headless composition, metamorphic, security/currentness and forbidden-surface gates are GREEN on the prompt-clean Product. The certified engine remains frozen and no latest qualifying A3 request reached it. The rejected prompt-only patch is not part of the Product candidate. Paid trigger is absent and authorization is OFF.
+
+**What remains unproven:** A3 original `4/4 FULL`. Therefore A3 semantic sibling, A4/A5/A6, B1/B2/B3, Phase-6 consolidation audit, final Wave C/freeze and the one-time same-SHA `34/36+` panel remain closed by supervisor order.
+
+**30-case readiness:** CLOSER, NOT READY.
+
+**NEXT LEGAL ACTION:** do not run another identical F06_M merely hoping for a different model sample; do not add another prompt/regex/morph/benchmark guard; do not advance to A3 sibling or A4+. A supervisor-level decision is required on the remaining raw-language temporal authority/topology boundary before another Product semantic change or qualifying paid run. Broad paid, actual 30-case and frontend remain CLOSED.
