@@ -5771,3 +5771,64 @@ SPAN preserves one bounded interval and never asserts hidden baseline/comparison
 **Paid authorization:** OFF.
 
 **NEXT LEGAL ACTION:** require semantic/frozen + full Phase-1 + Phase-2/headless GREEN on the recovery candidate. Only then repin and run exactly one A3 original. No sibling/A4+, broad, 30-case, engine change, or frontend before A3 original FULL.
+
+
+---
+
+## PHASE 3 A3 EVIDENCE-ADMISSION RECOVERY — PF GREEN CHECKPOINT — 2026-10-05
+
+**PHASE:** 3 / A3 original recovery
+
+**STATUS:** ROOT FIX PROVIDER-FREE GREEN; PAID OFF; LIVE WORKFLOW REPIN BLOCKED BY CONNECTED TOOL SAFETY SURFACE
+
+**Product SHA:** `957fea9876cfa4cdf8ee3a4f5701c0b6cfc2a40e`
+
+**Engine SHA/tag/digest:** `4c49b8da6b424b0fa4d8ef340ca1b238d12980c1` / `0.63.18-dima.11.1` / `sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d`
+
+**Objective:** repair only the new first-invalid A3 boundary exposed after PAIR/SPAN: valid derived CHANGE native material executed but was not promoted to governed Evidence.
+
+**First invalid boundary addressed:** native result/material coverage -> Evidence admission.
+
+**Exact owner:** `research_material_coverage.py` result-level Evidence coverage plus proof propagation from `research_native_gateway.py`.
+
+**Files changed:**
+- `backend/tests/test_v3_research_material_coverage.py`;
+- `backend/app/v3/research_material_coverage.py`;
+- `backend/app/v3/research_native_gateway.py`;
+- canonical readiness/auth receipts.
+
+**Generic law changed:** a final native CHANGE ranking rowset may omit the intermediate governed time column only when the exact same native occurrence has already passed material-scope validation proving accepted temporal scope and CHANGE ranking semantics. This permits normal multi-stage analytical projection without weakening authority. If the time column is present, old row-level comparison coverage remains strict. If material attestation is absent, the result still fails closed. Plain comparison Evidence still requires explicit governed time coverage.
+
+**Pattern fit:** Metabase query-builder may use temporal breakout/aggregation in earlier stages and project only entity + derived expression in the final stage. Dima therefore validates analytical WHAT/material through the native observer and validates the final projection without forcing intermediate HOW columns back into the user-facing rowset. No SQL/MBQL is authored by Dima; dima.11.1 remains frozen.
+
+**Provider-free tests:** generic derived CHANGE projection positive; identical proofless projection negative; plain comparison negative; existing material/scope/ranking/repair/security families retained.
+
+**Provider-free runs:**
+- semantic conformance + Wave A/B + mutation canaries: `37241788680 = SUCCESS`;
+- frozen-family closure: `37241798779 = SUCCESS`;
+- full Phase-1 provider-free including Research/material coverage: `37241841231 = SUCCESS`;
+- Phase-2/headless + metamorphic + forbidden-surface audit: `37241841255 = SUCCESS`.
+
+**Paid run:** none after this recovery.
+
+**Score / provider requests / tokens / cost / latency:** N/A provider-free; provider calls = `0`.
+
+**Exception:** 0 provider-free gate failures.
+
+**Silent wrong:** 0 admitted.
+
+**Duplicate native:** provider-free dedup invariants GREEN.
+
+**Stale Evidence:** 0.
+
+**Security violation:** 0.
+
+**What is proven:** the exact Evidence-admission defect exposed by A3 has a generic owner-correct fix; provider-free Product, semantic, frozen-family, headless, metamorphic and security gates are all GREEN; no engine or planner change is required.
+
+**What remains unproven:** A3 original `4/4 FULL` on Product `957fea98...`, then A3 semantic sibling. Therefore A4+ and final readiness panel remain closed.
+
+**30-case readiness:** NOT READY.
+
+**Operational live-gate state:** authorization is OFF, broad/30-case are false, and no trigger is armed. The connected GitHub write surface blocked the required update of `.github/workflows/dima-brain-v2-1-spec-closure-live.yml` hard-pins from prior Product `447847e4...` to `957fea98...`. No supported workflow-dispatch action is exposed. Low-level Git-object bypass was deliberately not used.
+
+**NEXT LEGAL ACTION:** when a supported workflow-file write or workflow-dispatch surface is available, repin the one-shot A3 workflow to Product `957fea98...` and provider-free receipts `37241841231 / 37241841255 / 37241788680 / 37241798779`, run exactly one A3 original, immediately disarm, and manually require `4/4 FULL`. Until then: no same-old candidate retry, no sibling, no A4+, no engine change, no broad, no 30-case, no frontend.
