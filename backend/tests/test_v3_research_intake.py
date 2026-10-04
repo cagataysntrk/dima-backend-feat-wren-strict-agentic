@@ -3853,12 +3853,17 @@ def test_change_ranking_shared_period_surface_can_ground_two_typed_roles() -> No
         ("May and June", "2026-06-01", "2026-07-01", "comparison_period"),
     ]
 
-    bounded_system = transport.calls[1]["system"]
-    assert "one shared source span does not imply one continuous interval" in bounded_system.lower()
-    assert "two distinct calendar periods" in bounded_system.lower()
-    assert "earlier one to baseline_period" in bounded_system.lower()
-    assert "later one to comparison_period" in bounded_system.lower()
-    assert "mayıs" not in bounded_system.lower()
+    bounded_call = transport.calls[1]
+    assert bounded_call["schema_name"].endswith("_change_period_pair")
+    reconsideration = bounded_call["user"]["reconsideration"]
+    assert reconsideration["kind"] == "CHANGE_PERIOD_PAIR_DELIBERATION"
+    assert reconsideration["reason"] == "SHARED_SOURCE_SURFACE"
+    assert reconsideration["time_dimension_semantic_id"] == "dimension.event_date"
+
+    # Seal the typed bounded contract, not mutable prompt wording.
+    bounded_system = bounded_call["system"].lower()
+    for forbidden in ("mayıs", "haziran", "sql", "mbql", "benchmark phrase"):
+        assert forbidden not in bounded_system
 
 
 def test_change_ranking_shared_period_surface_may_clarify_when_pair_unresolved() -> None:
