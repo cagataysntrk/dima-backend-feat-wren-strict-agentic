@@ -3346,7 +3346,11 @@ def test_coorigin_source_fragment_provenance_is_exact_and_shared_across_goal_dec
     )
     assert result.brief is not None
     ranking, relationship = result.brief.questions
-    assert ranking.source_text != relationship.source_text
+    # The exact verbatim source fragment is the canonical obligation-local text.
+    # Provider-authored broad/paraphrased source_text must not leak into P14
+    # native material turns when a grounded fragment already exists.
+    assert ranking.source_text == fragment
+    assert relationship.source_text == fragment
     assert ranking.source_fragment_identity is not None
     assert ranking.source_fragment_identity == relationship.source_fragment_identity
     assert ranking.source_fragment_identity.startswith("fragment-sha256:")
@@ -3859,3 +3863,61 @@ def test_change_ranking_without_baseline_comparison_fails_closed() -> None:
         )
 
     assert exc.value.code == "INTAKE_CHANGE_RANKING_COMPARISON_REQUIRED"
+
+
+def test_goal_local_fragment_becomes_research_obligation_text() -> None:
+    ranking_fragment = "Rank departments by the governed downtime change."
+    deep_fragment = "Then inspect only the selected department by machine."
+    question = f"{ranking_fragment} {deep_fragment}"
+    payload = ready_payload(
+        kind="ranking",
+        subject=("metric.downtime",),
+        related=("dimension.department",),
+    )
+    payload["goals"][0].update(
+        {
+            "goal_key": "g-ranking-local",
+            "source_text": question,
+            "source_fragment_text": ranking_fragment,
+            "ranking": {
+                "source_text": ranking_fragment,
+                "direction": "desc",
+                "limit": 1,
+                "measure_semantic_id": "metric.downtime",
+                "basis": "level",
+            },
+            "result_dependency": None,
+        }
+    )
+    payload["goals"].append(
+        {
+            "goal_key": "g-child-local",
+            "kind": "breakdown",
+            "source_text": question,
+            "source_fragment_text": deep_fragment,
+            "subject_semantic_ids": ["metric.fault_count"],
+            "related_semantic_ids": ["dimension.machine_id"],
+            "ranking": None,
+            "comparisons": [],
+            "result_dependency": {
+                "source_goal_key": "g-ranking-local",
+                "dimension_semantic_id": "dimension.department",
+                "selection": "first_ranked_entity",
+            },
+            "causal_competition": None,
+        }
+    )
+
+    result = ResearchIntakeCompiler(
+        transport=FakeTransport(payload)
+    ).compile(
+        question=question,
+        catalog=catalog(),
+    )
+
+    assert result.brief is not None
+    ranking, child = result.brief.questions
+    assert ranking.source_text == ranking_fragment
+    assert child.source_text == deep_fragment
+    assert ranking.source_text != question
+    assert child.source_text != question
