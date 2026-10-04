@@ -103,7 +103,7 @@ def test_active_developer_authority_is_canonical():
         assert "feat/dima-brain-v2-1-specification-closure" in text
         assert "Brain V2.1" in text
         assert "Metabase" in text
-        assert "dima.9" in text
+        assert "dima.11.1" in text
     for token in (
         "belgeler/plan/",
         "feat/ask-v2-mvp",
@@ -218,8 +218,8 @@ def test_engine_gitlink_is_documented_exactly():
     authority = (
         BACKEND / "belgeler" / "metabase" / "DIMA_BRAIN_V2_1_FINAL_ARCHITECTURE.md"
     ).read_text(encoding="utf-8")
-    assert "d5c60dc9f37a9ec9c5b0117f178146bbcb8dca88" in authority
-    assert "0.63.18-dima.9" in authority
+    assert "4c49b8da6b424b0fa4d8ef340ca1b238d12980c1" in authority
+    assert "0.63.18-dima.11.1" in authority
 
 
 def test_default_action_registry_and_execution_boundary_remain_closed():
