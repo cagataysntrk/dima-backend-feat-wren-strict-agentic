@@ -5242,3 +5242,45 @@ to prior semantic SHA `9b761e...`. This was a stale verification receipt, not a 
 The Phase-2 freeze base is now advanced to `5bb2bc2f...` without changing Product semantics.
 
 NEXT LEGAL ACTION: rerun only Phase-2/headless provider-free.
+
+
+### A3 INTAKE MISSING-PAIR ROOT FIX — FULL PROVIDER-FREE SEAL
+
+**STATUS: GREEN — A3 ONLY AUTHORIZED**
+
+Product SHA:
+`5bb2bc2f1b40377e354c9e20fa14aaf729fb4cd0`
+
+Engine:
+- SHA `72992664803783ef437be8d944c0555a30ef211b`
+- release `0.63.18-dima.11.1.2`
+- digest `sha256:42d591b14c6affe2e45b5525564f9c220bd0d2c93f38edba4000cf83985c419b`
+
+Provider-free receipts:
+- frozen family: `37202479233 = SUCCESS`;
+- semantic conformance + Wave A/B + mutation: `37202479248 = SUCCESS`;
+- aggregate Phase-1: `37202641985 = SUCCESS`;
+- Phase-2/headless: `37202813200 = SUCCESS`;
+- provider/model calls: `0`;
+- new-family discovery: `0`.
+
+The first Phase-2 rerun `37202642046` stopped at a stale CI freeze-base receipt before tests.
+The guard was advanced to the exact new semantic Product SHA and the full Phase-2 suite then passed.
+
+What is proven:
+- CHANGE ranking missing-pair intake uses the existing one-call structured reconsideration;
+- a second missing result fails closed;
+- no engine/prompt/model/query-planner change;
+- all independent/frozen/aggregate gates remain GREEN.
+
+What remains:
+- A3/F06_M >= 3/4 on these exact bytes;
+- A4/A5/A6/B2/B3 development probes;
+- final saturation/freeze;
+- one final same-SHA 9-case panel >= 34/36.
+
+30-case readiness:
+**NO — A3 ONLY. BROAD CLOSED.**
+
+NEXT LEGAL ACTION:
+run exactly one A3/F06_M paid proof on Product `5bb2bc2f...`.
