@@ -3815,9 +3815,9 @@ def test_change_ranking_shared_period_surface_gets_bounded_source_reconsideratio
     assert issue["reason"] == "SHARED_SOURCE_SURFACE"
 
 
-def test_change_ranking_shared_period_surface_fails_closed_when_still_ambiguous() -> None:
+def test_change_ranking_shared_period_surface_can_ground_two_typed_roles() -> None:
     question, first = _shared_surface_change_period_payload()
-    unresolved = {
+    resolved = {
         "terminal": "RESOLVED",
         "baseline_period": _r6_period(
             "May and June",
@@ -3832,19 +3832,51 @@ def test_change_ranking_shared_period_surface_fails_closed_when_still_ambiguous(
             role="comparison_period",
         ),
     }
-    transport = SequenceTransport([first, unresolved])
+    transport = SequenceTransport([first, resolved])
 
-    with pytest.raises(ResearchIntakeError) as exc:
-        ResearchIntakeCompiler(
-            transport=transport,
-            calendar_reference_date="2026-10-04",
-        ).compile(
-            question=question,
-            catalog=_r6_temporal_catalog(),
-        )
+    result = ResearchIntakeCompiler(
+        transport=transport,
+        calendar_reference_date="2026-10-04",
+    ).compile(
+        question=question,
+        catalog=_r6_temporal_catalog(),
+    )
 
-    assert exc.value.code == "INTAKE_CHANGE_PERIOD_SOURCE_SURFACES_AMBIGUOUS"
-    assert transport.call_count == 2
+    assert result.terminal == ResearchIntakeTerminal.READY
+    assert result.model_calls == 2
+    assert result.brief is not None
+    assert [
+        (item.source_text, item.start, item.end, item.role.value)
+        for item in result.brief.scope.periods
+    ] == [
+        ("May and June", "2026-05-01", "2026-06-01", "baseline_period"),
+        ("May and June", "2026-06-01", "2026-07-01", "comparison_period"),
+    ]
+
+
+def test_change_ranking_shared_period_surface_may_clarify_when_pair_unresolved() -> None:
+    question, first = _shared_surface_change_period_payload()
+    transport = SequenceTransport(
+        [
+            first,
+            {
+                "terminal": "CLARIFY",
+                "clarification_question": "Which two governed periods should be compared?",
+            },
+        ]
+    )
+
+    result = ResearchIntakeCompiler(
+        transport=transport,
+        calendar_reference_date="2026-10-04",
+    ).compile(
+        question=question,
+        catalog=_r6_temporal_catalog(),
+    )
+
+    assert result.terminal == ResearchIntakeTerminal.CLARIFY
+    assert result.brief is None
+    assert result.model_calls == 2
 
 
 def test_change_ranking_deliberate_rolling_overlap_is_not_canonicalized_away() -> None:
