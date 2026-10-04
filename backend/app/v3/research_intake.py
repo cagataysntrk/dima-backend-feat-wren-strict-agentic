@@ -453,6 +453,17 @@ class ModelFollowupScopeEnvelope(Frozen):
     )
 
 
+class ModelResolvedRankingBasis(Frozen):
+    terminal: Literal["RESOLVED"]
+    basis: RankingBasis
+
+
+class ModelRankingBasisReconsiderationEnvelope(Frozen):
+    """Narrow provider DTO: only ranking authority may change."""
+
+    result: ModelResolvedRankingBasis | ModelClarifyResearchIntake
+
+
 class ResearchIntakeResult(Frozen):
     terminal: ResearchIntakeTerminal
     brief: ResearchBrief | None = None
@@ -592,6 +603,25 @@ Authority rules:
 - If a native single-metric ranking needs direction and the user's direction is genuinely ambiguous,
   return CLARIFY rather than guessing direction from words, morphology, regex, or a default.
 - Do not emit implementation-specific Wren/SQL/lane/token concepts.
+"""
+
+
+_RANKING_BASIS_RECONSIDERATION_SYSTEM = """You are Dima's bounded ranking-authority resolver.
+You receive only already-grounded typed Research Intake material and exact verbatim user fragments.
+
+Return exactly one of:
+- RESOLVED with basis=LEVEL or basis=CHANGE, or
+- CLARIFY with one bounded clarification question.
+
+Authority rules:
+- Decide only whether the requested ranking orders the governed measure by LEVEL/magnitude or by
+  baseline-to-comparison CHANGE.
+- Do not change metric identity, ranking direction, result count, goals, scope, periods, dependencies,
+  deliverables, or any other semantic state.
+- Do not plan a query, calculate a delta, write SQL/MBQL, choose an entity, or inspect results.
+- The supplied baseline/comparison periods are typed accepted context, not evidence of a CHANGE request.
+- If the exact user fragments do not deliberately distinguish LEVEL from CHANGE, return CLARIFY.
+- Never use keyword lists, regex, morphology rules, benchmark identity, or hidden defaults.
 """
 
 
@@ -913,6 +943,14 @@ def _intake_provider_schema(
 
     goal_definition.clear()
     goal_definition["anyOf"] = variants
+    validate_provider_strict_schema(schema)
+    return schema
+
+
+def _ranking_basis_reconsideration_schema() -> dict[str, Any]:
+    """Provider contract exposing only the one authority field being reconsidered."""
+
+    schema = strict_json_schema(ModelRankingBasisReconsiderationEnvelope)
     validate_provider_strict_schema(schema)
     return schema
 
@@ -1709,6 +1747,184 @@ class ResearchIntakeCompiler:
         )
 
     @staticmethod
+    def _ranking_basis_reconsideration_issue(
+        draft: ModelResearchBriefDraft,
+        *,
+        current: str,
+        catalog: ResearchIntakeCatalog,
+    ) -> dict[str, Any] | None:
+        """Detect structurally coupled temporal-comparison ranking authority.
+
+        This function infers nothing from wording. Exact user fragments are
+        forwarded to one bounded typed reconsideration call.
+        """
+
+        if draft.terminal != ResearchIntakeTerminal.READY:
+            return None
+        baselines = tuple(
+            item
+            for item in draft.time_periods
+            if item.role == TemporalRole.BASELINE_PERIOD
+        )
+        comparisons = tuple(
+            item
+            for item in draft.time_periods
+            if item.role == TemporalRole.COMPARISON_PERIOD
+        )
+        if len(baselines) != 1 or len(comparisons) != 1:
+            return None
+        baseline, comparison = baselines[0], comparisons[0]
+        if (
+            baseline.time_dimension_semantic_id
+            != comparison.time_dimension_semantic_id
+        ):
+            return None
+
+        temporal_goals = tuple(
+            goal
+            for goal in draft.goals
+            if (
+                goal.kind == ResearchGoalKind.COMPARISON
+                and any(
+                    item.role == ComparisonRole.TEMPORAL_PERIOD
+                    for item in goal.comparisons
+                )
+            )
+        )
+        candidates: list[
+            tuple[ModelGoalDraft, tuple[ModelGoalDraft, ...]]
+        ] = []
+        for goal in draft.goals:
+            ranking = goal.ranking
+            if (
+                ranking is None
+                or ranking.basis != RankingBasis.LEVEL
+                or ranking.measure_semantic_id is None
+            ):
+                continue
+            measure = ranking.measure_semantic_id
+            owners = tuple(
+                owner
+                for owner in temporal_goals
+                if measure
+                in {
+                    *owner.subject_semantic_ids,
+                    *owner.related_semantic_ids,
+                }
+            )
+            if owners:
+                candidates.append((goal, owners))
+        if not candidates:
+            return None
+        if len(candidates) != 1:
+            raise ResearchIntakeError(
+                "INTAKE_RANKING_BASIS_RECONSIDERATION_AMBIGUOUS",
+                "multiple LEVEL rankings share typed temporal comparison material",
+            )
+
+        ranking_goal, owners = candidates[0]
+        ranking_fragment = ranking_goal.source_fragment_text
+        comparison_fragments = tuple(
+            owner.source_fragment_text for owner in owners
+        )
+        if (
+            ranking_fragment is None
+            or ranking_fragment != ranking_fragment.strip()
+            or ranking_fragment not in current
+            or any(
+                fragment is None
+                or fragment != fragment.strip()
+                or fragment not in current
+                for fragment in comparison_fragments
+            )
+        ):
+            raise ResearchIntakeError(
+                "INTAKE_RANKING_BASIS_SOURCE_FRAGMENT_REQUIRED",
+                "ranking-basis deliberation requires exact verbatim user fragments",
+            )
+
+        measure = ranking_goal.ranking.measure_semantic_id
+        assert measure is not None
+        accepted_metric_refs = [
+            {
+                "candidate_id": item.candidate_id,
+                "canonical_name": item.canonical_name,
+            }
+            for item in catalog.semantic_refs
+            if (
+                item.candidate_id == measure
+                and item.target_kind
+                in {SemanticTargetKind.METRIC, SemanticTargetKind.KPI}
+            )
+        ]
+        if len(accepted_metric_refs) != 1:
+            raise ResearchIntakeError(
+                "INTAKE_RANKING_MEASURE_UNAUTHORIZED",
+                measure,
+            )
+        return {
+            "kind": "RANKING_BASIS_DELIBERATION",
+            "ranking_goal_key": ranking_goal.goal_key,
+            "current_basis": RankingBasis.LEVEL.value,
+            "ranking_source_fragment": ranking_fragment,
+            "comparison_source_fragments": list(comparison_fragments),
+            "accepted_metric_refs": accepted_metric_refs,
+            "typed_periods": [
+                baseline.model_dump(mode="json"),
+                comparison.model_dump(mode="json"),
+            ],
+            "candidate_ranking_measure": measure,
+        }
+
+    @staticmethod
+    def _assert_change_ranking_temporal_contract(
+        draft: ModelResearchBriefDraft,
+    ) -> None:
+        if draft.terminal != ResearchIntakeTerminal.READY:
+            return
+        if not any(
+            goal.ranking is not None
+            and goal.ranking.basis == RankingBasis.CHANGE
+            for goal in draft.goals
+        ):
+            return
+        baselines = tuple(
+            item
+            for item in draft.time_periods
+            if item.role == TemporalRole.BASELINE_PERIOD
+        )
+        comparisons = tuple(
+            item
+            for item in draft.time_periods
+            if item.role == TemporalRole.COMPARISON_PERIOD
+        )
+        if len(baselines) != 1 or len(comparisons) != 1:
+            raise ResearchIntakeError(
+                "INTAKE_CHANGE_RANKING_COMPARISON_REQUIRED",
+                "CHANGE ranking requires exactly one baseline and one comparison period",
+            )
+        baseline, comparison = baselines[0], comparisons[0]
+        if (
+            baseline.time_dimension_semantic_id
+            != comparison.time_dimension_semantic_id
+        ):
+            raise ResearchIntakeError(
+                "INTAKE_CHANGE_RANKING_TIME_DIMENSION_DRIFT",
+                "CHANGE ranking periods must use one governed time dimension",
+            )
+        if (
+            baseline.start,
+            baseline.end,
+        ) == (
+            comparison.start,
+            comparison.end,
+        ):
+            raise ResearchIntakeError(
+                "INTAKE_CHANGE_RANKING_PERIOD_PAIR_COLLAPSED",
+                "CHANGE ranking baseline and comparison periods must be distinct bounded spans",
+            )
+
+    @staticmethod
     def _change_ranking_collapsed_period_issue(
         draft: ModelResearchBriefDraft,
     ) -> dict[str, Any] | None:
@@ -2460,6 +2676,77 @@ class ResearchIntakeCompiler:
                     "structured provider output failed the typed intake contract",
                 ) from exc
 
+        def reconsider_ranking_basis(
+            draft: ModelResearchBriefDraft,
+            issue: dict[str, Any],
+        ) -> ModelResearchBriefDraft:
+            raw = self._transport.structured_json(
+                _RANKING_BASIS_RECONSIDERATION_SYSTEM,
+                _canonical(
+                    {
+                        "reconsideration": issue,
+                        "instruction": (
+                            "Return only typed ranking basis authority or CLARIFY. "
+                            "All omitted semantic state is immutable."
+                        ),
+                    }
+                ),
+                schema=_ranking_basis_reconsideration_schema(),
+                schema_name=self._schema_name + "_ranking_basis",
+            )
+            try:
+                envelope = (
+                    ModelRankingBasisReconsiderationEnvelope.model_validate_json(
+                        raw
+                    )
+                )
+            except Exception as exc:
+                raise ResearchIntakeError(
+                    "INTAKE_RANKING_BASIS_MODEL_OUTPUT_INVALID",
+                    "ranking-basis output failed the narrow typed contract",
+                ) from exc
+            provider_result = envelope.result
+            if isinstance(provider_result, ModelClarifyResearchIntake):
+                return ModelResearchBriefDraft(
+                    terminal=ResearchIntakeTerminal.CLARIFY,
+                    clarification_question=(
+                        provider_result.clarification_question
+                    ),
+                )
+
+            goal_key = str(issue["ranking_goal_key"])
+            measure = str(issue["candidate_ranking_measure"])
+            changed = False
+            goals: list[ModelGoalDraft] = []
+            for goal in draft.goals:
+                if goal.goal_key != goal_key:
+                    goals.append(goal)
+                    continue
+                if (
+                    goal.ranking is None
+                    or goal.ranking.measure_semantic_id != measure
+                ):
+                    raise ResearchIntakeError(
+                        "INTAKE_RANKING_BASIS_TARGET_DRIFT",
+                        goal_key,
+                    )
+                goals.append(
+                    goal.model_copy(
+                        update={
+                            "ranking": goal.ranking.model_copy(
+                                update={"basis": provider_result.basis}
+                            )
+                        }
+                    )
+                )
+                changed = True
+            if not changed:
+                raise ResearchIntakeError(
+                    "INTAKE_RANKING_BASIS_TARGET_MISSING",
+                    goal_key,
+                )
+            return draft.model_copy(update={"goals": tuple(goals)})
+
         draft = invoke_provider(
             instruction=(
                 "Return the complete CURRENT intent only. Prior brief is context, "
@@ -2491,10 +2778,21 @@ class ResearchIntakeCompiler:
         # It is not a retry loop: the provider ceiling remains two calls. The
         # second pass receives no new authority, only deterministic calendar /
         # single-domain context already present in this request.
+        ranking_basis_issue = self._ranking_basis_reconsideration_issue(
+            draft,
+            current=current,
+            catalog=catalog,
+        )
         change_period_issue = self._change_ranking_collapsed_period_issue(
             draft
         )
         if (
+            prior_brief is None
+            and self.call_count < 2
+            and ranking_basis_issue is not None
+        ):
+            draft = reconsider_ranking_basis(draft, ranking_basis_issue)
+        elif (
             prior_brief is None
             and self.call_count < 2
             and change_period_issue is not None
@@ -2564,6 +2862,7 @@ class ResearchIntakeCompiler:
                 ",".join(duplicate_root_keys),
             )
 
+        self._assert_change_ranking_temporal_contract(draft)
         final_change_period_issue = (
             self._change_ranking_collapsed_period_issue(draft)
         )
