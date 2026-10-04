@@ -3741,6 +3741,112 @@ def test_change_ranking_overlapping_pair_gets_narrow_temporal_reconsideration() 
     }
 
 
+def _shared_surface_change_period_payload() -> tuple[str, dict]:
+    question = "Compare May and June governed downtime, then rank departments by change."
+    payload = ready_payload(
+        kind="ranking",
+        subject=("dimension.department",),
+        related=("metric.downtime", "dimension.event_date"),
+    )
+    payload["goals"][0]["source_text"] = question
+    payload["goals"][0]["source_fragment_text"] = question
+    payload["goals"][0]["ranking"] = {
+        "source_text": question,
+        "direction": "desc",
+        "limit": 1,
+        "measure_semantic_id": "metric.downtime",
+        "basis": "change",
+    }
+    payload["time_periods"] = [
+        _r6_period(
+            "May and June",
+            "2026-05-01",
+            "2026-06-01",
+            role="baseline_period",
+        ),
+        _r6_period(
+            "May and June",
+            "2026-06-01",
+            "2026-07-01",
+            role="comparison_period",
+        ),
+    ]
+    return question, payload
+
+
+def test_change_ranking_shared_period_surface_gets_bounded_source_reconsideration() -> None:
+    question, first = _shared_surface_change_period_payload()
+    resolved = {
+        "terminal": "RESOLVED",
+        "baseline_period": _r6_period(
+            "May",
+            "2026-05-01",
+            "2026-06-01",
+            role="baseline_period",
+        ),
+        "comparison_period": _r6_period(
+            "June",
+            "2026-06-01",
+            "2026-07-01",
+            role="comparison_period",
+        ),
+    }
+    transport = SequenceTransport([first, resolved])
+
+    result = ResearchIntakeCompiler(
+        transport=transport,
+        calendar_reference_date="2026-10-04",
+    ).compile(
+        question=question,
+        catalog=_r6_temporal_catalog(),
+    )
+
+    assert result.terminal == ResearchIntakeTerminal.READY
+    assert result.model_calls == 2
+    assert result.brief is not None
+    assert [
+        (item.source_text, item.start, item.end, item.role.value)
+        for item in result.brief.scope.periods
+    ] == [
+        ("May", "2026-05-01", "2026-06-01", "baseline_period"),
+        ("June", "2026-06-01", "2026-07-01", "comparison_period"),
+    ]
+    issue = transport.calls[1]["user"]["reconsideration"]
+    assert issue["reason"] == "SHARED_SOURCE_SURFACE"
+
+
+def test_change_ranking_shared_period_surface_fails_closed_when_still_ambiguous() -> None:
+    question, first = _shared_surface_change_period_payload()
+    unresolved = {
+        "terminal": "RESOLVED",
+        "baseline_period": _r6_period(
+            "May and June",
+            "2026-05-01",
+            "2026-06-01",
+            role="baseline_period",
+        ),
+        "comparison_period": _r6_period(
+            "May and June",
+            "2026-06-01",
+            "2026-07-01",
+            role="comparison_period",
+        ),
+    }
+    transport = SequenceTransport([first, unresolved])
+
+    with pytest.raises(ResearchIntakeError) as exc:
+        ResearchIntakeCompiler(
+            transport=transport,
+            calendar_reference_date="2026-10-04",
+        ).compile(
+            question=question,
+            catalog=_r6_temporal_catalog(),
+        )
+
+    assert exc.value.code == "INTAKE_CHANGE_PERIOD_SOURCE_SURFACES_AMBIGUOUS"
+    assert transport.call_count == 2
+
+
 def test_change_ranking_deliberate_rolling_overlap_is_not_canonicalized_away() -> None:
     question, first = _overlapping_change_period_payload()
     deliberate = {
