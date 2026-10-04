@@ -237,6 +237,7 @@ def test_change_ranking_intake_preserves_basis_and_role_bound_periods():
 
 
 
+# Supervisor Phase 1/2 certification: symbolic PAIR/SPAN law, no benchmark wording authority.
 def test_change_ranking_bounded_symbolic_span_is_safe_without_pair_invention():
     question = (
         "Across P1-P2, rank departments by governed downtime deterioration."
