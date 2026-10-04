@@ -61,6 +61,7 @@ class AnalyticalTemporalObservationInvariant(FrozenModel):
     minimum_distinct_values: int = Field(default=2, ge=2)
 
 
+# Read-only PAIR/SPAN view; certified without query-planning authority.
 class AnalyticalTemporalChangeFrame(FrozenModel):
     """Read-only typed CHANGE temporal view over already accepted period authority."""
 
