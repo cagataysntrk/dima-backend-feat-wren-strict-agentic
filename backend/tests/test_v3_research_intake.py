@@ -4318,7 +4318,7 @@ def test_temporal_ranking_ambiguous_basis_cannot_silently_default_level() -> Non
     assert "ranked" in result.clarification_question.lower()
 
 
-def test_change_ranking_without_baseline_comparison_fails_closed() -> None:
+def test_change_ranking_without_pair_or_bounded_span_fails_closed() -> None:
     payload = ready_payload(
         kind="ranking",
         subject=("metric.downtime",),
@@ -4341,7 +4341,7 @@ def test_change_ranking_without_baseline_comparison_fails_closed() -> None:
             catalog=_r6_temporal_catalog(),
         )
 
-    assert exc.value.code == "INTAKE_CHANGE_RANKING_COMPARISON_REQUIRED"
+    assert exc.value.code == "INTAKE_CHANGE_RANKING_TEMPORAL_FRAME_REQUIRED"
 
 
 def test_goal_local_fragment_becomes_research_obligation_text() -> None:
