@@ -5310,3 +5310,87 @@ Test-first commit:
 `0b681641e378b58d23e8621a8639b2dcad086855`.
 
 Paid is STOPPED. A4/broad remain CLOSED.
+
+
+---
+
+## FINAL READINESS — A3 TEMPORAL RANKING BASIS ROOT FIX
+
+**STATUS: PRE-GATES GREEN / FULL PROVIDER-FREE SEAL STARTING**
+
+### Product / engine
+
+- semantic root-fix SHA: `e9e8df7cb545de309f11eed285da71a9275a786a`
+- engine SHA: `72992664803783ef437be8d944c0555a30ef211b`
+- release/runtime: `0.63.18-dima.11.1.2 / v0.63.18-dima.11.1.2`
+- digest: `sha256:42d591b14c6affe2e45b5525564f9c220bd0d2c93f38edba4000cf83985c419b`
+- engine production change: `0`
+- provider/model calls during RCA/fix: `0`
+
+### First invalid boundary
+
+`typed temporal-comparison intake -> ranking basis semantic classification`
+
+A3 run `37202946250` reached `REPORT/COMPLETE`, but the accepted ranking goal carried
+`basis=LEVEL`. Because the task also carried an exact BASELINE/COMPARISON pair over the same governed
+metric, this run is not accepted as A3 CHANGE-ranking readiness evidence.
+
+### Owner / generic law
+
+Owner: `research_intake.py`.
+
+> When one READY brief contains an exact role-bound temporal comparison and a separate LEVEL ranking
+> over the same governed metric, LEVEL versus CHANGE is semantically ambiguous. Intake may use the
+> existing one-call bounded reconsideration to re-evaluate only ranking.basis from current user intent.
+> All governed refs, periods, direction, limit, dependencies and deliverables remain fixed. No third
+> call is legal.
+
+### Test-first proof
+
+Intentional RED:
+- aggregate Phase-1 run `37205000784 = FAILURE`;
+- only the two new ambiguity siblings failed;
+- existing research/scope suite otherwise `286 passed`.
+
+Negative sibling:
+- ordinary single-period LEVEL ranking does not trigger reconsideration.
+
+### Production change
+
+Exactly one semantic root-fix commit:
+- `e9e8df7cb545de309f11eed285da71a9275a786a`
+  — bounded temporal ranking-basis reconsideration.
+
+No engine, prompt-template, model, SQL/MBQL, regex/fuzzy/morph, benchmark-case or provider-ceiling change.
+
+### Pre-gates
+
+- frozen-family closure: `37205123841 = SUCCESS`;
+- semantic conformance + Wave A + independent Wave B + mutation:
+  `37205123836 = SUCCESS`;
+- new-family discovery: `0`;
+- provider calls: `0`.
+
+### What is proven
+
+- A3's last mechanical completion cannot silently substitute LEVEL authority for CHANGE readiness;
+- ambiguity handling is owner-local and bounded to the existing two-call intake ceiling;
+- ordinary LEVEL semantics remain unaffected;
+- independent semantic/frozen-family confidence remains GREEN.
+
+### What remains
+
+- aggregate Phase-1 on the exact root-fix bytes;
+- Phase-2/headless on the exact root-fix bytes;
+- one A3 development proof >= `3/4` with accepted `basis=CHANGE`;
+- A4/A5/A6/B2/B3 development probes;
+- final provider-free saturation/freeze and final same-SHA panel.
+
+### 30-case readiness
+
+**NO — A3 PROVIDER-FREE SEAL IN PROGRESS. BROAD CLOSED.**
+
+### NEXT LEGAL ACTION
+
+Run aggregate Phase-1 + Phase-2/headless on exact semantic SHA `e9e8df7c...`. If both GREEN, run
+A3/F06_M exactly once. A4 remains closed until A3 >= `3/4`.
