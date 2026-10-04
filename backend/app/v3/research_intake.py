@@ -669,10 +669,16 @@ Return exactly one of:
 - CLARIFY with one bounded clarification question.
 
 Authority rules:
-- Decide only the two accepted half-open [start,end) period bounds.
+- Decide only the two accepted period authorities: each period's exact verbatim source_text plus its
+  half-open [start,end) normalized bounds.
 - Keep the supplied governed time dimension and period roles exactly.
+- Goal source fragments are immutable. A returned period.source_text may only become a more atomic
+  exact verbatim substring of those supplied user fragments that directly grounds that one period.
+- BASELINE_PERIOD and COMPARISON_PERIOD are distinct semantic authorities. They must not silently
+  share one undifferentiated period source_text. If the exact user fragments cannot separately ground
+  the two periods, return CLARIFY.
 - Do not change goals, metrics, ranking basis/direction/limit, dependencies, deliverables, scope refs,
-  source fragments, or any other semantic state.
+  or any other semantic state.
 - Overlap is not globally illegal: preserve overlapping windows only when the exact user fragments
   deliberately establish an overlapping/rolling comparison. Otherwise resolve the exact period pair
   established by the user and calendar context, or return CLARIFY.
@@ -2039,7 +2045,18 @@ class ResearchIntakeCompiler:
             }
             if len(kinds) == 1:
                 overlap = max(b_start, c_start) < min(b_end, c_end)
-        if not collapsed and not overlap:
+        period_source_ungrounded = any(
+            item.source_text != item.source_text.strip()
+            or item.source_text not in current
+            for item in (baseline, comparison)
+        )
+        shared_source_surface = baseline.source_text == comparison.source_text
+        if (
+            not collapsed
+            and not overlap
+            and not period_source_ungrounded
+            and not shared_source_surface
+        ):
             return None
 
         ranking_goal = change_goals[0]
@@ -2081,7 +2098,15 @@ class ResearchIntakeCompiler:
 
         return {
             "kind": "CHANGE_PERIOD_PAIR_DELIBERATION",
-            "reason": "COLLAPSED" if collapsed else "OVERLAPPING",
+            "reason": (
+                "COLLAPSED"
+                if collapsed
+                else "OVERLAPPING"
+                if overlap
+                else "UNGROUNDED_PERIOD_SOURCE"
+                if period_source_ungrounded
+                else "SHARED_SOURCE_SURFACE"
+            ),
             "time_dimension_semantic_id": baseline.time_dimension_semantic_id,
             "calendar_reference_date": calendar_reference_date,
             "ranking_source_fragment": ranking_fragment,
@@ -2136,6 +2161,11 @@ class ResearchIntakeCompiler:
             raise ResearchIntakeError(
                 "INTAKE_CHANGE_RANKING_PERIOD_PAIR_COLLAPSED",
                 "CHANGE ranking baseline and comparison periods must be distinct bounded spans",
+            )
+        if baseline.source_text == comparison.source_text:
+            raise ResearchIntakeError(
+                "INTAKE_CHANGE_PERIOD_SOURCE_SURFACES_AMBIGUOUS",
+                "CHANGE ranking baseline and comparison require distinct grounded source surfaces",
             )
 
     @staticmethod
@@ -3011,6 +3041,24 @@ class ResearchIntakeCompiler:
                     time_dimension,
                 )
 
+            resolved_sources = (
+                provider_result.baseline_period.source_text,
+                provider_result.comparison_period.source_text,
+            )
+            if any(
+                source != source.strip() or source not in current
+                for source in resolved_sources
+            ):
+                raise ResearchIntakeError(
+                    "INTAKE_CHANGE_PERIOD_SOURCE_FRAGMENT_NOT_VERBATIM",
+                    "resolved temporal authority must retain exact user source provenance",
+                )
+            if resolved_sources[0] == resolved_sources[1]:
+                raise ResearchIntakeError(
+                    "INTAKE_CHANGE_PERIOD_SOURCE_SURFACES_AMBIGUOUS",
+                    "baseline and comparison require distinct grounded period source surfaces",
+                )
+
             original_baselines = tuple(
                 item
                 for item in draft.time_periods
@@ -3031,12 +3079,14 @@ class ResearchIntakeCompiler:
             replacement_by_role = {
                 TemporalRole.BASELINE_PERIOD: original_baseline.model_copy(
                     update={
+                        "source_text": provider_result.baseline_period.source_text,
                         "start": provider_result.baseline_period.start,
                         "end": provider_result.baseline_period.end,
                     }
                 ),
                 TemporalRole.COMPARISON_PERIOD: original_comparison.model_copy(
                     update={
+                        "source_text": provider_result.comparison_period.source_text,
                         "start": provider_result.comparison_period.start,
                         "end": provider_result.comparison_period.end,
                     }
