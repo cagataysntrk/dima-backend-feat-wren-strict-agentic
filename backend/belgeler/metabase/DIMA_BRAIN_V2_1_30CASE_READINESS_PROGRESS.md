@@ -5007,3 +5007,69 @@ scores at least `3/4`.
 **Efficiency gate:** target <= 8 provider requests for A3; hard ceiling remains 10.
 
 **NEXT LEGAL ACTION:** run A3.1 once. If FULL, run exactly one semantic sibling. If deterministic Product is GREEN but Luna still resolves LEVEL at Research Intake, STOP PRODUCT PATCHING and invoke only the supervisor-defined Luna-vs-Terra model-ceiling comparison.
+
+
+---
+
+## PHASE 3 A3.1 ORIGINAL — NATIVE QUERY-COGNITION RED — 2026-10-04
+
+**PHASE:** 3 / A3.1 original
+
+**STATUS:** RED; PAID STOP RESTORED; PRODUCT SEMANTIC ROOT REMAINS GREEN
+
+**Semantic Product SHA:** `e39c2f566c1b2a97ccb840cd01e55913cd2a7662`
+
+**Repository run HEAD:** `aa0fe4fb10220e0cd7f1faa2c76ee7688d253816`
+
+**Engine SHA/tag/digest:** `4c49b8da6b424b0fa4d8ef340ca1b238d12980c1` / `0.63.18-dima.11.1` / `sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d`
+
+**Objective:** Execute exactly one original F06_M live proof after deterministic A3 root closure, without broad execution or engine changes.
+
+**First invalid boundary:** native Metabot query cognition / `construct_notebook_query` before a runnable parent ranking occurrence was captured. Research Intake was valid and is not the failing boundary.
+
+**Exact owner:** Metabase/Metabot query-cognition generation for the accepted CHANGE material. Dima remains owner of the semantic WHAT only.
+
+**Was this law already implemented elsewhere?** YES. The certified engine's own `construct_notebook_query` reference already defines the legal MBQL representation rules observed in the errors: first-stage source identity, canonical aggregation/expression placement, cross-stage machine-name references, and legal window/aggregation operators. Dima must not duplicate that query-planning law.
+
+**Canonical semantic owner:** Research Intake owns LEVEL/CHANGE intent; AnalyticalRequestContract owns accepted semantic WHAT; Metabase/Metabot owns query construction and analytical HOW.
+
+**Files changed after RED:** authorization receipt only; consumed paid trigger removed; this progress receipt. No Product semantic code or engine code changed.
+
+**Generic law:** Do not compensate for a query-cognition generation failure by teaching Dima MBQL, adding benchmark wording, adding query templates, or reopening the engine loop. First prove whether the certified native representation is expressible and whether the failure is deterministic Product projection, native query-cognition reliability, or model ceiling.
+
+**Live run:** `37211289511 = FAILURE`; artifact `11307187075`; digest `sha256:b337d3cdf8b8c08c98f9c358d27595a9eda7f2e951ce273b763945921e269d4f`.
+
+**Manual score:** `0/4` because no VERIFIED parent ranking material was produced; semantic Intake authority itself was correct.
+
+**Provider requests:** `9 forwarded` = Research Intake 1 + Metabase 8; three additional Metabase attempts were blocked locally after the completion-token ceiling was exhausted.
+
+**Tokens:** prompt `155,770`; completion `35,707`; reasoning `2,884`.
+
+**Cost:** `$0.05418265`.
+
+**Latency:** `264,851 ms`.
+
+**Exception:** `0`.
+
+**Silent wrong:** `0` observed; the run failed closed before Evidence/report admission.
+
+**Duplicate native:** `0`.
+
+**Stale Evidence:** `0`.
+
+**Accepted semantic proof from the live artifact:**
+- ranking basis = `CHANGE`;
+- baseline = May 2026;
+- comparison = June 2026;
+- ranking measure = governed machine downtime;
+- child breakdown carries a typed result dependency on the ranking goal for `dimension.department`.
+
+**Native failure evidence:** Metabot repeatedly produced invalid `construct_notebook_query` payloads, including non-machine cross-stage names such as `sum_where` / `June downtime`, invalid expression/aggregation placement, missing first-stage source identity, and finally a malformed oversized tool payload. No runnable parent native query was captured, so result-dependency execution was never reached.
+
+**What is proven:** Phase 1A/1B semantic fixes survive the original live wording. A3 is no longer failing at LEVEL-vs-CHANGE Intake authority. The certified engine remains the only query-cognition owner. Product-side MBQL/prompt heuristics would be an architectural regression.
+
+**What remains unproven:** a reliable native CHANGE ranking occurrence under the frozen engine/model topology; A3 original FULL; semantic sibling FULL; A4/A5/A6; B1/B2/B3; final Wave C and same-SHA panel.
+
+**30-case readiness:** CLOSER, NOT READY.
+
+**NEXT LEGAL ACTION:** paid window stays OFF. Prove the frozen engine can execute one legal CHANGE representation without an LLM and audit the exact semantic-to-native request surface. If deterministic representability and Product projection are both GREEN, classify the remaining defect as native query-cognition/model reliability rather than adding Product semantic code. Only then choose the narrowest authorized diagnostic; broad and 30-case remain CLOSED.
