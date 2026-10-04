@@ -3214,11 +3214,11 @@ def test_change_level_first_result_allows_one_repair_then_change_admits() -> Non
 def test_level_material_requirement_has_no_change_semantics() -> None:
     contract = _change_ranking_contract().model_copy(
         update={
-            "ranking": AnalyticalRankingInvariant(
+            "ranking": scope_module.AnalyticalRankingInvariant(
                 measure="metric.downtime",
                 direction="desc",
                 limit=5,
-                basis=RankingBasis.LEVEL,
+                basis=scope_module.RankingBasis.LEVEL,
             ),
             "temporal_observation": None,
         }
