@@ -3454,8 +3454,10 @@ def test_change_ranking_two_neutral_periods_canonicalize_by_chronology() -> None
         subject=("metric.downtime",),
         related=("dimension.department",),
     )
+    payload["goals"][0]["source_text"] = question
+    payload["goals"][0]["source_fragment_text"] = question
     payload["goals"][0]["ranking"] = {
-        "source_text": "rank governed period change",
+        "source_text": question,
         "direction": "desc",
         "limit": 1,
         "measure_semantic_id": "metric.downtime",
@@ -3493,7 +3495,9 @@ def test_change_ranking_two_neutral_periods_canonicalize_by_chronology() -> None
     }
 
 
-def _collapsed_change_period_payload() -> dict:
+def _collapsed_change_period_payload(
+    question: str = "Rank the governed metric by change between the two periods.",
+) -> dict:
     payload = ready_payload(
         kind="ranking",
         subject=("metric.downtime",),
@@ -3524,34 +3528,30 @@ def _collapsed_change_period_payload() -> dict:
 
 
 def test_change_ranking_collapsed_pair_gets_one_structured_reconsideration() -> None:
-    first = _collapsed_change_period_payload()
-    second = ready_payload(
-        kind="ranking",
-        subject=("metric.downtime",),
-        related=("dimension.department",),
-    )
-    second["goals"][0]["ranking"] = dict(first["goals"][0]["ranking"])
-    second["time_periods"] = [
-        _r6_period(
-            "baseline pair",
+    question = "Rank the governed metric by change between the two periods."
+    first = _collapsed_change_period_payload(question)
+    resolved = {
+        "terminal": "RESOLVED",
+        "baseline_period": _r6_period(
+            "ignored provider text",
             "2026-05-01",
             "2026-06-01",
             role="baseline_period",
         ),
-        _r6_period(
-            "comparison pair",
+        "comparison_period": _r6_period(
+            "ignored provider text",
             "2026-06-01",
             "2026-07-01",
             role="comparison_period",
         ),
-    ]
-    transport = SequenceTransport([first, second])
+    }
+    transport = SequenceTransport([first, resolved])
 
     result = ResearchIntakeCompiler(
         transport=transport,
         calendar_reference_date="2026-10-04",
     ).compile(
-        question="Rank the governed metric by change between the two periods.",
+        question=question,
         catalog=_r6_temporal_catalog(),
     )
 
@@ -3574,18 +3574,18 @@ def test_change_ranking_collapsed_pair_gets_one_structured_reconsideration() -> 
         ),
     ]
     reconsideration = transport.calls[1]["user"]["reconsideration"]
-    assert reconsideration["kind"] == "CHANGE_PERIOD_PAIR_COLLAPSED"
+    assert reconsideration["kind"] == "CHANGE_PERIOD_PAIR_DELIBERATION"
+    assert reconsideration["reason"] == "COLLAPSED"
     assert reconsideration["time_dimension_semantic_id"] == (
         "dimension.event_date"
     )
+    assert result.brief.scope.periods[0].source_text == "baseline pair"
+    assert result.brief.scope.periods[1].source_text == "comparison pair"
 
 
 def test_change_ranking_collapsed_pair_fails_closed_after_one_reconsideration() -> None:
     question = "Compare the governed earlier and later periods, then rank departments by change."
-    collapsed = _collapsed_change_period_payload()
-    collapsed["goals"][0]["source_text"] = question
-    collapsed["goals"][0]["source_fragment_text"] = question
-    collapsed["goals"][0]["ranking"]["source_text"] = question
+    collapsed = _collapsed_change_period_payload(question)
     unresolved = {
         "terminal": "RESOLVED",
         "baseline_period": _r6_period(
