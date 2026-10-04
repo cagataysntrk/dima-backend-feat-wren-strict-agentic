@@ -2,9 +2,10 @@
 
 > **Status:** CURRENT / MANDATORY DEVELOPMENT METHOD  
 > **Branch family:** Brain V2.1 forward runtime  
-> **Semantic closure baseline:** `ce8704d6a0db10dc3fb6b1a7e5d0f86afe9ccdc9`  
-> **Engine:** `d5c60dc9f37a9ec9c5b0117f178146bbcb8dca88` / `0.63.18-dima.9`  
-> **Read first:** `DIMA_BRAIN_V2_1_FINAL_ARCHITECTURE.md`
+> **Current recovery branch:** `feat/dima-brain-v2-1-specification-closure`  
+> **Active semantic candidate:** `34d0bbd461222e2a0859ed196a5a950e362c8622` — provider-free GREEN, not final-frozen  
+> **Certified engine:** `4c49b8da6b424b0fa4d8ef340ca1b238d12980c1` / `0.63.18-dima.11.1`  
+> **Read first:** `DIMA_BRAIN_V2_1_FINAL_ARCHITECTURE.md`; for execution status read `DIMA_BRAIN_V2_1_30CASE_READINESS_PROGRESS.md`
 
 This playbook explains **how Dima must be developed** after Brain V2.1 closure.
 It is deliberately stricter than an ordinary coding guide. Most expensive historical
