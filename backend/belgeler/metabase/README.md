@@ -2,15 +2,16 @@
 
 > **Status:** CURRENT AUTHORITY  
 > **Working recovery branch:** `feat/dima-brain-v2-1-specification-closure`  
-> **Documentation consolidation source HEAD:** `ed95d22a3dee4c3e3cac8932ebd3050a6c0d691e`  
-> **Final semantic Product SHA:** `ce8704d6a0db10dc3fb6b1a7e5d0f86afe9ccdc9`  
-> **Engine:** `d5c60dc9f37a9ec9c5b0117f178146bbcb8dca88` / `0.63.18-dima.9`
+> **Current readiness program:** `DIMA_BRAIN_V2_1_30CASE_READINESS_PROGRESS.md`  
+> **Active semantic recovery candidate:** `34d0bbd461222e2a0859ed196a5a950e362c8622` — provider-free GREEN, not final-frozen  
+> **Certified engine:** `4c49b8da6b424b0fa4d8ef340ca1b238d12980c1` / `0.63.18-dima.11.1`  
+> **Engine digest:** `sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d`
 
 This directory intentionally contains only the current Brain V2.1 authority set plus
 `legacy/`. If a developer is unsure what is current, start here. During the active
-post-benchmark recovery, `DIMA_BRAIN_V2_1_SPECIFICATION_CLOSURE_PROGRESS.md` is the living
-execution log; it may advance run IDs and the next legal action without changing frozen
-architecture laws.
+post-benchmark recovery, `DIMA_BRAIN_V2_1_30CASE_READINESS_PROGRESS.md` is the single canonical
+readiness execution log. Historical specification-closure receipts remain evidence, but they do
+not override its latest phase status or next legal action.
 
 ## Read in this order
 
@@ -30,10 +31,13 @@ architecture laws.
 4. **[DIMA_BRAIN_V2_1_ROUND2_FINAL_ADJUDICATION_2026-10-02.md](./DIMA_BRAIN_V2_1_ROUND2_FINAL_ADJUDICATION_2026-10-02.md)**  
    Immutable broad 30-case quality/speed/cost receipt and the current benchmark verdict.
 
-5. **[DIMA_BRAIN_V2_1_SPECIFICATION_CLOSURE_PROGRESS.md](./DIMA_BRAIN_V2_1_SPECIFICATION_CLOSURE_PROGRESS.md)**  
-   Living provider-free recovery log and current certification status.
+5. **[DIMA_BRAIN_V2_1_30CASE_READINESS_PROGRESS.md](./DIMA_BRAIN_V2_1_30CASE_READINESS_PROGRESS.md)**  
+   Single canonical Phase 0–10 readiness log, exact current candidate, gates and next legal action.
 
-6. **[DIMA_BRAIN_V2_1_FORWARD_RUNTIME_LAWS.md](./DIMA_BRAIN_V2_1_FORWARD_RUNTIME_LAWS.md)**  
+6. **[DIMA_BRAIN_V2_1_SPECIFICATION_CLOSURE_PROGRESS.md](./DIMA_BRAIN_V2_1_SPECIFICATION_CLOSURE_PROGRESS.md)**  
+   Earlier specification-closure evidence retained for forensics; not the latest readiness authority.
+
+7. **[DIMA_BRAIN_V2_1_FORWARD_RUNTIME_LAWS.md](./DIMA_BRAIN_V2_1_FORWARD_RUNTIME_LAWS.md)**  
    Compact permanent architecture laws backed by executable CI guardrails.
 
 ## Authority precedence
@@ -56,6 +60,23 @@ legacy/ only for historical forensics
 
 The handoff may advance run IDs, status and the next legal action. It may not silently
 change the permanent architecture laws.
+
+## Current readiness overlay
+
+The historical Round-2 result below is intentionally preserved as immutable counterexample evidence.
+It does **not** describe the current recovery candidate. Current state is:
+
+~~~text
+semantic recovery candidate = 34d0bbd461222e2a0859ed196a5a950e362c8622
+certified engine             = 4c49b8da6b424b0fa4d8ef340ca1b238d12980c1 / 0.63.18-dima.11.1
+provider-free readiness      = GREEN
+A3 original live             = pending rerun after operational workflow pin
+30-case                      = CLOSED / NOT EXECUTED on this candidate
+frontend                      = FORBIDDEN
+~~~
+
+Do not infer 30-case readiness from provider-free GREEN alone. Follow
+`DIMA_BRAIN_V2_1_30CASE_READINESS_PROGRESS.md` phase order.
 
 ## Current closure
 
