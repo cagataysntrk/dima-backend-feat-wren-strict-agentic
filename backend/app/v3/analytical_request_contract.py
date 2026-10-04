@@ -62,6 +62,7 @@ class AnalyticalTemporalObservationInvariant(FrozenModel):
 
 
 # Read-only PAIR/SPAN view; certified without query-planning authority.
+# Independent Wave A/B probes bind explicit frame views, not arbitrary periods.
 class AnalyticalTemporalChangeFrame(FrozenModel):
     """Read-only typed CHANGE temporal view over already accepted period authority."""
 
