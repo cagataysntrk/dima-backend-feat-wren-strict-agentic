@@ -3502,3 +3502,70 @@ def test_result_dependency_conflicting_child_filter_fails_closed() -> None:
             },
         )
     assert exc.value.code == "R1_RESULT_DEPENDENCY_SCOPE_CONFLICT"
+
+
+@pytest.mark.parametrize("row_count", [0, 2])
+def test_result_dependency_binding_cardinality_fails_closed(
+    monkeypatch,
+    row_count: int,
+) -> None:
+    base_brief = brief()
+    _, dependency_dimension = base_brief.scope.semantic_refs
+    session = SimpleNamespace(
+        context_version=CONTEXT,
+        tenant_binding=f"id:{TENANT}",
+        accepted_brief=SimpleNamespace(scope=base_brief.scope),
+    )
+
+    class FakeRows:
+        def all(self):
+            return [SimpleNamespace()] * row_count
+
+    class FakeDB:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_):
+            return False
+
+        def exec(self, _statement):
+            return FakeRows()
+
+    monkeypatch.setattr(gateway_module, "Session", lambda *_: FakeDB())
+    executor = NativeResearchMaterialExecutor(
+        subject_provider=SimpleNamespace(db_engine=object()),
+        store=SimpleNamespace(),
+        expected_identity=expected_identity(),
+    )
+
+    with pytest.raises(ResearchMaterialLimitation) as exc:
+        executor._material_bindings(
+            principal=principal(),
+            session=session,
+            candidate_ids=(dependency_dimension.candidate_id,),
+        )
+
+    assert exc.value.code == "R1_NATIVE_RESOURCE_BINDING_MISSING"
+
+
+def test_result_dependency_foreign_scope_binding_fails_closed() -> None:
+    base_brief = brief()
+    session = SimpleNamespace(
+        context_version=CONTEXT,
+        tenant_binding=f"id:{TENANT}",
+        accepted_brief=SimpleNamespace(scope=base_brief.scope),
+    )
+    executor = NativeResearchMaterialExecutor(
+        subject_provider=SimpleNamespace(db_engine=object()),
+        store=SimpleNamespace(),
+        expected_identity=expected_identity(),
+    )
+
+    with pytest.raises(ResearchMaterialLimitation) as exc:
+        executor._material_bindings(
+            principal=principal(),
+            session=session,
+            candidate_ids=("dimension.foreign",),
+        )
+
+    assert exc.value.code == "R1_SEMANTIC_REF_OUTSIDE_ACCEPTED_SCOPE"
