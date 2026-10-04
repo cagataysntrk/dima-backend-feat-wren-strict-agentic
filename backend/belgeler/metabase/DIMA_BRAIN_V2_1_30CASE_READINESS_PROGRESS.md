@@ -5194,3 +5194,37 @@ Intentional test-first siblings:
 - second missing pair -> fail closed with a typed intake error.
 
 Paid is STOPPED. A4/broad remain CLOSED.
+
+
+### A3 INTAKE MISSING-PAIR ROOT FIX — PRE-GATES GREEN
+
+**STATUS: PRE-GATES GREEN / FULL RECERTIFICATION STARTING**
+
+- semantic root-fix SHA: `5bb2bc2f1b40377e354c9e20fa14aaf729fb4cd0`
+- engine unchanged: `72992664803783ef437be8d944c0555a30ef211b`
+- provider/model calls: `0`
+
+Generic law:
+
+> READY + ranking.basis=CHANGE may not proceed without exactly one bounded baseline/comparison pair.
+> If fewer than two governed periods are present, intake may use its existing one-call structured
+> reconsideration to resolve the pair from already-grounded user/catalog context. No new temporal
+> authority is invented. If the second result still lacks the pair, fail closed.
+
+Test-first proof:
+
+- intentional RED: `37202195033 = FAILURE`;
+- only the two new missing-pair siblings failed;
+- existing research/scope regressions otherwise: `283 passed`.
+
+Post-fix pre-gates:
+
+- frozen-family closure: `37202479233 = SUCCESS`;
+- semantic conformance + Wave A + independent Wave B + mutation:
+  `37202479248 = SUCCESS`;
+- new-family discovery: `0`;
+- provider calls: `0`.
+
+No engine, prompt, model, SQL/MBQL, regex/fuzzy/morph or benchmark-case change.
+
+NEXT LEGAL ACTION: aggregate Phase-1 + Phase-2/headless on these exact bytes. Paid A3 remains disabled.
