@@ -58,12 +58,12 @@ jobs:
           assert auth["thirty_case_allowed"] is False
           assert auth["automatic_retry_allowed"] is False
           assert auth["case_count"] == 1
-          assert auth["candidate_product_sha"]=="a347b6db8bfe7e50aeacdfa0264458c63fcea911"
-          assert auth["provider_free_phase1_run_id"]==37227846821
-          assert auth["provider_free_phase2_run_id"]==37227846831
-          assert auth["semantic_conformance_run_id"]==37227671781
-          assert auth["semantic_holdout_run_id"]==37227671781
-          assert auth["frozen_family_run_id"]==37227671779
+          assert auth["candidate_product_sha"]=="6656533fb9a86580db9617709bb5331ba4d031ab"
+          assert auth["provider_free_phase1_run_id"]==37231420855
+          assert auth["provider_free_phase2_run_id"]==37231420890
+          assert auth["semantic_conformance_run_id"]==37230925331
+          assert auth["semantic_holdout_run_id"]==37230925331
+          assert auth["frozen_family_run_id"]==37230925285
           assert isinstance(auth["case_id"],str) and auth["case_id"]
           assert isinstance(auth.get("question_override", ""), str)
           assert auth["engine_sha"]=="4c49b8da6b424b0fa4d8ef340ca1b238d12980c1"
@@ -362,7 +362,7 @@ jobs:
           r=json.loads(p.read_text())
           assert r["schema_version"]=="dima_brain_v2_1_recovery_live_v1"
           assert r["system"]=="DIMA_BRAIN_V2_1_LANGGRAPH"
-          assert r["candidate_product_sha"]=="a347b6db8bfe7e50aeacdfa0264458c63fcea911"
+          assert r["candidate_product_sha"]=="6656533fb9a86580db9617709bb5331ba4d031ab"
           assert r["engine_sha"]=="4c49b8da6b424b0fa4d8ef340ca1b238d12980c1"
           assert r["engine_release"]=="v0.63.18-dima.11.1.1"
           assert r["source_case_count"]==30
