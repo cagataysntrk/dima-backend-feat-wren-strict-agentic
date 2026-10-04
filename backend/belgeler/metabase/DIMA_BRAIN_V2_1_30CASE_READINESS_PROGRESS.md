@@ -5394,3 +5394,41 @@ No engine, prompt-template, model, SQL/MBQL, regex/fuzzy/morph, benchmark-case o
 
 Run aggregate Phase-1 + Phase-2/headless on exact semantic SHA `e9e8df7c...`. If both GREEN, run
 A3/F06_M exactly once. A4 remains closed until A3 >= `3/4`.
+
+
+### A3 ranking-basis full provider-free seal — GREEN
+
+Exact semantic Product:
+`e9e8df7cb545de309f11eed285da71a9275a786a`
+
+Engine remains frozen:
+`72992664803783ef437be8d944c0555a30ef211b / 0.63.18-dima.11.1.2 /
+sha256:42d591b14c6affe2e45b5525564f9c220bd0d2c93f38edba4000cf83985c419b`
+
+Provider-free receipts:
+
+- aggregate Phase-1: `37205354375 = SUCCESS`
+  - Brain V2 deterministic: `144 passed`
+  - Research/scope authority: `288 passed`
+  - P17: `145 passed`
+  - P19: `53 passed`
+  - P20/Core-B: `57 passed`
+  - security/repository hygiene: `26 passed`
+- Phase-2/headless: `37205437883 = SUCCESS`
+  - T1-T7 Product/contracts: `96 passed`
+  - real-owner carry-forward: `4 passed`
+  - P18: `28 passed`
+  - P20 contextual: `33 passed`
+  - independent metamorphic: `15 passed`
+  - security/repository hygiene: `26 passed`
+- frozen-family: `37205123841 = SUCCESS`
+- semantic conformance / Wave A / Wave B / mutation: `37205123836 = SUCCESS`
+
+The initial Phase-2 attempt `37205354363` stopped only at stale `PHASE2_BASE_SHA=5bb2bc2f...`.
+CI freeze-base was advanced to exact semantic Product `e9e8df7c...` in commit
+`df53e97cddb03467d390bc9c688d1f5ed76faeaf`; no Product semantic code changed.
+
+Provider/model calls: `0`.
+
+**A3 development proof is now the only legal paid action.**
+A1/A2/A4 and broad 30-case remain closed.
