@@ -4768,3 +4768,89 @@ Paid surface is disabled and temporary trigger removed.
 
 Run aggregate Phase-1 + Phase-2/headless. If GREEN, run **A3 only once**. A4 stays closed until A3
 scores at least `3/4`.
+
+
+---
+
+## FINAL READINESS — PHASE 0 AUTHORITY FREEZE
+
+**STATUS: GREEN**
+
+- final-readiness branch: `feat/dima-brain-v2-1-final-readiness`
+- backend base SHA: `db8ce44f9c6fb0360260c70d1657938655b01c27`
+- semantic Product: `43da71811370cce931d08a3bf0561c09652f632a`
+- certified engine SHA: `72992664803783ef437be8d944c0555a30ef211b`
+- engine release/runtime: `0.63.18-dima.11.1.2 / v0.63.18-dima.11.1.2`
+- engine digest: `sha256:42d591b14c6affe2e45b5525564f9c220bd0d2c93f38edba4000cf83985c419b`
+- engine certification: `37189616635 = SUCCESS`
+- superseded engine branch: `feat/dima11-conditional-change-observer = FORENSIC ONLY / NOT AUTHORITY`
+- dima.12: **FORBIDDEN**
+- broad 30-case: **CLOSED**
+- frontend: **FORBIDDEN**
+- provider calls: `0`
+
+### Proven
+
+The red-loop authority ambiguity is closed. Final readiness now has one backend branch and one immutable
+engine authority.
+
+### Next legal action
+
+PHASE 1 exact backend integration and full provider-free seal.
+
+---
+
+## FINAL READINESS — PHASE 1 DIMA.11.1.2 INTEGRATION
+
+**STATUS: PRE-GATES GREEN / AGGREGATE SEAL STARTING**
+
+### Exact candidate
+
+- integration SHA: `f9db76aea411b0af17ccd051d561940b4075b07f`
+- semantic Product diff: `0`
+- engine SHA: `72992664803783ef437be8d944c0555a30ef211b`
+- release/runtime: `0.63.18-dima.11.1.2 / v0.63.18-dima.11.1.2`
+- digest: `sha256:42d591b14c6affe2e45b5525564f9c220bd0d2c93f38edba4000cf83985c419b`
+- certification: `37189616635 = SUCCESS`
+- provider/model calls: `0`
+
+### Production/config changes
+
+Identity/config only:
+
+- exact engine gitlink pin;
+- canonical runtime lock;
+- provider-free/semantic/frozen workflow identity guards;
+- final-readiness branch CI routing;
+- paid live authorization disabled pending seal.
+
+No `backend/app/**` semantic Product file changed.
+
+### Provider-free pre-gates
+
+- focused Brain V2: `37199357653 = SUCCESS` — `101 passed, 1 skipped`;
+- frozen Round-2 family closure: `37199357651 = SUCCESS`
+  - ranking/completion/dependency/adaptive: `68 passed`;
+  - temporal/scope: `14 passed`;
+  - P18/P19/P20: `89 passed`;
+- semantic conformance + Wave A + independent Wave B + mutation:
+  `37199357678 = SUCCESS`;
+- new-family discovery: `0`;
+- provider calls: `0`.
+
+### First invalid boundary
+
+None in pre-gates.
+
+### What remains
+
+Aggregate Phase-1 and Phase-2/headless on the exact integration bytes.
+
+### 30-case readiness
+
+**NO — PHASE 1 SEAL IN PROGRESS.**
+
+### NEXT LEGAL ACTION
+
+Run aggregate Phase-1 and Phase-2/headless. If both GREEN, Phase 1 is sealed and only A3/F06_M may
+be paid-run.
