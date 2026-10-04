@@ -4582,3 +4582,79 @@ Commits:
 
 Run aggregate Phase-1 and Phase-2/headless provider-free on the exact lifecycle candidate. If both
 GREEN, arm **A3 only once**. A4 remains closed until A3 >= `3/4`.
+
+
+---
+
+## FINAL CONVERGENCE — A3 COLLAPSED CHANGE PERIOD ROOT FIX
+
+**STATUS: PROVIDER-FREE PRE-GATES GREEN; AGGREGATE RECERTIFICATION STARTING**
+
+- semantic Product SHA: `fda9271fea27a6149e8ecacde822581b80d2eb36`
+- exact repository candidate: `158b30cc1ed2f7964792d004bd2c623c1bdd1531`
+- engine SHA: `4c49b8da6b424b0fa4d8ef340ca1b238d12980c1`
+- release/runtime: `0.63.18-dima.11.1 / v0.63.18-dima.11.1.1`
+- digest: `sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d`
+- provider calls during RCA/fix: `0`
+
+### First invalid boundary
+
+Latest A3 observation-resume proof `37194986696` did not exercise the repaired CHANGE observer path.
+The accepted typed scope already contained an invalid temporal contract:
+
+- baseline = `[2026-05-01, 2026-07-01)`
+- comparison = `[2026-05-01, 2026-07-01)`
+
+Both role-bound periods were the exact same governed span. Metabot therefore generated LEVEL material and
+the ranking stayed LIMITED. This is upstream of material repair/observation.
+
+### Owner / generic law
+
+Owner: `research_intake.py`.
+
+> A CHANGE ranking may not accept an exact-identical role-bound baseline/comparison span. When the
+> provider emits that collapsed pair, intake may use its existing one-call bounded reconsideration to
+> request two distinct exact governed periods. It must preserve all non-temporal authority and must
+> CLARIFY rather than invent dates if user intent does not establish the pair. If the second output is
+> still collapsed, fail closed.
+
+No wording parser, regex, month-name branch, SQL/MBQL or benchmark-case logic is used.
+
+### Changes
+
+- detect only the proven exact collapsed pair:
+  same time dimension + same start + same end + BASELINE/COMPARISON roles;
+- invoke at most one structured reconsideration under the existing two-call intake ceiling;
+- preserve all non-temporal typed authority;
+- second collapsed output raises `INTAKE_CHANGE_RANKING_PERIOD_PAIR_COLLAPSED`;
+- added positive recovery and repeated-collapse fail-closed siblings.
+
+### Tests / runs
+
+- frozen-family closure: `37195499323 = SUCCESS`;
+- semantic conformance + Wave A + independent Wave B + mutation:
+  `37195499339 = SUCCESS`;
+- provider calls: `0`;
+- new-family discovery: `0`.
+
+### What is proven
+
+- A3's latest failure was not a new engine/lifecycle primitive;
+- existing CHANGE period-role law had one missing typed validity invariant;
+- root fix is owner-local, bounded and generic;
+- frozen families and independent semantic holdout remain GREEN.
+
+### What remains unproven
+
+- aggregate Phase-1 on these exact bytes;
+- Phase-2/headless on these exact bytes;
+- A3 development score >= `3/4`.
+
+### 30-case readiness
+
+**NO — CLOSER.**
+
+### NEXT LEGAL ACTION
+
+Run aggregate Phase-1 and Phase-2/headless on the exact candidate. If both GREEN, run **A3 only once**.
+If A3 >= `3/4`, proceed directly to A4, A5, A6 without restarting earlier green probes.
