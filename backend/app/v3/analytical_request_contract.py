@@ -21,7 +21,7 @@ from app.v3.analytics_contract import (
     ResolvedPeriod,
     ResolvedRanking,
 )
-from app.v3.research_contracts import RankingBasis
+from app.v3.research_contracts import RankingBasis, TemporalChangeFrameMode
 
 
 class FrozenModel(BaseModel):
@@ -61,6 +61,52 @@ class AnalyticalTemporalObservationInvariant(FrozenModel):
     minimum_distinct_values: int = Field(default=2, ge=2)
 
 
+class AnalyticalTemporalChangeFrame(FrozenModel):
+    """Read-only typed CHANGE temporal view over already accepted period authority."""
+
+    mode: TemporalChangeFrameMode
+    time_dimension: str = Field(min_length=1)
+    span_period: AnalyticalPeriodInvariant | None = None
+    baseline_period: AnalyticalPeriodInvariant | None = None
+    comparison_period: AnalyticalPeriodInvariant | None = None
+
+    @model_validator(mode="after")
+    def coherent(self):
+        if self.mode == TemporalChangeFrameMode.PAIR:
+            if (
+                self.span_period is not None
+                or self.baseline_period is None
+                or self.comparison_period is None
+            ):
+                raise ValueError("PAIR frame requires baseline+comparison only")
+            if (
+                self.baseline_period.time_dimension != self.time_dimension
+                or self.comparison_period.time_dimension != self.time_dimension
+            ):
+                raise ValueError("PAIR frame must use one governed time dimension")
+            if (
+                self.baseline_period.start,
+                self.baseline_period.end,
+            ) == (
+                self.comparison_period.start,
+                self.comparison_period.end,
+            ):
+                raise ValueError("PAIR frame periods must be distinct")
+            return self
+
+        if (
+            self.span_period is None
+            or self.baseline_period is not None
+            or self.comparison_period is not None
+        ):
+            raise ValueError("SPAN frame requires one bounded span only")
+        if self.span_period.time_dimension != self.time_dimension:
+            raise ValueError("SPAN frame must use its governed time dimension")
+        if self.span_period.end is None:
+            raise ValueError("SPAN frame must be bounded")
+        return self
+
+
 class AnalyticalRankingInvariant(FrozenModel):
     """Native ranking WHAT; Metabot still owns analytical HOW."""
 
@@ -94,6 +140,7 @@ class AnalyticalRequestContract(FrozenModel):
     period: AnalyticalPeriodInvariant | None = None
     comparison: AnalyticalComparisonInvariant | None = None
     temporal_observation: AnalyticalTemporalObservationInvariant | None = None
+    temporal_change_frame: AnalyticalTemporalChangeFrame | None = None
     ranking: (
         AnalyticalRankingInvariant
         | AnalyticalEvidenceSynthesisRankingInvariant
@@ -137,6 +184,11 @@ class AnalyticalRequestContract(FrozenModel):
                 if self.temporal_observation is not None
                 else None
             ),
+            "temporal_change_frame": (
+                self.temporal_change_frame.model_dump(mode="json")
+                if self.temporal_change_frame is not None
+                else None
+            ),
             "ranking": (
                 self.ranking.model_dump(mode="json")
                 if self.ranking is not None
@@ -173,6 +225,39 @@ class AnalyticalRequestContract(FrozenModel):
             raise ValueError(
                 "change ranking requires typed baseline/comparison authority"
             )
+        return self
+
+    @model_validator(mode="after")
+    def coherent_temporal_change_frame(self):
+        frame = self.temporal_change_frame
+        ranking = self.ranking
+        if frame is None:
+            return self
+        if (
+            not isinstance(ranking, AnalyticalRankingInvariant)
+            or ranking.basis != RankingBasis.CHANGE
+        ):
+            raise ValueError("temporal change frame requires CHANGE ranking")
+        if frame.mode == TemporalChangeFrameMode.PAIR:
+            if self.comparison is None:
+                raise ValueError("PAIR frame requires accepted comparison authority")
+            if self.period is not None:
+                raise ValueError("PAIR frame cannot also use one span period")
+            expected = (
+                self.comparison.reference_period,
+                self.comparison.base_period,
+            )
+            observed = (
+                frame.baseline_period,
+                frame.comparison_period,
+            )
+            if observed != expected:
+                raise ValueError("PAIR frame must be a view of accepted comparison authority")
+        else:
+            if self.period is None or self.comparison is not None:
+                raise ValueError("SPAN frame requires one accepted period and no comparison")
+            if frame.span_period != self.period:
+                raise ValueError("SPAN frame must be a view of accepted period authority")
         return self
 
     @model_validator(mode="after")
