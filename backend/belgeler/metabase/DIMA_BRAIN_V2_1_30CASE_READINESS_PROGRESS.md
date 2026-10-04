@@ -4658,3 +4658,113 @@ No wording parser, regex, month-name branch, SQL/MBQL or benchmark-case logic is
 
 Run aggregate Phase-1 and Phase-2/headless on the exact candidate. If both GREEN, run **A3 only once**.
 If A3 >= `3/4`, proceed directly to A4, A5, A6 without restarting earlier green probes.
+
+
+---
+
+## FINAL CONVERGENCE — A3 OBSERVATION VISIBILITY CLOSURE
+
+**STATUS: PROVIDER-FREE PRE-GATES GREEN; AGGREGATE RECERTIFICATION STARTING**
+
+- semantic Product SHA: `43da71811370cce931d08a3bf0561c09652f632a`
+- engine SHA: `4c49b8da6b424b0fa4d8ef340ca1b238d12980c1`
+- release/runtime: `0.63.18-dima.11.1 / v0.63.18-dima.11.1.1`
+- digest: `sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d`
+
+### A3 development proof
+
+Run `37195865881 = SUCCESS` at harness level, but manual Product adjudication is:
+
+- score: `2/4 PARTIAL`;
+- artifact: `11300866805`;
+- artifact digest:
+  `sha256:ebd2490e436e0915499bec1f534b6ba0a599f25ca8b3b11820f9e781e05b46e1`;
+- provider requests: `9`;
+- prompt tokens: `201625`;
+- completion tokens: `9919`;
+- reasoning tokens: `2301`;
+- cost: `$0.02765728`;
+- latency: `78368 ms`;
+- exception: `0`;
+- duplicate native: `0`;
+- stale Evidence: `0`;
+- requirement_complete: `false`;
+- terminal: `PARTIAL / WAITING`.
+
+The collapsed-period intake fix worked: accepted scope now has exact distinct May and June periods.
+The ranking occurrence generated legal period-pair derived `downtime_change` material, but the durable
+occurrence remained `EXECUTED` with no receipt/Evidence.
+
+### First invalid boundary
+
+`durable native EXECUTED occurrence -> read-only material observation visibility`.
+
+Certified engine source loads observation from persisted Metabot conversation/message state. The
+dataset side effect was already complete and durably captured; replaying Metabot or the dataset would
+be incorrect. Existing Product policy attempted observation only twice immediately, then safely left
+the obligation DELEGATED/WAITING.
+
+### Reference pattern
+
+Temporal durable-execution retry/idempotency pattern: retry the unreliable read-only step against the
+same durable identity; do not replay the already-completed side effect.
+
+### Generic law / owner
+
+Owner: P14 Product durable occurrence lifecycle.
+
+> An exact native occurrence may be observed with a small bounded visibility retry after execution,
+> provided every retry uses the same durable execution link, native query id and captured query
+> payload. Metabot cognition and dataset execution must never replay. Exhaustion remains WAITING and
+> fail-closed.
+
+### Changes
+
+- observation lookup ceiling is now total `3` attempts;
+- bounded visibility backoff: `0.2s`, then `0.6s`;
+- no provider/model call is added;
+- no Metabot call is added;
+- no dataset execution is added;
+- same durable occurrence/query payload is reused.
+
+### Test-first proof
+
+Intentional RED before production fix:
+- semantic conformance `37196551408 = FAILURE`;
+- exact failures:
+  - two observation misses did not recover;
+  - three-miss sibling performed only two attempts.
+
+After production fix:
+- frozen-family closure `37196605603 = SUCCESS`;
+- semantic conformance + Wave A + independent Wave B + mutation
+  `37196605612 = SUCCESS`;
+- two misses -> third observation succeeds, same query/no replay;
+- three misses -> WAITING, same query/no replay.
+
+### Provider / cost
+
+Provider calls during RCA/fix: `0`.
+Paid surface is disabled and temporary trigger removed.
+
+### What is proven
+
+- legal CHANGE planner output now exists;
+- accepted period pair is exact;
+- observation recovery is bounded over a durable occurrence;
+- independent semantic/frozen-family confidence remains GREEN.
+
+### What remains unproven
+
+- aggregate Phase-1 / Phase-2 on exact observation-retry bytes;
+- A3 score >= `3/4`;
+- A4/A5/A6 and B1/B2/B3 development probes.
+
+### 30-case readiness
+
+**NO — CLOSER.**
+
+### NEXT LEGAL ACTION
+
+Run aggregate Phase-1 + Phase-2/headless. If GREEN, run **A3 only once**. A4 stays closed until A3
+scores at least `3/4`.
