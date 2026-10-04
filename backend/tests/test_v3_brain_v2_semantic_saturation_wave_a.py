@@ -9,6 +9,7 @@ from app.v3.analytical_request_contract import (
     AnalyticalRankingInvariant,
     AnalyticalRequestContract,
     AnalyticalScopeIdentity,
+    AnalyticalTemporalChangeFrame,
     RankingBasis as ProductRankingBasis,
 )
 from tests.semantic_spec.mutation_canaries import mutation_report_payload
@@ -25,6 +26,7 @@ from tests.semantic_spec.saturation import (
     top_k_value,
     classify_saturation_case,
 )
+from app.v3.research_contracts import TemporalChangeFrameMode
 from tests.semantic_spec.model import PeriodStructure
 from tests.semantic_spec.strategies import saturation_cases
 
@@ -64,6 +66,28 @@ def _product_ranking_accepts(case: SaturationCase) -> bool:
     direction = (
         "asc" if case.ranking_direction == RankingDirection.ASC else "desc"
     )
+    temporal_change_frame = None
+    if (
+        case.ranking_basis.value == "CHANGE"
+        and comparison is not None
+    ):
+        temporal_change_frame = AnalyticalTemporalChangeFrame(
+            mode=TemporalChangeFrameMode.PAIR,
+            time_dimension=comparison.reference_period.time_dimension,
+            baseline_period=comparison.reference_period,
+            comparison_period=comparison.base_period,
+        )
+    elif (
+        case.ranking_basis.value == "CHANGE"
+        and period_structure == PeriodStructure.SINGLE_WINDOW
+        and period is not None
+    ):
+        temporal_change_frame = AnalyticalTemporalChangeFrame(
+            mode=TemporalChangeFrameMode.SPAN,
+            time_dimension=period.time_dimension,
+            span_period=period,
+        )
+
     payload = dict(
         authority_id="auth-saturation",
         request_ref="req-saturation",
@@ -76,6 +100,7 @@ def _product_ranking_accepts(case: SaturationCase) -> bool:
         metric_refs=metrics,
         period=period,
         comparison=comparison,
+        temporal_change_frame=temporal_change_frame,
         ranking=AnalyticalRankingInvariant(
             measure=metrics[0],
             direction=direction,
