@@ -14,9 +14,11 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from app.v3.analytical_request_contract import (
     AnalyticalPeriodInvariant,
+    AnalyticalRankingInvariant,
     AnalyticalRequestContract,
 )
 from app.v3.research_analytical_scope import NativeMaterialBinding
+from app.v3.research_contracts import RankingBasis
 
 
 class Frozen(BaseModel):
@@ -199,8 +201,16 @@ def assert_material_result_coverage(
     contract: AnalyticalRequestContract,
     result_payload: Mapping[str, Any],
     bindings: Mapping[str, NativeMaterialBinding],
+    attested_native_material: bool = False,
 ) -> MaterialResultCoverage:
-    """Fail closed when VERIFIED Evidence would overstate result coverage."""
+    """Fail closed when VERIFIED Evidence would overstate result coverage.
+
+    A native CHANGE ranking may legitimately project only entity + derived
+    change in its final rowset after Metabot used governed time material in
+    earlier stages.  Omitting that time column is admissible only when this
+    exact native occurrence has already passed material-scope validation.
+    Plain comparison Evidence and unattested results remain row-level strict.
+    """
 
     rows, cols = _rows_and_cols(result_payload)
     comparison = contract.comparison
@@ -243,6 +253,14 @@ def assert_material_result_coverage(
         if _column_field_id(column) == binding.field_id
     ]
     if len(matches) != 1:
+        attested_change_projection = (
+            attested_native_material
+            and len(matches) == 0
+            and isinstance(contract.ranking, AnalyticalRankingInvariant)
+            and contract.ranking.basis == RankingBasis.CHANGE
+        )
+        if attested_change_projection:
+            return MaterialResultCoverage(result_row_count=len(rows))
         raise ResearchMaterialCoverageError(
             missing_column_code,
             missing_column_detail,
