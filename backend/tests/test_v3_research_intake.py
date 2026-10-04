@@ -3731,7 +3731,10 @@ def test_change_ranking_overlapping_pair_gets_narrow_temporal_reconsideration() 
     assert reconsideration["comparison_source_fragments"] == [
         first["goals"][0]["source_fragment_text"]
     ]
-    assert set(second_call["schema"]["properties"]["result"]["anyOf"][0]["required"]) >= {
+    resolved_period_pair = second_call["schema"]["$defs"][
+        "ModelResolvedChangePeriodPair"
+    ]
+    assert set(resolved_period_pair["required"]) >= {
         "terminal",
         "baseline_period",
         "comparison_period",
