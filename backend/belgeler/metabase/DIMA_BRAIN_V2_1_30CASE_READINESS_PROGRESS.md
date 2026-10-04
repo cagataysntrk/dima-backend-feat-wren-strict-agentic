@@ -4893,3 +4893,16 @@ scores at least `3/4`.
 **30-case readiness:** CLOSER.
 
 **NEXT LEGAL ACTION:** require all provider-free suites GREEN. If GREEN, proceed to generated/stateful Phase-2 siblings and only then temporarily re-arm exactly the two authorized A3 live proofs.
+
+
+### Phase-1 PF RED #1 classification
+
+- Run: \`37210415303\`
+- First invalid boundary: **test fixture only**, before binding-policy semantics.
+- Failure: \`test_result_dependency_filter_only_loads_binding_from_accepted_scope\` constructed a SimpleNamespace without the real P14 \`tenant_binding\` invariant.
+- Exact owner: test fixture.
+- Was this semantic law already implemented elsewhere? **YES** — \`_tenant_uuid()\` already correctly enforces tenant-bound Research sessions.
+- Product change required: **NO**.
+- Root correction: fixture now carries \`tenant_binding=id:<tenant UUID>\`; no production authority was weakened or bypassed.
+- Evidence before failure: Brain V2 deterministic closure \`144 passed\`; migration single-head GREEN; Research regression batch reached \`289 passed / 1 fixture failure\`.
+- NEXT LEGAL ACTION: rerun full Phase-1 provider-free on the corrected fixture; do not spend paid calls.
