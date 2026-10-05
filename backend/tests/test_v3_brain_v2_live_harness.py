@@ -8,9 +8,12 @@ from uuid import UUID
 
 from app.v3.brain_v2.state import BrainGraphState, BrainWorkflowStatus
 from lab.metabase.brain_v2 import phase1_live
+from lab.metabase.brain_v2.final_probes import FINAL_READINESS_PANEL
 from lab.metabase.brain_v2.phase1_live import (
+    _contextual_report_mechanical,
     _mechanical,
     _native_occurrence_projection,
+    _safety_unsupported_mechanical,
     _require_locked_engine_runtime,
 )
 
@@ -573,3 +576,162 @@ def test_basic_readiness_mechanical_gate_needs_governed_evidence_without_researc
     assert "scope_version_advanced" not in result["checks"]
     assert "two_intake_calls" not in result["checks"]
     assert "two_native_acquisitions" not in result["checks"]
+
+
+def test_final_readiness_panel_matches_supervisor_nine_capabilities() -> None:
+    assert FINAL_READINESS_PANEL == (
+        "DIRECT_ANALYTICS_V1",
+        "TEMPORAL_COMPARISON_V1",
+        "CHANGE_DEPENDENT_DRILLDOWN_V1",
+        "R_LIVE_2_ADAPTIVE",
+        "RELATIONSHIP_REPORT_PHASE2_V1",
+        "R_LIVE_4_SCOPE_RESUME",
+        "CONTEXTUAL_REPORT_V1",
+        "MULTI_INTENT_PHASE2_V1",
+        "SAFETY_UNSUPPORTED_V1",
+    )
+    assert len(FINAL_READINESS_PANEL) == len(set(FINAL_READINESS_PANEL)) == 9
+
+
+def test_quality_mechanical_does_not_fail_only_for_efficiency_debt() -> None:
+    state = BrainGraphState(
+        thread_id="live:efficiency-separation",
+        tenant_binding="id:tenant",
+        principal_ref="user-1",
+        research_session_id="rs_" + "1" * 24,
+        accepted_brief_ref="rb_basic",
+        scope_version_id="scope_v1",
+        evidence_revision=1,
+        evidence_ids=("evi_" + "2" * 24,),
+        workflow_status=BrainWorkflowStatus.COMPLETE,
+        last_completed_node="COMPLETE",
+    )
+    provider = {
+        "provider_requests_by_source": {
+            "research_intake": 1,
+            "metabase": 7,
+            "p17_manager": 0,
+            "p19_manager": 0,
+        },
+        "actual_provider_request_count": 8,
+        "prompt_tokens": 1000,
+        "blocked_request_count": 0,
+    }
+    result = _mechanical(
+        probe_id="DIRECT_ANALYTICS_V1",
+        state=state,
+        provider=provider,
+        links=(_link(),),
+        p17_snapshot=SimpleNamespace(
+            investigation=SimpleNamespace(nodes=()),
+            claims=(),
+        ),
+        p19_snapshot=None,
+        report_doc=None,
+    )
+    assert result["mechanical_green"] is True
+    assert result["efficiency_green"] is False
+    assert result["efficiency_checks"]["provider_slo"] is False
+    assert "provider_slo" not in result["checks"]
+
+
+def test_contextual_report_mechanical_requires_zero_analytical_report_delta() -> None:
+    first = BrainGraphState(
+        thread_id="live:contextual-report",
+        tenant_binding="id:tenant",
+        principal_ref="user-1",
+        research_session_id="rs_" + "1" * 24,
+        accepted_brief_ref="rb_contextual",
+        scope_version_id="scope_v1",
+        evidence_revision=1,
+        evidence_ids=("evi_" + "2" * 24,),
+        direct_requirement_ids=("g_direct",),
+        terminal_requirement_ids=("g_direct",),
+        workflow_status=BrainWorkflowStatus.COMPLETE,
+        last_completed_node="COMPLETE",
+    )
+    final = first.model_copy(
+        update={
+            "open_requirement_ids": ("g_direct", "d_report_" + "3" * 24),
+            "report_requirement_ids": ("d_report_" + "3" * 24,),
+            "terminal_requirement_ids": (
+                "g_direct",
+                "d_report_" + "3" * 24,
+            ),
+            "presentation_revision": 1,
+            "report_ref": "p20r_" + "4" * 24,
+            "last_completed_node": "COMPLETE",
+        }
+    )
+    provider = {
+        "provider_requests_by_source": {
+            "research_intake": 1,
+            "metabase": 1,
+            "p17_manager": 0,
+            "p18_manager": 0,
+            "p19_manager": 0,
+        },
+        "actual_provider_request_count": 2,
+        "blocked_request_count": 0,
+    }
+    result = _contextual_report_mechanical(
+        first_state=first,
+        state=final,
+        provider=provider,
+        links=(_link(),),
+        report_doc=object(),
+        report_current=True,
+        first_native_count=1,
+        budget_before_report={
+            "research_intake": 1,
+            "metabase": 1,
+        },
+        budget_after={
+            "research_intake": 1,
+            "metabase": 1,
+        },
+        checkpoint_roundtrip=True,
+        stale_evidence_count=0,
+        cross_tenant_violation_count=0,
+        causal_overclaim_count=0,
+    )
+    assert result["mechanical_green"] is True
+    assert result["report_turn_native_delta"] == 0
+    assert all(value == 0 for value in result["report_turn_owner_delta"].values())
+
+
+def test_safety_unsupported_mechanical_accepts_typed_fail_closed_without_native() -> None:
+    provider = {
+        "provider_requests_by_source": {
+            "research_intake": 1,
+            "metabase": 0,
+            "p17_manager": 0,
+            "p18_manager": 0,
+            "p19_manager": 0,
+        },
+        "actual_provider_request_count": 1,
+        "blocked_request_count": 0,
+    }
+    result = _safety_unsupported_mechanical(
+        terminal_code="BRAIN_V2_INTAKE_UNSUPPORTED",
+        provider=provider,
+        native_http_requests=(),
+        agent_api_request_count=0,
+    )
+    assert result["mechanical_green"] is True
+    assert result["efficiency_green"] is True
+
+    unsafe = _safety_unsupported_mechanical(
+        terminal_code="BRAIN_V2_INTAKE_UNSUPPORTED",
+        provider={
+            **provider,
+            "provider_requests_by_source": {
+                **provider["provider_requests_by_source"],
+                "metabase": 1,
+            },
+            "actual_provider_request_count": 2,
+        },
+        native_http_requests=(("POST", "/api/dataset"),),
+        agent_api_request_count=0,
+    )
+    assert unsafe["mechanical_green"] is False

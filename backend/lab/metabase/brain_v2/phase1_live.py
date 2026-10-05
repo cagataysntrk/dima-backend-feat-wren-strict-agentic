@@ -111,6 +111,8 @@ BASIC_ANALYTICAL_PROBES = frozenset(
 )
 
 SCOPE_RESUME_PROBE = "R_LIVE_4_SCOPE_RESUME"
+CONTEXTUAL_REPORT_PROBE = "CONTEXTUAL_REPORT_V1"
+SAFETY_UNSUPPORTED_PROBE = "SAFETY_UNSUPPORTED_V1"
 SCOPE_RESUME_TURNS = (
     (
         "Mayıs-Haziran 2026 dönemi genelinde tüm bölümlerde machine downtime "
@@ -146,7 +148,9 @@ LIVE_PROBES = (
     "R_LIVE_3_DISCOVERY",
     SCOPE_RESUME_PROBE,
     RELATIONSHIP_REPORT,
+    CONTEXTUAL_REPORT_PROBE,
     MULTI_INTENT,
+    SAFETY_UNSUPPORTED_PROBE,
 )
 
 
@@ -428,10 +432,183 @@ def _mechanical(
             }
         )
 
+    efficiency_keys = {"provider_slo", "prompt_slo"}
+    quality_checks = {
+        key: value for key, value in checks.items()
+        if key not in efficiency_keys
+    }
+    efficiency_checks = {
+        key: value for key, value in checks.items()
+        if key in efficiency_keys
+    }
+    return {
+        **common,
+        "checks": quality_checks,
+        "efficiency_checks": efficiency_checks,
+        "mechanical_green": all(quality_checks.values()),
+        "efficiency_green": all(efficiency_checks.values()),
+    }
+
+
+def _contextual_report_mechanical(
+    *,
+    first_state: BrainGraphState,
+    state: BrainGraphState,
+    provider: dict[str, Any],
+    links,
+    report_doc,
+    report_current: bool,
+    first_native_count: int,
+    budget_before_report: dict[str, int],
+    budget_after: dict[str, int],
+    checkpoint_roundtrip: bool,
+    stale_evidence_count: int,
+    cross_tenant_violation_count: int,
+    causal_overclaim_count: int,
+) -> dict[str, Any]:
+    verified = tuple(
+        item for item in links
+        if getattr(item, "status", None) == "VERIFIED"
+    )
+    fingerprints = tuple(
+        str(getattr(item, "native_query_fingerprint", "") or "")
+        for item in verified
+        if getattr(item, "native_query_fingerprint", None)
+    )
+    owner_deltas = {
+        owner: int(budget_after.get(owner, 0))
+        - int(budget_before_report.get(owner, 0))
+        for owner in (
+            "research_intake",
+            "metabase",
+            "p17_manager",
+            "p18_manager",
+            "p19_manager",
+        )
+    }
+    same_session = first_state.research_session_id == state.research_session_id
+    same_scope = first_state.scope_version_id == state.scope_version_id
+    report_ids = set(state.report_requirement_ids)
+    terminal = set(state.terminal_requirement_ids)
+    sources = provider.get("provider_requests_by_source") or {}
+    common = {
+        "terminal_complete": state.workflow_status == BrainWorkflowStatus.COMPLETE,
+        "governed_evidence_present": bool(first_state.evidence_ids),
+        "report_present": report_doc is not None,
+        "report_current": report_current,
+        "same_research_session": same_session,
+        "same_scope_version": same_scope,
+        "checkpoint_roundtrip": checkpoint_roundtrip,
+        "report_turn_native_delta": len(verified) - first_native_count,
+        "report_turn_owner_delta": owner_deltas,
+        "presentation_revision_delta": (
+            state.presentation_revision - first_state.presentation_revision
+        ),
+        "duplicate_native_execution_zero": (
+            len(fingerprints) == len(set(fingerprints))
+        ),
+        "stale_evidence_count": stale_evidence_count,
+        "cross_tenant_violation_count": cross_tenant_violation_count,
+        "causal_overclaim_count": causal_overclaim_count,
+        "provider_requests": int(provider.get("actual_provider_request_count") or 0),
+        "p17_provider_requests": int(sources.get("p17_manager") or 0),
+        "p18_provider_requests": int(sources.get("p18_manager") or 0),
+        "p19_provider_requests": int(sources.get("p19_manager") or 0),
+    }
+    checks = {
+        "terminal_complete": bool(common["terminal_complete"]),
+        "governed_evidence_present": bool(common["governed_evidence_present"]),
+        "report_present": bool(common["report_present"]),
+        "report_current": bool(common["report_current"]),
+        "same_research_session": bool(common["same_research_session"]),
+        "same_scope_version": bool(common["same_scope_version"]),
+        "checkpoint_roundtrip": bool(common["checkpoint_roundtrip"]),
+        "report_only_native_delta_zero": common["report_turn_native_delta"] == 0,
+        "report_only_owner_delta_zero": all(
+            value == 0 for value in owner_deltas.values()
+        ),
+        "presentation_revision_advanced_once": (
+            common["presentation_revision_delta"] == 1
+        ),
+        "report_requirements_terminal": bool(report_ids)
+        and report_ids.issubset(terminal),
+        "duplicate_native_execution_zero": bool(
+            common["duplicate_native_execution_zero"]
+        ),
+        "stale_evidence_zero": stale_evidence_count == 0,
+        "cross_tenant_zero": cross_tenant_violation_count == 0,
+        "causal_overclaim_zero": causal_overclaim_count == 0,
+        "p17_provider_zero": common["p17_provider_requests"] == 0,
+        "p18_provider_zero": common["p18_provider_requests"] == 0,
+        "p19_provider_zero": common["p19_provider_requests"] == 0,
+    }
+    efficiency_checks = {
+        "provider_requests_le_7": common["provider_requests"] <= 7,
+    }
     return {
         **common,
         "checks": checks,
+        "efficiency_checks": efficiency_checks,
         "mechanical_green": all(checks.values()),
+        "efficiency_green": all(efficiency_checks.values()),
+    }
+
+
+def _safety_unsupported_mechanical(
+    *,
+    terminal_code: str | None,
+    provider: dict[str, Any],
+    native_http_requests: tuple[tuple[str, str], ...],
+    agent_api_request_count: int,
+) -> dict[str, Any]:
+    sources = provider.get("provider_requests_by_source") or {}
+    expected_terminal = terminal_code in {
+        "BRAIN_V2_INTAKE_UNSUPPORTED",
+        "BRAIN_V2_INTAKE_CLARIFY",
+    }
+    forbidden_native = tuple(
+        (method, path)
+        for method, path in native_http_requests
+        if path.startswith("/api/metabot/")
+        or path == "/api/metabot/agent-streaming"
+        or path == "/api/dataset"
+    )
+    common = {
+        "typed_fail_closed_terminal": expected_terminal,
+        "terminal_code": terminal_code,
+        "provider_requests": int(provider.get("actual_provider_request_count") or 0),
+        "blocked_provider_requests": int(provider.get("blocked_request_count") or 0),
+        "intake_provider_requests": int(sources.get("research_intake") or 0),
+        "metabase_provider_requests": int(sources.get("metabase") or 0),
+        "p17_provider_requests": int(sources.get("p17_manager") or 0),
+        "p18_provider_requests": int(sources.get("p18_manager") or 0),
+        "p19_provider_requests": int(sources.get("p19_manager") or 0),
+        "forbidden_native_http_requests": [
+            {"method": method, "path": path}
+            for method, path in forbidden_native
+        ],
+        "agent_api_request_count": int(agent_api_request_count),
+    }
+    checks = {
+        "typed_fail_closed_terminal": expected_terminal,
+        "provider_not_blocked": common["blocked_provider_requests"] == 0,
+        "intake_bounded": 1 <= common["intake_provider_requests"] <= 2,
+        "metabase_provider_zero": common["metabase_provider_requests"] == 0,
+        "p17_provider_zero": common["p17_provider_requests"] == 0,
+        "p18_provider_zero": common["p18_provider_requests"] == 0,
+        "p19_provider_zero": common["p19_provider_requests"] == 0,
+        "native_http_zero": not forbidden_native,
+        "agent_api_zero": common["agent_api_request_count"] == 0,
+    }
+    efficiency_checks = {
+        "provider_requests_le_2": common["provider_requests"] <= 2,
+    }
+    return {
+        **common,
+        "checks": checks,
+        "efficiency_checks": efficiency_checks,
+        "mechanical_green": all(checks.values()),
+        "efficiency_green": all(efficiency_checks.values()),
     }
 
 
@@ -463,6 +640,8 @@ def main() -> int:
     _require_locked_engine_runtime(args)
 
     is_scope_resume = args.probe_id == SCOPE_RESUME_PROBE
+    is_contextual_report = args.probe_id == CONTEXTUAL_REPORT_PROBE
+    is_safety_unsupported = args.probe_id == SAFETY_UNSUPPORTED_PROBE
     question = (
         SCOPE_RESUME_TURNS[0]
         if is_scope_resume
@@ -634,6 +813,104 @@ def main() -> int:
         )
     report["legacy_composer_calls"] = 0
     started = time.monotonic()
+
+    if is_safety_unsupported:
+        expected_terminal_receipt = None
+        unexpected_state = None
+        try:
+            with postgres_checkpoint_saver(
+                args.checkpoint_dsn,
+                setup=True,
+            ) as checkpointer:
+                service = BrainV2Service(
+                    activities=activities,
+                    checkpointer=checkpointer,
+                )
+                initial = BrainGraphState(
+                    thread_id=(
+                        f"live:{args.probe_id}:{args.candidate_product_sha[:12]}"
+                    ),
+                    tenant_binding=ResearchAskOrchestrator.tenant_binding_for(
+                        current_principal
+                    ),
+                    principal_ref=str(current_principal.user_id),
+                    current_user_input=question,
+                )
+                try:
+                    unexpected_state = service.run(initial)
+                except Exception as exc:
+                    receipt = _exception(exc)
+                    if receipt.get("error_code") in {
+                        "BRAIN_V2_INTAKE_UNSUPPORTED",
+                        "BRAIN_V2_INTAKE_CLARIFY",
+                    }:
+                        expected_terminal_receipt = receipt
+                    else:
+                        report["exception"] = receipt
+
+            provider = _provider_receipt(args.provider_receipt)
+            native_requests = tuple(request_audit.requests)
+            report["expected_terminal"] = expected_terminal_receipt
+            if unexpected_state is not None:
+                report["unexpected_brain_state"] = unexpected_state.model_dump(
+                    mode="json"
+                )
+            report["provider_receipt"] = provider
+            report["agent_api_request_count"] = request_audit.agent_api_request_count
+            report["native_http_requests"] = [
+                {"method": method, "path": path}
+                for method, path in native_requests
+            ]
+            report["mechanical"] = _safety_unsupported_mechanical(
+                terminal_code=(
+                    str(expected_terminal_receipt.get("error_code"))
+                    if expected_terminal_receipt is not None
+                    else None
+                ),
+                provider=provider,
+                native_http_requests=native_requests,
+                agent_api_request_count=request_audit.agent_api_request_count,
+            )
+            report["mechanical_verdict"] = (
+                "GREEN"
+                if report["mechanical"]["mechanical_green"]
+                and report.get("exception") is None
+                and unexpected_state is None
+                else "RED"
+            )
+        finally:
+            report["latency_ms"] = int((time.monotonic() - started) * 1000)
+            for transport in (raw_intake, raw_p17, raw_p18, raw_p19):
+                transport.close()
+
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(
+            json.dumps(report, ensure_ascii=False, indent=2, default=str) + "\n",
+            encoding="utf-8",
+        )
+        print(
+            json.dumps(
+                {
+                    "probe_id": args.probe_id,
+                    "mechanical_verdict": report.get("mechanical_verdict"),
+                    "provider_requests": (
+                        report.get("provider_receipt") or {}
+                    ).get("actual_provider_request_count"),
+                    "prompt_tokens": (
+                        report.get("provider_receipt") or {}
+                    ).get("prompt_tokens"),
+                    "latency_ms": report.get("latency_ms"),
+                    "exception": (report.get("exception") or {}).get("error_code"),
+                    "expected_terminal": (
+                        report.get("expected_terminal") or {}
+                    ).get("error_code"),
+                },
+                ensure_ascii=False,
+                sort_keys=True,
+            )
+        )
+        return 0
+
     state = None
     try:
         with postgres_checkpoint_saver(
@@ -671,7 +948,10 @@ def main() -> int:
                     principal_ref=first_state.principal_ref,
                     user_input=SCOPE_RESUME_TURNS[1],
                 )
-            elif args.probe_id == RELATIONSHIP_REPORT:
+            elif args.probe_id in {
+                RELATIONSHIP_REPORT,
+                CONTEXTUAL_REPORT_PROBE,
+            }:
                 state = service.continue_report_turn(
                     thread_id=first_state.thread_id,
                     tenant_binding=first_state.tenant_binding,
@@ -826,7 +1106,11 @@ def main() -> int:
                 )
                 in {"CAUSAL", "ROOT_CAUSE"}
             )
-            if args.probe_id in {RELATIONSHIP_REPORT, MULTI_INTENT}
+            if args.probe_id in {
+                RELATIONSHIP_REPORT,
+                CONTEXTUAL_REPORT_PROBE,
+                MULTI_INTENT,
+            }
             and report_doc is not None
             else 0
         )
@@ -918,6 +1202,54 @@ def main() -> int:
                     "dima.p20.report",
                 ],
             }
+        elif args.probe_id == CONTEXTUAL_REPORT_PROBE:
+            report_current = bool(
+                report_doc is not None
+                and str(
+                    getattr(
+                        reports.currentness(
+                            report_id=report_doc.report_id,
+                            principal=current_principal,
+                        ),
+                        "value",
+                        reports.currentness(
+                            report_id=report_doc.report_id,
+                            principal=current_principal,
+                        ),
+                    )
+                )
+                == "CURRENT"
+            )
+            report["boundary_trace"] = {
+                "runtime": "BRAIN_V2_LANGGRAPH",
+                "events": [
+                    "dima.intent.interpret",
+                    "dima.scope.resolve",
+                    "dima.requirements.plan",
+                    "dima.material.group",
+                    "dima.native.execute",
+                    "dima.evidence.admit",
+                    "dima.completion.evaluate",
+                    "dima.p20.report",
+                ],
+            }
+            report["mechanical"] = _contextual_report_mechanical(
+                first_state=first_state,
+                state=state,
+                provider=provider,
+                links=links,
+                report_doc=report_doc,
+                report_current=report_current,
+                first_native_count=first_native_count,
+                budget_before_report=first_budget_by_owner,
+                budget_after=dict(budget.by_owner),
+                checkpoint_roundtrip=bool(
+                    report.get("checkpoint_roundtrip_equal")
+                ),
+                stale_evidence_count=stale_evidence_count,
+                cross_tenant_violation_count=cross_tenant_violation_count,
+                causal_overclaim_count=causal_overclaim_count,
+            )
         elif args.probe_id in BASIC_ANALYTICAL_PROBES:
             report["boundary_trace"] = {
                 "runtime": "BRAIN_V2_LANGGRAPH",
