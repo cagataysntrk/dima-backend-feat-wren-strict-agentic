@@ -1035,6 +1035,16 @@ def test_later_run_next_observes_same_waiting_occurrence_without_replay():
         json.dumps(item[2], sort_keys=True) for item in executor.calls
     } == captured_payloads
 
+    calls_after_verified = len(executor.calls)
+    with pytest.raises(Exception) as terminal:
+        restarted.run_next(
+            session_id=session.session_id,
+            principal=_principal(),
+        )
+    assert getattr(terminal.value, "code", None) == "P14_NO_OPEN_NATIVE_OBLIGATION"
+    assert factory.metabot_posts == 1
+    assert len(executor.calls) == calls_after_verified
+
 
 def test_material_limitation_is_scoped_and_independent_work_continues():
     engine = _db_engine()
