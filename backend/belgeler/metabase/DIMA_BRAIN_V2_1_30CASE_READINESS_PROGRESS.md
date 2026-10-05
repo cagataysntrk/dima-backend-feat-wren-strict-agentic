@@ -8316,3 +8316,72 @@ The next investigation should make the read-only material-observation failure re
 Until a supervisor authorizes that response:
 
 \`30-CASE READY = NO\`.
+
+
+---
+
+### SUPERVISOR P14 OCCURRENCE LIFECYCLE CORRECTION — PROVIDER-FREE RECERT
+
+PHASE:
+PRODUCT CORRECTION / PROVIDER-FREE RECERTIFICATION
+
+STATUS:
+IN PROGRESS — semantic Product code frozen pending final Phase-1 closure
+
+Diagnostic baseline:
+`e257a4754487ec4ac7bfe9fa93966e5ac4a5d1ea`
+
+Candidate semantic Product commit:
+`ae4e0348601774082b0270f23d6de126e71e6055`
+
+Root correction:
+
+`CANDIDATE_CAPTURED`
+→ exact occurrence attestation
+→ read-only material observation
+→ exact-occurrence execution
+→ result coverage
+→ VERIFIED Evidence
+→ dependent continuation.
+
+Canonical P14 no longer uses direct `/api/dataset` execution.
+
+Python bridge now preserves engine HTTP status and `dima/error-code`.
+
+Retry classification:
+
+- occurrence 404 / explicit temporary transport unavailability → bounded WAIT;
+- observer/attestation 422 → deterministic limitation, no execution/retry;
+- 409 state/occurrence mismatch → deterministic RED, no execution/retry;
+- CANDIDATE wait preserves zero native analytical side effect;
+- EXECUTED/VERIFIED work is never executed twice.
+
+Provider-free state machine proofs include:
+
+- CANDIDATE_CAPTURED remains result-free across WAIT;
+- process reconstruction reuses the same query occurrence without Metabot replay;
+- observation READY permits one exact execution;
+- VERIFIED state has no second native execution;
+- direct dataset execution is forbidden in canonical P14 tests.
+
+Harness cleanup:
+
+- stale `OrchestrationBudget` recovery import migrated to `OrchestrationEfficiencyTracker`;
+- dead `model_budget` parameter removed instead of being silently hard-coded;
+- recovery receipts expose actual orchestration efficiency measurement.
+
+Current provider-free gates:
+
+- Frozen family: `37361628140` = GREEN on candidate semantic Product.
+- Semantic conformance + Wave A + Wave B holdout + mutation:
+  `37362755577` = GREEN.
+- Aggregate Brain V2 provider-free:
+  `37362808365` = GREEN.
+- Phase-2 headless:
+  `37363034659` = GREEN.
+- Phase-1 full closure: pending runner execution after harness stale-import repair.
+
+No paid S3 run is authorized until Phase-1 is GREEN.
+
+Engine, engine gitlink/build, prompt, semantic grammar, LangGraph and provider ceilings:
+UNCHANGED.
