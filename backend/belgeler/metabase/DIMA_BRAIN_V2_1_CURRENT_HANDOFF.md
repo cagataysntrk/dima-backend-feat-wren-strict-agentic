@@ -2,17 +2,19 @@
 
 Updated: 2026-10-05
 
-## 0. Current status — read first
+## 0. Read this first
 
-Current branch:
+Branch:
 
 \`feat/dima-brain-v2-1-specification-closure\`
 
-Current frozen semantic Product:
+Frozen semantic Product:
 
 \`e257a4754487ec4ac7bfe9fa93966e5ac4a5d1ea\`
 
-Current certified engine:
+The Product is still frozen. Do not modify it without a new supervisor decision.
+
+Certified engine remains:
 
 - SHA: \`4c49b8da6b424b0fa4d8ef340ca1b238d12980c1\`
 - release: \`0.63.18-dima.11.1\`
@@ -25,461 +27,411 @@ Current release decision:
 
 \`paid authorization = OFF\`
 
-\`broad 30-case = CLOSED\`
+\`full 9-sentinel panel = NOT AUTHORIZED\`
 
 \`frontend = NOT AUTHORIZED\`
 
-Reason:
+Current reason:
 
-The supervisor-authorized durable WAITING/resume lifecycle closure is provider-free GREEN and fully recertified. The one authorized final paid 9-sentinel panel, run \`37348187000\`, stopped at S3 with:
+The prior 12-unit final-panel stop was a harness correctness/efficiency coupling defect. That harness defect is now fixed without touching Product semantics.
 
-\`PINPOINT_ORCHESTRATION_BOUNDARY_BUDGET_EXHAUSTED\`
+A single supervisor-authorized S3 diagnostic then ran on the unchanged frozen Product. It proved there is no provider runaway, but S3 still ends in retryable \`MATERIAL_GROUP_WAITING\` with the one parent native occurrence durably \`EXECUTED\` and not \`VERIFIED\`.
 
-\`metabot would exceed the 12-unit live ceiling\`
+Therefore S3 remains \`2/4 PARTIAL\`, below the required \`>=3/4\` gate.
 
-S1 and S2 completed GREEN. S3 raised an exception before terminal Product adjudication. Matrix fail-fast cancelled S4-S9.
+The full 9-sentinel panel was NOT run.
 
-The supervisor exception explicitly forbids another fix round after a failed final panel.
-
-Therefore the next legal action is:
-
-\`STOP / ARCHITECTURE REASSESSMENT / NEW SUPERVISOR DECISION REQUIRED\`
-
-Do not retry the panel and do not change a ceiling merely to make the benchmark pass.
+Architecture reassessment is now open. Architecture implementation/refactor is NOT authorized.
 
 ---
 
 ## 1. Development purpose
 
-The purpose of this branch is to make Brain V2 backend 30-case-ready through architecture closure, not through benchmark-specific patching.
+This branch exists to make the Brain V2 backend 30-case-ready through generic architecture laws and independent proof, not benchmark patching.
 
-The intended backend proves:
+Permanent goals:
 
-- one canonical owner for analytical meaning;
+- one canonical semantic authority;
 - Metabase owns native analytical HOW;
-- Dima owns business semantic authority and Evidence admission;
-- result-dependent continuation is source-backed by SelectionBinding;
-- Completion Ledger is canonical lifecycle authority;
+- Dima admits only governed Evidence;
+- result-dependent continuation is backed by exact SelectionBinding;
 - LangGraph owns durable orchestration/checkpoint/resume;
-- security/currentness/provenance fail closed;
-- broad quality is measured only after deterministic/provider-free closure.
+- native cognition/execution is effectively-once;
+- scope/currentness/security/provenance fail closed;
+- correctness and efficiency are measured separately.
 
 This phase is backend-only.
 
-UX/demo references mean **contract-ready for future UX**, not permission to build UI.
-
-Forbidden:
-
-- frontend;
-- web UI;
-- Ask screen;
-- Investigation screen;
-- Evidence Drawer;
-- Report/Decision UI;
-- dashboard UI integration;
-- demo frontend;
-- visual Product work.
+Frontend, UI, demo frontend, visual Product work and 30-case execution remain forbidden until explicitly authorized.
 
 ---
 
 ## 2. Permanent architecture
 
-Canonical authority path:
+Authority direction:
 
-\`user/business request\`
-→ \`ResearchBrief / ResearchScope\`
+\`ResearchBrief / ResearchScope\`
 → \`AnalyticalIntentV1\`
 → \`Metabase native HOW\`
-→ \`attested material / AnalyticalExecutionManifestV1\`
-→ \`governed Evidence\`
+→ \`durable native occurrence\`
+→ \`material observation / Evidence admission\`
 → \`SelectionBindingV1\`
+→ \`dependent continuation\`
 → \`Completion Ledger\`
 → \`P20\`
 
-Permanent ownership:
+Owners:
 
-- Metabase/Metabot: native analytics/query cognition and physical query representation.
-- LangGraph: orchestration, routing, durable checkpoint/resume lifecycle.
-- Dima domain stores: canonical business/research truth.
-- Thin Dima Brain: business semantics, scope/currentness, Evidence, epistemics, decisions, permissions and orchestration policy.
+- Metabase/Metabot: native query cognition and physical query representation.
+- LangGraph: orchestration, checkpoint, interrupt/resume.
+- Dima stores: canonical Research/domain truth.
+- Thin Dima Brain: business semantics, scope/currentness, Evidence, epistemics, permissions and orchestration policy.
 
-Dima does not become:
+Forbidden architecture moves:
 
-- a SQL/MBQL planner;
-- a second analytics engine;
-- a physical-query reverse-engineer;
-- a second semantic authority;
-- a benchmark vocabulary router.
-
-Physical implementation details are not Product semantic authority:
-
-- Lib UUID;
-- exact expression tree;
-- exact stage topology;
-- JVM datetime class;
-- physical metric expansion count;
-- exact aggregation placement.
+- second semantic authority;
+- Dima SQL/MBQL planner;
+- raw-schema escape;
+- Wren analytical fallback;
+- Agent API restoration;
+- benchmark fuzzy/regex/morph routing;
+- prompt patching for a specific sentinel;
+- engine rebuild without literal substrate proof.
 
 ---
 
-## 3. Frozen Product identities
+## 3. Durable-resume Product closure
 
-Semantic Product:
+Supervisor-authorized Product change is frozen at:
 
 \`e257a4754487ec4ac7bfe9fa93966e5ac4a5d1ea\`
 
-Migration head:
+The implemented law:
+
+\`WAITING\`
+→ durable LangGraph interrupt/checkpoint
+→ same-thread explicit resume
+→ same Research/scope/tenant/principal
+→ same durable EXECUTED occurrence
+→ read-only observation
+→ VERIFIED Evidence
+→ SelectionBinding
+→ dependent continuation.
+
+Resume is not a new user turn.
+
+Intake is not replayed.
+
+Scope is not changed.
+
+Native cognition replay = 0 for the durable parent.
+
+Dataset/native execution replay = 0.
+
+If observation remains unavailable, one explicit resume returns to bounded WAITING; no busy-loop.
+
+Provider-free recertification is GREEN:
+
+- focused Brain V2: \`37347542415\`
+- Phase-1 aggregate: \`37347542513\`
+- Phase-2/headless: \`37347542482\`
+- semantic conformance + Wave A/B + mutation: \`37347543030\`
+- frozen-family: \`37347542511\`
+
+Migration remains single-head:
 
 \`ff5b8e2c1a73\`
 
-Grammar/schema identities:
-
-- \`dima_analytical_grammar_v1\`
-- \`dima_analytical_intent_v1\`
-- \`dima_analytical_execution_manifest_v1\`
-- \`dima_selection_binding_v1\`
-
-Model topology:
-
-- Dima cognition: \`openai/gpt-5.6-luna\`
-- Metabot: \`openrouter/openai/gpt-5.6-luna\`
-- cascade: NONE
-
-No dima.12.
-
-Do not create a new engine build for a Product/orchestration defect.
-
 ---
 
-## 4. Closed V1 grammar
+## 4. Harness correction after the first final-panel attempt
 
-Supported primitives:
-
-- OBSERVE
-- BREAKDOWN
-- COMPARE
-- RANK
-- SELECT
-- DRILLDOWN
-- RELATE
-- RCA
-- REPORT
-- SCOPE_PATCH
-
-Important legal compositions:
-
-- OBSERVE
-- OBSERVE → BREAKDOWN
-- COMPARE
-- COMPARE → RANK
-- COMPARE → RANK → SELECT → DRILLDOWN
-- RELATE
-- RCA
-- RCA → NEXT_TEST → RCA
-- REPORT(current governed state)
-- SCOPE_PATCH → supported operation
-
-Unsupported semantics fail closed as UNSUPPORTED or CLARIFY.
-
-Do not invent a semantic family during benchmark recovery.
-
----
-
-## 5. Supervisor durable-resume exception — implemented
-
-The authorized scope was exactly:
-
-\`WAITING → durable same-thread resume\`
-
-Product semantic commits:
-
-- \`80fa1df917aa22d2f414f9e8625c441607b156c4\`
-  - explicit resumable material wait nodes;
-  - \`MATERIAL_GROUP_WAITING\` and \`MATERIAL_WAITING\` no longer terminal END;
-  - LangGraph dynamic \`interrupt()\` boundary.
-- \`e257a4754487ec4ac7bfe9fa93966e5ac4a5d1ea\`
-  - explicit \`resume_waiting()\`;
-  - same thread/tenant/principal/Research/scope verification;
-  - \`Command(resume=...)\`;
-  - WAITING cannot fall through generic crash-resume API.
-
-Permanent lifecycle law:
-
-1. material side effect may become durably EXECUTED;
-2. if semantic observation is temporarily unavailable, Product returns retryable WAITING;
-3. Brain V2 checkpoints at an explicit interrupt, not END;
-4. a later explicit resume is **not** a new user turn;
-5. Intake is not rerun;
-6. accepted scope is not mutated;
-7. same material group/request identity is resumed;
-8. durable occurrence is re-observed;
-9. Metabot cognition is not replayed for the already-EXECUTED parent;
-10. dataset/native execution is not replayed;
-11. if observation is still unavailable, one resume call returns to bounded WAITING and interrupts again;
-12. no internal busy-loop;
-13. once observation becomes legal/current, Evidence is admitted;
-14. dependent continuation may proceed only from VERIFIED parent material.
-
----
-
-## 6. Durable-resume provider-free proofs
-
-Provider-free/state-machine proof added for:
-
-- in-memory WAITING → interrupt → reconstructed service → same-thread resume → Evidence → completion;
-- generic \`MATERIAL_WAITING\` sibling;
-- repeated-unavailable resume remains WAITING after exactly one explicit resume;
-- Postgres checkpointer close/reopen + reconstructed service;
-- owner-level later \`run_next\` reuses exact native query/payload occurrence;
-- \`resumed_exact_occurrence = true\`;
-- Metabot post count remains 1 across the waiting/recovery boundary;
-- live harness before/after identity checks;
-- resume-provider delta protection.
-
-Full post-exception recertification:
-
-- focused Brain V2: \`37347542415\` — GREEN
-- Phase-1 aggregate: \`37347542513\` — GREEN
-  - deterministic closure: 186 passed
-  - Research/Scope: 317 passed
-  - P17: 145 passed
-  - P19: 53 passed
-  - P20/Core-B: 90 passed
-  - security/hygiene: 26 passed
-  - migration: single head \`ff5b8e2c1a73\`
-- Phase-2/headless: \`37347542482\` — GREEN
-- semantic conformance + Wave A + independent Wave B + mutation canaries: \`37347543030\` — GREEN
-- frozen-family closure: \`37347542511\` — GREEN
-
-Engine, prompts, semantic grammar, provider budgets, Metabot and model topology were unchanged.
-
----
-
-## 7. Final paid panel
-
-Authorized final run:
+Previous final-panel run:
 
 \`37348187000\`
 
-Checkout:
+The run stopped at S3 because the harness used one value, \`12\`, as both an efficiency target and a correctness exception boundary.
 
-\`5cb269f91524c0dfd76db658dcb0b34e5b8130a2\`
+That was wrong.
 
-Frozen semantic Product:
+Harness-only correction:
+
+- removed \`PinpointBudgetExceeded\`;
+- \`12\` is now only \`ORCHESTRATION_EFFICIENCY_SLO_UNITS\`;
+- orchestration-unit debt can make \`efficiency_green = false\` but cannot make Product correctness fail;
+- real hard runaway safety remains in the provider proxy;
+- exception artifacts now attempt to preserve:
+  - orchestration units used;
+  - units by owner;
+  - partial Brain state;
+  - native occurrences;
+  - provider receipt.
+
+There is no live \`model_budget\` CLI/contract in the current harness. No fake parameter was added.
+
+Real safety caps stayed unchanged:
+
+- provider total: 16
+- research_intake: 2 (scope-resume special case 4)
+- Metabase: 15
+- P17: 3
+- P18: 1
+- P19: 2
+- prompt tokens: 400000
+- completion tokens: 40000
+- reasoning tokens: 30000
+- provider cost: $0.35
+
+The orchestration tracker is a measurement layer, not a provider-call counter.
+
+Its material owner is named \`material_executor\`; each read-only same-occurrence observation entry is counted.
+
+---
+
+## 5. S3-only diagnostic — canonical result
+
+Run:
+
+\`37353003472\`
+
+Job:
+
+\`111908606464\`
+
+Probe:
+
+\`CHANGE_DEPENDENT_DRILLDOWN_V1\`
+
+Frozen Product:
 
 \`e257a4754487ec4ac7bfe9fa93966e5ac4a5d1ea\`
 
-### S1 — Direct analytics
+Workflow:
+SUCCESS.
 
-SUCCESS / mechanical GREEN.
+Harness exception:
+NONE.
 
-- provider requests: 3
-- prompt tokens: 37,866
-- completion tokens: 680
-- reasoning tokens: 125
-- latency: 10,117 ms
-- cost: $0.00876681
-- one VERIFIED native occurrence
-- duplicate native = 0
+Hard safety:
+CLEAN.
 
-### S2 — Temporal comparison
+Product mechanical result:
+RED.
 
-SUCCESS / mechanical GREEN.
+### Provider measurements
 
-- provider requests: 4
-- prompt tokens: 55,594
-- completion tokens: 1,229
-- reasoning tokens: 465
-- latency: 16,134 ms
-- cost: $0.00725577
-- one VERIFIED native occurrence
-- temporal projection closure remained GREEN
+- total requests: 5
+- research_intake: 1
+- Metabase provider calls: 4
+- blocked requests: 0
+- prompt tokens: 74,600
+- completion tokens: 2,976
+- reasoning tokens: 1,530
+- provider-reported cost: $0.01272674
+- latency: 52,329 ms
 
-### S3 — CHANGE ranking + dependent drilldown
+This is not provider runaway.
 
-STOP / exception.
+### Orchestration-efficiency measurement
 
-Exception:
+- SLO: 12 units
+- observed: 16 units
+- one Intake boundary
+- fifteen material-executor boundary entries
+- efficiency SLO: missed
 
-\`PINPOINT_ORCHESTRATION_BOUNDARY_BUDGET_EXHAUSTED\`
+The fifteen material entries are not fifteen Metabot provider calls.
 
-Detail:
+The frozen Product performs up to five observation entries per \`run_next()\`:
 
-\`metabot would exceed the 12-unit live ceiling\`
+- initial execution/observation attempt;
+- read-only observation backoff at 0.2 / 0.6 / 1.2 / 2.4 seconds.
 
-The live probe stopped before a terminal Product artifact was available:
+The live Brain path performs:
 
-- no final Brain state for scoring;
-- no final native-occurrence projection;
-- no final SelectionBinding/child result for scoring;
-- no valid provider receipt projection.
+- initial graph run;
+- up to two explicit same-thread resumes.
 
-The failing boundary is the certification live \`OrchestrationBudget.consume("metabot")\` guard.
+So:
 
-The current guard:
+\`3 × 5 = 15\`
 
-- allows at most 12 orchestration boundary units;
-- counts structured cognition boundaries;
-- counts each bounded material executor call as one Metabot unit.
-
-Runtime evidence showed multiple internal Metabot query-construction iterations before the boundary exhaustion, including an intermediate rejected query construction referencing unavailable column name \`metric\`.
-
-This is distinct from the previously fixed WAITING/resume lifecycle.
-
-### S4–S9
-
-No same-run result.
-
-They were cancelled by matrix fail-fast after the S3 job-level exception.
-
-Do not carry older panel results forward as same-SHA proof.
+material-executor entries are structurally explained.
 
 ---
 
-## 8. Final acceptance result
+## 6. Exact S3 state after diagnostic
+
+Accepted semantics are correct:
+
+- parent: May–June 2026 department CHANGE ranking;
+- child: select first ranked department and drill one level into machine;
+- dependency is explicit;
+- scope remains \`scope_v1\`.
+
+Exactly one parent native occurrence exists:
+
+- execution_link_id: \`58d8e98f-c604-4a3c-a029-6389f7ed7e8e\`
+- native_query_id: \`LHewV7dcCB1HRwZDgFn0d\`
+- query fingerprint: \`f6ba3fb1327c04b9bb58adb1c83a4ed6dcbc0baa192fa742d938b293ef1a9455\`
+- state: \`EXECUTED\`
+- Evidence: absent
+- receipt: absent
+
+Duplicate native execution:
+0.
+
+Brain state:
+
+- workflow_status: \`WAITING\`
+- last_completed_node: \`MATERIAL_GROUP_WAITING\`
+- Evidence revision: 0
+- parent obligation: DELEGATED
+- dependent child: READY
+- SelectionBinding: absent
+- child native drilldown: not executed
+- P17/P19/P20: unopened
+
+---
+
+## 7. Current first unclosed boundary
+
+The 12-unit correctness gate is no longer the blocker.
+
+The current first unclosed Product/substrate boundary is:
+
+\`durable EXECUTED parent occurrence\`
+→ read-only \`/api/dima/engine/v1/native-query-material-observation\`
+→ observation remains unavailable through all bounded same-occurrence attempts
+→ parent never becomes VERIFIED
+→ Evidence absent
+→ SelectionBinding absent
+→ dependent child cannot execute
+→ Brain remains WAITING.
+
+The Product correctly avoids replay.
+
+What is NOT yet known:
+
+The diagnostic artifact does not expose the underlying read-only observation error detail that caused each \`R1_NATIVE_MATERIAL_OBSERVATION_UNAVAILABLE\`.
+
+Therefore do not guess whether the cause is:
+
+- delayed native-occurrence visibility;
+- an HTTP response such as 404/422;
+- a material-observation shape/attestation issue;
+- timeout/transport;
+- or another read-only observation contract condition.
+
+That missing lower-level reason is the first observability gap for architecture reassessment.
+
+---
+
+## 8. S3 quality decision
+
+Existing canonical Product-quality rubric applies.
+
+Passed:
+
+- typed CHANGE ranking accepted;
+- result dependency accepted;
+- current scope preserved;
+- one durable native occurrence;
+- duplicate native = 0;
+- provider safety clean;
+- no P17/P19 contamination.
+
+Missing:
+
+- parent VERIFIED Evidence;
+- receipt;
+- SelectionBinding;
+- child drilldown;
+- terminal completion.
+
+Quality:
+
+\`2/4 PARTIAL\`
 
 Required:
 
-- complete 9-case same-SHA panel;
-- >=34/36;
-- every case >=3/4;
-- >=7 FULL;
-- exception = 0;
-- silent wrong = 0;
-- security violation = 0;
-- causal overclaim = 0;
-- duplicate native = 0.
+\`>=3/4\`
 
-Actual:
+Result:
 
-- complete 9-case panel: FAIL
-- >=34/36: NOT ADJUDICABLE
-- every case >=3/4: NOT ADJUDICABLE
-- >=7 FULL: NOT ADJUDICABLE
-- exception = 0: FAIL
-- observed silent wrong: 0
-- observed security/cross-tenant violation: 0
-- observed causal overclaim: 0
-- observed duplicate native: 0 in completed cases
+FAIL.
 
-Therefore:
+Therefore the supervisor condition for the full final panel was not met.
 
-\`30-CASE READY = NO\`
-
-Do not reinterpret S1/S2 success plus old panel results as a final seal.
+No new full 9-sentinel panel was run.
 
 ---
 
-## 9. Current blocker classification
+## 9. Current authorization
 
-The durable-resume Product law is provider-free GREEN.
+S3 diagnostic:
+OFF.
 
-The final paid seal was instead blocked by:
-
-\`S3 Metabot/native cognition path → live OrchestrationBudget 12-unit guard\`
-
-This is not permission to:
-
-- raise the live limit;
-- raise provider budgets;
-- change prompts;
-- change Metabot;
-- change the engine;
-- change grammar;
-- add benchmark vocabulary;
-- add fuzzy/regex/morph matching;
-- special-case S3;
-- retry the same panel hoping for a lower cognition path.
-
-The supervisor exception explicitly required STOP if the final panel missed acceptance.
-
----
-
-## 10. Authorization state
-
-Final paid-panel authorization:
-
+Final 9-panel:
 OFF.
 
 Broad paid:
-
 OFF.
 
 30-case:
-
 CLOSED.
 
 Frontend:
-
 NOT AUTHORIZED.
 
-No new fix round is authorized.
+Product changes:
+NOT AUTHORIZED.
+
+Architecture reassessment:
+OPEN, read-only until supervisor decision.
 
 ---
 
-## 11. Required architecture reassessment
+## 10. What architecture reassessment must answer
 
-A new supervisor decision must answer the bounded-cognition question before any further coding or paid run.
+The next decision must locate the exact owner of persistent material-observation unavailability while preserving effectively-once execution.
 
-The next review should distinguish at least:
+Required questions:
 
-1. whether the 12-unit live orchestration guard is a certification-only diagnostic ceiling or a permanent release invariant;
-2. whether a legal S3 path is required to fit under that invariant deterministically;
-3. whether Metabot's variable internal query-construction cognition must be represented/measured differently from Dima owner-boundary work;
-4. whether the S3 failure reveals a Product orchestration inefficiency, a Metabot cognition variance issue, or an evaluation-harness coupling problem;
-5. how to preserve the permanent laws:
-   - no engine change without proof;
-   - no prompt/benchmark patch;
-   - no provider-budget rescue;
-   - no parent native replay;
-   - no second semantic authority;
-   - no unbounded retry.
+1. What exact lower-level error does \`native-query-material-observation\` return for the persisted S3 parent occurrence?
+2. Is that failure transient visibility, semantic material-shape rejection, currentness mismatch, or another contract condition?
+3. Is the current 5-attempt × 3-turn observation policy the correct bounded lifecycle, or is it merely hiding a deterministic non-transient observation failure?
+4. Can the failure reason be persisted/telemetried without changing query semantics or replaying native work?
+5. Which owner must change, if any, while keeping:
+   - native replay = 0;
+   - parent cognition replay = 0;
+   - same thread/Research/scope;
+   - bounded WAITING;
+   - fail-closed Evidence;
+   - no second semantic authority?
 
-Until that decision exists:
-
-\`STOP\`
+Do not code the answer until a supervisor explicitly authorizes it.
 
 ---
 
-## 12. Development rules that remain permanent
+## 11. Next legal action
 
-Never:
+STOP paid work.
 
-- create Brain V3;
-- restore Wren execution;
-- add another analytics engine;
-- restore Agent API;
-- write SQL/MBQL planning inside Dima;
-- make physical query shape semantic authority;
-- duplicate canonical domain stores into graph state;
-- route via fuzzy/regex/morph/prompt benchmark vocabulary;
-- increase ceilings as a correctness fix;
-- retry paid same-SHA hoping for luck;
-- weaken tenant/principal/currentness/security;
-- bypass Evidence admission;
-- manufacture SelectionBinding from unverified material;
-- let P20 reopen analytics;
-- start frontend because backend is “almost ready.”
+Do not run S3 again.
 
-For any newly authorized future work:
+Do not run the full panel.
 
-\`RED → first invalid boundary → exact owner → generic invariant → provider-free reproducer → stateful/metamorphic siblings → generic fix → affected PF → wider PF → freeze → surgical live proof → receipt\`
+Do not change Product \`e257a475...\`.
 
----
+Do not change engine, prompt, grammar, Metabot or provider caps.
 
-## 13. Canonical documentation order
+Perform architecture reassessment / obtain supervisor decision for the persistent:
 
-1. \`backend/belgeler/metabase/README.md\`
-2. \`DIMA_BRAIN_V2_1_FINAL_ARCHITECTURE.md\`
-3. \`DIMA_BRAIN_V2_1_ENGINEERING_PLAYBOOK.md\`
-4. \`DIMA_BRAIN_V2_1_CURRENT_HANDOFF.md\`
-5. \`DIMA_BRAIN_V2_1_30CASE_READINESS_PROGRESS.md\`
-6. \`DIMA_BRAIN_V2_1_FORWARD_RUNTIME_LAWS.md\`
+\`EXECUTED → material observation unavailable\`
 
-Historical documents under \`legacy/\` are forensic context only.
+boundary.
 
----
+One-line handoff:
 
-## 14. One-line handoff
-
-\`Durable WAITING/resume closure = provider-free GREEN; final Product = e257a475...; final paid panel S1/S2 GREEN, S3 STOP on unchanged 12-unit live orchestration budget, S4-S9 cancelled; paid OFF; 30-case CLOSED; frontend forbidden; no further fix/retry authorized; architecture reassessment required.\`
+\`Product e257a475... remains frozen; 12-unit harness correctness bug is closed; S3-only diagnostic 37353003472 is safety-clean but still 2/4 because one durable parent stays EXECUTED/not VERIFIED after bounded same-occurrence observation, so no Evidence/SelectionBinding/child; full panel was not run; all paid auth is OFF; architecture reassessment is open.\`
