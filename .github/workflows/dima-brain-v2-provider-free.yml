@@ -16,6 +16,10 @@ on:
       - "backend/control_plane/models.py"
       - "backend/migrations/versions/*p18*"
       - "backend/tests/test_v3_brain_v2_*.py"
+      - "backend/tests/test_v3_analytical_boundary.py"
+      - "backend/tests/test_v3_selection_binding.py"
+      - "backend/tests/test_v3_v1_analytical_grammar.py"
+      - "backend/tests/test_v3_v1_completion_ledger.py"
   workflow_dispatch:
 
 permissions:
@@ -76,6 +80,10 @@ jobs:
         working-directory: backend
         run: |
           pytest -q \
+            tests/test_v3_analytical_boundary.py \
+            tests/test_v3_selection_binding.py \
+            tests/test_v3_v1_analytical_grammar.py \
+            tests/test_v3_v1_completion_ledger.py \
             tests/test_v3_brain_v2_contracts.py \
             tests/test_v3_brain_v2_graph.py \
             tests/test_v3_brain_v2_discovery_stateful.py \
