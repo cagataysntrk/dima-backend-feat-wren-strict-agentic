@@ -7283,3 +7283,119 @@ CLOSER — NOT READY
 
 NEXT LEGAL ACTION:
 Phase 10. Group S2 and S3 by existing owner laws; perform pattern research before coding; implement generic typed fixes only. No prompt/fuzzy/regex/benchmark patch, no engine build, no broad paid, no 30-case, no frontend.
+
+
+---
+
+### ACCELERATION PHASE 10 — ONE ROOT-FIX ROUND
+
+PHASE:
+10 — ONE ROOT FIX ROUND MAXIMUM
+
+STATUS: GREEN — TWO REDS GROUPED INTO EXISTING OWNER LAWS; FULL PROVIDER-FREE RECERTIFICATION GREEN
+
+Product semantic SHA:
+`9132e54f0f26c5470f0a82a2d5edaddb040b36b5`
+
+Recertification checkout:
+`0e17aa54c82ca3b7394b32e47aaebcfcda2cf88b` — test-only recert anchor over the semantic Product.
+
+Engine SHA/tag/digest:
+`4c49b8da6b424b0fa4d8ef340ca1b238d12980c1` / `0.63.18-dima.11.1` / `sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d`
+
+Objective:
+Close the only two RED boundaries discovered by the complete first frozen nine-sentinel panel without case patches, prompt morphology, benchmark vocabulary, new engine builds, or grammar expansion.
+
+Architecture owners and generic fixes:
+
+1. S2 / temporal comparison projection
+- owner: `research_material_coverage.py` Evidence-admission projection.
+- prior defect: after the exact native occurrence had already passed material-scope validation for the accepted comparison periods, final comparison projections were still required to expose the intermediate governed time column physically.
+- generic law: an attested native comparison or CHANGE final projection may omit the intermediate time breakout only when that exact occurrence already passed material-scope validation. Unattested projections still fail closed. If the final result does expose the governed time column, exact row-level period coverage remains mandatory.
+- this extends the already-certified derived CHANGE projection law to its plain-comparison sibling; it does not copy query-planner authority into Dima.
+
+2. S3 / durable EXECUTED observation recovery
+- owner: `ResearchAskOrchestrator.run_next` bounded read-only observation recovery.
+- prior defect: the dataset side-effect was durably EXECUTED, but the native material-observation projection remained temporarily unavailable beyond the old 0.8 s observation window, leaving the graph WAITING although no native replay was legal or necessary.
+- generic law: after an occurrence is durably EXECUTED, retry only the read-only material-observation projection with bounded exponential backoff over the same persisted query/result. Never replay Metabot cognition or `/api/dataset`. If observation remains unavailable after the bounded window, preserve EXECUTED and return WAITING/fail-safe.
+
+Pattern research:
+- Metabase officially separates query/result projection from source schema and lets queries expose selected result columns; therefore forcing an intermediate temporal field into a final projection is a physical-shape requirement, not business semantic authority.
+- LangGraph durable execution/checkpoint guidance treats transient failures as retryable while preserving state and recommends keeping expensive/retrieved data durable rather than repeating completed work.
+- these patterns align with the existing Dima boundary: semantic attestation + durable side-effect identity, not query-shape reverse engineering or replay.
+
+Files changed:
+- `backend/app/v3/research_material_coverage.py`
+- `backend/tests/test_v3_research_material_coverage.py`
+- `backend/app/v3/research_product.py`
+- `backend/tests/test_v3_p14_product.py`
+- `backend/tests/test_v3_v1_analytical_grammar.py` recertification anchor only
+
+Old representation removed/deprecated:
+The strict rule “attested plain comparison final rowset must physically retain the governed time column” is deprecated. Exact period semantics are proven at the attested material boundary; final projection physical columns are not a second semantic authority.
+
+Canonical semantic authority after this phase:
+Unchanged:
+ResearchBrief/ResearchScope own accepted WHAT/currentness; AnalyticalIntentV1 projects it; Metabase owns native HOW; attested native material + AnalyticalExecutionManifestV1 prove fulfilled semantics; Evidence admission consumes that proof; durable execution state prevents replay.
+
+Provider-free runs:
+- focused Brain V2: `37335380989` — GREEN
+- Phase-2/headless: `37335380988` — GREEN
+- frozen-family closure: `37335380727` — GREEN
+- semantic conformance + Wave A/B + mutation canaries: `37335381048` — GREEN
+- full Phase-1 aggregate: `37335381093` — GREEN
+- migration remains single-head; engine identity unchanged.
+
+Paid runs:
+0 new in Phase 10.
+
+Manual quality score:
+N/A — Product changes are provider-free recertified; second/final panel is next.
+
+Provider requests:
+0 paid
+
+Tokens:
+0 paid
+
+Latency:
+provider-free only.
+
+Cost:
+$0 provider cost.
+
+First invalid boundary:
+Both Phase-8 RED boundaries have generic owner-level fixes and no provider-free regression remains.
+
+New semantic family discovered:
+NO
+
+Exception:
+0 provider-free gate failures
+
+Silent wrong:
+0
+
+Security:
+0
+
+Causal overclaim:
+0
+
+Duplicate native:
+0
+
+What is proven:
+- S2 physical-shape duplication was collapsed into the attested semantic boundary.
+- S3 transient observation recovery remains effectively-once for native execution.
+- all deterministic, holdout, stateful, frozen-family, security and headless gates are GREEN after both fixes.
+- no engine build, prompt change, regex/fuzzy matcher, benchmark phrase, or V1 grammar enlargement was needed.
+
+What remains:
+Freeze semantic Product `9132e54f...` and run exactly one second/final complete nine-sentinel panel. Per supervisor directive, there is no third generic fix cycle if that panel discovers multiple unrelated semantic primitives.
+
+30-case readiness:
+CLOSER — NOT YET READY
+
+NEXT LEGAL ACTION:
+Freeze `9132e54f0f26c5470f0a82a2d5edaddb040b36b5`; repin the exact nine-sentinel authorization to the new Product and the GREEN recertification receipts; execute one complete same-SHA panel under the same engine digest and Luna/Luna/no-cascade topology. No broad and no 30-case.
