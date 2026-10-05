@@ -29,7 +29,7 @@ from app.v3.research_analytical_scope import (
 from app.v3.research_contracts import ResearchBrief
 from app.v3.research_material_coverage import assert_material_result_coverage
 from app.v3.research_product import ResearchAskOrchestrator
-from app.v3.research_result_dependency import resolve_first_ranked_entity
+from app.v3.research_result_dependency import resolve_selection_binding_v1
 from app.v3.research_store import ResearchSessionStore
 from control_plane.authorize import Principal
 
@@ -276,21 +276,52 @@ def test_a3_frozen_artifact_replays_through_evidence_dependency_and_child_readin
         session=session,
         obligation_id=child_id,
     )
-    resolution = resolve_first_ranked_entity(
+    parent_question = next(
+        item for item in brief.questions if item.goal_id == ranking_id
+    )
+    assert parent_question.ranking is not None
+    assert parent_question.ranking.basis.value == "change"
+    assert parent_question.ranking.direction == "desc"
+    assert ranking_receipt.execution_id is not None
+    assert ranking_receipt.result_hash is not None
+    frozen_parent_before = json.dumps(
+        ranking_result,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+
+    resolution = resolve_selection_binding_v1(
         base_contract=child_contract,
         source_goal_id=ranking_id,
         source_execution_obligation_id=ranking_id,
         source_evidence_id=ranking_evidence.artifact_id,
         source_receipt_id=ranking_receipt.receipt_id,
         source_result_hash=ranking_receipt.result_hash,
+        parent_execution_id=ranking_receipt.execution_id,
         dimension_semantic_id=(
             frozen["expected"]["dependency_dimension_semantic_id"]
         ),
         native_field_id=2,
         parent_result=ranking_result,
+        ranking_basis=parent_question.ranking.basis,
+        ranking_direction=parent_question.ranking.direction,
+        top_k=parent_question.ranking.limit,
         dimension_name="Department",
+        expected_parent_result_hash=ranking_receipt.result_hash,
     )
-    assert resolution.selected_value == frozen["expected"]["selected_entity"]
+    binding = resolution.selection_binding
+    assert binding is not None
+    assert binding.parent_execution_id == ranking_receipt.execution_id
+    assert binding.parent_result_hash == ranking_receipt.result_hash
+    assert binding.selected_row_index == 0
+    assert binding.selected_semantic_id == "dimension.department"
+    assert binding.selected_value == frozen["expected"]["selected_entity"]
+    assert binding.selected_value == "Assembly"
+    assert binding.selection_rule.selection == "first_ranked_entity"
+    assert binding.selection_rule.ranking_basis.value == "change"
+    assert binding.selection_rule.ranking_direction == "desc"
+    assert binding.scope_version_id == "scope_v1"
     assert resolution.selected_value == "Assembly"
     assert resolution.contract.scope_identity == child_contract.scope_identity
     assert resolution.contract.scope_fingerprint == child_contract.scope_fingerprint
@@ -298,6 +329,15 @@ def test_a3_frozen_artifact_replays_through_evidence_dependency_and_child_readin
         "dimension.department"
     )
     assert resolution.contract.filters[-1].value == "Assembly"
+
+    # The durable parent result is read once. Selection must not replay native
+    # work, re-rank, or recalculate CHANGE while compiling the child filter.
+    assert json.dumps(
+        ranking_result,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ) == frozen_parent_before
 
     groups = project_material_groups(session)
     by_requirement = {

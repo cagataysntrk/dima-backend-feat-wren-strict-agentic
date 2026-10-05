@@ -865,7 +865,13 @@ class ResearchAskOrchestrator:
         bridge_factory, material_executor = self._runtime()
         tenant = self.tenant_binding_for(principal)
         subject = self._principal_subject(principal)
-        session = self._store.load(session_id, tenant=tenant, principal=subject)
+        # Every analytical execution must run only on the canonical lineage head.
+        # This is a currentness gate, not a SelectionBinding-specific rule: an old
+        # scope version must never acquire fresh native material after a follow-up
+        # has superseded it.
+        session = self._store.assert_lineage_head(
+            self._store.load(session_id, tenant=tenant, principal=subject)
+        )
         delegatable = self._store.delegatable_ids(
             session_id,
             tenant=tenant,

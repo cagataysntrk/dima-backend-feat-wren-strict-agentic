@@ -24,6 +24,7 @@ from app.v3.research_contracts import (
     ResearchSemanticRef,
     ResearchTimePeriod,
     RankingSurface,
+    ScopeVersion,
     SemanticTargetKind,
 )
 from app.v3.evidence import DimaQueryReceipt, EvidenceArtifact, EvidenceState
@@ -602,6 +603,57 @@ def test_causal_change_authority_projects_to_native_material_contract():
         "time_dimension": "cand_sales_order_date",
         "minimum_distinct_values": 2,
     }
+
+
+
+
+def test_run_next_rejects_superseded_scope_before_any_native_work():
+    engine = _db_engine()
+    factory = BridgeFactory()
+    executor = MaterialExecutor()
+    product = _product(engine, factory, executor)
+
+    original_brief = _brief(two=False)
+    original = product.start_from_brief(
+        brief=original_brief,
+        request_ref="r-p14-stale-v1",
+        source_message_hash=hashlib.sha256(b"stale v1").hexdigest(),
+        principal=_principal(),
+    )
+    next_brief = original_brief.model_copy(
+        update={
+            "brief_id": "rb-product-p14-v2",
+            "scope": original_brief.scope.model_copy(
+                update={
+                    "scope_version": ScopeVersion(
+                        version_id="scope_v2",
+                        ordinal=2,
+                        parent_version_id="scope_v1",
+                    )
+                }
+            ),
+        }
+    )
+    newer = product.start_from_brief(
+        brief=next_brief,
+        request_ref="r-p14-stale-v2",
+        source_message_hash=hashlib.sha256(b"stale v2").hexdigest(),
+        principal=_principal(),
+        prior_session_id=original.session_id,
+    )
+    assert newer.lineage_id == original.lineage_id
+    assert newer.accepted_brief is not None
+    assert newer.accepted_brief.scope.scope_version.version_id == "scope_v2"
+
+    with pytest.raises(ResearchPersistenceError) as exc:
+        product.run_next(
+            session_id=original.session_id,
+            principal=_principal(),
+        )
+
+    assert exc.value.code == "P14_RESEARCH_SCOPE_SUPERSEDED"
+    assert factory.metabot_posts == 0
+    assert executor.calls == []
 
 
 def test_product_research_entry_persists_session_and_requires_native_runtime():
