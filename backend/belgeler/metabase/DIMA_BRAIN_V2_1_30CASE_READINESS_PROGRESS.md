@@ -6122,3 +6122,32 @@ The hard total remains the controlling bound. The source ceilings prohibit unrel
 **30-case readiness:** NOT READY.
 
 **NEXT LEGAL ACTION:** execute one A3 original on the new checkout with `research_intake<=2`, hard total `<=16`, automatic retry OFF. No sibling/A4+, no engine change, no broad/30-case/frontend until A3 original is `4/4 FULL`.
+
+
+---
+
+## PHASE 1 — A3 VERTICAL CHAIN AUDIT — 2026-10-05
+
+**STATUS:** RUNNING — provider-free frozen-artifact replay added; paid remains OFF.
+
+**Product SHA:** \`957fea9876cfa4cdf8ee3a4f5701c0b6cfc2a40e\`
+
+**Engine SHA/tag/digest:** \`4c49b8da6b424b0fa4d8ef340ca1b238d12980c1\` / \`v0.63.18-dima.11.1.1\` / \`sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d\`
+
+**Objective:** replay immutable A3 run \`37237863865\` / artifact \`11315439520\` on current Product without LLM/provider calls and prove deterministic continuation after the Evidence-admission recovery.
+
+**Owner chain audited:** Intake owns PAIR/SPAN; Metabot owns query shape; dima.11.1 owns CHANGE observation; Dima material validation owns accepted-vs-observed compatibility; result coverage owns final-row Evidence legality; ResearchManager owns Evidence admission/obligation state; \`research_result_dependency.py\` owns first-ranked entity projection; \`brain_v2/material_groups.py\` owns dependency-ready child scheduling; P20 owns presentation.
+
+**Duplicate authority found:** no duplicate production owner found in the audited continuation chain.
+
+**Frozen replay input:** exact A3 comparison rows and exact CHANGE ranking rows from artifact \`11315439520\`, including \`Assembly +267\`, \`Packaging +74\`, \`Utilities +34\`, \`Maintenance +18\`, \`Quality +8\`.
+
+**Files changed:** \`backend/tests/test_v3_p14_native_gateway.py\` only for replay coverage. Semantic production files changed = \`0\`.
+
+**Provider calls:** \`0\`.
+
+**First invalid boundary:** pending provider-free execution of the new deterministic replay.
+
+**30-case readiness:** NOT READY.
+
+**NEXT LEGAL ACTION:** require this replay and the full Phase-1 gate GREEN. Only then proceed to the ops-only live harness repin/budget audit. No paid run yet.
