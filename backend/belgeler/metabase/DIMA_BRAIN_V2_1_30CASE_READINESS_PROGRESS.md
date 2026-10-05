@@ -6151,3 +6151,6 @@ The hard total remains the controlling bound. The source ceilings prohibit unrel
 **30-case readiness:** NOT READY.
 
 **NEXT LEGAL ACTION:** require this replay and the full Phase-1 gate GREEN. Only then proceed to the ops-only live harness repin/budget audit. No paid run yet.
+
+
+**Replay retry note:** first provider-free execution \`37281746708\` reached the new vertical replay and failed only because the test fixture's synthetic Evidence ID was one hex character short of the canonical \`evi_[a-f0-9]{24}\` shape. Existing Research/scope suite was otherwise \`311 passed\`. Production semantic code was not implicated. Fixture shape corrected in \`f7a21d76839ac1c92f698d6b46dba1bbee63166b\`; provider calls remain \`0\`.
