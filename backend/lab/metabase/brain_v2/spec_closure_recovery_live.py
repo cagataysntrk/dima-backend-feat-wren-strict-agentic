@@ -43,7 +43,8 @@ from lab.metabase.brain_v2.live_support import (
     NativeRequestAudit,
     NativeResearchMaterialExecutor,
     NativeSubjectSessionProvider,
-    OrchestrationBudget,
+    ORCHESTRATION_EFFICIENCY_SLO_UNITS,
+    OrchestrationEfficiencyTracker,
     build_catalog,
     build_control_plane,
     execution_links,
@@ -137,15 +138,14 @@ def _case_runtime(
     expected: NativeEngineIdentity,
     proxy: str,
     checkpointer: Any,
-    model_budget: int,
 ):
-    budget = OrchestrationBudget(12)
+    tracker = OrchestrationEfficiencyTracker(ORCHESTRATION_EFFICIENCY_SLO_UNITS)
     raw_material = NativeResearchMaterialExecutor(
         subject_provider=subjects,
         store=store,
         expected_identity=expected,
     )
-    material = BoundedMaterialExecutor(raw_material, budget=budget)
+    material = BoundedMaterialExecutor(raw_material, tracker=tracker)
     research = ResearchAskOrchestrator(
         store=store,
         bridge_factory=subjects,
@@ -176,10 +176,10 @@ def _case_runtime(
         base_url=proxy + "/source/p19_manager/v1",
         owner="p19_manager",
     )
-    intake_transport = BoundedStructuredTransport(raw_intake, budget=budget, owner="research_intake")
-    p17_transport = BoundedStructuredTransport(raw_p17, budget=budget, owner="p17_manager")
-    p18_transport = BoundedStructuredTransport(raw_p18, budget=budget, owner="p18_manager")
-    p19_transport = BoundedStructuredTransport(raw_p19, budget=budget, owner="p19_manager")
+    intake_transport = BoundedStructuredTransport(raw_intake, tracker=tracker, owner="research_intake")
+    p17_transport = BoundedStructuredTransport(raw_p17, tracker=tracker, owner="p17_manager")
+    p18_transport = BoundedStructuredTransport(raw_p18, tracker=tracker, owner="p18_manager")
+    p19_transport = BoundedStructuredTransport(raw_p19, tracker=tracker, owner="p19_manager")
 
     intake = ResearchIntakeCompiler(transport=intake_transport)
     claims = ClaimLineageStore(research_store=store, db_engine=db_engine)
@@ -237,7 +237,7 @@ def _case_runtime(
         "epistemics": epistemics,
         "reports": reports,
         "relationships": relationships,
-        "budget": budget,
+        "budget": tracker,
         "transports": (raw_intake, raw_p17, raw_p18, raw_p19),
         "principal": current_principal,
     }
@@ -445,7 +445,6 @@ def _run_case(
         expected=expected,
         proxy=proxy,
         checkpointer=checkpointer,
-        model_budget=int(case.get("max_model_calls", 14)),
     )
     service: BrainV2Service = runtime["service"]
     current_principal = runtime["principal"]
