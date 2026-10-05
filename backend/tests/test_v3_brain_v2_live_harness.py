@@ -570,3 +570,6 @@ def test_basic_readiness_mechanical_gate_needs_governed_evidence_without_researc
     assert result["p17_provider_requests"] == 0
     assert result["p19_provider_requests"] == 0
     assert result["duplicate_native_execution_zero"] is True
+    assert "scope_version_advanced" not in result["checks"]
+    assert "two_intake_calls" not in result["checks"]
+    assert "two_native_acquisitions" not in result["checks"]

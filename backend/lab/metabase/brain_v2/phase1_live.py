@@ -408,7 +408,7 @@ def _mechanical(
                 "provider_slo": common["provider_requests"] <= 12,
             }
         )
-    else:
+    elif probe_id == SCOPE_RESUME_PROBE:
         scope = scope_resume or {}
         checks.update(
             {

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-# Phase-6 recertification anchor: closed grammar tests are provider-free and benchmark-agnostic.
+# Phase-6 recertification anchor v2: harness routing fixed; grammar remains provider-free and benchmark-agnostic.
 
 import pytest
 from hypothesis import given, settings, strategies as st
