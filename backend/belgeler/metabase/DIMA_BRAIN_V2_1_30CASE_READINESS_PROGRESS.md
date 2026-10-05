@@ -7721,3 +7721,147 @@ Frontend = NOT AUTHORIZED.
 
 NEXT LEGAL ACTION:
 SUPERVISOR DECISION REQUIRED. No further Product semantic commit, no third paid final panel, no broad 30-case, and no frontend work under the current directive.
+
+
+---
+
+### SUPERVISOR EXCEPTION — ONE FINAL DURABLE-RESUME CLOSURE
+
+PHASE:
+SUPERVISOR EXCEPTION — WAITING -> DURABLE SAME-THREAD RESUME
+
+STATUS: GREEN — PROVIDER-FREE CLOSURE + FULL RECERTIFICATION GREEN; FINAL PAID PANEL NOT YET RUN
+
+Product semantic SHA:
+\`e257a4754487ec4ac7bfe9fa93966e5ac4a5d1ea\`
+
+Recertification checkout:
+\`e3aadc7107675a78150dc325078017273bc5b002\` — tests/lab/recert anchor only above the semantic Product.
+
+Engine SHA/tag/digest:
+\`4c49b8da6b424b0fa4d8ef340ca1b238d12980c1\` / \`0.63.18-dima.11.1\` / \`sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d\`
+
+Objective:
+Complete only the Brain V2 retryable material lifecycle contract:
+\`WAITING -> durable checkpoint/interrupt -> same-thread explicit resume -> same durable EXECUTED occurrence -> read-only observation -> VERIFIED Evidence -> dependent continuation\`.
+
+Architecture owner:
+LangGraph Brain V2 orchestration lifecycle only. Research/Scope, AnalyticalIntent/ExecutionManifest, Evidence, SelectionBinding, Completion, Metabase query cognition, engine and closed V1 grammar remain unchanged.
+
+Files changed in semantic Product:
+- \`backend/app/v3/brain_v2/graph.py\`
+- \`backend/app/v3/brain_v2/service.py\`
+
+Test/lab support:
+- \`backend/tests/test_v3_brain_v2_graph.py\`
+- \`backend/tests/test_v3_brain_v2_postgres_checkpoint.py\`
+- \`backend/tests/test_v3_p14_product.py\`
+- \`backend/lab/metabase/brain_v2/phase1_live.py\`
+- \`backend/tests/test_v3_brain_v2_live_harness.py\`
+- recertification anchor in \`backend/tests/test_v3_v1_analytical_grammar.py\`
+
+Generic lifecycle law:
+1. \`MATERIAL_GROUP_WAITING\` and generic \`MATERIAL_WAITING\` no longer route to terminal END.
+2. Each routes to an explicit LangGraph \`interrupt()\` wait node backed by the existing checkpointer.
+3. Resume uses \`Command(resume=...)\` on the same \`thread_id\`; it is not a new user turn.
+4. No Intake or scope mutation occurs on resume.
+5. Material-group WAITING preserves \`active_material_group_id\`, so the same material owner/request key is selected on resume.
+6. Each \`resume_waiting()\` invocation performs exactly one bounded re-observation attempt. If still unavailable, the graph interrupts again and remains WAITING. There is no internal busy-loop.
+7. Existing Research Product durable-occurrence logic remains authoritative: an EXECUTED occurrence is reused; Metabot cognition and dataset/native execution are not replayed.
+8. Resume enforces unchanged tenant, principal, Research session and scope version.
+
+Provider-free state-machine proof:
+- In-memory \`WAITING -> checkpoint -> reconstructed service -> resume -> Evidence -> completion\` GREEN.
+- Generic \`MATERIAL_WAITING\` sibling GREEN.
+- Repeated unavailable observation remains WAITING after exactly one explicit resume; no busy-loop GREEN.
+- Postgres checkpointer reconstruction/reopen test GREEN under Phase-1 aggregate.
+- P14 two-top-level-call sibling proves later observation uses the same query/payload occurrence, \`resumed_exact_occurrence = true\`, Metabot posts remain 1 and Evidence becomes VERIFIED.
+- Live harness now records before/after occurrence identities and fails S3 if an EXECUTED parent changes \`execution_link_id\`, \`native_query_id\` or query fingerprint, or if resume reopens Intake/Metabot/P17/P18/P19 cognition.
+
+Pattern research:
+- LangGraph persistence/checkpoints preserve thread-scoped state and successful writes for fault-tolerant resumption.
+- LangGraph interrupts persist the graph state and require the same thread identity for resume; \`Command(resume=...)\` is the intended dynamic-resume mechanism.
+- This matches Dima's effectively-once native law: durable side effects are not repeated; only read-only observation is retried.
+
+Provider-free runs:
+- focused Brain V2: \`37347542415\` — GREEN; focused suite 225 passed / 1 skipped.
+- Phase-1 aggregate: \`37347542513\` — GREEN.
+  - deterministic closure: 186 passed
+  - Research/Scope authority: 317 passed
+  - P17 regressions: 145 passed
+  - P19 regressions: 53 passed
+  - P20/Core-B: 90 passed
+  - security/repository hygiene: 26 passed
+  - migration graph: single head \`ff5b8e2c1a73\`
+- Phase-2/headless: \`37347542482\` — GREEN.
+- semantic conformance + Wave A + independent Wave B + mutation canaries: \`37347543030\` — GREEN.
+- frozen-family closure: \`37347542511\` — GREEN.
+
+Paid runs:
+0 new for the supervisor exception so far.
+
+Manual quality score:
+N/A until the one authorized final 9-sentinel panel.
+
+Provider requests:
+0 paid.
+
+Tokens:
+0 paid.
+
+Latency:
+provider-free CI only.
+
+Cost:
+$0 provider cost.
+
+First invalid boundary:
+Closed provider-free. The prior \`MATERIAL_GROUP_WAITING -> END\` lifecycle gap has been replaced by an explicit resumable checkpoint boundary.
+
+New semantic family discovered:
+NO.
+
+Exception:
+0 provider-free failures.
+
+Silent wrong:
+0
+
+Security:
+0
+
+Causal overclaim:
+0
+
+Duplicate native:
+0
+
+What is proven:
+- WAITING is a durable orchestration pause, not a terminal graph completion.
+- resume is same-thread and not a new Intake/user turn.
+- scope/tenant/principal/Research identity remain unchanged.
+- same durable EXECUTED native occurrence can be re-observed later without Metabot or dataset replay.
+- unavailable observation remains bounded WAITING rather than busy-looping.
+- all required provider-free, holdout, mutation and frozen-family gates are GREEN.
+- engine, prompts, grammar, provider budgets and Metabot were not changed.
+
+Frozen candidate identity:
+- Product semantic SHA: \`e257a4754487ec4ac7bfe9fa93966e5ac4a5d1ea\`
+- engine SHA: \`4c49b8da6b424b0fa4d8ef340ca1b238d12980c1\`
+- engine release: \`0.63.18-dima.11.1\`
+- engine digest: \`sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d\`
+- migration head: \`ff5b8e2c1a73\`
+- grammar: \`dima_analytical_grammar_v1\`
+- AnalyticalIntent: \`dima_analytical_intent_v1\`
+- ExecutionManifest: \`dima_analytical_execution_manifest_v1\`
+- SelectionBinding: \`dima_selection_binding_v1\`
+- model topology: Luna / Luna / no cascade
+
+What remains:
+Exactly one final nine-sentinel panel on this new frozen Product SHA. Old 8/9 FULL results are not carried forward as a same-SHA seal.
+
+30-case readiness:
+CLOSER — FINAL PANEL REQUIRED.
+
+NEXT LEGAL ACTION:
+Authorize and run exactly one final same-SHA S1-S9 panel on Product \`e257a475...\` under the unchanged certified engine and Luna topology. If acceptance passes (>=34/36, every case >=3/4, >=7 FULL, zero exception/silent-wrong/security/causal-overclaim/duplicate-native), seal \`30-CASE READY = YES\` and STOP. Otherwise STOP without another fix round.
