@@ -3698,3 +3698,17 @@ def test_result_dependency_foreign_scope_binding_fails_closed() -> None:
         )
 
     assert exc.value.code == "R1_SEMANTIC_REF_OUTSIDE_ACCEPTED_SCOPE"
+
+
+def test_a3_frozen_artifact_vertical_replay_is_part_of_phase1_gate():
+    """Execute the immutable A3 replay inside the canonical Phase-1 suite."""
+
+    import runpy
+    from pathlib import Path
+
+    replay = runpy.run_path(
+        str(Path(__file__).with_name("test_v3_brain_v2_a3_vertical_replay.py"))
+    )
+    replay[
+        "test_a3_frozen_artifact_replays_through_evidence_dependency_and_child_readiness"
+    ]()
