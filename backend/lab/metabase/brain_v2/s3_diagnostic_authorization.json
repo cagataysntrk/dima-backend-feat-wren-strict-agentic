@@ -1,6 +1,6 @@
 {
   "schema_version": "dima_brain_v2_1_s3_diagnostic_v1",
-  "enabled": true,
+  "enabled": false,
   "candidate_product_sha": "ae4e0348601774082b0270f23d6de126e71e6055",
   "provider_free_status": "GREEN",
   "provider_free_phase1_run_id": 37363967416,
@@ -28,5 +28,5 @@
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
   "frontend_allowed": false,
-  "note": "Supervisor-authorized single S3 diagnostic for the frozen P14 lifecycle correction Product ae4e0348.... Provider-free focused/Phase-1/Phase-2/semantic Wave A+B+mutation/frozen-family are GREEN. Engine, prompt, grammar, Metabot/model topology and hard provider/source/token/cost ceilings are unchanged. Exactly one CHANGE_DEPENDENT_DRILLDOWN_V1 live diagnostic is authorized. Full nine-sentinel panel remains unauthorized until S3 reaches >=3/4 with exception=0, exactly one parent execution, successful material observation, VERIFIED Evidence, SelectionBinding, child drilldown, duplicate-native=0 and clean provider safety."
+  "note": "CONSUMED: authorized P14 S3 diagnostic 37366103013 completed on frozen Product ae4e0348601774082b0270f23d6de126e71e6055. Exact deterministic failure was recovered without another paid run: HTTP 422 NATIVE_METRIC_EXPANSION_UNSUPPORTED — P13B-v1 certifies one native metric aggregation only. Owner = engine native attestation structural capability. Product remains frozen; next paid S3 requires certified engine fix + full provider-free closure + fresh authorization."
 }
