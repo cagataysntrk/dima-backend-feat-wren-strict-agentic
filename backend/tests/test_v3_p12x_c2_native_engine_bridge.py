@@ -10,6 +10,7 @@ from pydantic import ValidationError
 from app.v3.substrate.metabase.native_engine import (
     NativeEngineBridge,
     NativeEngineBridgeError,
+    NativeEngineEndpointError,
     NativeEngineIdentityMismatch,
     NativeEngineStreamError,
 )
@@ -650,3 +651,78 @@ def test_native_direct_dataset_permission_failure_stays_native_http_failure():
             bridge.execute_dataset({"database": 1, "type": "query", "query": {}})
     assert exc.value.status_code == 403
     assert "permissions" in exc.value.detail
+
+
+
+@pytest.mark.parametrize(
+    ("status_code", "error_code"),
+    (
+        (404, "NATIVE_QUERY_OCCURRENCE_NOT_FOUND"),
+        (409, "NATIVE_QUERY_STATE_MISMATCH"),
+        (422, "NATIVE_MATERIAL_CHANGE_RANKING_UNPROVABLE"),
+    ),
+)
+def test_c2_material_observation_preserves_typed_engine_error(
+    status_code,
+    error_code,
+):
+    conversation_id = UUID("00000000-0000-4000-8000-000000000001")
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/api/dima/engine/v1/native-query-material-observation":
+            return httpx.Response(
+                status_code,
+                json={
+                    "message": "typed engine failure",
+                    "data": {"dima/error-code": error_code},
+                },
+            )
+        return httpx.Response(599)
+
+    with NativeEngineBridge(
+        base_url="http://metabase",
+        session_token="fixture-session",
+        expected_identity=IDENTITY,
+        transport=httpx.MockTransport(handler),
+    ) as bridge:
+        with pytest.raises(NativeEngineEndpointError) as exc:
+            bridge.observe_native_query_material(
+                conversation_id=conversation_id,
+                native_query_id="native-q",
+            )
+
+    assert exc.value.status_code == status_code
+    assert exc.value.error_code == error_code
+    assert exc.value.detail == "typed engine failure"
+
+
+def test_c2_exact_execution_preserves_typed_engine_error():
+    conversation_id = UUID("00000000-0000-4000-8000-000000000001")
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/api/dima/engine/v1/native-query-execution":
+            return httpx.Response(
+                409,
+                json={
+                    "message": "occurrence drifted",
+                    "dima/error-code": "NATIVE_QUERY_EXECUTION_FINGERPRINT_MISMATCH",
+                },
+            )
+        return httpx.Response(599)
+
+    with NativeEngineBridge(
+        base_url="http://metabase",
+        session_token="fixture-session",
+        expected_identity=IDENTITY,
+        transport=httpx.MockTransport(handler),
+    ) as bridge:
+        with pytest.raises(NativeEngineEndpointError) as exc:
+            bridge.execute_native_query(
+                conversation_id=conversation_id,
+                native_query_id="native-q",
+                expected_pmbql_fingerprint="a" * 64,
+                expected_attestation_id="att-test",
+            )
+
+    assert exc.value.status_code == 409
+    assert exc.value.error_code == "NATIVE_QUERY_EXECUTION_FINGERPRINT_MISMATCH"
