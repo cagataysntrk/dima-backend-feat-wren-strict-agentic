@@ -2215,6 +2215,52 @@ def _span_change_ranking_contract():
     )
 
 
+def test_span_change_level_observation_reaches_canonical_boundary() -> None:
+    _, session, _, _ = session_and_link(db_engine())
+    observation = rich_material_observation(
+        temporal_scopes=[
+            {
+                "time_field_id": 30,
+                "table_id": 10,
+                "lower_bound": "2026-05-01",
+                "lower_inclusive": True,
+                "upper_bound": "2026-07-01",
+                "upper_inclusive": False,
+            }
+        ],
+        ranking=[
+            {
+                "stage_number": 0,
+                "order_index": 0,
+                "target": {
+                    "kind": "metric",
+                    "metabase_metric_id": 501,
+                    "metabase_metric_entity_id": "metric-downtime-v1",
+                },
+                "direction": "desc",
+                "limit": 5,
+                "basis": "level",
+            }
+        ],
+    )
+
+    projected = scope_module.assert_material_native_scope(
+        session=session,
+        obligation_id="g1",
+        contract=_span_change_ranking_contract(),
+        observation=observation,
+        bindings=rich_material_bindings(),
+        expected_engine=expected_identity(),
+        expected_metabase_subject=7,
+    )
+
+    assert projected.ranking is not None
+    assert projected.ranking.measure == "metric.downtime"
+    assert projected.ranking.basis == scope_module.RankingBasis.LEVEL
+    assert projected.ranking.direction == "desc"
+    assert projected.ranking.limit == 5
+
+
 def test_dima10_material_transport_preserves_observed_change_ranking_basis() -> None:
     observation = rich_material_observation(
         ranking=[
