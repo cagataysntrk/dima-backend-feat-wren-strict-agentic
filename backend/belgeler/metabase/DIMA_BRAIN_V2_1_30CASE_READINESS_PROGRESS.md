@@ -6154,3 +6154,167 @@ The hard total remains the controlling bound. The source ceilings prohibit unrel
 
 
 **Replay retry note:** first provider-free execution \`37281746708\` reached the new vertical replay and failed only because the test fixture's synthetic Evidence ID was one hex character short of the canonical \`evi_[a-f0-9]{24}\` shape. Existing Research/scope suite was otherwise \`311 passed\`. Production semantic code was not implicated. Fixture shape corrected in \`f7a21d76839ac1c92f698d6b46dba1bbee63166b\`; provider calls remain \`0\`.
+
+
+---
+
+## ACCELERATION DIRECTIVE — PHASE 0/1 AUTHORITY FREEZE + INVENTORY
+
+Date: 2026-10-05
+
+### PHASE 0 — STOP THE FIX LOOP / FREEZE AUTHORITY
+
+STATUS: GREEN
+
+Product SHA: `957fea9876cfa4cdf8ee3a4f5701c0b6cfc2a40e`  
+Evidence HEAD at receipt: `544e905af011d119f8825434e40ab37b96621809`  
+Engine: `4c49b8da6b424b0fa4d8ef340ca1b238d12980c1` / `0.63.18-dima.11.1` / `sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d`
+
+Objective:
+Reach 30-case READY without running the 30-case: collapse analytical meaning into one versioned Dima→Metabase intent / Metabase→Dima execution boundary, certify result-dependent continuation, closed V1 grammar, full provider-free recertification and one same-SHA 9-capability sentinel panel.
+
+Architecture owner:
+Accepted `ResearchBrief / ResearchQuestion / ResearchScope` own business semantics. `AnalyticalRequestContract` is a deterministic projection. Metabase/Metabot own native analytical realization. Evidence owns governed admission.
+
+Files changed:
+documentation only.
+
+Old representation removed/deprecated:
+`feat/dima11-conditional-change-observer` remains obsolete diagnostic R&D: DO NOT MERGE / DO NOT CHERRY-PICK / DO NOT CONTINUE.
+
+Canonical semantic authority after this phase:
+Product semantics remain `957fea9876cfa4cdf8ee3a4f5701c0b6cfc2a40e`. Engine remains certified dima.11.1. No dima.12. Broad paid OFF; user-authorized pinpoint live only after provider-free proof. 30-case CLOSED. Frontend/UI/UX NOT AUTHORIZED.
+
+Provider-free runs:
+Existing semantic conformance / Phase-1 / Phase-2 candidate evidence remains authoritative. Corrected A3 vertical replay at current evidence HEAD is GREEN.
+
+Paid runs:
+Meaningful A3 run `37265809604` = RED before Metabot: two Research Intake calls, zero native analytical calls. Terminal = `BRAIN_V2_INTAKE_CLARIFY`.
+
+Manual quality score:
+N/A — no completed answer.
+
+Provider requests:
+2 Research Intake; 0 Metabot/native analytical requests.
+
+Tokens / latency / cost:
+No new paid execution in this phase. See frozen artifact for `37265809604`.
+
+First invalid boundary:
+Research Intake → accepted ResearchBrief temporal comparison authority.
+
+New semantic family discovered:
+NO — A3 is already the declared `COMPARE -> RANK -> SELECT -> DRILLDOWN` composition.
+
+Exception:
+YES, fail-closed clarification.
+
+Silent wrong:
+NO
+
+Security:
+NO
+
+Causal overclaim:
+NO
+
+Duplicate native:
+NO
+
+What is proven:
+The latest A3 RED is not an engine/query/provider-budget failure. The certified engine remains sufficient for the stable facts already exposed.
+
+What remains:
+Acceleration Phases 1–11.
+
+30-case readiness:
+CLOSER
+
+NEXT LEGAL ACTION:
+Complete Phase 1 authority inventory before Product code.
+
+### PHASE 1 — ANALYTICAL AUTHORITY INVENTORY
+
+STATUS: GREEN
+
+Product SHA: `957fea9876cfa4cdf8ee3a4f5701c0b6cfc2a40e`  
+Engine: `4c49b8da6b424b0fa4d8ef340ca1b238d12980c1` / `0.63.18-dima.11.1` / same certified digest.
+
+Objective:
+Identify one and only one business-semantic owner for every analytical fact from Intake through Evidence.
+
+Architecture owner:
+`ResearchBrief / ResearchQuestion / ResearchScope`. The Phase-2 DTOs are versioned anti-corruption projections, never a second truth.
+
+| SEMANTIC FACT | CANONICAL OWNER | CURRENT DUPLICATE / PROJECTED REPRESENTATIONS | CONSUMERS | PHYSICAL / IMPLEMENTATION DETAIL? |
+|---|---|---|---|---|
+| metric | requirement-local `ResearchQuestion.subject_refs/related_refs`, admitted by `ResearchScope.semantic_refs` | `AnalyticalRequestContract.metric_refs`, MaterialGroup, R5 metric binding | Metabot, Evidence | NO; native metric IDs are physical |
+| dimension | requirement-local `ResearchQuestion.subject_refs/related_refs`, admitted by `ResearchScope.semantic_refs` | contract dimensions, MaterialGroup, R5 dimensions | Metabot, coverage, Evidence | NO; field/table IDs are physical |
+| filter/entity | accepted Research scope; dependent selection is source-backed from VERIFIED parent | contract filters, MaterialGroup filters, native filters | Metabot, currentness, Evidence | NO; MBQL filter tree is physical |
+| time period | `ResearchScope.periods` | contract period/comparison/change-frame, material periods, native temporal scopes | acquisition, coverage, Evidence | NO |
+| temporal role | `ResearchTimePeriod.role` | contract PAIR/SPAN view, MaterialPeriodRef role | CHANGE semantics | NO |
+| comparison type | `ResearchQuestion.comparisons`; temporal bounds/roles in ResearchScope | comparison invariant, native realization | Metabot, Evidence | NO |
+| ranking basis | `ResearchQuestion.ranking.basis` | analytical contract, R5 ranking observation | Metabot, Evidence | NO |
+| ranking direction | `ResearchQuestion.ranking.direction` | analytical contract, R5 ranking | Metabot, Evidence | NO |
+| top-k | `ResearchQuestion.ranking.limit` | analytical contract, R5 ranking | Metabot, selection | NO |
+| result dependency | `ResearchQuestion.result_dependency` | MaterialGroup dependency IDs, execution-anchor lookup | scheduler, child material | NO |
+| selected entity | VERIFIED parent result + deterministic selection rule; currently transient `ResultSelectionResolution` | execution-local filter provenance | child material | NO; Phase 3 adds durable `SelectionBindingV1` |
+| row grain | accepted requirement dimension/grain semantics | contract grain/dimensions, native breakouts, result columns | coverage, Evidence | NO; stage topology is physical |
+| scope version | `ResearchScope.scope_version` | AnalyticalScopeIdentity, MaterialGroup scope_version | currentness/admission | NO |
+| tenant/principal | Dima request/session security authority | native authenticated subject correlation | execution, Evidence | NO |
+| native query shape | Metabase/Metabot | MBQL/pMBQL, stage tree, expression tree | engine | YES |
+| engine/native IDs | certified engine + semantic binding correlation | Lib UUID, field/table/metric IDs, query fingerprint | attestation/correlation | YES |
+| result bytes | native execution | columns/rows/result hash | manifest/Evidence | YES until governed admission |
+
+Phase-1 gate answer:
+
+> CHANGE ranking meaning is owned exactly once by `ResearchQuestion.ranking`. Baseline/comparison bounds and roles are owned by `ResearchScope.periods`. `AnalyticalRequestContract`, `MaterialGroup`, NativeEngineRequest/R5 observation and Evidence checks are projections or consumers.
+
+Duplicate compatibility validators to redirect/delegate toward Phase 2:
+- `assert_request_invariants`
+- `assert_material_native_scope`
+- `assert_material_result_coverage`
+- ranking/time/filter compatibility checks in `research_analytical_scope.py`
+- Evidence admission compatibility checks that currently re-compare projected facts
+
+Files changed:
+this progress receipt and README authority pointer.
+
+Old representation removed/deprecated:
+None. Phase 2 is a strangler façade; existing objects remain.
+
+Canonical semantic authority after this phase:
+Unchanged.
+
+Provider-free runs:
+No new run required for documentation-only inventory.
+
+Paid runs:
+0 new
+
+Manual quality score:
+N/A
+
+Provider requests / tokens / latency / cost:
+0 new
+
+First invalid boundary:
+No new execution; existing A3 boundary remains Research Intake temporal comparison admission.
+
+New semantic family discovered:
+NO
+
+Exception / Silent wrong / Security / Causal overclaim / Duplicate native:
+NO new findings.
+
+What is proven:
+Every requested semantic fact has one explicit business owner, and physical Metabase representation is excluded from Product authority.
+
+What remains:
+Phase 2 `AnalyticalIntentV1` + `AnalyticalExecutionManifestV1` + one subset verifier, zero engine changes.
+
+30-case readiness:
+CLOSER
+
+NEXT LEGAL ACTION:
+Implement Phase 2 provider-free only.

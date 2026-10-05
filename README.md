@@ -18,9 +18,10 @@ orchestration
 BrainV2Service / LangGraph = single forward runtime
 
 engine
-d5c60dc9f37a9ec9c5b0117f178146bbcb8dca88
-0.63.18-dima.9
-FROZEN
+4c49b8da6b424b0fa4d8ef340ca1b238d12980c1
+0.63.18-dima.11.1
+sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d
+CERTIFIED / FROZEN
 
 frontend / UI / UX implementation
 NOT AUTHORIZED
@@ -60,9 +61,10 @@ is closed. Do not rerun the 30-case without new explicit authorization.
 Current recovery objective:
 
 ```text
-BUILD A GENERIC SEMANTIC CONFORMANCE SYSTEM
-AND CLOSE BROAD PRODUCT GAPS
-AT THEIR REAL CONTRACT OWNERS.
+REACH 30-CASE READY WITHOUT RUNNING THE 30-CASE:
+COLLAPSE ANALYTICAL MEANING INTO ONE VERSIONED INTENT / EXECUTION BOUNDARY,
+PROVE RESULT-DEPENDENT CONTINUATION, CLOSED V1 GRAMMAR, PROVIDER-FREE RECERT,
+THEN ONE SAME-SHA 9-CAPABILITY SENTINEL PANEL.
 ```
 
 Provider-free specification closure is active. Production changes must come from independent
@@ -71,7 +73,7 @@ fixes. Fuzzy/regex/morph/prompt semantic patches and case-specific branches are 
 
 The living recovery log is:
 
-`backend/belgeler/metabase/DIMA_BRAIN_V2_1_SPECIFICATION_CLOSURE_PROGRESS.md`
+`backend/belgeler/metabase/DIMA_BRAIN_V2_1_30CASE_READINESS_PROGRESS.md`
 
 ## Repository map
 
