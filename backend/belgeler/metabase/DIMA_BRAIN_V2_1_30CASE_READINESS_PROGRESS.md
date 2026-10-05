@@ -8029,3 +8029,290 @@ Frontend = NOT AUTHORIZED.
 NEXT LEGAL ACTION:
 STOP. Do not patch Product, prompt, Metabot, engine, grammar, provider budget, live budget, or workflow in order to rescue this panel. Do not rerun S3 or the 9-case panel hoping for luck. A new supervisor decision is required to define the architectural response to S3's bounded-cognition/live-budget exhaustion. Until then:
 \`30-CASE READY = NO\`.
+
+
+---
+
+### SUPERVISOR FOLLOW-UP — HARNESS SEPARATION + S3 DIAGNOSTIC
+
+PHASE:
+PRODUCT FREEZE / HARNESS CORRECTION / S3-ONLY DIAGNOSTIC
+
+STATUS: S3 QUALITY RED 2/4 — ARCHITECTURE REASSESSMENT OPEN; FULL 9-PANEL NOT RUN
+
+Frozen semantic Product:
+\`e257a4754487ec4ac7bfe9fa93966e5ac4a5d1ea\`
+
+Product semantic changes in this phase:
+NONE.
+
+Engine changes:
+NONE.
+
+Prompt / grammar / Metabot / provider safety-cap changes:
+NONE.
+
+### Why the previous final-panel STOP was not sufficient evidence
+
+Run \`37348187000\` stopped when the certification harness treated the value \`12\` as both:
+
+1. an orchestration-efficiency target, and
+2. a correctness/runaway exception boundary.
+
+That coupling was invalid.
+
+The real provider-safety layer already existed independently in the counting proxy:
+
+- hard provider requests: \`16\`
+- research_intake source cap: \`2\` (scope-resume exception remains 4)
+- Metabase source cap: \`15\`
+- P17 source cap: \`3\`
+- P18 source cap: \`1\`
+- P19 source cap: \`2\`
+- prompt tokens: \`400000\`
+- completion tokens: \`40000\`
+- reasoning tokens: \`30000\`
+- provider-reported cost: \`$0.35\`
+
+Those hard safety caps were NOT increased.
+
+### Harness correction
+
+Harness-only commits:
+
+- \`c0900e390f5db2bc963188bbc90cb1973d9752e0\`
+  - removed \`PinpointBudgetExceeded\` as a correctness gate;
+  - replaced the hard \`OrchestrationBudget(12)\` with non-blocking \`OrchestrationEfficiencyTracker\`;
+  - \`12\` is now \`ORCHESTRATION_EFFICIENCY_SLO_UNITS\`, an SLO measurement only.
+- \`14717ccce28c3605bde3e83ba40f8880fe45b87b\`
+  - exception artifacts now best-effort preserve:
+    - orchestration units used;
+    - orchestration units by owner;
+    - partial Brain checkpoint state;
+    - native occurrences;
+    - provider receipt;
+  - orchestration SLO is attached to \`efficiency_checks\`, never \`mechanical_green\`.
+- \`e4ce8b7dcc321a6024fb490dd7b7f8d6c3959279\`
+  - provider-free tests prove efficiency debt cannot turn Product correctness RED.
+- \`b578526b182010bb8b837a14d7cb63f45cf20ce8\`
+  - renamed tracker owner from misleading \`metabot\` to \`material_executor\`.
+  - The tracker counts material-executor boundary invocations, including read-only re-observation; it is NOT a provider-call counter.
+
+There is no live \`model_budget\` CLI/contract in the current harness. No fake parameter was added. The hidden fixed-12 behavior was removed instead.
+
+Provider-free S3 diagnostic preflight:
+GREEN before any paid provider window.
+
+### S3-only diagnostic
+
+Run:
+\`37353003472\`
+
+Job:
+\`111908606464\`
+
+Probe:
+\`CHANGE_DEPENDENT_DRILLDOWN_V1\`
+
+Frozen Product:
+\`e257a4754487ec4ac7bfe9fa93966e5ac4a5d1ea\`
+
+Workflow result:
+SUCCESS — harness/safety completed normally.
+
+Product mechanical result:
+RED.
+
+Exception:
+NONE.
+
+Hard safety:
+CLEAN.
+
+Provider measurement:
+
+- total provider requests: \`5\`
+- research_intake: \`1\`
+- Metabase: \`4\`
+- blocked requests: \`0\`
+- prompt tokens: \`74,600\`
+- completion tokens: \`2,976\`
+- reasoning tokens: \`1,530\`
+- provider-reported cost: \`$0.01272674\`
+- latency: \`52,329 ms\`
+
+No real provider runaway occurred.
+
+Orchestration-efficiency measurement:
+
+- SLO target: \`12\`
+- observed boundary units: \`16\`
+- diagnostic raw attribution at run time: \`research_intake=1, material-executor-equivalent=15\`
+- SLO: MISSED
+- correctness: unaffected by the SLO miss
+
+Why 15 material-boundary invocations are plausible:
+
+The frozen Product's \`ResearchAskOrchestrator.run_next()\` performs one native occurrence followed by bounded read-only observation retry over the same durable EXECUTED link:
+
+- initial observation attempt;
+- then backoff retries at \`0.2 / 0.6 / 1.2 / 2.4\` seconds;
+- at most five material-executor entries per top-level run.
+
+Brain V2 performed:
+
+- initial graph run;
+- up to two explicit same-thread durable resumes.
+
+Therefore:
+
+\`3 top-level material attempts × 5 same-occurrence observation attempts = 15 material-executor boundary invocations\`.
+
+This is NOT 15 native executions and NOT 15 Metabot provider requests.
+
+### Exact native lifecycle result
+
+Only one native parent occurrence exists:
+
+- execution_link_id: \`58d8e98f-c604-4a3c-a029-6389f7ed7e8e\`
+- native_query_id: \`LHewV7dcCB1HRwZDgFn0d\`
+- query fingerprint: \`f6ba3fb1327c04b9bb58adb1c83a4ed6dcbc0baa192fa742d938b293ef1a9455\`
+- status: \`EXECUTED\`
+- receipt: absent
+- Evidence: absent
+
+Duplicate native:
+0.
+
+The graph finishes the diagnostic in:
+
+- workflow_status: \`WAITING\`
+- last_completed_node: \`MATERIAL_GROUP_WAITING\`
+- same thread: yes
+- same Research session: yes
+- same scope \`scope_v1\`: yes
+- parent requirement: DELEGATED
+- dependent child requirement: READY
+
+No SelectionBinding is created because parent Evidence never becomes VERIFIED.
+
+No child drilldown executes.
+
+No P17/P19/P20 work is opened.
+
+### First actual invalid/unclosed boundary after harness correction
+
+The 12-unit certification guard is CLOSED as a harness defect.
+
+The actual remaining boundary is:
+
+\`durable parent EXECUTED\`
+→ \`read-only /api/dima/engine/v1/native-query-material-observation\`
+→ observation remains unavailable across all bounded same-occurrence attempts
+→ no VERIFIED Evidence
+→ no SelectionBinding
+→ dependent child cannot run
+→ \`MATERIAL_GROUP_WAITING\`.
+
+Current artifact does not expose the underlying engine observation HTTP/error detail because normal retryable WAITING converts the lower-level \`NativeEngineBridgeError\` to \`R1_NATIVE_MATERIAL_OBSERVATION_UNAVAILABLE\` and persists only the retryable lifecycle outcome.
+
+Do not guess whether the underlying reason is eventual visibility, HTTP shape rejection, timeout, or another read-only observation condition. That exact cause is currently an observability gap and belongs in the architecture reassessment.
+
+### Product-quality adjudication
+
+Existing canonical S3 rubric applies unchanged.
+
+What passed:
+
+- accepted typed CHANGE ranking;
+- accepted result-dependent child semantics;
+- correct scope;
+- one durable native occurrence;
+- no duplicate native execution;
+- hard provider safety clean;
+- no P17/P19 contamination.
+
+What did not pass:
+
+- parent occurrence never reaches VERIFIED;
+- governed Evidence absent;
+- SelectionBinding absent;
+- dependent child drilldown absent;
+- requirement completion absent.
+
+Manual Product quality:
+\`2/4 PARTIAL\`.
+
+Required gate:
+\`>=3/4\`.
+
+Result:
+FAIL.
+
+Therefore the user's conditional authorization to run the full final 9-sentinel panel was NOT reached.
+
+No full panel was run after \`37353003472\`.
+
+### Architecture reassessment status
+
+OPEN — READ-ONLY ANALYSIS ONLY.
+
+This does NOT authorize:
+
+- Product refactor;
+- Brain V3;
+- engine build;
+- prompt change;
+- grammar change;
+- Metabot change;
+- provider-cap increase;
+- unbounded polling;
+- benchmark-specific retry;
+- a second S3 paid run;
+- full 9-panel;
+- 30-case;
+- frontend.
+
+The reassessment must resolve why the exact durable EXECUTED occurrence cannot become legally observable/VERIFIED under the frozen system, while preserving:
+
+- native execution replay = 0;
+- Metabot cognition replay = 0 for the durable parent;
+- same thread / Research / scope identity;
+- bounded wait/resume;
+- fail-closed Evidence admission.
+
+### Authorization after diagnostic
+
+S3 diagnostic authorization:
+OFF.
+
+Final-panel authorization:
+OFF.
+
+Broad paid:
+OFF.
+
+30-case:
+CLOSED.
+
+Frontend:
+NOT AUTHORIZED.
+
+### NEXT LEGAL ACTION
+
+Architecture reassessment only.
+
+Do not run the full panel.
+
+Do not change Product \`e257a475...\` without a new supervisor decision.
+
+The next investigation should make the read-only material-observation failure reason observable without replaying or mutating the native occurrence, then decide whether the defect belongs to:
+
+- Product observation lifecycle;
+- engine read-only observation contract;
+- persisted occurrence visibility/currentness;
+- or certification observability.
+
+Until a supervisor authorizes that response:
+
+\`30-CASE READY = NO\`.
