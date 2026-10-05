@@ -292,7 +292,7 @@ jobs:
             --listen-host 0.0.0.0 \
             --listen-port "$PROVIDER_PROXY_PORT" \
             --ceiling "$HARD_PROVIDER_REQUEST_CEILING" \
-            --source-ceiling research_intake=1 \
+            --source-ceiling research_intake=2 \
             --source-ceiling metabase=15 \
             --source-ceiling p17_manager=0 \
             --source-ceiling p18_manager=0 \
