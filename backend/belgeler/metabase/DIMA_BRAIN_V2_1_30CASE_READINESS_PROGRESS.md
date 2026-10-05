@@ -6318,3 +6318,124 @@ CLOSER
 
 NEXT LEGAL ACTION:
 Implement Phase 2 provider-free only.
+
+
+---
+
+### ACCELERATION PHASE 2 — ANALYTICAL ANTI-CORRUPTION BOUNDARY V1
+
+PHASE: 2  
+STATUS: GREEN
+
+Product SHA: `f11b6dbfb151c3cdc17ffa0cc373cd698a367438`  
+Evidence/workflow HEAD: `bac177cbe1853005e077cbf6eb3eb2862a3683fe`  
+Engine SHA/tag/digest: `4c49b8da6b424b0fa4d8ef340ca1b238d12980c1` / `0.63.18-dima.11.1` / `sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d`
+
+Objective:
+Introduce one versioned Dima→Metabase WHAT boundary and one Metabase→Dima stable execution manifest, with a single fail-closed semantic admission law and zero engine changes.
+
+Architecture owner:
+`backend/app/v3/analytical_boundary.py` is an anti-corruption/projection façade only. Canonical meaning remains ResearchBrief/ResearchQuestion/ResearchScope. Metabase/Metabot still own analytical HOW.
+
+Files changed:
+- `backend/app/v3/analytical_boundary.py`
+- `backend/tests/test_v3_analytical_boundary.py`
+- `.github/workflows/dima-brain-v2-phase1-provider-free.yml` only to certify the new provider-free test in the existing gate
+
+DTO schemas:
+- `AnalyticalIntentV1` / schema `dima_analytical_intent_v1`
+- `AnalyticalExecutionManifestV1` / schema `dima_analytical_execution_manifest_v1`
+- WHAT-only operation/metric/dimension/filter/temporal/ranking/dependency/row-grain semantics
+- exact scope/context/tenant/principal/currentness/security/resource identity
+- stable query/result/engine identity and result data
+- no SQL, MBQL, aggregation implementation, expression tree or stage topology
+
+Old representation removed/deprecated:
+None. Strangler rule preserved: existing objects remain canonical/compatible.
+
+Canonical semantic authority after this phase:
+Unchanged. The new DTOs are deterministic projections; they cannot mint semantic refs or query plans.
+
+Old validators redirected:
+- New final V1 compatibility decision is centralized in `verify_analytical_fulfillment_v1`.
+- Existing lower-level native/material validators remain observation/proof producers; they do not become a competing final admission authority.
+
+Validators not yet redirected:
+- `assert_request_invariants`
+- `assert_material_native_scope`
+- `assert_material_result_coverage`
+These remain fail-closed lower-level proof gates and will be composed under the manifest boundary rather than deleted blindly.
+
+Engine changes:
+0
+
+Compatibility matrix:
+- LEVEL intent + LEVEL manifest = ACCEPT
+- CHANGE intent + structurally matching CHANGE manifest = ACCEPT
+- CHANGE intent + LEVEL manifest = REJECT
+- wrong metric = REJECT
+- wrong dimension = REJECT
+- wrong period/role = REJECT
+- wrong entity/filter = REJECT
+- legal extra physical/diagnostic metadata = ACCEPT
+- foreign semantic ID = REJECT
+- foreign scope version = REJECT
+- foreign tenant = REJECT
+- foreign principal = REJECT
+- exact resource/currentness/security identities are fail-closed
+
+Provider-free runs:
+- `37306352793` dima-brain-v2-phase1-provider-free = SUCCESS
+- `37306279926` dima-brain-v2-1-frozen-family-closure = SUCCESS
+- new analytical-boundary test is inside canonical deterministic closure gate
+
+Paid runs:
+0
+
+Manual quality score:
+N/A
+
+Provider requests:
+0
+
+Tokens:
+0 paid
+
+Latency:
+N/A
+
+Cost:
+$0
+
+First invalid boundary:
+No provider-free invalid boundary. Existing live A3 first-invalid remains Research Intake temporal comparison admission and is intentionally not case-patched before the sentinel map.
+
+New semantic family discovered:
+NO
+
+Exception:
+0
+
+Silent wrong:
+0
+
+Security:
+0
+
+Causal overclaim:
+0
+
+Duplicate native:
+0
+
+What is proven:
+Dima can express required analytical WHAT independently of physical Metabase query representation, consume stable execution semantics, and centrally reject semantic/context/security drift without an engine change.
+
+What remains:
+Phase 3 durable `SelectionBindingV1`; then completion/presentation collapse, closed grammar, full recertification and final same-SHA sentinel panel.
+
+30-case readiness:
+CLOSER
+
+NEXT LEGAL ACTION:
+Implement Phase 3 `SelectionBindingV1` provider-free; no parent replay, reranking or recomputation.
