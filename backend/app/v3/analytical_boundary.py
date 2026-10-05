@@ -19,10 +19,13 @@ from app.v3.analytical_request_contract import (
     AnalyticalRankingInvariant,
 )
 from app.v3.research_contracts import (
+    PresentationKind,
     RankingBasis,
+    ResearchBrief,
     ResearchGoalKind,
     ResearchQuestion,
     ResearchScope,
+    SemanticTargetKind,
     TemporalRole,
 )
 
@@ -49,6 +52,128 @@ class AnalyticalBoundaryError(RuntimeError):
         super().__init__(f"{code}: {detail}")
         self.code = code
         self.detail = detail
+
+
+class V1GrammarControl(StrEnum):
+    """Control-only token in the Product grammar; never sent to Metabase."""
+
+    NEXT_TEST = "NEXT_TEST"
+
+
+V1_ANALYTICAL_GRAMMAR_VERSION = "dima_analytical_grammar_v1"
+
+_BASE_V1_COMPOSITIONS = frozenset(
+    {
+        (AnalyticalOperation.OBSERVE,),
+        (AnalyticalOperation.OBSERVE, AnalyticalOperation.BREAKDOWN),
+        # Existing certified direct surfaces remain legal. Closing V1 must not
+        # regress a direct breakdown/ranking request merely because richer
+        # compositions are also named.
+        (AnalyticalOperation.BREAKDOWN,),
+        (AnalyticalOperation.COMPARE,),
+        (AnalyticalOperation.COMPARE, AnalyticalOperation.RANK),
+        (
+            AnalyticalOperation.COMPARE,
+            AnalyticalOperation.RANK,
+            AnalyticalOperation.SELECT,
+            AnalyticalOperation.DRILLDOWN,
+        ),
+        (AnalyticalOperation.RANK,),
+        (
+            AnalyticalOperation.RANK,
+            AnalyticalOperation.SELECT,
+            AnalyticalOperation.DRILLDOWN,
+        ),
+        (AnalyticalOperation.RELATE,),
+        (AnalyticalOperation.RCA,),
+        (
+            AnalyticalOperation.RCA,
+            V1GrammarControl.NEXT_TEST,
+            AnalyticalOperation.RCA,
+        ),
+        (AnalyticalOperation.REPORT,),
+    }
+)
+
+# A typed scope mutation is a wrapper over an already-supported operation; it
+# never manufactures a new analytical primitive.
+V1_LEGAL_COMPOSITIONS = frozenset(
+    {
+        *_BASE_V1_COMPOSITIONS,
+        *{
+            (AnalyticalOperation.SCOPE_PATCH, *composition)
+            for composition in _BASE_V1_COMPOSITIONS
+        },
+    }
+)
+
+
+def _grammar_token(
+    value: AnalyticalOperation | V1GrammarControl | str,
+) -> AnalyticalOperation | V1GrammarControl:
+    if isinstance(value, (AnalyticalOperation, V1GrammarControl)):
+        return value
+    try:
+        return AnalyticalOperation(value)
+    except ValueError:
+        try:
+            return V1GrammarControl(value)
+        except ValueError as exc:
+            raise AnalyticalBoundaryError(
+                "ANALYTICAL_V1_GRAMMAR_TOKEN_UNSUPPORTED",
+                str(value),
+            ) from exc
+
+
+def assert_v1_analytical_composition(
+    steps: tuple[AnalyticalOperation | V1GrammarControl | str, ...],
+    *,
+    complete: bool = True,
+) -> tuple[AnalyticalOperation | V1GrammarControl, ...]:
+    """Validate only the closed V1 operation graph, never analytical HOW."""
+
+    normalized = tuple(_grammar_token(item) for item in steps)
+    if not normalized:
+        raise AnalyticalBoundaryError(
+            "ANALYTICAL_V1_GRAMMAR_EMPTY",
+            "V1 analytical composition cannot be empty",
+        )
+    if complete:
+        if normalized not in V1_LEGAL_COMPOSITIONS:
+            raise AnalyticalBoundaryError(
+                "ANALYTICAL_V1_COMPOSITION_UNSUPPORTED",
+                " -> ".join(item.value for item in normalized),
+            )
+        return normalized
+
+    if not any(
+        candidate[: len(normalized)] == normalized
+        for candidate in V1_LEGAL_COMPOSITIONS
+    ):
+        raise AnalyticalBoundaryError(
+            "ANALYTICAL_V1_TRANSITION_UNSUPPORTED",
+            " -> ".join(item.value for item in normalized),
+        )
+    return normalized
+
+
+def legal_v1_next_steps(
+    prefix: tuple[AnalyticalOperation | V1GrammarControl | str, ...],
+) -> frozenset[AnalyticalOperation | V1GrammarControl]:
+    normalized = tuple(_grammar_token(item) for item in prefix)
+    if normalized and not any(
+        candidate[: len(normalized)] == normalized
+        for candidate in V1_LEGAL_COMPOSITIONS
+    ):
+        return frozenset()
+    return frozenset(
+        candidate[len(normalized)]
+        for candidate in V1_LEGAL_COMPOSITIONS
+        if (
+            len(candidate) > len(normalized)
+            and candidate[: len(normalized)] == normalized
+        )
+    )
 
 
 class AnalyticalFilterV1(FrozenModel):
@@ -156,6 +281,94 @@ _OPERATION_BY_GOAL = {
     ResearchGoalKind.RANKING: AnalyticalOperation.RANK,
     ResearchGoalKind.ROOT_CAUSE: AnalyticalOperation.RCA,
 }
+
+
+def _question_metric_ids(question: ResearchQuestion) -> frozenset[str]:
+    return frozenset(
+        item.candidate_id
+        for item in (*question.subject_refs, *question.related_refs)
+        if item.target_kind in {SemanticTargetKind.METRIC, SemanticTargetKind.KPI}
+    )
+
+
+def validate_v1_research_brief(
+    brief: ResearchBrief,
+    *,
+    scope_patch: bool = False,
+) -> tuple[tuple[AnalyticalOperation | V1GrammarControl, ...], ...]:
+    """Project one accepted typed brief onto the closed V1 composition grammar.
+
+    This validates composition only. ResearchBrief/ResearchScope remain semantic
+    authority and Metabase/Metabot remain the owner of query realization.
+    """
+
+    by_id = {item.goal_id: item for item in brief.questions}
+    projected: list[tuple[AnalyticalOperation | V1GrammarControl, ...]] = []
+
+    for question in brief.questions:
+        operation = _OPERATION_BY_GOAL.get(question.kind)
+        if operation is None:
+            raise AnalyticalBoundaryError(
+                "ANALYTICAL_V1_OPERATION_UNSUPPORTED",
+                question.kind.value,
+            )
+
+        dependency = question.result_dependency
+        if dependency is None:
+            chain: tuple[AnalyticalOperation | V1GrammarControl, ...] = (
+                operation,
+            )
+        else:
+            parent = by_id.get(dependency.source_goal_id)
+            if parent is None or parent.ranking is None:
+                raise AnalyticalBoundaryError(
+                    "ANALYTICAL_V1_DEPENDENCY_SOURCE_UNSUPPORTED",
+                    dependency.source_goal_id,
+                )
+            if question.kind != ResearchGoalKind.BREAKDOWN:
+                raise AnalyticalBoundaryError(
+                    "ANALYTICAL_V1_DEPENDENT_OPERATION_UNSUPPORTED",
+                    question.kind.value,
+                )
+
+            chain = (
+                AnalyticalOperation.RANK,
+                AnalyticalOperation.SELECT,
+                AnalyticalOperation.DRILLDOWN,
+            )
+            ranking_metrics = _question_metric_ids(parent)
+            if parent.ranking.measure_semantic_id is not None:
+                ranking_metrics = frozenset(
+                    {parent.ranking.measure_semantic_id}
+                )
+            comparison_present = any(
+                candidate.kind == ResearchGoalKind.COMPARISON
+                and bool(ranking_metrics & _question_metric_ids(candidate))
+                for candidate in brief.questions
+            )
+            if comparison_present:
+                chain = (AnalyticalOperation.COMPARE, *chain)
+
+        if scope_patch:
+            chain = (AnalyticalOperation.SCOPE_PATCH, *chain)
+        projected.append(
+            assert_v1_analytical_composition(chain)
+        )
+
+    if any(
+        item.kind == PresentationKind.REPORT
+        for item in brief.deliverables
+    ):
+        report_chain: tuple[
+            AnalyticalOperation | V1GrammarControl, ...
+        ] = (AnalyticalOperation.REPORT,)
+        if scope_patch:
+            report_chain = (AnalyticalOperation.SCOPE_PATCH, *report_chain)
+        projected.append(
+            assert_v1_analytical_composition(report_chain)
+        )
+
+    return tuple(projected)
 
 
 def _ranking_from_contract(
