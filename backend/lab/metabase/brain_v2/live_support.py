@@ -221,7 +221,7 @@ class BoundedMaterialExecutor:
         self._tracker = tracker
 
     def execute(self, *args, **kwargs):
-        self._tracker.consume("metabot")
+        self._tracker.consume("material_executor")
         return self._inner.execute(*args, **kwargs)
 
     def __getattr__(self, name):
