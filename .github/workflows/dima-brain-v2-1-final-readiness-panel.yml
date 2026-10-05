@@ -91,7 +91,7 @@ jobs:
               "provider_free_focused_run_id",
           ):
               assert int(auth[key])>0
-          assert auth["candidate_product_sha"]=="9132e54f0f26c5470f0a82a2d5edaddb040b36b5"
+          assert auth["candidate_product_sha"]=="e257a4754487ec4ac7bfe9fa93966e5ac4a5d1ea"
           assert auth["engine_sha"]=="4c49b8da6b424b0fa4d8ef340ca1b238d12980c1"
           assert auth["engine_release"]=="0.63.18-dima.11.1"
           assert auth["engine_runtime_tag"]=="v0.63.18-dima.11.1.1"
