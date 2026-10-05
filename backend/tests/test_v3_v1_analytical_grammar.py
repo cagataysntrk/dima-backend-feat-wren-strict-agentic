@@ -437,3 +437,5 @@ TestV1GrammarStateMachine.settings = settings(
     stateful_step_count=30,
     deadline=None,
 )
+
+# durable-resume final exception recertification: semantics remain closed V1.
