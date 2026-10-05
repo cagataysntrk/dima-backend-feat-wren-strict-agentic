@@ -2264,129 +2264,84 @@ def _assert_material_dimension_scope(
             observed=observed,
         )
 
-def _assert_material_ranking_scope(
-    contract: AnalyticalRequestContract,
+def _project_material_ranking_observation(
     observation: NativeMaterialObservation,
     bindings: Mapping[str, NativeMaterialBinding],
-) -> None:
-    ranking = contract.ranking
-    # Metabase may add deterministic ORDER BY clauses for presentation/stability.
-    # Without LIMIT they do not restrict the material row set and therefore do
-    # not mint Dima ranking authority. A native LIMIT is material: it can remove
-    # rows and must remain authorized by an accepted ranking invariant.
-    restrictive_ordering = tuple(
-        item for item in observation.ranking
-        if item.limit is not None
-    )
-    if ranking is None:
-        if restrictive_ordering:
-            raise ResearchAnalyticalScopeError(
-                "R1_NATIVE_RANKING_SCOPE_MISMATCH",
-                "native occurrence introduced an unaccepted row-limiting ranking",
-            )
-        return
-    if isinstance(ranking, AnalyticalEvidenceSynthesisRankingInvariant):
-        if restrictive_ordering:
-            raise ResearchAnalyticalScopeError(
-                "R1_NATIVE_RANKING_SCOPE_MISMATCH",
-                "evidence-synthesis ranking has no authorized native row limit",
-            )
-        return
-    binding = _material_binding(bindings, ranking.measure)
-    if binding.metric_id is None or not binding.metric_entity_id:
-        raise ResearchAnalyticalScopeError(
-            "R1_NATIVE_RANKING_RESOURCE_BINDING_REQUIRED",
-            ranking.measure,
+) -> AnalyticalRankingInvariant | None:
+    """Project engine-reported native ranking into the canonical V1 fact shape.
+
+    This adapter does not decide whether the observed ranking satisfies user
+    intent. It only maps stable native metric identity to the governed semantic
+    candidate and preserves the engine-reported basis/direction/limit. The one
+    business-semantic compatibility decision belongs to
+    verify_analytical_fulfillment_v1.
+
+    Non-limiting field ordering is presentation-only and is not analytical
+    ranking material. A restrictive field ranking cannot be represented by the
+    V1 native-metric ranking DTO and therefore fails closed as a representation
+    boundary rather than being reinterpreted as business semantics.
+    """
+
+    metric_reverse: dict[tuple[int, str], list[str]] = {}
+    for candidate_id, binding in bindings.items():
+        if binding.metric_id is None or not binding.metric_entity_id:
+            continue
+        metric_reverse.setdefault(
+            (int(binding.metric_id), str(binding.metric_entity_id)),
+            [],
+        ).append(candidate_id)
+
+    projected: list[AnalyticalRankingInvariant] = []
+    for item in observation.ranking:
+        if item.target.kind == "field":
+            if item.limit is not None:
+                raise ResearchAnalyticalScopeError(
+                    "ANALYTICAL_V1_EXECUTION_RANKING_UNREPRESENTABLE",
+                    (
+                        "row-limiting native field ranking cannot be represented "
+                        "by the V1 native-metric ranking manifest"
+                    ),
+                    last_valid_boundary="dima.native.observe",
+                    first_invalid_boundary="dima.execution.manifest",
+                )
+            continue
+
+        identity = (
+            int(item.target.metabase_metric_id or 0),
+            str(item.target.metabase_metric_entity_id or ""),
         )
-    metric_ordering = tuple(
-        item for item in observation.ranking
-        if item.target.kind == "metric"
-    )
-    if not metric_ordering and not restrictive_ordering:
-        raise ResearchAnalyticalScopeError(
-            "R1_NATIVE_RANKING_REQUIRED_MISSING",
-            (
-                "accepted governed metric ranking is absent; observed "
-                "non-restrictive field ordering is presentation-only"
-            ),
-            last_valid_boundary="dima.native.observe",
-            first_invalid_boundary="dima.evidence.admit",
-            scope_fingerprint=contract.scope_fingerprint,
-            material_fingerprint=contract.material_fingerprint,
-            expected_semantic_shape={
-                "ranking": ranking.model_dump(mode="json"),
-                "change_semantics": _change_material_semantics(
-                    contract,
-                    material_coverage_contract(contract),
+        candidates = tuple(sorted(metric_reverse.get(identity, ())))
+        if len(candidates) != 1:
+            raise ResearchAnalyticalScopeError(
+                "R1_NATIVE_RANKING_RESOURCE_BINDING_REQUIRED",
+                (
+                    "native ranking metric identity must map to exactly one "
+                    f"governed semantic candidate; observed={identity!r} "
+                    f"candidates={candidates!r}"
                 ),
-            },
-            observed_semantic_shape={
-                "ranking": [
-                    item.model_dump(mode="json")
-                    for item in observation.ranking
-                ]
-            },
+                last_valid_boundary="dima.native.observe",
+                first_invalid_boundary="dima.execution.manifest",
+            )
+        projected.append(
+            AnalyticalRankingInvariant(
+                measure=candidates[0],
+                direction=item.direction,
+                limit=item.limit,
+                basis=RankingBasis(item.basis),
+            )
         )
 
-    structural_matches = [
-        item
-        for item in observation.ranking
-        if item.target.kind == "metric"
-        and item.target.metabase_metric_id == binding.metric_id
-        and item.target.metabase_metric_entity_id == binding.metric_entity_id
-        and item.direction == ranking.direction
-        and item.limit == ranking.limit
-    ]
-    if len(structural_matches) != 1:
+    if len(projected) > 1:
         raise ResearchAnalyticalScopeError(
-            "R1_NATIVE_RANKING_SCOPE_MISMATCH",
-            "material ranking target/direction/limit differs from accepted scope",
-            last_valid_boundary="dima.native.observe",
-            first_invalid_boundary="dima.evidence.admit",
-            scope_fingerprint=contract.scope_fingerprint,
-            material_fingerprint=contract.material_fingerprint,
-            expected_semantic_shape={
-                "ranking": ranking.model_dump(mode="json"),
-            },
-            observed_semantic_shape={
-                "ranking": [
-                    item.model_dump(mode="json")
-                    for item in observation.ranking
-                ]
-            },
-        )
-
-    authorized = structural_matches[0]
-    if authorized.basis != ranking.basis.value:
-        raise ResearchAnalyticalScopeError(
-            "R1_NATIVE_RANKING_BASIS_MISMATCH",
+            "ANALYTICAL_V1_EXECUTION_RANKING_AMBIGUOUS",
             (
-                "observed native ranking basis differs from the accepted typed "
-                "ranking basis"
+                "one V1 execution manifest cannot represent multiple native "
+                "metric ranking facts"
             ),
             last_valid_boundary="dima.native.observe",
-            first_invalid_boundary="dima.evidence.admit",
-            scope_fingerprint=contract.scope_fingerprint,
-            material_fingerprint=contract.material_fingerprint,
-            expected_semantic_shape={
-                "ranking_basis": ranking.basis.value,
-                "change_semantics": _change_material_semantics(
-                    contract,
-                    material_coverage_contract(contract),
-                ),
-            },
-            observed_semantic_shape={"ranking_basis": authorized.basis},
+            first_invalid_boundary="dima.execution.manifest",
         )
-    unauthorized_restrictive = tuple(
-        item
-        for item in observation.ranking
-        if item is not authorized and item.limit is not None
-    )
-    if unauthorized_restrictive:
-        raise ResearchAnalyticalScopeError(
-            "R1_NATIVE_RANKING_SCOPE_MISMATCH",
-            "native occurrence introduced an additional row-limiting ranking",
-        )
+    return projected[0] if projected else None
 
 
 def assert_material_native_scope(
@@ -2429,7 +2384,10 @@ def assert_material_native_scope(
         bindings,
         time_identity=time_identity,
     )
-    _assert_material_ranking_scope(contract, observation, bindings)
+    observed_ranking = _project_material_ranking_observation(
+        observation,
+        bindings,
+    )
 
     request = AnalyticalRequestObservation(
         scope_identity=contract.scope_identity,
@@ -2439,10 +2397,9 @@ def assert_material_native_scope(
         period=contract.period,
         comparison=contract.comparison,
         temporal_observation=contract.temporal_observation,
-        ranking=contract.ranking,
+        ranking=observed_ranking,
         grain_constraints=contract.grain_constraints,
         requested_output_surfaces=contract.requested_output_surfaces,
     )
-    assert_request_invariants(contract, request)
     return request
 
