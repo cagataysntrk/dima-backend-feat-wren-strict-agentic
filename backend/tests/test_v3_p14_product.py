@@ -973,6 +973,63 @@ def test_five_observation_misses_stay_waiting_without_replaying_metabot():
     assert len({item[1] for item in executor.calls}) == 1
     assert len({json.dumps(item[2], sort_keys=True) for item in executor.calls}) == 1
 
+def test_later_run_next_observes_same_waiting_occurrence_without_replay():
+    engine = _db_engine()
+    store = ResearchSessionStore(engine)
+    factory = BridgeFactory()
+    executor = MaterialExecutor(
+        observation_unavailable_failures=5,
+        store=store,
+    )
+    first = ResearchAskOrchestrator(
+        store=store,
+        bridge_factory=factory,
+        material_executor=executor,
+    )
+    session = _start(first, two=False)
+
+    waiting = first.run_next(
+        session_id=session.session_id,
+        principal=_principal(),
+    )
+    assert waiting.evidence_id is None
+    assert waiting.limitation_code == "R1_NATIVE_MATERIAL_OBSERVATION_UNAVAILABLE"
+    assert factory.metabot_posts == 1
+    assert len(executor.calls) == 5
+    captured_query_ids = {item[1] for item in executor.calls}
+    captured_payloads = {json.dumps(item[2], sort_keys=True) for item in executor.calls}
+    assert len(captured_query_ids) == 1
+    assert len(captured_payloads) == 1
+
+    # A later orchestration resume reconstructs the Product facade but must
+    # observe the durable EXECUTED occurrence rather than reopen cognition or
+    # execute a new native query.
+    restarted = ResearchAskOrchestrator(
+        store=store,
+        bridge_factory=factory,
+        material_executor=executor,
+    )
+    recovered = restarted.run_next(
+        session_id=session.session_id,
+        principal=_principal(),
+    )
+    restored = restarted.resume_state(
+        session_id=session.session_id,
+        principal=_principal(),
+    )
+
+    assert recovered.evidence_id is not None
+    assert recovered.receipt_id is not None
+    assert recovered.resumed_exact_occurrence is True
+    assert restored.obligations[0].state == ObligationState.VERIFIED
+    assert factory.metabot_posts == 1
+    assert len(executor.calls) == 6
+    assert {item[1] for item in executor.calls} == captured_query_ids
+    assert {
+        json.dumps(item[2], sort_keys=True) for item in executor.calls
+    } == captured_payloads
+
+
 def test_material_limitation_is_scoped_and_independent_work_continues():
     engine = _db_engine()
     factory = BridgeFactory()
