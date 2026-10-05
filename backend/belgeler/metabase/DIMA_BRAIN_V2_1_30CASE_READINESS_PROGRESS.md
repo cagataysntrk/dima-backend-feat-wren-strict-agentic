@@ -6866,3 +6866,122 @@ CLOSER
 
 NEXT LEGAL ACTION:
 Run the complete provider-free recertification stack on one unchanged tree. Do not run paid or 30-case.
+
+
+---
+
+### ACCELERATION PHASE 6 — FULL PROVIDER-FREE SYSTEM RECERTIFICATION
+
+PHASE:
+6 — PROVIDER-FREE SYSTEM RECERTIFICATION
+
+STATUS: GREEN
+
+Product SHA:
+`b4bf7a43326a4c690c48c507d47625edb37ac8f0`
+
+Engine SHA/tag/digest:
+`4c49b8da6b424b0fa4d8ef340ca1b238d12980c1` / `0.63.18-dima.11.1` / `sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d`
+
+Objective:
+Recertify the entire deterministic Brain V2.1 stack on one unchanged Product checkout after analytical-boundary collapse, SelectionBinding, completion collapse and closed V1 grammar.
+
+Architecture owner:
+No new owner. This phase proves the existing owner graph: ResearchBrief/Scope -> AnalyticalIntent boundary -> Metabase/Metabot -> ExecutionManifest/Evidence -> Completion Ledger -> P20 presentation.
+
+Files changed:
+- `backend/lab/metabase/brain_v2/phase1_live.py` — harness-only root fix isolating SCOPE_RESUME checks from basic sentinels
+- `backend/tests/test_v3_brain_v2_live_harness.py` — harness classification invariant
+- `backend/tests/test_v3_v1_analytical_grammar.py` — recertification anchor only
+
+Old representation removed/deprecated:
+No Product semantic representation changed. The failed first recert attempt exposed a harness routing fallthrough, not Product semantics.
+
+Canonical semantic authority after this phase:
+Unchanged from Phases 1–5. Closed grammar version remains `dima_analytical_grammar_v1`.
+
+Provider-free runs:
+- Phase-1 aggregate `37327009729` — GREEN.
+  - deterministic closure: 176 passed
+  - Research/scope authority: 314 passed
+  - P17 regressions: 145 passed
+  - P19 regressions: 53 passed
+  - P20/Core-B regressions: 90 passed
+  - security/repository hygiene: 26 passed
+  - migration graph: single head `ff5b8e2c1a73`
+- focused Brain V2 `37327009932` — GREEN
+- Phase-2/headless `37327009747` — GREEN, including independent metamorphic confidence and forbidden-surface audit
+- frozen-family closure `37327009685` — GREEN; artifact `11351719713`
+- semantic conformance `37327009856` — GREEN
+  - main semantic conformance: 318 passed
+  - Wave A: 8 passed
+  - independent Wave B holdout: 9 passed
+  - mutation-canary artifact emitted successfully; artifact `11352248375`
+
+Paid runs:
+0 new.
+
+Manual quality score:
+N/A — no paid quality adjudication in Phase 6.
+
+Provider requests:
+0
+
+Tokens:
+0 paid
+
+Latency:
+provider-free CI only.
+
+Cost:
+$0 provider cost.
+
+First invalid boundary:
+The first recert attempt `37326136092` found one harness-only first-invalid boundary: basic S1/S2/S3 mechanical checks fell through into the SCOPE_RESUME-only branch. Root owner was `phase1_live._mechanical`. Generic fix changed the catch-all `else` to exact `elif probe_id == SCOPE_RESUME_PROBE`. No Product semantic code changed.
+
+Critical mutation canaries:
+1. CHANGE -> LEVEL: rejected by `test_change_rejects_level_manifest`.
+2. wrong period: rejected by analytical-boundary temporal-scope mismatch tests.
+3. wrong selected entity: tampered parent payload rejected by `R1_SELECTION_BINDING_PAYLOAD_HASH_MISMATCH`.
+4. stale parent result: wrong expected parent hash rejected by `R1_SELECTION_BINDING_RESULT_HASH_MISMATCH`; non-VERIFIED parent remains non-runnable.
+5. wrong scope version: boundary exact-context mismatch + `test_run_next_rejects_superseded_scope_before_any_native_work`.
+6. false completion: pending USER_MUST cannot be hidden by a trusted answer.
+7. duplicate native execution: persisted EXECUTED occurrence resumes from durable result; EXECUTION_STARTED unknown outcome cannot blind-retry; stateful duplicate material is effectively once.
+
+Mutation detection:
+100% across all seven directive-critical canary classes. The independent semantic-oracle mutation artifact is also GREEN.
+
+New semantic family discovered:
+NO
+
+Exception:
+0
+
+Silent wrong:
+0
+
+Security:
+0
+
+Causal overclaim:
+0
+
+Duplicate native:
+0
+
+What is proven:
+- full provider-free stack is GREEN on one Product SHA;
+- independent semantic holdout is GREEN;
+- frozen broad failure families replay through current owners;
+- currentness, checkpoint/resume, tenant/principal security, repository hygiene, migration single-head and forbidden surfaces are GREEN;
+- all directive-critical mutation classes fail closed;
+- no new semantic family was needed.
+
+What remains:
+Phase 7 freeze and the exact one same-SHA 9-capability sentinel panel. 30-case remains CLOSED.
+
+30-case readiness:
+CLOSER
+
+NEXT LEGAL ACTION:
+Freeze Product `b4bf7a43326a4c690c48c507d47625edb37ac8f0`, engine/migration/schema/grammar/model topology. After the freeze, only ops/lab/test/documentation changes are legal before the sentinel panel; no semantic Product change.
