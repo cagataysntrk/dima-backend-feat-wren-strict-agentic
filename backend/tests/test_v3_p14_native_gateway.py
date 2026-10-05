@@ -3117,7 +3117,7 @@ def test_span_change_material_requirement_is_typed_without_hidden_pair() -> None
         assert forbidden not in lowered
 
 
-def test_span_change_basis_mismatch_is_one_repair_eligible_canonical_defect() -> None:
+def test_span_change_basis_mismatch_is_terminal_at_canonical_owner() -> None:
     from app.v3.research_material_repair import (
         MaterialRepairDisposition,
         decide_material_repair,
@@ -3151,17 +3151,8 @@ def test_span_change_basis_mismatch_is_one_repair_eligible_canonical_defect() ->
         validation_detail="ranking basis/metric/direction/top-k differs",
         prior_repair_attempts=0,
     )
-    assert decision.disposition == MaterialRepairDisposition.REPAIR
-    assert decision.repair_attempt == 1
-    assert decision.require_new_query_fingerprint
-    assert decision.preserve_scope_identity
-    assert decision.preserve_material_contract
-
-    exhausted = decide_material_repair(
-        validation_code="ANALYTICAL_V1_RANKING_MISMATCH",
-        prior_repair_attempts=1,
-    )
-    assert exhausted.disposition == MaterialRepairDisposition.TERMINAL_LIMIT
+    assert decision.disposition == MaterialRepairDisposition.TERMINAL_LIMIT
+    assert decision.repair_attempt == 0
 
 
 def test_dima10_missing_native_ranking_projects_none_for_canonical_verifier() -> None:
@@ -3269,12 +3260,7 @@ def test_dima10_wrong_direction_is_preserved_for_canonical_verifier() -> None:
 
 
 
-def test_change_level_first_result_allows_one_canonical_repair_then_change_projects() -> None:
-    from app.v3.research_material_repair import (
-        MaterialRepairDisposition,
-        decide_material_repair,
-    )
-
+def test_change_level_and_change_basis_are_projected_without_hidden_repair() -> None:
     level_observation = rich_material_observation(
         ranking=[
             {
@@ -3291,22 +3277,14 @@ def test_change_level_first_result_allows_one_canonical_repair_then_change_proje
             }
         ]
     )
-    first = scope_module._project_material_ranking_observation(
+    level = scope_module._project_material_ranking_observation(
         level_observation,
         rich_material_bindings(),
     )
-    assert first is not None
-    assert first.basis == scope_module.RankingBasis.LEVEL
+    assert level is not None
+    assert level.basis == scope_module.RankingBasis.LEVEL
 
-    decision = decide_material_repair(
-        validation_code="ANALYTICAL_V1_RANKING_MISMATCH",
-        validation_detail="ranking basis/metric/direction/top-k differs",
-        prior_repair_attempts=0,
-    )
-    assert decision.disposition == MaterialRepairDisposition.REPAIR
-    assert decision.repair_attempt == 1
-
-    repaired_observation = rich_material_observation(
+    change_observation = rich_material_observation(
         ranking=[
             {
                 "stage_number": 0,
@@ -3322,18 +3300,12 @@ def test_change_level_first_result_allows_one_canonical_repair_then_change_proje
             }
         ]
     )
-    repaired = scope_module._project_material_ranking_observation(
-        repaired_observation,
+    change = scope_module._project_material_ranking_observation(
+        change_observation,
         rich_material_bindings(),
     )
-    assert repaired is not None
-    assert repaired.basis == scope_module.RankingBasis.CHANGE
-
-    exhausted = decide_material_repair(
-        validation_code="ANALYTICAL_V1_RANKING_MISMATCH",
-        prior_repair_attempts=1,
-    )
-    assert exhausted.disposition == MaterialRepairDisposition.TERMINAL_LIMIT
+    assert change is not None
+    assert change.basis == scope_module.RankingBasis.CHANGE
 
 
 
@@ -3355,7 +3327,7 @@ def test_level_material_requirement_has_no_change_semantics() -> None:
     assert requirement["change_semantics"] is None
 
 
-def test_canonical_ranking_repair_preserves_material_contract_without_duplicate_shape_owner() -> None:
+def test_canonical_ranking_mismatch_is_not_repaired_after_execution() -> None:
     from app.v3.research_material_repair import (
         MaterialRepairDisposition,
         decide_material_repair,
@@ -3367,11 +3339,8 @@ def test_canonical_ranking_repair_preserves_material_contract_without_duplicate_
         prior_repair_attempts=0,
     )
 
-    assert decision.disposition == MaterialRepairDisposition.REPAIR
-    assert decision.preserve_material_contract is True
-    assert decision.preserve_scope_identity is True
-    assert decision.expected_semantic_shape is None
-    assert decision.observed_semantic_shape is None
+    assert decision.disposition == MaterialRepairDisposition.TERMINAL_LIMIT
+    assert decision.repair_attempt == 0
 
 
 
