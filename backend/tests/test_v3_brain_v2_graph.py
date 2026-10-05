@@ -315,6 +315,48 @@ def test_retryable_material_group_waits_without_terminalizing_or_completing() ->
     assert activities.calls["completion"] == 0
 
 
+def test_waiting_resume_stays_bounded_when_observation_is_still_unavailable() -> None:
+    checkpointer = InMemorySaver(
+        serde=JsonPlusSerializer(allowed_msgpack_modules=None)
+    )
+    activities = FakeActivities("material_group_waiting")
+    thread_id = "thread-material-group-still-waiting"
+    service = BrainV2Service(
+        activities=activities,
+        checkpointer=checkpointer,
+    )
+    first = service.run(
+        BrainGraphState(
+            thread_id=thread_id,
+            tenant_binding="id:tenant",
+            principal_ref="user-1",
+            current_user_input="Run governed direct analytics.",
+        )
+    )
+    assert first.workflow_status == BrainWorkflowStatus.WAITING
+    assert activities.calls["material_group"] == 1
+
+    resumed = service.resume_waiting(
+        thread_id=thread_id,
+        tenant_binding="id:tenant",
+        principal_ref="user-1",
+    )
+
+    assert resumed.workflow_status == BrainWorkflowStatus.WAITING
+    assert resumed.last_completed_node == "MATERIAL_GROUP_WAITING"
+    assert resumed.active_material_group_id == "mg_" + "a" * 24
+    assert activities.calls["intake"] == 1
+    assert activities.calls["canonicalize"] == 1
+    assert activities.calls["requirements_plan"] == 1
+    assert activities.calls["material_group"] == 2
+    assert activities.calls["evidence"] == 0
+    assert activities.calls["completion"] == 0
+    snapshot = service.graph.get_state(
+        {"configurable": {"thread_id": thread_id}}
+    )
+    assert tuple(snapshot.next) == ("wait_material_group",)
+
+
 def test_material_group_wait_resumes_same_thread_without_new_intake() -> None:
     checkpointer = InMemorySaver(
         serde=JsonPlusSerializer(allowed_msgpack_modules=None)
