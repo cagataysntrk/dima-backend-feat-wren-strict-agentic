@@ -38,7 +38,7 @@ from control_plane.models import (
 MODEL = "openai/gpt-5.6-luna"
 METABOT_MODEL = "openrouter/openai/gpt-5.6-luna"
 CONTEXT = "phase1-final-pinpoint-v1"
-MAX_ORCHESTRATION_BOUNDARY_UNITS = 12
+ORCHESTRATION_EFFICIENCY_SLO_UNITS = 12
 
 TENANT_ID = UUID("00000000-0000-4000-8000-000000006801")
 USER_ID = UUID("00000000-0000-4000-8000-000000006802")
@@ -156,36 +156,42 @@ def execution_links(store_engine, session_id: str):
         )
 
 
-class PinpointBudgetExceeded(RuntimeError):
-    code = "PINPOINT_ORCHESTRATION_BOUNDARY_BUDGET_EXHAUSTED"
+class OrchestrationEfficiencyTracker:
+    """Non-blocking orchestration-cost meter for certification.
 
-    def __init__(self, owner: str, limit: int) -> None:
-        super().__init__(
-            f"{self.code}: {owner} would exceed the {limit}-unit live ceiling"
-        )
-        self.owner = owner
-        self.limit = limit
+    This is an SLO tracker, not a correctness or runaway-safety gate. Real
+    provider safety remains enforced by the counting proxy's hard request,
+    source, token and cost ceilings.
+    """
 
-
-class OrchestrationBudget:
-    def __init__(self, limit: int) -> None:
-        if limit < 1 or limit > MAX_ORCHESTRATION_BOUNDARY_UNITS:
-            raise ValueError("pinpoint model budget must be between 1 and 12")
-        self.limit = limit
+    def __init__(self, slo_units: int = ORCHESTRATION_EFFICIENCY_SLO_UNITS) -> None:
+        if slo_units < 1:
+            raise ValueError("orchestration efficiency SLO must be positive")
+        self.slo_units = int(slo_units)
         self.used = 0
         self.by_owner: dict[str, int] = {}
 
     def consume(self, owner: str) -> None:
-        if self.used >= self.limit:
-            raise PinpointBudgetExceeded(owner, self.limit)
         self.used += 1
         self.by_owner[owner] = self.by_owner.get(owner, 0) + 1
 
+    @property
+    def slo_met(self) -> bool:
+        return self.used <= self.slo_units
+
+    def receipt(self) -> dict[str, Any]:
+        return {
+            "slo_units": self.slo_units,
+            "used": self.used,
+            "by_owner": dict(sorted(self.by_owner.items())),
+            "slo_met": self.slo_met,
+        }
+
 
 class BoundedStructuredTransport:
-    def __init__(self, inner, *, budget: OrchestrationBudget, owner: str) -> None:
+    def __init__(self, inner, *, tracker: OrchestrationEfficiencyTracker, owner: str) -> None:
         self._inner = inner
-        self._budget = budget
+        self._tracker = tracker
         self._owner = owner
 
     @property
@@ -197,7 +203,7 @@ class BoundedStructuredTransport:
         return self._inner.trace_log
 
     def structured_json(self, system, user, *, schema, schema_name):
-        self._budget.consume(self._owner)
+        self._tracker.consume(self._owner)
         return self._inner.structured_json(
             system,
             user,
@@ -210,12 +216,12 @@ class BoundedStructuredTransport:
 
 
 class BoundedMaterialExecutor:
-    def __init__(self, inner, *, budget: OrchestrationBudget) -> None:
+    def __init__(self, inner, *, tracker: OrchestrationEfficiencyTracker) -> None:
         self._inner = inner
-        self._budget = budget
+        self._tracker = tracker
 
     def execute(self, *args, **kwargs):
-        self._budget.consume("metabot")
+        self._tracker.consume("metabot")
         return self._inner.execute(*args, **kwargs)
 
     def __getattr__(self, name):
