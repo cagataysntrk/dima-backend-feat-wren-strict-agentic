@@ -6738,3 +6738,131 @@ CLOSER
 
 NEXT LEGAL ACTION:
 Audit and seal Phase 4 against the existing canonical Completion Ledger and P20 publication-only boundary. Do not refactor P20 if the four Phase-4 gates are already proven.
+
+
+---
+
+### ACCELERATION PHASE 5 — CLOSED V1 ANALYTICAL GRAMMAR
+
+PHASE:
+5 — CLOSED V1 ANALYTICAL GRAMMAR
+
+STATUS: GREEN
+
+Product semantic SHA:
+`5ade1c98862a72c3216c6c1ecfa74b338c6df213`
+
+Evidence / readiness harness ancestry:
+through `a214d30cd84752a9ed80581142b376659ac841df`; later commits before this receipt are documentation-only.
+
+Engine SHA/tag/digest:
+`4c49b8da6b424b0fa4d8ef340ca1b238d12980c1` / `0.63.18-dima.11.1` / `sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d`
+
+Objective:
+Bound V1 to an explicit typed operation/composition grammar so benchmark recovery cannot silently mint new semantics from natural-language surface forms.
+
+Architecture owner:
+`analytical_boundary.py` owns only the closed composition grammar and admission boundary. `ResearchBrief/ResearchScope` still own accepted business semantics. Metabase/Metabot still own query realization. The grammar does not contain SQL, MBQL, formulas, stage topology or benchmark vocabulary.
+
+Files changed:
+- `backend/app/v3/analytical_boundary.py`
+- typed Intake/admission integration on the existing Research boundary
+- `backend/tests/test_v3_v1_analytical_grammar.py`
+- semantic/frozen/provider-free CI surfaces
+- readiness live-harness tests for basic direct, temporal and dependent sentinel mechanics
+
+Old representation removed/deprecated:
+Open-ended `ResearchGoalKind.OTHER` analytical promotion is not legal V1 behavior. An attempted compatibility canonicalization was reverted; unsupported OTHER remains fail-closed instead of silently enlarging the grammar.
+
+Canonical semantic authority after this phase:
+Grammar version `dima_analytical_grammar_v1`.
+
+Closed operation vocabulary:
+`OBSERVE, BREAKDOWN, COMPARE, RANK, SELECT, DRILLDOWN, RELATE, RCA, REPORT, SCOPE_PATCH`.
+
+Control-only token:
+`NEXT_TEST` — orchestration control only, never sent to Metabase as analytical semantics.
+
+Legal core compositions include:
+- OBSERVE
+- OBSERVE -> BREAKDOWN
+- direct BREAKDOWN / direct RANK where already certified
+- COMPARE
+- COMPARE -> RANK
+- COMPARE -> RANK -> SELECT -> DRILLDOWN
+- RANK -> SELECT -> DRILLDOWN
+- RELATE
+- RCA
+- RCA -> NEXT_TEST -> RCA
+- REPORT(current governed state)
+- SCOPE_PATCH -> any otherwise-supported composition
+
+Unsupported composition:
+fail-closed `ANALYTICAL_V1_COMPOSITION_UNSUPPORTED`, `ANALYTICAL_V1_TRANSITION_UNSUPPORTED`, or typed Intake UNSUPPORTED/CLARIFY path. No new semantic family is inferred during benchmark recovery.
+
+Provider-free runs:
+- `37312032125` Phase-1 aggregate — GREEN
+- `37312032168` semantic conformance — GREEN
+- `37312032116` frozen-family — GREEN
+- `37312032346` focused Brain V2 — GREEN
+- `37312109322` Phase-2/headless after unified admission seam — GREEN
+- `37313119482` focused Brain V2 after readiness-sentinel harness tests — GREEN
+
+Paid runs:
+0 new.
+
+Manual quality score:
+N/A — deterministic grammar phase.
+
+Provider requests:
+0
+
+Tokens:
+0 paid
+
+Latency:
+provider-free only.
+
+Cost:
+$0 provider cost.
+
+First invalid boundary:
+No unresolved Phase-5 boundary. The temporary attempt to map legacy OTHER into typed primitives was rejected and reverted; closed grammar authority won.
+
+New semantic family discovered:
+NO
+
+Exception:
+0 new
+
+Silent wrong:
+0
+
+Security:
+0
+
+Causal overclaim:
+0
+
+Duplicate native:
+0
+
+What is proven:
+- operation vocabulary is closed and versioned;
+- required legal compositions are explicit;
+- SCOPE_PATCH wraps only already-supported compositions;
+- dependent selection cannot originate from a non-ranking parent;
+- result-dependent non-drilldown shapes fail closed;
+- RCA permits one typed NEXT_TEST reentry but rejects an unbounded repeated loop;
+- legal/illegal next-step transitions are exercised with Hypothesis/property/stateful tests;
+- report is a presentation requirement, not a new analytics owner;
+- benchmark seed vocabulary is absent from production grammar.
+
+What remains:
+Phase 6 full same-tree provider-free recertification and 100% critical mutation-canary proof, then candidate freeze.
+
+30-case readiness:
+CLOSER
+
+NEXT LEGAL ACTION:
+Run the complete provider-free recertification stack on one unchanged tree. Do not run paid or 30-case.
