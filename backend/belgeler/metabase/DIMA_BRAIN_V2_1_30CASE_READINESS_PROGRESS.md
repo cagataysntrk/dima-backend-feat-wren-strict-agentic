@@ -8385,3 +8385,163 @@ No paid S3 run is authorized until Phase-1 is GREEN.
 
 Engine, engine gitlink/build, prompt, semantic grammar, LangGraph and provider ceilings:
 UNCHANGED.
+
+
+---
+
+### FINAL 90+ CLOSURE — EXACT S3 TYPED ROOT / ENGINE OWNER
+
+STATUS:
+ROOT CAUSE SEALED; ENGINE CANDIDATE UNDER PROVIDER-FREE/CERTIFICATION PROOF.
+
+Frozen Product semantic baseline:
+\`ae4e0348601774082b0270f23d6de126e71e6055\`
+
+S3 diagnostic:
+\`37366103013\`
+
+S3 limitation:
+\`lim_5e922a1862518105be60d9eb\`
+
+### Exact typed error recovered without another paid run
+
+The S3 artifact did not project limitation code/detail, but \`ResearchManager.record_limitation()\` creates limitation ids deterministically from:
+
+\`session + obligation + code + detail + revision\`.
+
+Artifact identity:
+
+- session: \`rs_e076577bf1a7ad6b18235cae\`
+- obligation: \`g_9090692adfdae08af3be\`
+- limitation id: \`lim_5e922a1862518105be60d9eb\`
+
+Enumerating the certified dima.11.1 attestation/occurrence typed failures produces one exact hash match:
+
+- HTTP status: \`422\`
+- dima/error-code: \`NATIVE_METRIC_EXPANSION_UNSUPPORTED\`
+- engine detail: \`P13B-v1 certifies one native metric aggregation only\`
+- Product detail: \`HTTP 422 NATIVE_METRIC_EXPANSION_UNSUPPORTED: P13B-v1 certifies one native metric aggregation only\`
+- limitation revision seed: \`3\`
+
+This is deterministic evidence, not inference.
+
+### First invalid boundary
+
+The diagnostic request trace contains:
+
+\`Metabot -> /api/dima/engine/v1/native-query-attestation\`
+
+and contains neither:
+
+- \`/api/dima/engine/v1/native-query-material-observation\`
+- nor \`/api/dima/engine/v1/native-query-execution\`.
+
+Therefore S3 never reached the material observer and never executed analytics.
+
+First invalid boundary:
+
+\`legal persisted native CHANGE occurrence -> dima.11.1 native attestation -> NATIVE_METRIC_EXPANSION_UNSUPPORTED 422\`.
+
+### Owner classification
+
+ENGINE-OWNED STRUCTURAL ATTESTATION CAPABILITY GAP.
+
+Certified dima.11.1 material observer already has generic period-pair CHANGE ranking support, including structural period pairs, ordered derived CHANGE expressions, previous-stage Lib equality lineage and equality-period normalization.
+
+The earlier P13B attestation seam still requires:
+
+- one native metric reference;
+- one original aggregation;
+- one expanded aggregation.
+
+A legal period-pair CHANGE query uses one governed native metric but expands through multiple structural aggregations. The old attestation count restriction rejects it before the semantic observer can adjudicate it.
+
+### Semantic-owner decision
+
+No Product semantic patch.
+
+No new semantic primitive.
+
+No grammar/prompt/Metabot change.
+
+Attestation must remain structural/provenance authority:
+
+- identify exact occurrence;
+- preserve stable native metric references;
+- report produced structural aggregation facts;
+- enforce subject/permission/engine identity.
+
+It must not decide CHANGE/ranking business legality from aggregation count.
+
+Business fulfillment remains owned by:
+
+\`AnalyticalIntentV1 -> ExecutionManifest -> verify_analytical_fulfillment_v1 -> Evidence\`.
+
+Material observer remains the engine representation-neutral observer.
+
+### Backend freeze audit
+
+Post-diagnostic semantic refactors that appeared after \`ae4e0348...\` were not adopted as the Product baseline and were restored.
+
+Current protected diff against \`ae4e0348...\`:
+
+- \`backend/app/**\`: 0
+- \`backend/pyproject.toml\`: 0
+- backend engine semantic surface: 0
+
+Product semantics are frozen.
+
+### Engine exact reproducer
+
+Engine repository:
+\`UpcyTech/dima-metabase-engine\`
+
+Existing certified release branch:
+\`release/r11p1-dima11-equality-period-observer\`
+
+Certified dima.11.1 base:
+\`4c49b8da6b424b0fa4d8ef340ca1b238d12980c1\`
+
+Test-only reproducer:
+\`f627a482290a36721393001ce8c2444b87283fe3\`
+
+It adds:
+
+- exact period-pair CHANGE native-metric attestation reproducer;
+- structural multi-metric sibling proving attestation does not own business semantic legality.
+
+### Generic engine candidate
+
+Candidate:
+\`bb6f81a73e1f5b37de3b4e1373c22bea0708c8e5\`
+
+New immutable engine release identity:
+\`0.63.18-dima.11.2\`
+
+Production owner changed:
+\`src/metabase/dima/native_attestation.clj\` only.
+
+Generic law:
+
+When stable native metric references exist, attestation preserves those original references and reports all aggregation facts produced by Metabase preprocessing. It no longer rejects a legal occurrence solely because native metric expansion yields multiple structural aggregations.
+
+It does not pair period aggregates, infer CHANGE, interpret ranking, or certify business fulfillment.
+
+Observer/verifier remain the semantic owners.
+
+No engine build result is claimed yet.
+
+GitHub Actions currently has a platform incident delaying hosted-runner assignment; the engine runs are queued. No duplicate certification is being triggered to work around the external delay.
+
+### NEXT LEGAL ACTION
+
+Wait only for the already-created provider-free/focused/certification jobs to execute.
+
+Acceptance sequence after engine GREEN:
+
+1. pin the certified engine SHA/digest into backend runtime lock, without changing Product semantics;
+2. full provider-free closure;
+3. ONE fresh S3 diagnostic;
+4. if S3 >=3/4 with successful observation, exactly one parent execution, VERIFIED Evidence, SelectionBinding, child completion, duplicate=0 and clean safety:
+   freeze same Product semantics + certified engine identity and run ONE final 9-sentinel panel;
+5. if S3 <3: STOP, no new fix.
