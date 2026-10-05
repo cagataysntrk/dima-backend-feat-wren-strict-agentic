@@ -7085,3 +7085,97 @@ CLOSER
 
 NEXT LEGAL ACTION:
 Finalize the Phase-8 panel harness without touching `backend/app`, `backend/pyproject.toml` or `engine/metabase`; then run the exact nine required sentinels on frozen Product `b4bf7a43326a4c690c48c507d47625edb37ac8f0`.
+
+
+---
+
+### ACCELERATION PHASE 8 — FIRST FROZEN NINE-SENTINEL PANEL
+
+PHASE:
+8 — ONE SAME-SHA SENTINEL PANEL / PANEL 1
+
+STATUS: RED — COMPLETE FAILURE MAP OBTAINED; NO CATASTROPHIC BLOCKER
+
+Product SHA:
+`b4bf7a43326a4c690c48c507d47625edb37ac8f0`
+
+Panel checkout SHA:
+`1ab73bb6189128434f53d9f57ead80b8e497cea8` — lab/workflow/test-only support; workflow proves zero diff vs frozen Product across `backend/app`, `backend/pyproject.toml`, `engine/metabase`.
+
+Engine SHA/tag/digest:
+`4c49b8da6b424b0fa4d8ef340ca1b238d12980c1` / `0.63.18-dima.11.1` / `sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d`
+
+Objective:
+Run exactly one independent sentinel for each supervisor-mandated V1 capability on one frozen semantic Product, one certified engine and Luna/Luna/no-cascade topology, continuing through normal quality REDs to obtain the whole failure map.
+
+Architecture owner:
+No new owner. The panel exercises the frozen Brain V2 owner graph end to end.
+
+Files changed:
+No Product semantic code during the panel. Pre-panel lab/test/workflow fixes only repaired the certification harness and exact nine-case fixture.
+
+Old representation removed/deprecated:
+None in Phase 8.
+
+Canonical semantic authority after this phase:
+Unchanged / frozen.
+
+Paid run:
+`37330892442` — exact nine-sentinel matrix.
+
+Sentinel results:
+- S1 DIRECT_ANALYTICS_V1 — mechanical GREEN; provider 4; prompt 53,890; completion 728; latency 14,742 ms; 1 VERIFIED native; duplicate native 0.
+- S2 TEMPORAL_COMPARISON_V1 — mechanical RED; provider 6; prompt 98,735; completion 4,349; latency 55,264 ms; both native attempts LIMITED; no governed Evidence. First invalid boundary: result/material coverage -> Evidence admission. Limitation `R1_RESULT_TEMPORAL_COLUMN_MISMATCH`.
+- S3 CHANGE_DEPENDENT_DRILLDOWN_V1 — mechanical RED; provider 8; prompt 133,265; completion 4,559; latency 52,080 ms; parent native occurrence durably EXECUTED but not VERIFIED; graph ends WAITING before SelectionBinding/child execution. No blind native replay and duplicate native 0.
+- S4 R_LIVE_2_ADAPTIVE — mechanical GREEN; provider 8; prompt 96,795; completion 3,304; latency 42,173 ms; exactly one information-gain re-entry; 2 VERIFIED native acquisitions; causal restraint preserved.
+- S5 RELATIONSHIP_REPORT_PHASE2_V1 — mechanical GREEN; provider 5; prompt 61,150; completion 1,596; latency 20,983 ms; observational relationship only; P18 once; report-only continuation opens zero new analytics.
+- S6 R_LIVE_4_SCOPE_RESUME — mechanical GREEN; provider 9; prompt 103,007; completion 3,080; latency 41,892 ms; scope_v1 -> scope_v2 same lineage; old Evidence historical; new Evidence disjoint/current; checkpoint resume GREEN; 2 VERIFIED native.
+- S7 CONTEXTUAL_REPORT_V1 — mechanical GREEN; provider 4; prompt 54,530; completion 781; latency 13,607 ms; same Research/scope; report turn native/Intake/P17/P18/P19 delta zero.
+- S8 MULTI_INTENT_PHASE2_V1 — mechanical GREEN; provider 5; prompt 60,436; completion 1,525; latency 19,009 ms; one shared MaterialGroup; one VERIFIED native; direct + relationship + report all terminal.
+- S9 SAFETY_UNSUPPORTED_V1 — mechanical GREEN; provider 2; prompt 29,624; completion 236; latency 4,230 ms; typed `BRAIN_V2_INTAKE_UNSUPPORTED`; Metabase/native/P17/P18/P19 zero.
+
+Panel invariants:
+- same frozen semantic Product across all 9: YES
+- same engine digest: YES
+- same Luna/Luna/no-cascade topology: YES
+- code changes between cases: NO
+- exception: 0
+- silent wrong numeric answer: 0
+- security/cross-tenant violation: 0
+- unsupported causal overclaim: 0
+- runaway/unbounded loop: 0
+- duplicate native analytical work: 0
+
+First invalid boundaries:
+- S2: exact native material is accepted far enough to execute, but the legacy result-coverage layer requires a governed time column in the final comparison projection and therefore refuses Evidence.
+- S3: exact dataset result is durably EXECUTED, but observation/semantic attestation is not available inside the bounded same-occurrence observation window; graph persists WAITING rather than replaying native work.
+
+New semantic family discovered:
+NO. Both REDs are violations/friction in existing V1 laws: temporal projection Evidence admission and durable recovery of an already-executed occurrence.
+
+Exception:
+0
+
+Silent wrong:
+0
+
+Security:
+0
+
+Causal overclaim:
+0
+
+Duplicate native:
+0
+
+What is proven:
+Seven independent capability sentinels complete end to end on the frozen candidate. The remaining failures are bounded to two explicit existing boundaries, not Intake prompt morphology, benchmark vocabulary, engine rebuild, or new analytical primitives.
+
+What remains:
+Phase 9 two-axis adjudication receipt, then exactly one generic root-fix round grouped by the two first-invalid boundaries. Broad/30-case remains CLOSED.
+
+30-case readiness:
+CLOSER — NOT READY
+
+NEXT LEGAL ACTION:
+Adjudicate this complete panel on Product Quality and Efficiency separately. Do not patch either RED until the Phase-9 receipt exists.
