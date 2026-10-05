@@ -1,5 +1,6 @@
 name: dima-brain-v2-1-semantic-conformance
 
+# dima.11.2 final acceptance recertification
 on:
   push:
     branches:
