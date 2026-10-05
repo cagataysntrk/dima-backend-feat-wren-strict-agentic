@@ -1132,7 +1132,7 @@ def test_zero_ref_other_instruction_is_not_a_second_analytical_goal_beside_one_r
     )
 
 
-def test_other_goal_with_distinct_governed_scope_is_not_absorbed_into_root_cause():
+def test_other_goal_with_distinct_governed_scope_is_explicitly_unsupported():
     clause = "Determine which governed explanation better accounts for downtime."
     separate_clause = "Also inspect machine-level context."
     question = clause + " " + separate_clause
@@ -1182,11 +1182,12 @@ def test_other_goal_with_distinct_governed_scope_is_not_absorbed_into_root_cause
         catalog=catalog(),
     )
 
-    assert result.brief is not None
-    assert tuple(item.kind for item in result.brief.questions) == (
-        ResearchGoalKind.ROOT_CAUSE,
-        ResearchGoalKind.OTHER,
-    )
+    # Closed V1 grammar must not silently absorb an unknown analytical
+    # primitive into RCA or manufacture a new execution path.
+    assert result.terminal == ResearchIntakeTerminal.UNSUPPORTED
+    assert result.brief is None
+    assert result.unsupported_reason is not None
+    assert "ANALYTICAL_V1_OPERATION_UNSUPPORTED" in result.unsupported_reason
 
 
 def test_ready_breakdown_compiles_to_typed_research_brief():
