@@ -21,6 +21,13 @@ from typing import Any, Callable
 
 from sqlmodel import Session, select
 
+from app.v3.analytical_boundary import (
+    AnalyticalBoundaryError,
+    AnalyticalEngineIdentityV1,
+    project_analytical_intent_v1,
+    project_execution_manifest_v1,
+    verify_analytical_fulfillment_v1,
+)
 from app.v3.analytical_request_contract import AnalyticalRequestContract
 from app.v3.evidence import EvidenceArtifact, EvidenceState
 from app.v3.execution_identity import (
@@ -863,6 +870,84 @@ class NativeResearchMaterialExecutor:
             )
         except ResearchMaterialCoverageError as exc:
             raise ResearchMaterialLimitation(exc.code, exc.detail) from exc
+
+        # Final V1 anti-corruption admission. R5/native-scope and result-coverage
+        # remain independent proof producers; this boundary is the one final
+        # business/material compatibility decision before governed Evidence can
+        # be minted. It never inspects SQL/MBQL or replans Metabase work.
+        brief = session.accepted_brief
+        if brief is None:
+            raise ResearchMaterialLimitation(
+                "ANALYTICAL_V1_ACCEPTED_BRIEF_REQUIRED",
+                "final analytical admission requires the immutable accepted brief",
+            )
+        questions = tuple(
+            item for item in brief.questions if item.goal_id == obligation_id
+        )
+        if len(questions) != 1:
+            raise ResearchMaterialLimitation(
+                "ANALYTICAL_V1_INTENT_IDENTITY_MISMATCH",
+                "exactly one accepted analytical goal must own the native result",
+            )
+        currentness_token = (
+            f"{session.lineage_id}:{contract.scope_identity.version_id}"
+        )
+        security_fingerprint = hashlib.sha256(
+            "|".join(
+                (
+                    session.tenant_binding,
+                    session.principal_subject,
+                    native_subject_ref,
+                    ",".join(sorted(principal.roles)),
+                )
+            ).encode("utf-8")
+        ).hexdigest()
+        try:
+            analytical_intent = project_analytical_intent_v1(
+                question=questions[0],
+                scope=brief.scope,
+                contract=contract,
+                tenant_id=session.tenant_binding,
+                principal_id=session.principal_subject,
+                currentness_token=currentness_token,
+                security_fingerprint=security_fingerprint,
+            )
+            data = result_payload.get("data")
+            data = data if isinstance(data, dict) else {}
+            execution_manifest = project_execution_manifest_v1(
+                intent=analytical_intent,
+                observation=scope_observation,
+                execution_id=f"native-dataset:{execution_link_id}",
+                query_fingerprint=query_fingerprint,
+                result_hash=result.result_hash,
+                engine_identity=AnalyticalEngineIdentityV1(
+                    repository=runtime.repository or self._expected.repository,
+                    revision_sha=runtime.revision_sha,
+                    runtime_tag=runtime.runtime_tag,
+                    image_digest=runtime.image_digest,
+                ),
+                data_columns=tuple(data.get("cols") or ()),
+                data_rows=tuple(data.get("rows") or ()),
+                metadata={
+                    "native_conversation_id": str(native_conversation_id),
+                    "native_query_id": native_query_id,
+                    "material_observation_schema": material_observation.schema_version,
+                    "result_coverage_schema": result_coverage.schema_version,
+                },
+            )
+            verify_analytical_fulfillment_v1(
+                analytical_intent,
+                execution_manifest,
+            )
+        except AnalyticalBoundaryError as exc:
+            raise ResearchMaterialLimitation(
+                exc.code,
+                exc.detail,
+                last_valid_boundary="dima.native.result_coverage",
+                first_invalid_boundary="dima.evidence.admit",
+                scope_fingerprint=contract.scope_fingerprint,
+                material_fingerprint=contract.material_fingerprint,
+            ) from exc
 
         provenance_base = f"research-execution-link:{execution_link_id}"
         event = ExecutionEventIdentity(
