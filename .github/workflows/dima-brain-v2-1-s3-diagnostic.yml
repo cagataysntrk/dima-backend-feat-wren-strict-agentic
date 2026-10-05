@@ -1,0 +1,414 @@
+name: dima-brain-v2-1-s3-diagnostic
+
+on:
+  push:
+    branches:
+      - feat/dima-brain-v2-1-specification-closure
+    paths:
+      - ".github/BRAIN_V21_S3_DIAGNOSTIC_TRIGGER"
+
+permissions:
+  contents: read
+  packages: read
+
+env:
+  DIMA_OPENROUTER_API_KEY: ${{ secrets.DIMA_OPENROUTER_API_KEY || secrets.OPENROUTER_API_KEY }}
+  METABOT_MODEL_IDENTIFIER: openrouter/openai/gpt-5.6-luna
+  DIMA_COGNITION_MODEL: openai/gpt-5.6-luna
+  MB_ADMIN_EMAIL: admin@brain-v2-live.local
+  MB_RESTRICTED_EMAIL: restricted@brain-v2-live.local
+  MB_RESTRICTED_GROUP: Dima Brain V2 Restricted
+  PROVIDER_PROXY_PORT: "8799"
+  HARD_PROVIDER_REQUEST_CEILING: "16"
+  PROMPT_TOKEN_CEILING: "400000"
+  COMPLETION_TOKEN_CEILING: "40000"
+  REASONING_TOKEN_CEILING: "30000"
+  PROVIDER_COST_CEILING: "0.35"
+
+concurrency:
+  group: dima-brain-v2-1-s3-diagnostic
+  cancel-in-progress: true
+
+jobs:
+  s3-diagnostic:
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        probe_id:
+          - CHANGE_DEPENDENT_DRILLDOWN_V1
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    environment: DIMA_OPENROUTER_API_KEY
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 96
+          submodules: false
+
+      - name: Verify frozen S3 diagnostic authorization
+        id: auth
+        shell: bash
+        env:
+          PROBE_ID: ${{ matrix.probe_id }}
+        run: |
+          set -euo pipefail
+          AUTH="backend/lab/metabase/brain_v2/s3_diagnostic_authorization.json"
+          test -f "$AUTH"
+          python - "$AUTH" "$PROBE_ID" <<'PY'
+          import json, subprocess, sys
+          from pathlib import Path
+          auth=json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          probe=sys.argv[2]
+          expected=["CHANGE_DEPENDENT_DRILLDOWN_V1"]
+          assert auth["schema_version"]=="dima_brain_v2_1_s3_diagnostic_v1"
+          assert auth["enabled"] is True
+          assert auth["probe_ids"]==expected
+          assert probe=="CHANGE_DEPENDENT_DRILLDOWN_V1"
+          assert auth["provider_free_status"]=="GREEN"
+          for key in (
+              "provider_free_phase1_run_id","provider_free_phase2_run_id",
+              "provider_free_semantic_run_id","provider_free_frozen_run_id",
+              "provider_free_focused_run_id",
+          ):
+              assert int(auth[key])>0
+          assert auth["candidate_product_sha"]=="e257a4754487ec4ac7bfe9fa93966e5ac4a5d1ea"
+          assert auth["engine_sha"]=="4c49b8da6b424b0fa4d8ef340ca1b238d12980c1"
+          assert auth["engine_release"]=="0.63.18-dima.11.1"
+          assert auth["engine_runtime_tag"]=="v0.63.18-dima.11.1.1"
+          assert auth["engine_digest"]=="sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d"
+          assert auth["migration_head"]=="ff5b8e2c1a73"
+          assert auth["grammar_version"]=="dima_analytical_grammar_v1"
+          assert auth["analytical_intent_schema"]=="dima_analytical_intent_v1"
+          assert auth["execution_manifest_schema"]=="dima_analytical_execution_manifest_v1"
+          assert auth["selection_binding_schema"]=="dima_selection_binding_v1"
+          assert auth["model_topology"]=={
+              "dima_cognition":"openai/gpt-5.6-luna",
+              "metabot":"openrouter/openai/gpt-5.6-luna",
+              "cascade":"NONE",
+          }
+          assert auth["broad_paid_allowed"] is False
+          assert auth["thirty_case_allowed"] is False
+          assert auth["frontend_allowed"] is False
+          candidate=auth["candidate_product_sha"]
+          subprocess.run(["git","cat-file","-e",candidate+"^{commit}"],check=True)
+          subprocess.run(
+              ["git","diff","--exit-code",candidate+"..HEAD","--",
+               "backend/app","backend/pyproject.toml","engine/metabase"],
+              check=True,
+          )
+          print("candidate="+candidate)
+          PY
+          CANDIDATE="$(python -c 'import json; print(json.load(open("backend/lab/metabase/brain_v2/s3_diagnostic_authorization.json"))["candidate_product_sha"])')"
+          echo "probe_id=$PROBE_ID" >> "$GITHUB_OUTPUT"
+          echo "candidate_sha=$CANDIDATE" >> "$GITHUB_OUTPUT"
+          test -n "$DIMA_OPENROUTER_API_KEY"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install canonical environment
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Provider-free final-panel preflight
+        working-directory: backend
+        run: |
+          set -euo pipefail
+          python -m py_compile             lab/metabase/brain_v2/phase1_live.py             lab/metabase/brain_v2/live_support.py             lab/metabase/brain_v2/final_probes.py             lab/metabase/core_b/runtime/openrouter_counting_proxy.py             lab/metabase/core_b/runtime/seed_phase1_pinpoint_metrics.py             lab/metabase/core_b/runtime/seed_round2_fixture.py
+          pytest -q             tests/test_v3_brain_v2_contracts.py             tests/test_v3_brain_v2_graph.py             tests/test_v3_brain_v2_owner_integration.py             tests/test_v3_brain_v2_postgres_checkpoint.py             tests/test_v3_brain_v2_live_harness.py             tests/test_v3_brain_v2_phase2_live_harness.py             tests/test_v3_openrouter_counting_proxy.py
+
+      - name: Derive ephemeral credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          S="${GITHUB_SHA:0:12}"
+          {
+            echo "MB_ADMIN_PASSWORD=Adm-${S}-Aa1!"
+            echo "MB_RESTRICTED_PASSWORD=Res-${S}-Aa1!"
+            echo "PG_OWNER_PASSWORD=PgO-${S}-Aa1!"
+            echo "CORE_B_READONLY_PASSWORD=PgR-${S}-Aa1!"
+            echo "MB_APP_PASSWORD=MbA-${S}-Aa1!"
+          } >> "$GITHUB_ENV"
+
+      - name: Load exact certified engine runtime lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          GITLINK_SHA="$(git ls-tree HEAD engine/metabase | awk '{print $3}')"
+          python backend/lab/metabase/core_b/runtime/engine_runtime_lock.py             --lock backend/lab/metabase/core_b/runtime/engine_runtime_lock.json             --gitlink-sha "$GITLINK_SHA"             --github-env "$GITHUB_ENV"
+
+      - name: Pull exact certified dima.11.1 digest
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$ENGINE_SHA" = "4c49b8da6b424b0fa4d8ef340ca1b238d12980c1"
+          test "$CERTIFICATION_RUN_ID" = "37176179588"
+          test "$RUNTIME_TAG" = "v0.63.18-dima.11.1.1"
+          test "$REGISTRY_DIGEST" = "sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d"
+          docker pull "$IMMUTABLE_IMAGE_REF"
+          docker image inspect -f '{{range .RepoDigests}}{{println .}}{{end}}' "$IMMUTABLE_IMAGE_REF" | grep -Fx "$IMMUTABLE_IMAGE_REF"
+
+      - name: Start fail-closed zero-spend setup proxy
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p backend/eval/brain_v2_live
+          nohup python backend/lab/metabase/core_b/runtime/openrouter_counting_proxy.py             --listen-host 0.0.0.0             --listen-port "$PROVIDER_PROXY_PORT"             --ceiling 0             --receipt backend/eval/brain_v2_live/provider_setup.json             >backend/eval/brain_v2_live/provider_setup_proxy.log 2>&1 &
+          echo "PROVIDER_PROXY_PID=$!" >> "$GITHUB_ENV"
+          for i in $(seq 1 30); do
+            curl -fsS "http://127.0.0.1:${PROVIDER_PROXY_PORT}/__dima__/health" >/dev/null && break
+            sleep 1
+            test "$i" -lt 30
+          done
+
+      - name: Start neutral databases
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker network create dima-brain-v2-live
+          PG="postgres@sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675"
+          docker run -d --name analytics-db             --network dima-brain-v2-live --network-alias analytics-db             -p 127.0.0.1:55461:5432             -e POSTGRES_DB=brain_v2_live             -e POSTGRES_USER=brain_v2_owner             -e POSTGRES_PASSWORD="$PG_OWNER_PASSWORD" "$PG"
+          docker run -d --name app-db             --network dima-brain-v2-live --network-alias app-db             -p 127.0.0.1:55462:5432             -e POSTGRES_DB=metabase_brain_v2             -e POSTGRES_USER=metabase_app             -e POSTGRES_PASSWORD="$MB_APP_PASSWORD" "$PG"
+          for n in analytics-db app-db; do
+            for i in $(seq 1 90); do
+              docker exec "$n" pg_isready >/dev/null 2>&1 && break
+              sleep 2
+              test "$i" -lt 90
+            done
+            # pg_isready only proves the server socket is accepting connections;
+            # initdb may still be creating the requested POSTGRES_DB. Wait until
+            # the exact database/user SELECT succeeds, then require three
+            # consecutive successes before exposing host-port seeding.
+            for i in $(seq 1 90); do
+              test "$(docker inspect -f '{{.State.Running}}' "$n")" = "true"
+              if [ "$n" = "analytics-db" ]; then
+                docker exec "$n" psql -U brain_v2_owner -d brain_v2_live -Atqc 'SELECT 1' 2>/dev/null | grep -Fx 1 && break
+              else
+                docker exec "$n" psql -U metabase_app -d metabase_brain_v2 -Atqc 'SELECT 1' 2>/dev/null | grep -Fx 1 && break
+              fi
+              sleep 1
+              test "$i" -lt 90
+            done
+            for i in 1 2 3; do
+              if [ "$n" = "analytics-db" ]; then
+                docker exec "$n" psql -U brain_v2_owner -d brain_v2_live -Atqc 'SELECT 1' | grep -Fx 1
+              else
+                docker exec "$n" psql -U metabase_app -d metabase_brain_v2 -Atqc 'SELECT 1' | grep -Fx 1
+              fi
+              sleep 1
+            done
+          done
+
+      - name: Seed frozen neutral fixture
+        working-directory: backend
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: "55461"
+          PGDATABASE: brain_v2_live
+          PGUSER: brain_v2_owner
+          PGPASSWORD: ${{ env.PG_OWNER_PASSWORD }}
+          CORE_B_READONLY_USER: brain_v2_readonly
+          CORE_B_READONLY_PASSWORD: ${{ env.CORE_B_READONLY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if ! python lab/metabase/core_b/runtime/seed_round2_fixture.py             --fixture eval/round2_neutral_machine_fixture.json; then
+            docker ps -a
+            docker logs analytics-db || true
+            docker inspect analytics-db || true
+            exit 1
+          fi
+
+      - name: Start exact certified dima.11.1 engine
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run -d --name mb-brain-v2             --network dima-brain-v2-live             --add-host=host.docker.internal:host-gateway             -p 127.0.0.1:3361:3000             -e MB_DB_TYPE=postgres             -e MB_DB_HOST=app-db             -e MB_DB_PORT=5432             -e MB_DB_DBNAME=metabase_brain_v2             -e MB_DB_USER=metabase_app             -e MB_DB_PASS="$MB_APP_PASSWORD"             -e MB_AI_FEATURES_ENABLED=true             -e MB_METABOT_ENABLED=true             -e MB_AGENT_API_ENABLED=false             -e MB_LOAD_SAMPLE_CONTENT=false             -e MB_MCP_EXECUTE_SQL_ENABLED=false             -e MB_LLM_OPENROUTER_API_KEY="$DIMA_OPENROUTER_API_KEY"             -e MB_LLM_OPENROUTER_API_BASE_URL="http://host.docker.internal:${PROVIDER_PROXY_PORT}"             -e MB_LLM_METABOT_PROVIDER="$METABOT_MODEL_IDENTIFIER"             -e DIMA_ENGINE_REPOSITORY=UpcyTech/dima-metabase-engine             -e DIMA_ENGINE_REVISION_SHA="$ENGINE_SHA"             -e DIMA_ENGINE_UPSTREAM_BASE_SHA="$UPSTREAM_BASE_SHA"             -e DIMA_ENGINE_RUNTIME_TAG="$RUNTIME_TAG"             -e DIMA_ENGINE_BUILD_IDENTITY="$BUILD_IDENTITY"             -e DIMA_ENGINE_IMAGE_IDENTITY="$REGISTRY_DIGEST"             "$IMMUTABLE_IMAGE_REF"
+
+      - name: Bootstrap restricted analytical principal
+        working-directory: backend
+        env:
+          METABASE_URL: http://127.0.0.1:3361
+          MB_SITE_NAME: Dima Brain V2 Live
+          ANALYTICS_DB_NAME: brain_v2_live
+          ANALYTICS_DB_USER: brain_v2_readonly
+          ANALYTICS_DB_PASSWORD: ${{ env.CORE_B_READONLY_PASSWORD }}
+          MB_ADMIN_EMAIL: ${{ env.MB_ADMIN_EMAIL }}
+          MB_ADMIN_PASSWORD: ${{ env.MB_ADMIN_PASSWORD }}
+          MB_RESTRICTED_EMAIL: ${{ env.MB_RESTRICTED_EMAIL }}
+          MB_RESTRICTED_PASSWORD: ${{ env.MB_RESTRICTED_PASSWORD }}
+          MB_RESTRICTED_GROUP: ${{ env.MB_RESTRICTED_GROUP }}
+        run: python lab/metabase/core_b/runtime/bootstrap.py
+
+      - name: Exhaust startup provider window at zero spend
+        shell: bash
+        run: |
+          set -euo pipefail
+          sleep 16
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path("backend/eval/brain_v2_live/provider_setup.json").read_text())
+          assert r["hard_provider_request_ceiling"] == 0
+          assert r["actual_provider_request_count"] == 0
+          assert r["blocked_request_count"] == 0
+          PY
+
+      - name: Create governed native metric resources
+        working-directory: backend
+        env:
+          MB_ADMIN_EMAIL: ${{ env.MB_ADMIN_EMAIL }}
+          MB_ADMIN_PASSWORD: ${{ env.MB_ADMIN_PASSWORD }}
+          MB_RESTRICTED_EMAIL: ${{ env.MB_RESTRICTED_EMAIL }}
+          MB_RESTRICTED_PASSWORD: ${{ env.MB_RESTRICTED_PASSWORD }}
+        run: |
+          python lab/metabase/core_b/runtime/seed_phase1_pinpoint_metrics.py             --base-url http://127.0.0.1:3361             --fixture eval/round2_neutral_machine_fixture.json             --output eval/brain_v2_live/native_bindings.json
+
+      - name: Arm bounded per-sentinel provider window
+        shell: bash
+        env:
+          PROBE_ID: ${{ steps.auth.outputs.probe_id }}
+        run: |
+          set -euo pipefail
+          kill "$PROVIDER_PROXY_PID"
+          wait "$PROVIDER_PROXY_PID" 2>/dev/null || true
+          INTAKE_SOURCE_CEILING=2
+          if [[ "$PROBE_ID" == "R_LIVE_4_SCOPE_RESUME" ]]; then
+            INTAKE_SOURCE_CEILING=4
+          fi
+          mkdir -p backend/eval/brain_v2_s3_diagnostic
+          nohup python backend/lab/metabase/core_b/runtime/openrouter_counting_proxy.py             --listen-host 0.0.0.0             --listen-port "$PROVIDER_PROXY_PORT"             --ceiling "$HARD_PROVIDER_REQUEST_CEILING"             --source-ceiling research_intake="$INTAKE_SOURCE_CEILING"             --source-ceiling metabase=15             --source-ceiling p17_manager=3             --source-ceiling p18_manager=1             --source-ceiling p19_manager=2             --prompt-token-ceiling "$PROMPT_TOKEN_CEILING"             --completion-token-ceiling "$COMPLETION_TOKEN_CEILING"             --reasoning-token-ceiling "$REASONING_TOKEN_CEILING"             --provider-cost-ceiling "$PROVIDER_COST_CEILING"             --receipt "backend/eval/brain_v2_s3_diagnostic/provider_$PROBE_ID.json"             >"backend/eval/brain_v2_s3_diagnostic/provider_$PROBE_ID.log" 2>&1 &
+          echo "PROVIDER_PROXY_PID=$!" >> "$GITHUB_ENV"
+          for i in $(seq 1 30); do
+            curl -fsS "http://127.0.0.1:$PROVIDER_PROXY_PORT/__dima__/health" >/dev/null && break
+            sleep 1
+            test "$i" -lt 30
+          done
+
+      - name: Run exactly one Brain V2 live probe
+        working-directory: backend
+        env:
+          PYTHONPATH: .
+          PROBE_ID: ${{ steps.auth.outputs.probe_id }}
+          CHECKPOINT_DSN: postgresql://metabase_app:${{ env.MB_APP_PASSWORD }}@127.0.0.1:55462/metabase_brain_v2
+        run: |
+          set -euo pipefail
+          python lab/metabase/brain_v2/phase1_live.py               --probe-id "$PROBE_ID"               --base-url http://127.0.0.1:3361               --email "$MB_RESTRICTED_EMAIL"               --password "$MB_RESTRICTED_PASSWORD"               --binding-manifest eval/brain_v2_live/native_bindings.json               --output "eval/brain_v2_s3_diagnostic/${PROBE_ID}.json"               --control-db "eval/brain_v2_s3_diagnostic/${PROBE_ID}.db"               --checkpoint-dsn "$CHECKPOINT_DSN"               --provider-proxy-base-url "http://127.0.0.1:${PROVIDER_PROXY_PORT}"               --provider-receipt eval/brain_v2_s3_diagnostic/provider_${PROBE_ID}.json               --engine-sha "$ENGINE_SHA"               --upstream-sha "$UPSTREAM_BASE_SHA"               --runtime-tag "$RUNTIME_TAG"               --runtime-image-digest "$REGISTRY_DIGEST"               --build-identity "$BUILD_IDENTITY"               --image-identity "$REGISTRY_DIGEST"               --candidate-product-sha "${{ steps.auth.outputs.candidate_sha }}"               --checkout-sha "$GITHUB_SHA"
+      - name: Enforce catastrophic safety and artifact integrity
+        working-directory: backend
+        env:
+          PROBE_ID: ${{ steps.auth.outputs.probe_id }}
+          CANDIDATE_SHA: ${{ steps.auth.outputs.candidate_sha }}
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          probe=os.environ["PROBE_ID"]
+          r=json.loads(Path(f"eval/brain_v2_s3_diagnostic/{probe}.json").read_text())
+          assert r["schema_version"]=="dima_brain_v2_phase1_live_v1"
+          assert r["candidate_product_sha"]==os.environ["CANDIDATE_SHA"]
+          assert r["engine_sha"]=="4c49b8da6b424b0fa4d8ef340ca1b238d12980c1"
+          assert r["engine_release"]=="v0.63.18-dima.11.1.1"
+          assert r["langgraph_model_policy"]=="openai/gpt-5.6-luna"
+          assert r["metabot_model"]=="openrouter/openai/gpt-5.6-luna"
+          assert r.get("exception") is None, r.get("exception")
+          assert r["runtime"]=="BRAIN_V2_LANGGRAPH"
+          assert r["legacy_composer_calls"]==0
+          assert r["agent_api_request_count"]==0
+          if probe!="SAFETY_UNSUPPORTED_V1":
+              assert r["checkpoint_roundtrip_equal"] is True
+          else:
+              assert (r.get("expected_terminal") or {}).get("error_code") in {
+                  "BRAIN_V2_INTAKE_UNSUPPORTED","BRAIN_V2_INTAKE_CLARIFY"
+              }, r.get("expected_terminal")
+          provider=r["provider_receipt"]
+          assert provider["actual_provider_request_count"] <= 16, provider
+          assert provider["blocked_request_count"] == 0, provider
+          assert provider["provider_requests_by_source"].get("research_intake",0) <= (
+              4 if probe=="R_LIVE_4_SCOPE_RESUME" else 2
+          )
+          assert provider["provider_requests_by_source"].get("metabase",0) <= 15
+          assert provider["provider_requests_by_source"].get("p17_manager",0) <= 3
+          assert provider["provider_requests_by_source"].get("p18_manager",0) <= 1
+          assert provider["provider_requests_by_source"].get("p19_manager",0) <= 2
+          assert provider["privacy_contract"]["api_keys_persisted"] is False
+          assert provider["privacy_contract"]["reasoning_text_persisted"] is False
+          mech=r.get("mechanical") or {}
+          assert int(mech.get("cross_tenant_violation_count",0) or 0)==0, mech
+          assert int(mech.get("causal_overclaim_count",0) or 0)==0, mech
+          print("DIMA_BRAIN_V21_PANEL_CASE_COMPLETE",probe,r.get("mechanical_verdict"))
+          PY
+
+      - name: Emit sanitized adjudication projection
+        if: always()
+        working-directory: backend
+        env:
+          PROBE_ID: ${{ steps.auth.outputs.probe_id }}
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          probe=os.environ.get("PROBE_ID","")
+          p=Path(f"eval/brain_v2_s3_diagnostic/{probe}.json")
+          if not p.exists():
+              print('DIMA_BRAIN_V2_ADJUDICATION={"artifact_missing":true}')
+              raise SystemExit(0)
+          r=json.loads(p.read_text())
+          projection={
+            "probe_id":r.get("probe_id"),
+            "candidate_product_sha":r.get("candidate_product_sha"),
+            "engine_sha":r.get("engine_sha"),
+            "engine_release":r.get("engine_release"),
+            "brain_state":r.get("brain_state"),
+            "partial_brain_state":r.get("partial_brain_state"),
+            "first_brain_state":r.get("first_brain_state"),
+            "accepted_intent":r.get("accepted_intent"),
+            "research":r.get("research"),
+            "p17":r.get("p17"),
+            "p18":r.get("p18"),
+            "p19":r.get("p19"),
+            "p20":r.get("p20"),
+            "native_occurrences":r.get("native_occurrences"),
+            "mechanical":r.get("mechanical"),
+            "mechanical_verdict":r.get("mechanical_verdict"),
+            "provider_receipt":r.get("provider_receipt"),
+            "orchestration_efficiency":r.get("orchestration_efficiency"),
+            "orchestration_boundary_units":r.get("orchestration_boundary_units"),
+            "orchestration_boundary_units_by_owner":r.get("orchestration_boundary_units_by_owner"),
+            "latency_ms":r.get("latency_ms"),
+            "manual_contract":r.get("manual_contract"),
+            "runtime":r.get("runtime"),
+            "legacy_composer_calls":r.get("legacy_composer_calls"),
+            "agent_api_request_count":r.get("agent_api_request_count"),
+            "boundary_trace":r.get("boundary_trace"),
+            "exception":r.get("exception"),
+            "expected_terminal":r.get("expected_terminal"),
+          }
+          print("DIMA_BRAIN_V2_ADJUDICATION="+json.dumps(projection,ensure_ascii=False,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dima-brain-v2-1-s3-diagnostic-${{ steps.auth.outputs.probe_id }}-${{ github.run_id }}
+          path: |
+            backend/eval/brain_v2_s3_diagnostic/*.json
+          if-no-files-found: warn
+          retention-days: 90
+
+      - name: Runtime logs
+        if: failure()
+        run: docker logs --tail=1500 mb-brain-v2 || true
+
+      - name: Teardown
+        if: always()
+        run: |
+          if [ -n "${PROVIDER_PROXY_PID:-}" ]; then
+            kill "$PROVIDER_PROXY_PID" 2>/dev/null || true
+          fi
+          docker rm -f mb-brain-v2 analytics-db app-db 2>/dev/null || true
+          docker network rm dima-brain-v2-live 2>/dev/null || true
