@@ -6985,3 +6985,103 @@ CLOSER
 
 NEXT LEGAL ACTION:
 Freeze Product `b4bf7a43326a4c690c48c507d47625edb37ac8f0`, engine/migration/schema/grammar/model topology. After the freeze, only ops/lab/test/documentation changes are legal before the sentinel panel; no semantic Product change.
+
+
+---
+
+### ACCELERATION PHASE 7 — FINAL CANDIDATE FREEZE
+
+PHASE:
+7 — FREEZE ONE FINAL CANDIDATE
+
+STATUS: GREEN
+
+Product SHA:
+`b4bf7a43326a4c690c48c507d47625edb37ac8f0` — FINAL SEMANTIC PRODUCT CANDIDATE
+
+Engine SHA/tag/digest:
+`4c49b8da6b424b0fa4d8ef340ca1b238d12980c1` / `0.63.18-dima.11.1` / `sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d`
+
+Objective:
+Freeze one immutable semantic Product candidate before the final same-SHA sentinel panel.
+
+Architecture owner:
+Unchanged. No further Product semantic edits are legal before Phase-8 adjudication.
+
+Files changed:
+documentation only.
+
+Old representation removed/deprecated:
+No new deprecation. The obsolete dima11 conditional observer branch remains permanently outside the candidate.
+
+Canonical semantic authority after this phase:
+Frozen.
+
+Frozen release identity:
+- Product semantic SHA: `b4bf7a43326a4c690c48c507d47625edb37ac8f0`
+- engine SHA: `4c49b8da6b424b0fa4d8ef340ca1b238d12980c1`
+- engine release: `0.63.18-dima.11.1`
+- engine digest: `sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d`
+- migration head: `ff5b8e2c1a73`
+- grammar version: `dima_analytical_grammar_v1`
+- AnalyticalIntent schema: `dima_analytical_intent_v1`
+- AnalyticalExecutionManifest schema: `dima_analytical_execution_manifest_v1`
+- SelectionBinding schema: `dima_selection_binding_v1`
+- model topology: Luna / Luna / no cascade
+- frontend/UI/UX: NOT AUTHORIZED
+- 30-case: CLOSED
+
+Provider-free runs:
+Phase-6 frozen evidence set:
+`37327009729`, `37327009932`, `37327009747`, `37327009685`, `37327009856` — all GREEN.
+
+Paid runs:
+0 new.
+
+Manual quality score:
+N/A.
+
+Provider requests:
+0
+
+Tokens:
+0 paid
+
+Latency:
+N/A for quality.
+
+Cost:
+$0 provider cost.
+
+First invalid boundary:
+None open at freeze.
+
+New semantic family discovered:
+NO
+
+Exception:
+0
+
+Silent wrong:
+0
+
+Security:
+0
+
+Causal overclaim:
+0
+
+Duplicate native:
+0
+
+What is proven:
+The semantic candidate is frozen only after analytical boundary, SelectionBinding, completion/presentation, closed grammar, full provider-free, holdout and mutation gates are GREEN.
+
+What remains:
+One exact 9-capability same-Product-SHA sentinel panel and two-axis adjudication. The panel must use this frozen semantic SHA even if later checkout commits contain only lab/workflow/test/documentation support.
+
+30-case readiness:
+CLOSER
+
+NEXT LEGAL ACTION:
+Finalize the Phase-8 panel harness without touching `backend/app`, `backend/pyproject.toml` or `engine/metabase`; then run the exact nine required sentinels on frozen Product `b4bf7a43326a4c690c48c507d47625edb37ac8f0`.
