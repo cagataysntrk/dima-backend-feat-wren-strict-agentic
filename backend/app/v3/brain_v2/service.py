@@ -5,9 +5,10 @@ import hashlib
 
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
+from langgraph.types import Command
 
 from .activities import BrainActivities
-from .graph import build_brain_v2_graph
+from .graph import DURABLE_OBSERVATION_RESUME, build_brain_v2_graph
 from .state import BrainGraphState, BrainWorkflowStatus
 
 
@@ -59,12 +60,20 @@ class BrainV2Service:
                 "Brain V2 thread is outside the current tenant/principal scope"
             )
 
+    def _state_after_invoke(self, *, thread_id: str, result) -> BrainGraphState:
+        if isinstance(result, dict) and "__interrupt__" in result:
+            restored = self.state(thread_id=thread_id)
+            if restored is None:
+                raise BrainV2ThreadError("Brain V2 interrupted state was not checkpointed")
+            return restored
+        return BrainGraphState.model_validate(result)
+
     def run(self, state: BrainGraphState) -> BrainGraphState:
         result = self._graph.invoke(
             state.model_dump(mode="python"),
             config=self._config(state.thread_id),
         )
-        return BrainGraphState.model_validate(result)
+        return self._state_after_invoke(thread_id=state.thread_id, result=result)
 
     def continue_turn(
         self,
@@ -106,7 +115,7 @@ class BrainV2Service:
             },
             config=self._config(thread_id),
         )
-        return BrainGraphState.model_validate(result)
+        return self._state_after_invoke(thread_id=thread_id, result=result)
 
     def continue_report_turn(
         self,
@@ -177,7 +186,64 @@ class BrainV2Service:
             },
             config=self._config(thread_id),
         )
-        return BrainGraphState.model_validate(result)
+        return self._state_after_invoke(thread_id=thread_id, result=result)
+
+    def resume_waiting(
+        self,
+        *,
+        thread_id: str,
+        tenant_binding: str,
+        principal_ref: str,
+    ) -> BrainGraphState:
+        """Resume one retryable material-observation wait on the same thread."""
+
+        config = self._config(thread_id)
+        snapshot = self._graph.get_state(config)
+        values = getattr(snapshot, "values", None)
+        if not values:
+            raise BrainV2ThreadError("Brain V2 thread does not exist")
+        prior = BrainGraphState.model_validate(values)
+        self._assert_identity(
+            prior,
+            tenant_binding=tenant_binding,
+            principal_ref=principal_ref,
+        )
+        if prior.workflow_status != BrainWorkflowStatus.WAITING:
+            raise BrainV2ThreadError("Brain V2 thread is not waiting for durable observation")
+        expected_pending = (
+            "wait_material_group"
+            if prior.last_completed_node == "MATERIAL_GROUP_WAITING"
+            else "wait_material"
+            if prior.last_completed_node == "MATERIAL_WAITING"
+            else None
+        )
+        if expected_pending is None:
+            raise BrainV2ThreadError(
+                "Brain V2 WAITING state has no resumable material boundary"
+            )
+        pending = tuple(getattr(snapshot, "next", ()) or ())
+        if pending != (expected_pending,):
+            raise BrainV2ThreadError(
+                "Brain V2 WAITING checkpoint does not expose the expected resume boundary"
+            )
+
+        result = self._graph.invoke(
+            Command(resume=DURABLE_OBSERVATION_RESUME),
+            config=config,
+        )
+        resumed = self._state_after_invoke(thread_id=thread_id, result=result)
+        self._assert_identity(
+            resumed,
+            tenant_binding=tenant_binding,
+            principal_ref=principal_ref,
+        )
+        if resumed.thread_id != prior.thread_id:
+            raise BrainV2ThreadError("Brain V2 durable resume changed thread identity")
+        if resumed.research_session_id != prior.research_session_id:
+            raise BrainV2ThreadError("Brain V2 durable resume changed Research identity")
+        if resumed.scope_version_id != prior.scope_version_id:
+            raise BrainV2ThreadError("Brain V2 durable resume changed scope version")
+        return resumed
 
     def resume_interrupted(
         self,
@@ -199,9 +265,13 @@ class BrainV2Service:
             tenant_binding=tenant_binding,
             principal_ref=principal_ref,
         )
+        if prior.workflow_status == BrainWorkflowStatus.WAITING:
+            raise BrainV2ThreadError(
+                "Brain V2 durable material wait requires resume_waiting()"
+            )
         pending = tuple(getattr(snapshot, "next", ()) or ())
         if not pending:
             return prior
 
         result = self._graph.invoke(None, config=config)
-        return BrainGraphState.model_validate(result)
+        return self._state_after_invoke(thread_id=thread_id, result=result)
