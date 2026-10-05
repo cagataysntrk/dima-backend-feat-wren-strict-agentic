@@ -7179,3 +7179,107 @@ CLOSER — NOT READY
 
 NEXT LEGAL ACTION:
 Adjudicate this complete panel on Product Quality and Efficiency separately. Do not patch either RED until the Phase-9 receipt exists.
+
+
+---
+
+### ACCELERATION PHASE 9 — TWO-AXIS PANEL ADJUDICATION
+
+PHASE:
+9 — ADJUDICATE PANEL ON PRODUCT QUALITY + EFFICIENCY
+
+STATUS: RED — QUALITY GATE 32/36; EFFICIENCY AGGREGATE WITHIN TARGET
+
+Product SHA:
+`b4bf7a43326a4c690c48c507d47625edb37ac8f0`
+
+Engine SHA/tag/digest:
+`4c49b8da6b424b0fa4d8ef340ca1b238d12980c1` / `0.63.18-dima.11.1` / `sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d`
+
+Objective:
+Adjudicate the completed Phase-8 panel without conflating semantic Product quality with provider/token/latency efficiency.
+
+Architecture owner:
+No semantic owner change in adjudication.
+
+Files changed:
+Canonical progress receipt only.
+
+Product Quality rubric:
+4/FULL = correct, scope-faithful, task-fulfilling, governed/provenance-backed, causally restrained, useful terminal synthesis.
+3 = materially correct and useful with a bounded non-critical shortfall.
+2/PARTIAL = safe and partly correct, but a required analytical/evidence/continuation surface is missing.
+1 = major task failure with little usable governed result.
+0 = invalid/catastrophic/silent-wrong output.
+
+Manual quality score:
+- S1 Direct analytics: `4/4 FULL`.
+- S2 Temporal comparison: `2/4 PARTIAL`. Exact scope/intent are preserved and failure is safe, but the requested May-vs-June comparison, absolute difference and percentage change never become governed Evidence or a usable answer.
+- S3 CHANGE ranking + dependent drilldown: `2/4 PARTIAL`. Typed CHANGE ranking/dependency semantics are accepted and one native result is durably executed without replay, but it never becomes VERIFIED Evidence; SelectionBinding/child drilldown/task completion do not occur.
+- S4 Adaptive RCA: `4/4 FULL`. Exactly one discriminating re-entry, new Evidence, grounded competing hypotheses and restrained P19 terminal result.
+- S5 Relationship: `4/4 FULL`. Governed observational relationship, explicit non-causal limitations, P18 once, report-only delta zero.
+- S6 Scope mutation: `4/4 FULL`. scope_v1 -> scope_v2, same lineage, old Evidence historical, current Evidence disjoint, checkpoint resume, no duplicate native.
+- S7 Contextual report: `4/4 FULL`. Current governed result reused presentation-only with zero analytical-owner delta.
+- S8 Multi-intent: `4/4 FULL`. Both analytical needs retained, one shared material group/native acquisition, all USER_MUST terminal, restrained report.
+- S9 Safety/unsupported: `4/4 FULL`. Specialized forecast/optimizer demand is correctly typed UNSUPPORTED with zero native/Metabot/P17/P18/P19 work and no fabricated answer.
+
+Aggregate Product Quality:
+`32 / 36 = 88.9%`
+
+FULL cases:
+`7 / 9`
+
+Gate comparison:
+- >=34/36: FAIL
+- every case >=3/4: FAIL (S2=2, S3=2)
+- >=7/9 FULL: PASS
+- exception=0: PASS
+- silent wrong=0: PASS
+- security violation=0: PASS
+- causal overclaim=0: PASS
+- duplicate native=0: PASS
+
+Efficiency:
+- provider requests total: `51`
+- mean provider requests: `5.67 / case` — PASS <=7
+- prompt tokens total: `691,432`; mean `76,825.8`
+- completion tokens total: `20,158`; mean `2,239.8`
+- reasoning tokens total: `6,546`; mean `727.3`
+- aggregate case latency: `263,980 ms`; mean `29,331 ms`
+- provider-reported cost total: `$0.10268107`; mean `$0.011409`
+- duplicate native analytical work: `0`
+- individual efficiency debt: S3=8 provider requests, S4=8, S6=9. These are reported separately and do not convert otherwise-correct Product outcomes into semantic FAIL.
+
+First invalid boundary:
+S2 = result/material temporal projection coverage -> Evidence admission.
+S3 = durable EXECUTED occurrence -> read-only semantic observation/attestation -> VERIFIED Evidence/resume.
+
+New semantic family discovered:
+NO
+
+Exception:
+0
+
+Silent wrong:
+0
+
+Security:
+0
+
+Causal overclaim:
+0
+
+Duplicate native:
+0
+
+What is proven:
+The redesigned boundary has broad coverage: 7/9 independent sentinels are FULL and all catastrophic safety gates are clean. The current Product is materially stronger than the prior 60.5 broad baseline, but the supervisor 90+ readiness buffer is not yet met.
+
+What remains:
+Exactly one Phase-10 root-fix round over the two existing first-invalid boundaries, followed by full provider-free recertification, a new frozen SHA, and exactly one complete second/final nine-sentinel panel.
+
+30-case readiness:
+CLOSER — NOT READY
+
+NEXT LEGAL ACTION:
+Phase 10. Group S2 and S3 by existing owner laws; perform pattern research before coding; implement generic typed fixes only. No prompt/fuzzy/regex/benchmark patch, no engine build, no broad paid, no 30-case, no frontend.
