@@ -511,3 +511,62 @@ def test_exception_projection_includes_first_wrong_boundary_identity():
     assert receipt["material_group_id"] == "mg_" + "1" * 24
     assert receipt["expected_owner"] == "P20"
     assert receipt["observed_owner"] == "P20"
+
+
+@pytest.mark.parametrize(
+    ("probe_id", "native_count"),
+    (
+        ("DIRECT_ANALYTICS_V1", 1),
+        ("TEMPORAL_COMPARISON_V1", 1),
+        ("CHANGE_DEPENDENT_DRILLDOWN_V1", 2),
+    ),
+)
+def test_basic_readiness_mechanical_gate_needs_governed_evidence_without_research_managers(
+    probe_id,
+    native_count,
+) -> None:
+    state = BrainGraphState(
+        thread_id=f"live:{probe_id}",
+        tenant_binding="id:tenant",
+        principal_ref="user-1",
+        research_session_id="rs_" + "1" * 24,
+        accepted_brief_ref="rb_basic",
+        scope_version_id="scope_v1",
+        evidence_revision=1,
+        evidence_ids=("evi_" + "2" * 24,),
+        workflow_status=BrainWorkflowStatus.COMPLETE,
+        last_completed_node="COMPLETE",
+    )
+    provider = {
+        "provider_requests_by_source": {
+            "research_intake": 1,
+            "metabase": native_count,
+            "p17_manager": 0,
+            "p19_manager": 0,
+        },
+        "actual_provider_request_count": 1 + native_count,
+        "prompt_tokens": 1000,
+        "blocked_request_count": 0,
+    }
+    links = tuple(
+        _link(fingerprint=(chr(96 + ordinal) * 64), ordinal=ordinal)
+        for ordinal in range(1, native_count + 1)
+    )
+
+    result = _mechanical(
+        probe_id=probe_id,
+        state=state,
+        provider=provider,
+        links=links,
+        p17_snapshot=SimpleNamespace(
+            investigation=SimpleNamespace(nodes=()),
+            claims=(),
+        ),
+        p19_snapshot=None,
+        report_doc=None,
+    )
+
+    assert result["mechanical_green"] is True
+    assert result["p17_provider_requests"] == 0
+    assert result["p19_provider_requests"] == 0
+    assert result["duplicate_native_execution_zero"] is True
