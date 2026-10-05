@@ -4,6 +4,9 @@ import hashlib
 from contextlib import contextmanager
 from collections import Counter
 
+from langgraph.checkpoint.memory import InMemorySaver
+from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
+
 from app.v3.brain_v2.activities import (
     CandidateProjectionActivityResult,
     CanonicalizeActivityResult,
@@ -84,7 +87,10 @@ class FakeActivities:
         self, state: BrainGraphState
     ) -> RequirementPlanActivityResult:
         self.calls["requirements_plan"] += 1
-        if self.mode == "material_group_waiting":
+        if self.mode in {
+            "material_group_waiting",
+            "material_group_waiting_then_evidence",
+        }:
             return RequirementPlanActivityResult(
                 material_group_ids=("mg_" + "a" * 24,),
                 direct_requirement_ids=("goal-1",),
@@ -100,7 +106,13 @@ class FakeActivities:
         self, state: BrainGraphState
     ) -> MaterialGroupActivityResult:
         self.calls["material_group"] += 1
-        if self.mode == "material_group_waiting":
+        if (
+            self.mode == "material_group_waiting"
+            or (
+                self.mode == "material_group_waiting_then_evidence"
+                and self.calls["material_group"] == 1
+            )
+        ):
             return MaterialGroupActivityResult(
                 material_group_id="mg_" + "a" * 24,
                 consumer_requirement_ids=("goal-1",),
@@ -146,6 +158,16 @@ class FakeActivities:
 
     def acquire_material(self, state: BrainGraphState) -> MaterialActivityResult:
         self.calls["material"] += 1
+        if (
+            self.mode == "material_waiting_then_evidence"
+            and self.calls["material"] == 1
+        ):
+            return MaterialActivityResult(
+                material_requirement_ids=state.material_requirement_ids,
+                disposition=MaterialActivityDisposition.WAITING,
+                limitation_code="P14_TRANSIENT_WAIT",
+                activity_fingerprint=self._fp("material-waiting", state),
+            )
         if self.mode == "material_limited":
             return MaterialActivityResult(
                 material_requirement_ids=state.material_requirement_ids,
@@ -288,9 +310,111 @@ def test_retryable_material_group_waits_without_terminalizing_or_completing() ->
     assert result.workflow_status == BrainWorkflowStatus.WAITING
     assert result.completed_material_group_ids == ()
     assert result.terminal_requirement_ids == ()
-    assert result.active_material_group_id is None
+    assert result.active_material_group_id == "mg_" + "a" * 24
     assert activities.calls["material_group"] == 1
     assert activities.calls["completion"] == 0
+
+
+def test_material_group_wait_resumes_same_thread_without_new_intake() -> None:
+    checkpointer = InMemorySaver(
+        serde=JsonPlusSerializer(allowed_msgpack_modules=None)
+    )
+    activities = FakeActivities("material_group_waiting_then_evidence")
+    thread_id = "thread-material-group-durable-resume"
+    first_service = BrainV2Service(
+        activities=activities,
+        checkpointer=checkpointer,
+    )
+    first = first_service.run(
+        BrainGraphState(
+            thread_id=thread_id,
+            tenant_binding="id:tenant",
+            principal_ref="user-1",
+            current_user_input="Run governed direct analytics.",
+        )
+    )
+
+    assert first.workflow_status == BrainWorkflowStatus.WAITING
+    assert first.last_completed_node == "MATERIAL_GROUP_WAITING"
+    assert first.active_material_group_id == "mg_" + "a" * 24
+    assert activities.calls["intake"] == 1
+    assert activities.calls["canonicalize"] == 1
+    assert activities.calls["requirements_plan"] == 1
+    assert activities.calls["material_group"] == 1
+    snapshot = first_service.graph.get_state(
+        {"configurable": {"thread_id": thread_id}}
+    )
+    assert tuple(snapshot.next) == ("wait_material_group",)
+
+    restarted = BrainV2Service(
+        activities=activities,
+        checkpointer=checkpointer,
+    )
+    resumed = restarted.resume_waiting(
+        thread_id=thread_id,
+        tenant_binding="id:tenant",
+        principal_ref="user-1",
+    )
+
+    assert resumed.workflow_status == BrainWorkflowStatus.COMPLETE
+    assert resumed.thread_id == first.thread_id
+    assert resumed.research_session_id == first.research_session_id
+    assert resumed.scope_version_id == first.scope_version_id
+    assert resumed.evidence_ids == ("evi_" + "9" * 24,)
+    assert resumed.completed_material_group_ids == ("mg_" + "a" * 24,)
+    assert activities.calls["intake"] == 1
+    assert activities.calls["canonicalize"] == 1
+    assert activities.calls["requirements_plan"] == 1
+    assert activities.calls["material_group"] == 2
+    assert activities.calls["evidence"] == 1
+    assert activities.calls["completion"] == 1
+
+
+def test_generic_material_wait_resumes_without_new_intake_or_busy_loop() -> None:
+    checkpointer = InMemorySaver(
+        serde=JsonPlusSerializer(allowed_msgpack_modules=None)
+    )
+    activities = FakeActivities("material_waiting_then_evidence")
+    thread_id = "thread-material-durable-resume"
+    first_service = BrainV2Service(
+        activities=activities,
+        checkpointer=checkpointer,
+    )
+    first = first_service.run(
+        BrainGraphState(
+            thread_id=thread_id,
+            tenant_binding="id:tenant",
+            principal_ref="user-1",
+            current_user_input="Run governed RCA.",
+        )
+    )
+
+    assert first.workflow_status == BrainWorkflowStatus.WAITING
+    assert first.last_completed_node == "MATERIAL_WAITING"
+    assert activities.calls["material"] == 1
+    snapshot = first_service.graph.get_state(
+        {"configurable": {"thread_id": thread_id}}
+    )
+    assert tuple(snapshot.next) == ("wait_material",)
+
+    restarted = BrainV2Service(
+        activities=activities,
+        checkpointer=checkpointer,
+    )
+    resumed = restarted.resume_waiting(
+        thread_id=thread_id,
+        tenant_binding="id:tenant",
+        principal_ref="user-1",
+    )
+
+    assert resumed.workflow_status == BrainWorkflowStatus.COMPLETE
+    assert resumed.thread_id == first.thread_id
+    assert resumed.research_session_id == first.research_session_id
+    assert resumed.scope_version_id == first.scope_version_id
+    assert activities.calls["intake"] == 1
+    assert activities.calls["material"] == 2
+    assert activities.calls["evidence"] == 1
+    assert activities.calls["p19"] == 1
 
 
 def test_one_pass_skips_p17_and_executes_one_material_acquisition() -> None:
