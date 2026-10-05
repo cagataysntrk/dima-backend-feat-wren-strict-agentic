@@ -6061,3 +6061,64 @@ The hard total remains the controlling bound. The source ceilings prohibit unrel
 **30-case readiness:** NOT READY.
 
 **NEXT LEGAL ACTION:** arm exactly one F06_M original on Product `957fea...`, Luna/Luna/no cascade, automatic retry OFF; immediately disarm after the run.
+
+
+---
+
+## FINAL CLOSURE PHASE 4 — A3 ORIGINAL PROOF ATTEMPT 1 — 2026-10-05
+
+**PHASE:** Final closure / Phase 4 / A3 original
+
+**STATUS:** RED — OPERATIONAL PROVIDER-SOURCE BUDGET; STOP-ON-RED APPLIED
+
+**Product SHA:** `957fea9876cfa4cdf8ee3a4f5701c0b6cfc2a40e`
+
+**Checkout SHA:** `aa68aeab5eb2b26b827491c37027a6f2d6188e9e`
+
+**Engine SHA/tag/digest:** `4c49b8da6b424b0fa4d8ef340ca1b238d12980c1` / `0.63.18-dima.11.1` / `sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d`
+
+**Objective:** execute exactly one F06_M original after vertical replay, live-harness repin and bounded provider budget.
+
+**Live run:** `37265397050`; artifact `11325773824`.
+
+**Score:** `0/4` infrastructure/harness RED; no analytical turn completed, so this is not evidence against the recovered Product semantics.
+
+**Provider requests:** 1 forwarded Research Intake request + 1 blocked Research Intake request.
+
+**Tokens:** prompt `14739`; completion `768`; reasoning `0`.
+
+**Cost:** `$0.0046062`.
+
+**Latency:** `6461 ms` case latency.
+
+**Exception:** `COGNITION_PROVIDER_REJECTED` from local proxy HTTP 429.
+
+**First invalid boundary:** live provider-source budget contract, before Research Intake completed and before any Metabot/native execution.
+
+**Exact owner:** `.github/workflows/dima-brain-v2-1-spec-closure-live.yml` provider proxy source ceiling. Product Intake explicitly permits at most one bounded reconsideration and therefore up to two provider calls; the temporary `research_intake=1` source cap incorrectly prohibited the legal second call.
+
+**Artifact facts:** provider ordinal 1 / `research_intake` forwarded HTTP 200; ordinal 2 / `research_intake` blocked locally with `PROVIDER_SOURCE_CEILING_EXHAUSTED`. Metabase requests = 0; native acquisitions = 0.
+
+**Generic fix:** source ceiling changed `research_intake=1 -> 2`; hard total remains `16`; Metabase remains `15`; P17/P18/P19 remain `0`. This changes no semantic authority and does not create a retry loop. Product code already seals the second call as at most one bounded reconsideration with total Intake call_count < 2.
+
+**Files changed for fix:** `.github/workflows/dima-brain-v2-1-spec-closure-live.yml` only.
+
+**Semantic files changed:** 0.
+
+**Duplicate native:** 0.
+
+**Stale Evidence:** 0.
+
+**Scope violation:** 0.
+
+**Security violation:** 0.
+
+**Causal overclaim:** 0.
+
+**What is proven:** the workflow is now on current Product/engine and the first attempt did not reach analytics because the source cap was stricter than Product's frozen two-call Intake contract. This is an ops boundary, not an engine or semantic regression.
+
+**What remains:** rerun A3 original only after this owner-local ops correction. This is not a blind same-checkout retry: the failing first-invalid boundary has been changed in the live harness while semantic Product remains frozen.
+
+**30-case readiness:** NOT READY.
+
+**NEXT LEGAL ACTION:** execute one A3 original on the new checkout with `research_intake<=2`, hard total `<=16`, automatic retry OFF. No sibling/A4+, no engine change, no broad/30-case/frontend until A3 original is `4/4 FULL`.
