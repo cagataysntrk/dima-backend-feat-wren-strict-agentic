@@ -239,6 +239,19 @@ def test_other_goal_cannot_mint_a_new_analytical_operation() -> None:
         ),
         metric_refs=(metric.candidate_id,),
     )
+    brief = ResearchBrief(
+        brief_id="rb-v1-grammar-other",
+        objective="Unsupported analytical primitive.",
+        scope=scope,
+        questions=(question,),
+        deliverables=(),
+        must_requirement_ids=(question.goal_id,),
+        context_version="ctx-v1-grammar-other",
+        status=ResearchBriefStatus.READY_FOR_RESEARCH,
+    )
+    with pytest.raises(AnalyticalBoundaryError) as brief_exc:
+        validate_v1_research_brief(brief)
+    assert brief_exc.value.code == "ANALYTICAL_V1_OPERATION_UNSUPPORTED"
 
     with pytest.raises(AnalyticalBoundaryError) as exc:
         project_analytical_intent_v1(
