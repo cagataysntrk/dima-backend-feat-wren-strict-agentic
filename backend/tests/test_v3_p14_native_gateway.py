@@ -4198,7 +4198,7 @@ def test_a3_frozen_artifact_vertical_replay_opens_result_dependent_child():
             "854758dad443fdc595bb4055c2046323f1cae775570c6bb1348fad86aa8369cc"
         ),
         result_payload=ranking_result,
-        evidence_id="evi_11315439520a3feedface00",
+        evidence_id="evi_111111111111111111111111",
         attested_native_material=True,
     )
     assert ranking_contract.ranking is not None
