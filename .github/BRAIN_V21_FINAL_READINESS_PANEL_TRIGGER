@@ -1,14 +1,14 @@
 DIMA Brain V2.1 final readiness panel
-attempt: final-2
+attempt: supervisor-exception-final
 triggered_at: 2026-10-05
-semantic_product_sha: 9132e54f0f26c5470f0a82a2d5edaddb040b36b5
+semantic_product_sha: e257a4754487ec4ac7bfe9fa93966e5ac4a5d1ea
 engine_sha: 4c49b8da6b424b0fa4d8ef340ca1b238d12980c1
 engine_digest: sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d
-provider_free_phase1: 37335381093
-provider_free_phase2: 37335380988
-provider_free_semantic: 37335381048
-provider_free_frozen: 37335380727
-provider_free_focused: 37335380989
+provider_free_phase1: 37347542513
+provider_free_phase2: 37347542482
+provider_free_semantic: 37347543030
+provider_free_frozen: 37347542511
+provider_free_focused: 37347542415
 broad_30_case: CLOSED
 frontend: NOT_AUTHORIZED
-rerun_nonce: phase10-final-panel-2-supersede-obsolete
+rerun_nonce: supervisor-exception-durable-resume-final-1
