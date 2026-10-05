@@ -218,6 +218,56 @@ def _native_occurrence_projection(links) -> list[dict[str, Any]]:
     ]
 
 
+def _durable_resume_identity_checks(
+    attempts: list[dict[str, Any]] | None,
+) -> dict[str, bool]:
+    attempts = attempts or []
+    if not attempts:
+        return {
+            "durable_resume_identity_preserved": True,
+            "durable_resume_provider_replay_zero": True,
+        }
+    identity_ok = True
+    provider_replay_zero = True
+    for attempt in attempts:
+        after_by_link = {
+            str(item.get("execution_link_id")): item
+            for item in (attempt.get("after_occurrences") or [])
+        }
+        before_executed = tuple(
+            item
+            for item in (attempt.get("before_occurrences") or [])
+            if item.get("status") == "EXECUTED"
+        )
+        for before in before_executed:
+            after = after_by_link.get(str(before.get("execution_link_id")))
+            if after is None:
+                identity_ok = False
+                continue
+            if (
+                after.get("native_query_id") != before.get("native_query_id")
+                or after.get("query_fingerprint") != before.get("query_fingerprint")
+            ):
+                identity_ok = False
+        deltas = attempt.get("provider_delta_by_owner") or {}
+        if any(
+            int(deltas.get(owner, 0) or 0) != 0
+            for owner in (
+                "research_intake",
+                "metabase",
+                "p17_manager",
+                "p18_manager",
+                "p19_manager",
+            )
+        ):
+            provider_replay_zero = False
+    return {
+        "durable_resume_identity_preserved": identity_ok,
+        "durable_resume_provider_replay_zero": provider_replay_zero,
+    }
+
+
+
 def _mechanical(
     *,
     probe_id: str,
@@ -228,6 +278,7 @@ def _mechanical(
     p19_snapshot,
     report_doc,
     scope_resume: dict[str, Any] | None = None,
+    durable_wait_resume_attempts: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     sources = provider.get("provider_requests_by_source") or {}
     verified_links = tuple(
@@ -1330,6 +1381,7 @@ def main() -> int:
                 p19_snapshot=None,
                 report_doc=report_doc,
                 scope_resume=None,
+                durable_wait_resume_attempts=durable_wait_resume_attempts,
             )
         else:
             if root_goal is None or p19_snapshot is None:
