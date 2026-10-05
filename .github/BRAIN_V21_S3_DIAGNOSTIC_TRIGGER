@@ -1,0 +1,10 @@
+DIMA Brain V2.1 S3 diagnostic
+triggered_at: 2026-10-05
+semantic_product_sha: e257a4754487ec4ac7bfe9fa93966e5ac4a5d1ea
+probe: CHANGE_DEPENDENT_DRILLDOWN_V1
+purpose: measure natural orchestration units after correctness/efficiency harness separation
+hard_provider_request_ceiling: 16
+provider_caps: unchanged
+engine: dima.11.1 unchanged
+frontend: NOT_AUTHORIZED
+nonce: s3-diagnostic-harness-separation-1
