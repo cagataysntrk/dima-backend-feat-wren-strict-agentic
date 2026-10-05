@@ -352,7 +352,7 @@ def test_verified_parent_result_dependency_resolves_through_p14_executor(monkeyp
     parent_link = SimpleNamespace(
         evidence_id="evidence-parent",
         receipt_id="receipt-parent",
-        result_hash="b" * 64,
+        result_hash=h(parent_result),
     )
 
     class ParentStore:
@@ -453,7 +453,7 @@ def test_result_dependency_preserves_semantic_source_and_uses_execution_anchor(m
     parent_link = SimpleNamespace(
         evidence_id="evidence-shared",
         receipt_id="receipt-shared",
-        result_hash="e" * 64,
+        result_hash=h(parent_result),
     )
 
     class SharedOccurrenceStore:
@@ -3427,11 +3427,6 @@ def test_result_dependency_filter_only_loads_binding_from_accepted_scope() -> No
             scope=base_brief.scope,
         ),
     )
-    parent_link = SimpleNamespace(
-        evidence_id="evidence-filter-only",
-        receipt_id="receipt-filter-only",
-        result_hash="a" * 64,
-    )
     parent_result = {
         "data": {
             "cols": [
@@ -3446,6 +3441,12 @@ def test_result_dependency_filter_only_loads_binding_from_accepted_scope() -> No
             "rows": [["Web", 41], ["Direct", 33]],
         }
     }
+
+    parent_link = SimpleNamespace(
+        evidence_id="evidence-filter-only",
+        receipt_id="receipt-filter-only",
+        result_hash=h(parent_result),
+    )
 
     class ParentStore:
         def verified_material_result(self, *, session_id, obligation_id):
