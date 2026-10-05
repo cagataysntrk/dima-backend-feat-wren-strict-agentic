@@ -11,6 +11,7 @@ from lab.metabase.brain_v2 import phase1_live
 from lab.metabase.brain_v2.final_probes import FINAL_READINESS_PANEL
 from lab.metabase.brain_v2.phase1_live import (
     _contextual_report_mechanical,
+    _durable_resume_identity_checks,
     _mechanical,
     _native_occurrence_projection,
     _safety_unsupported_mechanical,
@@ -57,6 +58,82 @@ def test_live_receipt_uses_canonical_native_query_fingerprint() -> None:
             "execution_kind": "P14_BASE",
         }
     ]
+
+
+def test_durable_resume_identity_gate_accepts_same_executed_occurrence() -> None:
+    attempts = [
+        {
+            "before_occurrences": [
+                {
+                    "execution_link_id": "link-1",
+                    "status": "EXECUTED",
+                    "native_query_id": "query-1",
+                    "query_fingerprint": "a" * 64,
+                }
+            ],
+            "after_occurrences": [
+                {
+                    "execution_link_id": "link-1",
+                    "status": "VERIFIED",
+                    "native_query_id": "query-1",
+                    "query_fingerprint": "a" * 64,
+                },
+                {
+                    "execution_link_id": "link-child",
+                    "status": "VERIFIED",
+                    "native_query_id": "query-child",
+                    "query_fingerprint": "b" * 64,
+                },
+            ],
+            "provider_delta_by_owner": {
+                "research_intake": 0,
+                "metabase": 0,
+                "p17_manager": 0,
+                "p18_manager": 0,
+                "p19_manager": 0,
+            },
+        }
+    ]
+
+    result = _durable_resume_identity_checks(attempts)
+
+    assert result == {
+        "durable_resume_identity_preserved": True,
+        "durable_resume_provider_replay_zero": True,
+    }
+
+
+def test_durable_resume_identity_gate_rejects_parent_replay() -> None:
+    attempts = [
+        {
+            "before_occurrences": [
+                {
+                    "execution_link_id": "link-1",
+                    "status": "EXECUTED",
+                    "native_query_id": "query-1",
+                    "query_fingerprint": "a" * 64,
+                }
+            ],
+            "after_occurrences": [
+                {
+                    "execution_link_id": "link-2",
+                    "status": "VERIFIED",
+                    "native_query_id": "query-2",
+                    "query_fingerprint": "c" * 64,
+                }
+            ],
+            "provider_delta_by_owner": {
+                "research_intake": 0,
+                "metabase": 1,
+            },
+        }
+    ]
+
+    result = _durable_resume_identity_checks(attempts)
+
+    assert result["durable_resume_identity_preserved"] is False
+    assert result["durable_resume_provider_replay_zero"] is False
+
 
 
 def test_one_pass_mechanical_gate_reads_canonical_native_fingerprint() -> None:
