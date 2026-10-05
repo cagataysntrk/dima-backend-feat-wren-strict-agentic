@@ -80,7 +80,7 @@ class ResearchMaterialLimitation(ResearchProductError):
 
 
 class ResearchMaterialObservationUnavailable(ResearchMaterialLimitation):
-    """Post-execution semantic observation is unavailable; exact execution is reusable."""
+    """Pre-execution occurrence readiness/observation is temporarily unavailable."""
 
 
 class ResearchMaterialOutcome(Frozen):
@@ -152,7 +152,7 @@ class NativeResearchOccurrenceResult(Frozen):
 
 
 class NativeResearchOccurrenceRunner:
-    """Single native Metabot -> exact query -> dataset/receipt/Evidence occurrence path."""
+    """Single Metabot capture -> observe -> exact execute -> Evidence occurrence path."""
 
     def __init__(
         self,
@@ -1003,12 +1003,12 @@ class ResearchAskOrchestrator:
             request,
             repair_parent_link_id=None,
         ):
-            """Bounded observation retry over one durable EXECUTED occurrence.
+            """Bounded readiness/observation retry over one durable occurrence.
 
-            Native cognition and dataset execution are never replayed. Metabase
-            occurrence persistence can become visible slightly after the exact
-            dataset result is durably captured, so retry only the read-only
-            observation lookup on the same execution link/query payload.
+            Native cognition is never replayed. A CANDIDATE_CAPTURED occurrence
+            has not executed yet; retries only attest/observe that same locator.
+            If a prior process reached EXECUTED, retries remain read-only and
+            exact execution is never replayed.
             """
 
             try:
@@ -1026,14 +1026,13 @@ class ResearchAskOrchestrator:
                 last_exc = first_exc
 
             persisted = self._store.execution_link(link.id)
-            if persisted.status != "EXECUTED":
+            if persisted.status not in {"CANDIDATE_CAPTURED", "EXECUTED"}:
                 raise last_exc
 
-            # The native dataset side-effect is already durable. Poll only the
-            # read-only material-observation projection with bounded backoff;
-            # never replay Metabot cognition or /api/dataset. The wider window
-            # covers eventual visibility under real Metabase load while still
-            # returning WAITING if the observation never becomes available.
+            # Retry only exact-occurrence readiness/material observation. A
+            # CANDIDATE_CAPTURED link has zero analytical execution side effect;
+            # an EXECUTED link already owns one durable result. Neither path
+            # reopens Metabot cognition or submits a second native execution.
             for delay_seconds in (0.2, 0.6, 1.2, 2.4):
                 time.sleep(delay_seconds)
                 try:
@@ -1050,7 +1049,7 @@ class ResearchAskOrchestrator:
                 except ResearchMaterialObservationUnavailable as retry_exc:
                     last_exc = retry_exc
                     persisted = self._store.execution_link(link.id)
-                    if persisted.status != "EXECUTED":
+                    if persisted.status not in {"CANDIDATE_CAPTURED", "EXECUTED"}:
                         raise
 
             raise last_exc
@@ -1175,6 +1174,7 @@ class ResearchAskOrchestrator:
             pending.id,
             receipt_id=outcome.receipt.receipt_id,
             evidence_id=outcome.evidence.artifact_id,
+            attestation_id=outcome.attestation_id,
         )
         return self._response(
             updated,
