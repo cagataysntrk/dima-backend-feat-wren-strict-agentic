@@ -85,14 +85,14 @@ from lab.metabase.brain_v2.final_mechanical import (
 from lab.metabase.brain_v2.live_support import (
     BoundedMaterialExecutor,
     BoundedStructuredTransport,
-    MAX_ORCHESTRATION_BOUNDARY_UNITS,
+    ORCHESTRATION_EFFICIENCY_SLO_UNITS,
     MODEL,
     METABOT_MODEL,
     NativeEngineIdentity,
     NativeRequestAudit,
     NativeResearchMaterialExecutor,
     NativeSubjectSessionProvider,
-    OrchestrationBudget,
+    OrchestrationEfficiencyTracker,
     build_catalog,
     build_control_plane,
     execution_links,
@@ -194,6 +194,35 @@ def _provider_receipt(path: Path) -> dict[str, Any]:
     if value.get("schema_version") != "dima_openrouter_counting_proxy_v1":
         raise RuntimeError("unexpected provider receipt schema")
     return value
+
+
+def _try_provider_receipt(path: Path) -> dict[str, Any]:
+    """Best-effort provider receipt projection for exception artifacts."""
+
+    try:
+        return _provider_receipt(path)
+    except Exception as exc:
+        return {
+            "receipt_available": False,
+            "receipt_error": f"{type(exc).__name__}: {exc}",
+        }
+
+
+def _apply_orchestration_efficiency(
+    report: dict[str, Any],
+    tracker: OrchestrationEfficiencyTracker,
+) -> None:
+    receipt = tracker.receipt()
+    report["orchestration_efficiency"] = receipt
+    # Backward-compatible fields retained as measurements only.
+    report["orchestration_boundary_units"] = receipt["used"]
+    report["orchestration_boundary_units_by_owner"] = receipt["by_owner"]
+    mechanical = report.get("mechanical")
+    if isinstance(mechanical, dict):
+        efficiency_checks = dict(mechanical.get("efficiency_checks") or {})
+        efficiency_checks["orchestration_units_slo"] = bool(receipt["slo_met"])
+        mechanical["efficiency_checks"] = efficiency_checks
+        mechanical["efficiency_green"] = all(efficiency_checks.values())
 
 
 def _links(db_engine, session_id: str):
@@ -730,13 +759,13 @@ def main() -> int:
         request_observer=request_audit.observe,
     )
 
-    budget = OrchestrationBudget(MAX_ORCHESTRATION_BOUNDARY_UNITS)
+    tracker = OrchestrationEfficiencyTracker(ORCHESTRATION_EFFICIENCY_SLO_UNITS)
     raw_material = NativeResearchMaterialExecutor(
         subject_provider=subjects,
         store=store,
         expected_identity=expected,
     )
-    material = BoundedMaterialExecutor(raw_material, budget=budget)
+    material = BoundedMaterialExecutor(raw_material, tracker=tracker)
     research = ResearchAskOrchestrator(
         store=store,
         bridge_factory=subjects,
@@ -769,16 +798,16 @@ def main() -> int:
         owner="p19_manager",
     )
     intake_transport = BoundedStructuredTransport(
-        raw_intake, budget=budget, owner="research_intake"
+        raw_intake, tracker=tracker, owner="research_intake"
     )
     p17_transport = BoundedStructuredTransport(
-        raw_p17, budget=budget, owner="p17_manager"
+        raw_p17, tracker=tracker, owner="p17_manager"
     )
     p18_transport = BoundedStructuredTransport(
-        raw_p18, budget=budget, owner="p18_manager"
+        raw_p18, tracker=tracker, owner="p18_manager"
     )
     p19_transport = BoundedStructuredTransport(
-        raw_p19, budget=budget, owner="p19_manager"
+        raw_p19, tracker=tracker, owner="p19_manager"
     )
 
     intake = ResearchIntakeCompiler(transport=intake_transport)
@@ -848,6 +877,7 @@ def main() -> int:
         "manual_quality_score": None,
         "manual_quality_status": "PENDING",
         "runtime": "BRAIN_V2_LANGGRAPH",
+        "orchestration_efficiency_slo_units": ORCHESTRATION_EFFICIENCY_SLO_UNITS,
     }
     legacy_modules = (
         "lab.metabase.core_b.live_sentinel",
@@ -922,6 +952,7 @@ def main() -> int:
                 native_http_requests=native_requests,
                 agent_api_request_count=request_audit.agent_api_request_count,
             )
+            _apply_orchestration_efficiency(report, tracker)
             report["mechanical_verdict"] = (
                 "GREEN"
                 if report["mechanical"]["mechanical_green"]
@@ -995,7 +1026,7 @@ def main() -> int:
                     db_engine,
                     first_state.research_session_id,
                 )
-                before_provider = dict(budget.by_owner)
+                before_provider = dict(tracker.by_owner)
                 time.sleep(1.0)
                 service = BrainV2Service(
                     activities=activities,
@@ -1027,10 +1058,10 @@ def main() -> int:
                             after_links
                         ),
                         "provider_delta_by_owner": {
-                            owner: int(budget.by_owner.get(owner, 0))
+                            owner: int(tracker.by_owner.get(owner, 0))
                             - int(before_provider.get(owner, 0))
                             for owner in set(
-                                (*before_provider.keys(), *budget.by_owner.keys())
+                                (*before_provider.keys(), *tracker.by_owner.keys())
                             )
                         },
                     }
@@ -1043,7 +1074,7 @@ def main() -> int:
                 and first_checkpointed.model_dump(mode="json")
                 == first_state.model_dump(mode="json")
             )
-            first_budget_by_owner = dict(budget.by_owner)
+            first_budget_by_owner = dict(tracker.by_owner)
             first_native_count = len(
                 tuple(
                     item for item in _links(db_engine, first_state.research_session_id)
@@ -1251,11 +1282,6 @@ def main() -> int:
         report["p20"] = _safe(report_doc)
         report["native_occurrences"] = native_occurrences
         report["provider_receipt"] = provider
-        report["orchestration_boundary_units"] = budget.used
-        report["orchestration_boundary_units_by_owner"] = dict(
-            sorted(budget.by_owner.items())
-        )
-
         if args.probe_id in {RELATIONSHIP_REPORT, MULTI_INTENT}:
             first_same_session = (
                 first_state.research_session_id == state.research_session_id
@@ -1280,7 +1306,7 @@ def main() -> int:
                     if args.probe_id == RELATIONSHIP_REPORT
                     else None
                 ),
-                budget_after=dict(budget.by_owner),
+                budget_after=dict(tracker.by_owner),
                 same_research_session=first_same_session,
                 same_scope_version=first_same_scope,
                 checkpoint_roundtrip=bool(
@@ -1351,7 +1377,7 @@ def main() -> int:
                 report_current=report_current,
                 first_native_count=first_native_count,
                 budget_before_report=first_budget_by_owner,
-                budget_after=dict(budget.by_owner),
+                budget_after=dict(tracker.by_owner),
                 checkpoint_roundtrip=bool(
                     report.get("checkpoint_roundtrip_equal")
                 ),
@@ -1474,11 +1500,51 @@ def main() -> int:
                 scope_resume=scope_resume,
             )
 
+        _apply_orchestration_efficiency(report, tracker)
         report["mechanical_verdict"] = (
             "GREEN" if report["mechanical"]["mechanical_green"] else "RED"
         )
     except Exception as exc:
         report["exception"] = _exception(exc)
+        partial_state = state
+        if partial_state is None:
+            recovery_thread_id = (
+                f"live:{args.probe_id}:{args.candidate_product_sha[:12]}"
+            )
+            try:
+                with postgres_checkpoint_saver(
+                    args.checkpoint_dsn,
+                    setup=False,
+                ) as recovery_checkpointer:
+                    recovery_service = BrainV2Service(
+                        activities=activities,
+                        checkpointer=recovery_checkpointer,
+                    )
+                    partial_state = recovery_service.state(
+                        thread_id=recovery_thread_id
+                    )
+            except Exception as recovery_exc:
+                report["partial_state_recovery_error"] = (
+                    f"{type(recovery_exc).__name__}: {recovery_exc}"
+                )
+        report["partial_brain_state"] = (
+            partial_state.model_dump(mode="json")
+            if partial_state is not None
+            else None
+        )
+        partial_session_id = (
+            partial_state.research_session_id
+            if partial_state is not None
+            else None
+        )
+        partial_links = (
+            _links(db_engine, partial_session_id)
+            if partial_session_id is not None
+            else ()
+        )
+        report["native_occurrences"] = _native_occurrence_projection(partial_links)
+        report["provider_receipt"] = _try_provider_receipt(args.provider_receipt)
+        _apply_orchestration_efficiency(report, tracker)
         if (
             report["exception"].get("first_invalid_boundary") is not None
             or report["exception"].get("last_valid_boundary") is not None
@@ -1512,8 +1578,9 @@ def main() -> int:
             }
         report["mechanical_verdict"] = "RED"
     finally:
+        _apply_orchestration_efficiency(report, tracker)
         report["latency_ms"] = int((time.monotonic() - started) * 1000)
-        for transport in (raw_intake, raw_p17, raw_p19):
+        for transport in (raw_intake, raw_p17, raw_p18, raw_p19):
             transport.close()
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
