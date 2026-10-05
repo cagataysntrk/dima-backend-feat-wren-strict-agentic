@@ -2720,7 +2720,9 @@ def test_direct_native_result_seals_one_research_receipt_without_resource_or_ope
     )
     assert outcome.evidence.payload["observed_query_fingerprint"] == h(query)
     assert outcome.evidence.payload["scope_identity"]["version_id"] == "scope_v1"
-    assert bridge.attestation_calls == []
+    assert len(bridge.attestation_calls) == 2
+    assert bridge.call_order[:3] == ["attest", "observe", "execute"]
+    assert len(bridge.calls) == 1
 
     updated = ResearchManager.admit_receipted_evidence(
         session,
