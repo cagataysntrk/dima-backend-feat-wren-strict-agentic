@@ -1029,7 +1029,12 @@ class ResearchAskOrchestrator:
             if persisted.status != "EXECUTED":
                 raise last_exc
 
-            for delay_seconds in (0.2, 0.6):
+            # The native dataset side-effect is already durable. Poll only the
+            # read-only material-observation projection with bounded backoff;
+            # never replay Metabot cognition or /api/dataset. The wider window
+            # covers eventual visibility under real Metabase load while still
+            # returning WAITING if the observation never becomes available.
+            for delay_seconds in (0.2, 0.6, 1.2, 2.4):
                 time.sleep(delay_seconds)
                 try:
                     return runner.execute(
