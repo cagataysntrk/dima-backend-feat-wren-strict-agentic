@@ -205,11 +205,12 @@ def assert_material_result_coverage(
 ) -> MaterialResultCoverage:
     """Fail closed when VERIFIED Evidence would overstate result coverage.
 
-    A native CHANGE ranking may legitimately project only entity + derived
-    change in its final rowset after Metabot used governed time material in
-    earlier stages.  Omitting that time column is admissible only when this
-    exact native occurrence has already passed material-scope validation.
-    Plain comparison Evidence and unattested results remain row-level strict.
+    A native comparison or CHANGE ranking may legitimately project only final
+    comparison/derived columns after Metabot used governed time material in
+    earlier stages. Omitting that intermediate time column is admissible only
+    when this exact native occurrence has already passed material-scope
+    validation. Unattested results remain row-level strict, and any result that
+    still exposes the governed time column must satisfy exact period coverage.
     """
 
     rows, cols = _rows_and_cols(result_payload)
@@ -253,14 +254,33 @@ def assert_material_result_coverage(
         if _column_field_id(column) == binding.field_id
     ]
     if len(matches) != 1:
-        attested_change_projection = (
+        attested_temporal_projection = (
             attested_native_material
             and len(matches) == 0
-            and isinstance(contract.ranking, AnalyticalRankingInvariant)
-            and contract.ranking.basis == RankingBasis.CHANGE
+            and (
+                comparison is not None
+                or (
+                    isinstance(contract.ranking, AnalyticalRankingInvariant)
+                    and contract.ranking.basis == RankingBasis.CHANGE
+                )
+            )
         )
-        if attested_change_projection:
-            return MaterialResultCoverage(result_row_count=len(rows))
+        if attested_temporal_projection:
+            # The exact native occurrence has already passed material-scope
+            # validation for the accepted temporal contract. Metabase may
+            # legitimately project away the intermediate time breakout in the
+            # final rowset (comparison scalar/derived columns or CHANGE rank).
+            # This propagates that semantic proof; it does not admit an
+            # unattested result and it does not bypass row-level checks when a
+            # governed time column is actually present.
+            return MaterialResultCoverage(
+                result_row_count=len(rows),
+                covered_comparison_roles=(
+                    ("reference_period", "base_period")
+                    if comparison is not None
+                    else ()
+                ),
+            )
         raise ResearchMaterialCoverageError(
             missing_column_code,
             missing_column_detail,

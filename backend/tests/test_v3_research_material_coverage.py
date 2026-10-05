@@ -163,13 +163,29 @@ def test_unattested_change_ranking_projection_without_time_fails_closed() -> Non
     assert exc.value.code == "R1_RESULT_TEMPORAL_COLUMN_MISMATCH"
 
 
-def test_attested_plain_comparison_still_requires_time_column() -> None:
+def test_attested_plain_comparison_final_projection_may_omit_time_column() -> None:
+    coverage = assert_material_result_coverage(
+        contract=_contract(),
+        result_payload=_derived_change_payload(),
+        bindings=_bindings(),
+        attested_native_material=True,
+    )
+
+    assert coverage.status == "FULL"
+    assert coverage.result_row_count == 2
+    assert coverage.time_field_id is None
+    assert coverage.covered_comparison_roles == (
+        "reference_period",
+        "base_period",
+    )
+
+
+def test_unattested_plain_comparison_projection_without_time_fails_closed() -> None:
     with pytest.raises(ResearchMaterialCoverageError) as exc:
         assert_material_result_coverage(
             contract=_contract(),
             result_payload=_derived_change_payload(),
             bindings=_bindings(),
-            attested_native_material=True,
         )
 
     assert exc.value.code == "R1_RESULT_TEMPORAL_COLUMN_MISMATCH"
