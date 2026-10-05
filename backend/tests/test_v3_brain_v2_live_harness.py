@@ -645,6 +645,7 @@ def test_contextual_report_mechanical_requires_zero_analytical_report_delta() ->
         scope_version_id="scope_v1",
         evidence_revision=1,
         evidence_ids=("evi_" + "2" * 24,),
+        open_requirement_ids=("g_direct",),
         direct_requirement_ids=("g_direct",),
         terminal_requirement_ids=("g_direct",),
         workflow_status=BrainWorkflowStatus.COMPLETE,
