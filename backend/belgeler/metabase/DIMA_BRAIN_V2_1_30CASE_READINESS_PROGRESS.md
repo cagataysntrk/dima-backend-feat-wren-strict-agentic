@@ -5854,3 +5854,82 @@ SPAN preserves one bounded interval and never asserts hidden baseline/comparison
 **Operational live-gate state:** authorization is OFF, broad/30-case are false, and no trigger is armed. The connected GitHub write surface blocked the required update of `.github/workflows/dima-brain-v2-1-spec-closure-live.yml` hard-pins from prior Product `447847e4...` to `957fea98...`. No supported workflow-dispatch action is exposed. Low-level Git-object bypass was deliberately not used.
 
 **NEXT LEGAL ACTION:** when a supported workflow-file write or workflow-dispatch surface is available, repin the one-shot A3 workflow to Product `957fea98...` and provider-free receipts `37241841231 / 37241841255 / 37241788680 / 37241798779`, run exactly one A3 original, immediately disarm, and manually require `4/4 FULL`. Until then: no same-old candidate retry, no sibling, no A4+, no engine change, no broad, no 30-case, no frontend.
+
+
+---
+
+## FINAL CLOSURE PHASE 1 — A3 VERTICAL CHAIN AUDIT — 2026-10-05
+
+**PHASE:** Final closure / Phase 1
+
+**STATUS:** GREEN
+
+**Product SHA:** `957fea9876cfa4cdf8ee3a4f5701c0b6cfc2a40e`
+
+**Engine SHA/tag/digest:** `4c49b8da6b424b0fa4d8ef340ca1b238d12980c1` / `0.63.18-dima.11.1` / `sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d`
+
+**Objective:** replay immutable A3 run `37237863865` / artifact `11315439520` provider-free through the current vertical owner chain before any new paid proof.
+
+**Owner chain audited:**
+- raw temporal WHAT + PAIR/SPAN = Research Intake;
+- accepted analytical material = AnalyticalRequestContract;
+- native HOW/query shape = Metabot;
+- CHANGE occurrence observation = frozen dima.11.1;
+- accepted-vs-observed compatibility = Dima material validation;
+- final-row Evidence legality = result coverage;
+- obligation Evidence state = P14 ResearchManager;
+- selected ranked entity = `research_result_dependency.py`;
+- dependency-ready child scheduling = `brain_v2/material_groups.py`;
+- presentation = P20.
+
+**Duplicate authority found:** NO. The replay found no production layer independently recalculating the same semantic fact. Result dependency selects from already VERIFIED ranked material and creates only an execution-local filter without changing accepted scope identity/fingerprint.
+
+**Frozen artifact replay result:** GREEN.
+- original comparison occurrence remains source-VERIFIED;
+- current result-coverage law admits the exact material-attested derived CHANGE projection;
+- ranking receipt != null;
+- ranking Evidence != null;
+- ranking obligation = VERIFIED;
+- ranked rows are exactly `Assembly +267, Packaging +74, Utilities +34, Maintenance +18, Quality +8`;
+- selected result entity = `Assembly`;
+- result dependency resolves with `dimension.department = Assembly`;
+- accepted scope identity/fingerprint remain unchanged;
+- after comparison + ranking groups are completed, the next dependency-ready MaterialGroup is the child breakdown obligation;
+- the old Evidence-admission defect no longer forces `MATERIAL_GROUP_WAITING`.
+
+**Test-only files changed:**
+- `backend/tests/fixtures/a3_37237863865_vertical_replay.json`;
+- `backend/tests/test_v3_brain_v2_a3_vertical_replay.py`;
+- `backend/tests/test_v3_p14_native_gateway.py` only to include the replay in the canonical Phase-1 gate.
+
+**Semantic files changed:** 0.
+
+**Provider calls:** 0.
+
+**Provider-free runs:**
+- focused Brain V2 provider-free: `37264715320 = SUCCESS`;
+- canonical Phase-1 with replay included: `37264855036 = SUCCESS`.
+
+**First invalid boundary:** none in deterministic vertical replay. The next unproven boundary is the live full A3 original on Product `957fea...`.
+
+**Exception:** 0.
+
+**Silent wrong:** 0.
+
+**Duplicate native:** N/A replay; no native/provider execution occurs.
+
+**Stale Evidence:** 0.
+
+**Scope violation:** 0.
+
+**Security violation:** 0.
+
+**Causal overclaim:** 0.
+
+**What is proven:** Evidence-admission recovery is not merely an isolated result-coverage unit fix; the immutable old A3 ranking result now traverses receipt/Evidence admission, ranking terminality, governed top-entity selection, result dependency and child-readiness on current Product without LLM/provider work.
+
+**What remains:** ops-only live workflow repin, bounded A3 provider-budget contract, then exactly one A3 original paid proof.
+
+**30-case readiness:** NOT READY.
+
+**NEXT LEGAL ACTION:** Phase 2 live harness repin to Product `957fea...` and exact current certification receipts. Product/runtime semantics remain frozen.
