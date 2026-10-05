@@ -5989,3 +5989,75 @@ SPAN preserves one bounded interval and never asserts hidden baseline/comparison
 **30-case readiness:** NOT READY.
 
 **NEXT LEGAL ACTION:** audit the immutable A3 provider receipt and set a bounded development-proof ceiling no greater than 16, without relaxing semantic validation or enabling uncontrolled retries.
+
+
+---
+
+## FINAL CLOSURE PHASE 3 — A3 PROVIDER-BUDGET CONTRACT — 2026-10-05
+
+**PHASE:** Final closure / Phase 3
+
+**STATUS:** GREEN / BOUNDED DEVELOPMENT-PROOF BUDGET
+
+**Product SHA:** `957fea9876cfa4cdf8ee3a4f5701c0b6cfc2a40e`
+
+**Engine SHA/tag/digest:** `4c49b8da6b424b0fa4d8ef340ca1b238d12980c1` / `0.63.18-dima.11.1` / `sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d`
+
+**Objective:** replace the stale arbitrary hard request ceiling of 10 with a bounded ceiling that can physically cover the already-observed comparison + ranking chain plus exactly one result-dependent child leg, without weakening semantic validation or allowing uncontrolled loops.
+
+**Immutable source audit:** run `37237863865` / artifact `11315439520`.
+
+**Provider receipt:** 10 forwarded requests, 0 blocked = 1 Research Intake + 9 Metabase.
+- ordinal 1 = `research_intake`;
+- ordinals 2–4 = first Metabot analytical leg by conversation-context growth before the first native capture;
+- first native result capture anchor = comparison occurrence `mdjcw91DQhwHz58uqLJ4B`, started `2026-10-04T21:55:30.39506808Z`;
+- ordinal 5 shows a fresh Metabot prompt-context reset and ordinals 5–10 form the second analytical leg;
+- second native result capture anchor = CHANGE ranking occurrence `pHptOIaZo05ThIon0JKg5`, started `2026-10-04T21:56:01.827774788Z`;
+- old receipt did not persist request-level timestamps by privacy design, so no synthetic per-request timestamp is invented. Native occurrence timestamps are the immutable leg-boundary anchors.
+- prompt/reasoning/request/response bodies are not persisted.
+
+**Observed analytical topology:** comparison leg = 3 Metabase provider turns; ranking leg = 6 Metabase provider turns. The prior run exhausted hard total 10 immediately after the ranking occurrence, before the dependency child could execute.
+
+**New development-proof ceiling:**
+- hard total = `16`;
+- `research_intake = 1`;
+- `metabase = 15`;
+- `p17_manager = 0`;
+- `p18_manager = 0`;
+- `p19_manager = 0`.
+
+The hard total remains the controlling bound. The source ceilings prohibit unrelated investigation owners from consuming the A3 proof budget.
+
+**Retry/loop law:** unchanged Product law. One material repair remains the absolute maximum; duplicate native remains forbidden; same analytical material cannot enter an uncontrolled retry loop; A3 accepted authority contains exactly one result-dependent child and this proof authorizes no second child branch.
+
+**Files changed:** `.github/workflows/dima-brain-v2-1-spec-closure-live.yml` only for provider ceilings.
+
+**Semantic files changed:** 0.
+
+**Provider calls in this phase:** 0.
+
+**First invalid boundary:** none. The live A3 original is now physically executable without changing semantic behavior.
+
+**Exception:** 0.
+
+**Silent wrong:** 0.
+
+**Duplicate native:** 0 in the audited source run.
+
+**Stale Evidence:** 0 in the audited source run.
+
+**Scope violation:** 0.
+
+**Security violation:** 0.
+
+**Causal overclaim:** 0.
+
+**Efficiency debt rule:** a development A3 proof may use up to 16 only for this closure. Any 12+ request A3 result is explicitly flagged for manual efficiency review and cannot redefine final readiness behavior. Final same-SHA panel still targets mean provider requests <= 7.
+
+**What is proven:** the previous A3 failure at total request 10 cannot be misread as evidence that the current child path is semantically invalid; the live proof now has bounded headroom for exactly the missing continuation while retaining fail-closed source ownership.
+
+**What remains:** exactly one A3 original live proof, manual `4/4 FULL` adjudication.
+
+**30-case readiness:** NOT READY.
+
+**NEXT LEGAL ACTION:** arm exactly one F06_M original on Product `957fea...`, Luna/Luna/no cascade, automatic retry OFF; immediately disarm after the run.
