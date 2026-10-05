@@ -2383,45 +2383,7 @@ def test_dima10_level_basis_is_projected_and_rejected_only_by_canonical_verifier
                     }
                 ]
             },
-            "R1_NATIVE_RANKING_SCOPE_MISMATCH",
-        ),
-        (
-            {
-                "ranking": [
-                    {
-                        "stage_number": 0,
-                        "order_index": 0,
-                        "target": {
-                            "kind": "metric",
-                            "metabase_metric_id": 501,
-                            "metabase_metric_entity_id": "metric-downtime-v1",
-                        },
-                        "direction": "asc",
-                        "limit": 5,
-                        "basis": "level",
-                    }
-                ]
-            },
-            "R1_NATIVE_RANKING_SCOPE_MISMATCH",
-        ),
-        (
-            {
-                "ranking": [
-                    {
-                        "stage_number": 0,
-                        "order_index": 0,
-                        "target": {
-                            "kind": "metric",
-                            "metabase_metric_id": 501,
-                            "metabase_metric_entity_id": "metric-downtime-v1",
-                        },
-                        "direction": "desc",
-                        "limit": 10,
-                        "basis": "level",
-                    }
-                ]
-            },
-            "R1_NATIVE_RANKING_SCOPE_MISMATCH",
+            "R1_NATIVE_RANKING_RESOURCE_BINDING_REQUIRED",
         ),
         ({"authenticated_metabase_subject": 8}, "R1_NATIVE_SUBJECT_MISMATCH"),
     ),
@@ -3276,6 +3238,33 @@ def test_dima10_row_limiting_field_order_remains_nonrepairable_scope_mismatch() 
         )
 
     assert exc.value.code == "ANALYTICAL_V1_EXECUTION_RANKING_UNREPRESENTABLE"
+
+
+def test_dima10_wrong_limit_is_preserved_for_canonical_verifier() -> None:
+    observation = rich_material_observation(
+        ranking=[
+            {
+                "stage_number": 0,
+                "order_index": 0,
+                "target": {
+                    "kind": "metric",
+                    "metabase_metric_id": 501,
+                    "metabase_metric_entity_id": "metric-downtime-v1",
+                },
+                "direction": "desc",
+                "limit": 10,
+                "basis": "level",
+            }
+        ]
+    )
+
+    projected = scope_module._project_material_ranking_observation(
+        observation,
+        rich_material_bindings(),
+    )
+    assert projected is not None
+    assert projected.limit == 10
+    assert projected.basis == scope_module.RankingBasis.LEVEL
 
 
 def test_dima10_wrong_direction_is_preserved_for_canonical_verifier() -> None:
