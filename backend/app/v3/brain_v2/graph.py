@@ -5,6 +5,7 @@ from typing import Any
 
 from langgraph.func import task
 from langgraph.graph import END, START, StateGraph
+from langgraph.types import interrupt
 
 from .activities import (
     BrainActivities,
@@ -24,6 +25,8 @@ from .activities import (
     ReportActivityResult,
 )
 from .telemetry import BoundaryName, OpenTelemetryBridge
+
+DURABLE_OBSERVATION_RESUME = "REOBSERVE_DURABLE_EXECUTED"
 from .state import (
     BrainGraphState,
     BrainP19Route,
@@ -290,7 +293,7 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
         )
         if result.disposition == MaterialActivityDisposition.WAITING:
             return {
-                "active_material_group_id": None,
+                "active_material_group_id": result.material_group_id,
                 "pending_evidence_ids": (),
                 "pending_receipt_refs": (),
                 "workflow_status": BrainWorkflowStatus.WAITING,
@@ -364,6 +367,53 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
             "activity_fingerprints": _append_fingerprint(
                 current, result.activity_fingerprint
             ),
+        }
+
+    def material_group_wait_node(state: BrainStatePayload):
+        current = _snapshot(state)
+        if (
+            current.workflow_status != BrainWorkflowStatus.WAITING
+            or current.last_completed_node != "MATERIAL_GROUP_WAITING"
+            or current.active_material_group_id is None
+        ):
+            raise ValueError("material-group wait boundary requires explicit WAITING state")
+        resumed = interrupt(
+            {
+                "kind": "DURABLE_MATERIAL_GROUP_WAIT",
+                "thread_id": current.thread_id,
+                "research_session_id": current.research_session_id,
+                "scope_version_id": current.scope_version_id,
+                "material_group_id": current.active_material_group_id,
+            }
+        )
+        if resumed != DURABLE_OBSERVATION_RESUME:
+            raise ValueError("material-group wait received an invalid resume command")
+        return {
+            "workflow_status": BrainWorkflowStatus.RUNNING,
+            "last_completed_node": "MATERIAL_GROUP_RESUME",
+        }
+
+    def material_wait_node(state: BrainStatePayload):
+        current = _snapshot(state)
+        if (
+            current.workflow_status != BrainWorkflowStatus.WAITING
+            or current.last_completed_node != "MATERIAL_WAITING"
+        ):
+            raise ValueError("material wait boundary requires explicit WAITING state")
+        resumed = interrupt(
+            {
+                "kind": "DURABLE_MATERIAL_WAIT",
+                "thread_id": current.thread_id,
+                "research_session_id": current.research_session_id,
+                "scope_version_id": current.scope_version_id,
+                "material_requirement_ids": current.material_requirement_ids,
+            }
+        )
+        if resumed != DURABLE_OBSERVATION_RESUME:
+            raise ValueError("material wait received an invalid resume command")
+        return {
+            "workflow_status": BrainWorkflowStatus.RUNNING,
+            "last_completed_node": "MATERIAL_RESUME",
         }
 
     def evidence_node(state: BrainStatePayload):
@@ -720,7 +770,9 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
     builder.add_node("canonicalize", canonicalize_node)
     builder.add_node("requirements_plan", requirement_plan_node)
     builder.add_node("acquire_material_group", material_group_node)
+    builder.add_node("wait_material_group", material_group_wait_node)
     builder.add_node("acquire_material", material_node)
+    builder.add_node("wait_material", material_wait_node)
     builder.add_node("admit_evidence", evidence_node)
     builder.add_node("requirement_dispatch", requirement_dispatch_node)
     builder.add_node("p18_adjudicate", p18_node)
@@ -758,18 +810,20 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
             "admit_evidence": "admit_evidence",
             "acquire_material_group": "acquire_material_group",
             "completion_evaluate": "completion_evaluate",
-            "wait": END,
+            "wait": "wait_material_group",
         },
     )
+    builder.add_edge("wait_material_group", "acquire_material_group")
     builder.add_conditional_edges(
         "acquire_material",
         after_material,
         {
             "admit_evidence": "admit_evidence",
             "completion_evaluate": "completion_evaluate",
-            "wait": END,
+            "wait": "wait_material",
         },
     )
+    builder.add_edge("wait_material", "acquire_material")
     builder.add_conditional_edges(
         "admit_evidence",
         after_evidence,
