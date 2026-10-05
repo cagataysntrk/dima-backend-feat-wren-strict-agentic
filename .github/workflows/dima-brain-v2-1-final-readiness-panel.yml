@@ -27,7 +27,7 @@ env:
 
 concurrency:
   group: dima-brain-v2-1-final-readiness-panel
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   frozen-nine-sentinel:
