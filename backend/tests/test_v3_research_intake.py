@@ -4421,3 +4421,18 @@ def test_goal_local_fragment_becomes_research_obligation_text() -> None:
     assert child.source_text == deep_fragment
     assert ranking.source_text != question
     assert child.source_text != question
+
+
+def test_closed_v1_grammar_returns_unsupported_for_unknown_analytical_primitive() -> None:
+    payload = ready_payload(kind="other")
+    result = ResearchIntakeCompiler(
+        transport=FakeTransport(payload),
+    ).compile(
+        question="Use a governed analytical primitive outside the current V1 grammar.",
+        catalog=catalog(),
+    )
+
+    assert result.terminal == ResearchIntakeTerminal.UNSUPPORTED
+    assert result.brief is None
+    assert result.unsupported_reason is not None
+    assert "ANALYTICAL_V1_OPERATION_UNSUPPORTED" in result.unsupported_reason
