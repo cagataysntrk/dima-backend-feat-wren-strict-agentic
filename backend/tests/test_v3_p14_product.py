@@ -368,10 +368,9 @@ class MaterialExecutor:
             )
         if self.observation_unavailable_failures > 0:
             self.observation_unavailable_failures -= 1
-            if self.store is not None:
-                self.store._update_link(execution_link_id, status="EXECUTED")
             raise ResearchMaterialObservationUnavailable(
-                "R1_NATIVE_MATERIAL_OBSERVATION_UNAVAILABLE",
+                "NATIVE_QUERY_OCCURRENCE_NOT_FOUND",
+                "HTTP 404 NATIVE_QUERY_OCCURRENCE_NOT_FOUND: "
                 "symbolic transient observer unavailable",
             )
         suffix = "4" if obligation_id == "g1" else "5"
@@ -908,7 +907,7 @@ def test_two_transient_observation_misses_resume_same_occurrence_without_replayi
     assert len({json.dumps(item[2], sort_keys=True) for item in executor.calls}) == 1
 
 
-def test_three_observation_misses_recover_same_executed_occurrence_without_replay():
+def test_three_observation_misses_recover_same_captured_occurrence_without_replay():
     engine = _db_engine()
     store = ResearchSessionStore(engine)
     factory = BridgeFactory()
@@ -966,7 +965,7 @@ def test_five_observation_misses_stay_waiting_without_replaying_metabot():
     )
 
     assert response.evidence_id is None
-    assert response.limitation_code == "R1_NATIVE_MATERIAL_OBSERVATION_UNAVAILABLE"
+    assert response.limitation_code == "NATIVE_QUERY_OCCURRENCE_NOT_FOUND"
     assert restored.obligations[0].state == ObligationState.DELEGATED
     assert factory.metabot_posts == 1
     assert len(executor.calls) == 5
@@ -993,7 +992,7 @@ def test_later_run_next_observes_same_waiting_occurrence_without_replay():
         principal=_principal(),
     )
     assert waiting.evidence_id is None
-    assert waiting.limitation_code == "R1_NATIVE_MATERIAL_OBSERVATION_UNAVAILABLE"
+    assert waiting.limitation_code == "NATIVE_QUERY_OCCURRENCE_NOT_FOUND"
     assert factory.metabot_posts == 1
     assert len(executor.calls) == 5
     captured_query_ids = {item[1] for item in executor.calls}
@@ -1002,8 +1001,8 @@ def test_later_run_next_observes_same_waiting_occurrence_without_replay():
     assert len(captured_payloads) == 1
 
     # A later orchestration resume reconstructs the Product facade but must
-    # observe the durable EXECUTED occurrence rather than reopen cognition or
-    # execute a new native query.
+    # observe the durable CANDIDATE_CAPTURED occurrence rather than reopen
+    # cognition; execution may happen only after observation becomes READY.
     restarted = ResearchAskOrchestrator(
         store=store,
         bridge_factory=factory,
