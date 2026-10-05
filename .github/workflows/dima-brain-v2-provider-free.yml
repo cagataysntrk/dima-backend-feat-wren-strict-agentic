@@ -12,6 +12,7 @@ on:
       - "backend/pyproject.toml"
       - "backend/app/v3/brain_v2/**"
       - "backend/app/v3/business_relationship_v1.py"
+      - "backend/app/v3/research_native_gateway.py"
       - "backend/app/v3/business_relationship_policy.py"
       - "backend/control_plane/models.py"
       - "backend/migrations/versions/*p18*"
@@ -84,6 +85,7 @@ jobs:
             tests/test_v3_selection_binding.py \
             tests/test_v3_v1_analytical_grammar.py \
             tests/test_v3_v1_completion_ledger.py \
+            tests/test_v3_p14_native_gateway.py \
             tests/test_v3_brain_v2_contracts.py \
             tests/test_v3_brain_v2_graph.py \
             tests/test_v3_brain_v2_discovery_stateful.py \
