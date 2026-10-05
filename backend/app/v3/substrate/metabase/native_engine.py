@@ -32,6 +32,38 @@ class NativeEngineBridgeError(RuntimeError):
     pass
 
 
+class NativeEngineTransportError(NativeEngineBridgeError):
+    """Transient transport failure before an engine HTTP response exists."""
+
+    def __init__(self, operation: str, detail: str) -> None:
+        super().__init__(f"{operation} transport failed: {detail}")
+        self.operation = operation
+        self.detail = detail
+
+
+class NativeEngineEndpointError(NativeEngineBridgeError):
+    """Typed engine HTTP failure preserving status and Dima error identity."""
+
+    def __init__(
+        self,
+        *,
+        operation: str,
+        status_code: int,
+        detail: str,
+        error_code: str | None,
+        payload: Any | None = None,
+    ) -> None:
+        code = f" {error_code}" if error_code else ""
+        super().__init__(
+            f"{operation} returned HTTP {status_code}{code}: {detail}"
+        )
+        self.operation = operation
+        self.status_code = int(status_code)
+        self.detail = detail
+        self.error_code = error_code
+        self.payload = payload
+
+
 class NativeEngineIdentityMismatch(NativeEngineBridgeError):
     pass
 
@@ -58,6 +90,49 @@ class NativeEngineStreamError(NativeEngineBridgeError):
     def __init__(self, observation: NativeEngineObservation) -> None:
         super().__init__("native Metabot stream returned error events")
         self.observation = observation
+
+
+def _dima_error_code(value: Any) -> str | None:
+    if isinstance(value, dict):
+        for key in ("dima/error-code", "dima_error_code"):
+            candidate = value.get(key)
+            if isinstance(candidate, str) and candidate.strip():
+                return candidate.strip()
+        for candidate in value.values():
+            found = _dima_error_code(candidate)
+            if found:
+                return found
+    elif isinstance(value, (list, tuple)):
+        for candidate in value:
+            found = _dima_error_code(candidate)
+            if found:
+                return found
+    return None
+
+
+def _endpoint_error(
+    response: httpx.Response,
+    *,
+    operation: str,
+) -> NativeEngineEndpointError:
+    payload: Any | None = None
+    try:
+        payload = response.json()
+    except (ValueError, json.JSONDecodeError):
+        payload = None
+    error_code = _dima_error_code(payload)
+    detail = response.text[:1000]
+    if isinstance(payload, dict):
+        message = payload.get("message")
+        if isinstance(message, str) and message.strip():
+            detail = message.strip()
+    return NativeEngineEndpointError(
+        operation=operation,
+        status_code=response.status_code,
+        detail=detail,
+        error_code=error_code,
+        payload=payload,
+    )
 
 
 class NativeEngineBridge:
@@ -392,16 +467,15 @@ class NativeEngineBridge:
                 },
             )
         except httpx.TimeoutException as exc:
-            raise NativeEngineBridgeError("native attestation request timed out") from exc
+            raise NativeEngineTransportError(
+                "native attestation", "request timed out"
+            ) from exc
         except httpx.RequestError as exc:
-            raise NativeEngineBridgeError(
-                f"native attestation transport failed: {exc}"
+            raise NativeEngineTransportError(
+                "native attestation", str(exc)
             ) from exc
         if response.status_code != 200:
-            raise NativeEngineBridgeError(
-                f"native attestation returned HTTP {response.status_code}: "
-                f"{response.text[:1000]}"
-            )
+            raise _endpoint_error(response, operation="native attestation")
         body = response.json()
         if not isinstance(body, dict):
             raise NativeEngineBridgeError("native attestation response is not an object")
@@ -425,17 +499,17 @@ class NativeEngineBridge:
                 },
             )
         except httpx.TimeoutException as exc:
-            raise NativeEngineBridgeError(
-                "native material observation request timed out"
+            raise NativeEngineTransportError(
+                "native material observation", "request timed out"
             ) from exc
         except httpx.RequestError as exc:
-            raise NativeEngineBridgeError(
-                f"native material observation transport failed: {exc}"
+            raise NativeEngineTransportError(
+                "native material observation", str(exc)
             ) from exc
         if response.status_code != 200:
-            raise NativeEngineBridgeError(
-                f"native material observation returned HTTP {response.status_code}: "
-                f"{response.text[:1000]}"
+            raise _endpoint_error(
+                response,
+                operation="native material observation",
             )
         body = response.json()
         if not isinstance(body, dict):
@@ -476,16 +550,18 @@ class NativeEngineBridge:
                 },
             )
         except httpx.TimeoutException as exc:
-            raise NativeEngineBridgeError("native exact-occurrence execution timed out") from exc
+            raise NativeEngineTransportError(
+                "native exact-occurrence execution", "request timed out"
+            ) from exc
         except httpx.RequestError as exc:
-            raise NativeEngineBridgeError(
-                f"native exact-occurrence execution transport failed: {exc}"
+            raise NativeEngineTransportError(
+                "native exact-occurrence execution", str(exc)
             ) from exc
         latency_ms = max(0, int((time.monotonic() - started) * 1000))
         if response.status_code != 200:
-            raise NativeEngineBridgeError(
-                f"native exact-occurrence execution returned HTTP {response.status_code}: "
-                f"{response.text[:1000]}"
+            raise _endpoint_error(
+                response,
+                operation="native exact-occurrence execution",
             )
         body = response.json()
         if not isinstance(body, dict):
