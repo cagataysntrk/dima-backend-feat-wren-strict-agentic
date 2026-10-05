@@ -1,10 +1,10 @@
 DIMA Brain V2.1 S3 diagnostic
 triggered_at: 2026-10-05
-semantic_product_sha: e257a4754487ec4ac7bfe9fa93966e5ac4a5d1ea
+semantic_product_sha: ae4e0348601774082b0270f23d6de126e71e6055
 probe: CHANGE_DEPENDENT_DRILLDOWN_V1
-purpose: measure natural orchestration units after correctness/efficiency harness separation
+purpose: validate P14 observe-before-execute occurrence lifecycle on frozen semantic baseline
 hard_provider_request_ceiling: 16
 provider_caps: unchanged
 engine: dima.11.1 unchanged
 frontend: NOT_AUTHORIZED
-nonce: s3-diagnostic-harness-separation-2
+nonce: p14-occurrence-lifecycle-s3-final-diagnostic-1
