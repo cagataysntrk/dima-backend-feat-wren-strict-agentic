@@ -995,6 +995,13 @@ def test_later_run_next_observes_same_waiting_occurrence_without_replay():
     assert waiting.limitation_code == "NATIVE_QUERY_OCCURRENCE_NOT_FOUND"
     assert factory.metabot_posts == 1
     assert len(executor.calls) == 5
+    pending = store.pending_link(
+        session_id=session.session_id,
+        obligation_id="g1",
+    )
+    assert pending is not None
+    assert pending.status == "CANDIDATE_CAPTURED"
+    assert pending.native_result_json is None
     captured_query_ids = {item[1] for item in executor.calls}
     captured_payloads = {json.dumps(item[2], sort_keys=True) for item in executor.calls}
     assert len(captured_query_ids) == 1
