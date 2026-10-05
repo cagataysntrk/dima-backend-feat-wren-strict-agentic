@@ -102,6 +102,14 @@ from lab.metabase.brain_v2.live_support import (
     seed_native_resource_bindings,
 )
 
+BASIC_ANALYTICAL_PROBES = frozenset(
+    {
+        "DIRECT_ANALYTICS_V1",
+        "TEMPORAL_COMPARISON_V1",
+        "CHANGE_DEPENDENT_DRILLDOWN_V1",
+    }
+)
+
 SCOPE_RESUME_PROBE = "R_LIVE_4_SCOPE_RESUME"
 SCOPE_RESUME_TURNS = (
     (
@@ -130,6 +138,9 @@ SCOPE_RESUME_MANUAL_CONTRACT = (
 )
 
 LIVE_PROBES = (
+    "DIRECT_ANALYTICS_V1",
+    "TEMPORAL_COMPARISON_V1",
+    "CHANGE_DEPENDENT_DRILLDOWN_V1",
     "R_LIVE_1_ONE_PASS",
     "R_LIVE_2_ADAPTIVE",
     "R_LIVE_3_DISCOVERY",
@@ -231,7 +242,11 @@ def _mechanical(
         == "TEST_DISCRIMINATING_EVIDENCE"
     )
     p17_claims = tuple(p17_snapshot.claims)
-    hypotheses = tuple(p19_snapshot.hypotheses)
+    hypotheses = (
+        tuple(p19_snapshot.hypotheses)
+        if p19_snapshot is not None
+        else ()
+    )
     evidence_grounded = tuple(
         item for item in hypotheses
         if any(
@@ -320,7 +335,7 @@ def _mechanical(
             else common["intake_provider_requests"] <= 1
         ),
     }
-    if probe_id != "R_LIVE_3_DISCOVERY":
+    if probe_id not in {"R_LIVE_3_DISCOVERY", *BASIC_ANALYTICAL_PROBES}:
         checks.update(
             {
                 "terminal_complete": bool(common["terminal_complete"]),
@@ -328,6 +343,21 @@ def _mechanical(
                 "report_contract_coherent": bool(common["report_contract_coherent"]),
             }
         )
+    elif probe_id in BASIC_ANALYTICAL_PROBES:
+        checks.update(
+            {
+                "terminal_complete": bool(common["terminal_complete"]),
+                "p17_provider_calls_zero": common["p17_provider_requests"] == 0,
+                "p19_provider_calls_zero": common["p19_provider_requests"] == 0,
+                "provider_slo": common["provider_requests"] <= 7,
+            }
+        )
+        if probe_id == "DIRECT_ANALYTICS_V1":
+            checks["native_acquisition_present"] = common["native_acquisitions"] >= 1
+        elif probe_id == "TEMPORAL_COMPARISON_V1":
+            checks["native_acquisition_present"] = common["native_acquisitions"] >= 1
+        else:
+            checks["dependent_native_path_present"] = common["native_acquisitions"] >= 2
 
     if probe_id == "R_LIVE_1_ONE_PASS":
         checks.update(
@@ -888,6 +918,29 @@ def main() -> int:
                     "dima.p20.report",
                 ],
             }
+        elif args.probe_id in BASIC_ANALYTICAL_PROBES:
+            report["boundary_trace"] = {
+                "runtime": "BRAIN_V2_LANGGRAPH",
+                "events": [
+                    "dima.intent.interpret",
+                    "dima.scope.resolve",
+                    "dima.requirements.plan",
+                    "dima.material.group",
+                    "dima.native.execute",
+                    "dima.evidence.admit",
+                    "dima.completion.evaluate",
+                ],
+            }
+            report["mechanical"] = _mechanical(
+                probe_id=args.probe_id,
+                state=state,
+                provider=provider,
+                links=links,
+                p17_snapshot=p17_snapshot,
+                p19_snapshot=None,
+                report_doc=report_doc,
+                scope_resume=None,
+            )
         else:
             if root_goal is None or p19_snapshot is None:
                 raise RuntimeError("RCA live probe requires exactly one root-cause goal")
