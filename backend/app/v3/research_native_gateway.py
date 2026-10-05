@@ -932,7 +932,7 @@ class NativeResearchMaterialExecutor:
                     "native_conversation_id": str(native_conversation_id),
                     "native_query_id": native_query_id,
                     "material_observation_schema": material_observation.schema_version,
-                    "result_coverage_schema": result_coverage.schema_version,
+                    "result_coverage_status": result_coverage.status,
                 },
             )
             verify_analytical_fulfillment_v1(
