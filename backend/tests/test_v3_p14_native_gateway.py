@@ -3712,3 +3712,557 @@ def test_a3_frozen_artifact_vertical_replay_is_part_of_phase1_gate():
     replay[
         "test_a3_frozen_artifact_replays_through_evidence_dependency_and_child_readiness"
     ]()
+
+
+def test_a3_frozen_artifact_vertical_replay_opens_result_dependent_child():
+    """Replay run 37237863865 / artifact 11315439520 without any provider call."""
+
+    from app.v3.authority import AcceptedResearchAuthority
+    from app.v3.brain_v2.material_groups import (
+        project_material_groups,
+        result_dependency_execution_anchor,
+        select_pending_material_group,
+    )
+    from app.v3.evidence import EvidenceArtifact, EvidenceState
+    from app.v3.execution_identity import RuntimeIdentity
+    from app.v3.research_analytical_scope import (
+        NativeMaterialBinding,
+        analytical_scope_contract,
+    )
+    from app.v3.research_material_coverage import assert_material_result_coverage
+    from app.v3.research_result_dependency import resolve_first_ranked_entity
+
+    source_run_id = 37237863865
+    source_artifact_id = 11315439520
+    comparison_id = "g_ce4372699197a8ea8167"
+    ranking_id = "g_2fe6e7df18e5a9299821"
+    child_id = "g_af46dc6ed8a2c6455c8d"
+
+    semantic = {
+        "metric.machine_downtime_minutes": {
+            "source_mention": "makine duruşları / duruş süresi / machine downtime",
+            "candidate_id": "metric.machine_downtime_minutes",
+            "target_kind": "metric",
+            "canonical_name": "Machine Downtime Minutes",
+            "cube_names": ["machine_operations"],
+        },
+        "dimension.department": {
+            "source_mention": "bölüm / departman / department",
+            "candidate_id": "dimension.department",
+            "target_kind": "dimension",
+            "canonical_name": "Department",
+            "cube_names": ["machine_operations"],
+        },
+        "dimension.machine_id": {
+            "source_mention": "makine / machine",
+            "candidate_id": "dimension.machine_id",
+            "target_kind": "dimension",
+            "canonical_name": "Machine",
+            "cube_names": ["machine_operations"],
+        },
+        "metric.fault_count": {
+            "source_mention": "arıza sayısı / fault count",
+            "candidate_id": "metric.fault_count",
+            "target_kind": "metric",
+            "canonical_name": "Fault Count",
+            "cube_names": ["machine_operations"],
+        },
+        "metric.maintenance_delay_hours": {
+            "source_mention": "bakım gecikmesi / maintenance delay",
+            "candidate_id": "metric.maintenance_delay_hours",
+            "target_kind": "metric",
+            "canonical_name": "Maintenance Delay Hours",
+            "cube_names": ["machine_operations"],
+        },
+        "metric.performance_score": {
+            "source_mention": "performans / performance",
+            "candidate_id": "metric.performance_score",
+            "target_kind": "metric",
+            "canonical_name": "Performance Score",
+            "cube_names": ["machine_operations"],
+        },
+        "metric.spare_part_delay_hours": {
+            "source_mention": "yedek parça gecikmesi / spare part delay",
+            "candidate_id": "metric.spare_part_delay_hours",
+            "target_kind": "metric",
+            "canonical_name": "Spare Part Delay Hours",
+            "cube_names": ["machine_operations"],
+        },
+        "dimension.event_date": {
+            "source_mention": "tarih / date / Mayıs / Haziran",
+            "candidate_id": "dimension.event_date",
+            "target_kind": "dimension",
+            "canonical_name": "Event Date",
+            "cube_names": ["machine_operations"],
+        },
+    }
+
+    def ref(candidate_id):
+        return semantic[candidate_id]
+
+    brief = ResearchBrief.model_validate(
+        {
+            "brief_id": "rb_c0990d3b2e58d80fdf407e29",
+            "objective": (
+                "Mayıs-Haziran dönemindeki makine duruş değişimini incelemek, "
+                "en çok bozulan bölümü belirlemek ve bu bölüm içinde makine veya "
+                "ilgili operasyonel faktör bazında bir seviye daha derinleşerek "
+                "seçimi kanıtlamak."
+            ),
+            "scope": {
+                "semantic_refs": list(semantic.values()),
+                "time_surfaces": ["Mayıs", "Haziran"],
+                "periods": [
+                    {
+                        "source_text": "Mayıs",
+                        "time_dimension_candidate_id": "dimension.event_date",
+                        "start": "2026-05-01",
+                        "end": "2026-06-01",
+                        "role": "baseline_period",
+                    },
+                    {
+                        "source_text": "Haziran",
+                        "time_dimension_candidate_id": "dimension.event_date",
+                        "start": "2026-06-01",
+                        "end": "2026-07-01",
+                        "role": "comparison_period",
+                    },
+                ],
+                "temporal_dimension_ids": ["dimension.event_date"],
+                "native_verification_bindings": [
+                    {
+                        "candidate_id": "metric.fault_count",
+                        "table_name": "machine_operations",
+                        "column_name": "fault_count",
+                        "native_metric_entity_id": "oZwzWEN33R_yhDKzOCh-y",
+                    },
+                    {
+                        "candidate_id": "metric.machine_downtime_minutes",
+                        "table_name": "machine_operations",
+                        "column_name": "machine_downtime_minutes",
+                        "native_metric_entity_id": "3BV5uQyad1P8ZjF8MF412",
+                    },
+                    {
+                        "candidate_id": "metric.maintenance_delay_hours",
+                        "table_name": "machine_operations",
+                        "column_name": "maintenance_delay_hours",
+                        "native_metric_entity_id": "Ncs9eO5OvrvG4eQtGpwBd",
+                    },
+                    {
+                        "candidate_id": "metric.performance_score",
+                        "table_name": "machine_operations",
+                        "column_name": "performance_score",
+                        "native_metric_entity_id": "GJHHx_OhZZ2ufay3MjO8i",
+                    },
+                    {
+                        "candidate_id": "metric.spare_part_delay_hours",
+                        "table_name": "machine_operations",
+                        "column_name": "spare_part_delay_hours",
+                        "native_metric_entity_id": "mgg3vPU4kq25ZjOZzwB9s",
+                    },
+                    {
+                        "candidate_id": "dimension.department",
+                        "table_name": "machine_operations",
+                        "column_name": "department",
+                    },
+                    {
+                        "candidate_id": "dimension.event_date",
+                        "table_name": "machine_operations",
+                        "column_name": "event_date",
+                    },
+                    {
+                        "candidate_id": "dimension.machine_id",
+                        "table_name": "machine_operations",
+                        "column_name": "machine_id",
+                    },
+                ],
+                "scope_version": {"version_id": "scope_v1", "ordinal": 1},
+            },
+            "required_domains": ["machine_operations"],
+            "questions": [
+                {
+                    "goal_id": comparison_id,
+                    "kind": "comparison",
+                    "source_text": "Mayıs-Haziran duruş değişimini araştır",
+                    "source_fragment_identity": (
+                        "fragment-sha256:"
+                        "ffc5f2e8e8ec1bf6bc31b153fdf93749e41d1f649ee2c88c936360208494ce75"
+                    ),
+                    "subject_refs": [ref("metric.machine_downtime_minutes")],
+                    "related_refs": [ref("metric.machine_downtime_minutes")],
+                    "comparisons": [
+                        {
+                            "text": "Mayıs-Haziran duruş değişimini araştır",
+                            "role": "temporal_period",
+                        }
+                    ],
+                    "status": "RESOLVED",
+                },
+                {
+                    "goal_id": ranking_id,
+                    "kind": "ranking",
+                    "source_text": "en çok bozulan bölümü bul",
+                    "source_fragment_identity": (
+                        "fragment-sha256:"
+                        "38de9155a9810538095694d73296d3665c98296e45eb0d6d1c063d20eed75608"
+                    ),
+                    "subject_refs": [ref("dimension.department")],
+                    "related_refs": [
+                        ref("dimension.department"),
+                        ref("metric.machine_downtime_minutes"),
+                    ],
+                    "ranking": {
+                        "text": "en çok bozulan bölümü bul",
+                        "direction": "desc",
+                        "limit": None,
+                        "measure_semantic_id": "metric.machine_downtime_minutes",
+                        "basis": "change",
+                    },
+                    "status": "RESOLVED",
+                },
+                {
+                    "goal_id": child_id,
+                    "kind": "breakdown",
+                    "source_text": (
+                        "sonra o bölüm içinde makine veya ilgili operasyonel faktör "
+                        "bazında bir seviye daha derinleş ve seçimini kanıtla"
+                    ),
+                    "source_fragment_identity": (
+                        "fragment-sha256:"
+                        "b1c2dbeef8a738b775fd2ca816f191a3aefe996ed0a93c8b063680b540dd8df9"
+                    ),
+                    "subject_refs": [ref("dimension.machine_id")],
+                    "related_refs": [
+                        ref("dimension.machine_id"),
+                        ref("metric.machine_downtime_minutes"),
+                        ref("metric.fault_count"),
+                        ref("metric.maintenance_delay_hours"),
+                        ref("metric.performance_score"),
+                        ref("metric.spare_part_delay_hours"),
+                    ],
+                    "result_dependency": {
+                        "source_goal_id": ranking_id,
+                        "dimension_semantic_id": "dimension.department",
+                        "selection": "first_ranked_entity",
+                    },
+                    "status": "RESOLVED",
+                },
+            ],
+            "deliverables": [
+                {
+                    "requirement_id": "d_9c0daca25878ff79967f",
+                    "kind": "report",
+                    "source_text": "seçimini kanıtla",
+                }
+            ],
+            "must_requirement_ids": [
+                comparison_id,
+                ranking_id,
+                child_id,
+                "d_9c0daca25878ff79967f",
+            ],
+            "context_version": "phase1-final-pinpoint-v1",
+            "status": "READY_FOR_RESEARCH",
+        }
+    )
+    authority = AcceptedResearchAuthority(
+        contract_id="atc_7bc0bc597893a6d503f5f57e",
+        lineage_id="atl_1564ca7d2a9c1a11bb2f",
+        turn_id="research:a3-frozen-replay",
+        request_ref="artifact:11315439520",
+        source_message_hash=hashlib.sha256(
+            b"a3 frozen vertical replay"
+        ).hexdigest(),
+        accepted_attempt_id=brief.brief_id,
+        model_role="research-brief-product",
+        obligation_ids=brief.must_requirement_ids,
+        context_version=brief.context_version,
+        accepted_at_iso="2026-10-04T21:53:06+00:00",
+    )
+    session = ResearchManager.start(
+        authority=authority,
+        objective=brief.objective,
+        obligation_objectives={
+            item.goal_id: item.source_text for item in brief.questions
+        },
+        tenant_binding="id:a3-replay-tenant",
+        principal_subject="a3-replay-user",
+        accepted_brief=brief,
+        session_id="rs_5ba010c46f20f6f9e980d0a2",
+        now=STAMP,
+    )
+
+    bindings = {
+        "dimension.event_date": NativeMaterialBinding(
+            candidate_id="dimension.event_date",
+            candidate_kind="dimension",
+            database_id=1,
+            table_id=1,
+            field_id=1,
+        ),
+        "dimension.department": NativeMaterialBinding(
+            candidate_id="dimension.department",
+            candidate_kind="dimension",
+            database_id=1,
+            table_id=1,
+            field_id=2,
+        ),
+    }
+    runtime = RuntimeIdentity(
+        substrate="metabase-native",
+        runtime_version="v0.63.18-dima.11.1.1",
+        image_digest=(
+            "sha256:"
+            "0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d"
+        ),
+        database_id="1",
+        repository="UpcyTech/dima-metabase-engine",
+        revision_sha="4c49b8da6b424b0fa4d8ef340ca1b238d12980c1",
+        upstream_base_sha="2ba2485c78d7e00a9a25f82c00fc201da71590c4",
+        runtime_tag="v0.63.18-dima.11.1.1",
+        build_identity=(
+            "github-actions:37176179588:"
+            "4c49b8da6b424b0fa4d8ef340ca1b238d12980c1"
+        ),
+        image_identity=(
+            "sha256:"
+            "0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d"
+        ),
+        runtime_instance_id=UUID("00000000-0000-4000-8000-000000001131"),
+    )
+    conversation_id = UUID("00000000-0000-4000-8000-000000001132")
+
+    def admit_frozen_occurrence(
+        current,
+        *,
+        obligation_id,
+        native_query_id,
+        query_fingerprint,
+        result_payload,
+        evidence_id,
+        attested_native_material,
+    ):
+        contract = analytical_scope_contract(
+            session=current,
+            obligation_id=obligation_id,
+        )
+        prepared = ResearchManager.prepare_native_delegation(
+            current,
+            obligation_id=obligation_id,
+            analytical_scope=contract,
+        )
+        delegated = prepared.session
+        assert (
+            ResearchManager.obligation(delegated, obligation_id).state
+            == ObligationState.DELEGATED
+        )
+        coverage = assert_material_result_coverage(
+            contract=contract,
+            result_payload=result_payload,
+            bindings=bindings,
+            attested_native_material=attested_native_material,
+        )
+        assert coverage.status == "FULL"
+        snapshot = ExecutionResultSnapshot(
+            payload=result_payload,
+            row_count=len(result_payload["data"]["rows"]),
+        )
+        receipt = DimaQueryReceiptSealer.seal_research_execution(
+            authority_id=delegated.authority_id,
+            research_session_id=delegated.session_id,
+            obligation_ids=(obligation_id,),
+            tenant_binding=delegated.tenant_binding,
+            principal_subject=delegated.principal_subject,
+            roles=("analyst",),
+            native_subject_ref="metabase-user:7",
+            native_conversation_id=conversation_id,
+            native_query_id=native_query_id,
+            native_query_provenance_ref=(
+                f"github-actions:{source_run_id}:artifact:{source_artifact_id}:query"
+            ),
+            native_result_provenance_ref=(
+                f"github-actions:{source_run_id}:artifact:{source_artifact_id}:result"
+            ),
+            query_fingerprint=query_fingerprint,
+            semantic_context_version=delegated.context_version,
+            scope_fingerprint=brief.scope_fingerprint,
+            runtime=runtime,
+            result=snapshot,
+            event=ExecutionEventIdentity(
+                execution_id=f"a3-replay:{obligation_id}",
+                executed_at=STAMP,
+            ),
+        )
+        evidence = EvidenceArtifact(
+            artifact_id=evidence_id,
+            authority_id=delegated.authority_id,
+            obligation_ids=(obligation_id,),
+            query_receipt_refs=(receipt.receipt_id,),
+            evidence_kind="a3_frozen_artifact_vertical_replay",
+            state=EvidenceState.VERIFIED,
+            payload={
+                "source_run_id": source_run_id,
+                "source_artifact_id": source_artifact_id,
+                "result_hash": snapshot.result_hash,
+                "result": result_payload,
+            },
+        )
+        admitted = ResearchManager.admit_receipted_evidence(
+            delegated,
+            obligation_id=obligation_id,
+            receipt=receipt,
+            evidence=evidence,
+            satisfies_obligation=True,
+            now=STAMP,
+        )
+        assert (
+            ResearchManager.obligation(admitted, obligation_id).state
+            == ObligationState.VERIFIED
+        )
+        assert receipt.receipt_id
+        assert evidence.artifact_id
+        return admitted, contract, receipt, evidence, snapshot
+
+    comparison_result = {
+        "data": {
+            "cols": [
+                {
+                    "id": 1,
+                    "name": "event_date",
+                    "display_name": "Event Date: Month",
+                    "field_ref": ["field", 1, {"temporal-unit": "month"}],
+                },
+                {
+                    "name": "sum",
+                    "display_name": "Machine Downtime Minutes",
+                    "field_ref": ["aggregation", 0],
+                },
+            ],
+            "rows": [
+                ["2026-05-01T00:00:00Z", 1224],
+                ["2026-06-01T00:00:00Z", 1625],
+            ],
+        }
+    }
+    session, _, _, _, _ = admit_frozen_occurrence(
+        session,
+        obligation_id=comparison_id,
+        native_query_id="mdjcw91DQhwHz58uqLJ4B",
+        query_fingerprint=(
+            "395cce76f5847079a0d9f6c674f56749d30cddf02504a7545e78f5189785a764"
+        ),
+        result_payload=comparison_result,
+        evidence_id="evi_e235b1bfbe327943ed5e0a83",
+        attested_native_material=False,
+    )
+
+    ranking_result = {
+        "data": {
+            "cols": [
+                {
+                    "id": 2,
+                    "name": "department",
+                    "display_name": "Department",
+                    "field_ref": [
+                        "field",
+                        "department",
+                        {"base-type": "type/Text"},
+                    ],
+                },
+                {
+                    "name": "Change (Jun minus May)",
+                    "display_name": "Change (Jun minus May)",
+                    "field_ref": ["expression", "Change (Jun minus May)"],
+                },
+            ],
+            "rows": [
+                ["Assembly", 267.0],
+                ["Packaging", 74.0],
+                ["Utilities", 34.0],
+                ["Maintenance", 18.0],
+                ["Quality", 8.0],
+            ],
+        }
+    }
+    (
+        session,
+        ranking_contract,
+        ranking_receipt,
+        ranking_evidence,
+        ranking_snapshot,
+    ) = admit_frozen_occurrence(
+        session,
+        obligation_id=ranking_id,
+        native_query_id="pHptOIaZo05ThIon0JKg5",
+        query_fingerprint=(
+            "854758dad443fdc595bb4055c2046323f1cae775570c6bb1348fad86aa8369cc"
+        ),
+        result_payload=ranking_result,
+        evidence_id="evi_11315439520a3feedface00",
+        attested_native_material=True,
+    )
+    assert ranking_contract.ranking is not None
+    assert ranking_contract.ranking.basis.value == "change"
+    assert ranking_receipt.receipt_id is not None
+    assert ranking_evidence.artifact_id is not None
+    assert (
+        ResearchManager.obligation(session, ranking_id).state
+        == ObligationState.VERIFIED
+    )
+
+    child_contract = analytical_scope_contract(
+        session=session,
+        obligation_id=child_id,
+    )
+    dependency = resolve_first_ranked_entity(
+        base_contract=child_contract,
+        source_goal_id=ranking_id,
+        source_execution_obligation_id=ranking_id,
+        source_evidence_id=ranking_evidence.artifact_id,
+        source_receipt_id=ranking_receipt.receipt_id,
+        source_result_hash=ranking_snapshot.result_hash,
+        dimension_semantic_id="dimension.department",
+        native_field_id=2,
+        parent_result=ranking_result,
+        dimension_name="Department",
+    )
+    assert dependency.selected_value == "Assembly"
+    assert dependency.contract.scope_identity == child_contract.scope_identity
+    assert dependency.contract.scope_fingerprint == child_contract.scope_fingerprint
+    assert dependency.contract.filters[-1].source_candidate_id == (
+        "dimension.department"
+    )
+    assert dependency.contract.filters[-1].value == "Assembly"
+
+    groups = project_material_groups(session)
+    comparison_group = next(
+        item for item in groups if comparison_id in item.consumer_requirement_ids
+    )
+    ranking_group = next(
+        item for item in groups if ranking_id in item.consumer_requirement_ids
+    )
+    child_group = next(
+        item for item in groups if child_id in item.consumer_requirement_ids
+    )
+    execution_anchor = result_dependency_execution_anchor(
+        session=session,
+        groups=groups,
+        requirement_id=child_id,
+    )
+    assert execution_anchor == ranking_group.anchor_requirement_id
+    completed = tuple(
+        dict.fromkeys(
+            (
+                comparison_group.material_group_id,
+                ranking_group.material_group_id,
+            )
+        )
+    )
+    next_group = select_pending_material_group(
+        groups,
+        completed_material_group_ids=completed,
+    )
+    assert next_group is not None
+    assert next_group.material_group_id == child_group.material_group_id
+    assert child_id in next_group.consumer_requirement_ids
+    assert ranking_id in next_group.dependency_requirement_ids
