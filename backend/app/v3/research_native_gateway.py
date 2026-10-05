@@ -48,7 +48,7 @@ from app.v3.research_material_coverage import (
 from app.v3.research_result_dependency import (
     ResultDependencyProjectionError,
     ResultSelectionResolution,
-    resolve_first_ranked_entity,
+    resolve_selection_binding_v1,
 )
 from app.v3.research_store import ResearchSessionStore
 from app.v3.substrate.metabase.native_engine import (
@@ -478,18 +478,53 @@ class NativeResearchMaterialExecutor:
                 material_fingerprint=contract.material_fingerprint,
             )
 
+        parent_question = next(
+            (
+                item
+                for item in brief.questions
+                if item.goal_id == dependency.source_goal_id
+            ),
+            None,
+        )
+        parent_ranking = (
+            parent_question.ranking
+            if parent_question is not None
+            else None
+        )
+
         try:
-            return resolve_first_ranked_entity(
+            return resolve_selection_binding_v1(
                 base_contract=contract,
                 source_goal_id=dependency.source_goal_id,
                 source_evidence_id=str(parent_link.evidence_id),
                 source_receipt_id=str(parent_link.receipt_id),
                 source_result_hash=str(parent_link.result_hash),
+                parent_execution_id=str(
+                    getattr(parent_link, "id", None)
+                    or parent_link.receipt_id
+                ),
                 dimension_semantic_id=dependency.dimension_semantic_id,
                 native_field_id=int(binding.field_id),
                 parent_result=parent_result,
+                selection=dependency.selection,
+                ranking_basis=(
+                    parent_ranking.basis
+                    if parent_ranking is not None
+                    else None
+                ),
+                ranking_direction=(
+                    parent_ranking.direction
+                    if parent_ranking is not None
+                    else None
+                ),
+                top_k=(
+                    parent_ranking.limit
+                    if parent_ranking is not None
+                    else None
+                ),
                 dimension_name=semantic_ref.canonical_name,
                 source_execution_obligation_id=execution_source,
+                expected_parent_result_hash=str(parent_link.result_hash),
             )
         except ResultDependencyProjectionError as exc:
             raise ResearchMaterialLimitation(
