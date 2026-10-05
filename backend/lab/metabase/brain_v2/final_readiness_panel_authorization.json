@@ -1,0 +1,40 @@
+{
+  "schema_version": "dima_brain_v2_1_final_readiness_panel_v1",
+  "enabled": true,
+  "candidate_product_sha": "b4bf7a43326a4c690c48c507d47625edb37ac8f0",
+  "provider_free_status": "GREEN",
+  "provider_free_phase1_run_id": 37327009729,
+  "provider_free_phase2_run_id": 37327009747,
+  "provider_free_semantic_run_id": 37327009856,
+  "provider_free_frozen_run_id": 37327009685,
+  "provider_free_focused_run_id": 37327009932,
+  "engine_sha": "4c49b8da6b424b0fa4d8ef340ca1b238d12980c1",
+  "engine_release": "0.63.18-dima.11.1",
+  "engine_runtime_tag": "v0.63.18-dima.11.1.1",
+  "engine_digest": "sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d",
+  "migration_head": "ff5b8e2c1a73",
+  "grammar_version": "dima_analytical_grammar_v1",
+  "analytical_intent_schema": "dima_analytical_intent_v1",
+  "execution_manifest_schema": "dima_analytical_execution_manifest_v1",
+  "selection_binding_schema": "dima_selection_binding_v1",
+  "model_topology": {
+    "dima_cognition": "openai/gpt-5.6-luna",
+    "metabot": "openrouter/openai/gpt-5.6-luna",
+    "cascade": "NONE"
+  },
+  "probe_ids": [
+    "DIRECT_ANALYTICS_V1",
+    "TEMPORAL_COMPARISON_V1",
+    "CHANGE_DEPENDENT_DRILLDOWN_V1",
+    "R_LIVE_2_ADAPTIVE",
+    "RELATIONSHIP_REPORT_PHASE2_V1",
+    "R_LIVE_4_SCOPE_RESUME",
+    "CONTEXTUAL_REPORT_V1",
+    "MULTI_INTENT_PHASE2_V1",
+    "SAFETY_UNSUPPORTED_V1"
+  ],
+  "broad_paid_allowed": false,
+  "thirty_case_allowed": false,
+  "frontend_allowed": false,
+  "note": "One exact same-frozen-Product 9-capability sentinel panel. Normal quality RED does not stop the panel; catastrophic safety/runaway/infrastructure does."
+}
