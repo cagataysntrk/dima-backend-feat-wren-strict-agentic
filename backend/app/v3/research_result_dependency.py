@@ -248,6 +248,16 @@ def resolve_selection_binding_v1(
             "R1_SELECTION_BINDING_RESULT_HASH_MISMATCH",
             "parent result hash differs from the expected VERIFIED occurrence",
         )
+
+    observed_parent_result_hash = hashlib.sha256(
+        _canonical(parent_result).encode("utf-8")
+    ).hexdigest()
+    if observed_parent_result_hash != source_result_hash:
+        raise ResultDependencyProjectionError(
+            "R1_SELECTION_BINDING_PAYLOAD_HASH_MISMATCH",
+            "parent result payload differs from its durable VERIFIED result hash",
+        )
+
     if selection != "first_ranked_entity":
         raise ResultDependencyProjectionError(
             "R1_SELECTION_BINDING_RULE_UNSUPPORTED",
