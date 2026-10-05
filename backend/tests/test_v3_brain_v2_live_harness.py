@@ -679,10 +679,10 @@ def test_orchestration_efficiency_slo_is_non_blocking() -> None:
 
     tracker = OrchestrationEfficiencyTracker()
     for _ in range(ORCHESTRATION_EFFICIENCY_SLO_UNITS + 5):
-        tracker.consume("metabot")
+        tracker.consume("material_executor")
 
     assert tracker.used == 17
-    assert tracker.by_owner == {"metabot": 17}
+    assert tracker.by_owner == {"material_executor": 17}
     assert tracker.slo_met is False
 
     report = {
@@ -703,7 +703,7 @@ def test_orchestration_efficiency_slo_is_non_blocking() -> None:
     assert report["orchestration_efficiency"] == {
         "slo_units": 12,
         "used": 17,
-        "by_owner": {"metabot": 17},
+        "by_owner": {"material_executor": 17},
         "slo_met": False,
     }
 
