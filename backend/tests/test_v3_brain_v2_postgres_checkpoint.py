@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import os
+from collections import Counter
 
 import pytest
 from psycopg import connect
@@ -11,6 +12,7 @@ from app.v3.brain_v2.activities import (
     CompletionActivityResult,
     EvidenceActivityResult,
     IntakeActivityResult,
+    MaterialActivityDisposition,
     MaterialActivityResult,
     MaterialGroupActivityResult,
     P18ActivityResult,
@@ -126,6 +128,139 @@ class OnePassActivities:
             report_ref="p20r_" + "f" * 24,
             activity_fingerprint=_fp("report"),
         )
+
+
+class WaitingThenEvidenceActivities(OnePassActivities):
+    """Direct-analytics fixture with one durable observation wait then Evidence."""
+
+    def __init__(self) -> None:
+        self.calls: Counter[str] = Counter()
+        self.occurrence_identity = (
+            "execution-link-fixed",
+            "native-query-fixed",
+            "query-fingerprint-fixed",
+            "result-hash-fixed",
+        )
+        self.observed_occurrence_identities: list[tuple[str, str, str, str]] = []
+
+    def intake(self, state):
+        self.calls["intake"] += 1
+        return super().intake(state)
+
+    def canonicalize(self, state):
+        self.calls["canonicalize"] += 1
+        return super().canonicalize(state)
+
+    def plan_requirements(self, state):
+        self.calls["requirements_plan"] += 1
+        return RequirementPlanActivityResult(
+            material_group_ids=("mg_" + "a" * 24,),
+            direct_requirement_ids=("g1",),
+            activity_fingerprint=_fp("requirements-plan-direct"),
+        )
+
+    def acquire_material_group(self, state):
+        self.calls["material_group"] += 1
+        self.observed_occurrence_identities.append(self.occurrence_identity)
+        if self.calls["material_group"] == 1:
+            return MaterialGroupActivityResult(
+                material_group_id="mg_" + "a" * 24,
+                consumer_requirement_ids=("g1",),
+                disposition=MaterialActivityDisposition.WAITING,
+                limitation_code="R1_NATIVE_MATERIAL_OBSERVATION_UNAVAILABLE",
+                activity_fingerprint=_fp("material-group-waiting"),
+            )
+        return MaterialGroupActivityResult(
+            material_group_id="mg_" + "a" * 24,
+            consumer_requirement_ids=("g1",),
+            produced_evidence_ids=("evi_" + "c" * 24,),
+            produced_receipt_refs=("dqr_" + "d" * 24,),
+            activity_fingerprint=_fp("material-group-observed"),
+        )
+
+    def admit_evidence(self, state):
+        self.calls["evidence"] += 1
+        return EvidenceActivityResult(
+            evidence_revision=1,
+            evidence_ids=("evi_" + "c" * 24,),
+            hypothesis_revision=0,
+            hypothesis_ids=(),
+            discovery_required=False,
+            activity_fingerprint=_fp("evidence-direct"),
+        )
+
+    def evaluate_completion(self, state):
+        self.calls["completion"] += 1
+        return CompletionActivityResult(
+            completion_revision=state.completion_revision + 1,
+            terminal_requirement_ids=("g1",),
+            analytical_complete=True,
+            all_requirements_terminal=True,
+            requirement_complete=True,
+            report_required=False,
+            activity_fingerprint=_fp("completion-direct"),
+        )
+
+
+def test_postgres_wait_checkpoint_survives_restart_and_resumes_same_occurrence():
+    schema = "dima_brain_v2_test_wait_resume"
+    thread_id = "postgres-wait-resume"
+
+    with connect(DSN, autocommit=True) as conn:
+        with conn.cursor() as cur:
+            cur.execute(f'DROP SCHEMA IF EXISTS "{schema}" CASCADE')
+
+    activities = WaitingThenEvidenceActivities()
+    with postgres_checkpoint_saver(DSN, schema=schema, setup=True) as saver:
+        service = BrainV2Service(activities=activities, checkpointer=saver)
+        waiting = service.run(
+            BrainGraphState(
+                thread_id=thread_id,
+                tenant_binding="id:tenant",
+                principal_ref="user-1",
+                current_user_input="Run governed direct analytics.",
+            )
+        )
+        assert waiting.workflow_status == BrainWorkflowStatus.WAITING
+        assert waiting.last_completed_node == "MATERIAL_GROUP_WAITING"
+        assert waiting.active_material_group_id == "mg_" + "a" * 24
+        assert activities.calls["intake"] == 1
+        assert activities.calls["material_group"] == 1
+        snapshot = service.graph.get_state(
+            {"configurable": {"thread_id": thread_id}}
+        )
+        assert tuple(snapshot.next) == ("wait_material_group",)
+
+    # Reopen the durable checkpointer and reconstruct the service. This is the
+    # required process/service restart boundary; resume is not a new user turn.
+    with postgres_checkpoint_saver(DSN, schema=schema) as saver:
+        restarted = BrainV2Service(activities=activities, checkpointer=saver)
+        restored = restarted.state(thread_id=thread_id)
+        assert restored is not None
+        assert restored.workflow_status == BrainWorkflowStatus.WAITING
+        resumed = restarted.resume_waiting(
+            thread_id=thread_id,
+            tenant_binding="id:tenant",
+            principal_ref="user-1",
+        )
+
+    assert resumed.workflow_status == BrainWorkflowStatus.COMPLETE
+    assert resumed.thread_id == waiting.thread_id
+    assert resumed.research_session_id == waiting.research_session_id
+    assert resumed.scope_version_id == waiting.scope_version_id == "scope_v1"
+    assert resumed.evidence_ids == ("evi_" + "c" * 24,)
+    assert resumed.terminal_requirement_ids == ("g1",)
+    assert activities.calls["intake"] == 1
+    assert activities.calls["canonicalize"] == 1
+    assert activities.calls["requirements_plan"] == 1
+    assert activities.calls["material_group"] == 2
+    assert activities.calls["evidence"] == 1
+    assert activities.calls["completion"] == 1
+    assert len(activities.observed_occurrence_identities) == 2
+    assert set(activities.observed_occurrence_identities) == {
+        activities.occurrence_identity
+    }
+
 
 
 def test_postgres_checkpoint_survives_service_reconstruction_and_is_schema_isolated():
