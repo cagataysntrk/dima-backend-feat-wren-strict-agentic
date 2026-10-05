@@ -11,6 +11,7 @@ from lab.metabase.brain_v2 import phase1_live
 from lab.metabase.brain_v2.final_probes import FINAL_READINESS_PANEL
 from lab.metabase.brain_v2.phase1_live import (
     _contextual_report_mechanical,
+    _apply_orchestration_efficiency,
     _durable_resume_identity_checks,
     _mechanical,
     _native_occurrence_projection,
@@ -668,6 +669,62 @@ def test_final_readiness_panel_matches_supervisor_nine_capabilities() -> None:
         "SAFETY_UNSUPPORTED_V1",
     )
     assert len(FINAL_READINESS_PANEL) == len(set(FINAL_READINESS_PANEL)) == 9
+
+
+def test_orchestration_efficiency_slo_is_non_blocking() -> None:
+    from lab.metabase.brain_v2.live_support import (
+        ORCHESTRATION_EFFICIENCY_SLO_UNITS,
+        OrchestrationEfficiencyTracker,
+    )
+
+    tracker = OrchestrationEfficiencyTracker()
+    for _ in range(ORCHESTRATION_EFFICIENCY_SLO_UNITS + 5):
+        tracker.consume("metabot")
+
+    assert tracker.used == 17
+    assert tracker.by_owner == {"metabot": 17}
+    assert tracker.slo_met is False
+
+    report = {
+        "mechanical": {
+            "checks": {"correctness": True},
+            "efficiency_checks": {"provider_slo": True},
+            "mechanical_green": True,
+            "efficiency_green": True,
+        }
+    }
+    _apply_orchestration_efficiency(report, tracker)
+
+    assert report["mechanical"]["mechanical_green"] is True
+    assert report["mechanical"]["efficiency_green"] is False
+    assert report["mechanical"]["efficiency_checks"][
+        "orchestration_units_slo"
+    ] is False
+    assert report["orchestration_efficiency"] == {
+        "slo_units": 12,
+        "used": 17,
+        "by_owner": {"metabot": 17},
+        "slo_met": False,
+    }
+
+
+def test_exception_artifact_helper_preserves_provider_receipt_shape(tmp_path) -> None:
+    from lab.metabase.brain_v2.phase1_live import _try_provider_receipt
+
+    receipt = {
+        "schema_version": "dima_openrouter_counting_proxy_v1",
+        "actual_provider_request_count": 7,
+        "blocked_request_count": 0,
+        "provider_requests_by_source": {"metabase": 6, "research_intake": 1},
+    }
+    path = tmp_path / "provider.json"
+    path.write_text(json.dumps(receipt), encoding="utf-8")
+
+    assert _try_provider_receipt(path) == receipt
+
+    missing = _try_provider_receipt(tmp_path / "missing.json")
+    assert missing["receipt_available"] is False
+    assert "receipt_error" in missing
 
 
 def test_quality_mechanical_does_not_fail_only_for_efficiency_debt() -> None:
