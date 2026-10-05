@@ -1,13 +1,13 @@
 {
   "schema_version": "dima_brain_v2_1_final_readiness_panel_v1",
-  "enabled": false,
-  "candidate_product_sha": "9132e54f0f26c5470f0a82a2d5edaddb040b36b5",
+  "enabled": true,
+  "candidate_product_sha": "e257a4754487ec4ac7bfe9fa93966e5ac4a5d1ea",
   "provider_free_status": "GREEN",
-  "provider_free_phase1_run_id": 37335381093,
-  "provider_free_phase2_run_id": 37335380988,
-  "provider_free_semantic_run_id": 37335381048,
-  "provider_free_frozen_run_id": 37335380727,
-  "provider_free_focused_run_id": 37335380989,
+  "provider_free_phase1_run_id": 37347542513,
+  "provider_free_phase2_run_id": 37347542482,
+  "provider_free_semantic_run_id": 37347543030,
+  "provider_free_frozen_run_id": 37347542511,
+  "provider_free_focused_run_id": 37347542415,
   "engine_sha": "4c49b8da6b424b0fa4d8ef340ca1b238d12980c1",
   "engine_release": "0.63.18-dima.11.1",
   "engine_runtime_tag": "v0.63.18-dima.11.1.1",
@@ -36,5 +36,5 @@
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
   "frontend_allowed": false,
-  "note": "DISARMED after second/final frozen nine-sentinel panel 37336402464. Panel quality = 34/36 with S3 CHANGE_DEPENDENT_DRILLDOWN_V1 = 2/4 PARTIAL; every-case>=3 gate failed. Broad paid, 30-case, and frontend remain CLOSED. No further Product semantic fix or paid panel is authorized without a new supervisor decision."
+  "note": "SUPERVISOR EXCEPTION: authorize exactly one final S1-S9 sentinel panel on frozen durable-resume Product e257a475... after full provider-free recertification. Engine, grammar, prompts, provider budgets and Luna topology unchanged. No broad 30-case or frontend authorization. If this panel misses acceptance, STOP with no further fix round."
 }
