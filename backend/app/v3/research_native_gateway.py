@@ -2,14 +2,14 @@
 
 Metabot + Metabase own analytical truth and execution. This module owns only
 Dima-principal/native-subject correlation, native session/runtime identity,
-direct execution of the exact captured Metabot query, result provenance,
+exact-occurrence readiness/observation/execution ordering, result provenance,
 the single DimaQueryReceipt family, Evidence, and Research correlation.
 
 No analytical planner, MBQL parser, semantic guesser, re-execution dependency,
 P10 access-snapshot synthesis, or resource-planning authority lives here.
-The dima.7 material-observation seam reports stable material native semantics
-after durable execution; Dima compares them to the accepted analytical contract
-before a native result may become governed Evidence. P13 attestation is forensic only.
+P14 observes and attests the persisted Metabot occurrence before any analytical
+side effect, then executes that exact occurrence through the certified engine
+primitive and admits only covered results as governed Evidence.
 """
 from __future__ import annotations
 
@@ -59,9 +59,10 @@ from app.v3.research_result_dependency import (
 )
 from app.v3.research_store import ResearchSessionStore
 from app.v3.substrate.metabase.native_engine import (
-    NativeDatasetExecutionError,
     NativeEngineBridge,
     NativeEngineBridgeError,
+    NativeEngineEndpointError,
+    NativeEngineTransportError,
 )
 from app.v3.substrate.metabase.native_models import (
     NativeEngineIdentity,
@@ -608,6 +609,119 @@ class NativeResearchMaterialExecutor:
         return request.model_copy(update={"context": context})
 
 
+    @staticmethod
+    def _engine_failure_detail(exc: NativeEngineEndpointError) -> str:
+        code = f" {exc.error_code}" if exc.error_code else ""
+        return f"HTTP {exc.status_code}{code}: {exc.detail}"
+
+    @staticmethod
+    def _raise_readiness_failure(
+        exc: NativeEngineBridgeError,
+        *,
+        boundary: str,
+    ) -> None:
+        """Classify pre-execution engine failures without hiding typed status."""
+
+        if isinstance(exc, NativeEngineTransportError):
+            raise ResearchMaterialObservationUnavailable(
+                "R1_NATIVE_OCCURRENCE_TEMPORARILY_UNAVAILABLE",
+                str(exc),
+                last_valid_boundary="dima.native.generate",
+                first_invalid_boundary=boundary,
+            ) from exc
+        if isinstance(exc, NativeEngineEndpointError):
+            detail = NativeResearchMaterialExecutor._engine_failure_detail(exc)
+            if (
+                exc.status_code == 404
+                and exc.error_code == "NATIVE_QUERY_OCCURRENCE_NOT_FOUND"
+            ):
+                raise ResearchMaterialObservationUnavailable(
+                    exc.error_code,
+                    detail,
+                    last_valid_boundary="dima.native.generate",
+                    first_invalid_boundary=boundary,
+                ) from exc
+            raise ResearchMaterialLimitation(
+                exc.error_code
+                or f"P14_NATIVE_ENDPOINT_HTTP_{exc.status_code}",
+                detail,
+                last_valid_boundary="dima.native.generate",
+                first_invalid_boundary=boundary,
+            ) from exc
+        raise ResearchMaterialLimitation(
+            "P14_NATIVE_ENDPOINT_PROTOCOL_FAILED",
+            str(exc),
+            last_valid_boundary="dima.native.generate",
+            first_invalid_boundary=boundary,
+        ) from exc
+
+    def _attest_occurrence(
+        self,
+        *,
+        bridge: NativeEngineBridge,
+        native_conversation_id: uuid.UUID,
+        native_query_id: str,
+        metabase_user_id: int,
+    ) -> tuple[str, str]:
+        try:
+            envelope = bridge.attest_native_query(
+                conversation_id=native_conversation_id,
+                native_query_id=native_query_id,
+            )
+        except NativeEngineBridgeError as exc:
+            self._raise_readiness_failure(
+                exc,
+                boundary="dima.native.attest",
+            )
+            raise AssertionError("unreachable")
+        manifest = envelope.get("manifest")
+        if not isinstance(manifest, dict):
+            raise ResearchMaterialLimitation(
+                "P14_NATIVE_ATTESTATION_MANIFEST_REQUIRED",
+                "native attestation response has no manifest object",
+                last_valid_boundary="dima.native.generate",
+                first_invalid_boundary="dima.native.attest",
+            )
+        if (
+            str(manifest.get("native_conversation_id") or "")
+            != str(native_conversation_id)
+            or str(manifest.get("native_query_id") or "") != native_query_id
+        ):
+            raise ResearchMaterialLimitation(
+                "P14_NATIVE_ATTESTATION_OCCURRENCE_MISMATCH",
+                "attestation belongs to another persisted native occurrence",
+                last_valid_boundary="dima.native.generate",
+                first_invalid_boundary="dima.native.attest",
+            )
+        if int(manifest.get("authenticated_metabase_subject") or 0) != int(
+            metabase_user_id
+        ):
+            raise ResearchMaterialLimitation(
+                "P14_NATIVE_SUBJECT_MISMATCH",
+                "attestation subject differs from the correlated Metabase principal",
+                last_valid_boundary="dima.native.generate",
+                first_invalid_boundary="dima.native.attest",
+            )
+        runtime = manifest.get("runtime_identity")
+        if not isinstance(runtime, dict):
+            raise ResearchMaterialLimitation(
+                "P14_NATIVE_ATTESTATION_RUNTIME_REQUIRED",
+                "attestation has no runtime identity",
+                last_valid_boundary="dima.native.generate",
+                first_invalid_boundary="dima.native.attest",
+            )
+        self._subjects.assert_engine_identity(runtime)
+        fingerprint = str(manifest.get("exact_pmbql_fingerprint") or "")
+        attestation_id = str(manifest.get("attestation_id") or "")
+        if len(fingerprint) != 64 or not attestation_id:
+            raise ResearchMaterialLimitation(
+                "P14_NATIVE_ATTESTATION_IDENTITY_INCOMPLETE",
+                "attestation lacks exact persisted fingerprint or attestation id",
+                last_valid_boundary="dima.native.generate",
+                first_invalid_boundary="dima.native.attest",
+            )
+        return fingerprint, attestation_id
+
     def _observe_scope(
         self,
         *,
@@ -640,10 +754,11 @@ class NativeResearchMaterialExecutor:
                 native_query_id=native_query_id,
             )
         except NativeEngineBridgeError as exc:
-            raise ResearchMaterialObservationUnavailable(
-                "R1_NATIVE_MATERIAL_OBSERVATION_UNAVAILABLE",
-                str(exc),
-            ) from exc
+            self._raise_readiness_failure(
+                exc,
+                boundary="dima.native.observe",
+            )
+            raise AssertionError("unreachable")
         if (
             observation.conversation_id != native_conversation_id
             or observation.native_query_id != native_query_id
@@ -753,10 +868,47 @@ class NativeResearchMaterialExecutor:
             raise ResearchMaterialLimitation(
                 "P14_NATIVE_EXECUTION_OUTCOME_UNKNOWN",
                 (
-                    "native execution was durably started but no result was persisted; "
-                    "blind retry is forbidden"
+                    "native exact-occurrence execution was durably started but no "
+                    "result was persisted; blind retry is forbidden"
                 ),
             )
+        if link.status not in {"CANDIDATE_CAPTURED", "EXECUTED"}:
+            raise ResearchMaterialLimitation(
+                "P14_NATIVE_EXECUTION_STATE_INVALID",
+                f"native occurrence cannot continue from {link.status}",
+            )
+
+        contract = analytical_scope or analytical_scope_contract(
+            session=session,
+            obligation_id=obligation_id,
+        )
+        self._assert_scope_fingerprint(
+            session=session,
+            contract=contract,
+        )
+
+        # Lifecycle law: readiness/attestation and semantic material observation
+        # must succeed before analytical execution is allowed to start.
+        (
+            exact_pmbql_fingerprint,
+            attestation_id,
+        ) = self._attest_occurrence(
+            bridge=bridge,
+            native_conversation_id=native_conversation_id,
+            native_query_id=native_query_id,
+            metabase_user_id=int(binding.metabase_user_id),
+        )
+        scope_observation, material_observation = self._observe_scope(
+            principal=principal,
+            bridge=bridge,
+            session=session,
+            obligation_id=obligation_id,
+            native_conversation_id=native_conversation_id,
+            native_query_id=native_query_id,
+            query_fingerprint=query_fingerprint,
+            metabase_user_id=int(binding.metabase_user_id),
+            analytical_scope=contract,
+        )
 
         if link.status == "EXECUTED":
             (
@@ -782,45 +934,73 @@ class NativeResearchMaterialExecutor:
                 )
             runtime = RuntimeIdentity.model_validate(runtime_payload)
         else:
-            if link.status != "CANDIDATE_CAPTURED":
-                raise ResearchMaterialLimitation(
-                    "P14_NATIVE_EXECUTION_STATE_INVALID",
-                    f"native execution cannot start from {link.status}",
-                )
             self._store.mark_execution_started(
                 execution_link_id,
                 native_subject_ref=native_subject_ref,
             )
             try:
-                observed = bridge.execute_dataset(native_query)
-            except NativeDatasetExecutionError as exc:
+                observed = bridge.execute_native_query(
+                    conversation_id=native_conversation_id,
+                    native_query_id=native_query_id,
+                    expected_pmbql_fingerprint=exact_pmbql_fingerprint,
+                    expected_attestation_id=attestation_id,
+                )
+            except NativeEngineTransportError as exc:
                 raise ResearchMaterialLimitation(
-                    f"P14_NATIVE_DATASET_HTTP_{exc.status_code}",
-                    exc.detail,
+                    "P14_NATIVE_EXECUTION_OUTCOME_UNKNOWN",
+                    str(exc),
+                    last_valid_boundary="dima.native.observe",
+                    first_invalid_boundary="dima.native.execute",
+                ) from exc
+            except NativeEngineEndpointError as exc:
+                raise ResearchMaterialLimitation(
+                    exc.error_code
+                    or f"P14_NATIVE_EXECUTION_HTTP_{exc.status_code}",
+                    self._engine_failure_detail(exc),
+                    last_valid_boundary="dima.native.observe",
+                    first_invalid_boundary="dima.native.execute",
                 ) from exc
             except NativeEngineBridgeError as exc:
                 raise ResearchMaterialLimitation(
-                    "P14_NATIVE_DATASET_TRANSPORT_FAILED",
+                    "P14_NATIVE_EXECUTION_PROTOCOL_FAILED",
                     str(exc),
+                    last_valid_boundary="dima.native.observe",
+                    first_invalid_boundary="dima.native.execute",
                 ) from exc
 
-            if observed.query_fingerprint != query_fingerprint:
+            if (
+                observed.native_conversation_id != native_conversation_id
+                or observed.native_query_id != native_query_id
+            ):
                 raise ResearchMaterialLimitation(
-                    "P14_NATIVE_QUERY_FINGERPRINT_MISMATCH",
-                    "dataset execution did not receive the exact captured query payload",
+                    "P14_NATIVE_EXECUTION_OCCURRENCE_MISMATCH",
+                    "exact-occurrence execution returned another native occurrence",
+                    last_valid_boundary="dima.native.observe",
+                    first_invalid_boundary="dima.native.execute",
                 )
+            if observed.executed_pmbql_fingerprint != exact_pmbql_fingerprint:
+                raise ResearchMaterialLimitation(
+                    "P14_NATIVE_EXECUTION_FINGERPRINT_MISMATCH",
+                    "executed pMBQL fingerprint differs from the authorized occurrence",
+                    last_valid_boundary="dima.native.observe",
+                    first_invalid_boundary="dima.native.execute",
+                )
+            if observed.attestation_id != attestation_id:
+                raise ResearchMaterialLimitation(
+                    "P14_NATIVE_EXECUTION_ATTESTATION_MISMATCH",
+                    "execution attestation differs from the pre-execution attestation",
+                    last_valid_boundary="dima.native.observe",
+                    first_invalid_boundary="dima.native.execute",
+                )
+
             result_payload = observed.payload
             result = ExecutionResultSnapshot(
                 payload=result_payload,
                 row_count=self._row_count(result_payload),
             )
-            raw_runtime = bridge.engine_identity()
-            database_id = result_payload.get("database_id")
-            if database_id is None:
-                database_id = native_query.get("database")
             runtime = self._runtime_identity(
-                raw=raw_runtime,
-                database_id=database_id,
+                raw=observed.runtime_identity,
+                database_id=material_observation.database_id,
             )
             executed_at = datetime.now(timezone.utc)
             self._store.mark_executed(
@@ -831,26 +1011,6 @@ class NativeResearchMaterialExecutor:
                 result_hash=result.result_hash,
                 executed_at=executed_at,
             )
-
-        contract = analytical_scope or analytical_scope_contract(
-            session=session,
-            obligation_id=obligation_id,
-        )
-        self._assert_scope_fingerprint(
-            session=session,
-            contract=contract,
-        )
-        scope_observation, material_observation = self._observe_scope(
-            principal=principal,
-            bridge=bridge,
-            session=session,
-            obligation_id=obligation_id,
-            native_conversation_id=native_conversation_id,
-            native_query_id=native_query_id,
-            query_fingerprint=query_fingerprint,
-            metabase_user_id=int(binding.metabase_user_id),
-            analytical_scope=contract,
-        )
         coverage_bindings = self._material_bindings(
             principal=principal,
             session=session,
@@ -917,7 +1077,7 @@ class NativeResearchMaterialExecutor:
             execution_manifest = project_execution_manifest_v1(
                 intent=analytical_intent,
                 observation=scope_observation,
-                execution_id=f"native-dataset:{execution_link_id}",
+                execution_id=f"native-occurrence:{execution_link_id}",
                 query_fingerprint=query_fingerprint,
                 result_hash=result.result_hash,
                 engine_identity=AnalyticalEngineIdentityV1(
@@ -951,7 +1111,7 @@ class NativeResearchMaterialExecutor:
 
         provenance_base = f"research-execution-link:{execution_link_id}"
         event = ExecutionEventIdentity(
-            execution_id=f"native-dataset:{execution_link_id}",
+            execution_id=f"native-occurrence:{execution_link_id}",
             executed_at=executed_at,
         )
         receipt = DimaQueryReceiptSealer.seal_research_execution(
@@ -988,6 +1148,8 @@ class NativeResearchMaterialExecutor:
                 "native_query_id": native_query_id,
                 "query_fingerprint": query_fingerprint,
                 "material_observation_schema": material_observation.schema_version,
+                "attestation_id": attestation_id,
+                "exact_pmbql_fingerprint": exact_pmbql_fingerprint,
                 "observed_query_fingerprint": material_observation.query_fingerprint,
                 "scope_identity": scope_observation.scope_identity.model_dump(
                     mode="json"
@@ -1024,7 +1186,7 @@ class NativeResearchMaterialExecutor:
         return ResearchMaterialOutcome(
             native_conversation_id=native_conversation_id,
             native_query_id=native_query_id,
-            attestation_id=None,
+            attestation_id=attestation_id,
             receipt=receipt,
             evidence=evidence,
         )
