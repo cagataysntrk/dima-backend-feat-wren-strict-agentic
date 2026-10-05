@@ -27,6 +27,27 @@ The engineering objective is specification closure, not benchmark memorization:
 
 > CLOSE THE LAW. FREEZE THE OWNER. PROVE THE HOLDOUT. THEN GO LIVE.
 
+## CURRENT CANONICAL STATUS — 2026-10-05
+
+This block is the current orientation. Older PHASE sections below are historical receipts and must not be read as the current freeze when their SHAs/engine releases differ from this block.
+
+- Branch: `feat/dima-brain-v2-1-specification-closure`
+- Repository HEAD before this status refresh: `dd0a5148aaa83751c80d617eada59a393cbacdb7`
+- Current semantic Product: `957fea9876cfa4cdf8ee3a4f5701c0b6cfc2a40e`
+- Certified/frozen engine: `4c49b8da6b424b0fa4d8ef340ca1b238d12980c1` / `0.63.18-dima.11.1`
+- Engine digest: `sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d`
+- Engine rule: dima.11.1 remains frozen; `feat/dima11-conditional-change-observer` is obsolete diagnostic R&D and must not be merged/cherry-picked.
+- Temporal semantic law: `TemporalChangeFrame = PAIR | SPAN` is provider-free GREEN.
+- A3 latest paid evidence: run `37237863865` was `2/4 PARTIAL`; Intake READY and correct CHANGE ranking executed, but ranking Evidence admission/continuation did not close.
+- A3 recovery Product law: an exact material-attested native CHANGE occurrence may project a final derived rowset without repeating the intermediate governed time column; proofless CHANGE and plain comparison remain fail-closed.
+- Recovery certification: Phase-1 `37241841231 = SUCCESS`; Phase-2 `37241841255 = SUCCESS`; semantic/Wave A/Wave B/mutation `37241788680 = SUCCESS`; frozen-family `37241798779 = SUCCESS`.
+- Paid authorization: OFF.
+- Broad / actual 30-case: FORBIDDEN until the directive gate is satisfied.
+- Frontend/UI/demo implementation: FORBIDDEN in this program.
+- Current first unproven boundary: live A3 original quality on Product `957fea98...`.
+- Next legal action: execute exactly one A3 original on Product `957fea98...`, require `4/4 FULL`, then one semantic sibling `4/4 FULL`. Only then may Phase 4 begin.
+- Operational blocker: the canonical spec-closure workflow still hard-pins prior Product `447847e4...`; the connected safe GitHub write surface currently rejects workflow-file modification. Do not bypass this by low-level Git-object writes. No alternate workflow may be treated as qualifying evidence unless it preserves the same frozen Product, engine, one-case authorization, provider ceilings, artifact integrity and manual 4/4 adjudication.
+
 ---
 
 ## PHASE 0 — CANONICAL ORIENTATION & FREEZE
