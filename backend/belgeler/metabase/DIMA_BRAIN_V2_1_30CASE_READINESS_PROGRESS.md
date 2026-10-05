@@ -7399,3 +7399,49 @@ CLOSER — NOT YET READY
 
 NEXT LEGAL ACTION:
 Freeze `9132e54f0f26c5470f0a82a2d5edaddb040b36b5`; repin the exact nine-sentinel authorization to the new Product and the GREEN recertification receipts; execute one complete same-SHA panel under the same engine digest and Luna/Luna/no-cascade topology. No broad and no 30-case.
+
+
+---
+
+### PHASE 10 POST-FIX CANDIDATE RE-FREEZE
+
+PHASE:
+10 / POST-FIX FREEZE
+
+STATUS: GREEN — SECOND/FINAL PANEL CANDIDATE FROZEN
+
+Product semantic SHA:
+`9132e54f0f26c5470f0a82a2d5edaddb040b36b5`
+
+Engine SHA/tag/digest:
+`4c49b8da6b424b0fa4d8ef340ca1b238d12980c1` / `0.63.18-dima.11.1` / `sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d`
+
+Migration head:
+`ff5b8e2c1a73`
+
+Grammar / DTO versions:
+- `dima_analytical_grammar_v1`
+- `dima_analytical_intent_v1`
+- `dima_analytical_execution_manifest_v1`
+- `dima_selection_binding_v1`
+
+Model topology:
+Luna / Luna / no cascade.
+
+Provider-free proof set:
+`37335381093 / 37335380988 / 37335381048 / 37335380727 / 37335380989` — all GREEN.
+
+Paid authorization:
+Only the second/final exact nine-sentinel panel. Broad paid = OFF. 30-case = CLOSED.
+
+Frontend:
+NOT AUTHORIZED.
+
+What remains:
+Exactly one complete same-SHA Phase-8/9 panel rerun. No code change between its nine cases.
+
+30-case readiness:
+CLOSER
+
+NEXT LEGAL ACTION:
+Trigger second/final exact nine-sentinel panel on semantic Product `9132e54f...`. If it passes the Phase-11 seal gates, declare 30-CASE READY and STOP. If it exposes multiple unrelated new semantic primitives, STOP without another fix cycle.
