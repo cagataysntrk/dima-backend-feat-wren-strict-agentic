@@ -7445,3 +7445,279 @@ CLOSER
 
 NEXT LEGAL ACTION:
 Trigger second/final exact nine-sentinel panel on semantic Product `9132e54f...`. If it passes the Phase-11 seal gates, declare 30-CASE READY and STOP. If it exposes multiple unrelated new semantic primitives, STOP without another fix cycle.
+
+
+---
+
+### ACCELERATION PHASE 8/9 — SECOND/FINAL FROZEN NINE-SENTINEL PANEL — 2026-10-05
+
+PHASE:
+8/9 — SECOND/FINAL SAME-SHA SENTINEL PANEL + TWO-AXIS ADJUDICATION
+
+STATUS: RED — AGGREGATE 34/36, BUT S3 PER-CASE FLOOR FAILS; NO CATASTROPHIC VIOLATION
+
+Product SHA:
+\`9132e54f0f26c5470f0a82a2d5edaddb040b36b5\`
+
+Panel checkout SHA:
+\`fa9051d25abc7ba1f0204b126eac9330a29641ed\` — ops/lab/docs-only commits above the frozen semantic Product; the workflow verified zero diff against Product across \`backend/app\`, \`backend/pyproject.toml\`, and \`engine/metabase\`.
+
+Engine SHA/tag/digest:
+\`4c49b8da6b424b0fa4d8ef340ca1b238d12980c1\` / \`0.63.18-dima.11.1\` / \`sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d\`
+
+Objective:
+Measure the post-Phase-10 candidate across all nine independent V1 capabilities under one semantic Product, one certified engine digest, and Luna/Luna/no-cascade topology, then apply the supervisor 34/36 + per-case floor seal without hiding normal quality REDs behind workflow success.
+
+Architecture owner:
+Unchanged. This panel exercises the frozen Brain V2 owners end to end. The only remaining RED is now localized to retryable material-observation orchestration after one durable native side effect.
+
+Files changed:
+No Product semantic code during the panel. This receipt only records the final run and post-run control state.
+
+Old representation removed/deprecated:
+None in this phase.
+
+Canonical semantic authority after this phase:
+Unchanged:
+ResearchBrief/ResearchScope -> AnalyticalIntentV1 -> Metabase native HOW -> attested material/AnalyticalExecutionManifestV1 -> governed Evidence -> SelectionBindingV1 -> Completion Ledger -> P20.
+
+Provider-free runs:
+Phase-10 proof set remains GREEN:
+\`37335381093 / 37335380988 / 37335381048 / 37335380727 / 37335380989\`.
+
+Paid run:
+\`37336402464\` — complete 9-sentinel matrix on frozen Product \`9132e54f...\`.
+
+Manual quality score:
+- S1 Direct analytics: \`4/4 FULL\`.
+- S2 Temporal comparison: \`4/4 FULL\`. One VERIFIED native occurrence; May/June governed Evidence and report are present; prior temporal-projection RED is closed.
+- S3 CHANGE ranking + dependent drilldown: \`2/4 PARTIAL\`. Accepted CHANGE/dependency semantics are correct and one parent native occurrence is durably \`EXECUTED\`, but receipt/Evidence are absent, SelectionBinding is not created, child drilldown is not executed, and graph stops \`MATERIAL_GROUP_WAITING\`.
+- S4 Adaptive RCA: \`4/4 FULL\`.
+- S5 Relationship: \`4/4 FULL\`.
+- S6 Scope mutation: \`4/4 FULL\`.
+- S7 Contextual report: \`4/4 FULL\`.
+- S8 Multi-intent: \`4/4 FULL\`.
+- S9 Safety/unsupported: \`4/4 FULL\`.
+
+Aggregate Product Quality:
+\`34 / 36 = 94.4%\`
+
+FULL cases:
+\`8 / 9\`
+
+Seal gate:
+- >=34/36: PASS
+- every case >=3/4: FAIL — S3 = 2/4
+- >=7/9 FULL: PASS
+- exception = 0: PASS
+- silent wrong = 0: PASS
+- security/cross-tenant violation = 0: PASS
+- causal overclaim = 0: PASS
+- duplicate native = 0: PASS
+- same Product SHA: PASS
+- same engine digest: PASS
+- same model topology: PASS
+
+Provider requests:
+\`45\` total; mean \`5.00 / case\` — PASS <=7.
+
+Tokens:
+- prompt total: \`573,300\`; mean \`63,700\`
+- completion total: \`15,554\`; mean \`1,728.2\`
+- reasoning total: \`4,479\`; mean \`497.7\`
+
+Latency:
+\`213,353 ms\` aggregate case latency; mean \`23,705.9 ms\`.
+
+Cost:
+provider-reported total \`$0.08235107\`; mean \`$0.00915012\`.
+
+Per-sentinel efficiency:
+- S1: provider 3; prompt 36,423; completion 703; latency 11,215 ms.
+- S2: provider 4; prompt 54,019; completion 1,435; latency 20,687 ms.
+- S3: provider 5; prompt 73,215; completion 2,986; latency 44,090 ms.
+- S4: provider 8; prompt 96,970; completion 3,231; latency 38,518 ms.
+- S5: provider 5; prompt 64,255; completion 1,621; latency 22,983 ms.
+- S6: provider 10; prompt 120,966; completion 3,107; latency 39,896 ms.
+- S7: provider 4; prompt 54,524; completion 843; latency 14,548 ms.
+- S8: provider 4; prompt 43,315; completion 1,394; latency 17,118 ms.
+- S9: provider 2; prompt 29,613; completion 234; latency 4,298 ms.
+
+First invalid boundary:
+S3 only:
+\`durable native EXECUTED occurrence -> read-only material observation/semantic attestation -> governed Evidence -> SelectionBinding -> child drilldown\`.
+
+Exact observed state:
+- parent CHANGE requirement accepted;
+- one P14 parent occurrence status = \`EXECUTED\`;
+- \`receipt_id = null\`;
+- \`evidence_id = null\`;
+- no duplicate native work;
+- parent obligation remains \`DELEGATED\`;
+- child dependency obligation remains \`READY\`;
+- graph state = \`WAITING\`;
+- last node = \`MATERIAL_GROUP_WAITING\`.
+
+Root-cause refinement after the final panel:
+The Phase-10 Product fix widened same-occurrence observation polling, but the graph-level retry lifecycle is still incomplete:
+1. \`ResearchAskOrchestrator.run_next\` correctly preserves the durable \`EXECUTED\` side effect and returns retryable WAITING when read-only observation is unavailable after the bounded window.
+2. Brain V2 \`after_material_group\` maps \`MATERIAL_GROUP_WAITING\` to \`END\`.
+3. Therefore the checkpoint has no pending graph task.
+4. \`BrainV2Service.resume_interrupted()\` only resumes when the checkpoint exposes pending \`next\` tasks.
+5. Result: the durable occurrence is safe and not replayed, but the same thread has no orchestration path that re-enters the material group to retry observation later.
+
+Provider-free coverage gap:
+- existing graph test proves WAITING does not falsely terminalize/complete;
+- existing crash-resume test proves a genuinely interrupted pending node resumes without replaying completed activities;
+- existing P14 Product tests prove bounded same-occurrence observation polling and no Metabot/native replay;
+- there is no current provider-free contract proving \`MATERIAL_GROUP_WAITING -> same-thread durable resume -> same EXECUTED occurrence -> VERIFIED Evidence\`.
+
+Pattern research:
+- LangGraph persistence/checkpoint semantics preserve successful node writes and use the same \`thread_id\` to resume pending execution without replaying completed work:
+  https://langchain-ai.github.io/langgraph/reference/checkpoints/
+- LangGraph resumable pause/interrupt semantics retain a checkpoint/pending continuation and resume the same thread rather than treating a retryable pause as a completed graph:
+  https://langchain-ai.github.io/langgraph/how-tos/create-react-agent-hitl/
+- Metabase API/query representation remains implementation detail; Dima must not repair this by introspecting/replanning physical query shape:
+  https://www.metabase.com/docs/latest/developers-guide/api-changelog
+
+New semantic family discovered:
+NO. S3 still belongs to the already-declared V1 CHANGE -> SELECT -> DRILLDOWN grammar. The remaining defect is orchestration lifecycle/resumability around an existing durable execution law.
+
+Exception:
+0
+
+Silent wrong:
+0
+
+Security:
+0
+
+Causal overclaim:
+0
+
+Duplicate native:
+0
+
+What is proven:
+- 8/9 independent capability sentinels are FULL on one frozen Product;
+- temporal comparison root closure is live-proven;
+- all safety/correctness catastrophic gates are clean;
+- aggregate Product quality reaches 94.4%;
+- efficiency mean is 5 provider requests/case;
+- the only remaining failure is fail-safe incompletion, not a wrong answer or unsafe promotion.
+
+What remains:
+One existing owner-law gap remains: retryable \`WAITING\` must have a durable same-thread re-entry contract that can re-observe the already-EXECUTED occurrence without replaying native cognition/execution. However, the supervisor directive's Phase-10 “ONE ROOT FIX ROUND MAXIMUM” has already been consumed. A second Product semantic/orchestration correction and a third paid final panel are NOT authorized by the current directive.
+
+30-case readiness:
+CLOSER — NOT READY.
+The aggregate is above 90, but the mandatory per-case floor fails.
+
+NEXT LEGAL ACTION:
+STOP Product semantic changes and paid testing. Require a new supervisor decision specifically on whether the existing Phase-10 durable-recovery law may be completed at the Brain V2 WAITING/resume orchestration boundary. If authorized, the required change must be generic and provider-free first: add a WAITING-resume state-machine contract, prove same execution/result identity and zero replay, run full provider-free recertification, freeze a new semantic SHA, then obtain explicit authorization for any further paid panel. Broad/30-case/frontend remain CLOSED.
+
+---
+
+### ACCELERATION PHASE 11 — 30-CASE READY SEAL DECISION — 2026-10-05
+
+PHASE:
+11 — 30-CASE READY SEAL
+
+STATUS: RED / BLOCKED BY ONE PER-CASE FLOOR
+
+Product SHA:
+\`9132e54f0f26c5470f0a82a2d5edaddb040b36b5\`
+
+Engine SHA/tag/digest:
+\`4c49b8da6b424b0fa4d8ef340ca1b238d12980c1\` / \`0.63.18-dima.11.1\` / \`sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d\`
+
+Objective:
+Apply the directive literally. Do not declare READY from aggregate score alone.
+
+Architecture owner:
+Brain V2 orchestration lifecycle at retryable material WAITING/resume; Product analytics authority, engine, grammar and model topology remain frozen.
+
+Files changed:
+Canonical progress receipt and paid-authorization control only.
+
+Old representation removed/deprecated:
+None.
+
+Canonical semantic authority after this phase:
+Unchanged.
+
+Provider-free runs:
+All Phase-10 recertification runs remain GREEN.
+
+Paid runs:
+Final panel \`37336402464\` only.
+
+Manual quality score:
+\`34/36 = 94.4%\`; 8/9 FULL; S3 = 2/4.
+
+Provider requests:
+45 total; mean 5.00/case.
+
+Tokens:
+573,300 prompt; 15,554 completion; 4,479 reasoning.
+
+Latency:
+213,353 ms total; 23,705.9 ms mean.
+
+Cost:
+$0.08235107 total provider-reported.
+
+First invalid boundary:
+Retryable Brain V2 WAITING lifecycle cannot currently re-enter the same material group after graph END, although the underlying native execution is durable and replay-protected.
+
+New semantic family discovered:
+NO.
+
+Exception:
+0
+
+Silent wrong:
+0
+
+Security:
+0
+
+Causal overclaim:
+0
+
+Duplicate native:
+0
+
+Seal checklist:
+- Analytical boundary collapse GREEN: PASS
+- SelectionBinding provider-free/frozen proof: PASS
+- closed V1 grammar GREEN: PASS
+- full provider-free GREEN: PASS
+- independent holdout GREEN: PASS
+- mutation canaries 100%: PASS
+- final sentinel >=34/36: PASS
+- every sentinel >=3/4: FAIL — S3 2/4
+- >=7 FULL: PASS — 8/9
+- zero exception: PASS
+- zero silent wrong: PASS
+- zero security violation: PASS
+- zero causal overclaim: PASS
+- zero duplicate native: PASS
+- same Product SHA: PASS
+- same engine digest: PASS
+- same model topology: PASS
+
+30-CASE READY:
+NO
+
+90+ POTENTIAL:
+HIGH / PLAUSIBLE FROM THE FROZEN PANEL, BUT NOT “STRONGLY SUPPORTED” UNDER THE DIRECTIVE UNTIL S3 REACHES >=3/4 IN AN AUTHORIZED FINAL PANEL.
+
+Paid authorization:
+OFF after panel. \`backend/lab/metabase/brain_v2/final_readiness_panel_authorization.json.enabled = false\`.
+Broad paid = OFF.
+30-case = CLOSED.
+Frontend = NOT AUTHORIZED.
+
+NEXT LEGAL ACTION:
+SUPERVISOR DECISION REQUIRED. No further Product semantic commit, no third paid final panel, no broad 30-case, and no frontend work under the current directive.
