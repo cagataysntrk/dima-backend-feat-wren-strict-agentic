@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-# Phase-6 recertification anchor v2: harness routing fixed; grammar remains provider-free and benchmark-agnostic.
+# Phase-10 recertification anchor: temporal projection/recovery fixes are provider-free; grammar remains unchanged.
 
 import pytest
 from hypothesis import given, settings, strategies as st
