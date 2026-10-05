@@ -1028,6 +1028,16 @@ def test_later_run_next_observes_same_waiting_occurrence_without_replay():
     assert recovered.receipt_id is not None
     assert recovered.resumed_exact_occurrence is True
     assert restored.obligations[0].state == ObligationState.VERIFIED
+    assert store.pending_link(
+        session_id=session.session_id,
+        obligation_id="g1",
+    ) is None
+    verified = store.verified_link(
+        session_id=session.session_id,
+        obligation_id="g1",
+    )
+    assert verified.native_query_id in captured_query_ids
+    assert verified.evidence_id == recovered.evidence_id
     assert factory.metabot_posts == 1
     assert len(executor.calls) == 6
     assert {item[1] for item in executor.calls} == captured_query_ids
