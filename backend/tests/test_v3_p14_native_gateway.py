@@ -2154,7 +2154,7 @@ def test_r5_unranked_material_still_blocks_unaccepted_row_limiting_order():
             expected_metabase_subject=7,
         )
 
-    assert exc.value.code == "ANALYTICAL_V1_EXECUTION_RANKING_UNREPRESENTABLE"
+    assert exc.value.code == "R1_NATIVE_RANKING_SCOPE_MISMATCH"
 
 
 # Provider-free A3 RCA: dima.10 ranking basis must survive transport unchanged.
@@ -2215,52 +2215,6 @@ def _span_change_ranking_contract():
     )
 
 
-def test_span_change_level_observation_reaches_canonical_boundary() -> None:
-    _, session, _, _ = session_and_link(db_engine())
-    observation = rich_material_observation(
-        temporal_scopes=[
-            {
-                "time_field_id": 30,
-                "table_id": 10,
-                "lower_bound": "2026-05-01",
-                "lower_inclusive": True,
-                "upper_bound": "2026-07-01",
-                "upper_inclusive": False,
-            }
-        ],
-        ranking=[
-            {
-                "stage_number": 0,
-                "order_index": 0,
-                "target": {
-                    "kind": "metric",
-                    "metabase_metric_id": 501,
-                    "metabase_metric_entity_id": "metric-downtime-v1",
-                },
-                "direction": "desc",
-                "limit": 5,
-                "basis": "level",
-            }
-        ],
-    )
-
-    projected = scope_module.assert_material_native_scope(
-        session=session,
-        obligation_id="g1",
-        contract=_span_change_ranking_contract(),
-        observation=observation,
-        bindings=rich_material_bindings(),
-        expected_engine=expected_identity(),
-        expected_metabase_subject=7,
-    )
-
-    assert projected.ranking is not None
-    assert projected.ranking.measure == "metric.downtime"
-    assert projected.ranking.basis == scope_module.RankingBasis.LEVEL
-    assert projected.ranking.direction == "desc"
-    assert projected.ranking.limit == 5
-
-
 def test_dima10_material_transport_preserves_observed_change_ranking_basis() -> None:
     observation = rich_material_observation(
         ranking=[
@@ -2300,16 +2254,14 @@ def test_dima10_observed_change_basis_satisfies_typed_change_ranking() -> None:
         ]
     )
 
-    projected = scope_module._project_material_ranking_observation(
+    scope_module._assert_material_ranking_scope(
+        _change_ranking_contract(),
         observation,
         rich_material_bindings(),
     )
-    assert projected is not None
-    assert projected.measure == "metric.downtime"
-    assert projected.basis == scope_module.RankingBasis.CHANGE
 
 
-def test_dima10_level_basis_is_projected_and_rejected_only_by_canonical_verifier() -> None:
+def test_dima10_level_basis_cannot_satisfy_typed_change_ranking() -> None:
     observation = rich_material_observation(
         ranking=[
             {
@@ -2327,12 +2279,13 @@ def test_dima10_level_basis_is_projected_and_rejected_only_by_canonical_verifier
         ]
     )
 
-    projected = scope_module._project_material_ranking_observation(
-        observation,
-        rich_material_bindings(),
-    )
-    assert projected is not None
-    assert projected.basis == scope_module.RankingBasis.LEVEL
+    with pytest.raises(scope_module.ResearchAnalyticalScopeError) as exc:
+        scope_module._assert_material_ranking_scope(
+            _change_ranking_contract(),
+            observation,
+            rich_material_bindings(),
+        )
+    assert exc.value.code == "R1_NATIVE_RANKING_BASIS_MISMATCH"
 
 
 @pytest.mark.parametrize(
@@ -2383,7 +2336,45 @@ def test_dima10_level_basis_is_projected_and_rejected_only_by_canonical_verifier
                     }
                 ]
             },
-            "R1_NATIVE_RANKING_RESOURCE_BINDING_REQUIRED",
+            "R1_NATIVE_RANKING_SCOPE_MISMATCH",
+        ),
+        (
+            {
+                "ranking": [
+                    {
+                        "stage_number": 0,
+                        "order_index": 0,
+                        "target": {
+                            "kind": "metric",
+                            "metabase_metric_id": 501,
+                            "metabase_metric_entity_id": "metric-downtime-v1",
+                        },
+                        "direction": "asc",
+                        "limit": 5,
+                        "basis": "level",
+                    }
+                ]
+            },
+            "R1_NATIVE_RANKING_SCOPE_MISMATCH",
+        ),
+        (
+            {
+                "ranking": [
+                    {
+                        "stage_number": 0,
+                        "order_index": 0,
+                        "target": {
+                            "kind": "metric",
+                            "metabase_metric_id": 501,
+                            "metabase_metric_entity_id": "metric-downtime-v1",
+                        },
+                        "direction": "desc",
+                        "limit": 10,
+                        "basis": "level",
+                    }
+                ]
+            },
+            "R1_NATIVE_RANKING_SCOPE_MISMATCH",
         ),
         ({"authenticated_metabase_subject": 8}, "R1_NATIVE_SUBJECT_MISMATCH"),
     ),
@@ -3125,7 +3116,7 @@ def test_span_change_material_requirement_is_typed_without_hidden_pair() -> None
         assert forbidden not in lowered
 
 
-def test_span_change_basis_mismatch_is_terminal_at_canonical_owner() -> None:
+def test_span_change_basis_mismatch_is_one_repair_eligible_material_defect() -> None:
     from app.v3.research_material_repair import (
         MaterialRepairDisposition,
         decide_material_repair,
@@ -3147,34 +3138,56 @@ def test_span_change_basis_mismatch_is_terminal_at_canonical_owner() -> None:
             }
         ]
     )
-    projected = scope_module._project_material_ranking_observation(
-        observation,
-        rich_material_bindings(),
-    )
-    assert projected is not None
-    assert projected.basis == scope_module.RankingBasis.LEVEL
+    with pytest.raises(scope_module.ResearchAnalyticalScopeError) as exc:
+        scope_module._assert_material_ranking_scope(
+            _span_change_ranking_contract(),
+            observation,
+            rich_material_bindings(),
+        )
+
+    assert exc.value.code == "R1_NATIVE_RANKING_BASIS_MISMATCH"
+    change = exc.value.expected_semantic_shape["change_semantics"]
+    assert change["frame_mode"] == "SPAN"
+    assert change["operation"] == "change_over_span"
+    assert "baseline_period" not in change
+    assert "comparison_period" not in change
 
     decision = decide_material_repair(
-        validation_code="ANALYTICAL_V1_RANKING_MISMATCH",
-        validation_detail="ranking basis/metric/direction/top-k differs",
+        validation_code=exc.value.code,
+        validation_detail=exc.value.detail,
         prior_repair_attempts=0,
+        expected_semantic_shape=exc.value.expected_semantic_shape,
+        observed_semantic_shape=exc.value.observed_semantic_shape,
     )
-    assert decision.disposition == MaterialRepairDisposition.TERMINAL_LIMIT
-    assert decision.repair_attempt == 0
+    assert decision.disposition == MaterialRepairDisposition.REPAIR
+    assert decision.repair_attempt == 1
+    assert decision.require_new_query_fingerprint
+    assert decision.preserve_scope_identity
+    assert decision.preserve_material_contract
+
+    exhausted = decide_material_repair(
+        validation_code=exc.value.code,
+        prior_repair_attempts=1,
+    )
+    assert exhausted.disposition == MaterialRepairDisposition.TERMINAL_LIMIT
 
 
-def test_dima10_missing_native_ranking_projects_none_for_canonical_verifier() -> None:
+def test_dima10_missing_required_change_ranking_is_distinct_material_miss() -> None:
     observation = rich_material_observation(ranking=[])
 
-    projected = scope_module._project_material_ranking_observation(
-        observation,
-        rich_material_bindings(),
-    )
+    with pytest.raises(scope_module.ResearchAnalyticalScopeError) as exc:
+        scope_module._assert_material_ranking_scope(
+            _change_ranking_contract(),
+            observation,
+            rich_material_bindings(),
+        )
 
-    assert projected is None
+    assert exc.value.code == "R1_NATIVE_RANKING_REQUIRED_MISSING"
+    assert exc.value.expected_semantic_shape["ranking"]["basis"] == "change"
+    assert exc.value.observed_semantic_shape == {"ranking": []}
 
 
-def test_dima10_nonrestrictive_field_order_projects_no_business_ranking() -> None:
+def test_dima10_nonrestrictive_field_order_is_presentation_not_required_ranking() -> None:
     observation = rich_material_observation(
         ranking=[
             {
@@ -3204,13 +3217,19 @@ def test_dima10_nonrestrictive_field_order_projects_no_business_ranking() -> Non
         ]
     )
 
-    assert (
-        scope_module._project_material_ranking_observation(
+    with pytest.raises(scope_module.ResearchAnalyticalScopeError) as exc:
+        scope_module._assert_material_ranking_scope(
+            _change_ranking_contract(),
             observation,
             rich_material_bindings(),
         )
-        is None
-    )
+
+    assert exc.value.code == "R1_NATIVE_RANKING_REQUIRED_MISSING"
+    assert exc.value.expected_semantic_shape["ranking"]["basis"] == "change"
+    assert {
+        item["target"]["kind"]
+        for item in exc.value.observed_semantic_shape["ranking"]
+    } == {"field"}
 
 
 def test_dima10_row_limiting_field_order_remains_nonrepairable_scope_mismatch() -> None:
@@ -3232,42 +3251,16 @@ def test_dima10_row_limiting_field_order_remains_nonrepairable_scope_mismatch() 
     )
 
     with pytest.raises(scope_module.ResearchAnalyticalScopeError) as exc:
-        scope_module._project_material_ranking_observation(
+        scope_module._assert_material_ranking_scope(
+            _change_ranking_contract(),
             observation,
             rich_material_bindings(),
         )
 
-    assert exc.value.code == "ANALYTICAL_V1_EXECUTION_RANKING_UNREPRESENTABLE"
+    assert exc.value.code == "R1_NATIVE_RANKING_SCOPE_MISMATCH"
 
 
-def test_dima10_wrong_limit_is_preserved_for_canonical_verifier() -> None:
-    observation = rich_material_observation(
-        ranking=[
-            {
-                "stage_number": 0,
-                "order_index": 0,
-                "target": {
-                    "kind": "metric",
-                    "metabase_metric_id": 501,
-                    "metabase_metric_entity_id": "metric-downtime-v1",
-                },
-                "direction": "desc",
-                "limit": 10,
-                "basis": "level",
-            }
-        ]
-    )
-
-    projected = scope_module._project_material_ranking_observation(
-        observation,
-        rich_material_bindings(),
-    )
-    assert projected is not None
-    assert projected.limit == 10
-    assert projected.basis == scope_module.RankingBasis.LEVEL
-
-
-def test_dima10_wrong_direction_is_preserved_for_canonical_verifier() -> None:
+def test_dima10_wrong_direction_remains_nonrepairable_structural_mismatch() -> None:
     observation = rich_material_observation(
         ranking=[
             {
@@ -3285,17 +3278,26 @@ def test_dima10_wrong_direction_is_preserved_for_canonical_verifier() -> None:
         ]
     )
 
-    projected = scope_module._project_material_ranking_observation(
-        observation,
-        rich_material_bindings(),
+    with pytest.raises(scope_module.ResearchAnalyticalScopeError) as exc:
+        scope_module._assert_material_ranking_scope(
+            _change_ranking_contract(),
+            observation,
+            rich_material_bindings(),
+        )
+
+    assert exc.value.code == "R1_NATIVE_RANKING_SCOPE_MISMATCH"
+    assert exc.value.expected_semantic_shape["ranking"]["direction"] == "desc"
+    assert exc.value.observed_semantic_shape["ranking"][0]["direction"] == "asc"
+
+
+
+def test_change_level_first_result_allows_one_repair_then_change_admits() -> None:
+    from app.v3.research_material_repair import (
+        MaterialRepairDisposition,
+        decide_material_repair,
     )
-    assert projected is not None
-    assert projected.direction == "asc"
-    assert projected.basis == scope_module.RankingBasis.CHANGE
 
-
-
-def test_change_level_and_change_basis_are_projected_without_hidden_repair() -> None:
+    contract = _change_ranking_contract()
     level_observation = rich_material_observation(
         ranking=[
             {
@@ -3312,14 +3314,26 @@ def test_change_level_and_change_basis_are_projected_without_hidden_repair() -> 
             }
         ]
     )
-    level = scope_module._project_material_ranking_observation(
-        level_observation,
-        rich_material_bindings(),
-    )
-    assert level is not None
-    assert level.basis == scope_module.RankingBasis.LEVEL
 
-    change_observation = rich_material_observation(
+    with pytest.raises(scope_module.ResearchAnalyticalScopeError) as first:
+        scope_module._assert_material_ranking_scope(
+            contract,
+            level_observation,
+            rich_material_bindings(),
+        )
+    assert first.value.code == "R1_NATIVE_RANKING_BASIS_MISMATCH"
+
+    decision = decide_material_repair(
+        validation_code=first.value.code,
+        validation_detail=first.value.detail,
+        prior_repair_attempts=0,
+        expected_semantic_shape=first.value.expected_semantic_shape,
+        observed_semantic_shape=first.value.observed_semantic_shape,
+    )
+    assert decision.disposition == MaterialRepairDisposition.REPAIR
+    assert decision.repair_attempt == 1
+
+    repaired_observation = rich_material_observation(
         ranking=[
             {
                 "stage_number": 0,
@@ -3335,12 +3349,17 @@ def test_change_level_and_change_basis_are_projected_without_hidden_repair() -> 
             }
         ]
     )
-    change = scope_module._project_material_ranking_observation(
-        change_observation,
+    scope_module._assert_material_ranking_scope(
+        contract,
+        repaired_observation,
         rich_material_bindings(),
     )
-    assert change is not None
-    assert change.basis == scope_module.RankingBasis.CHANGE
+
+    exhausted = decide_material_repair(
+        validation_code="R1_NATIVE_RANKING_BASIS_MISMATCH",
+        prior_repair_attempts=1,
+    )
+    assert exhausted.disposition == MaterialRepairDisposition.TERMINAL_LIMIT
 
 
 
@@ -3362,21 +3381,37 @@ def test_level_material_requirement_has_no_change_semantics() -> None:
     assert requirement["change_semantics"] is None
 
 
-def test_canonical_ranking_mismatch_is_not_repaired_after_execution() -> None:
-    from app.v3.research_material_repair import (
-        MaterialRepairDisposition,
-        decide_material_repair,
+def test_basis_mismatch_feedback_carries_full_change_semantics() -> None:
+    observation = rich_material_observation(
+        ranking=[
+            {
+                "stage_number": 0,
+                "order_index": 0,
+                "target": {
+                    "kind": "metric",
+                    "metabase_metric_id": 501,
+                    "metabase_metric_entity_id": "metric-downtime-v1",
+                },
+                "direction": "desc",
+                "limit": 5,
+                "basis": "level",
+            }
+        ]
     )
 
-    decision = decide_material_repair(
-        validation_code="ANALYTICAL_V1_RANKING_MISMATCH",
-        validation_detail="ranking basis/metric/direction/top-k differs",
-        prior_repair_attempts=0,
-    )
+    with pytest.raises(scope_module.ResearchAnalyticalScopeError) as exc:
+        scope_module._assert_material_ranking_scope(
+            _change_ranking_contract(),
+            observation,
+            rich_material_bindings(),
+        )
 
-    assert decision.disposition == MaterialRepairDisposition.TERMINAL_LIMIT
-    assert decision.repair_attempt == 0
-
+    assert exc.value.code == "R1_NATIVE_RANKING_BASIS_MISMATCH"
+    change = exc.value.expected_semantic_shape["change_semantics"]
+    assert change["operation"] == "comparison_minus_baseline"
+    assert change["metric_ref"] == "metric.downtime"
+    assert change["entity_breakout_refs"] == ["dimension.department"]
+    assert change["time_dimension"] == "time.event_date"
 
 
 # Phase-1A 30-case readiness: result dependency is execution-local FILTER authority.
