@@ -107,7 +107,7 @@ PROBES = {
             "all USER_MUST requirements receive explicit terminal accounting",
             "P20 consumes terminal governed outcomes without duplicate analytics",
         ),
-    },,
+    },
     "CONTEXTUAL_REPORT_V1": {
         "turns": (
             "Haziran 2026'da bölüm bazında toplam machine downtime değerlerini göster.",
