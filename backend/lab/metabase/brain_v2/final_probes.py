@@ -15,6 +15,42 @@ FINAL_CAPABILITY_RUNTIME = {
 
 
 PROBES = {
+    "DIRECT_ANALYTICS_V1": {
+        "turns": (
+            "Haziran 2026'da toplam machine downtime kaç dakika?",
+        ),
+        "manual_contract": (
+            "one accepted direct analytical obligation",
+            "June 2026 scope is preserved exactly",
+            "governed Evidence is produced from native Metabase execution",
+            "no P17/P18/P19 work is opened",
+            "no duplicate native analytical work",
+        ),
+    },
+    "TEMPORAL_COMPARISON_V1": {
+        "turns": (
+            "Mayıs ve Haziran 2026 toplam machine downtime değerlerini karşılaştır; mutlak farkı ve yüzde değişimi ver.",
+        ),
+        "manual_contract": (
+            "May and June temporal authority is preserved",
+            "comparison material is governed and Evidence-backed",
+            "absolute and percentage change are grounded in the native result",
+            "no P17/P18/P19 work is opened",
+            "no silent semantic drift",
+        ),
+    },
+    "CHANGE_DEPENDENT_DRILLDOWN_V1": {
+        "turns": (
+            "Mayıs-Haziran 2026 arasında bölüm bazında machine downtime değişimini sırala; en çok kötüleşen bölümü seç ve yalnız o bölüm içinde machine bazında bir seviye derinleş.",
+        ),
+        "manual_contract": (
+            "COMPARE -> RANK -> SELECT -> DRILLDOWN remains inside the closed V1 grammar",
+            "CHANGE ranking is governed by accepted time authority",
+            "SelectionBindingV1 binds the child to the exact VERIFIED parent result",
+            "child drilldown uses the selected department without reranking or replaying parent work",
+            "no duplicate native analytical work or stale Evidence reuse",
+        ),
+    },
     "R_LIVE_1_ONE_PASS": {
         "turns": (
             "Packaging bölümünde Mayıs-Haziran 2026 machine downtime artışını açıklarken maintenance delay ile spare-part delay adaylarını değerlendir. İki adayın destekleyen ve zayıflatan kanıtlarını ayrı tut. Mevcut governed Evidence adayları yeterince değerlendiriyorsa sırf derinlik göstermek için ek analitik sorgu açma; P19 ile en savunulabilir terminal sonuca ulaş ve nedensellik sınırını koru.",
