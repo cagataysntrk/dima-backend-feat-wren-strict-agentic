@@ -1,0 +1,537 @@
+{
+  "schema_version": "dima_brain_v2_1_a3_vertical_replay_v1",
+  "source_run_id": 37237863865,
+  "source_artifact_id": 11315439520,
+  "source_candidate_product_sha": "447847e4b1161ee7a4fc34b7d3f861872f9c0564",
+  "current_replay_product_sha": "957fea9876cfa4cdf8ee3a4f5701c0b6cfc2a40e",
+  "engine_sha": "4c49b8da6b424b0fa4d8ef340ca1b238d12980c1",
+  "case_id": "F06_M",
+  "accepted_brief": {
+    "brief_id": "rb_c0990d3b2e58d80fdf407e29",
+    "objective": "Mayıs-Haziran dönemindeki makine duruş değişimini incelemek, en çok bozulan bölümü belirlemek ve bu bölüm içinde makine veya ilgili operasyonel faktör bazında bir seviye daha derinleşerek seçimi kanıtlamak.",
+    "scope": {
+      "semantic_refs": [
+        {
+          "source_mention": "makine duruşları / duruş süresi / machine downtime",
+          "candidate_id": "metric.machine_downtime_minutes",
+          "target_kind": "metric",
+          "canonical_name": "Machine Downtime Minutes",
+          "dimension_name": null,
+          "value": null,
+          "cube_names": [
+            "machine_operations"
+          ],
+          "sensitive": false
+        },
+        {
+          "source_mention": "bölüm / departman / department",
+          "candidate_id": "dimension.department",
+          "target_kind": "dimension",
+          "canonical_name": "Department",
+          "dimension_name": null,
+          "value": null,
+          "cube_names": [
+            "machine_operations"
+          ],
+          "sensitive": false
+        },
+        {
+          "source_mention": "makine / machine",
+          "candidate_id": "dimension.machine_id",
+          "target_kind": "dimension",
+          "canonical_name": "Machine",
+          "dimension_name": null,
+          "value": null,
+          "cube_names": [
+            "machine_operations"
+          ],
+          "sensitive": false
+        },
+        {
+          "source_mention": "arıza sayısı / fault count",
+          "candidate_id": "metric.fault_count",
+          "target_kind": "metric",
+          "canonical_name": "Fault Count",
+          "dimension_name": null,
+          "value": null,
+          "cube_names": [
+            "machine_operations"
+          ],
+          "sensitive": false
+        },
+        {
+          "source_mention": "bakım gecikmesi / maintenance delay",
+          "candidate_id": "metric.maintenance_delay_hours",
+          "target_kind": "metric",
+          "canonical_name": "Maintenance Delay Hours",
+          "dimension_name": null,
+          "value": null,
+          "cube_names": [
+            "machine_operations"
+          ],
+          "sensitive": false
+        },
+        {
+          "source_mention": "performans / performance",
+          "candidate_id": "metric.performance_score",
+          "target_kind": "metric",
+          "canonical_name": "Performance Score",
+          "dimension_name": null,
+          "value": null,
+          "cube_names": [
+            "machine_operations"
+          ],
+          "sensitive": false
+        },
+        {
+          "source_mention": "yedek parça gecikmesi / spare part delay",
+          "candidate_id": "metric.spare_part_delay_hours",
+          "target_kind": "metric",
+          "canonical_name": "Spare Part Delay Hours",
+          "dimension_name": null,
+          "value": null,
+          "cube_names": [
+            "machine_operations"
+          ],
+          "sensitive": false
+        },
+        {
+          "source_mention": "tarih / date / Mayıs / Haziran",
+          "candidate_id": "dimension.event_date",
+          "target_kind": "dimension",
+          "canonical_name": "Event Date",
+          "dimension_name": null,
+          "value": null,
+          "cube_names": [
+            "machine_operations"
+          ],
+          "sensitive": false
+        }
+      ],
+      "time_surfaces": [
+        "Mayıs",
+        "Haziran"
+      ],
+      "periods": [
+        {
+          "source_text": "Mayıs",
+          "time_dimension_candidate_id": "dimension.event_date",
+          "start": "2026-05-01",
+          "end": "2026-06-01",
+          "role": "baseline_period"
+        },
+        {
+          "source_text": "Haziran",
+          "time_dimension_candidate_id": "dimension.event_date",
+          "start": "2026-06-01",
+          "end": "2026-07-01",
+          "role": "comparison_period"
+        }
+      ],
+      "temporal_dimension_ids": [
+        "dimension.event_date"
+      ],
+      "native_verification_bindings": [
+        {
+          "candidate_id": "metric.fault_count",
+          "table_name": "machine_operations",
+          "schema_name": null,
+          "column_name": "fault_count",
+          "aggregation": null,
+          "argument_kind": null,
+          "native_metric_entity_id": "oZwzWEN33R_yhDKzOCh-y"
+        },
+        {
+          "candidate_id": "metric.machine_downtime_minutes",
+          "table_name": "machine_operations",
+          "schema_name": null,
+          "column_name": "machine_downtime_minutes",
+          "aggregation": null,
+          "argument_kind": null,
+          "native_metric_entity_id": "3BV5uQyad1P8ZjF8MF412"
+        },
+        {
+          "candidate_id": "metric.maintenance_delay_hours",
+          "table_name": "machine_operations",
+          "schema_name": null,
+          "column_name": "maintenance_delay_hours",
+          "aggregation": null,
+          "argument_kind": null,
+          "native_metric_entity_id": "Ncs9eO5OvrvG4eQtGpwBd"
+        },
+        {
+          "candidate_id": "metric.performance_score",
+          "table_name": "machine_operations",
+          "schema_name": null,
+          "column_name": "performance_score",
+          "aggregation": null,
+          "argument_kind": null,
+          "native_metric_entity_id": "GJHHx_OhZZ2ufay3MjO8i"
+        },
+        {
+          "candidate_id": "metric.spare_part_delay_hours",
+          "table_name": "machine_operations",
+          "schema_name": null,
+          "column_name": "spare_part_delay_hours",
+          "aggregation": null,
+          "argument_kind": null,
+          "native_metric_entity_id": "mgg3vPU4kq25ZjOZzwB9s"
+        },
+        {
+          "candidate_id": "dimension.department",
+          "table_name": "machine_operations",
+          "schema_name": null,
+          "column_name": "department",
+          "aggregation": null,
+          "argument_kind": null,
+          "native_metric_entity_id": null
+        },
+        {
+          "candidate_id": "dimension.event_date",
+          "table_name": "machine_operations",
+          "schema_name": null,
+          "column_name": "event_date",
+          "aggregation": null,
+          "argument_kind": null,
+          "native_metric_entity_id": null
+        },
+        {
+          "candidate_id": "dimension.machine_id",
+          "table_name": "machine_operations",
+          "schema_name": null,
+          "column_name": "machine_id",
+          "aggregation": null,
+          "argument_kind": null,
+          "native_metric_entity_id": null
+        }
+      ],
+      "scope_version": {
+        "version_id": "scope_v1",
+        "ordinal": 1,
+        "parent_version_id": null
+      }
+    },
+    "required_domains": [
+      "machine_operations"
+    ],
+    "questions": [
+      {
+        "goal_id": "g_ce4372699197a8ea8167",
+        "kind": "comparison",
+        "priority": "MUST",
+        "source_text": "Mayıs-Haziran duruş değişimini araştır",
+        "source_fragment_identity": "fragment-sha256:ffc5f2e8e8ec1bf6bc31b153fdf93749e41d1f649ee2c88c936360208494ce75",
+        "subject_refs": [
+          {
+            "source_mention": "makine duruşları / duruş süresi / machine downtime",
+            "candidate_id": "metric.machine_downtime_minutes",
+            "target_kind": "metric",
+            "canonical_name": "Machine Downtime Minutes",
+            "dimension_name": null,
+            "value": null,
+            "cube_names": [
+              "machine_operations"
+            ],
+            "sensitive": false
+          }
+        ],
+        "related_refs": [
+          {
+            "source_mention": "makine duruşları / duruş süresi / machine downtime",
+            "candidate_id": "metric.machine_downtime_minutes",
+            "target_kind": "metric",
+            "canonical_name": "Machine Downtime Minutes",
+            "dimension_name": null,
+            "value": null,
+            "cube_names": [
+              "machine_operations"
+            ],
+            "sensitive": false
+          }
+        ],
+        "ranking": null,
+        "comparisons": [
+          {
+            "text": "Mayıs-Haziran duruş değişimini araştır",
+            "role": "temporal_period",
+            "semantic_id": null
+          }
+        ],
+        "result_dependency": null,
+        "causal_competition": null,
+        "relationship_intent": null,
+        "unresolved": [],
+        "status": "RESOLVED"
+      },
+      {
+        "goal_id": "g_2fe6e7df18e5a9299821",
+        "kind": "ranking",
+        "priority": "MUST",
+        "source_text": "en çok bozulan bölümü bul",
+        "source_fragment_identity": "fragment-sha256:38de9155a9810538095694d73296d3665c98296e45eb0d6d1c063d20eed75608",
+        "subject_refs": [
+          {
+            "source_mention": "bölüm / departman / department",
+            "candidate_id": "dimension.department",
+            "target_kind": "dimension",
+            "canonical_name": "Department",
+            "dimension_name": null,
+            "value": null,
+            "cube_names": [
+              "machine_operations"
+            ],
+            "sensitive": false
+          }
+        ],
+        "related_refs": [
+          {
+            "source_mention": "bölüm / departman / department",
+            "candidate_id": "dimension.department",
+            "target_kind": "dimension",
+            "canonical_name": "Department",
+            "dimension_name": null,
+            "value": null,
+            "cube_names": [
+              "machine_operations"
+            ],
+            "sensitive": false
+          },
+          {
+            "source_mention": "makine duruşları / duruş süresi / machine downtime",
+            "candidate_id": "metric.machine_downtime_minutes",
+            "target_kind": "metric",
+            "canonical_name": "Machine Downtime Minutes",
+            "dimension_name": null,
+            "value": null,
+            "cube_names": [
+              "machine_operations"
+            ],
+            "sensitive": false
+          }
+        ],
+        "ranking": {
+          "text": "en çok bozulan bölümü bul",
+          "direction": "desc",
+          "limit": null,
+          "measure_semantic_id": "metric.machine_downtime_minutes",
+          "basis": "change"
+        },
+        "comparisons": [],
+        "result_dependency": null,
+        "causal_competition": null,
+        "relationship_intent": null,
+        "unresolved": [],
+        "status": "RESOLVED"
+      },
+      {
+        "goal_id": "g_af46dc6ed8a2c6455c8d",
+        "kind": "breakdown",
+        "priority": "MUST",
+        "source_text": "sonra o bölüm içinde makine veya ilgili operasyonel faktör bazında bir seviye daha derinleş ve seçimini kanıtla",
+        "source_fragment_identity": "fragment-sha256:b1c2dbeef8a738b775fd2ca816f191a3aefe996ed0a93c8b063680b540dd8df9",
+        "subject_refs": [
+          {
+            "source_mention": "makine / machine",
+            "candidate_id": "dimension.machine_id",
+            "target_kind": "dimension",
+            "canonical_name": "Machine",
+            "dimension_name": null,
+            "value": null,
+            "cube_names": [
+              "machine_operations"
+            ],
+            "sensitive": false
+          }
+        ],
+        "related_refs": [
+          {
+            "source_mention": "makine / machine",
+            "candidate_id": "dimension.machine_id",
+            "target_kind": "dimension",
+            "canonical_name": "Machine",
+            "dimension_name": null,
+            "value": null,
+            "cube_names": [
+              "machine_operations"
+            ],
+            "sensitive": false
+          },
+          {
+            "source_mention": "makine duruşları / duruş süresi / machine downtime",
+            "candidate_id": "metric.machine_downtime_minutes",
+            "target_kind": "metric",
+            "canonical_name": "Machine Downtime Minutes",
+            "dimension_name": null,
+            "value": null,
+            "cube_names": [
+              "machine_operations"
+            ],
+            "sensitive": false
+          },
+          {
+            "source_mention": "arıza sayısı / fault count",
+            "candidate_id": "metric.fault_count",
+            "target_kind": "metric",
+            "canonical_name": "Fault Count",
+            "dimension_name": null,
+            "value": null,
+            "cube_names": [
+              "machine_operations"
+            ],
+            "sensitive": false
+          },
+          {
+            "source_mention": "bakım gecikmesi / maintenance delay",
+            "candidate_id": "metric.maintenance_delay_hours",
+            "target_kind": "metric",
+            "canonical_name": "Maintenance Delay Hours",
+            "dimension_name": null,
+            "value": null,
+            "cube_names": [
+              "machine_operations"
+            ],
+            "sensitive": false
+          },
+          {
+            "source_mention": "performans / performance",
+            "candidate_id": "metric.performance_score",
+            "target_kind": "metric",
+            "canonical_name": "Performance Score",
+            "dimension_name": null,
+            "value": null,
+            "cube_names": [
+              "machine_operations"
+            ],
+            "sensitive": false
+          },
+          {
+            "source_mention": "yedek parça gecikmesi / spare part delay",
+            "candidate_id": "metric.spare_part_delay_hours",
+            "target_kind": "metric",
+            "canonical_name": "Spare Part Delay Hours",
+            "dimension_name": null,
+            "value": null,
+            "cube_names": [
+              "machine_operations"
+            ],
+            "sensitive": false
+          }
+        ],
+        "ranking": null,
+        "comparisons": [],
+        "result_dependency": {
+          "source_goal_id": "g_2fe6e7df18e5a9299821",
+          "dimension_semantic_id": "dimension.department",
+          "selection": "first_ranked_entity"
+        },
+        "causal_competition": null,
+        "relationship_intent": null,
+        "unresolved": [],
+        "status": "RESOLVED"
+      }
+    ],
+    "deliverables": [
+      {
+        "requirement_id": "d_9c0daca25878ff79967f",
+        "kind": "report",
+        "priority": "MUST",
+        "source_text": "seçimini kanıtla"
+      }
+    ],
+    "must_requirement_ids": [
+      "g_ce4372699197a8ea8167",
+      "g_2fe6e7df18e5a9299821",
+      "g_af46dc6ed8a2c6455c8d",
+      "d_9c0daca25878ff79967f"
+    ],
+    "blocking_goal_ids": [],
+    "budget": {
+      "max_data_queries": null,
+      "max_branch_depth": null,
+      "max_llm_turns": null,
+      "max_wall_clock_seconds": null,
+      "assignment": "deferred_to_research_execution_policy"
+    },
+    "context_version": "phase1-final-pinpoint-v1",
+    "status": "READY_FOR_RESEARCH"
+  },
+  "comparison_occurrence": {
+    "execution_link_id": "9ac2d1c2-44bc-4255-a627-4bed1b0f1ba3",
+    "obligation_id": "g_ce4372699197a8ea8167",
+    "native_query_id": "mdjcw91DQhwHz58uqLJ4B",
+    "query_fingerprint": "395cce76f5847079a0d9f6c674f56749d30cddf02504a7545e78f5189785a764",
+    "rows": [
+      [
+        "2026-05-01T00:00:00Z",
+        1224
+      ],
+      [
+        "2026-06-01T00:00:00Z",
+        1625
+      ]
+    ]
+  },
+  "ranking_occurrence": {
+    "execution_link_id": "360c6dd6-2431-466f-ac56-d9185f29d11e",
+    "obligation_id": "g_2fe6e7df18e5a9299821",
+    "native_query_id": "pHptOIaZo05ThIon0JKg5",
+    "query_fingerprint": "854758dad443fdc595bb4055c2046323f1cae775570c6bb1348fad86aa8369cc",
+    "result_payload": {
+      "data": {
+        "cols": [
+          {
+            "id": 2,
+            "table_id": 1,
+            "name": "department",
+            "display_name": "Department",
+            "field_ref": [
+              "field",
+              "department",
+              {
+                "base-type": "type/Text"
+              }
+            ]
+          },
+          {
+            "name": "Change (Jun minus May)",
+            "display_name": "Change (Jun minus May)",
+            "field_ref": [
+              "expression",
+              "Change (Jun minus May)"
+            ]
+          }
+        ],
+        "rows": [
+          [
+            "Assembly",
+            267
+          ],
+          [
+            "Packaging",
+            74
+          ],
+          [
+            "Utilities",
+            34
+          ],
+          [
+            "Maintenance",
+            18
+          ],
+          [
+            "Quality",
+            8
+          ]
+        ]
+      },
+      "database_id": 1,
+      "row_count": 5,
+      "status": "completed"
+    }
+  },
+  "expected": {
+    "selected_entity": "Assembly",
+    "child_obligation_id": "g_af46dc6ed8a2c6455c8d",
+    "dependency_dimension_semantic_id": "dimension.department"
+  }
+}
