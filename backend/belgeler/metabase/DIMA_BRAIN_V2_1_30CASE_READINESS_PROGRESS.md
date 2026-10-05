@@ -6439,3 +6439,191 @@ CLOSER
 
 NEXT LEGAL ACTION:
 Implement Phase 3 `SelectionBindingV1` provider-free; no parent replay, reranking or recomputation.
+
+
+---
+
+### ACCELERATION PHASE 3 — DURABLE SELECTION BINDING V1
+
+PHASE: 3  
+STATUS: GREEN
+
+Product SHA: `a31416c955b5bb1e2dc5957e567e619296c6dda5`  
+Evidence/test HEAD: `64af74bf45ecd0acc705d6cb5d439dfd690c4331`  
+Engine SHA/tag/digest: `4c49b8da6b424b0fa4d8ef340ca1b238d12980c1` / `0.63.18-dima.11.1` / `sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d`
+
+Objective:
+Collapse result-dependent continuation into one durable `SelectionBindingV1` so child material consumes one exact source-backed entity from one VERIFIED parent result without replay, reranking, CHANGE recomputation, language inference, or accepted-scope mutation.
+
+Architecture owner:
+VERIFIED P14 parent execution/result -> `SelectionBindingV1` -> execution-local child filter. Scope/currentness remains `ResearchScope.scope_version` plus canonical lineage-head validation.
+
+Files changed:
+- `backend/app/v3/research_result_dependency.py`
+- `backend/app/v3/research_native_gateway.py`
+- `backend/app/v3/research_product.py`
+- SelectionBinding, frozen-A3, currentness and gateway provenance tests
+- provider-free CI inclusion
+
+Old representation removed/deprecated:
+Selected entity no longer exists only as a transient source-goal/evidence/receipt/filter chain. `resolve_first_ranked_entity` remains a lower-level compatibility projection; production continuation emits a durable binding.
+
+Canonical semantic authority after this phase:
+`SelectionBindingV1(parent_execution_id, parent_result_hash, selected_row_index, selected_semantic_id, selected_value, selection_rule, scope_version_id)`. The actual canonical parent payload hash must equal the durable VERIFIED result hash.
+
+Provider-free runs:
+- `37309053722` Brain V2 provider-free = SUCCESS
+- `37309053553` semantic-conformance = SUCCESS
+- `37309053575` frozen-family = SUCCESS
+- `37309053604` Phase-1 aggregate = SUCCESS
+- `37309717360` frozen-family after payload-hash hardening = SUCCESS
+- `37309717389` Phase-1 aggregate = RED only because three historical gateway fixtures used synthetic hashes; production invariant was retained
+- `37310102813` Phase-1 aggregate after fixture correction = SUCCESS
+
+Paid runs:
+0
+
+Manual quality score:
+N/A
+
+Provider requests:
+0
+
+Tokens:
+0 paid
+
+Latency:
+N/A
+
+Cost:
+$0
+
+First invalid boundary:
+The only RED was test-fixture provenance at SelectionBinding payload-hash verification; fixture owner was corrected with no runtime semantic relaxation.
+
+New semantic family discovered:
+NO
+
+Exception:
+0 runtime/provider exceptions
+
+Silent wrong:
+0
+
+Security:
+0
+
+Causal overclaim:
+0
+
+Duplicate native:
+0
+
+Frozen A3 proof:
+comparison VERIFIED; CHANGE ranking VERIFIED/FULL; row 0 selects `dimension.department = Assembly`; child filter is Assembly; scope identity/fingerprint unchanged; parent payload unchanged; no replay/rerank/recalculation; child group becomes dependency-ready.
+
+Generic siblings/canaries:
+LEVEL/CHANGE, ASC/DESC, TOP_1/TOP_K; empty parent, wrong expected hash, tampered selected-row payload and unsupported selection fail closed. Superseded scope fails before Metabot/native work.
+
+What is proven:
+Result-dependent continuation has one durable selected-entity primitive and one canonical currentness gate.
+
+What remains:
+Phase 4 receipt then Phase 5 closed grammar.
+
+30-case readiness:
+CLOSER
+
+NEXT LEGAL ACTION:
+Seal Phase 4 from existing Completion/P20 owner laws; do not refactor working authority.
+
+---
+
+### ACCELERATION PHASE 4 — COMPLETION AND PRESENTATION COLLAPSE
+
+PHASE: 4  
+STATUS: GREEN
+
+Product SHA: `a31416c955b5bb1e2dc5957e567e619296c6dda5`  
+Evidence/test HEAD: `da3f643640a0e041b238fd5c645c96110696344f`  
+Engine SHA/tag/digest: `4c49b8da6b424b0fa4d8ef340ca1b238d12980c1` / `0.63.18-dima.11.1` / `sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d`
+
+Objective:
+Prove exactly one USER_MUST completion authority and keep P20 presentation/publication-only.
+
+Architecture owner:
+Completion Ledger / Brain V2 completion evaluation owns terminal + fulfillment accounting; P14/P18/P19 own upstream truth; P20 renders/seals governed terminal state.
+
+Files changed:
+No Product code change required. Existing canonical owners already satisfy Phase 4; another completion abstraction would duplicate authority. CI/test coverage was strengthened only.
+
+Old representation removed/deprecated:
+No new representation. `trusted_complete` remains an explicit compatibility alias for `process_complete`, not fulfillment authority.
+
+Canonical semantic authority after this phase:
+All USER_MUST terminal -> process may complete. Only all FULFILLED -> `requirement_complete=True`. Open USER_MUST cannot falsely complete. P20 may render/summarize/explain limitations; it may not reopen analytics, invent numbers, rerank, rescope or re-adjudicate Evidence.
+
+Provider-free runs:
+- `37310102813` Phase-1 aggregate = SUCCESS
+- `37310220961` Phase-1 aggregate with completion/grammar test surface = SUCCESS
+- `37309053553` semantic-conformance = SUCCESS
+- `37309053575` frozen-family = SUCCESS
+
+Paid runs:
+0
+
+Manual quality score:
+N/A
+
+Provider requests:
+0
+
+Tokens:
+0 paid
+
+Latency:
+N/A
+
+Cost:
+$0
+
+First invalid boundary:
+None.
+
+New semantic family discovered:
+NO
+
+Exception:
+0
+
+Silent wrong:
+0
+
+Security:
+0
+
+Causal overclaim:
+0
+
+Duplicate native:
+0
+
+Phase-4 gates:
+- terminal governed owner state + presentation -> report = GREEN
+- open/retryable material -> no false completion = GREEN
+- report-only continuation -> zero new analytical/native work = GREEN
+- repeated identical report seal -> idempotent = GREEN
+- P20 has no Metabase/native analytics/planner dependency = GREEN
+- report seal leaves P14-P19 authority unchanged = GREEN
+
+What is proven:
+Completion owns completion; P20 owns presentation legality. No second lifecycle truth is required.
+
+What remains:
+Phase 5 needs explicit legal composition/transition certification. `test_v3_v1_analytical_grammar.py` is useful but not yet sufficient for the property/stateful transition gate.
+
+30-case readiness:
+CLOSER
+
+NEXT LEGAL ACTION:
+Complete Phase 5 closed V1 transition grammar; no benchmark vocabulary and no query-planning authority.
