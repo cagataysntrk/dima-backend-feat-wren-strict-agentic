@@ -5933,3 +5933,59 @@ SPAN preserves one bounded interval and never asserts hidden baseline/comparison
 **30-case readiness:** NOT READY.
 
 **NEXT LEGAL ACTION:** Phase 2 live harness repin to Product `957fea...` and exact current certification receipts. Product/runtime semantics remain frozen.
+
+
+---
+
+## FINAL CLOSURE PHASE 2 — LIVE HARNESS REPIN — 2026-10-05
+
+**PHASE:** Final closure / Phase 2
+
+**STATUS:** GREEN
+
+**Product SHA:** `957fea9876cfa4cdf8ee3a4f5701c0b6cfc2a40e`
+
+**Engine SHA/tag/digest:** `4c49b8da6b424b0fa4d8ef340ca1b238d12980c1` / `0.63.18-dima.11.1` / `sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d`
+
+**Objective:** remove the stale operational freeze that prevented the canonical surgical A3 workflow from testing the current Product.
+
+**Files changed:**
+- `.github/workflows/dima-brain-v2-1-spec-closure-live.yml` only for literal freeze repinning in this phase.
+
+**Ops-only repin:**
+- candidate: `447847e4... -> 957fea98...`;
+- Phase-1 receipt: `37237559926 -> 37241841231`;
+- Phase-2 receipt: `37237559952 -> 37241841255`;
+- semantic + holdout receipt: `37237559953 -> 37241788680`;
+- frozen-family receipt: `37237559916 -> 37241798779`;
+- artifact-integrity candidate assertions now also require `957fea98...`.
+
+**Product immutability check:** `git diff 957fea..HEAD -- backend/app backend/pyproject.toml engine/metabase` equivalent repository comparison is empty. No Product/runtime semantic file changed after `957fea...`.
+
+**Semantic files changed:** 0.
+
+**Provider calls:** 0.
+
+**First invalid boundary:** none. The stale workflow freeze is closed.
+
+**Exception:** 0.
+
+**Silent wrong:** 0.
+
+**Duplicate native:** N/A.
+
+**Stale Evidence:** 0.
+
+**Scope violation:** 0.
+
+**Security violation:** 0.
+
+**Causal overclaim:** 0.
+
+**What is proven:** the canonical spec-closure live workflow now validates the exact current Product and current GREEN certification receipts rather than the superseded PAIR/SPAN candidate.
+
+**What remains:** bounded provider-budget contract, then exactly one A3 original paid proof.
+
+**30-case readiness:** NOT READY.
+
+**NEXT LEGAL ACTION:** audit the immutable A3 provider receipt and set a bounded development-proof ceiling no greater than 16, without relaxing semantic validation or enabling uncontrolled retries.
