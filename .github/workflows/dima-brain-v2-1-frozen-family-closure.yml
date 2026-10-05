@@ -8,6 +8,11 @@ on:
       - ".github/workflows/dima-brain-v2-1-frozen-family-closure.yml"
       - "backend/tests/semantic_spec/frozen_family_closure.py"
       - "backend/tests/semantic_spec/**"
+      - "backend/tests/test_v3_analytical_boundary.py"
+      - "backend/tests/test_v3_selection_binding.py"
+      - "backend/tests/test_v3_v1_analytical_grammar.py"
+      - "backend/tests/test_v3_v1_completion_ledger.py"
+      - "backend/tests/test_v3_product_composition.py"
       - "backend/tests/test_v3_brain_v2_semantic_conformance.py"
       - "backend/tests/test_v3_brain_v2_semantic_saturation_wave_b.py"
       - "backend/tests/test_v3_brain_v2_adaptive_material_delta.py"
@@ -77,6 +82,11 @@ jobs:
         working-directory: backend
         run: |
           pytest -q \
+            tests/test_v3_analytical_boundary.py \
+            tests/test_v3_selection_binding.py \
+            tests/test_v3_v1_analytical_grammar.py \
+            tests/test_v3_v1_completion_ledger.py \
+            tests/test_v3_product_composition.py \
             tests/test_v3_brain_v2_semantic_conformance.py \
             tests/test_v3_brain_v2_semantic_saturation_wave_b.py \
             tests/test_v3_brain_v2_adaptive_material_delta.py \
