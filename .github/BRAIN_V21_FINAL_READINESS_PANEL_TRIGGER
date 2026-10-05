@@ -1,0 +1,9 @@
+DIMA Brain V2.1 final readiness panel
+triggered_at: 2026-10-05
+semantic_product_sha: b4bf7a43326a4c690c48c507d47625edb37ac8f0
+engine_sha: 4c49b8da6b424b0fa4d8ef340ca1b238d12980c1
+engine_digest: sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d
+provider_free_phase6: GREEN
+panel_harness_preflight_run: 37329849743
+broad_30_case: CLOSED
+frontend: NOT_AUTHORIZED
