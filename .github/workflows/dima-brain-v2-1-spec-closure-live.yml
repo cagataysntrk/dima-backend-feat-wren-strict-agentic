@@ -20,7 +20,7 @@ env:
   MB_RESTRICTED_EMAIL: restricted@brain-v21-recovery.local
   MB_RESTRICTED_GROUP: Dima Brain V2.1 Recovery Restricted
   PROVIDER_PROXY_PORT: "8799"
-  HARD_PROVIDER_REQUEST_CEILING: "10"
+  HARD_PROVIDER_REQUEST_CEILING: "16"
   PROMPT_TOKEN_CEILING: "350000"
   COMPLETION_TOKEN_CEILING: "30000"
   REASONING_TOKEN_CEILING: "25000"
@@ -292,11 +292,11 @@ jobs:
             --listen-host 0.0.0.0 \
             --listen-port "$PROVIDER_PROXY_PORT" \
             --ceiling "$HARD_PROVIDER_REQUEST_CEILING" \
-            --source-ceiling research_intake=60 \
-            --source-ceiling metabase=260 \
-            --source-ceiling p17_manager=30 \
-            --source-ceiling p18_manager=40 \
-            --source-ceiling p19_manager=60 \
+            --source-ceiling research_intake=1 \
+            --source-ceiling metabase=15 \
+            --source-ceiling p17_manager=0 \
+            --source-ceiling p18_manager=0 \
+            --source-ceiling p19_manager=0 \
             --prompt-token-ceiling "$PROMPT_TOKEN_CEILING" \
             --completion-token-ceiling "$COMPLETION_TOKEN_CEILING" \
             --reasoning-token-ceiling "$REASONING_TOKEN_CEILING" \
