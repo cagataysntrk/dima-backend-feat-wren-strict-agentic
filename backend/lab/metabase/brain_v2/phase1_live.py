@@ -928,6 +928,64 @@ def main() -> int:
                 current_user_input=question,
             )
             first_state = service.run(initial)
+            durable_wait_resume_attempts: list[dict[str, Any]] = []
+            # Explicitly resume retryable observation waits. Each resume is one
+            # bounded action on the same checkpointed thread; there is no
+            # internal busy-loop and no new user turn. Reconstructing the
+            # service exercises the durable-checkpointer boundary.
+            for attempt in range(1, 3):
+                if (
+                    first_state.workflow_status != BrainWorkflowStatus.WAITING
+                    or first_state.last_completed_node
+                    not in {"MATERIAL_GROUP_WAITING", "MATERIAL_WAITING"}
+                ):
+                    break
+                before_links = _links(
+                    db_engine,
+                    first_state.research_session_id,
+                )
+                before_provider = dict(budget.by_owner)
+                time.sleep(1.0)
+                service = BrainV2Service(
+                    activities=activities,
+                    checkpointer=checkpointer,
+                )
+                resumed_state = service.resume_waiting(
+                    thread_id=first_state.thread_id,
+                    tenant_binding=first_state.tenant_binding,
+                    principal_ref=first_state.principal_ref,
+                )
+                after_links = _links(
+                    db_engine,
+                    resumed_state.research_session_id,
+                )
+                durable_wait_resume_attempts.append(
+                    {
+                        "attempt": attempt,
+                        "thread_id": resumed_state.thread_id,
+                        "research_session_id": resumed_state.research_session_id,
+                        "scope_version_id": resumed_state.scope_version_id,
+                        "before_status": first_state.workflow_status.value,
+                        "before_last_node": first_state.last_completed_node,
+                        "after_status": resumed_state.workflow_status.value,
+                        "after_last_node": resumed_state.last_completed_node,
+                        "before_occurrences": _native_occurrence_projection(
+                            before_links
+                        ),
+                        "after_occurrences": _native_occurrence_projection(
+                            after_links
+                        ),
+                        "provider_delta_by_owner": {
+                            owner: int(budget.by_owner.get(owner, 0))
+                            - int(before_provider.get(owner, 0))
+                            for owner in set(
+                                (*before_provider.keys(), *budget.by_owner.keys())
+                            )
+                        },
+                    }
+                )
+                first_state = resumed_state
+            report["durable_wait_resume_attempts"] = durable_wait_resume_attempts
             first_checkpointed = service.state(thread_id=first_state.thread_id)
             first_checkpoint_roundtrip = (
                 first_checkpointed is not None
