@@ -1378,6 +1378,12 @@ class ResearchIntakeCompiler:
           analytical authority; P17/P19 already own the evidence/hypothesis
           treatment inside that governed causal investigation.
 
+        A remaining distinct OTHER with governed metric material is legacy typed
+        transport, not an open-ended semantic family. Canonicalize only from
+        catalog kinds: metric + dimension -> BREAKDOWN, metric-only ->
+        PERFORMANCE/OBSERVE. A shape with no governed metric remains OTHER and
+        the closed V1 grammar rejects it.
+
         Typed RELATIONSHIP/RANKING/TREND/etc., distinct refs/scope, and real
         multi-intent are never collapsed by this rule. No wording, regex,
         similarity or benchmark identity participates in the decision.
@@ -1505,6 +1511,43 @@ class ResearchIntakeCompiler:
             )
             if represented_by_deliverable or subsumed_by_one_root:
                 continue
+
+            if not has_distinct_analytical_surface and refs:
+                catalog_by_id = {
+                    item.candidate_id: item
+                    for item in catalog.semantic_refs
+                }
+                metric_refs = tuple(
+                    ref_id
+                    for ref_id in refs
+                    if (
+                        (ref := catalog_by_id.get(ref_id)) is not None
+                        and ref.target_kind
+                        in {SemanticTargetKind.METRIC, SemanticTargetKind.KPI}
+                    )
+                )
+                dimension_refs = tuple(
+                    ref_id
+                    for ref_id in refs
+                    if (
+                        (ref := catalog_by_id.get(ref_id)) is not None
+                        and ref.target_kind == SemanticTargetKind.DIMENSION
+                    )
+                )
+                if metric_refs:
+                    canonical.append(
+                        goal.model_copy(
+                            update={
+                                "kind": (
+                                    ResearchGoalKind.BREAKDOWN
+                                    if dimension_refs
+                                    else ResearchGoalKind.PERFORMANCE
+                                )
+                            }
+                        )
+                    )
+                    continue
+
             canonical.append(goal)
 
         if len(canonical) == len(draft.goals):
