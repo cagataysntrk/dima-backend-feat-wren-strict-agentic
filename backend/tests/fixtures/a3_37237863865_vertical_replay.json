@@ -469,7 +469,10 @@
         "2026-06-01T00:00:00Z",
         1625
       ]
-    ]
+    ],
+    "status": "VERIFIED",
+    "receipt_id": "dqr_2930fd7c887125390680795e",
+    "evidence_id": "evi_e235b1bfbe327943ed5e0a83"
   },
   "ranking_occurrence": {
     "execution_link_id": "360c6dd6-2431-466f-ac56-d9185f29d11e",
@@ -527,7 +530,8 @@
       "database_id": 1,
       "row_count": 5,
       "status": "completed"
-    }
+    },
+    "source_status": "EXECUTED"
   },
   "expected": {
     "selected_entity": "Assembly",
