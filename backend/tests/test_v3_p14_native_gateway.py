@@ -2713,7 +2713,7 @@ def test_direct_native_result_seals_one_research_receipt_without_resource_or_ope
     assert outcome.receipt.native_query_id == "native-query-1"
     assert outcome.receipt.canonical_query_fingerprint == h(query)
     assert outcome.receipt.resource_entity_ids == ()
-    assert outcome.attestation_id is None
+    assert outcome.attestation_id == "att-p14-test"
     assert outcome.evidence.verified
     assert outcome.evidence.payload["material_observation_schema"] == (
         "dima_native_material_observation_v1"
