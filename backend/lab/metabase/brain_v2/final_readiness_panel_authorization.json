@@ -36,5 +36,5 @@
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
   "frontend_allowed": false,
-  "note": "DISARMED after supervisor-exception final panel 37348187000 stopped at S3 CHANGE_DEPENDENT_DRILLDOWN_V1 with PINPOINT_ORCHESTRATION_BOUNDARY_BUDGET_EXHAUSTED (metabot would exceed unchanged 12-unit live ceiling). S1/S2 were GREEN; S4-S9 were cancelled by fail-fast. Supervisor exception forbids provider-budget/prompt/Metabot/engine/grammar changes and forbids another fix round. Broad paid, 30-case, and frontend remain CLOSED. Architecture reassessment / new supervisor decision required."
+  "note": "DISARMED. Harness 12-unit correctness coupling was removed without touching frozen Product e257a475.... S3-only diagnostic 37353003472 then ran naturally under unchanged hard provider/source/token/cost caps: no exception or safety runaway, but Product remained MATERIAL_GROUP_WAITING with one parent occurrence EXECUTED and not VERIFIED, no Evidence, no SelectionBinding and no child drilldown. Existing rubric = 2/4 PARTIAL (<3/4). Therefore the supervisor condition for a full nine-sentinel panel was not met. Full panel, broad paid, 30-case and frontend remain CLOSED; architecture reassessment is open and Product changes require a new supervisor decision."
 }
