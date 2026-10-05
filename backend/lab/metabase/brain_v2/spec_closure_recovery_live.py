@@ -237,7 +237,7 @@ def _case_runtime(
         "epistemics": epistemics,
         "reports": reports,
         "relationships": relationships,
-        "budget": tracker,
+        "efficiency_tracker": tracker,
         "transports": (raw_intake, raw_p17, raw_p18, raw_p19),
         "principal": current_principal,
     }
@@ -523,7 +523,7 @@ def _run_case(
         "kind": case["kind"],
         "question": case["question"],
         "expected": case.get("expected", {}),
-        "legacy_case_model_call_ceiling": case.get("max_model_calls"),
+        "orchestration_efficiency": runtime["efficiency_tracker"].receipt(),
         "turn_count_expected": len(turns),
         "turn_count_executed": len(turn_records),
         "turns": turn_records,
