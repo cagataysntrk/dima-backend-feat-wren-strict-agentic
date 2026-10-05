@@ -6627,3 +6627,114 @@ CLOSER
 
 NEXT LEGAL ACTION:
 Complete Phase 5 closed V1 transition grammar; no benchmark vocabulary and no query-planning authority.
+
+
+---
+
+### ACCELERATION PHASE 3 — SELECTION BINDING V1
+
+PHASE:
+3 — COLLAPSE RESULT-DEPENDENCY INTO SelectionBindingV1
+
+STATUS: GREEN
+
+Product SHA:
+`f9cb04375de9ec1572a287a0ef7123f837aa992e`
+
+Engine SHA/tag/digest:
+`4c49b8da6b424b0fa4d8ef340ca1b238d12980c1` / `0.63.18-dima.11.1` / `sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d`
+
+Objective:
+Replace the proliferated parent-result continuation path with one durable, source-backed selection primitive that can be consumed by a child material request without replaying or reinterpreting the parent analytics.
+
+Architecture owner:
+- parent analytical truth remains the VERIFIED parent execution/result;
+- `SelectionBindingV1` owns only durable selection identity;
+- accepted Research scope remains immutable authority;
+- child execution receives the selected entity only as an execution-local source-backed filter;
+- Metabase remains query cognition / execution authority.
+
+Files changed:
+- `backend/app/v3/research_result_dependency.py`
+- `backend/app/v3/research_native_gateway.py`
+- `backend/app/v3/research_product.py`
+- `backend/tests/test_v3_selection_binding.py`
+- `backend/tests/test_v3_brain_v2_a3_vertical_replay.py`
+- `backend/tests/test_v3_p14_product.py`
+- `.github/workflows/dima-brain-v2-phase1-provider-free.yml`
+
+Old representation removed/deprecated:
+- runtime child material resolution is redirected through `resolve_selection_binding_v1`;
+- the lower-level `resolve_first_ranked_entity` remains only as an internal compatibility projection used by the V1 resolver, not as a competing runtime authority;
+- no parent replay, natural-language re-inference, CHANGE recomputation, or ranking recomputation is legal in the child path.
+
+Canonical semantic authority after this phase:
+`ResearchQuestion.result_dependency` declares dependency intent; the exact VERIFIED parent result plus `SelectionBindingV1` supplies selected entity identity; `ResearchScope` continues to own accepted scope/currentness.
+
+Provider-free runs:
+- `37309053604` — Phase-1 aggregate — GREEN
+- `37309053553` — semantic conformance + Wave A/B + mutation surface — GREEN
+- `37309053575` — frozen-family closure — GREEN
+- `37309053722` — focused Brain V2 provider-free — GREEN
+- earlier SelectionBinding-specific aggregate `37307251211` — GREEN
+
+Paid runs:
+0 new. Broad paid remains OFF. 30-case remains CLOSED.
+
+Manual quality score:
+N/A — deterministic architecture phase.
+
+Provider requests:
+0
+
+Tokens:
+0
+
+Latency:
+provider-free only; CI timing is operational evidence, not Product quality.
+
+Cost:
+$0 provider cost.
+
+First invalid boundary:
+Closed currentness gap at `ResearchAskOrchestrator.run_next -> ResearchSessionStore.assert_lineage_head`. A superseded scope now fails before Metabot/native work.
+
+New semantic family discovered:
+NO
+
+Exception:
+0 new
+
+Silent wrong:
+0
+
+Security:
+0
+
+Causal overclaim:
+0
+
+Duplicate native:
+0
+
+What is proven:
+- frozen A3 comparison is VERIFIED;
+- frozen A3 CHANGE ranking is VERIFIED;
+- `SelectionBindingV1.selected_value == Assembly`;
+- child filter is exactly `department = Assembly`;
+- accepted scope identity/fingerprint remain unchanged;
+- parent result bytes remain unchanged during selection;
+- selection does not replay native work or recompute ranking/CHANGE;
+- generic LEVEL/CHANGE, ASC/DESC, TOP_1/TOP_K siblings are covered;
+- missing parent row and wrong parent result hash fail closed;
+- stale scope now fails before any fresh native side-effect;
+- child material group remains READY after its dependencies terminalize.
+
+What remains:
+Phase 4 completion/presentation collapse, Phase 5 closed V1 grammar, Phase 6 full provider-free recertification, freeze, and one same-SHA 9-capability sentinel panel.
+
+30-case readiness:
+CLOSER
+
+NEXT LEGAL ACTION:
+Audit and seal Phase 4 against the existing canonical Completion Ledger and P20 publication-only boundary. Do not refactor P20 if the four Phase-4 gates are already proven.
