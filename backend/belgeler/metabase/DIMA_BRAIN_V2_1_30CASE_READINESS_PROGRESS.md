@@ -7865,3 +7865,167 @@ CLOSER — FINAL PANEL REQUIRED.
 
 NEXT LEGAL ACTION:
 Authorize and run exactly one final same-SHA S1-S9 panel on Product \`e257a475...\` under the unchanged certified engine and Luna topology. If acceptance passes (>=34/36, every case >=3/4, >=7 FULL, zero exception/silent-wrong/security/causal-overclaim/duplicate-native), seal \`30-CASE READY = YES\` and STOP. Otherwise STOP without another fix round.
+
+
+---
+
+### SUPERVISOR EXCEPTION — FINAL PANEL STOP / ARCHITECTURE REASSESSMENT
+
+PHASE:
+SUPERVISOR EXCEPTION — FINAL SAME-SHA PANEL
+
+STATUS: RED / STOP — S3 HIT THE EXISTING 12-UNIT LIVE ORCHESTRATION CEILING; PANEL DID NOT COMPLETE
+
+Product semantic SHA:
+\`e257a4754487ec4ac7bfe9fa93966e5ac4a5d1ea\`
+
+Panel checkout SHA:
+\`5cb269f91524c0dfd76db658dcb0b34e5b8130a2\` — test/lab/docs/ops only above the frozen semantic Product.
+
+Engine SHA/tag/digest:
+\`4c49b8da6b424b0fa4d8ef340ca1b238d12980c1\` / \`0.63.18-dima.11.1\` / \`sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d\`
+
+Objective:
+Run the one supervisor-authorized final nine-sentinel panel on the new durable-resume Product without changing engine, prompt, grammar, provider budget, Metabot, or model topology.
+
+Architecture owner:
+No Product owner change during adjudication. The final blocking event occurred in the live certification guard \`OrchestrationBudget\` before S3 could reach a terminal Product state. The guard counts structured cognition/material-execution boundary units and is hard-bounded to 12 in the current harness.
+
+Files changed:
+No Product semantic code during the final panel.
+
+Canonical semantic authority after this phase:
+Unchanged / frozen at Product \`e257a475...\`.
+
+Provider-free runs before panel:
+- focused Brain V2: \`37347542415\` — GREEN
+- Phase-1 aggregate: \`37347542513\` — GREEN
+- Phase-2/headless: \`37347542482\` — GREEN
+- semantic conformance + Wave A/B + mutation canaries: \`37347543030\` — GREEN
+- frozen-family closure: \`37347542511\` — GREEN
+
+Paid run:
+\`37348187000\`
+
+Observed panel sequence:
+- S1 DIRECT_ANALYTICS_V1 — completed SUCCESS; mechanical GREEN.
+  - provider requests: 3
+  - prompt tokens: 37,866
+  - completion tokens: 680
+  - reasoning tokens: 125
+  - latency: 10,117 ms
+  - provider-reported cost: $0.00876681
+  - native: 1 VERIFIED
+  - duplicate native: 0
+- S2 TEMPORAL_COMPARISON_V1 — completed SUCCESS; mechanical GREEN.
+  - provider requests: 4
+  - prompt tokens: 55,594
+  - completion tokens: 1,229
+  - reasoning tokens: 465
+  - latency: 16,134 ms
+  - provider-reported cost: $0.00725577
+  - native: 1 VERIFIED
+  - temporal projection regression remained closed.
+- S3 CHANGE_DEPENDENT_DRILLDOWN_V1 — live probe process produced an exception artifact; job failed at catastrophic artifact-integrity enforcement.
+  - exception: \`PinpointBudgetExceeded\`
+  - error code: \`PINPOINT_ORCHESTRATION_BOUNDARY_BUDGET_EXHAUSTED\`
+  - detail: \`metabot would exceed the 12-unit live ceiling\`
+  - latency before stop: 37,564 ms
+  - no terminal \`brain_state\`, native-occurrence adjudication, SelectionBinding, or dependent-child result was produced for acceptance.
+- S4-S9 — cancelled by matrix fail-fast after the S3 job-level failure.
+
+Important classification:
+This run does NOT prove that the durable WAITING/resume Product contract failed. The run stopped before a usable terminal S3 state because the unchanged live orchestration boundary guard fired. It also does NOT prove the final Product passes, because acceptance requires a complete panel and \`exception = 0\`.
+
+The guard:
+- \`OrchestrationBudget\` has maximum 12 units.
+- each bounded structured cognition call consumes one unit;
+- each bounded material executor call consumes one \`metabot\` unit;
+- S3 attempted a further Metabot material boundary after the live budget was already exhausted.
+- runtime logs show Metabot required multiple internal query-construction iterations, including an intermediate rejected construct using unavailable column name \`metric\`, before producing a query.
+- engine, prompt, Metabot, model, provider budget and this live ceiling were not changed.
+
+Manual quality score:
+No valid 9-case aggregate can be issued from this run.
+S1 and S2 are FULL/4-quality candidates from their artifacts; S3 is an exception, not a 0–4 terminal Product-quality artifact; S4-S9 have no same-run result.
+
+Provider requests:
+Known:
+- S1 = 3
+- S2 = 4
+S3 provider receipt was not available in the adjudication artifact because the orchestration guard raised before final receipt projection.
+
+Tokens:
+Known:
+- S1 prompt/completion/reasoning = 37,866 / 680 / 125
+- S2 prompt/completion/reasoning = 55,594 / 1,229 / 465
+No valid panel aggregate.
+
+Latency:
+Known:
+- S1 = 10,117 ms
+- S2 = 16,134 ms
+- S3 stop = 37,564 ms
+
+Cost:
+Known:
+- S1 = $0.00876681
+- S2 = $0.00725577
+No valid panel aggregate.
+
+First invalid boundary:
+Final certification panel:
+\`S3 native-query cognition/material acquisition -> live OrchestrationBudget.consume("metabot") -> PINPOINT_ORCHESTRATION_BOUNDARY_BUDGET_EXHAUSTED\`.
+
+This is distinct from the prior WAITING/resume lifecycle defect. The durable-resume lifecycle itself is provider-free GREEN and fully recertified.
+
+New semantic family discovered:
+NO semantic family was discovered by the available artifact. The panel was stopped by a bounded live cognition/execution guard before semantic task completion could be adjudicated.
+
+Exception:
+1 — S3 \`PINPOINT_ORCHESTRATION_BOUNDARY_BUDGET_EXHAUSTED\`.
+
+Silent wrong:
+0 observed.
+
+Security:
+0 observed.
+
+Causal overclaim:
+0 observed.
+
+Duplicate native:
+0 observed in completed S1/S2. S3 did not produce a terminal occurrence projection.
+
+Acceptance:
+- complete same-SHA 9-case panel: FAIL
+- >=34/36: NOT ADJUDICABLE
+- every case >=3/4: NOT ADJUDICABLE
+- >=7 FULL: NOT ADJUDICABLE
+- exception = 0: FAIL
+- silent wrong = 0: no violation observed
+- security violation = 0: no violation observed
+- causal overclaim = 0: no violation observed
+- duplicate native = 0: no violation observed in completed artifacts
+
+What is proven:
+- the supervisor-exception durable WAITING/resume lifecycle is provider-free GREEN across in-memory, Postgres process-reconstruction, owner-level occurrence-reuse, full Phase-1, Phase-2/headless, holdout/mutation and frozen-family gates;
+- S1 and S2 remain live GREEN on the new frozen Product;
+- engine/model/grammar/prompt/provider-budget constraints stayed unchanged;
+- the final paid panel did not pass because S3 exhausted the pre-existing 12-unit live orchestration guard before final Product adjudication.
+
+What remains:
+Architecture reassessment only. The supervisor exception explicitly states that if this final panel does not meet acceptance, no new fix round is allowed.
+
+30-case readiness:
+NO — NOT READY.
+
+Paid authorization:
+OFF after this run.
+Broad paid = OFF.
+30-case = CLOSED.
+Frontend = NOT AUTHORIZED.
+
+NEXT LEGAL ACTION:
+STOP. Do not patch Product, prompt, Metabot, engine, grammar, provider budget, live budget, or workflow in order to rescue this panel. Do not rerun S3 or the 9-case panel hoping for luck. A new supervisor decision is required to define the architectural response to S3's bounded-cognition/live-budget exhaustion. Until then:
+\`30-CASE READY = NO\`.
