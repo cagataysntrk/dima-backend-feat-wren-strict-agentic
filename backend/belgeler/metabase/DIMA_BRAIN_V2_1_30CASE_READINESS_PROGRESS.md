@@ -47,6 +47,7 @@ This block is the current orientation. Older PHASE sections below are historical
 - Current first unproven boundary: live A3 original quality on Product `957fea98...`.
 - Next legal action: execute exactly one A3 original on Product `957fea98...`, require `4/4 FULL`, then one semantic sibling `4/4 FULL`. Only then may Phase 4 begin.
 - Operational blocker: the canonical spec-closure workflow still hard-pins prior Product `447847e4...`; the connected safe GitHub write surface currently rejects workflow-file modification. Do not bypass this by low-level Git-object writes. No alternate workflow may be treated as qualifying evidence unless it preserves the same frozen Product, engine, one-case authorization, provider ceilings, artifact integrity and manual 4/4 adjudication.
+- Alternate-live audit: `dima-brain-v2-phase1-live.yml` is not a qualifying substitute. It triggers only `feat/dima-brain-v2` / `feat/dima-brain-v2-1-discovery-simplification`, exposes a fixed probe set that does not include A3/F06_M, and caps Metabase source calls at 7 whereas the latest A3 original required 9 Metabase calls. Reusing it would change the test contract rather than prove the recovered A3 law.
 
 ---
 
