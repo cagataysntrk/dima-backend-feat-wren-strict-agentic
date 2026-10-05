@@ -1021,13 +1021,11 @@ class NativeResearchMaterialExecutor:
                 contract=contract,
                 result_payload=result_payload,
                 bindings=coverage_bindings,
-                # _observe_scope above proved exact occurrence identity,
-                # engine/subject/resource safety and captured native material
-                # facts. It no longer owns ranking business-meaning
-                # compatibility; that decision belongs to the canonical V1
-                # fulfillment verifier below. Result coverage may rely on the
-                # fact that native material was observed, but cannot promote a
-                # semantic mismatch into Evidence.
+                # _observe_scope above already proved the exact persisted
+                # occurrence against accepted native material semantics.
+                # Result coverage may therefore accept a derived CHANGE
+                # projection that no longer repeats the intermediate time
+                # column; this is proof propagation, not relaxed planning.
                 attested_native_material=True,
             )
         except ResearchMaterialCoverageError as exc:
