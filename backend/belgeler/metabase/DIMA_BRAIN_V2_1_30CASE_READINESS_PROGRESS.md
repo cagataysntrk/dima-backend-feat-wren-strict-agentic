@@ -8821,3 +8821,99 @@ STOP. No more pre-30-case perfection loop. Only after explicit user authorizatio
 
 Seal:
 `30-CASE EXECUTION READY = YES`
+
+
+---
+
+### ACTUAL FROZEN 30-CASE — FINAL QUALITY RECEIPT
+
+DATE:
+2026-10-06
+
+STATUS:
+COMPLETE / ADJUDICATED / PAID CLOSED
+
+Frozen identity:
+- Product: `ae4e0348601774082b0270f23d6de126e71e6055`
+- engine: `686671fa7e55f715e4fb5ac155f9e66019fd12d8`
+- release: `0.63.18-dima.11.2`
+- runtime: `v0.63.18-dima.11.2.1`
+- digest: `sha256:fe1b6fb67be6dbadea1af5d415f3ba2e033d46f91289f5c3c9844bee20c379bd`
+
+Execution:
+- run: `37470794678`
+- job: `112293435226`
+- benchmark checkout: `dc9aefb30ec1a8261ff5e73e99a9efa28c948238`
+- artifact: `11417995791`
+- artifact digest: `sha256:762fa89d79d6b796d95cb73a0bbacf2d84c50b267dbf8ec308863775601cce74`
+- 30/30 cases completed
+- workflow SUCCESS
+- raw harness PASS = 14/30
+
+Fair manual Product quality under the unchanged original Round-2 rubric:
+
+`68.25 / 100`
+
+Difficulty:
+- Simple = `87.5`
+- Medium = `77.5`
+- Hard = `55.0`
+
+Feature scores:
+- F01 = `50.0`
+- F02 = `100.0`
+- F03 = `50.0`
+- F04 = `80.0`
+- F05 = `80.0`
+- F06 = `37.5`
+- F07 = `75.0`
+- F08 = `50.0`
+- F09 = `100.0`
+- F10 = `60.0`
+
+Efficiency:
+- provider requests = `132`
+- prompt tokens = `1,740,602`
+- completion tokens = `38,669`
+- reasoning tokens = `8,134`
+- provider cost = `$0.24467439`
+- mean case latency = `19.633s`
+- median = `18.894s`
+- p90 = `40.226s`
+- max = `47.325s`
+- duplicate native = `0`
+- stale Evidence = `0`
+- blocked provider requests = `0`
+
+Proof:
+- `90+ PROVEN = NO`
+- `80+ PROVEN = NO`
+
+Compared with the prior broad `60.5` receipt, quality improved by `+7.75` points.
+
+Dominant remaining broad families:
+1. Intake comparison / temporal ownership — F01_H, F03_H.
+2. Adaptive investigation closure — F06_S/M/H.
+3. Reporting / synthesis coverage — F04_M/H, F08_S/M/H.
+4. Multi-turn scope/currentness continuation — F10_M/H.
+
+Closed/strong surfaces:
+- F02 ranking = 100.
+- F09 unsupported/clarification safety = 100.
+- F10_S scope repair = 4/4.
+- duplicate native = 0.
+- stale Evidence = 0.
+
+Canonical manual adjudication:
+`backend/belgeler/metabase/DIMA_BRAIN_V2_1_ROUND2_FINAL_ADJUDICATION_2026-10-06.md`
+
+Authorization after corpus:
+- actual 30-case OFF
+- broad paid OFF
+- automatic retry OFF
+- final sentinel OFF
+- S3 diagnostic OFF
+- frontend NOT AUTHORIZED
+
+NEXT LEGAL ACTION:
+STOP. Do not rerun the 30-case and do not open thirty case-level fixes. Any recovery cycle requires a separate user decision and must begin from the four corpus-level architecture families above.
