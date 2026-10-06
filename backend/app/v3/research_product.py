@@ -453,11 +453,11 @@ class ResearchBriefAuthoritySealer:
                         "or advance exactly one version for a real ScopeMutation"
                     ),
                 )
-            if same_scope and brief.scope != prior_brief.scope:
-                # Fingerprint equivalence intentionally ignores presentation
-                # ordering/wording, but the sealed scope snapshot must remain
-                # byte-for-byte immutable on a SAME_SCOPE_CONTINUATION.
-                brief = brief.model_copy(update={"scope": prior_brief.scope})
+            if same_scope and brief.scope.scope_version != prior_scope:
+                raise ResearchProductError(
+                    "P14_SCOPE_VERSION_MISMATCH",
+                    "same-scope continuation changed ScopeVersion identity",
+                )
             lineage_id = prior_session.lineage_id
             authority_version = prior_session.authority_revision + 1
             supersedes = prior_session.authority_id
