@@ -183,7 +183,14 @@ class ReportStatement(Frozen):
         return self
 
 class ReportDraft(Frozen):
-    research_session_id: str = Field(pattern='^rs_[a-f0-9]{24}
+    research_session_id: str = Field(pattern='^rs_[a-f0-9]{24}$')
+    report_key: str = Field(min_length=1, max_length=160)
+    coverage: tuple[CoverageEntry, ...] = Field(min_length=1)
+    deliverable_coverage: tuple[DeliverableCoverageEntry, ...] = ()
+    statements: tuple[ReportStatement, ...] = ()
+    limitations: tuple[ReportLimitation, ...] = ()
+
+
 class ReportDocument(Frozen):
     report_id: str = Field(pattern='^p20r_[a-f0-9]{24}$')
     research_session_id: str = Field(pattern='^rs_[a-f0-9]{24}$')
