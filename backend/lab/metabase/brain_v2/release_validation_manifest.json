@@ -1,0 +1,99 @@
+{
+  "schema_version": "dima_brain_v2_1_release_validation_v1",
+  "status": "FROZEN",
+  "frozen_identity": {
+    "product_semantic_sha": "ae4e0348601774082b0270f23d6de126e71e6055",
+    "engine_sha": "a54a13be978985b58aa53b3ca70a6a51ecb3de3b",
+    "engine_release": "0.63.18-dima.11.2",
+    "engine_runtime_tag": "v0.63.18-dima.11.2.1",
+    "engine_digest": "sha256:34a3acec8d9cd8743c894f3ef4314b406eaeee08c67526328a55ed8e639be763",
+    "acceptance_baseline_backend_head": "5bbf02f9d088d1060ab5e388f41629337ef4e770",
+    "migration_head": "ff5b8e2c1a73",
+    "grammar_version": "dima_analytical_grammar_v1",
+    "analytical_intent_schema": "dima_analytical_intent_v1",
+    "execution_manifest_schema": "dima_analytical_execution_manifest_v1",
+    "selection_binding_schema": "dima_selection_binding_v1",
+    "model_topology": {
+      "dima_cognition": "openai/gpt-5.6-luna",
+      "metabot": "openrouter/openai/gpt-5.6-luna",
+      "cascade": "NONE"
+    }
+  },
+  "readiness": {
+    "thirty_case_execution_ready": true,
+    "ninety_plus_high_confidence_quality_ready": false,
+    "ninety_plus_proven": false,
+    "meaning": "A frozen Product+engine candidate exists; required provider-free closure and safety/currentness/dedup infrastructure are GREEN; the evaluation infrastructure is ready. This does not assert 90+ quality."
+  },
+  "provider_free_closure": {
+    "status": "GREEN",
+    "runs": {
+      "focused_brain_v2": 37391242111,
+      "phase2_headless": 37391242219,
+      "phase1_aggregate": 37391242264,
+      "frozen_family": 37391441309,
+      "semantic_conformance_wave_a_wave_b_mutation": 37391441484
+    }
+  },
+  "known_release_validation_risks": [
+    {
+      "id": "S3_CHANGE_DEPENDENT_DRILLDOWN",
+      "source_run": 37391843531,
+      "job_id": 112038501786,
+      "score": "2/4 PARTIAL",
+      "mechanical_verdict": "RED",
+      "hidden": false,
+      "release_blocking_for_90_plus_proof": true,
+      "known_state": {
+        "brain_workflow_status": "WAITING",
+        "last_completed_node": "MATERIAL_GROUP_WAITING",
+        "parent_obligation_state": "LIMITED",
+        "child_obligation_state": "READY",
+        "native_occurrence_status": "LIMITED",
+        "native_occurrence_count": 1,
+        "native_acquisitions": 0,
+        "verified_evidence_present": false,
+        "selection_binding_present": false,
+        "child_machine_drilldown_completed": false
+      },
+      "safety_observed": {
+        "exception_count": 0,
+        "blocked_provider_requests": 0,
+        "duplicate_native": 0,
+        "scope_current": true,
+        "p17_provider_calls": 0,
+        "p19_provider_calls": 0
+      },
+      "note": "This risk is accepted for release-validation execution readiness only. It is not a PASS and must remain visible in actual frozen 30-case adjudication."
+    }
+  ],
+  "authorization": {
+    "paid_broad": false,
+    "actual_frozen_30_case": false,
+    "final_sentinel": false,
+    "frontend": false,
+    "note": "Actual frozen 30-case execution requires separate explicit user authorization. No pre-30-case semantic or engine changes are authorized."
+  },
+  "actual_frozen_30_case_protocol": {
+    "required_identity_match": true,
+    "fail_fast": false,
+    "all_30_cases_must_complete": true,
+    "commits_or_fixes_during_run": false,
+    "raw_mechanical_and_manual_adjudication_separate": true,
+    "required_reporting": [
+      "per_case_score",
+      "per_family_score",
+      "exception",
+      "silent_wrong",
+      "security",
+      "causal_overclaim",
+      "duplicate_native"
+    ],
+    "proven_rule": {
+      "threshold_score": 90,
+      "safety_invariants_must_be_clean": true,
+      "on_pass": "90+ PROVEN = YES; specification-closure program closes; STOP.",
+      "on_fail": "Do not open broad fixes immediately. Adjudicate the full 30-case corpus first, extract a small set of true root architecture families, then wait for a separate user decision."
+    }
+  }
+}
