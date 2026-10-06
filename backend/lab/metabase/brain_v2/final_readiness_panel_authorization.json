@@ -1,17 +1,17 @@
 {
   "schema_version": "dima_brain_v2_1_final_readiness_panel_v1",
-  "enabled": false,
+  "enabled": true,
   "candidate_product_sha": "ae4e0348601774082b0270f23d6de126e71e6055",
   "provider_free_status": "GREEN",
-  "provider_free_phase1_run_id": 37347542513,
-  "provider_free_phase2_run_id": 37347542482,
-  "provider_free_semantic_run_id": 37347543030,
-  "provider_free_frozen_run_id": 37347542511,
-  "provider_free_focused_run_id": 37347542415,
-  "engine_sha": "a54a13be978985b58aa53b3ca70a6a51ecb3de3b",
+  "provider_free_phase1_run_id": 37461980584,
+  "provider_free_phase2_run_id": 37461980519,
+  "provider_free_semantic_run_id": 37461980396,
+  "provider_free_frozen_run_id": 37461980475,
+  "provider_free_focused_run_id": 37461980401,
+  "engine_sha": "686671fa7e55f715e4fb5ac155f9e66019fd12d8",
   "engine_release": "0.63.18-dima.11.2",
   "engine_runtime_tag": "v0.63.18-dima.11.2.1",
-  "engine_digest": "sha256:34a3acec8d9cd8743c894f3ef4314b406eaeee08c67526328a55ed8e639be763",
+  "engine_digest": "sha256:fe1b6fb67be6dbadea1af5d415f3ba2e033d46f91289f5c3c9844bee20c379bd",
   "migration_head": "ff5b8e2c1a73",
   "grammar_version": "dima_analytical_grammar_v1",
   "analytical_intent_schema": "dima_analytical_intent_v1",
@@ -36,5 +36,5 @@
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
   "frontend_allowed": false,
-  "note": "FINAL FREEZE. 30-CASE EXECUTION READY = YES means the frozen Product ae4e0348... + certified dima.11.2 candidate, provider-free closure, security/currentness/dedup invariants and evaluation infrastructure are technically ready for the actual frozen 30-case. It does NOT mean 90+ quality is proven. Known S3 risk remains 2/4 PARTIAL from run 37391843531 and is explicitly recorded in release_validation_manifest.json. 90+ HIGH-CONFIDENCE QUALITY READY is not declared; 90+ PROVEN = NO. Final sentinel/broad paid/actual 30-case/frontend authorization remain OFF. Actual 30-case requires separate explicit user permission."
+  "note": "FINAL RAPID CLOSURE: authorize exactly one fail-fast=false S1-S9 panel on frozen Product ae4e0348... + certified engine 686671fa... after full provider-free closure. No semantic changes or separate S3 canary. Acceptance is >=34/36, every case >=3/4, >=7 FULL and zero exception/silent-wrong/security/causal-overclaim/duplicate-native. 30-case remains separately unauthorized."
 }
