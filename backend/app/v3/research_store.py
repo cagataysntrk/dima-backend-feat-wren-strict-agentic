@@ -163,6 +163,7 @@ class ResearchSessionStore:
                 "scope currentness requires an immutable accepted ResearchBrief",
             )
         current_ordinal = session.accepted_brief.scope.scope_version.ordinal
+        current_revision = session.authority_revision
         peers: list[ResearchSession] = []
         with Session(self._engine) as db:
             records = tuple(
@@ -183,32 +184,35 @@ class ResearchSessionStore:
             if restored.lineage_id == session.lineage_id:
                 peers.append(restored)
 
-        ordinals = [
-            item.accepted_brief.scope.scope_version.ordinal
-            for item in peers
-            if item.accepted_brief is not None
-        ]
-        if not ordinals:
+        def head_key(item: ResearchSession) -> tuple[int, int]:
+            if item.accepted_brief is None:
+                return (0, 0)
+            return (
+                item.authority_revision,
+                item.accepted_brief.scope.scope_version.ordinal,
+            )
+
+        keys = [head_key(item) for item in peers if item.accepted_brief is not None]
+        if not keys:
             raise ResearchPersistenceError(
                 "P14_RESEARCH_SCOPE_LINEAGE_MISSING",
                 session.lineage_id,
             )
-        latest = max(ordinals)
-        if current_ordinal < latest:
+        latest_key = max(keys)
+        current_key = (current_revision, current_ordinal)
+        if current_key < latest_key:
             raise ResearchPersistenceError(
                 "P14_RESEARCH_SCOPE_SUPERSEDED",
                 (
-                    f"{session.session_id} is scope_v{current_ordinal}; "
-                    f"lineage head is scope_v{latest}"
+                    f"{session.session_id} is authority_r{current_revision}/"
+                    f"scope_v{current_ordinal}; lineage head is "
+                    f"authority_r{latest_key[0]}/scope_v{latest_key[1]}"
                 ),
             )
         heads = tuple(
             item
             for item in peers
-            if (
-                item.accepted_brief is not None
-                and item.accepted_brief.scope.scope_version.ordinal == latest
-            )
+            if item.accepted_brief is not None and head_key(item) == latest_key
         )
         if len({item.authority_id for item in heads}) != 1:
             raise ResearchPersistenceError(
