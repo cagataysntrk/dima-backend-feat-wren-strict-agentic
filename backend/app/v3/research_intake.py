@@ -95,6 +95,13 @@ class ResearchIntakeTerminal(StrEnum):
     UNSUPPORTED = "UNSUPPORTED"
 
 
+class TurnTransitionKind(StrEnum):
+    """Turn semantics are independent from ScopeVersion transitions."""
+
+    SCOPE_MUTATION = "SCOPE_MUTATION"
+    SAME_SCOPE_CONTINUATION = "SAME_SCOPE_CONTINUATION"
+
+
 class AllowedRelationship(Frozen):
     relationship_id: str = Field(min_length=1)
     left_semantic_id: str = Field(min_length=1)
@@ -506,6 +513,7 @@ class ResearchIntakeResult(Frozen):
     brief: ResearchBrief | None = None
     investigation_requirements: tuple[ProductInvestigationRequirement, ...] = ()
     scope_contract: TurnScopeContract | None = None
+    turn_transition: TurnTransitionKind | None = None
     clarification_question: str | None = None
     unsupported_reason: str | None = None
     catalog_fingerprint: str = Field(pattern=r"^[a-f0-9]{64}$")
@@ -520,10 +528,17 @@ class ResearchIntakeResult(Frozen):
             self.brief is not None
             or self.investigation_requirements
             or self.scope_contract is not None
+            or self.turn_transition is not None
         ):
             raise ValueError(
-                "non-READY result cannot carry ResearchBrief, scope contract, or product routing"
+                "non-READY result cannot carry ResearchBrief, scope contract, turn transition, or product routing"
             )
+        if self.turn_transition == TurnTransitionKind.SCOPE_MUTATION:
+            if self.scope_contract is None:
+                raise ValueError("SCOPE_MUTATION requires one scope contract")
+        elif self.turn_transition == TurnTransitionKind.SAME_SCOPE_CONTINUATION:
+            if self.scope_contract is not None:
+                raise ValueError("same-scope continuation cannot carry a scope mutation")
         return self
 
 
@@ -2865,6 +2880,11 @@ class ResearchIntakeCompiler:
             brief=brief,
             investigation_requirements=(),
             scope_contract=resolved.scope_contract,
+            turn_transition=(
+                TurnTransitionKind.SCOPE_MUTATION
+                if resolved.scope_contract is not None
+                else TurnTransitionKind.SAME_SCOPE_CONTINUATION
+            ),
             catalog_fingerprint=catalog.fingerprint,
             model_calls=self.call_count,
         )
@@ -2882,13 +2902,6 @@ class ResearchIntakeCompiler:
                 "INTAKE_QUESTION_REQUIRED",
                 "current user question is required",
             )
-        if prior_brief is not None:
-            return self._compile_followup_scope_patch(
-                current=current,
-                catalog=catalog,
-                prior_brief=prior_brief,
-            )
-
         def invoke_provider(
             *,
             instruction: str,
@@ -3926,6 +3939,15 @@ class ResearchIntakeCompiler:
             brief=brief,
             investigation_requirements=tuple(investigation_requirements),
             scope_contract=scope_contract,
+            turn_transition=(
+                TurnTransitionKind.SCOPE_MUTATION
+                if scope_contract is not None
+                else (
+                    TurnTransitionKind.SAME_SCOPE_CONTINUATION
+                    if prior_brief is not None
+                    else None
+                )
+            ),
             catalog_fingerprint=catalog.fingerprint,
             model_calls=calls,
         )
