@@ -36,5 +36,5 @@
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
   "frontend_allowed": false,
-  "note": "FINAL ACCEPTANCE PANEL NOT AUTHORIZED. Full dima.11.2 provider-free closure is GREEN, but mandatory S3 diagnostic 37391843531 failed the >=3/4 Product gate: one parent occurrence is LIMITED, VERIFIED Evidence/SelectionBinding/child drilldown are absent, native_acquisitions=0; exception/security/silent-wrong/duplicate safety remained clean. Directive requires STOP with no new fix. 90+ HIGH-CONFIDENCE READY = NO. 30-case remains CLOSED."
+  "note": "FINAL FREEZE. 30-CASE EXECUTION READY = YES means the frozen Product ae4e0348... + certified dima.11.2 candidate, provider-free closure, security/currentness/dedup invariants and evaluation infrastructure are technically ready for the actual frozen 30-case. It does NOT mean 90+ quality is proven. Known S3 risk remains 2/4 PARTIAL from run 37391843531 and is explicitly recorded in release_validation_manifest.json. 90+ HIGH-CONFIDENCE QUALITY READY is not declared; 90+ PROVEN = NO. Final sentinel/broad paid/actual 30-case/frontend authorization remain OFF. Actual 30-case requires separate explicit user permission."
 }
