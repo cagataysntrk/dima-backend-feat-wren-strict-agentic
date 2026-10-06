@@ -8666,3 +8666,95 @@ STOP.
 No new Product fix, semantic refactor, prompt/grammar/LangGraph/Metabot change, engine build, paid S3 retry, final panel retry, or “one more improvement” is authorized under the current final-acceptance directive.
 
 30-case requires separate explicit permission and is not reached by this sprint.
+
+
+---
+
+### FINAL FREEZE — 30-CASE EXECUTION READY
+
+DATE:
+2026-10-06
+
+STATUS:
+FROZEN / STOP
+
+Canonical Product semantics:
+`ae4e0348601774082b0270f23d6de126e71e6055`
+
+Certified engine:
+`a54a13be978985b58aa53b3ca70a6a51ecb3de3b`
+
+Release:
+`0.63.18-dima.11.2`
+
+Engine digest:
+`sha256:34a3acec8d9cd8743c894f3ef4314b406eaeee08c67526328a55ed8e639be763`
+
+Acceptance-baseline backend HEAD:
+`5bbf02f9d088d1060ab5e388f41629337ef4e770`
+
+Final provider-free closure:
+- focused Brain V2 `37391242111` — GREEN
+- Phase-2/headless `37391242219` — GREEN
+- Phase-1 aggregate `37391242264` — GREEN
+- frozen-family closure `37391441309` — GREEN
+- semantic conformance + Wave A/B + mutation `37391441484` — GREEN
+
+Readiness terminology:
+- `30-CASE EXECUTION READY = YES`
+- `90+ HIGH-CONFIDENCE QUALITY READY = NOT DECLARED`
+- `90+ PROVEN = NO`
+
+Meaning:
+The immutable Product+engine candidate, provider-free certification stack, security/currentness/dedup invariants and evaluation infrastructure are ready for the actual frozen 30-case. This statement is about execution/certification readiness, not quality proof.
+
+Known release-validation risk:
+S3 `CHANGE_DEPENDENT_DRILLDOWN_V1` remains `2/4 PARTIAL` from run `37391843531`.
+
+S3 is intentionally NOT marked PASS:
+- parent obligation = LIMITED
+- native occurrence = LIMITED
+- native acquisitions = 0
+- VERIFIED Evidence = absent
+- SelectionBinding = absent
+- child machine drilldown = incomplete
+- workflow = WAITING / MATERIAL_GROUP_WAITING
+
+Observed S3 safety:
+- exception = 0
+- blocked provider requests = 0
+- duplicate native = 0
+- scope current = yes
+- P17 provider calls = 0
+- P19 provider calls = 0
+
+Machine-readable release-validation record:
+`backend/lab/metabase/brain_v2/release_validation_manifest.json`
+
+Authorization:
+- final sentinel panel = OFF
+- broad paid = OFF
+- actual frozen 30-case = NOT AUTHORIZED
+- frontend = NOT AUTHORIZED
+
+Actual frozen 30-case may run only after separate explicit user permission.
+
+When authorized:
+- same frozen Product+engine identity only;
+- fail-fast = false;
+- all 30 cases complete;
+- no intermediate fix/commit;
+- mechanical and manual adjudication separate;
+- per-case and per-family scores;
+- exception, silent-wrong, security, causal-overclaim and duplicate-native separately reported.
+
+Proof rule:
+If frozen 30-case score is `>=90` and safety invariants are clean:
+`90+ PROVEN = YES`
+and the specification-closure program closes.
+
+If score is `<90`:
+do not immediately open another fix loop. First adjudicate the complete 30-case corpus and extract the small set of true root architecture families. Any implementation requires a separate user decision.
+
+NEXT LEGAL ACTION:
+STOP / FREEZE. Wait for explicit authorization to run the actual frozen 30-case.
