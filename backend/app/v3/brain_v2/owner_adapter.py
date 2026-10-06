@@ -71,6 +71,7 @@ from app.v3.research_intake import (
     ResearchIntakeCatalog,
     ResearchIntakeCompiler,
     ResearchIntakeTerminal,
+    TurnTransitionKind,
 )
 from app.v3.research_analytical_scope import analytical_scope_contract
 from app.v3.research_manager import (
@@ -639,8 +640,13 @@ class DimaBrainV2Activities(BrainActivities):
             owner="ResearchIntake",
             purpose=(
                 CognitionPurpose.REPAIR_SCOPE
-                if prior_brief is not None
-                else CognitionPurpose.INTERPRET_NEW_INTENT
+                if result.turn_transition == TurnTransitionKind.SCOPE_MUTATION
+                else (
+                    CognitionPurpose.CONTINUE_SAME_SCOPE
+                    if result.turn_transition
+                    == TurnTransitionKind.SAME_SCOPE_CONTINUATION
+                    else CognitionPurpose.INTERPRET_NEW_INTENT
+                )
             ),
             objective_id=objective_id,
             legal_profile_hash=self._catalog.fingerprint,
