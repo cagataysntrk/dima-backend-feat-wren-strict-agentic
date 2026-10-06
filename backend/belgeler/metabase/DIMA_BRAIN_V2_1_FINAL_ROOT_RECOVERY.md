@@ -204,3 +204,34 @@ The recovery uses standards and upstream architecture as design constraints, not
 As of this file's creation, branch HEAD equals the recovery baseline `505caec...`. No recovery Product patch has yet been applied.
 
 Next action: R1 thin semantic admission.
+
+
+## Recovery execution ledger — 2026-10-06
+
+Current candidate Product SHA at this checkpoint: `de4c03f288b62ffcad4aece57f0bebf102b381bd`.
+
+Implemented root changes:
+
+- R1 thin semantic admission: IMPLEMENTED. Closed V1 grammar no longer rejects an otherwise governed ResearchBrief; `OTHER` routes to governed `OBSERVE`.
+- R2 scope-level comparison/temporal authority: IMPLEMENTED. Goal-local comparison membership was removed; repeated identical frames coalesce; neutral material windows are not promoted to CHANGE; PAIR is not manufactured from chronology; Intake/ScopePatch/material/intent use the canonical temporal resolver/projection path.
+- R3 turn transition vs ScopeVersion: IMPLEMENTED. `SCOPE_MUTATION` and `SAME_SCOPE_CONTINUATION` are separate; same-scope turns preserve ScopeVersion and advance independent authority revision; currentness remains exact.
+- R4 adaptive authorization collapse: IMPLEMENTED. ROOT_CAUSE is sufficient bounded investigation authority; ordinary direct deepening still requires explicit FOLLOW_VERIFIED_MATERIAL; P17 remains sole NextTest designer; max adaptive reentries=2; P17 state is not consulted before P19 emits a NextTest.
+- R5 governed P20 synthesis: IMPLEMENTED. P20 has one bounded typed synthesis cognition seam, receives only governed publication-gated material, has no native/Metabase capability, cannot author numeric synthesis text, and degrades presentation to LIMITED when synthesis cannot be safely completed.
+- R6 deliverable-aware completion: IMPLEMENTED. `report_ref` existence is not fulfillment; current sealed report deliverable coverage is the completion authority.
+- R7 metamorphic anti-new-family closure: IN VALIDATION. 192 deterministic generated scenarios are wired as a mandatory provider-free gate. Semantic conformance + all 192 scenarios are GREEN in run `37525079655`; Wave A/B and mutation steps are still completing in that same run.
+
+Provider-free receipts already GREEN on candidate SHA `de4c03f...`:
+
+- focused Brain V2: run `37525079508` — GREEN.
+- frozen-family closure: run `37525079621` — GREEN.
+- semantic conformance core + 192 generated scenarios: run `37525079655` — GREEN through metamorphic receipt; saturation/mutation remainder pending at this checkpoint.
+
+Security/provenance status:
+
+- certified engine gitlink remains `686671fa7e55f715e4fb5ac155f9e66019fd12d8`;
+- no engine build was performed;
+- P17 discovery was not restored;
+- production boundary audits contain no benchmark-family IDs;
+- tenant/principal/currentness/Evidence lineage/native identity gates remain fail-closed.
+
+Paid validation remains BLOCKED until the entire provider-free closure, including Wave A/B and mutation canaries, is GREEN. The frozen 30-case corpus remains unauthorized and unexecuted.
