@@ -1858,20 +1858,22 @@ class DimaBrainV2Activities(BrainActivities):
             explicit_follow_verified_material=typed_adaptive_intent,
         )
         competing_set_available = len(snapshot.hypotheses) >= 2
-        investigation_snapshot = self._investigation.snapshot(
-            session_id=session.session_id,
-            principal=self._principal,
+        parent_verified = any(
+            item.obligation_id == goal.goal_id
+            and str(getattr(item.state, "value", item.state)) == "VERIFIED"
+            for item in session.obligations
         )
-        deterministic_capacity = discriminating_test_capacity_available(
-            snapshot=investigation_snapshot,
-            evidence_surface_available=bool(self._native_session_token),
-            target_obligation_id=goal.goal_id,
-        )
+        # This is only a cheap potential-capacity signal for P19 cognition.
+        # Do not touch P17/investigation state before P19 actually emits a
+        # typed NextTestRequest; final deterministic callability is checked
+        # below at the execution seam.
         discrimination_capacity = (
             competing_set_available
             and adaptive_authorized
             and state.adaptive_reentries < state.max_adaptive_reentries
-            and deterministic_capacity
+            and bool(self._native_session_token)
+            and parent_verified
+            and bool(state.evidence_ids)
         )
         key = self._cognition_key(
             state=state,
@@ -1955,6 +1957,11 @@ class DimaBrainV2Activities(BrainActivities):
             scope_lineage_id=session.lineage_id,
             scope_version_id=state.scope_version_id or "scope_v1",
         )
+        if request is not None:
+            investigation_snapshot = self._investigation.snapshot(
+                session_id=session.session_id,
+                principal=self._principal,
+            )
         if request is not None and not discriminating_test_is_callable(
             snapshot=investigation_snapshot,
             request=request,
