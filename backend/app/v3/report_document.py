@@ -1276,6 +1276,10 @@ class ReportClaimGate:
                         raise P20ReportError('P20_USER_MUST_LIMITATION_INVALID', f'{oid}:{lid}')
                     covered_limitation_ids.add(lid)
         for statement in approved:
+            if statement.statement_kind == ReportStatementKind.SYNTHESIS:
+                # Presentation synthesis is accounted by deliverable coverage,
+                # not by the upstream analytical-obligation coverage ledger.
+                continue
             for oid in statement.obligation_refs:
                 entry = coverage_map[oid]
                 if entry.coverage_status != CoverageStatus.REPRESENTED or statement.statement_id not in entry.statement_ids:
@@ -1318,6 +1322,29 @@ class ReportClaimGate:
                                 f'{requirement_id}:{limitation_id}',
                             )
                         covered_limitation_ids.add(limitation_id)
+
+            synthesis_statement_ids = {
+                item.statement_id
+                for item in approved
+                if item.statement_kind == ReportStatementKind.SYNTHESIS
+            }
+            synthesis_coverage_ids = {
+                statement_id
+                for entry in draft.deliverable_coverage
+                if entry.coverage_status
+                == DeliverableCoverageStatus.FULFILLED
+                for statement_id in entry.statement_ids
+                if (
+                    statement_id in approved_map
+                    and approved_map[statement_id].statement_kind
+                    == ReportStatementKind.SYNTHESIS
+                )
+            }
+            if synthesis_statement_ids != synthesis_coverage_ids:
+                raise P20ReportError(
+                    'P20_SYNTHESIS_NOT_ACCOUNTED',
+                    draft.report_key,
+                )
 
         referenced_limitations = covered_limitation_ids | {lid for statement in approved for lid in statement.limitation_refs}
         if referenced_limitations != set(limitation_map):
