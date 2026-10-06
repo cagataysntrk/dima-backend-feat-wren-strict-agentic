@@ -1,6 +1,6 @@
 {
   "schema_version": "dima_brain_v2_1_final_readiness_panel_v1",
-  "enabled": true,
+  "enabled": false,
   "candidate_product_sha": "ae4e0348601774082b0270f23d6de126e71e6055",
   "provider_free_status": "GREEN",
   "provider_free_phase1_run_id": 37461980584,
@@ -36,5 +36,5 @@
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
   "frontend_allowed": false,
-  "note": "FINAL RAPID CLOSURE: authorize exactly one fail-fast=false S1-S9 panel on frozen Product ae4e0348... + certified engine 686671fa... after full provider-free closure. No semantic changes or separate S3 canary. Acceptance is >=34/36, every case >=3/4, >=7 FULL and zero exception/silent-wrong/security/causal-overclaim/duplicate-native. 30-case remains separately unauthorized."
+  "note": "DISARMED after engine integration and provider-free recertification. Extra panel 37462642488 already completed (8 mechanical GREEN, S3 RED) and is recorded as a known non-proof quality observation. No more sentinel/S3 paid runs are authorized. 30-CASE EXECUTION READY = YES, but the actual frozen 30-case remains separately unauthorized."
 }
