@@ -1,5 +1,6 @@
 from lab.metabase.brain_v2.spec_closure_recovery_live import (
     _case_with_question_override,
+    _case_with_turns_override,
     _raw_harness_gate,
 )
 
@@ -70,3 +71,28 @@ def test_semantic_sibling_override_rejects_multiturn_rewrite() -> None:
         assert "one-turn" in str(exc)
     else:
         raise AssertionError("multi-turn sibling override must fail closed")
+
+
+def test_multiturn_recovery_sibling_override_is_eval_only() -> None:
+    frozen = {
+        "id": "F10_S",
+        "question": "turn one",
+        "turns": ["turn one", "scope mutation"],
+        "max_model_calls": 8,
+    }
+    sibling = _case_with_turns_override(
+        frozen,
+        (
+            "turn one",
+            "same scope report only; do not execute new analytics",
+        ),
+    )
+
+    assert frozen["turns"] == ["turn one", "scope mutation"]
+    assert sibling["id"] == "F10_S"
+    assert sibling["max_model_calls"] == 8
+    assert sibling["question"] == "turn one"
+    assert sibling["turns"] == [
+        "turn one",
+        "same scope report only; do not execute new analytics",
+    ]
