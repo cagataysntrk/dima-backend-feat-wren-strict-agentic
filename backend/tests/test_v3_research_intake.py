@@ -15,6 +15,7 @@ from app.v3.product.service import HeadlessProductService, ProductSources
 from app.v3.research_contracts import (
     CausalCompetitionSurface,
     ComparisonRole,
+    PresentationKind,
     ResearchBrief,
     ResearchBriefStatus,
     ResearchGoalKind,
@@ -32,6 +33,7 @@ from app.v3.research_intake import (
     ResearchIntakeCompiler,
     ResearchIntakeError,
     ResearchIntakeTerminal,
+    TurnTransitionKind,
     _followup_scope_provider_schema,
     _intake_provider_schema,
 )
