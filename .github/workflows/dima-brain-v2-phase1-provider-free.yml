@@ -58,19 +58,19 @@ jobs:
         run: |
           set -euo pipefail
           GITLINK_SHA="$(git ls-tree HEAD engine/metabase | awk '{print $3}')"
-          test "$GITLINK_SHA" = "a54a13be978985b58aa53b3ca70a6a51ecb3de3b"
+          test "$GITLINK_SHA" = "686671fa7e55f715e4fb5ac155f9e66019fd12d8"
           python - <<'PY'
           import json
           from pathlib import Path
           lock = json.loads(Path("backend/lab/metabase/core_b/runtime/engine_runtime_lock.json").read_text())
           expected = {
-              "engine_sha": "a54a13be978985b58aa53b3ca70a6a51ecb3de3b",
+              "engine_sha": "686671fa7e55f715e4fb5ac155f9e66019fd12d8",
               "upstream_sha": "2ba2485c78d7e00a9a25f82c00fc201da71590c4",
               "runtime_tag": "v0.63.18-dima.11.2.1",
-              "certification_run_id": "37383555448",
-              "immutable_image_ref": "ghcr.io/upcytech/dima-metabase-engine@sha256:34a3acec8d9cd8743c894f3ef4314b406eaeee08c67526328a55ed8e639be763",
-              "registry_digest": "sha256:34a3acec8d9cd8743c894f3ef4314b406eaeee08c67526328a55ed8e639be763",
-              "build_identity": "github-actions:37383555448:a54a13be978985b58aa53b3ca70a6a51ecb3de3b",
+              "certification_run_id": "37449462486",
+              "immutable_image_ref": "ghcr.io/upcytech/dima-metabase-engine@sha256:fe1b6fb67be6dbadea1af5d415f3ba2e033d46f91289f5c3c9844bee20c379bd",
+              "registry_digest": "sha256:fe1b6fb67be6dbadea1af5d415f3ba2e033d46f91289f5c3c9844bee20c379bd",
+              "build_identity": "github-actions:37449462486:686671fa7e55f715e4fb5ac155f9e66019fd12d8",
           }
           for key, value in expected.items():
               assert lock.get(key) == value, (key, lock.get(key), value)
@@ -81,7 +81,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "a54a13be978985b58aa53b3ca70a6a51ecb3de3b"
+          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "686671fa7e55f715e4fb5ac155f9e66019fd12d8"
           test -d backend/app/v3/brain_v2
           ! grep -R -nE 'DEV80|Validation50|Hidden50|30-case|F0[0-9]|F10|T[1-7]' backend/app/v3/brain_v2
           ! grep -R -nE 'sqlalchemy|sqlmodel|app\.v3\.substrate\.metabase\.(compiler|execution_adapter)' backend/app/v3/brain_v2

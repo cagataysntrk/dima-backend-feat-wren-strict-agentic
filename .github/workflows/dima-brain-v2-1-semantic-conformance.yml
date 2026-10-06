@@ -76,7 +76,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "a54a13be978985b58aa53b3ca70a6a51ecb3de3b"
+          test "$(git ls-tree HEAD engine/metabase | awk '{print $3}')" = "686671fa7e55f715e4fb5ac155f9e66019fd12d8"
 
       - uses: actions/setup-python@v5
         with:
