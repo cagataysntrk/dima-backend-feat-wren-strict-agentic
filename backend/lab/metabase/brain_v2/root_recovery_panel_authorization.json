@@ -1,6 +1,6 @@
 {
   "schema_version": "dima_brain_v2_1_root_recovery_panel_v1",
-  "enabled": true,
+  "enabled": false,
   "candidate_product_sha": "de4c03f288b62ffcad4aece57f0bebf102b381bd",
   "recovery_baseline": "505caec6e7c3fbd5346dc6a4c310e8f656d324ae",
   "provider_free_status": "GREEN",
@@ -122,5 +122,29 @@
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
   "frontend_allowed": false,
-  "note": "Single supervisor-authorized 12-shape root-recovery wave. Eval-only slot IDs and wording overrides must never enter Product code. No second paid correction wave except a proven harness defect."
+  "note": "DISARMED after the single authorized paid wave. R8 was RED. No second paid Product-correction wave is authorized; broad 30-case remains forbidden.",
+  "final_result": {
+    "status": "RED",
+    "workflow_run_id": 37533803018,
+    "checkout_sha": "2c1c435ee3c0e61f054d746b9b5eb65d3aac916d",
+    "completed_slots": 12,
+    "mechanically_successful_slots": 10,
+    "product_exception_slots": [
+      {
+        "slot_id": "R10_CONTINUATION_ORIGINAL",
+        "code": "R1_METRIC_SCOPE_REQUIRED"
+      },
+      {
+        "slot_id": "R11_CONTINUATION_DEEPENING",
+        "code": "R1_METRIC_SCOPE_REQUIRED"
+      }
+    ],
+    "manual_score_total": "30/48",
+    "full_4_of_4": 1,
+    "duplicate_native": 0,
+    "stale_evidence": 0,
+    "report_only_native_delta": 0,
+    "second_paid_wave_authorized": false,
+    "thirty_case_execution_ready": false
+  }
 }
