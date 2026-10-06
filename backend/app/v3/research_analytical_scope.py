@@ -44,6 +44,10 @@ from app.v3.research_contracts import (
     TemporalRole,
     TemporalChangeFrameMode,
 )
+from app.v3.research_temporal_authority import (
+    TemporalAuthorityError,
+    resolve_temporal_authority,
+)
 from app.v3.substrate.metabase.native_models import (
     NativeEngineIdentity,
     NativeMaterialObservation,
@@ -710,70 +714,49 @@ def analytical_scope_contract(
             "initial R1 contract supports at most two explicit accepted periods",
         )
 
+    try:
+        temporal_authority = resolve_temporal_authority(periods)
+    except TemporalAuthorityError as exc:
+        # Intake/ScopePatch must already have resolved this. Reaching this
+        # boundary with ambiguous temporal authority is scope drift, not a new
+        # opportunity to reinterpret the user's meaning.
+        raise ResearchAnalyticalScopeError(
+            "R1_TEMPORAL_AUTHORITY_INVALID",
+            f"{exc.code}: {exc.detail}",
+        ) from exc
+
     period = None
     comparison = None
-    if len(periods) == 1:
+    if temporal_authority.change_frame_mode == TemporalChangeFrameMode.PAIR:
+        assert temporal_authority.baseline_period is not None
+        assert temporal_authority.comparison_period is not None
+        comparison = AnalyticalComparisonInvariant(
+            mode="explicit_periods",
+            reference_period=_period(temporal_authority.baseline_period),
+            base_period=_period(temporal_authority.comparison_period),
+        )
+    elif temporal_authority.change_frame_mode == TemporalChangeFrameMode.SPAN:
+        assert temporal_authority.span_period is not None
+        period = _period(temporal_authority.span_period)
+    elif len(periods) == 1:
         period = _period(periods[0])
     elif len(periods) == 2:
-        baseline_periods = tuple(
-            item
-            for item in periods
-            if item.role == TemporalRole.BASELINE_PERIOD
-        )
-        comparison_periods = tuple(
-            item
-            for item in periods
-            if item.role == TemporalRole.COMPARISON_PERIOD
-        )
-        has_temporal_comparison_role = bool(
-            baseline_periods or comparison_periods
-        )
-        if has_temporal_comparison_role:
-            if (
-                len(baseline_periods) != 1
-                or len(comparison_periods) != 1
-            ):
-                raise ResearchAnalyticalScopeError(
-                    "R1_TEMPORAL_COMPARISON_ROLE_INCOMPLETE",
-                    (
-                        "temporal comparison requires exactly one baseline "
-                        "and one comparison period"
-                    ),
-                )
-            baseline_period = baseline_periods[0]
-            comparison_period = comparison_periods[0]
-            if (
-                baseline_period.time_dimension_candidate_id
-                != comparison_period.time_dimension_candidate_id
-            ):
-                raise ResearchAnalyticalScopeError(
-                    "R1_TIME_DIMENSION_DRIFT",
-                    "one comparison cannot span two time dimensions",
-                )
-            comparison = AnalyticalComparisonInvariant(
-                mode="explicit_periods",
-                reference_period=_period(baseline_period),
-                base_period=_period(comparison_period),
+        # Auxiliary typed periods such as EFFECT_PERIOD + EVIDENCE_WINDOW are
+        # not a PAIR. They form only the minimum bounded material window.
+        starts = sorted(item.start for item in periods)
+        ends = sorted(item.end for item in periods)
+        time_dims = {item.time_dimension_candidate_id for item in periods}
+        if len(time_dims) != 1:
+            raise ResearchAnalyticalScopeError(
+                "R1_TIME_DIMENSION_DRIFT",
+                "one analytical occurrence cannot span two time dimensions",
             )
-        else:
-            # Two typed periods without baseline/comparison roles describe one
-            # bounded material window (for example EFFECT_PERIOD +
-            # EVIDENCE_WINDOW in RCA). Their wording and tuple order carry no
-            # temporal-comparison authority.
-            starts = sorted(item.start for item in periods)
-            ends = sorted(item.end for item in periods)
-            time_dims = {item.time_dimension_candidate_id for item in periods}
-            if len(time_dims) != 1:
-                raise ResearchAnalyticalScopeError(
-                    "R1_TIME_DIMENSION_DRIFT",
-                    "one analytical occurrence cannot span two time dimensions",
-                )
-            period = AnalyticalPeriodInvariant(
-                kind="explicit_half_open_window",
-                time_dimension=next(iter(time_dims)),
-                start=starts[0],
-                end=ends[-1],
-            )
+        period = AnalyticalPeriodInvariant(
+            kind="explicit_half_open_window",
+            time_dimension=next(iter(time_dims)),
+            start=starts[0],
+            end=ends[-1],
+        )
 
     temporal_observation = None
     if (
@@ -808,18 +791,16 @@ def analytical_scope_contract(
     if question.ranking is not None:
         value = question.ranking
         if value.basis == RankingBasis.CHANGE:
-            if comparison is not None:
+            if temporal_authority.change_frame_mode == TemporalChangeFrameMode.PAIR:
+                assert comparison is not None
                 temporal_change_frame = AnalyticalTemporalChangeFrame(
                     mode=TemporalChangeFrameMode.PAIR,
                     time_dimension=comparison.reference_period.time_dimension,
                     baseline_period=comparison.reference_period,
                     comparison_period=comparison.base_period,
                 )
-            elif (
-                len(periods) == 1
-                and period is not None
-                and periods[0].role == TemporalRole.MATERIAL_WINDOW
-            ):
+            elif temporal_authority.change_frame_mode == TemporalChangeFrameMode.SPAN:
+                assert period is not None
                 temporal_change_frame = AnalyticalTemporalChangeFrame(
                     mode=TemporalChangeFrameMode.SPAN,
                     time_dimension=period.time_dimension,
