@@ -1,6 +1,6 @@
 {
   "schema_version": "dima_brain_v2_1_s3_diagnostic_v1",
-  "enabled": true,
+  "enabled": false,
   "candidate_product_sha": "ae4e0348601774082b0270f23d6de126e71e6055",
   "provider_free_status": "GREEN",
   "provider_free_phase1_run_id": 37391242264,
@@ -28,5 +28,5 @@
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
   "frontend_allowed": false,
-  "note": "FINAL ACCEPTANCE SPRINT: authorize exactly one S3 diagnostic on frozen Product ae4e0348... with certified dima.11.2 engine a54a13be... after Phase-1, Phase-2/headless, focused Brain V2, semantic conformance Wave A/B + mutation and frozen-family all GREEN. No Product semantic changes. No full panel unless S3 meets acceptance."
+  "note": "CONSUMED / FINAL ACCEPTANCE STOP. Certified dima.11.2 S3 diagnostic run 37391843531 completed on frozen Product ae4e0348601774082b0270f23d6de126e71e6055. Safety was clean and exception=0, duplicate native=0, but Product mechanical verdict remained RED / manual quality 2/4 PARTIAL: parent occurrence LIMITED, native_acquisitions=0, VERIFIED Evidence absent, SelectionBinding absent, dependent child drilldown absent, terminal completion absent. Full 9-sentinel panel is NOT authorized under the final acceptance directive. No further fix or paid retry is authorized."
 }
