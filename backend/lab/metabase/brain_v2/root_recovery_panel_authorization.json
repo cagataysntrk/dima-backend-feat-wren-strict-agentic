@@ -1,0 +1,126 @@
+{
+  "schema_version": "dima_brain_v2_1_root_recovery_panel_v1",
+  "enabled": true,
+  "candidate_product_sha": "de4c03f288b62ffcad4aece57f0bebf102b381bd",
+  "recovery_baseline": "505caec6e7c3fbd5346dc6a4c310e8f656d324ae",
+  "provider_free_status": "GREEN",
+  "provider_free_focused_run_id": 37525079508,
+  "provider_free_semantic_run_id": 37525079655,
+  "provider_free_frozen_run_id": 37525079621,
+  "generated_metamorphic_scenarios": 192,
+  "engine_sha": "686671fa7e55f715e4fb5ac155f9e66019fd12d8",
+  "engine_release": "0.63.18-dima.11.2",
+  "engine_runtime_tag": "v0.63.18-dima.11.2.1",
+  "engine_digest": "sha256:fe1b6fb67be6dbadea1af5d415f3ba2e033d46f91289f5c3c9844bee20c379bd",
+  "panel_policy": {
+    "case_count": 12,
+    "minimum_score_each": 3,
+    "minimum_full_4_of_4": 8,
+    "exception_free_answerable": true,
+    "security_violations": 0,
+    "silent_wrong": 0,
+    "causal_overclaim": 0,
+    "stale_evidence": 0,
+    "duplicate_native": 0,
+    "presentation_only_native_delta": 0,
+    "second_paid_correction_wave_allowed": false
+  },
+  "slots": [
+    {
+      "slot_id": "R01_COMPARISON_ORIGINAL",
+      "family": "comparison_admission",
+      "shape": "original",
+      "case_id": "F01_H",
+      "override_type": "none"
+    },
+    {
+      "slot_id": "R02_COMPARISON_SEMANTIC",
+      "family": "comparison_admission",
+      "shape": "semantic_sibling",
+      "case_id": "F01_M",
+      "override_type": "question",
+      "override": "Mayıs 2026 ile Haziran 2026 toplam makine duruşunu karşılaştır; bölüm bazında mutlak değişimi göster ve en çok artan iki bölümü belirt."
+    },
+    {
+      "slot_id": "R03_COMPARISON_WORDING",
+      "family": "comparison_admission",
+      "shape": "wording_sibling",
+      "case_id": "F01_H",
+      "override_type": "question",
+      "override": "Mayıs 2026'yı başlangıç, Haziran 2026'yı karşılaştırma dönemi al. Toplam makine duruşunu kıyasla; farkı, yüzde değişimi ve artışa en çok katkı yapan iki bölümü raporla."
+    },
+    {
+      "slot_id": "R04_TEMPORAL_ORIGINAL",
+      "family": "temporal_authority",
+      "shape": "original",
+      "case_id": "F03_H",
+      "override_type": "none"
+    },
+    {
+      "slot_id": "R05_TEMPORAL_SEMANTIC",
+      "family": "temporal_authority",
+      "shape": "semantic_sibling",
+      "case_id": "F03_M",
+      "override_type": "none"
+    },
+    {
+      "slot_id": "R06_TEMPORAL_WORDING",
+      "family": "temporal_authority",
+      "shape": "wording_sibling",
+      "case_id": "F03_H",
+      "override_type": "question",
+      "override": "Her bölüm için Mayıs 2026 ile Haziran 2026'yı yan yana karşılaştır: duruş, arıza ve ortalama performansın değişimini göster; üç gösterge birlikte kötüleşen bölümleri belirt."
+    },
+    {
+      "slot_id": "R07_ADAPTIVE_ORIGINAL",
+      "family": "adaptive_investigation",
+      "shape": "original",
+      "case_id": "F06_M",
+      "override_type": "none"
+    },
+    {
+      "slot_id": "R08_ADAPTIVE_SEMANTIC",
+      "family": "adaptive_investigation",
+      "shape": "semantic_sibling",
+      "case_id": "F06_H",
+      "override_type": "none"
+    },
+    {
+      "slot_id": "R09_ADAPTIVE_WORDING",
+      "family": "adaptive_investigation",
+      "shape": "wording_sibling",
+      "case_id": "F06_S",
+      "override_type": "question",
+      "override": "Bölüm bazında makine duruşunu incele. Doğrulanmış kanıtta maddi bir ayrım çıkarsa yalnız yeni bilgi kazandıracak tek bir yönü takip et, neden seçtiğini ve ne öğrendiğini açıkla."
+    },
+    {
+      "slot_id": "R10_CONTINUATION_ORIGINAL",
+      "family": "scope_continuation",
+      "shape": "original",
+      "case_id": "F10_M",
+      "override_type": "none"
+    },
+    {
+      "slot_id": "R11_CONTINUATION_DEEPENING",
+      "family": "scope_continuation",
+      "shape": "semantic_sibling",
+      "case_id": "F10_H",
+      "override_type": "none"
+    },
+    {
+      "slot_id": "R12_CONTINUATION_REPORT_ONLY",
+      "family": "scope_continuation",
+      "shape": "wording_mutation_sibling",
+      "case_id": "F10_S",
+      "override_type": "turns",
+      "override": [
+        "Makine duruşlarını bölüm bazında incele.",
+        "Aynı kapsamı değiştirmeden yalnız mevcut doğrulanmış bulgulardan kısa bir yönetim raporu üret; yeni analiz veya yeni veri sorgusu yapma."
+      ]
+    }
+  ],
+  "broad_paid_allowed": false,
+  "thirty_case_allowed": false,
+  "frontend_allowed": false,
+  "note": "Single supervisor-authorized 12-shape root-recovery wave. Eval-only slot IDs and wording overrides must never enter Product code. No second paid correction wave except a proven harness defect."
+}
