@@ -126,7 +126,10 @@ def _scope(
     metrics = tuple(_metric(f"metric.m{i}") for i in range(1, metric_count + 1))
     breakdown = _dimension(dimension_id)
     periods = _periods(frame)
-    authority = resolve_temporal_authority((*periods, *periods))
+    authority = resolve_temporal_authority(
+        (*periods, *periods),
+        require_change_frame=True,
+    )
     assert len(authority.periods) == len(periods)
     refs = (*metrics, breakdown, TIME, *ENTITIES)
     if reverse:
@@ -404,7 +407,8 @@ def test_semantic_authority_collapse_metamorphic_matrix(
 
     # Repeated identical temporal authority is coalesced, never made ambiguous.
     repeated = resolve_temporal_authority(
-        (*scope.periods, *scope.periods)
+        (*scope.periods, *scope.periods),
+        require_change_frame=True,
     )
     assert repeated.periods == scope.periods
     assert repeated.change_frame_mode == (
