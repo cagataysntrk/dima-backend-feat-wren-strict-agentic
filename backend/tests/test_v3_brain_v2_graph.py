@@ -566,15 +566,16 @@ def test_inconclusive_is_an_honest_terminal_without_extra_work() -> None:
     assert activities.calls["completion"] == 1
 
 
-def test_reentry_bound_stops_second_next_test_instead_of_looping() -> None:
+def test_reentry_bound_allows_two_information_gain_steps_then_stops() -> None:
     result, activities = _run("always_next")
 
     assert result.workflow_status == BrainWorkflowStatus.INCONCLUSIVE
     assert activities.calls["material"] == 1
-    assert activities.calls["native_followup"] == 1
-    assert activities.calls["p17_next_test"] == 1
-    assert activities.calls["p19"] == 2
-    assert result.adaptive_reentries == 1
+    assert activities.calls["native_followup"] == 2
+    assert activities.calls["p17_next_test"] == 2
+    assert activities.calls["p19"] == 3
+    assert result.adaptive_reentries == 2
+    assert result.adaptive_reentries == result.max_adaptive_reentries
 
 
 
