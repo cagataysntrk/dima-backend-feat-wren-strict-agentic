@@ -16,6 +16,7 @@ from app.v3.brain_v2.adaptive_owner_adapter import (
     AdaptiveDimaBrainV2Activities as DimaBrainV2Activities,
 )
 from app.v3.brain_v2.service import BrainV2Service, BrainV2ThreadError
+from app.v3.brain_v2.report_synthesis import StructuredP20SynthesisManager
 from app.v3.brain_v2.state import BrainGraphState, BrainP19Route, BrainWorkflowStatus
 from app.v3.brain_v2.owner_adapter import BrainV2OwnerError
 from app.v3.evidence import DimaQueryReceipt, EvidenceArtifact, EvidenceState
@@ -1079,6 +1080,63 @@ class BombP17:
         raise AssertionError(f"ONE_PASS must not invoke P17: {name}")
 
 
+class DeterministicP20SynthesisTransport:
+    """Provider-free stand-in for the bounded P20 presentation cognition call."""
+
+    def __init__(self) -> None:
+        self.call_count = 0
+
+    def structured_json(self, system, user, *, schema, schema_name):
+        del system, schema
+        assert schema_name == "dima_p20_governed_synthesis_v1"
+        self.call_count += 1
+        payload = json.loads(user)
+        statement_ids = tuple(
+            item["statement_id"]
+            for item in payload["evidence_digests"]
+        )
+        deliverables = []
+        for item in payload["accepted_deliverables"]:
+            if not statement_ids:
+                deliverables.append(
+                    {
+                        "requirement_id": item["requirement_id"],
+                        "status": "LIMITED",
+                        "selected_statement_ids": [],
+                        "sections": [],
+                        "limitation_detail": (
+                            "No governed publishable statement is available."
+                        ),
+                    }
+                )
+                continue
+            deliverables.append(
+                {
+                    "requirement_id": item["requirement_id"],
+                    "status": "FULFILLED",
+                    "selected_statement_ids": list(statement_ids),
+                    "sections": [
+                        {
+                            "kind": "management_implication",
+                            "text": (
+                                "Governed evidence supports the stated management "
+                                "interpretation while preserving epistemic limits."
+                            ),
+                            "supporting_statement_ids": list(statement_ids),
+                        }
+                    ],
+                    "limitation_detail": None,
+                }
+            )
+        return json.dumps({"deliverables": deliverables})
+
+
+def _p20_synthesis_manager():
+    return StructuredP20SynthesisManager(
+        transport=DeterministicP20SynthesisTransport()
+    )
+
+
 def _stack(*, epistemic_manager=None, db=None):
     if db is None:
         db = _engine()
@@ -1109,6 +1167,7 @@ def _stack(*, epistemic_manager=None, db=None):
             research_store=store,
             db_engine=db,
         ),
+        report_synthesis_manager=_p20_synthesis_manager(),
         native_session_token="provider-free-native-session",
         engine_identity=ENGINE_IDENTITY,
     )
