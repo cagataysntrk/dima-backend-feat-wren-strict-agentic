@@ -417,79 +417,24 @@ def _periods_for_contract(
     scope: ResearchScope,
     contract: AnalyticalRequestContract,
 ) -> tuple[AnalyticalPeriodV1, ...]:
-    """Project accepted period authority without interpreting wording or tuple order."""
+    """Project canonical scope-level temporal authority without reinterpretation.
 
-    if contract.temporal_change_frame is not None:
-        frame = contract.temporal_change_frame
-        if frame.baseline_period is not None and frame.comparison_period is not None:
-            return (
-                AnalyticalPeriodV1(
-                    role=TemporalRole.BASELINE_PERIOD,
-                    time_dimension_semantic_id=frame.baseline_period.time_dimension,
-                    start=frame.baseline_period.start,
-                    end=frame.baseline_period.end or "",
-                ),
-                AnalyticalPeriodV1(
-                    role=TemporalRole.COMPARISON_PERIOD,
-                    time_dimension_semantic_id=frame.comparison_period.time_dimension,
-                    start=frame.comparison_period.start,
-                    end=frame.comparison_period.end or "",
-                ),
-            )
-        if frame.span_period is not None:
-            return (
-                AnalyticalPeriodV1(
-                    role=TemporalRole.MATERIAL_WINDOW,
-                    time_dimension_semantic_id=frame.span_period.time_dimension,
-                    start=frame.span_period.start,
-                    end=frame.span_period.end or "",
-                ),
-            )
+    The AnalyticalRequestContract may carry material-coverage projections, but it
+    cannot rewrite the accepted temporal meaning. Intake/ScopePatch already
+    canonicalized ResearchScope.periods; AnalyticalIntentV1 transports those
+    exact typed periods to the analytics substrate.
+    """
 
-    if contract.comparison is not None:
-        accepted = tuple(
-            item
-            for item in scope.periods
-            if item.role in {
-                TemporalRole.BASELINE_PERIOD,
-                TemporalRole.COMPARISON_PERIOD,
-            }
+    del contract
+    return tuple(
+        AnalyticalPeriodV1(
+            role=item.role,
+            time_dimension_semantic_id=item.time_dimension_candidate_id,
+            start=item.start,
+            end=item.end,
         )
-        if len(accepted) == 2:
-            return tuple(
-                AnalyticalPeriodV1(
-                    role=item.role,
-                    time_dimension_semantic_id=item.time_dimension_candidate_id,
-                    start=item.start,
-                    end=item.end,
-                )
-                for item in accepted
-            )
-
-    if contract.period is not None:
-        exact = tuple(
-            item
-            for item in scope.periods
-            if (
-                item.time_dimension_candidate_id == contract.period.time_dimension
-                and item.start >= contract.period.start
-                and contract.period.end is not None
-                and item.end <= contract.period.end
-            )
-        )
-        if exact:
-            return tuple(
-                AnalyticalPeriodV1(
-                    role=item.role,
-                    time_dimension_semantic_id=item.time_dimension_candidate_id,
-                    start=item.start,
-                    end=item.end,
-                )
-                for item in exact
-            )
-
-    return ()
-
+        for item in scope.periods
+    )
 
 def project_analytical_intent_v1(
     *,
