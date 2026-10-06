@@ -19,6 +19,7 @@ from app.v3.brain_v2.checkpoint import postgres_checkpoint_saver
 from app.v3.brain_v2.adaptive_owner_adapter import AdaptiveDimaBrainV2Activities
 from app.v3.brain_v2.service import BrainV2Service
 from app.v3.brain_v2.state import BrainGraphState, BrainWorkflowStatus
+from app.v3.brain_v2.report_synthesis import StructuredP20SynthesisManager
 from app.v3.business_relationship_policy import BusinessRelationshipPolicyStore
 from app.v3.claim_lineage import ClaimLineageStore
 from app.v3.hypothesis_root_cause import HypothesisRootCauseStore
@@ -176,10 +177,17 @@ def _case_runtime(
         base_url=proxy + "/source/p19_manager/v1",
         owner="p19_manager",
     )
+    raw_p20 = OpenRouterStructuredJSONTransport(
+        api_key=os.environ["DIMA_OPENROUTER_API_KEY"],
+        model=MODEL,
+        base_url=proxy + "/source/p20_synthesis/v1",
+        owner="p20_synthesis",
+    )
     intake_transport = BoundedStructuredTransport(raw_intake, tracker=tracker, owner="research_intake")
     p17_transport = BoundedStructuredTransport(raw_p17, tracker=tracker, owner="p17_manager")
     p18_transport = BoundedStructuredTransport(raw_p18, tracker=tracker, owner="p18_manager")
     p19_transport = BoundedStructuredTransport(raw_p19, tracker=tracker, owner="p19_manager")
+    p20_transport = BoundedStructuredTransport(raw_p20, tracker=tracker, owner="p20_synthesis")
 
     intake = ResearchIntakeCompiler(transport=intake_transport)
     claims = ClaimLineageStore(research_store=store, db_engine=db_engine)
@@ -209,6 +217,7 @@ def _case_runtime(
     epistemics = HypothesisRootCauseStore(research_store=store, db_engine=db_engine)
     p19_manager = StructuredP19AssessmentManager(transport=p19_transport)
     reports = ReportDocumentStore(research_store=store, db_engine=db_engine)
+    p20_manager = StructuredP20SynthesisManager(transport=p20_transport)
     relationships = BusinessRelationshipPolicyStore(research_store=store, db_engine=db_engine)
 
     current_principal = principal()
@@ -222,6 +231,7 @@ def _case_runtime(
         epistemics=epistemics,
         epistemic_manager=p19_manager,
         reports=reports,
+        report_synthesis_manager=p20_manager,
         relationships=relationships,
         relationship_interpreter=p18_manager,
         native_session_token=token,
@@ -238,7 +248,7 @@ def _case_runtime(
         "reports": reports,
         "relationships": relationships,
         "efficiency_tracker": tracker,
-        "transports": (raw_intake, raw_p17, raw_p18, raw_p19),
+        "transports": (raw_intake, raw_p17, raw_p18, raw_p19, raw_p20),
         "principal": current_principal,
     }
 
