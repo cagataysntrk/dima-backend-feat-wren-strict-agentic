@@ -430,6 +430,23 @@ def _case_with_question_override(
         updated["turns"] = [question]
     return updated
 
+def _case_with_turns_override(
+    case: dict[str, Any],
+    turns_override: tuple[str, ...] | None,
+) -> dict[str, Any]:
+    """Return one eval-only multi-turn sibling without mutating frozen corpus."""
+
+    if not turns_override:
+        return dict(case)
+    turns = tuple(str(item).strip() for item in turns_override)
+    if not (1 <= len(turns) <= 3) or any(not item for item in turns):
+        raise RuntimeError("turns override requires one to three non-empty turns")
+    updated = dict(case)
+    updated["question"] = turns[0]
+    updated["turns"] = list(turns)
+    return updated
+
+
 def _run_case(
     *,
     case: dict[str, Any],
@@ -579,6 +596,7 @@ def main() -> int:
     ap.add_argument("--candidate-product-sha", required=True)
     ap.add_argument("--checkout-sha", required=True)
     ap.add_argument("--question-override-file", type=Path)
+    ap.add_argument("--turns-override-file", type=Path)
     ap.add_argument(
         "--case-id",
         action="append",
@@ -602,17 +620,35 @@ def main() -> int:
     selected_id = str(args.case_id[0])
     if selected_id not in by_id:
         raise RuntimeError(f"unknown frozen recovery case id: {selected_id}")
+    if (
+        args.question_override_file is not None
+        and args.turns_override_file is not None
+    ):
+        raise RuntimeError(
+            "question override and turns override are mutually exclusive"
+        )
     question_override = None
     if args.question_override_file is not None:
         question_override = args.question_override_file.read_text(
             encoding="utf-8"
         ).strip()
-    cases = [
-        _case_with_question_override(
-            by_id[selected_id],
-            question_override,
+    turns_override = None
+    if args.turns_override_file is not None:
+        raw_turns = json.loads(
+            args.turns_override_file.read_text(encoding="utf-8")
         )
-    ]
+        if not isinstance(raw_turns, list):
+            raise RuntimeError("turns override must be a JSON array")
+        turns_override = tuple(str(item) for item in raw_turns)
+    selected_case = _case_with_question_override(
+        by_id[selected_id],
+        question_override,
+    )
+    selected_case = _case_with_turns_override(
+        selected_case,
+        turns_override,
+    )
+    cases = [selected_case]
 
     binding_manifest = load_binding_manifest(args.binding_manifest)
     catalog = build_catalog(binding_manifest)
