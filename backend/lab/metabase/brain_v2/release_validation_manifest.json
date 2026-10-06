@@ -7,7 +7,7 @@
     "engine_release": "0.63.18-dima.11.2",
     "engine_runtime_tag": "v0.63.18-dima.11.2.1",
     "engine_digest": "sha256:fe1b6fb67be6dbadea1af5d415f3ba2e033d46f91289f5c3c9844bee20c379bd",
-    "acceptance_baseline_backend_head": "5bbf02f9d088d1060ab5e388f41629337ef4e770",
+    "acceptance_baseline_backend_head": "4251622e65b6275735a9619d1a09a37dc60f280a",
     "migration_head": "ff5b8e2c1a73",
     "grammar_version": "dima_analytical_grammar_v1",
     "analytical_intent_schema": "dima_analytical_intent_v1",
