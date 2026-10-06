@@ -1,0 +1,8 @@
+DIMA Brain V2.1 root recovery panel trigger
+
+authorized_panel: dima_brain_v2_1_root_recovery_panel_v1
+candidate_product_sha: de4c03f288b62ffcad4aece57f0bebf102b381bd
+engine_sha: 686671fa7e55f715e4fb5ac155f9e66019fd12d8
+case_count: 12
+broad_30_case: forbidden
+second_paid_correction_wave: forbidden_except_proven_harness_defect
