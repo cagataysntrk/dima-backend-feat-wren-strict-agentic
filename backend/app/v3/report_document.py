@@ -1399,6 +1399,24 @@ class ReportDocumentStore:
             )
         return source
 
+    def validated_governed_statements(
+        self,
+        *,
+        draft: ReportDraft,
+        principal: Principal,
+    ) -> tuple[ReportStatement, ...]:
+        """Validate upstream P20 material before bounded synthesis cognition.
+
+        This has no persistence side effect. It exposes only statements already
+        accepted by the same publication gate used during final sealing.
+        """
+
+        _, _, statements, _, _ = self._gate.validate(
+            draft=draft,
+            principal=principal,
+        )
+        return statements
+
     def draft_from_governed_research(
         self,
         *,
