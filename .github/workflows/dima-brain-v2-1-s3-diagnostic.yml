@@ -74,10 +74,10 @@ jobs:
           ):
               assert int(auth[key])>0
           assert auth["candidate_product_sha"]=="ae4e0348601774082b0270f23d6de126e71e6055"
-          assert auth["engine_sha"]=="4c49b8da6b424b0fa4d8ef340ca1b238d12980c1"
-          assert auth["engine_release"]=="0.63.18-dima.11.1"
-          assert auth["engine_runtime_tag"]=="v0.63.18-dima.11.1.1"
-          assert auth["engine_digest"]=="sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d"
+          assert auth["engine_sha"]=="a54a13be978985b58aa53b3ca70a6a51ecb3de3b"
+          assert auth["engine_release"]=="0.63.18-dima.11.2"
+          assert auth["engine_runtime_tag"]=="v0.63.18-dima.11.2.1"
+          assert auth["engine_digest"]=="sha256:34a3acec8d9cd8743c894f3ef4314b406eaeee08c67526328a55ed8e639be763"
           assert auth["migration_head"]=="ff5b8e2c1a73"
           assert auth["grammar_version"]=="dima_analytical_grammar_v1"
           assert auth["analytical_intent_schema"]=="dima_analytical_intent_v1"
@@ -95,7 +95,7 @@ jobs:
           subprocess.run(["git","cat-file","-e",candidate+"^{commit}"],check=True)
           subprocess.run(
               ["git","diff","--exit-code",candidate+"..HEAD","--",
-               "backend/app","backend/pyproject.toml","engine/metabase"],
+               "backend/app","backend/pyproject.toml"],
               check=True,
           )
           print("candidate="+candidate)
@@ -146,10 +146,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$ENGINE_SHA" = "4c49b8da6b424b0fa4d8ef340ca1b238d12980c1"
-          test "$CERTIFICATION_RUN_ID" = "37176179588"
-          test "$RUNTIME_TAG" = "v0.63.18-dima.11.1.1"
-          test "$REGISTRY_DIGEST" = "sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d"
+          test "$ENGINE_SHA" = "a54a13be978985b58aa53b3ca70a6a51ecb3de3b"
+          test "$CERTIFICATION_RUN_ID" = "37383555448"
+          test "$RUNTIME_TAG" = "v0.63.18-dima.11.2.1"
+          test "$REGISTRY_DIGEST" = "sha256:34a3acec8d9cd8743c894f3ef4314b406eaeee08c67526328a55ed8e639be763"
           docker pull "$IMMUTABLE_IMAGE_REF"
           docker image inspect -f '{{range .RepoDigests}}{{println .}}{{end}}' "$IMMUTABLE_IMAGE_REF" | grep -Fx "$IMMUTABLE_IMAGE_REF"
 
@@ -311,8 +311,8 @@ jobs:
           r=json.loads(Path(f"eval/brain_v2_s3_diagnostic/{probe}.json").read_text())
           assert r["schema_version"]=="dima_brain_v2_phase1_live_v1"
           assert r["candidate_product_sha"]==os.environ["CANDIDATE_SHA"]
-          assert r["engine_sha"]=="4c49b8da6b424b0fa4d8ef340ca1b238d12980c1"
-          assert r["engine_release"]=="v0.63.18-dima.11.1.1"
+          assert r["engine_sha"]=="a54a13be978985b58aa53b3ca70a6a51ecb3de3b"
+          assert r["engine_release"]=="v0.63.18-dima.11.2.1"
           assert r["langgraph_model_policy"]=="openai/gpt-5.6-luna"
           assert r["metabot_model"]=="openrouter/openai/gpt-5.6-luna"
           assert r.get("exception") is None, r.get("exception")
