@@ -2,254 +2,179 @@
 
 Updated: 2026-10-06
 
-## 0. Current freeze status
+## 0. FINAL CURRENT STATE
 
-Current branch:
+Branch:
 
 `feat/dima-brain-v2-1-specification-closure`
 
-Canonical frozen Product semantics:
+Frozen Product semantics:
 
 `ae4e0348601774082b0270f23d6de126e71e6055`
 
-Certified engine identity:
+Certified engine:
 
 - SHA: `686671fa7e55f715e4fb5ac155f9e66019fd12d8`
 - release: `0.63.18-dima.11.2`
 - runtime tag: `v0.63.18-dima.11.2.1`
-- certification run: `37449462486`
+- certification: `37449462486`
 - digest: `sha256:fe1b6fb67be6dbadea1af5d415f3ba2e033d46f91289f5c3c9844bee20c379bd`
 
-Engine integration / provider-free acceptance head:
+The required provider-free integration stack is GREEN:
 
-`4251622e65b6275735a9619d1a09a37dc60f280a`
+- focused Brain V2: `37461980401`
+- Phase-2/headless: `37461980519`
+- Phase-1 aggregate: `37461980584`
+- frozen-family: `37461980475`
+- semantic conformance + Wave A/B + mutation: `37461980396`
 
-Current terminology:
+Product semantic freeze audit remains clean: no `backend/app/**` or `backend/pyproject.toml` semantic change was introduced after the frozen Product.
 
-`30-CASE EXECUTION READY = YES`
+## 1. ACTUAL FROZEN 30-CASE — COMPLETE
 
-`90+ HIGH-CONFIDENCE QUALITY READY = NOT DECLARED`
+The separately authorized actual frozen Round-2 corpus has now completed.
 
-`90+ PROVEN = NO`
+- run: `37470794678`
+- job: `112293435226`
+- benchmark checkout: `dc9aefb30ec1a8261ff5e73e99a9efa28c948238`
+- artifact: `11417995791`
+- artifact digest: `sha256:762fa89d79d6b796d95cb73a0bbacf2d84c50b267dbf8ec308863775601cce74`
+- cases: `30 / 30`
+- workflow: `SUCCESS`
+- raw harness PASS: `14 / 30`
 
-These statements are intentionally different.
+Raw harness PASS is not the Product-quality score.
 
-“30-CASE EXECUTION READY” means:
+Manual adjudication used the unchanged original Round-2 rubric and difficulty weights.
 
-- one immutable semantic Product exists;
-- one certified engine identity is pinned;
-- all required provider-free closure gates are GREEN;
-- security/currentness/dedup invariants are GREEN;
-- evaluation infrastructure is ready for one separately authorized frozen 30-case run.
+### Final Product quality
 
-It does NOT mean 90+ quality has already been demonstrated.
+`68.25 / 100`
 
-Actual frozen 30-case is NOT authorized yet.
+Therefore:
 
-Paid/broad authorization is OFF.
+- `90+ PROVEN = NO`
+- `80+ PROVEN = NO`
+- `30-CASE EXECUTION = COMPLETE`
 
-Frontend is NOT authorized.
+Difficulty:
+- Simple: `87.5`
+- Medium: `77.5`
+- Hard: `55.0`
 
----
+Ordinal distribution:
+- FULL: 13
+- STRONG_PARTIAL: 9
+- PARTIAL: 3
+- LOW_UTILITY: 3
+- FAIL: 2
 
-## 1. Final engine integration
+Canonical adjudication:
 
-The final engine integration is complete.
+`backend/belgeler/metabase/DIMA_BRAIN_V2_1_ROUND2_FINAL_ADJUDICATION_2026-10-06.md`
 
-Gitlink:
-
-`engine/metabase -> 686671fa7e55f715e4fb5ac155f9e66019fd12d8`
-
-Runtime lock:
-
-`backend/lab/metabase/core_b/runtime/engine_runtime_lock.json`
-
-contains the same:
-
-- engine SHA;
-- runtime tag;
-- registry digest;
-- certification run;
-- build identity.
-
-Machine-readable release manifest:
-
-`backend/lab/metabase/brain_v2/release_validation_manifest.json`
-
-contains the same frozen Product + engine identity.
-
-Semantic Product was not changed.
-
-Audit from Product `ae4e0348...` to current branch shows:
-
-- `backend/app/**` semantic changes: 0
-- `backend/pyproject.toml` changes: 0
-- intended engine gitlink change: yes
-
-No LangGraph, grammar, prompt, Metabot or provider-cap change is part of this final engine integration.
-
----
-
-## 2. Required provider-free recertification
-
-All required gates are GREEN on the certified engine integration checkout:
-
-- focused Brain V2: `37461980401` — GREEN
-- Phase-2/headless: `37461980519` — GREEN
-- Phase-1 aggregate: `37461980584` — GREEN
-- frozen-family closure: `37461980475` — GREEN
-- semantic conformance + Wave A + independent Wave B + mutation canaries: `37461980396` — GREEN
-
-Migration remains single-head:
-
-`ff5b8e2c1a73`
-
-This is the canonical deterministic readiness basis for:
-
-`30-CASE EXECUTION READY = YES`
-
----
-
-## 3. Known S3 quality risk remains explicit
-
-An extra same-SHA sentinel panel later ran:
-
-`37462642488`
-
-This panel was not required for the final 30-case-execution-ready seal and is not used to claim 90+ quality.
-
-Observed mechanical results:
-
-- S1 Direct Analytics — GREEN
-- S2 Temporal Comparison — GREEN
-- S3 CHANGE + dependent drilldown — RED
-- S4 Adaptive RCA — GREEN
-- S5 Relationship — GREEN
-- S6 Scope Resume — GREEN
-- S7 Contextual Report — GREEN
-- S8 Multi-intent — GREEN
-- S9 Safety / unsupported — GREEN
-
-S3:
-
-- mechanical verdict: RED
-- manual/canonical quality risk: `2/4 PARTIAL`
-- workflow status: `WAITING`
-- last node: `MATERIAL_GROUP_WAITING`
-- one native occurrence: `LIMITED`
-- VERIFIED Evidence: absent
-- SelectionBinding: absent
-- child machine drilldown: incomplete
-- duplicate native: 0
-- exception: 0
-- scope current: yes
-- provider safety: clean
-
-This risk is not hidden and is not called PASS.
-
-It blocks any claim that 90+ quality is already established.
-
-It does NOT invalidate “30-CASE EXECUTION READY”, whose definition is deterministic/evaluation readiness of the frozen candidate.
-
-Canonical risk record:
+Machine-readable release record:
 
 `backend/lab/metabase/brain_v2/release_validation_manifest.json`
 
----
+## 2. Feature result
 
-## 4. Authorization state
+| Feature | Score |
+|---|---:|
+| F01 Direct Ask | 50.0 |
+| F02 Breakdown / Ranking | **100.0** |
+| F03 Period / Multi-metric | 50.0 |
+| F04 Multi-intent Synthesis | 80.0 |
+| F05 Relationship Reasoning | 80.0 |
+| F06 Adaptive Investigation | 37.5 |
+| F07 RCA / Hypothesis Competition | 75.0 |
+| F08 Evidence-backed Reporting | 50.0 |
+| F09 Clarification / Unsupported Safety | **100.0** |
+| F10 Conversation Repair / Scope Refinement | 60.0 |
 
-Final sentinel authorization:
+Compared with the prior broad `60.5` receipt, the current frozen candidate improves by `+7.75` points. It is also faster and slightly cheaper, but quality remains below target.
 
-OFF.
-
-S3 diagnostic authorization:
-
-OFF.
-
-Broad paid:
-
-OFF.
+## 3. Efficiency / safety observations
 
 Actual frozen 30-case:
 
-NOT AUTHORIZED YET.
+- provider requests: `132`
+- prompt tokens: `1,740,602`
+- completion tokens: `38,669`
+- reasoning tokens: `8,134`
+- provider-reported cost: `$0.24467439`
+- mean latency: `19.633s`
+- median: `18.894s`
+- p90: `40.226s`
+- max: `47.325s`
+- duplicate native: `0`
+- stale Evidence: `0`
+- blocked provider requests: `0`
+- P17 provider calls: `0`
 
-Frontend:
+Correct F09 CLARIFY/UNSUPPORTED outcomes are manually scored FULL even though the raw harness records them as exceptions. Genuine answer-blocking exceptions remain penalized.
 
-NOT AUTHORIZED.
+## 4. Broad evidence — remaining root families
 
-No further S3 retry or sentinel run is authorized.
+Do not reopen thirty independent case fixes.
 
----
+The complete corpus currently clusters into four dominant Product families:
 
-## 5. Actual frozen 30-case protocol
+1. **INTAKE COMPARISON / TEMPORAL OWNERSHIP**
+   - `F01_H`
+   - `F03_H`
+   - legal comparison requests are rejected before analytical execution.
 
-Only after explicit user authorization, run exactly one frozen 30-case using:
+2. **ADAPTIVE INVESTIGATION CLOSURE**
+   - `F06_S/M/H`
+   - safe behavior is present, but bounded useful deepening is not consistently reachable.
 
-Product:
+3. **REPORTING / SYNTHESIS COVERAGE**
+   - `F04_M/H`
+   - `F08_S/M/H`
+   - governed material often exists, but requested management synthesis / evidence-backed presentation is incomplete; F08_H is rejected too early.
 
-`ae4e0348601774082b0270f23d6de126e71e6055`
+4. **MULTI-TURN SCOPE / CURRENTNESS CONTINUATION**
+   - `F10_M/H`
+   - simple scope repair is now FULL, but deeper narrowing + temporal/deepening sequences still fail.
 
-Engine:
+Important closures:
+- F02 ranking family is now `100/100`.
+- F09 safety remains `100/100`.
+- F10 simple repair is now `4/4`.
+- duplicate native and stale Evidence remain zero.
 
-`686671fa7e55f715e4fb5ac155f9e66019fd12d8`
+## 5. Authorization / freeze
 
-Digest:
+All paid authorization is CLOSED after the completed corpus:
 
-`sha256:fe1b6fb67be6dbadea1af5d415f3ba2e033d46f91289f5c3c9844bee20c379bd`
-
-Required protocol:
-
-1. `fail-fast = false`;
-2. all 30 cases complete;
-3. no fix, commit, Product change or engine change during the corpus;
-4. raw mechanical results and manual adjudication remain separate;
-5. produce per-case scores;
-6. produce per-family scores;
-7. separately report:
-   - exception;
-   - silent wrong;
-   - security;
-   - causal overclaim;
-   - duplicate native;
-8. do not hide the known S3 risk;
-9. do not mix old sentinel scores into the 30-case score.
-
-If final score is `>=90` and safety invariants are clean:
-
-`90+ PROVEN = YES`
-
-Then specification closure is complete and STOP.
-
-If score is `<90`:
-
-- do not immediately open another large fix loop;
-- adjudicate the entire 30-case corpus first;
-- derive only a small number of genuine root architecture families;
-- wait for a separate user decision.
-
----
-
-## 6. Permanent freeze rules
-
-Until separate authorization:
-
-- Product semantic code: FROZEN
-- engine code/build: FROZEN
-- LangGraph semantics: FROZEN
-- grammar: FROZEN
-- prompts: FROZEN
-- Metabot behavior: FROZEN
-- provider ceilings: FROZEN
-- new semantic families: FORBIDDEN
-- S3 retries: FORBIDDEN
-- sentinel retries: FORBIDDEN
-- 30-case execution: REQUIRES EXPLICIT USER AUTHORIZATION
+- actual frozen 30-case: OFF
+- broad paid: OFF
+- automatic retry: OFF
+- final sentinel: OFF
+- S3 diagnostic: OFF
 - frontend: NOT AUTHORIZED
 
----
+There must be **no automatic second 30-case run**.
 
-## 7. Canonical one-line handoff
+There must be **no immediate case-by-case patch loop**.
 
-`FROZEN: Product ae4e0348... + certified engine 686671fa... / dima.11.2 / digest fe1b6f...; required provider-free closure GREEN; semantic Product diff zero; known S3 = 2/4 PARTIAL and explicitly recorded; 30-CASE EXECUTION READY = YES; 90+ PROVEN = NO; all paid/sentinel auth OFF; actual frozen 30-case requires separate explicit user permission; STOP.`
+Any new implementation cycle requires a separate user decision and must start from the four corpus-level architecture families above.
+
+## 6. Permanent architecture boundaries
+
+- Metabase / Metabot = analytics and query cognition.
+- LangGraph = forward orchestration/checkpoint runtime.
+- Dima = intent, scope, material, Evidence, epistemics, completion and reporting semantics.
+- P18 = relationship judgment.
+- P19 = RCA judgment.
+- P17 = NextTest / information-gain only.
+- P20 = synthesis from governed state.
+- no second analytics engine.
+- no SQL/MBQL business logic in Dima.
+- no regex/fuzzy/morphology/benchmark-specific semantic patches.
+- no hidden case IDs or expected-answer branches.
+
+## 7. One-line handoff
+
+`FINAL BROAD RECEIPT: Product ae4e0348... + engine 686671fa... completed actual frozen 30-case run 37470794678; fair manual quality = 68.25/100; F02 and F09 = 100; duplicate native/stale Evidence/blocked provider = 0; 90+ PROVEN = NO; all paid auth CLOSED; STOP unless the user separately authorizes a new architecture-family recovery cycle.`
