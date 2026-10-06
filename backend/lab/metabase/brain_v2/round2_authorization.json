@@ -1,6 +1,6 @@
 {
   "schema_version": "dima_brain_v2_1_round2_authorization_v1",
-  "enabled": true,
+  "enabled": false,
   "candidate_product_sha": "ae4e0348601774082b0270f23d6de126e71e6055",
   "frozen_branch_head": "cf2947389320e7b49d0818d8a3d084877105f935",
   "engine_sha": "686671fa7e55f715e4fb5ac155f9e66019fd12d8",
@@ -12,10 +12,12 @@
   "manifest": "backend/eval/dima_neutral_feature_benchmark_round2.json",
   "fixture": "backend/eval/round2_neutral_machine_fixture.json",
   "case_count": 30,
-  "broad_paid_allowed": true,
-  "thirty_case_allowed": true,
+  "broad_paid_allowed": false,
+  "thirty_case_allowed": false,
   "automatic_retry_allowed": false,
   "fail_fast": false,
   "authorization_basis": "explicit user authorization 2026-10-06",
-  "purpose": "single frozen 30-case proof for final quality/speed/cost seal; no fixes during corpus"
+  "purpose": "single frozen 30-case proof for final quality/speed/cost seal; no fixes during corpus",
+  "closed_after_run_id": 37470794678,
+  "closed_reason": "single authorized frozen 30-case completed; automatic retry forbidden"
 }
