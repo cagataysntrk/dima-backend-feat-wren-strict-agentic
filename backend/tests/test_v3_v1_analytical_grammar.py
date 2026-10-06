@@ -218,12 +218,12 @@ def test_report_is_a_presentation_requirement_not_a_new_analytical_owner() -> No
     assert brief.deliverables == (report,)
 
 
-def test_other_goal_cannot_mint_a_new_analytical_operation() -> None:
+def test_other_goal_routes_to_generic_observe_floor() -> None:
     metric = _metric()
     question = ResearchQuestion(
         goal_id="g_other",
         kind=ResearchGoalKind.OTHER,
-        source_text="Unsupported analytical primitive.",
+        source_text="Meta analytical request over governed material.",
         subject_refs=(metric,),
         status=ResearchGoalStatus.RESOLVED,
     )
@@ -243,7 +243,7 @@ def test_other_goal_cannot_mint_a_new_analytical_operation() -> None:
     )
     brief = ResearchBrief(
         brief_id="rb-v1-grammar-other",
-        objective="Unsupported analytical primitive.",
+        objective="Meta analytical request over governed material.",
         scope=scope,
         questions=(question,),
         deliverables=(),
@@ -251,21 +251,23 @@ def test_other_goal_cannot_mint_a_new_analytical_operation() -> None:
         context_version="ctx-v1-grammar-other",
         status=ResearchBriefStatus.READY_FOR_RESEARCH,
     )
-    with pytest.raises(AnalyticalBoundaryError) as brief_exc:
-        validate_v1_research_brief(brief)
-    assert brief_exc.value.code == "ANALYTICAL_V1_OPERATION_UNSUPPORTED"
 
-    with pytest.raises(AnalyticalBoundaryError) as exc:
-        project_analytical_intent_v1(
-            question=question,
-            scope=scope,
-            contract=contract,
-            tenant_id="tenant-v1",
-            principal_id="principal-v1",
-            currentness_token="current-v1",
-            security_fingerprint="security-v1",
-        )
-    assert exc.value.code == "ANALYTICAL_V1_OPERATION_UNSUPPORTED"
+    # The closed grammar remains a conformance surface, but OTHER is no longer
+    # a capability veto. Its safe routing floor is one governed observation.
+    assert validate_v1_research_brief(brief) == (
+        (AnalyticalOperation.OBSERVE,),
+    )
+    intent = project_analytical_intent_v1(
+        question=question,
+        scope=scope,
+        contract=contract,
+        tenant_id="tenant-v1",
+        principal_id="principal-v1",
+        currentness_token="current-v1",
+        security_fingerprint="security-v1",
+    )
+    assert intent.operation == AnalyticalOperation.OBSERVE
+    assert intent.metrics == (metric.candidate_id,)
 
 
 def test_v1_grammar_version_and_required_compositions_are_explicit() -> None:
