@@ -92,6 +92,7 @@ from app.v3.root_cause_candidate_contract import (
 from control_plane.authorize import Principal
 
 from .report_synthesis import StructuredP20SynthesisManager
+from .adaptive_policy import adaptive_investigation_authorized
 from .completion_policy import (
     material_limitation_disposition,
     project_material_limitation_terminals,
@@ -1852,9 +1853,9 @@ class DimaBrainV2Activities(BrainActivities):
         # ROOT_CAUSE is already bounded investigation authority. Requiring the
         # same turn to also carry FOLLOW_VERIFIED_MATERIAL would create a second
         # semantic authorization for P19's discriminating NextTest seam.
-        adaptive_authorized = (
-            goal.kind == ResearchGoalKind.ROOT_CAUSE
-            or typed_adaptive_intent
+        adaptive_authorized = adaptive_investigation_authorized(
+            goal_kind=goal.kind,
+            explicit_follow_verified_material=typed_adaptive_intent,
         )
         competing_set_available = len(snapshot.hypotheses) >= 2
         investigation_snapshot = self._investigation.snapshot(
