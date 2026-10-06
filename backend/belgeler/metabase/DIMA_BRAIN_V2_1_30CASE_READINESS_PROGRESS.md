@@ -8545,3 +8545,124 @@ Acceptance sequence after engine GREEN:
 4. if S3 >=3/4 with successful observation, exactly one parent execution, VERIFIED Evidence, SelectionBinding, child completion, duplicate=0 and clean safety:
    freeze same Product semantics + certified engine identity and run ONE final 9-sentinel panel;
 5. if S3 <3: STOP, no new fix.
+
+
+---
+
+### FINAL ACCEPTANCE SPRINT — DIMA.11.2 / S3 STOP
+
+PHASE:
+FINAL ACCEPTANCE SPRINT
+
+STATUS:
+STOP — PROVIDER-FREE GREEN, S3 FINAL ACCEPTANCE RED, FINAL 9-PANEL NOT RUN
+
+Frozen semantic Product:
+\`ae4e0348601774082b0270f23d6de126e71e6055\`
+
+Certified engine:
+- SHA: \`a54a13be978985b58aa53b3ca70a6a51ecb3de3b\`
+- release: \`0.63.18-dima.11.2\`
+- runtime tag: \`v0.63.18-dima.11.2.1\`
+- digest: \`sha256:34a3acec8d9cd8743c894f3ef4314b406eaeee08c67526328a55ed8e639be763\`
+- certification run: \`37383555448\`
+- build identity: \`github-actions:37383555448:a54a13be978985b58aa53b3ca70a6a51ecb3de3b\`
+
+Product semantic changes during this sprint:
+NONE.
+
+Engine runtime pin:
+GREEN. Backend runtime lock and engine gitlink were moved to the exact certified dima.11.2 identity only.
+
+Provider-free closure:
+- focused Brain V2: \`37391242111\` — GREEN
+- Phase-2/headless: \`37391242219\` — GREEN
+- Phase-1 aggregate: \`37391242264\` — GREEN
+- frozen-family closure: \`37391441309\` — GREEN
+- semantic conformance + Wave A + independent Wave B + mutation canaries: \`37391441484\` — GREEN
+
+Provider-free setup drift encountered:
+Initial dima.11.2 recertification exposed stale workflow engine-identity literals and stale post-ae4 P14 gateway tests referring to a private semantic-consolidation helper that is not part of the frozen Product. No Product code was changed. The acceptance harness/test surface was aligned back to the frozen ae4 lifecycle baseline before final closure runs.
+
+Final S3 diagnostic:
+- run: \`37391843531\`
+- job: \`112038501786\`
+- workflow conclusion: SUCCESS
+- Product mechanical verdict: RED
+- candidate Product: \`ae4e0348601774082b0270f23d6de126e71e6055\`
+- engine SHA: \`a54a13be978985b58aa53b3ca70a6a51ecb3de3b\`
+- engine runtime: \`v0.63.18-dima.11.2.1\`
+
+S3 provider/safety:
+- exception: 0
+- blocked provider requests: 0
+- total provider requests: 5
+- research_intake: 1
+- Metabase: 4
+- prompt tokens: 73,708
+- completion tokens: 3,239
+- reasoning tokens: 1,433
+- provider-reported cost: $0.01294837
+- latency: 41,855 ms
+- duplicate native: 0
+- scope/currentness: clean
+- P17/P19 contamination: 0
+- orchestration efficiency: GREEN
+
+S3 Product state:
+- workflow_status: \`WAITING\`
+- last_completed_node: \`MATERIAL_GROUP_WAITING\`
+- parent obligation: \`LIMITED\`
+- dependent child obligation: \`READY\`
+- Evidence revision: 0
+- Evidence: absent
+- SelectionBinding: absent
+- child machine drilldown: not executed
+- terminal completion: absent
+
+Native occurrence:
+- exactly one persisted parent occurrence
+- execution_link_id: \`3a263740-4cee-4621-b6bc-4641c7a60b33\`
+- native_query_id: \`QCEXgtA4wXAL3zy3sloZv\`
+- query fingerprint: \`c4e139cdf67f1b458b5ab1f77ff67cae9a352862f01a057d54443c2ad1154715\`
+- status: \`LIMITED\`
+- receipt: absent
+- Evidence: absent
+- native_acquisitions: 0
+
+S3 acceptance:
+- exception = 0: PASS
+- provider safety clean: PASS
+- duplicate native = 0: PASS
+- attestation GREEN: NOT PROVEN AS AN ACCEPTED MATERIAL PATH
+- material observation GREEN: FAIL / no accepted observed material
+- parent exact native execution exactly 1: FAIL (\`native_acquisitions=0\`; persisted occurrence is LIMITED)
+- VERIFIED Evidence: FAIL
+- SelectionBinding: FAIL
+- child drilldown: FAIL
+- manual quality >=3/4: FAIL
+
+Manual quality:
+\`2/4 PARTIAL\`.
+
+Directive result:
+The required S3 gate did not pass. Therefore the final same-SHA nine-sentinel panel was NOT authorized and was NOT run.
+
+Final readiness:
+\`90+ HIGH-CONFIDENCE READY = NO\`
+
+\`30-CASE READY = NO\`
+
+Authorization:
+- S3 diagnostic: OFF
+- final 9-sentinel panel: OFF
+- broad paid: OFF
+- 30-case: CLOSED
+- frontend: NOT AUTHORIZED
+
+NEXT LEGAL ACTION:
+STOP.
+
+No new Product fix, semantic refactor, prompt/grammar/LangGraph/Metabot change, engine build, paid S3 retry, final panel retry, or “one more improvement” is authorized under the current final-acceptance directive.
+
+30-case requires separate explicit permission and is not reached by this sprint.
