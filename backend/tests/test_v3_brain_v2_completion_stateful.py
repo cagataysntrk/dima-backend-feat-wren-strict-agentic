@@ -9,6 +9,11 @@ from app.v3.brain_v2.material_groups import project_material_groups
 from app.v3.brain_v2.owner_adapter import DimaBrainV2Activities
 from app.v3.brain_v2.state import BrainGraphState
 from app.v3.business_relationship_v1 import RelationshipTerminalDisposition
+from app.v3.report_document import (
+    DeliverableCoverageEntry,
+    DeliverableCoverageStatus,
+    ReportCurrentness,
+)
 from app.v3.research import ObligationState, ResearchObligation
 from control_plane.authorize import Principal
 
@@ -134,6 +139,22 @@ class CompletionOwnerHarness(DimaBrainV2Activities):
                     scope_version_id="scope_v1",
                 ),
             )
+        )
+        self._reports = SimpleNamespace(
+            load=lambda **kwargs: SimpleNamespace(
+                report_id="p20r_" + "6" * 24,
+                research_session_id=self.session.session_id,
+                deliverable_coverage=(
+                    DeliverableCoverageEntry(
+                        requirement_id="d_report",
+                        coverage_status=(
+                            DeliverableCoverageStatus.FULFILLED
+                        ),
+                        statement_ids=("p20s_" + "8" * 24,),
+                    ),
+                ),
+            ),
+            currentness=lambda **kwargs: ReportCurrentness.CURRENT,
         )
 
     def _session(self, state):
