@@ -2373,11 +2373,9 @@ class ResearchIntakeCompiler:
         )
         if not comparison_goals:
             return draft
-        if len(comparison_goals) != 1:
-            raise ResearchIntakeError(
-                "INTAKE_TEMPORAL_COMPARISON_AMBIGUOUS",
-                "multiple analytical goals carry temporal-comparison authority",
-            )
+        # Goal ownership is not a second temporal truth. Multiple goals
+        # may consume the same accepted scope-level PAIR without creating
+        # ambiguity; only the actual typed frame can be ambiguous.
         if len(draft.time_periods) != 2:
             raise ResearchIntakeError(
                 "INTAKE_TEMPORAL_COMPARISON_PERIODS_REQUIRED",
