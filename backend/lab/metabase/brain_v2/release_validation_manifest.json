@@ -1,12 +1,12 @@
 {
   "schema_version": "dima_brain_v2_1_release_validation_v1",
-  "status": "FROZEN",
+  "status": "RECERTIFICATION_PENDING",
   "frozen_identity": {
     "product_semantic_sha": "ae4e0348601774082b0270f23d6de126e71e6055",
-    "engine_sha": "a54a13be978985b58aa53b3ca70a6a51ecb3de3b",
+    "engine_sha": "686671fa7e55f715e4fb5ac155f9e66019fd12d8",
     "engine_release": "0.63.18-dima.11.2",
     "engine_runtime_tag": "v0.63.18-dima.11.2.1",
-    "engine_digest": "sha256:34a3acec8d9cd8743c894f3ef4314b406eaeee08c67526328a55ed8e639be763",
+    "engine_digest": "sha256:fe1b6fb67be6dbadea1af5d415f3ba2e033d46f91289f5c3c9844bee20c379bd",
     "acceptance_baseline_backend_head": "5bbf02f9d088d1060ab5e388f41629337ef4e770",
     "migration_head": "ff5b8e2c1a73",
     "grammar_version": "dima_analytical_grammar_v1",
@@ -20,20 +20,21 @@
     }
   },
   "readiness": {
-    "thirty_case_execution_ready": true,
+    "thirty_case_execution_ready": false,
     "ninety_plus_high_confidence_quality_ready": false,
     "ninety_plus_proven": false,
-    "meaning": "A frozen Product+engine candidate exists; required provider-free closure and safety/currentness/dedup infrastructure are GREEN; the evaluation infrastructure is ready. This does not assert 90+ quality."
+    "meaning": "Certified engine correction 686671fa... is pinned to frozen Product ae4e0348...; provider-free recertification and final same-SHA quality panel are pending."
   },
   "provider_free_closure": {
-    "status": "GREEN",
-    "runs": {
+    "status": "PENDING",
+    "previous_engine_runs": {
       "focused_brain_v2": 37391242111,
       "phase2_headless": 37391242219,
       "phase1_aggregate": 37391242264,
       "frozen_family": 37391441309,
       "semantic_conformance_wave_a_wave_b_mutation": 37391441484
-    }
+    },
+    "runs": {}
   },
   "known_release_validation_risks": [
     {
@@ -72,7 +73,7 @@
     "actual_frozen_30_case": false,
     "final_sentinel": false,
     "frontend": false,
-    "note": "Actual frozen 30-case execution requires separate explicit user authorization. No pre-30-case semantic or engine changes are authorized."
+    "note": "Paid/final panel remains OFF until the new certified engine identity passes the full provider-free closure."
   },
   "actual_frozen_30_case_protocol": {
     "required_identity_match": true,
