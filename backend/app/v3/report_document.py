@@ -1095,6 +1095,48 @@ class ReportClaimGate:
             return self._analytical_fact(session=session, statement=statement, principal=principal)
         if statement.statement_kind in {ReportStatementKind.CAUSAL, ReportStatementKind.ROOT_CAUSE, ReportStatementKind.CONTRIBUTION, ReportStatementKind.UNCERTAINTY}:
             return self._p19_statement(session=session, statement=statement, principal=principal)
+        if statement.statement_kind == ReportStatementKind.SYNTHESIS:
+            required = {
+                'synthesis_kind',
+                'supporting_statement_ids',
+                'text',
+            }
+            if set(statement.payload) != required:
+                raise P20ReportError(
+                    'P20_SYNTHESIS_PAYLOAD_INVALID',
+                    statement.statement_id,
+                )
+            text = statement.payload['text']
+            supporting = statement.payload['supporting_statement_ids']
+            if (
+                not isinstance(text, str)
+                or not text.strip()
+                or not isinstance(supporting, list)
+                or not supporting
+                or any(not isinstance(item, str) or not item for item in supporting)
+            ):
+                raise P20ReportError(
+                    'P20_SYNTHESIS_PAYLOAD_INVALID',
+                    statement.statement_id,
+                )
+            # Free-form synthesis never carries new numbers. Exact numeric
+            # statements remain separate governed Evidence-backed statements.
+            if any(char.isdigit() for char in text):
+                raise P20ReportError(
+                    'P20_SYNTHESIS_NUMERIC_FORBIDDEN',
+                    statement.statement_id,
+                )
+            if statement.upstream_epistemic_ceiling != 'GOVERNED_SYNTHESIS':
+                raise P20ReportError(
+                    'P20_SYNTHESIS_CEILING_INVALID',
+                    statement.statement_id,
+                )
+            if not statement.source_refs:
+                raise P20ReportError(
+                    'P20_SYNTHESIS_SOURCE_REQUIRED',
+                    statement.statement_id,
+                )
+            return self._canonical_statement(statement, text)
         if statement.statement_kind == ReportStatementKind.LIMITATION:
             if set(statement.payload) != {'limitation_id'}:
                 raise P20ReportError('P20_LIMITATION_PAYLOAD_INVALID', statement.statement_id)
@@ -1126,11 +1168,18 @@ class ReportClaimGate:
         limitation_map = {item.limitation_id: item for item in draft.limitations}
         if len(limitation_map) != len(draft.limitations):
             raise P20ReportError('P20_LIMITATION_ID_DUPLICATE', draft.report_key)
+        accepted_limitation_ids = set(mandatory) | {
+            item.requirement_id
+            for item in session.accepted_brief.deliverables
+        }
         for limitation in draft.limitations:
-            if limitation.obligation_id not in set(mandatory):
+            if limitation.obligation_id not in accepted_limitation_ids:
                 raise P20ReportError('P20_LIMITATION_OBLIGATION_INVALID', limitation.limitation_id)
             for ref in limitation.source_refs:
-                if ref.obligation_id != limitation.obligation_id:
+                if limitation.obligation_id in set(mandatory):
+                    if ref.obligation_id != limitation.obligation_id:
+                        raise P20ReportError('P20_LIMITATION_SOURCE_SCOPE_INVALID', limitation.limitation_id)
+                elif ref.obligation_id not in set(mandatory):
                     raise P20ReportError('P20_LIMITATION_SOURCE_SCOPE_INVALID', limitation.limitation_id)
                 self._source_snapshot(session=session, ref=ref, principal=principal)
         statement_map = {item.statement_id: item for item in draft.statements}
@@ -1138,6 +1187,80 @@ class ReportClaimGate:
             raise P20ReportError('P20_STATEMENT_ID_DUPLICATE', draft.report_key)
         approved = tuple((self._validate_statement(session=session, statement=item, limitations=limitation_map, principal=principal) for item in draft.statements))
         approved_map = {item.statement_id: item for item in approved}
+
+        # Synthesis may only reorganize/restate already approved governed
+        # statements. It cannot introduce a new source, obligation, numeric
+        # claim, or recursively synthesize another synthesis statement.
+        for statement in approved:
+            if statement.statement_kind != ReportStatementKind.SYNTHESIS:
+                continue
+            support_ids = tuple(statement.payload['supporting_statement_ids'])
+            if len(support_ids) != len(set(support_ids)):
+                raise P20ReportError(
+                    'P20_SYNTHESIS_SUPPORT_DUPLICATE',
+                    statement.statement_id,
+                )
+            supporting = tuple(approved_map.get(item) for item in support_ids)
+            if (
+                any(item is None for item in supporting)
+                or any(
+                    item.statement_kind == ReportStatementKind.SYNTHESIS
+                    for item in supporting
+                    if item is not None
+                )
+            ):
+                raise P20ReportError(
+                    'P20_SYNTHESIS_SUPPORT_INVALID',
+                    statement.statement_id,
+                )
+            support_statements = tuple(
+                item for item in supporting if item is not None
+            )
+            expected_obligations = tuple(
+                sorted(
+                    {
+                        obligation
+                        for item in support_statements
+                        for obligation in item.obligation_refs
+                    }
+                )
+            )
+            if tuple(sorted(statement.obligation_refs)) != expected_obligations:
+                raise P20ReportError(
+                    'P20_SYNTHESIS_OBLIGATION_DRIFT',
+                    statement.statement_id,
+                )
+            expected_sources = {
+                self._source_key(ref)
+                for item in support_statements
+                for ref in item.source_refs
+            }
+            observed_sources = {
+                self._source_key(ref)
+                for ref in statement.source_refs
+            }
+            if observed_sources != expected_sources:
+                raise P20ReportError(
+                    'P20_SYNTHESIS_SOURCE_DRIFT',
+                    statement.statement_id,
+                )
+
+        deliverable_ids = tuple(
+            item.requirement_id
+            for item in session.accepted_brief.deliverables
+        )
+        deliverable_map = {
+            item.requirement_id: item for item in draft.deliverable_coverage
+        }
+        if draft.deliverable_coverage and (
+            len(deliverable_map) != len(draft.deliverable_coverage)
+            or set(deliverable_map) != set(deliverable_ids)
+        ):
+            raise P20ReportError(
+                'P20_DELIVERABLE_COVERAGE_INCOMPLETE',
+                'typed deliverable coverage must exactly cover accepted presentation requirements',
+            )
+
         covered_limitation_ids: set[str] = set()
         for oid in mandatory:
             entry = coverage_map[oid]
@@ -1157,6 +1280,45 @@ class ReportClaimGate:
                 entry = coverage_map[oid]
                 if entry.coverage_status != CoverageStatus.REPRESENTED or statement.statement_id not in entry.statement_ids:
                     raise P20ReportError('P20_STATEMENT_NOT_ACCOUNTED', statement.statement_id)
+        if draft.deliverable_coverage:
+            deliverable_kind_by_id = {
+                item.requirement_id: item.kind
+                for item in session.accepted_brief.deliverables
+            }
+            for requirement_id, entry in deliverable_map.items():
+                if entry.coverage_status == DeliverableCoverageStatus.FULFILLED:
+                    selected = tuple(
+                        approved_map.get(statement_id)
+                        for statement_id in entry.statement_ids
+                    )
+                    if any(item is None for item in selected):
+                        raise P20ReportError(
+                            'P20_DELIVERABLE_STATEMENT_INVALID',
+                            requirement_id,
+                        )
+                    kind = deliverable_kind_by_id[requirement_id]
+                    if kind in {PresentationKind.REPORT, PresentationKind.EXPLAIN} and not any(
+                        item is not None
+                        and item.statement_kind == ReportStatementKind.SYNTHESIS
+                        for item in selected
+                    ):
+                        raise P20ReportError(
+                            'P20_DELIVERABLE_SYNTHESIS_REQUIRED',
+                            requirement_id,
+                        )
+                else:
+                    for limitation_id in entry.limitation_ids:
+                        limitation = limitation_map.get(limitation_id)
+                        if (
+                            limitation is None
+                            or limitation.obligation_id != requirement_id
+                        ):
+                            raise P20ReportError(
+                                'P20_DELIVERABLE_LIMITATION_INVALID',
+                                f'{requirement_id}:{limitation_id}',
+                            )
+                        covered_limitation_ids.add(limitation_id)
+
         referenced_limitations = covered_limitation_ids | {lid for statement in approved for lid in statement.limitation_refs}
         if referenced_limitations != set(limitation_map):
             raise P20ReportError('P20_LIMITATION_NOT_ACCOUNTED', draft.report_key)
