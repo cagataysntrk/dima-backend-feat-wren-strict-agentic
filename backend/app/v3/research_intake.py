@@ -39,12 +39,10 @@ from app.v3.research_contracts import (
     ResearchScope,
     ResearchSemanticRef,
     ResearchTimePeriod,
-    ScopeMutation,
     ScopeMutationKind,
     SemanticTargetKind,
     TemporalRole,
     TurnScopeContract,
-    apply_scope_mutation,
 )
 from app.v3.research_scope_patch import (
     ScopePatchFacet,
@@ -3317,22 +3315,40 @@ class ResearchIntakeCompiler:
                         decision.time_dimension_id
                     )
 
-        calls = self.call_count
         if draft.terminal == ResearchIntakeTerminal.CLARIFY:
             return ResearchIntakeResult(
                 terminal=draft.terminal,
                 clarification_question=draft.clarification_question,
                 catalog_fingerprint=catalog.fingerprint,
-                model_calls=calls,
+                model_calls=self.call_count,
             )
         if draft.terminal == ResearchIntakeTerminal.UNSUPPORTED:
             return ResearchIntakeResult(
                 terminal=draft.terminal,
                 unsupported_reason=draft.unsupported_reason,
                 catalog_fingerprint=catalog.fingerprint,
-                model_calls=calls,
+                model_calls=self.call_count,
             )
 
+        # Turn semantics and ScopeVersion semantics are deliberately separate.
+        # A same-scope continuation inherits the exact accepted scope without a
+        # second interpretation pass. Only an explicitly typed ScopeMutation
+        # opens the bounded FieldMask-style scope-patch owner.
+        followup_scope_result: ResearchIntakeResult | None = None
+        if prior_brief is not None and draft.scope_mutation_kind is not None:
+            followup_scope_result = self._compile_followup_scope_patch(
+                current=current,
+                catalog=catalog,
+                prior_brief=prior_brief,
+            )
+            if (
+                followup_scope_result.terminal
+                != ResearchIntakeTerminal.READY
+                or followup_scope_result.brief is None
+            ):
+                return followup_scope_result
+
+        calls = self.call_count
         by_id = {item.candidate_id: item for item in catalog.semantic_refs}
         questions: list[ResearchQuestion] = []
         scope_refs: dict[str, ResearchSemanticRef] = {}
@@ -3818,89 +3834,65 @@ class ResearchIntakeCompiler:
                     "INTAKE_SCOPE_CONTEXT_MISMATCH",
                     "follow-up scope must remain inside the accepted semantic context",
                 )
-            prior_ids = {
-                item.candidate_id for item in prior_brief.scope.semantic_refs
-            }
-            current_ids = {
-                item.candidate_id for item in draft_scope.semantic_refs
-            }
-            prior_period_identity = tuple(
-                (
-                    item.time_dimension_candidate_id,
-                    item.start,
-                    item.end,
-                )
-                for item in prior_brief.scope.periods
-            )
-            current_period_identity = tuple(
-                (
-                    item.time_dimension_candidate_id,
-                    item.start,
-                    item.end,
-                )
-                for item in draft_scope.periods
-            )
-            changed = (
-                prior_ids != current_ids
-                or prior_period_identity != current_period_identity
-            )
-            if not changed and (
-                tuple(prior_brief.scope.temporal_dimension_ids)
-                != tuple(draft_scope.temporal_dimension_ids)
-                or tuple(prior_brief.scope.native_verification_bindings)
-                != tuple(draft_scope.native_verification_bindings)
-            ):
-                raise ResearchIntakeError(
-                    "INTAKE_SCOPE_CONTEXT_MISMATCH",
-                    "execution verification metadata changed inside one semantic context",
-                )
-            if changed:
-                if draft.scope_mutation_kind is None:
-                    raise ResearchIntakeError(
-                        "INTAKE_SCOPE_MUTATION_KIND_REQUIRED",
-                        "material follow-up scope change requires typed mutation kind",
-                    )
-                try:
-                    scope_contract = apply_scope_mutation(
-                        prior_brief.scope,
-                        ScopeMutation(
-                            kind=draft.scope_mutation_kind,
-                            source_version_id=(
-                                prior_brief.scope.scope_version.version_id
-                            ),
-                            target_semantic_refs=draft_scope.semantic_refs,
-                            target_time_surfaces=draft_scope.time_surfaces,
-                            target_periods=draft_scope.periods,
-                            target_temporal_dimension_ids=(
-                                draft_scope.temporal_dimension_ids
-                            ),
-                            target_native_verification_bindings=(
-                                draft_scope.native_verification_bindings
-                            ),
-                            reason=current,
-                        ),
-                    )
-                except ValueError as exc:
-                    raise ResearchIntakeError(
-                        "INTAKE_SCOPE_MUTATION_INVALID",
-                        str(exc),
-                    ) from exc
-                accepted_scope = scope_contract.current_scope
+
+            if draft.scope_mutation_kind is None:
+                # SAME_SCOPE_CONTINUATION: the current turn may mention only a
+                # subset of the accepted scope while asking for deeper analysis
+                # or a new presentation. Omission is not a removal operation.
+                accepted_scope = prior_brief.scope
             else:
-                if draft.scope_mutation_kind is not None:
+                if (
+                    followup_scope_result is None
+                    or followup_scope_result.brief is None
+                    or followup_scope_result.scope_contract is None
+                ):
                     raise ResearchIntakeError(
-                        "INTAKE_SCOPE_MUTATION_KIND_UNEXPECTED",
+                        "INTAKE_SCOPE_MUTATION_CONTRACT_REQUIRED",
                         draft.scope_mutation_kind.value,
                     )
-                accepted_scope = ResearchScope(
-                    semantic_refs=draft_scope.semantic_refs,
-                    time_surfaces=draft_scope.time_surfaces,
-                    periods=draft_scope.periods,
-                    temporal_dimension_ids=draft_scope.temporal_dimension_ids,
-                    native_verification_bindings=(
-                        draft_scope.native_verification_bindings
-                    ),
-                    scope_version=prior_brief.scope.scope_version,
+                accepted_scope = followup_scope_result.brief.scope
+                scope_contract = followup_scope_result.scope_contract
+
+            accepted_ids = {
+                item.candidate_id for item in accepted_scope.semantic_refs
+            }
+            escaped_refs = sorted(
+                {
+                    item.candidate_id
+                    for item in draft_scope.semantic_refs
+                }
+                - accepted_ids
+            )
+            if escaped_refs:
+                raise ResearchIntakeError(
+                    "INTAKE_FOLLOWUP_REF_OUTSIDE_ACCEPTED_SCOPE",
+                    ",".join(escaped_refs),
+                )
+
+            accepted_periods = {
+                (
+                    item.time_dimension_candidate_id,
+                    item.start,
+                    item.end,
+                    item.role.value,
+                )
+                for item in accepted_scope.periods
+            }
+            requested_periods = {
+                (
+                    item.time_dimension_candidate_id,
+                    item.start,
+                    item.end,
+                    item.role.value,
+                )
+                for item in draft_scope.periods
+            }
+            if requested_periods and not requested_periods.issubset(
+                accepted_periods
+            ):
+                raise ResearchIntakeError(
+                    "INTAKE_FOLLOWUP_PERIOD_OUTSIDE_ACCEPTED_SCOPE",
+                    "current analytical requirement escaped accepted temporal authority",
                 )
 
         identity = {
