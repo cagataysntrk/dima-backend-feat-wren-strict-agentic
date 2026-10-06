@@ -25,6 +25,7 @@ from app.v3.research import (
     ResearchManager,
     ResearchSession,
 )
+from app.v3.research_scope_patch import scope_fingerprint
 from app.v3.research_material_repair import (
     MaterialRepairDisposition,
     decide_material_repair,
@@ -429,16 +430,36 @@ class ResearchBriefAuthoritySealer:
                     "P14_SCOPE_CONTEXT_MISMATCH",
                     "follow-up scope cannot silently switch semantic context",
                 )
-            if (
-                scope_version.ordinal != prior_scope.ordinal + 1
-                or scope_version.parent_version_id != prior_scope.version_id
-            ):
+            same_scope = (
+                scope_version == prior_scope
+                and scope_fingerprint(
+                    brief.scope,
+                    context_version=brief.context_version,
+                )
+                == scope_fingerprint(
+                    prior_brief.scope,
+                    context_version=prior_brief.context_version,
+                )
+            )
+            scope_mutation = (
+                scope_version.ordinal == prior_scope.ordinal + 1
+                and scope_version.parent_version_id == prior_scope.version_id
+            )
+            if not same_scope and not scope_mutation:
                 raise ResearchProductError(
                     "P14_SCOPE_VERSION_MISMATCH",
-                    "follow-up scope must advance exactly one version from the prior session",
+                    (
+                        "follow-up must preserve the exact current ScopeVersion "
+                        "or advance exactly one version for a real ScopeMutation"
+                    ),
                 )
+            if same_scope and brief.scope != prior_brief.scope:
+                # Fingerprint equivalence intentionally ignores presentation
+                # ordering/wording, but the sealed scope snapshot must remain
+                # byte-for-byte immutable on a SAME_SCOPE_CONTINUATION.
+                brief = brief.model_copy(update={"scope": prior_brief.scope})
             lineage_id = prior_session.lineage_id
-            authority_version = scope_version.ordinal
+            authority_version = prior_session.authority_revision + 1
             supersedes = prior_session.authority_id
 
         raw = "\x1f".join(
