@@ -42,6 +42,7 @@ class P20ReportError(RuntimeError):
 
 class ReportStatementKind(StrEnum):
     NUMERIC = 'NUMERIC'
+    SYNTHESIS = 'SYNTHESIS'
     OBSERVATION = 'OBSERVATION'
     ANALYTICAL_FACT = 'ANALYTICAL_FACT'
     CAUSAL = 'CAUSAL'
@@ -62,6 +63,12 @@ class ReportSourceKind(StrEnum):
 class CoverageStatus(StrEnum):
     REPRESENTED = 'REPRESENTED'
     LIMITED = 'LIMITED'
+
+
+class DeliverableCoverageStatus(StrEnum):
+    FULFILLED = 'FULFILLED'
+    LIMITED = 'LIMITED'
+
 
 class ReportCurrentness(StrEnum):
     CURRENT = 'CURRENT'
@@ -135,6 +142,26 @@ class CoverageEntry(Frozen):
             raise ValueError('LIMITED requires limitations and no represented statements')
         return self
 
+class DeliverableCoverageEntry(Frozen):
+    requirement_id: str = Field(min_length=1)
+    coverage_status: DeliverableCoverageStatus
+    statement_ids: tuple[str, ...] = ()
+    limitation_ids: tuple[str, ...] = ()
+
+    @model_validator(mode='after')
+    def coherent(self):
+        if len(self.statement_ids) != len(set(self.statement_ids)):
+            raise ValueError('deliverable coverage statement ids must be unique')
+        if len(self.limitation_ids) != len(set(self.limitation_ids)):
+            raise ValueError('deliverable coverage limitation ids must be unique')
+        if self.coverage_status == DeliverableCoverageStatus.FULFILLED:
+            if not self.statement_ids or self.limitation_ids:
+                raise ValueError('FULFILLED deliverable requires statements and no limitation')
+        elif not self.limitation_ids or self.statement_ids:
+            raise ValueError('LIMITED deliverable requires limitations and no represented statements')
+        return self
+
+
 class ReportStatement(Frozen):
     statement_id: str = Field(pattern='^p20s_[a-f0-9]{24}$')
     statement_kind: ReportStatementKind
@@ -156,9 +183,1870 @@ class ReportStatement(Frozen):
         return self
 
 class ReportDraft(Frozen):
+    research_session_id: str = Field(pattern='^rs_[a-f0-9]{24}
+class ReportDocument(Frozen):
+    report_id: str = Field(pattern='^p20r_[a-f0-9]{24}$')
     research_session_id: str = Field(pattern='^rs_[a-f0-9]{24}$')
+    tenant_binding: str = Field(min_length=1)
+    semantic_context_version: str = Field(min_length=1)
+    report_key: str = Field(min_length=1)
+    revision: int = Field(ge=1)
+    parent_report_id: str | None = Field(default=None, pattern='^p20r_[a-f0-9]{24}$')
+    coverage: tuple[CoverageEntry, ...]
+    deliverable_coverage: tuple[DeliverableCoverageEntry, ...] = ()
+    statements: tuple[ReportStatement, ...]
+    source_refs: tuple[SourceReference, ...]
+    limitations: tuple[ReportLimitation, ...]
+    source_set_fingerprint: str = Field(pattern='^[a-f0-9]{64}$')
+    report_fingerprint: str = Field(pattern='^[a-f0-9]{64}$')
+    created_at: datetime
+
+def _canonical_json(value: Any, *, code: str) -> tuple[str, str]:
+    try:
+        raw = json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(',', ':'), allow_nan=False, default=str)
+    except (TypeError, ValueError) as exc:
+        raise P20ReportError(code, 'value is not deterministic JSON') from exc
+    return (raw, hashlib.sha256(raw.encode('utf-8')).hexdigest())
+
+def _aware(value: datetime | None) -> datetime:
+    stamp = value or datetime.now(timezone.utc)
+    if stamp.tzinfo is None or stamp.utcoffset() is None:
+        raise P20ReportError('P20_TIMEZONE_REQUIRED', 'timestamps must be timezone-aware')
+    return stamp
+
+def _tenant(principal: Principal) -> str:
+    if principal.tenant_id is not None:
+        return f'id:{principal.tenant_id}'
+    if principal.tenant_slug:
+        return f'slug:{principal.tenant_slug}'
+    raise P20ReportError('P20_TENANT_REQUIRED', 'P20 requires explicit tenant binding')
+
+def _subject(principal: Principal) -> str:
+    value = str(principal.user_id).strip()
+    if not value:
+        raise P20ReportError('P20_PRINCIPAL_REQUIRED', 'P20 requires explicit principal')
+    return value
+
+def _analytical_requirement_ids(brief) -> tuple[str, ...]:
+    return tuple(item.goal_id for item in brief.questions)
+
+def _numeric_row_values(payload: Any) -> tuple[tuple[str, int | float], ...]:
+    if not isinstance(payload, dict):
+        return ()
+    data = payload.get('data')
+    if not isinstance(data, dict):
+        return ()
+    rows = data.get('rows')
+    if not isinstance(rows, list):
+        return ()
+    found: list[tuple[str, int | float]] = []
+    for row_index, row in enumerate(rows):
+        if not isinstance(row, list):
+            continue
+        for column_index, value in enumerate(row):
+            if isinstance(value, bool) or not isinstance(value, (int, float)):
+                continue
+            found.append((f'data.rows.{row_index}.{column_index}', value))
+    return tuple(found)
+
+def _path_value(value: Any, path: str, *, code: str) -> Any:
+    current = value
+    for token in path.split('.'):
+        if not token:
+            raise P20ReportError(code, path)
+        if isinstance(current, list):
+            if not token.isdigit():
+                raise P20ReportError(code, path)
+            index = int(token)
+            if index >= len(current):
+                raise P20ReportError(code, path)
+            current = current[index]
+        elif isinstance(current, dict):
+            if token not in current:
+                raise P20ReportError(code, path)
+            current = current[token]
+        else:
+            raise P20ReportError(code, path)
+    return current
+
+def _json_object(raw: str | None, *, code: str) -> Any:
+    if raw is None:
+        raise P20ReportError(code, 'source payload is absent')
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise P20ReportError(code, 'source payload is invalid JSON') from exc
+
+def _render_scalar(value: Any) -> str:
+    return json.dumps(value, ensure_ascii=False, separators=(',', ':'), allow_nan=False)
+
+def stable_statement_id(value: Any) -> str:
+    return 'p20s_' + _canonical_json(value, code='P20_STATEMENT_ID_NOT_CANONICAL')[1][:24]
+
+def stable_limitation_id(value: Any) -> str:
+    return 'p20l_' + _canonical_json(value, code='P20_LIMITATION_ID_NOT_CANONICAL')[1][:24]
+
+class ReportClaimGate:
+    """Deterministic publication legality over exact upstream authority."""
+
+    def __init__(self, *, research_store: ResearchSessionStore, db_engine=None) -> None:
+        self._research = research_store
+        self._engine = db_engine or control_plane_engine
+        self._claims = ClaimLineageStore(research_store=research_store, db_engine=self._engine)
+        self._p19 = HypothesisRootCauseStore(research_store=research_store, db_engine=self._engine)
+
+    def _session(self, session_id: str, principal: Principal):
+        """Load structural Research authority; terminality is checked separately.
+
+        P14 state is not the only legal terminal owner. A relationship obligation
+        may remain READY when one typed co-origin occurrence was deliberately
+        acquired under a sibling anchor and P16/P18 subsequently terminalized the
+        relationship. P20 never mutates P14 to disguise that distinction.
+        """
+        try:
+            session = self._research.load(
+                session_id,
+                tenant=_tenant(principal),
+                principal=_subject(principal),
+            )
+        except ResearchPersistenceError as exc:
+            raise P20ReportError(
+                'P20_RESEARCH_SESSION_SCOPE_INVALID',
+                exc.code,
+            ) from exc
+        if session.accepted_brief is None:
+            raise P20ReportError(
+                'P20_ACCEPTED_BRIEF_REQUIRED',
+                'P20 never reparses the original user prompt',
+            )
+        mandatory = _analytical_requirement_ids(session.accepted_brief)
+        obligation_map = {
+            item.obligation_id: item for item in session.obligations
+        }
+        if not mandatory or tuple(obligation_map) != mandatory:
+            raise P20ReportError(
+                'P20_MANDATORY_OBLIGATION_AUTHORITY_MISMATCH',
+                'P14 execution obligations must exactly equal accepted analytical Research question ids',
+            )
+        if not set(mandatory).issubset(
+            set(session.accepted_brief.must_requirement_ids)
+        ):
+            raise P20ReportError(
+                'P20_MANDATORY_OBLIGATION_AUTHORITY_MISMATCH',
+                'analytical Research requirements left accepted USER_MUST authority',
+            )
+        return (session, mandatory)
+
+    @staticmethod
+    def _assert_sealed(
+        session,
+        mandatory: tuple[str, ...],
+        *,
+        downstream_terminal_ids: set[str] | frozenset[str] = frozenset(),
+    ) -> None:
+        obligation_map = {
+            item.obligation_id: item for item in session.obligations
+        }
+        unresolved = {
+            oid
+            for oid in mandatory
+            if obligation_map[oid].state
+            not in {ObligationState.VERIFIED, ObligationState.LIMITED}
+            and oid not in downstream_terminal_ids
+        }
+        if unresolved:
+            raise P20ReportError(
+                'P20_RESEARCH_SESSION_NOT_SEALED',
+                'analytical Research obligation remains non-terminal',
+            )
+        # USER_MUST completion is derived from terminal owner artifacts above.
+        # Research stopping status is process metadata and may lag behind already-
+        # terminal governed owners; it must not become a second completion truth.
+
+    @staticmethod
+    def _coorigin_coverage_bridge(
+        session,
+        *,
+        source_obligation_id: str,
+        coverage_obligation_id: str,
+        source_kind: ReportSourceKind,
+    ) -> dict[str, str] | None:
+        if source_obligation_id == coverage_obligation_id:
+            return None
+        if source_kind not in {
+            ReportSourceKind.P16_CLAIM,
+            ReportSourceKind.P18_POLICY_USE,
+        }:
+            raise P20ReportError(
+                'P20_SOURCE_OBLIGATION_SCOPE_MISMATCH',
+                coverage_obligation_id,
+            )
+        brief = session.accepted_brief
+        assert brief is not None
+        target = next(
+            (
+                item
+                for item in brief.questions
+                if item.goal_id == coverage_obligation_id
+            ),
+            None,
+        )
+        if target is None or target.kind != ResearchGoalKind.RELATIONSHIP:
+            raise P20ReportError(
+                'P20_SOURCE_OBLIGATION_SCOPE_MISMATCH',
+                coverage_obligation_id,
+            )
+        matches = tuple(
+            item
+            for item in coorigin_material_requirements(session)
+            if item.anchor_goal_id == source_obligation_id
+            and coverage_obligation_id in item.source_goal_ids
+        )
+        if len(matches) != 1:
+            raise P20ReportError(
+                'P20_SOURCE_OBLIGATION_SCOPE_MISMATCH',
+                coverage_obligation_id,
+            )
+        return {
+            'source_obligation_id': source_obligation_id,
+            'coverage_obligation_id': coverage_obligation_id,
+            'material_requirement_ref': matches[0].anchor_goal_id,
+        }
+
+    @staticmethod
+    def _completion_evidence_coverage_bridge(
+        session,
+        terminal: CompletionEvidenceTerminal,
+    ) -> dict[str, str]:
+        brief = session.accepted_brief
+        if brief is None:
+            raise P20ReportError(
+                'P20_ACCEPTED_BRIEF_REQUIRED',
+                session.session_id,
+            )
+        mandatory = {item.goal_id: item for item in brief.questions}
+        target = mandatory.get(terminal.requirement_id)
+        source = mandatory.get(terminal.source_obligation_id)
+        if target is None or source is None:
+            raise P20ReportError(
+                'P20_COMPLETION_EVIDENCE_REQUIREMENT_INVALID',
+                terminal.requirement_id,
+            )
+        if target.kind in {
+            ResearchGoalKind.RELATIONSHIP,
+            ResearchGoalKind.ROOT_CAUSE,
+        }:
+            raise P20ReportError(
+                'P20_COMPLETION_EVIDENCE_OWNER_INVALID',
+                terminal.requirement_id,
+            )
+
+        groups = {
+            item.material_group_id: item
+            for item in project_material_groups(session)
+        }
+        group = groups.get(terminal.material_group_id)
+        if group is None:
+            raise P20ReportError(
+                'P20_COMPLETION_EVIDENCE_GROUP_INVALID',
+                terminal.material_group_id,
+            )
+        if (
+            group.anchor_requirement_id != terminal.source_obligation_id
+            or terminal.requirement_id not in set(group.consumer_requirement_ids)
+            or group.scope_version_id != terminal.scope_version_id
+            or group.material_fingerprint != terminal.material_fingerprint
+            or terminal.scope_version_id
+            != brief.scope.scope_version.version_id
+        ):
+            raise P20ReportError(
+                'P20_COMPLETION_EVIDENCE_AUTHORITY_MISMATCH',
+                terminal.requirement_id,
+            )
+        return {
+            'bridge_kind': 'COMPLETION_P14_EVIDENCE',
+            'source_obligation_id': terminal.source_obligation_id,
+            'coverage_obligation_id': terminal.requirement_id,
+            'material_group_id': terminal.material_group_id,
+            'material_fingerprint': terminal.material_fingerprint,
+            'scope_version_id': terminal.scope_version_id,
+        }
+
+    @staticmethod
+    def _downstream_terminal_ids(
+        snapshots: tuple[dict[str, Any], ...],
+    ) -> set[str]:
+        by_target: dict[str, dict[str, set[str]]] = {}
+        completion_terminal: set[str] = set()
+        for snapshot in snapshots:
+            bridge = snapshot.get('coverage_bridge')
+            if not bridge:
+                continue
+            target = bridge['coverage_obligation_id']
+            if bridge.get('bridge_kind') == 'COMPLETION_P14_EVIDENCE':
+                if snapshot.get('source_kind') != ReportSourceKind.P14_EVIDENCE.value:
+                    raise P20ReportError(
+                        'P20_COMPLETION_EVIDENCE_SOURCE_KIND_INVALID',
+                        target,
+                    )
+                completion_terminal.add(target)
+                continue
+            bucket = by_target.setdefault(
+                target,
+                {'claims': set(), 'policy_claims': set()},
+            )
+            kind = snapshot.get('source_kind')
+            if kind == ReportSourceKind.P16_CLAIM.value:
+                if snapshot.get('claim_epistemic_state') != (
+                    ClaimEpistemicState.PROPOSED.value
+                ):
+                    bucket['claims'].add(str(snapshot.get('claim_id') or ''))
+            elif kind == ReportSourceKind.P18_POLICY_USE.value:
+                bucket['policy_claims'].add(
+                    str(snapshot.get('claim_id') or '')
+                )
+        relationship_terminal = {
+            target
+            for target, bucket in by_target.items()
+            if (bucket['claims'] & bucket['policy_claims']) - {''}
+        }
+        return completion_terminal | relationship_terminal
+
+    @staticmethod
+    def _source_key(ref: SourceReference) -> str:
+        return _canonical_json(ref.model_dump(mode='json'), code='P20_SOURCE_REF_NOT_CANONICAL')[0]
+
+    def _source_snapshot(self, *, session, ref: SourceReference, principal: Principal) -> dict[str, Any]:
+        if ref.obligation_id not in {item.obligation_id for item in session.obligations}:
+            raise P20ReportError('P20_SOURCE_OBLIGATION_INVALID', ref.obligation_id)
+        authority_fingerprint: str
+        bridge: dict[str, str] | None = None
+        source_meta: dict[str, Any] = {}
+        with Session(self._engine) as db:
+            if ref.source_kind == ReportSourceKind.P14_EVIDENCE:
+                source_obligation_id = ref.source_obligation_id or ref.obligation_id
+                rows = tuple(db.exec(select(ResearchExecutionLink).where(ResearchExecutionLink.session_id == session.session_id).where(ResearchExecutionLink.obligation_id == source_obligation_id).where(ResearchExecutionLink.evidence_id == ref.source_ref).where(ResearchExecutionLink.status == 'VERIFIED')).all())
+                if len(rows) != 1:
+                    raise P20ReportError('P20_EVIDENCE_SOURCE_NOT_FOUND', ref.source_ref)
+                row = rows[0]
+                if row.receipt_id != ref.source_receipt_id:
+                    raise P20ReportError('P20_EVIDENCE_RECEIPT_MISMATCH', ref.source_ref)
+                if not any((item.evidence_id == ref.source_ref and item.receipt_id == ref.source_receipt_id and (item.obligation_id == source_obligation_id) for item in session.evidence_refs)):
+                    raise P20ReportError('P20_EVIDENCE_NOT_IN_RESEARCH_AUTHORITY', ref.source_ref)
+                if ref.source_obligation_id is not None:
+                    terminal = CompletionEvidenceTerminal(
+                        requirement_id=ref.obligation_id,
+                        source_obligation_id=ref.source_obligation_id,
+                        evidence_id=ref.source_ref,
+                        receipt_id=str(ref.source_receipt_id),
+                        material_group_id=str(ref.completion_material_group_id),
+                        material_fingerprint=str(ref.completion_material_fingerprint),
+                        scope_version_id=str(ref.completion_scope_version_id),
+                    )
+                    bridge = self._completion_evidence_coverage_bridge(
+                        session,
+                        terminal,
+                    )
+                authority_fingerprint = _canonical_json({'evidence_id': row.evidence_id, 'receipt_id': row.receipt_id, 'query_fingerprint': row.native_query_fingerprint, 'result_hash': row.result_hash, 'status': row.status, 'source_obligation_id': source_obligation_id}, code='P20_EVIDENCE_SOURCE_NOT_CANONICAL')[1]
+            elif ref.source_kind == ReportSourceKind.P15_MATERIAL:
+                row = db.get(ResearchExplorationMaterial, ref.source_ref)
+                if row is None:
+                    raise P20ReportError('P20_MATERIAL_SOURCE_NOT_FOUND', ref.source_ref)
+                if row.session_id != session.session_id or row.obligation_id != ref.obligation_id or row.epistemic_state != 'RESEARCH_MATERIAL':
+                    raise P20ReportError('P20_MATERIAL_SOURCE_SCOPE_MISMATCH', ref.source_ref)
+                authority_fingerprint = _canonical_json({'lead_id': row.lead_id, 'query_fingerprint': row.query_fingerprint, 'payload_fingerprint': row.payload_fingerprint, 'epistemic_state': row.epistemic_state}, code='P20_MATERIAL_SOURCE_NOT_CANONICAL')[1]
+            elif ref.source_kind == ReportSourceKind.P17_REASONING_STEP:
+                row = db.get(ResearchReasoningStepRecord, ref.source_ref)
+                if row is None:
+                    raise P20ReportError('P20_P17_SOURCE_NOT_FOUND', ref.source_ref)
+                if row.session_id != session.session_id or row.parent_obligation_id != ref.obligation_id:
+                    raise P20ReportError('P20_P17_SOURCE_SCOPE_MISMATCH', ref.source_ref)
+                authority_fingerprint = _canonical_json({'step_id': row.step_id, 'proposal_fingerprint': row.proposal_fingerprint, 'status': row.status, 'result_refs_json': row.result_refs_json}, code='P20_P17_SOURCE_NOT_CANONICAL')[1]
+            elif ref.source_kind == ReportSourceKind.P18_POLICY_USE:
+                row = db.get(
+                    BusinessRelationshipPolicyUseRecord,
+                    ref.source_ref,
+                )
+                if row is None:
+                    raise P20ReportError(
+                        'P20_P18_SOURCE_NOT_FOUND',
+                        ref.source_ref,
+                    )
+                if row.research_session_id != session.session_id:
+                    raise P20ReportError(
+                        'P20_P18_SOURCE_SCOPE_MISMATCH',
+                        ref.source_ref,
+                    )
+                bridge = self._coorigin_coverage_bridge(
+                    session,
+                    source_obligation_id=row.obligation_id,
+                    coverage_obligation_id=ref.obligation_id,
+                    source_kind=ref.source_kind,
+                )
+                authority_fingerprint = _canonical_json(
+                    {
+                        'policy_use_id': row.policy_use_id,
+                        'requirement_fingerprint': row.requirement_fingerprint,
+                        'policy_id': row.policy_id,
+                        'policy_fingerprint': row.policy_fingerprint,
+                        'resolution_status': row.resolution_status,
+                        'limitation_code': row.limitation_code,
+                    },
+                    code='P20_P18_SOURCE_NOT_CANONICAL',
+                )[1]
+                source_meta = {
+                    'claim_id': row.claim_id,
+                    'resolution_status': row.resolution_status,
+                }
+            elif ref.source_kind == ReportSourceKind.P16_CLAIM:
+                claim = self._claims.load_claim(
+                    session_id=session.session_id,
+                    claim_id=ref.source_ref,
+                    principal=principal,
+                )
+                bridge = self._coorigin_coverage_bridge(
+                    session,
+                    source_obligation_id=claim.obligation_id,
+                    coverage_obligation_id=ref.obligation_id,
+                    source_kind=ref.source_kind,
+                )
+                authority_fingerprint = _canonical_json(
+                    {
+                        'claim_fingerprint': claim.claim_fingerprint,
+                        'epistemic_state': claim.epistemic_state.value,
+                        'links': [
+                            item.model_dump(mode='json')
+                            for item in claim.evidence_links
+                        ],
+                    },
+                    code='P20_CLAIM_SOURCE_NOT_CANONICAL',
+                )[1]
+                source_meta = {
+                    'claim_id': claim.claim_id,
+                    'claim_epistemic_state': claim.epistemic_state.value,
+                }
+            elif ref.source_kind == ReportSourceKind.P19_ASSESSMENT:
+                assessment = self._p19.load_assessment(assessment_id=ref.source_ref, principal=principal)
+                if assessment.research_session_id != session.session_id or assessment.obligation_id != ref.obligation_id:
+                    raise P20ReportError('P20_P19_SOURCE_SCOPE_MISMATCH', ref.source_ref)
+                authority_fingerprint = assessment.assessment_fingerprint
+            else:
+                raise P20ReportError('P20_SOURCE_KIND_UNSUPPORTED', ref.source_kind.value)
+        return {
+            'source': ref.model_dump(mode='json'),
+            'source_kind': ref.source_kind.value,
+            'authority_fingerprint': authority_fingerprint,
+            'coverage_bridge': bridge,
+            **source_meta,
+        }
+
+    def _payload_for_numeric_source(self, *, session, ref: SourceReference) -> Any:
+        with Session(self._engine) as db:
+            if ref.source_kind == ReportSourceKind.P14_EVIDENCE:
+                source_obligation_id = ref.source_obligation_id or ref.obligation_id
+                rows = tuple(db.exec(select(ResearchExecutionLink).where(ResearchExecutionLink.session_id == session.session_id).where(ResearchExecutionLink.obligation_id == source_obligation_id).where(ResearchExecutionLink.evidence_id == ref.source_ref).where(ResearchExecutionLink.status == 'VERIFIED')).all())
+                if len(rows) != 1 or rows[0].receipt_id != ref.source_receipt_id:
+                    raise P20ReportError('P20_NUMERIC_SOURCE_NOT_FOUND', ref.source_ref)
+                return _json_object(rows[0].native_result_json, code='P20_NUMERIC_SOURCE_PAYLOAD_INVALID')
+            if ref.source_kind == ReportSourceKind.P15_MATERIAL:
+                row = db.get(ResearchExplorationMaterial, ref.source_ref)
+                if row is None or row.session_id != session.session_id or row.obligation_id != ref.obligation_id:
+                    raise P20ReportError('P20_NUMERIC_SOURCE_NOT_FOUND', ref.source_ref)
+                return _json_object(row.native_payload_json, code='P20_NUMERIC_SOURCE_PAYLOAD_INVALID')
+        raise P20ReportError('P20_NUMERIC_SOURCE_KIND_INVALID', ref.source_kind.value)
+
+    @staticmethod
+    def _find_one(statement: ReportStatement, kind: ReportSourceKind) -> SourceReference:
+        refs = tuple((ref for ref in statement.source_refs if ref.source_kind == kind))
+        if len(refs) != 1:
+            raise P20ReportError('P20_STATEMENT_SOURCE_CARDINALITY_INVALID', f'{statement.statement_kind.value}:{kind.value}')
+        return refs[0]
+
+    def _load_hypothesis(self, *, session, obligation_id: str, hypothesis_id: str):
+        with Session(self._engine) as db:
+            row = db.get(HypothesisRecord, hypothesis_id)
+            if row is None:
+                raise P20ReportError('P20_HYPOTHESIS_NOT_FOUND', hypothesis_id)
+            if row.research_session_id != session.session_id or row.obligation_id != obligation_id or row.tenant_binding != session.tenant_binding or (row.semantic_context_version != session.context_version):
+                raise P20ReportError('P20_HYPOTHESIS_SCOPE_MISMATCH', hypothesis_id)
+            return row
+
+    @staticmethod
+    def _canonical_statement(statement: ReportStatement, text: str) -> ReportStatement:
+        if statement.text is not None and statement.text != text:
+            raise P20ReportError('P20_TEXT_NOT_CANONICAL', statement.statement_id)
+        return statement.model_copy(update={'text': text})
+
+    def _numeric_statement(self, *, session, statement: ReportStatement, principal: Principal) -> ReportStatement:
+        numeric_refs = tuple((ref for ref in statement.source_refs if ref.source_kind in {ReportSourceKind.P14_EVIDENCE, ReportSourceKind.P15_MATERIAL} and ref.source_path is not None))
+        if len(numeric_refs) != 1:
+            raise P20ReportError('P20_NUMERIC_PROVENANCE_REQUIRED', statement.statement_id)
+        ref = numeric_refs[0]
+        payload = self._payload_for_numeric_source(session=session, ref=ref)
+        assert ref.source_path is not None
+        value = _path_value(payload, ref.source_path, code='P20_NUMERIC_SOURCE_PATH_INVALID')
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            raise P20ReportError('P20_NUMERIC_SOURCE_NOT_NUMERIC', ref.source_path)
+        allowed = {'value', 'unit', 'label', 'context'}
+        if set(statement.payload) - allowed or statement.payload.get('value') != value:
+            raise P20ReportError('P20_NUMERIC_VALUE_MISMATCH', statement.statement_id)
+
+        projected_fact = governed_tabular_numeric_fact_for_path(
+            payload,
+            ref.source_path,
+        )
+        has_projection = (
+            'label' in statement.payload or 'context' in statement.payload
+        )
+        if has_projection:
+            if projected_fact is None:
+                raise P20ReportError(
+                    'P20_NUMERIC_PRESENTATION_SOURCE_INVALID',
+                    ref.source_path,
+                )
+            expected_context = [
+                item.model_dump(mode='json')
+                for item in projected_fact.context
+            ]
+            if (
+                statement.payload.get('label') != projected_fact.label
+                or statement.payload.get('context') != expected_context
+            ):
+                raise P20ReportError(
+                    'P20_NUMERIC_PRESENTATION_MISMATCH',
+                    statement.statement_id,
+                )
+
+        unit = None
+        if ref.source_unit_path is not None:
+            unit = _path_value(payload, ref.source_unit_path, code='P20_NUMERIC_UNIT_PATH_INVALID')
+            if not isinstance(unit, str) or not unit:
+                raise P20ReportError('P20_NUMERIC_UNIT_INVALID', ref.source_unit_path)
+            if statement.payload.get('unit') != unit:
+                raise P20ReportError('P20_NUMERIC_UNIT_MISMATCH', statement.statement_id)
+        elif 'unit' in statement.payload:
+            raise P20ReportError('P20_NUMERIC_UNIT_PROVENANCE_REQUIRED', statement.statement_id)
+        if ref.source_kind == ReportSourceKind.P15_MATERIAL:
+            p19_ref = self._find_one(statement, ReportSourceKind.P19_ASSESSMENT)
+            assessment = self._p19.load_assessment(assessment_id=p19_ref.source_ref, principal=principal)
+            retained = False
+            for candidate in assessment.candidates:
+                for provenance in candidate.numeric_provenance:
+                    if provenance.source_kind == GroundingSourceKind.P15_MATERIAL and provenance.source_ref == ref.source_ref and (provenance.source_path == ref.source_path):
+                        retained = True
+                        break
+                if retained:
+                    break
+            if not retained:
+                raise P20ReportError('P20_P15_NUMERIC_NOT_GOVERNED_BY_P19', ref.source_ref)
+        if statement.upstream_epistemic_ceiling != 'EXACT_GOVERNED_NUMERIC':
+            raise P20ReportError('P20_NUMERIC_CEILING_MISMATCH', statement.statement_id)
+
+        if has_projection and projected_fact is not None:
+            context = '; '.join(
+                f'{item.label}={item.value}'
+                for item in projected_fact.context
+            )
+            value_text = f'{projected_fact.label}={_render_scalar(value)}'
+            text = f'{context}; {value_text}' if context else value_text
+        else:
+            text = f'Numeric result: {_render_scalar(value)}'
+        if unit is not None:
+            text += f' {unit}'
+        return self._canonical_statement(statement, text)
+
+    def _observation_statement(
+        self,
+        *,
+        session,
+        statement: ReportStatement,
+    ) -> ReportStatement:
+        if statement.upstream_epistemic_ceiling != 'EXACT_GOVERNED_OBSERVATION':
+            raise P20ReportError(
+                'P20_OBSERVATION_CEILING_MISMATCH',
+                statement.statement_id,
+            )
+        if set(statement.payload) != {'context', 'metrics'}:
+            raise P20ReportError(
+                'P20_OBSERVATION_PAYLOAD_INVALID',
+                statement.statement_id,
+            )
+        refs = tuple(statement.source_refs)
+        if (
+            not refs
+            or any(
+                ref.source_kind != ReportSourceKind.P14_EVIDENCE
+                or ref.source_path is None
+                for ref in refs
+            )
+        ):
+            raise P20ReportError(
+                'P20_OBSERVATION_PROVENANCE_REQUIRED',
+                statement.statement_id,
+            )
+        source_identity = {
+            (
+                ref.source_ref,
+                ref.source_receipt_id,
+                ref.obligation_id,
+            )
+            for ref in refs
+        }
+        if len(source_identity) != 1:
+            raise P20ReportError(
+                'P20_OBSERVATION_SOURCE_MIXED',
+                statement.statement_id,
+            )
+        paths = tuple(ref.source_path for ref in refs)
+        if len(paths) != len(set(paths)):
+            raise P20ReportError(
+                'P20_OBSERVATION_SOURCE_DUPLICATE',
+                statement.statement_id,
+            )
+
+        payload = self._payload_for_numeric_source(
+            session=session,
+            ref=refs[0],
+        )
+        expected = next(
+            (
+                item
+                for item in project_governed_tabular_rows(payload)
+                if tuple(metric.source_path for metric in item.metrics) == paths
+            ),
+            None,
+        )
+        if expected is None:
+            raise P20ReportError(
+                'P20_OBSERVATION_SOURCE_ROW_INVALID',
+                statement.statement_id,
+            )
+        expected_payload = {
+            'context': [
+                item.model_dump(mode='json')
+                for item in expected.context
+            ],
+            'metrics': [
+                item.model_dump(mode='json')
+                for item in expected.metrics
+            ],
+        }
+        if statement.payload != expected_payload:
+            raise P20ReportError(
+                'P20_OBSERVATION_PRESENTATION_MISMATCH',
+                statement.statement_id,
+            )
+
+        context = '; '.join(
+            f'{item.label}={item.value}'
+            for item in expected.context
+        )
+        metrics = ', '.join(
+            f'{item.label}={_render_scalar(item.value)}'
+            for item in expected.metrics
+        )
+        text = (
+            f'Observation: {context}: {metrics}'
+            if context
+            else f'Observation: {metrics}'
+        )
+        return self._canonical_statement(statement, text)
+
+    @staticmethod
+    def _column_label(payload: dict[str, Any], column_index: int) -> str:
+        data = payload.get('data')
+        cols = data.get('cols') if isinstance(data, dict) else None
+        if isinstance(cols, list) and column_index < len(cols):
+            item = cols[column_index]
+            if isinstance(item, dict):
+                for key in ('display_name', 'name'):
+                    value = item.get(key)
+                    if isinstance(value, str) and value.strip():
+                        return value.strip()
+        return f'column_{column_index}'
+
+    def _relationship_observed_magnitudes(self, *, session, claim) -> str | None:
+        """Render exact cells selected by P18 without calculating new analytics."""
+
+        if 'relationship_kind' not in claim.proposition:
+            return None
+        raw_cells = claim.proposition.get('salient_cells')
+        if not isinstance(raw_cells, list) or not raw_cells:
+            return None
+
+        links = {item.evidence_id: item for item in claim.evidence_links}
+        observations: list[str] = []
+        seen: set[tuple[str, int, int]] = set()
+        grouped: dict[tuple[str, int], list[tuple[str, Any]]] = {}
+        contexts: dict[tuple[str, int], str | None] = {}
+
+        for raw in raw_cells:
+            if not isinstance(raw, dict) or set(raw) != {
+                'evidence_id',
+                'row_index',
+                'column_index',
+            }:
+                raise P20ReportError('P20_RELATIONSHIP_SALIENT_CELL_INVALID', claim.claim_id)
+            evidence_id = raw.get('evidence_id')
+            row_index = raw.get('row_index')
+            column_index = raw.get('column_index')
+            if (
+                not isinstance(evidence_id, str)
+                or isinstance(row_index, bool)
+                or not isinstance(row_index, int)
+                or row_index < 0
+                or isinstance(column_index, bool)
+                or not isinstance(column_index, int)
+                or column_index < 0
+            ):
+                raise P20ReportError('P20_RELATIONSHIP_SALIENT_CELL_INVALID', claim.claim_id)
+            identity = (evidence_id, row_index, column_index)
+            if identity in seen:
+                raise P20ReportError('P20_RELATIONSHIP_SALIENT_CELL_DUPLICATE', claim.claim_id)
+            seen.add(identity)
+
+            link = links.get(evidence_id)
+            if link is None:
+                raise P20ReportError('P20_RELATIONSHIP_SALIENT_EVIDENCE_INVALID', evidence_id)
+            if not any(
+                item.evidence_id == evidence_id
+                and item.receipt_id == link.receipt_id
+                and item.obligation_id == claim.obligation_id
+                for item in session.evidence_refs
+            ):
+                raise P20ReportError('P20_RELATIONSHIP_SALIENT_EVIDENCE_STALE', evidence_id)
+
+            source = SourceReference(
+                source_kind=ReportSourceKind.P14_EVIDENCE,
+                source_ref=evidence_id,
+                source_receipt_id=link.receipt_id,
+                obligation_id=claim.obligation_id,
+            )
+            payload = self._payload_for_numeric_source(session=session, ref=source)
+            data = payload.get('data')
+            rows = data.get('rows') if isinstance(data, dict) else None
+            if (
+                not isinstance(rows, list)
+                or row_index >= len(rows)
+                or not isinstance(rows[row_index], (list, tuple))
+                or column_index >= len(rows[row_index])
+            ):
+                raise P20ReportError('P20_RELATIONSHIP_SALIENT_CELL_INVALID', claim.claim_id)
+            row = rows[row_index]
+            value = row[column_index]
+            if isinstance(value, bool) or not isinstance(value, (int, float)):
+                raise P20ReportError('P20_RELATIONSHIP_SALIENT_VALUE_NOT_NUMERIC', claim.claim_id)
+
+            group_key = (evidence_id, row_index)
+            grouped.setdefault(group_key, []).append(
+                (self._column_label(payload, column_index), value)
+            )
+            if group_key not in contexts:
+                context = None
+                for index, candidate in enumerate(row):
+                    if index == column_index:
+                        continue
+                    if isinstance(candidate, str) and candidate.strip():
+                        context = (
+                            f'{self._column_label(payload, index)}='
+                            f'{candidate.strip()}'
+                        )
+                        break
+                contexts[group_key] = context
+
+        for group_key, values in grouped.items():
+            context = contexts.get(group_key)
+            rendered = ', '.join(
+                f'{label}={_render_scalar(value)}'
+                for label, value in values
+            )
+            observations.append(
+                f'{context}: {rendered}' if context else rendered
+            )
+        if not observations:
+            return None
+        return 'Observed magnitudes: ' + '; '.join(observations) + '.'
+
+    def _analytical_fact(self, *, session, statement: ReportStatement, principal: Principal) -> ReportStatement:
+        ref = self._find_one(statement, ReportSourceKind.P16_CLAIM)
+        claim = self._claims.load_claim(session_id=session.session_id, claim_id=ref.source_ref, principal=principal)
+        expected_payload = {'claim_id': claim.claim_id, 'epistemic_state': claim.epistemic_state.value}
+        if statement.payload != expected_payload:
+            raise P20ReportError('P20_CLAIM_PAYLOAD_MISMATCH', statement.statement_id)
+        if statement.upstream_epistemic_ceiling != claim.epistemic_state.value:
+            raise P20ReportError('P20_CLAIM_CEILING_MISMATCH', statement.statement_id)
+        if claim.epistemic_state == ClaimEpistemicState.SUPPORTED:
+            text = claim.claim_text
+        else:
+            text = f'{claim.epistemic_state.value}: {claim.claim_text}'
+
+        magnitude = self._relationship_observed_magnitudes(
+            session=session,
+            claim=claim,
+        )
+        if magnitude is not None:
+            text += ' ' + magnitude
+        if 'relationship_kind' in claim.proposition:
+            if claim.epistemic_state == ClaimEpistemicState.SUPPORTED:
+                text += (
+                    ' Decision use: treat the observed relationship as a '
+                    'prioritization and monitoring signal within the current '
+                    'scope, not as causal evidence.'
+                )
+            else:
+                text += (
+                    ' Decision use: do not use this relationship alone for '
+                    'action prioritization; additional governed Evidence is '
+                    'required.'
+                )
+        return self._canonical_statement(statement, text)
+
+    def _p19_statement(self, *, session, statement: ReportStatement, principal: Principal) -> ReportStatement:
+        ref = self._find_one(statement, ReportSourceKind.P19_ASSESSMENT)
+        assessment = self._p19.load_assessment(assessment_id=ref.source_ref, principal=principal)
+        candidate_map = {item.hypothesis_id: item for item in assessment.candidates}
+        if statement.statement_kind in {ReportStatementKind.CAUSAL, ReportStatementKind.ROOT_CAUSE}:
+            if set(statement.payload) != {'hypothesis_id'}:
+                raise P20ReportError('P20_P19_PAYLOAD_INVALID', statement.statement_id)
+            hid = statement.payload['hypothesis_id']
+            if not isinstance(hid, str) or hid not in candidate_map:
+                raise P20ReportError('P20_P19_HYPOTHESIS_INVALID', statement.statement_id)
+            candidate = candidate_map[hid]
+            hypothesis = self._load_hypothesis(session=session, obligation_id=ref.obligation_id, hypothesis_id=hid)
+            if statement.statement_kind == ReportStatementKind.CAUSAL:
+                if candidate.disposition != HypothesisDisposition.RETAINED or candidate.causal_qualification != CausalQualification.DEFENSIBLE_CAUSAL_CONCLUSION or candidate.evidence_strength not in {EvidenceStrength.STRONG, EvidenceStrength.MODERATE} or candidate.identification_limitations or (not candidate.causal_identification_refs):
+                    raise P20ReportError('P20_CAUSAL_AUTHORITY_INSUFFICIENT', hid)
+                if statement.upstream_epistemic_ceiling != CausalQualification.DEFENSIBLE_CAUSAL_CONCLUSION.value:
+                    raise P20ReportError('P20_CAUSAL_CEILING_MISMATCH', statement.statement_id)
+                return self._canonical_statement(statement, f'Causal conclusion: {hypothesis.statement}')
+            if assessment.aggregate_outcome != AggregateOutcome.ROOT_CAUSE_ESTABLISHED or hid not in assessment.root_cause_hypothesis_ids:
+                raise P20ReportError('P20_ROOT_CAUSE_NOT_ESTABLISHED', hid)
+            if statement.upstream_epistemic_ceiling != AggregateOutcome.ROOT_CAUSE_ESTABLISHED.value:
+                raise P20ReportError('P20_ROOT_CAUSE_CEILING_MISMATCH', statement.statement_id)
+            return self._canonical_statement(statement, f'Root cause established: {hypothesis.statement}')
+        if statement.statement_kind == ReportStatementKind.CONTRIBUTION:
+            if set(statement.payload) != {'candidate_hypothesis_ids'}:
+                raise P20ReportError('P20_CONTRIBUTION_PAYLOAD_INVALID', statement.statement_id)
+            raw_ids = statement.payload['candidate_hypothesis_ids']
+            if not isinstance(raw_ids, list) or any((not isinstance(x, str) for x in raw_ids)):
+                raise P20ReportError('P20_CONTRIBUTION_IDS_INVALID', statement.statement_id)
+            governed = tuple((item.hypothesis_id for item in assessment.candidates if item.disposition == HypothesisDisposition.RETAINED and item.contribution_class in {ContributionClass.DOMINANT, ContributionClass.MATERIAL}))
+            if tuple(raw_ids) != governed or not governed:
+                raise P20ReportError('P20_CONTRIBUTION_SET_MISMATCH', statement.statement_id)
+            if assessment.aggregate_outcome == AggregateOutcome.MULTIPLE_MATERIAL_CONTRIBUTORS and len(governed) < 2:
+                raise P20ReportError('P20_MULTIPLE_CONTRIBUTORS_COLLAPSED', statement.statement_id)
+            if statement.upstream_epistemic_ceiling != assessment.aggregate_outcome.value:
+                raise P20ReportError('P20_CONTRIBUTION_CEILING_MISMATCH', statement.statement_id)
+            parts = []
+            for hid in governed:
+                candidate = candidate_map[hid]
+                hypothesis = self._load_hypothesis(session=session, obligation_id=ref.obligation_id, hypothesis_id=hid)
+                parts.append(f'{hypothesis.statement} [{candidate.contribution_class.value}; evidence={candidate.evidence_strength.value}]')
+            return self._canonical_statement(statement, 'Contributors: ' + '; '.join(parts))
+        if statement.statement_kind == ReportStatementKind.UNCERTAINTY:
+            if statement.payload:
+                raise P20ReportError('P20_UNCERTAINTY_PAYLOAD_INVALID', statement.statement_id)
+            if assessment.aggregate_outcome != AggregateOutcome.NO_DEFENSIBLE_ROOT_CAUSE_ESTABLISHED:
+                raise P20ReportError('P20_UNCERTAINTY_OUTCOME_MISMATCH', statement.statement_id)
+            if statement.upstream_epistemic_ceiling != assessment.aggregate_outcome.value:
+                raise P20ReportError('P20_UNCERTAINTY_CEILING_MISMATCH', statement.statement_id)
+            retained = tuple(
+                item
+                for item in assessment.candidates
+                if item.disposition != HypothesisDisposition.REJECTED
+            )
+            parts: list[str] = []
+            for candidate in retained:
+                hypothesis = self._load_hypothesis(
+                    session=session,
+                    obligation_id=ref.obligation_id,
+                    hypothesis_id=candidate.hypothesis_id,
+                )
+                parts.append(
+                    f'{hypothesis.statement} '
+                    f'[epistemic={candidate.epistemic_class.value}; '
+                    f'evidence={candidate.evidence_strength.value}; '
+                    f'causal={candidate.causal_qualification.value}]'
+                )
+            text = 'No defensible root cause established.'
+            if parts:
+                text += ' Retained candidates: ' + '; '.join(parts)
+            return self._canonical_statement(statement, text)
+        raise P20ReportError('P20_P19_STATEMENT_KIND_INVALID', statement.statement_kind.value)
+
+    def _validate_statement(self, *, session, statement: ReportStatement, limitations: dict[str, ReportLimitation], principal: Principal) -> ReportStatement:
+        mandatory = set(_analytical_requirement_ids(session.accepted_brief))
+        if not set(statement.obligation_refs).issubset(mandatory):
+            raise P20ReportError('P20_STATEMENT_OBLIGATION_INVALID', statement.statement_id)
+        if any((ref.obligation_id not in statement.obligation_refs for ref in statement.source_refs)):
+            raise P20ReportError('P20_STATEMENT_SOURCE_SCOPE_INVALID', statement.statement_id)
+        if not set(statement.limitation_refs).issubset(limitations):
+            raise P20ReportError('P20_STATEMENT_LIMITATION_UNKNOWN', statement.statement_id)
+        for ref in statement.source_refs:
+            self._source_snapshot(session=session, ref=ref, principal=principal)
+        if statement.statement_kind == ReportStatementKind.NUMERIC:
+            return self._numeric_statement(session=session, statement=statement, principal=principal)
+        if statement.statement_kind == ReportStatementKind.OBSERVATION:
+            return self._observation_statement(
+                session=session,
+                statement=statement,
+            )
+        if statement.statement_kind == ReportStatementKind.ANALYTICAL_FACT:
+            return self._analytical_fact(session=session, statement=statement, principal=principal)
+        if statement.statement_kind in {ReportStatementKind.CAUSAL, ReportStatementKind.ROOT_CAUSE, ReportStatementKind.CONTRIBUTION, ReportStatementKind.UNCERTAINTY}:
+            return self._p19_statement(session=session, statement=statement, principal=principal)
+        if statement.statement_kind == ReportStatementKind.LIMITATION:
+            if set(statement.payload) != {'limitation_id'}:
+                raise P20ReportError('P20_LIMITATION_PAYLOAD_INVALID', statement.statement_id)
+            lid = statement.payload['limitation_id']
+            limitation = limitations.get(lid)
+            if limitation is None or limitation.obligation_id not in statement.obligation_refs:
+                raise P20ReportError('P20_LIMITATION_REF_INVALID', statement.statement_id)
+            if statement.upstream_epistemic_ceiling != 'LIMITATION':
+                raise P20ReportError('P20_LIMITATION_CEILING_MISMATCH', statement.statement_id)
+            return self._canonical_statement(statement, f'Limitation: {limitation.detail}')
+        if statement.statement_kind == ReportStatementKind.CONTEXT:
+            if statement.source_refs:
+                raise P20ReportError('P20_CONTEXT_SOURCE_FORBIDDEN', statement.statement_id)
+            if set(statement.payload) != {'text'} or not isinstance(statement.payload['text'], str):
+                raise P20ReportError('P20_CONTEXT_PAYLOAD_INVALID', statement.statement_id)
+            if statement.upstream_epistemic_ceiling != 'CONTEXT_ONLY':
+                raise P20ReportError('P20_CONTEXT_CEILING_MISMATCH', statement.statement_id)
+            return self._canonical_statement(statement, statement.payload['text'])
+        raise P20ReportError('P20_STATEMENT_KIND_UNSUPPORTED', statement.statement_kind.value)
+
+    def validate(self, *, draft: ReportDraft, principal: Principal):
+        session, mandatory = self._session(
+            draft.research_session_id,
+            principal,
+        )
+        coverage_map = {item.obligation_id: item for item in draft.coverage}
+        if len(coverage_map) != len(draft.coverage) or set(coverage_map) != set(mandatory):
+            raise P20ReportError('P20_USER_MUST_COVERAGE_INCOMPLETE', 'every accepted analytical Research requirement must have exactly one report-content coverage entry')
+        limitation_map = {item.limitation_id: item for item in draft.limitations}
+        if len(limitation_map) != len(draft.limitations):
+            raise P20ReportError('P20_LIMITATION_ID_DUPLICATE', draft.report_key)
+        for limitation in draft.limitations:
+            if limitation.obligation_id not in set(mandatory):
+                raise P20ReportError('P20_LIMITATION_OBLIGATION_INVALID', limitation.limitation_id)
+            for ref in limitation.source_refs:
+                if ref.obligation_id != limitation.obligation_id:
+                    raise P20ReportError('P20_LIMITATION_SOURCE_SCOPE_INVALID', limitation.limitation_id)
+                self._source_snapshot(session=session, ref=ref, principal=principal)
+        statement_map = {item.statement_id: item for item in draft.statements}
+        if len(statement_map) != len(draft.statements):
+            raise P20ReportError('P20_STATEMENT_ID_DUPLICATE', draft.report_key)
+        approved = tuple((self._validate_statement(session=session, statement=item, limitations=limitation_map, principal=principal) for item in draft.statements))
+        approved_map = {item.statement_id: item for item in approved}
+        covered_limitation_ids: set[str] = set()
+        for oid in mandatory:
+            entry = coverage_map[oid]
+            if entry.coverage_status == CoverageStatus.REPRESENTED:
+                for sid in entry.statement_ids:
+                    statement = approved_map.get(sid)
+                    if statement is None or oid not in statement.obligation_refs:
+                        raise P20ReportError('P20_USER_MUST_STATEMENT_INVALID', f'{oid}:{sid}')
+            else:
+                for lid in entry.limitation_ids:
+                    limitation = limitation_map.get(lid)
+                    if limitation is None or limitation.obligation_id != oid:
+                        raise P20ReportError('P20_USER_MUST_LIMITATION_INVALID', f'{oid}:{lid}')
+                    covered_limitation_ids.add(lid)
+        for statement in approved:
+            for oid in statement.obligation_refs:
+                entry = coverage_map[oid]
+                if entry.coverage_status != CoverageStatus.REPRESENTED or statement.statement_id not in entry.statement_ids:
+                    raise P20ReportError('P20_STATEMENT_NOT_ACCOUNTED', statement.statement_id)
+        referenced_limitations = covered_limitation_ids | {lid for statement in approved for lid in statement.limitation_refs}
+        if referenced_limitations != set(limitation_map):
+            raise P20ReportError('P20_LIMITATION_NOT_ACCOUNTED', draft.report_key)
+        source_by_key: dict[str, SourceReference] = {}
+        for statement in approved:
+            for ref in statement.source_refs:
+                source_by_key[self._source_key(ref)] = ref
+        for limitation in draft.limitations:
+            for ref in limitation.source_refs:
+                source_by_key[self._source_key(ref)] = ref
+        sources = tuple((source_by_key[key] for key in sorted(source_by_key)))
+        snapshots = tuple(
+            self._source_snapshot(
+                session=session,
+                ref=ref,
+                principal=principal,
+            )
+            for ref in sources
+        )
+        self._assert_sealed(
+            session,
+            mandatory,
+            downstream_terminal_ids=self._downstream_terminal_ids(
+                snapshots
+            ),
+        )
+        if session.accepted_brief is None:
+            raise P20ReportError(
+                'P20_ACCEPTED_BRIEF_REQUIRED',
+                session.session_id,
+            )
+        source_set_identity = {
+            'research_authority_id': session.authority_id,
+            'research_session_id': session.session_id,
+            'semantic_context_version': session.context_version,
+            'scope_fingerprint': session.accepted_brief.scope_fingerprint,
+            'mandatory_obligation_ids': list(mandatory),
+            'sources': list(snapshots),
+        }
+        source_set_fingerprint = _canonical_json(source_set_identity, code='P20_SOURCE_SET_NOT_CANONICAL')[1]
+        return (session, mandatory, approved, sources, source_set_fingerprint)
+
+class ReportDocumentStore:
+    """Single durable P20 owner for immutable ReportDocument snapshots."""
+
+    def __init__(self, *, research_store: ResearchSessionStore, db_engine=None) -> None:
+        self._research = research_store
+        self._engine = db_engine or control_plane_engine
+        self._gate = ReportClaimGate(research_store=research_store, db_engine=self._engine)
+
+    @staticmethod
+    def _relationship_source_anchor(
+        snapshot: dict[str, Any],
+        *,
+        target_requirement_id: str,
+    ) -> str:
+        """Return the material/source authority feeding one P18 terminal.
+
+        The terminal requirement identity belongs to P18. A shared-material
+        claim/policy may originate from another analytical obligation only via
+        the existing typed co-origin coverage bridge.
+        """
+
+        bridge = snapshot.get('coverage_bridge')
+        if not bridge:
+            return target_requirement_id
+        coverage = str(bridge.get('coverage_obligation_id') or '').strip()
+        source = str(bridge.get('source_obligation_id') or '').strip()
+        material = str(bridge.get('material_requirement_ref') or '').strip()
+        if (
+            coverage != target_requirement_id
+            or not source
+            or source != material
+        ):
+            raise P20ReportError(
+                'P20_RELATIONSHIP_RESULT_AUTHORITY_MISMATCH',
+                target_requirement_id,
+            )
+        return source
+
+    def draft_from_governed_research(
+        self,
+        *,
+        research_session_id: str,
+        report_key: str,
+        principal: Principal,
+        relationship_results: tuple[RelationshipResultProjection, ...] = (),
+        completion_evidence_terminals: tuple[CompletionEvidenceTerminal, ...] = (),
+        explicit_limitations: tuple[ReportLimitation, ...] = (),
+    ) -> ReportDraft:
+        """Project report content from terminal analytical authority only.
+
+        Presentation deliverables are fulfilled by the sealed report at Product Composition;
+        they are never P20 content-coverage obligations.
+        """
+        session, mandatory = self._gate._session(
+            research_session_id,
+            principal,
+        )
+        completion_by_goal: dict[str, SourceReference] = {}
+        bridge_snapshots: list[dict[str, Any]] = []
+        for terminal in completion_evidence_terminals:
+            if terminal.requirement_id in completion_by_goal:
+                raise P20ReportError(
+                    'P20_COMPLETION_EVIDENCE_DUPLICATE',
+                    terminal.requirement_id,
+                )
+            ref = SourceReference(
+                source_kind=ReportSourceKind.P14_EVIDENCE,
+                source_ref=terminal.evidence_id,
+                source_receipt_id=terminal.receipt_id,
+                obligation_id=terminal.requirement_id,
+                source_obligation_id=terminal.source_obligation_id,
+                completion_material_group_id=terminal.material_group_id,
+                completion_material_fingerprint=terminal.material_fingerprint,
+                completion_scope_version_id=terminal.scope_version_id,
+            )
+            snapshot = self._gate._source_snapshot(
+                session=session,
+                ref=ref,
+                principal=principal,
+            )
+            completion_by_goal[terminal.requirement_id] = ref
+            bridge_snapshots.append(snapshot)
+        relationship_by_goal: dict[
+            str,
+            tuple[
+                RelationshipResultProjection,
+                SourceReference,
+                SourceReference,
+            ],
+        ] = {}
+        for result in relationship_results:
+            if result.research_session_id != session.session_id:
+                raise P20ReportError(
+                    'P20_RELATIONSHIP_RESULT_SESSION_MISMATCH',
+                    result.research_session_id,
+                )
+            target_id = str(result.obligation_id or '').strip()
+            declared_target_id = str(
+                result.applicability_scope.get(
+                    'accepted_relationship_goal_id'
+                )
+                or ''
+            ).strip()
+            if (
+                not target_id
+                or declared_target_id != target_id
+                or target_id in relationship_by_goal
+            ):
+                raise P20ReportError(
+                    'P20_RELATIONSHIP_RESULT_TARGET_INVALID',
+                    target_id or declared_target_id or result.policy_use_id,
+                )
+            if (
+                result.scope_lineage_id != session.lineage_id
+                or session.accepted_brief is None
+                or result.scope_version_id
+                != session.accepted_brief.scope.scope_version.version_id
+            ):
+                raise P20ReportError(
+                    'P20_RELATIONSHIP_RESULT_SCOPE_MISMATCH',
+                    target_id,
+                )
+            claim_source = SourceReference(
+                source_kind=ReportSourceKind.P16_CLAIM,
+                source_ref=result.claim_id,
+                obligation_id=target_id,
+            )
+            policy_source = SourceReference(
+                source_kind=ReportSourceKind.P18_POLICY_USE,
+                source_ref=result.policy_use_id,
+                obligation_id=target_id,
+            )
+            claim_snapshot = self._gate._source_snapshot(
+                session=session,
+                ref=claim_source,
+                principal=principal,
+            )
+            policy_snapshot = self._gate._source_snapshot(
+                session=session,
+                ref=policy_source,
+                principal=principal,
+            )
+            claim_anchor = self._relationship_source_anchor(
+                claim_snapshot,
+                target_requirement_id=target_id,
+            )
+            policy_anchor = self._relationship_source_anchor(
+                policy_snapshot,
+                target_requirement_id=target_id,
+            )
+            if (
+                claim_snapshot.get('claim_id') != result.claim_id
+                or policy_snapshot.get('claim_id') != result.claim_id
+                or claim_anchor != policy_anchor
+            ):
+                raise P20ReportError(
+                    'P20_RELATIONSHIP_RESULT_AUTHORITY_MISMATCH',
+                    target_id,
+                )
+            relationship_by_goal[target_id] = (
+                result,
+                claim_source,
+                policy_source,
+            )
+            bridge_snapshots.extend((claim_snapshot, policy_snapshot))
+
+        downstream_terminal_ids = self._gate._downstream_terminal_ids(
+            tuple(bridge_snapshots)
+        )
+        self._gate._assert_sealed(
+            session,
+            mandatory,
+            downstream_terminal_ids=downstream_terminal_ids,
+        )
+        explicit_by_obligation: dict[str, ReportLimitation] = {}
+        for limitation in explicit_limitations:
+            if limitation.obligation_id not in set(mandatory):
+                raise P20ReportError('P20_LIMITATION_OBLIGATION_INVALID', limitation.limitation_id)
+            if limitation.obligation_id in explicit_by_obligation:
+                raise P20ReportError('P20_LIMITATION_OBLIGATION_DUPLICATE', limitation.obligation_id)
+            bridge = relationship_by_goal.get(limitation.obligation_id)
+            if bridge is not None and not limitation.source_refs:
+                _, claim_source, policy_source = bridge
+                limitation = limitation.model_copy(
+                    update={
+                        'source_refs': (
+                            claim_source,
+                            policy_source,
+                        )
+                    }
+                )
+            explicit_by_obligation[limitation.obligation_id] = limitation
+
+        obligation_map = {item.obligation_id: item for item in session.obligations}
+        research_limitations = {
+            item.limitation_id: item
+            for item in session.limitations
+        }
+        coverage: list[CoverageEntry] = []
+        statements: list[ReportStatement] = []
+        limitations: list[ReportLimitation] = []
+
+        for obligation_id in mandatory:
+            explicit = explicit_by_obligation.get(obligation_id)
+            if explicit is not None:
+                limitations.append(explicit)
+                coverage.append(
+                    CoverageEntry(
+                        obligation_id=obligation_id,
+                        coverage_status=CoverageStatus.LIMITED,
+                        limitation_ids=(explicit.limitation_id,),
+                    )
+                )
+                continue
+
+            bridge = relationship_by_goal.get(obligation_id)
+            if bridge is not None:
+                result, claim_source, policy_source = bridge
+                claim = self._gate._claims.load_claim(
+                    session_id=session.session_id,
+                    claim_id=result.claim_id,
+                    principal=principal,
+                )
+                claim_limitation_ids: list[str] = []
+                for detail in claim.limitations:
+                    limitation_id = stable_limitation_id(
+                        {
+                            'session_id': session.session_id,
+                            'obligation_id': obligation_id,
+                            'claim_id': claim.claim_id,
+                            'detail': detail,
+                        }
+                    )
+                    limitations.append(
+                        ReportLimitation(
+                            limitation_id=limitation_id,
+                            obligation_id=obligation_id,
+                            code='P16_CLAIM_LIMITATION',
+                            detail=detail,
+                            source_refs=(claim_source,),
+                        )
+                    )
+                    claim_limitation_ids.append(limitation_id)
+                statement_id = stable_statement_id(
+                    {
+                        'kind': ReportStatementKind.ANALYTICAL_FACT.value,
+                        'claim_id': claim.claim_id,
+                        'epistemic_state': claim.epistemic_state.value,
+                        'coverage_obligation_id': obligation_id,
+                        'source_refs': [
+                            claim_source.model_dump(mode='json'),
+                            policy_source.model_dump(mode='json'),
+                        ],
+                        'limitation_refs': claim_limitation_ids,
+                    }
+                )
+                statements.append(
+                    ReportStatement(
+                        statement_id=statement_id,
+                        statement_kind=ReportStatementKind.ANALYTICAL_FACT,
+                        source_refs=(claim_source, policy_source),
+                        obligation_refs=(obligation_id,),
+                        limitation_refs=tuple(claim_limitation_ids),
+                        upstream_epistemic_ceiling=claim.epistemic_state.value,
+                        payload={
+                            'claim_id': claim.claim_id,
+                            'epistemic_state': claim.epistemic_state.value,
+                        },
+                    )
+                )
+                coverage.append(
+                    CoverageEntry(
+                        obligation_id=obligation_id,
+                        coverage_status=CoverageStatus.REPRESENTED,
+                        statement_ids=(statement_id,),
+                    )
+                )
+                continue
+
+            completion_source = completion_by_goal.get(obligation_id)
+            if completion_source is not None:
+                payload = self._gate._payload_for_numeric_source(
+                    session=session,
+                    ref=completion_source,
+                )
+                projected_ids: list[str] = []
+                for observation in project_governed_tabular_rows(payload):
+                    sources = tuple(
+                        completion_source.model_copy(
+                            update={'source_path': metric.source_path}
+                        )
+                        for metric in observation.metrics
+                    )
+                    observation_payload = {
+                        'context': [
+                            item.model_dump(mode='json')
+                            for item in observation.context
+                        ],
+                        'metrics': [
+                            item.model_dump(mode='json')
+                            for item in observation.metrics
+                        ],
+                    }
+                    statement_id = stable_statement_id(
+                        {
+                            'kind': ReportStatementKind.OBSERVATION.value,
+                            'sources': [
+                                source.model_dump(mode='json')
+                                for source in sources
+                            ],
+                            'observation': observation_payload,
+                            'completion_requirement_id': obligation_id,
+                        }
+                    )
+                    statements.append(
+                        ReportStatement(
+                            statement_id=statement_id,
+                            statement_kind=ReportStatementKind.OBSERVATION,
+                            source_refs=sources,
+                            obligation_refs=(obligation_id,),
+                            upstream_epistemic_ceiling='EXACT_GOVERNED_OBSERVATION',
+                            payload=observation_payload,
+                        )
+                    )
+                    projected_ids.append(statement_id)
+                if not projected_ids:
+                    raise P20ReportError(
+                        'P20_COMPLETION_EVIDENCE_NOT_PUBLISHABLE',
+                        obligation_id,
+                    )
+                coverage.append(
+                    CoverageEntry(
+                        obligation_id=obligation_id,
+                        coverage_status=CoverageStatus.REPRESENTED,
+                        statement_ids=tuple(projected_ids),
+                    )
+                )
+                continue
+
+            obligation = obligation_map[obligation_id]
+            if obligation.state == ObligationState.LIMITED:
+                owned = tuple(
+                    research_limitations[lid]
+                    for lid in obligation.limitation_refs
+                    if lid in research_limitations
+                )
+                if not owned:
+                    raise P20ReportError(
+                        'P20_LIMITED_OBLIGATION_DETAIL_REQUIRED',
+                        obligation_id,
+                    )
+                ids: list[str] = []
+                for item in owned:
+                    limitation_id = stable_limitation_id(
+                        {
+                            'session_id': session.session_id,
+                            'obligation_id': obligation_id,
+                            'research_limitation_id': item.limitation_id,
+                            'code': item.code,
+                            'detail': item.detail,
+                        }
+                    )
+                    limitation = ReportLimitation(
+                        limitation_id=limitation_id,
+                        obligation_id=obligation_id,
+                        code=item.code,
+                        detail=item.detail,
+                    )
+                    limitations.append(limitation)
+                    ids.append(limitation_id)
+                coverage.append(
+                    CoverageEntry(
+                        obligation_id=obligation_id,
+                        coverage_status=CoverageStatus.LIMITED,
+                        limitation_ids=tuple(ids),
+                    )
+                )
+                continue
+
+            approved_ids: list[str] = []
+
+            # P16 already owns durable analytical claims and their epistemic
+            # state. P20 projects those governed claims; it never recomputes
+            # or strengthens them. P18 resolution receipts are provenance
+            # only and do not upgrade the claim ceiling.
+            with Session(self._engine) as db:
+                claim_rows = tuple(
+                    db.exec(
+                        select(ResearchClaimRecord)
+                        .where(
+                            ResearchClaimRecord.session_id
+                            == session.session_id
+                        )
+                        .where(
+                            ResearchClaimRecord.obligation_id
+                            == obligation_id
+                        )
+                        .order_by(ResearchClaimRecord.claim_id)
+                    ).all()
+                )
+            for claim_row in claim_rows:
+                claim = self._gate._claims.load_claim(
+                    session_id=session.session_id,
+                    claim_id=claim_row.claim_id,
+                    principal=principal,
+                )
+                if claim.epistemic_state == ClaimEpistemicState.PROPOSED:
+                    continue
+                claim_source = SourceReference(
+                    source_kind=ReportSourceKind.P16_CLAIM,
+                    source_ref=claim.claim_id,
+                    obligation_id=obligation_id,
+                )
+                with Session(self._engine) as db:
+                    policy_rows = tuple(
+                        db.exec(
+                            select(BusinessRelationshipPolicyUseRecord)
+                            .where(
+                                BusinessRelationshipPolicyUseRecord.research_session_id
+                                == session.session_id
+                            )
+                            .where(
+                                BusinessRelationshipPolicyUseRecord.obligation_id
+                                == obligation_id
+                            )
+                            .where(
+                                BusinessRelationshipPolicyUseRecord.claim_id
+                                == claim.claim_id
+                            )
+                            .order_by(
+                                BusinessRelationshipPolicyUseRecord.policy_use_id
+                            )
+                        ).all()
+                    )
+                provenance = [claim_source]
+                provenance.extend(
+                    SourceReference(
+                        source_kind=ReportSourceKind.P18_POLICY_USE,
+                        source_ref=row.policy_use_id,
+                        obligation_id=obligation_id,
+                    )
+                    for row in policy_rows
+                )
+                claim_limitation_ids: list[str] = []
+                for detail in claim.limitations:
+                    limitation_id = stable_limitation_id(
+                        {
+                            "session_id": session.session_id,
+                            "obligation_id": obligation_id,
+                            "claim_id": claim.claim_id,
+                            "detail": detail,
+                        }
+                    )
+                    limitations.append(
+                        ReportLimitation(
+                            limitation_id=limitation_id,
+                            obligation_id=obligation_id,
+                            code="P16_CLAIM_LIMITATION",
+                            detail=detail,
+                            source_refs=(claim_source,),
+                        )
+                    )
+                    claim_limitation_ids.append(limitation_id)
+                statement_id = stable_statement_id(
+                    {
+                        "kind": ReportStatementKind.ANALYTICAL_FACT.value,
+                        "claim_id": claim.claim_id,
+                        "epistemic_state": claim.epistemic_state.value,
+                        "source_refs": [
+                            item.model_dump(mode="json")
+                            for item in provenance
+                        ],
+                        "limitation_refs": claim_limitation_ids,
+                    }
+                )
+                statements.append(
+                    ReportStatement(
+                        statement_id=statement_id,
+                        statement_kind=ReportStatementKind.ANALYTICAL_FACT,
+                        source_refs=tuple(provenance),
+                        obligation_refs=(obligation_id,),
+                        limitation_refs=tuple(claim_limitation_ids),
+                        upstream_epistemic_ceiling=claim.epistemic_state.value,
+                        payload={
+                            "claim_id": claim.claim_id,
+                            "epistemic_state": claim.epistemic_state.value,
+                        },
+                    )
+                )
+                approved_ids.append(statement_id)
+
+            for evidence in (
+                item for item in session.evidence_refs
+                if item.obligation_id == obligation_id
+            ):
+                with Session(self._engine) as db:
+                    rows = tuple(
+                        db.exec(
+                            select(ResearchExecutionLink)
+                            .where(ResearchExecutionLink.session_id == session.session_id)
+                            .where(ResearchExecutionLink.obligation_id == obligation_id)
+                            .where(ResearchExecutionLink.evidence_id == evidence.evidence_id)
+                            .where(ResearchExecutionLink.receipt_id == evidence.receipt_id)
+                            .where(ResearchExecutionLink.status == 'VERIFIED')
+                        ).all()
+                    )
+                if len(rows) != 1:
+                    continue
+                payload = _json_object(
+                    rows[0].native_result_json,
+                    code='P20_NUMERIC_SOURCE_PAYLOAD_INVALID',
+                )
+                for observation in project_governed_tabular_rows(payload):
+                    sources = tuple(
+                        SourceReference(
+                            source_kind=ReportSourceKind.P14_EVIDENCE,
+                            source_ref=evidence.evidence_id,
+                            source_receipt_id=evidence.receipt_id,
+                            obligation_id=obligation_id,
+                            source_path=metric.source_path,
+                        )
+                        for metric in observation.metrics
+                    )
+                    observation_payload = {
+                        'context': [
+                            item.model_dump(mode='json')
+                            for item in observation.context
+                        ],
+                        'metrics': [
+                            item.model_dump(mode='json')
+                            for item in observation.metrics
+                        ],
+                    }
+                    statement_id = stable_statement_id(
+                        {
+                            'kind': ReportStatementKind.OBSERVATION.value,
+                            'sources': [
+                                source.model_dump(mode='json')
+                                for source in sources
+                            ],
+                            'observation': observation_payload,
+                        }
+                    )
+                    statements.append(
+                        ReportStatement(
+                            statement_id=statement_id,
+                            statement_kind=ReportStatementKind.OBSERVATION,
+                            source_refs=sources,
+                            obligation_refs=(obligation_id,),
+                            upstream_epistemic_ceiling='EXACT_GOVERNED_OBSERVATION',
+                            payload=observation_payload,
+                        )
+                    )
+                    approved_ids.append(statement_id)
+
+            if approved_ids:
+                coverage.append(
+                    CoverageEntry(
+                        obligation_id=obligation_id,
+                        coverage_status=CoverageStatus.REPRESENTED,
+                        statement_ids=tuple(dict.fromkeys(approved_ids)),
+                    )
+                )
+                continue
+
+            limitation_id = stable_limitation_id(
+                {
+                    'session_id': session.session_id,
+                    'obligation_id': obligation_id,
+                    'code': 'P20_NO_GOVERNED_PUBLISHABLE_FACT',
+                }
+            )
+            limitation = ReportLimitation(
+                limitation_id=limitation_id,
+                obligation_id=obligation_id,
+                code='P20_NO_GOVERNED_PUBLISHABLE_FACT',
+                detail=(
+                    'The analytical requirement is terminal, but its governed upstream '
+                    'artifacts contain no exact fact eligible under the existing P20 '
+                    'publication contracts.'
+                ),
+            )
+            limitations.append(limitation)
+            coverage.append(
+                CoverageEntry(
+                    obligation_id=obligation_id,
+                    coverage_status=CoverageStatus.LIMITED,
+                    limitation_ids=(limitation_id,),
+                )
+            )
+
+        return ReportDraft(
+            research_session_id=research_session_id,
+            report_key=report_key,
+            coverage=tuple(coverage),
+            statements=tuple(statements),
+            limitations=tuple(limitations),
+        )
+
+    @staticmethod
+    def _with_observation_only_report_transparency(
+        *,
+        draft: ReportDraft,
+        session,
+    ) -> ReportDraft:
+        """Expose the epistemic ceiling when REPORT has descriptive Evidence only.
+
+        This is final-draft presentation policy. It never creates an analytical
+        finding and must run only after any P16/P18/P19 statements have already
+        been composed into the draft.
+        """
+
+        brief = session.accepted_brief
+        if brief is None or not any(
+            item.kind == PresentationKind.REPORT
+            for item in brief.deliverables
+        ):
+            return draft
+
+        coverage_by_id = {
+            item.obligation_id: item
+            for item in draft.coverage
+        }
+        statement_by_id = {
+            item.statement_id: item
+            for item in draft.statements
+        }
+        existing_by_obligation = {
+            item.obligation_id
+            for item in draft.limitations
+            if item.code == 'P20_REPORT_OBSERVATION_ONLY'
+        }
+
+        observation_kinds = {
+            ReportStatementKind.OBSERVATION,
+            ReportStatementKind.NUMERIC,
+        }
+        interpretation_kinds = {
+            ReportStatementKind.ANALYTICAL_FACT,
+            ReportStatementKind.CAUSAL,
+            ReportStatementKind.ROOT_CAUSE,
+            ReportStatementKind.CONTRIBUTION,
+            ReportStatementKind.UNCERTAINTY,
+        }
+
+        additions: list[ReportStatement] = []
+        limitations = list(draft.limitations)
+        coverage_updates: dict[str, CoverageEntry] = {}
+
+        for obligation_id in _analytical_requirement_ids(brief):
+            entry = coverage_by_id.get(obligation_id)
+            if (
+                entry is None
+                or entry.coverage_status != CoverageStatus.REPRESENTED
+                or obligation_id in existing_by_obligation
+            ):
+                continue
+            owned = tuple(
+                statement_by_id[sid]
+                for sid in entry.statement_ids
+                if sid in statement_by_id
+            )
+            has_observation = any(
+                item.statement_kind in observation_kinds
+                for item in owned
+            )
+            has_interpretation = any(
+                item.statement_kind in interpretation_kinds
+                for item in owned
+            )
+            if not has_observation or has_interpretation:
+                continue
+
+            limitation_id = stable_limitation_id(
+                {
+                    'session_id': session.session_id,
+                    'obligation_id': obligation_id,
+                    'code': 'P20_REPORT_OBSERVATION_ONLY',
+                }
+            )
+            detail = (
+                'Only exact governed descriptive evidence is available for this '
+                'requirement. No governed analytical finding, relationship '
+                'judgment, or RCA assessment is present, so interpretation is '
+                'intentionally limited to descriptive evidence.'
+            )
+            limitation = ReportLimitation(
+                limitation_id=limitation_id,
+                obligation_id=obligation_id,
+                code='P20_REPORT_OBSERVATION_ONLY',
+                detail=detail,
+            )
+            statement_id = stable_statement_id(
+                {
+                    'kind': ReportStatementKind.LIMITATION.value,
+                    'limitation_id': limitation_id,
+                    'obligation_id': obligation_id,
+                }
+            )
+            statement = ReportStatement(
+                statement_id=statement_id,
+                statement_kind=ReportStatementKind.LIMITATION,
+                obligation_refs=(obligation_id,),
+                limitation_refs=(limitation_id,),
+                upstream_epistemic_ceiling='LIMITATION',
+                payload={'limitation_id': limitation_id},
+            )
+            limitations.append(limitation)
+            additions.append(statement)
+            coverage_updates[obligation_id] = entry.model_copy(
+                update={
+                    'statement_ids': tuple(
+                        dict.fromkeys(
+                            (*entry.statement_ids, statement_id)
+                        )
+                    )
+                }
+            )
+
+        if not additions:
+            return draft
+        return draft.model_copy(
+            update={
+                'coverage': tuple(
+                    coverage_updates.get(item.obligation_id, item)
+                    for item in draft.coverage
+                ),
+                'statements': (*draft.statements, *additions),
+                'limitations': tuple(limitations),
+            }
+        )
+
+    @staticmethod
+    def _hydrate(row: ReportDocumentRecord) -> ReportDocument:
+        try:
+            coverage = json.loads(row.coverage_json)
+            statements = json.loads(row.statements_json)
+            sources = json.loads(row.source_refs_json)
+            limitations = json.loads(row.limitations_json)
+        except json.JSONDecodeError as exc:
+            raise P20ReportError('P20_REPORT_PERSISTENCE_INVALID', row.report_id) from exc
+        if not all((isinstance(item, list) for item in (coverage, statements, sources, limitations))):
+            raise P20ReportError('P20_REPORT_PERSISTENCE_INVALID', row.report_id)
+        return ReportDocument(report_id=row.report_id, research_session_id=row.research_session_id, tenant_binding=row.tenant_binding, semantic_context_version=row.semantic_context_version, report_key=row.report_key, revision=row.revision, parent_report_id=row.parent_report_id, coverage=tuple((CoverageEntry.model_validate(item) for item in coverage)), statements=tuple((ReportStatement.model_validate(item) for item in statements)), source_refs=tuple((SourceReference.model_validate(item) for item in sources)), limitations=tuple((ReportLimitation.model_validate(item) for item in limitations)), source_set_fingerprint=row.source_set_fingerprint, report_fingerprint=row.report_fingerprint, created_at=row.created_at)
+
+    def seal(self, *, draft: ReportDraft, principal: Principal, now: datetime | None=None) -> ReportDocument:
+        session, _ = self._gate._session(
+            draft.research_session_id,
+            principal,
+        )
+        draft = self._with_observation_only_report_transparency(
+            draft=draft,
+            session=session,
+        )
+        session, mandatory, statements, sources, source_set_fingerprint = self._gate.validate(draft=draft, principal=principal)
+        if session.accepted_brief is None:
+            raise P20ReportError('P20_ACCEPTED_BRIEF_REQUIRED', session.session_id)
+        identity = {
+            'research_authority_id': session.authority_id,
+            'research_session_id': session.session_id,
+            'tenant_binding': session.tenant_binding,
+            'semantic_context_version': session.context_version,
+            'scope_fingerprint': session.accepted_brief.scope_fingerprint,
+            'report_key': draft.report_key,
+            'mandatory_obligation_ids': list(mandatory),
+            'coverage': [item.model_dump(mode='json') for item in draft.coverage],
+            'statements': [item.model_dump(mode='json') for item in statements],
+            'source_refs': [item.model_dump(mode='json') for item in sources],
+            'limitations': [item.model_dump(mode='json') for item in draft.limitations],
+            'source_set_fingerprint': source_set_fingerprint,
+        }
+        _, report_fingerprint = _canonical_json(identity, code='P20_REPORT_NOT_CANONICAL')
+        report_id = 'p20r_' + report_fingerprint[:24]
+        coverage_json = _canonical_json([item.model_dump(mode='json') for item in draft.coverage], code='P20_COVERAGE_NOT_CANONICAL')[0]
+        statements_json = _canonical_json([item.model_dump(mode='json') for item in statements], code='P20_STATEMENTS_NOT_CANONICAL')[0]
+        source_refs_json = _canonical_json([item.model_dump(mode='json') for item in sources], code='P20_SOURCES_NOT_CANONICAL')[0]
+        limitations_json = _canonical_json([item.model_dump(mode='json') for item in draft.limitations], code='P20_LIMITATIONS_NOT_CANONICAL')[0]
+        with Session(self._engine) as db:
+            existing = db.get(ReportDocumentRecord, report_id)
+            if existing is not None:
+                if existing.report_fingerprint != report_fingerprint:
+                    raise P20ReportError('P20_REPORT_IDENTITY_CONFLICT', report_id)
+                return self._hydrate(existing)
+            previous = db.exec(select(ReportDocumentRecord).where(ReportDocumentRecord.research_session_id == session.session_id).where(ReportDocumentRecord.report_key == draft.report_key).order_by(ReportDocumentRecord.revision.desc())).first()
+            revision = 1 if previous is None else previous.revision + 1
+            parent_report_id = None if previous is None else previous.report_id
+            row = ReportDocumentRecord(report_id=report_id, research_session_id=session.session_id, tenant_binding=session.tenant_binding, semantic_context_version=session.context_version, report_key=draft.report_key, revision=revision, parent_report_id=parent_report_id, coverage_json=coverage_json, statements_json=statements_json, source_refs_json=source_refs_json, limitations_json=limitations_json, source_set_fingerprint=source_set_fingerprint, report_fingerprint=report_fingerprint, created_at=_aware(now))
+            db.add(row)
+            db.commit()
+            db.refresh(row)
+            return self._hydrate(row)
+
+    def load(self, *, report_id: str, principal: Principal) -> ReportDocument:
+        with Session(self._engine) as db:
+            row = db.get(ReportDocumentRecord, report_id)
+            if row is None:
+                raise P20ReportError('P20_REPORT_NOT_FOUND', report_id)
+            report = self._hydrate(row)
+        try:
+            session = self._research.load(report.research_session_id, tenant=_tenant(principal), principal=_subject(principal))
+        except ResearchPersistenceError as exc:
+            raise P20ReportError('P20_REPORT_SCOPE_INVALID', report_id) from exc
+        if session.tenant_binding != report.tenant_binding or session.context_version != report.semantic_context_version:
+            raise P20ReportError('P20_REPORT_SCOPE_INVALID', report_id)
+        return report
+
+    def currentness(self, *, report_id: str, principal: Principal) -> ReportCurrentness:
+        report = self.load(report_id=report_id, principal=principal)
+        try:
+            session, mandatory = self._gate._session(
+                report.research_session_id,
+                principal,
+            )
+            self._research.assert_lineage_head(session)
+            snapshots = tuple(
+                self._gate._source_snapshot(
+                    session=session,
+                    ref=ref,
+                    principal=principal,
+                )
+                for ref in report.source_refs
+            )
+            self._gate._assert_sealed(
+                session,
+                mandatory,
+                downstream_terminal_ids=self._gate._downstream_terminal_ids(
+                    snapshots
+                ),
+            )
+            if session.accepted_brief is None:
+                raise P20ReportError('P20_ACCEPTED_BRIEF_REQUIRED', session.session_id)
+            current = _canonical_json({
+                'research_authority_id': session.authority_id,
+                'research_session_id': session.session_id,
+                'semantic_context_version': session.context_version,
+                'scope_fingerprint': session.accepted_brief.scope_fingerprint,
+                'mandatory_obligation_ids': list(mandatory),
+                'sources': list(snapshots),
+            }, code='P20_SOURCE_SET_NOT_CANONICAL')[1]
+        except (P20ReportError, ResearchPersistenceError):
+            return ReportCurrentness.STALE_SOURCE_SET
+        if current == report.source_set_fingerprint:
+            return ReportCurrentness.CURRENT
+        return ReportCurrentness.STALE_SOURCE_SET
+)
     report_key: str = Field(min_length=1, max_length=160)
     coverage: tuple[CoverageEntry, ...] = Field(min_length=1)
+    deliverable_coverage: tuple[DeliverableCoverageEntry, ...] = ()
     statements: tuple[ReportStatement, ...] = ()
     limitations: tuple[ReportLimitation, ...] = ()
 
