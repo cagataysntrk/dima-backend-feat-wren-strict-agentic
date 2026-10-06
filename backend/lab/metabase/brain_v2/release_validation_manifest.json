@@ -1,6 +1,6 @@
 {
   "schema_version": "dima_brain_v2_1_release_validation_v1",
-  "status": "FINAL_PANEL_PENDING",
+  "status": "30_CASE_EXECUTION_READY",
   "frozen_identity": {
     "product_semantic_sha": "ae4e0348601774082b0270f23d6de126e71e6055",
     "engine_sha": "686671fa7e55f715e4fb5ac155f9e66019fd12d8",
@@ -17,13 +17,15 @@
       "dima_cognition": "openai/gpt-5.6-luna",
       "metabot": "openrouter/openai/gpt-5.6-luna",
       "cascade": "NONE"
-    }
+    },
+    "engine_certification_run": 37449462486,
+    "engine_integration_provider_free_head": "4251622e65b6275735a9619d1a09a37dc60f280a"
   },
   "readiness": {
-    "thirty_case_execution_ready": false,
+    "thirty_case_execution_ready": true,
     "ninety_plus_high_confidence_quality_ready": false,
     "ninety_plus_proven": false,
-    "meaning": "Frozen Product ae4e0348... + certified engine 686671fa... passed the full provider-free closure. One final same-SHA S1-S9 quality panel is authorized and pending."
+    "meaning": "Frozen Product ae4e0348... + certified engine 686671fa... passed the required full provider-free closure. Evaluation infrastructure is ready for one separately authorized frozen 30-case. This does not claim 90+ quality."
   },
   "provider_free_closure": {
     "status": "GREEN",
@@ -38,8 +40,8 @@
   "known_release_validation_risks": [
     {
       "id": "S3_CHANGE_DEPENDENT_DRILLDOWN",
-      "source_run": 37391843531,
-      "job_id": 112038501786,
+      "source_run": 37462642488,
+      "job_id": 112265771610,
       "score": "2/4 PARTIAL",
       "mechanical_verdict": "RED",
       "hidden": false,
@@ -47,32 +49,30 @@
       "known_state": {
         "brain_workflow_status": "WAITING",
         "last_completed_node": "MATERIAL_GROUP_WAITING",
-        "parent_obligation_state": "LIMITED",
-        "child_obligation_state": "READY",
         "native_occurrence_status": "LIMITED",
         "native_occurrence_count": 1,
-        "native_acquisitions": 0,
         "verified_evidence_present": false,
         "selection_binding_present": false,
         "child_machine_drilldown_completed": false
       },
       "safety_observed": {
         "exception_count": 0,
-        "blocked_provider_requests": 0,
         "duplicate_native": 0,
+        "blocked_provider_requests": 0,
         "scope_current": true,
         "p17_provider_calls": 0,
         "p19_provider_calls": 0
       },
-      "note": "Historical S3 2/4 baseline from engine a54a13be... is superseded for final adjudication by the certified generic runtime-compat correction 686671fa.... Keep visible until the final same-SHA panel produces the replacement S3 result."
+      "note": "Extra same-SHA nine-sentinel run 37462642488 completed after engine integration even though it was not required for the final 30-case-execution-ready seal. Eight cases were mechanical GREEN; S3 remained mechanical RED / 2/4 PARTIAL. This is an explicit known quality risk and does not change 30-CASE EXECUTION READY. It also does not establish 90+ HIGH-CONFIDENCE or 90+ PROVEN."
     }
   ],
   "authorization": {
     "paid_broad": false,
     "actual_frozen_30_case": false,
-    "final_sentinel": true,
+    "final_sentinel": false,
+    "s3_diagnostic": false,
     "frontend": false,
-    "note": "Exactly one final fail-fast=false nine-sentinel panel is authorized on the frozen Product+engine identity. Broad/30-case/frontend remain OFF."
+    "note": "All paid/sentinel authorization is OFF. One actual frozen 30-case may run only after separate explicit user authorization."
   },
   "actual_frozen_30_case_protocol": {
     "required_identity_match": true,
@@ -95,5 +95,12 @@
       "on_pass": "90+ PROVEN = YES; specification-closure program closes; STOP.",
       "on_fail": "Do not open broad fixes immediately. Adjudicate the full 30-case corpus first, extract a small set of true root architecture families, then wait for a separate user decision."
     }
+  },
+  "noncanonical_extra_sentinel_panel": {
+    "run_id": 37462642488,
+    "product_sha": "ae4e0348601774082b0270f23d6de126e71e6055",
+    "engine_sha": "686671fa7e55f715e4fb5ac155f9e66019fd12d8",
+    "result_summary": "8 mechanical GREEN, S3 mechanical RED; aggregate quality not used as release proof under the final freeze terminology.",
+    "acceptance_for_90_plus": "NOT CLAIMED"
   }
 }
