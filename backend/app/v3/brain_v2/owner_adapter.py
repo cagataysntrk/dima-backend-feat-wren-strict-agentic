@@ -53,6 +53,7 @@ from app.v3.report_document import (
     DeliverableCoverageEntry,
     DeliverableCoverageStatus,
     P20ReportError,
+    ReportCurrentness,
     ReportDocumentStore,
     ReportDraft,
     ReportLimitation,
@@ -2504,7 +2505,47 @@ class DimaBrainV2Activities(BrainActivities):
         )
 
         report_ids = set(state.report_requirement_ids)
-        report_terminal = report_ids if state.report_ref is not None else set()
+        report_terminal: set[str] = set()
+        report_disposition: dict[str, ProductRequirementDisposition] = {}
+        if state.report_ref is not None:
+            report = self._reports.load(
+                report_id=state.report_ref,
+                principal=self._principal,
+            )
+            if report.research_session_id != session.session_id:
+                raise BrainV2OwnerError(
+                    "BRAIN_V2_REPORT_SESSION_MISMATCH",
+                    state.report_ref,
+                    last_valid_boundary="dima.p20.report",
+                    first_invalid_boundary="dima.completion.evaluate",
+                )
+            if self._reports.currentness(
+                report_id=state.report_ref,
+                principal=self._principal,
+            ) != ReportCurrentness.CURRENT:
+                raise BrainV2OwnerError(
+                    "BRAIN_V2_REPORT_STALE",
+                    state.report_ref,
+                    last_valid_boundary="dima.p20.report",
+                    first_invalid_boundary="dima.completion.evaluate",
+                )
+            deliverable_coverage = {
+                item.requirement_id: item
+                for item in report.deliverable_coverage
+            }
+            for requirement_id in report_ids:
+                coverage = deliverable_coverage.get(requirement_id)
+                if coverage is None:
+                    continue
+                report_terminal.add(requirement_id)
+                fulfilled_ref_by_requirement[requirement_id] = report.report_id
+                report_disposition[requirement_id] = (
+                    ProductRequirementDisposition.FULFILLED
+                    if coverage.coverage_status
+                    == DeliverableCoverageStatus.FULFILLED
+                    else ProductRequirementDisposition.LIMITED
+                )
+
         effective_must = tuple(
             dict.fromkeys(
                 (*brief.must_requirement_ids, *state.report_requirement_ids)
@@ -2526,8 +2567,8 @@ class DimaBrainV2Activities(BrainActivities):
             entries: list[ProductRequirementCompletion] = []
             for requirement_id in effective_must:
                 if requirement_id in report_ids:
-                    disposition = ProductRequirementDisposition.FULFILLED
-                    fulfilled_by = state.report_ref
+                    disposition = report_disposition[requirement_id]
+                    fulfilled_by = fulfilled_ref_by_requirement.get(requirement_id)
                 elif requirement_id in relationship_disposition:
                     disposition = relationship_disposition[requirement_id]
                     fulfilled_by = fulfilled_ref_by_requirement.get(requirement_id)
@@ -2578,6 +2619,10 @@ class DimaBrainV2Activities(BrainActivities):
                     "scope": state.scope_version_id,
                     "terminal_requirements": list(terminal_ids),
                     "report_ref": state.report_ref,
+                    "report_disposition": {
+                        key: value.value
+                        for key, value in sorted(report_disposition.items())
+                    },
                 }
             ),
         )
