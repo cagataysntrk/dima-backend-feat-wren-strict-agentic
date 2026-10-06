@@ -1745,12 +1745,16 @@ def test_real_owner_adaptive_runs_one_typed_followup_without_duplicate_native() 
     assert p19_manager.context_calls[0]["objective"] is None
     assert p19_manager.context_calls[0]["scope_authority"]["scope_version_id"] == "scope_v1"
     assert p19_manager.context_calls[0]["scope_authority"]["scope_fingerprint"]
+    # Capacity remains available after one successful re-entry because the
+    # bounded policy allows at most two. P19 nevertheless terminates here from
+    # the new Evidence, so no second NextTest is opened merely because budget
+    # remains.
     assert p19_manager.context_calls[1][
         "discriminating_test_available"
-    ] is False
+    ] is True
     assert p19_manager.context_calls[1][
         "deterministic_feedback_code"
-    ] == "P19_NO_CALLABLE_DISCRIMINATING_TEST"
+    ] == "P19_DISCRIMINATING_TEST_AVAILABLE"
 
 
 
