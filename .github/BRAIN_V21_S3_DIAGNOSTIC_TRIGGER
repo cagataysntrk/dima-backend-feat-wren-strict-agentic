@@ -2,9 +2,11 @@ DIMA Brain V2.1 S3 diagnostic
 triggered_at: 2026-10-05
 semantic_product_sha: ae4e0348601774082b0270f23d6de126e71e6055
 probe: CHANGE_DEPENDENT_DRILLDOWN_V1
-purpose: validate P14 observe-before-execute occurrence lifecycle on frozen semantic baseline
+purpose: final S3 acceptance diagnostic on frozen Product + certified dima.11.2
 hard_provider_request_ceiling: 16
 provider_caps: unchanged
 engine: dima.11.1 unchanged
 frontend: NOT_AUTHORIZED
-nonce: p14-occurrence-lifecycle-s3-final-diagnostic-1
+nonce: final-acceptance-dima11p2-s3-1
+engine_sha: a54a13be978985b58aa53b3ca70a6a51ecb3de3b
+engine_digest: sha256:34a3acec8d9cd8743c894f3ef4314b406eaeee08c67526328a55ed8e639be763
