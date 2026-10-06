@@ -2635,6 +2635,259 @@ class DimaBrainV2Activities(BrainActivities):
             results.append(projection)
         return tuple(results)
 
+    def _with_deliverable_synthesis(
+        self,
+        *,
+        state: BrainGraphState,
+        session,
+        draft: ReportDraft,
+        relationship_results,
+    ) -> ReportDraft:
+        """Turn governed P20 statements into typed presentation coverage.
+
+        The cognition owner receives only publication-gated statements and
+        upstream P18/P19 terminal artifacts. No native/Metabase capability is
+        available here. Any unavailable/invalid synthesis degrades to explicit
+        LIMITED presentation coverage rather than manufacturing content.
+        """
+
+        brief = session.accepted_brief
+        assert brief is not None
+        deliverables = tuple(brief.deliverables)
+        if not deliverables:
+            return draft
+
+        def limited(
+            *,
+            code: str,
+            detail: str,
+        ) -> ReportDraft:
+            limitations = list(draft.limitations)
+            coverage: list[DeliverableCoverageEntry] = []
+            for item in deliverables:
+                limitation_id = stable_limitation_id(
+                    {
+                        "session_id": session.session_id,
+                        "requirement_id": item.requirement_id,
+                        "code": code,
+                        "detail": detail,
+                    }
+                )
+                limitations.append(
+                    ReportLimitation(
+                        limitation_id=limitation_id,
+                        obligation_id=item.requirement_id,
+                        code=code,
+                        detail=detail,
+                    )
+                )
+                coverage.append(
+                    DeliverableCoverageEntry(
+                        requirement_id=item.requirement_id,
+                        coverage_status=DeliverableCoverageStatus.LIMITED,
+                        limitation_ids=(limitation_id,),
+                    )
+                )
+            return draft.model_copy(
+                update={
+                    "deliverable_coverage": tuple(coverage),
+                    "limitations": tuple(limitations),
+                }
+            )
+
+        if self._report_synthesis_manager is None:
+            return limited(
+                code="P20_SYNTHESIS_OWNER_UNAVAILABLE",
+                detail=(
+                    "Governed analytical material is available, but no bounded "
+                    "P20 presentation-synthesis owner is configured."
+                ),
+            )
+
+        governed = self._reports.validated_governed_statements(
+            draft=draft,
+            principal=self._principal,
+        )
+        governed_with_sources = tuple(
+            item for item in governed if item.source_refs
+        )
+        evidence_digests = tuple(
+            {
+                "statement_id": item.statement_id,
+                "statement_kind": item.statement_kind.value,
+                "text": item.text,
+                "payload": item.payload,
+                "upstream_epistemic_ceiling": item.upstream_epistemic_ceiling,
+                "source_refs": [
+                    ref.model_dump(mode="json")
+                    for ref in item.source_refs
+                ],
+            }
+            for item in governed_with_sources
+        )
+        accepted_deliverables = tuple(
+            {
+                "requirement_id": item.requirement_id,
+                "kind": item.kind.value,
+                "source_text": item.source_text,
+            }
+            for item in deliverables
+        )
+        p19_assessment = None
+        if state.latest_p19_assessment_ref is not None:
+            p19_assessment = self._epistemics.load_assessment(
+                assessment_id=state.latest_p19_assessment_ref,
+                principal=self._principal,
+            ).model_dump(mode="json")
+
+        try:
+            proposal = self._report_synthesis_manager.synthesize(
+                accepted_deliverables=accepted_deliverables,
+                scope_version_id=(
+                    state.scope_version_id
+                    or brief.scope.scope_version.version_id
+                ),
+                evidence_digests=evidence_digests,
+                p18_results=tuple(
+                    item.model_dump(mode="json")
+                    for item in relationship_results
+                ),
+                p19_assessment=p19_assessment,
+                limitations=tuple(
+                    item.model_dump(mode="json")
+                    for item in draft.limitations
+                ),
+            )
+        except Exception as exc:
+            # Presentation cognition is not semantic/security authority. A
+            # malformed/unavailable one-call synthesis cannot upgrade truth and
+            # must degrade to explicit LIMITED rather than leak an exception as
+            # a fake analytical failure.
+            return limited(
+                code="P20_SYNTHESIS_COGNITION_UNAVAILABLE",
+                detail=(
+                    "Governed presentation synthesis could not be completed "
+                    "within the bounded cognition contract."
+                ),
+            )
+
+        by_statement = {item.statement_id: item for item in governed}
+        statements = list(draft.statements)
+        limitations = list(draft.limitations)
+        coverage: list[DeliverableCoverageEntry] = []
+
+        for item in proposal.deliverables:
+            if item.status == "LIMITED":
+                assert item.limitation_detail is not None
+                limitation_id = stable_limitation_id(
+                    {
+                        "session_id": session.session_id,
+                        "requirement_id": item.requirement_id,
+                        "code": "P20_DELIVERABLE_LIMITED",
+                        "detail": item.limitation_detail,
+                    }
+                )
+                limitations.append(
+                    ReportLimitation(
+                        limitation_id=limitation_id,
+                        obligation_id=item.requirement_id,
+                        code="P20_DELIVERABLE_LIMITED",
+                        detail=item.limitation_detail,
+                    )
+                )
+                coverage.append(
+                    DeliverableCoverageEntry(
+                        requirement_id=item.requirement_id,
+                        coverage_status=DeliverableCoverageStatus.LIMITED,
+                        limitation_ids=(limitation_id,),
+                    )
+                )
+                continue
+
+            synthesis_ids: list[str] = []
+            for section in item.sections:
+                support = tuple(
+                    by_statement[statement_id]
+                    for statement_id in section.supporting_statement_ids
+                )
+                source_by_key: dict[str, SourceReference] = {}
+                obligations: set[str] = set()
+                for statement in support:
+                    obligations.update(statement.obligation_refs)
+                    for source in statement.source_refs:
+                        source_by_key[
+                            json.dumps(
+                                source.model_dump(mode="json"),
+                                sort_keys=True,
+                                separators=(",", ":"),
+                                ensure_ascii=False,
+                            )
+                        ] = source
+                if not source_by_key or not obligations:
+                    return limited(
+                        code="P20_SYNTHESIS_SUPPORT_INVALID",
+                        detail=(
+                            "The bounded synthesis selected material without "
+                            "publishable governed provenance."
+                        ),
+                    )
+                sources = tuple(
+                    source_by_key[key]
+                    for key in sorted(source_by_key)
+                )
+                payload = {
+                    "synthesis_kind": section.kind.value,
+                    "supporting_statement_ids": list(
+                        section.supporting_statement_ids
+                    ),
+                    "text": section.text,
+                }
+                statement_id = stable_statement_id(
+                    {
+                        "kind": ReportStatementKind.SYNTHESIS.value,
+                        "requirement_id": item.requirement_id,
+                        "payload": payload,
+                        "sources": [
+                            source.model_dump(mode="json")
+                            for source in sources
+                        ],
+                    }
+                )
+                statements.append(
+                    ReportStatement(
+                        statement_id=statement_id,
+                        statement_kind=ReportStatementKind.SYNTHESIS,
+                        source_refs=sources,
+                        obligation_refs=tuple(sorted(obligations)),
+                        upstream_epistemic_ceiling="GOVERNED_SYNTHESIS",
+                        payload=payload,
+                    )
+                )
+                synthesis_ids.append(statement_id)
+
+            coverage.append(
+                DeliverableCoverageEntry(
+                    requirement_id=item.requirement_id,
+                    coverage_status=DeliverableCoverageStatus.FULFILLED,
+                    statement_ids=tuple(
+                        dict.fromkeys(
+                            (
+                                *item.selected_statement_ids,
+                                *synthesis_ids,
+                            )
+                        )
+                    ),
+                )
+            )
+
+        return draft.model_copy(
+            update={
+                "deliverable_coverage": tuple(coverage),
+                "statements": tuple(statements),
+                "limitations": tuple(limitations),
+            }
+        )
+
     def synthesize_report(self, state: BrainGraphState) -> ReportActivityResult:
         session = self._session(state)
         if state.completion_revision <= 0:
@@ -2685,6 +2938,12 @@ class DimaBrainV2Activities(BrainActivities):
                 )
                 if state.latest_p19_assessment_ref is not None
                 else base
+            )
+            draft = self._with_deliverable_synthesis(
+                state=state,
+                session=session,
+                draft=draft,
+                relationship_results=relationship_results,
             )
             report = self._reports.seal(
                 draft=draft,
