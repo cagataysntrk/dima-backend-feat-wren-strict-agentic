@@ -55,7 +55,9 @@ from app.v3.research_scope_patch import (
 )
 from app.v3.research_temporal_authority import (
     ChangeTemporalAuthorityDisposition,
+    TemporalAuthorityError,
     resolve_change_temporal_authority,
+    resolve_temporal_authority,
 )
 from app.v3.structured_transport import (
     strict_json_schema,
@@ -3415,15 +3417,21 @@ class ResearchIntakeCompiler:
                 )
             typed_comparisons: list[ComparisonSurface] = []
             if goal.comparisons:
-                goal_ref_ids = set(ids)
                 for item in goal.comparisons:
-                    if (
-                        item.semantic_id is not None
-                        and item.semantic_id not in goal_ref_ids
-                    ):
-                        raise ResearchIntakeError(
-                            "INTAKE_COMPARISON_SEMANTIC_OUTSIDE_GOAL_SCOPE",
-                            item.semantic_id,
+                    if item.semantic_id is not None:
+                        comparison_ref = by_id.get(item.semantic_id)
+                        if comparison_ref is None:
+                            raise ResearchIntakeError(
+                                "INTAKE_UNKNOWN_SEMANTIC_REF",
+                                item.semantic_id,
+                            )
+                        # Accepted ResearchScope is the canonical semantic
+                        # authority. A comparison ref does not need to be
+                        # redundantly repeated in this goal's subject/related
+                        # tuple to remain governed.
+                        scope_refs.setdefault(
+                            comparison_ref.candidate_id,
+                            comparison_ref,
                         )
                     typed_comparisons.append(
                         ComparisonSurface(
@@ -3716,21 +3724,8 @@ class ResearchIntakeCompiler:
                 "READY intake must contain at least one analytical goal",
             )
 
-        period_identities: set[tuple[str, str, str, str]] = set()
         periods: list[ResearchTimePeriod] = []
         for item in draft.time_periods:
-            identity = (
-                item.time_dimension_semantic_id,
-                item.start,
-                item.end,
-                item.role.value,
-            )
-            if identity in period_identities:
-                raise ResearchIntakeError(
-                    "INTAKE_TIME_PERIOD_DUPLICATE",
-                    "|".join(identity),
-                )
-            period_identities.add(identity)
             dimension_ref = by_id.get(item.time_dimension_semantic_id)
             if (
                 dimension_ref is None
@@ -3760,7 +3755,20 @@ class ResearchIntakeCompiler:
                     "INTAKE_TIME_PERIOD_INVALID",
                     str(exc),
                 ) from exc
-        ordered_periods = tuple(periods)
+        try:
+            temporal_authority = resolve_temporal_authority(tuple(periods))
+        except TemporalAuthorityError as exc:
+            return ResearchIntakeResult(
+                terminal=ResearchIntakeTerminal.CLARIFY,
+                clarification_question=(
+                    "The request contains more than one distinct temporal frame. "
+                    "Please specify the single comparison pair or bounded change "
+                    "window that should govern this turn."
+                ),
+                catalog_fingerprint=catalog.fingerprint,
+                model_calls=calls,
+            )
+        ordered_periods = temporal_authority.periods
         time_surfaces = tuple(
             dict.fromkeys(item.source_text for item in ordered_periods)
         )
