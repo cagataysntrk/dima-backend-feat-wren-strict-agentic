@@ -24,6 +24,7 @@ from app.v3.research_contracts import (
     SemanticTargetKind,
     TurnScopeContract,
 )
+from app.v3.research_temporal_authority import resolve_temporal_authority
 
 
 class ScopePatchFacet(StrEnum):
@@ -513,9 +514,9 @@ def resolve_scope_patch(
         if value is not None:
             final_bindings[candidate_id] = value
 
-    ordered_periods = tuple(
-        periods[key] for key in sorted(periods)
-    )
+    ordered_periods = resolve_temporal_authority(
+        tuple(periods[key] for key in sorted(periods))
+    ).periods
     time_surfaces = tuple(
         dict.fromkeys(item.source_text for item in ordered_periods)
     )
