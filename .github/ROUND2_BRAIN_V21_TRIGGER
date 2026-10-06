@@ -1,0 +1,8 @@
+authorized_at=2026-10-06
+candidate=ae4e0348601774082b0270f23d6de126e71e6055
+engine=686671fa7e55f715e4fb5ac155f9e66019fd12d8
+manifest=dima-neutral-feature-benchmark-round2-v2
+single_run=true
+automatic_retry=false
+fail_fast=false
+reason=explicit_user_authorization_actual_frozen_30_case
