@@ -2102,9 +2102,41 @@ class ReportDocumentStore:
             limitations = json.loads(row.limitations_json)
         except json.JSONDecodeError as exc:
             raise P20ReportError('P20_REPORT_PERSISTENCE_INVALID', row.report_id) from exc
-        if not all((isinstance(item, list) for item in (coverage, statements, sources, limitations))):
+        # coverage_json was historically a list. New reports persist an
+        # object with analytical + deliverable coverage while legacy rows remain
+        # readable without migration.
+        if isinstance(coverage, list):
+            analytical_coverage = coverage
+            deliverable_coverage = []
+        elif isinstance(coverage, dict):
+            analytical_coverage = coverage.get('analytical')
+            deliverable_coverage = coverage.get('deliverables')
+            if not isinstance(analytical_coverage, list) or not isinstance(deliverable_coverage, list):
+                raise P20ReportError('P20_REPORT_PERSISTENCE_INVALID', row.report_id)
+        else:
             raise P20ReportError('P20_REPORT_PERSISTENCE_INVALID', row.report_id)
-        return ReportDocument(report_id=row.report_id, research_session_id=row.research_session_id, tenant_binding=row.tenant_binding, semantic_context_version=row.semantic_context_version, report_key=row.report_key, revision=row.revision, parent_report_id=row.parent_report_id, coverage=tuple((CoverageEntry.model_validate(item) for item in coverage)), statements=tuple((ReportStatement.model_validate(item) for item in statements)), source_refs=tuple((SourceReference.model_validate(item) for item in sources)), limitations=tuple((ReportLimitation.model_validate(item) for item in limitations)), source_set_fingerprint=row.source_set_fingerprint, report_fingerprint=row.report_fingerprint, created_at=row.created_at)
+        if not all((isinstance(item, list) for item in (statements, sources, limitations))):
+            raise P20ReportError('P20_REPORT_PERSISTENCE_INVALID', row.report_id)
+        return ReportDocument(
+            report_id=row.report_id,
+            research_session_id=row.research_session_id,
+            tenant_binding=row.tenant_binding,
+            semantic_context_version=row.semantic_context_version,
+            report_key=row.report_key,
+            revision=row.revision,
+            parent_report_id=row.parent_report_id,
+            coverage=tuple(CoverageEntry.model_validate(item) for item in analytical_coverage),
+            deliverable_coverage=tuple(
+                DeliverableCoverageEntry.model_validate(item)
+                for item in deliverable_coverage
+            ),
+            statements=tuple(ReportStatement.model_validate(item) for item in statements),
+            source_refs=tuple(SourceReference.model_validate(item) for item in sources),
+            limitations=tuple(ReportLimitation.model_validate(item) for item in limitations),
+            source_set_fingerprint=row.source_set_fingerprint,
+            report_fingerprint=row.report_fingerprint,
+            created_at=row.created_at,
+        )
 
     def seal(self, *, draft: ReportDraft, principal: Principal, now: datetime | None=None) -> ReportDocument:
         session, _ = self._gate._session(
@@ -2127,6 +2159,10 @@ class ReportDocumentStore:
             'report_key': draft.report_key,
             'mandatory_obligation_ids': list(mandatory),
             'coverage': [item.model_dump(mode='json') for item in draft.coverage],
+            'deliverable_coverage': [
+                item.model_dump(mode='json')
+                for item in draft.deliverable_coverage
+            ],
             'statements': [item.model_dump(mode='json') for item in statements],
             'source_refs': [item.model_dump(mode='json') for item in sources],
             'limitations': [item.model_dump(mode='json') for item in draft.limitations],
@@ -2134,7 +2170,19 @@ class ReportDocumentStore:
         }
         _, report_fingerprint = _canonical_json(identity, code='P20_REPORT_NOT_CANONICAL')
         report_id = 'p20r_' + report_fingerprint[:24]
-        coverage_json = _canonical_json([item.model_dump(mode='json') for item in draft.coverage], code='P20_COVERAGE_NOT_CANONICAL')[0]
+        coverage_json = _canonical_json(
+            {
+                'analytical': [
+                    item.model_dump(mode='json')
+                    for item in draft.coverage
+                ],
+                'deliverables': [
+                    item.model_dump(mode='json')
+                    for item in draft.deliverable_coverage
+                ],
+            },
+            code='P20_COVERAGE_NOT_CANONICAL',
+        )[0]
         statements_json = _canonical_json([item.model_dump(mode='json') for item in statements], code='P20_STATEMENTS_NOT_CANONICAL')[0]
         source_refs_json = _canonical_json([item.model_dump(mode='json') for item in sources], code='P20_SOURCES_NOT_CANONICAL')[0]
         limitations_json = _canonical_json([item.model_dump(mode='json') for item in draft.limitations], code='P20_LIMITATIONS_NOT_CANONICAL')[0]
