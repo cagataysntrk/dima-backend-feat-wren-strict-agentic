@@ -27,27 +27,33 @@ The engineering objective is specification closure, not benchmark memorization:
 
 > CLOSE THE LAW. FREEZE THE OWNER. PROVE THE HOLDOUT. THEN GO LIVE.
 
-## CURRENT CANONICAL STATUS — 2026-10-05
+## CURRENT CANONICAL STATUS — 2026-10-07
 
-This block is the current orientation. Older PHASE sections below are historical receipts and must not be read as the current freeze when their SHAs/engine releases differ from this block.
+This block supersedes all older phase/freeze sections below for current orientation.
 
-- Branch: `feat/dima-brain-v2-1-specification-closure`
-- Repository HEAD before this status refresh: `dd0a5148aaa83751c80d617eada59a393cbacdb7`
-- Current semantic Product: `957fea9876cfa4cdf8ee3a4f5701c0b6cfc2a40e`
-- Certified/frozen engine: `4c49b8da6b424b0fa4d8ef340ca1b238d12980c1` / `0.63.18-dima.11.1`
-- Engine digest: `sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d`
-- Engine rule: dima.11.1 remains frozen; `feat/dima11-conditional-change-observer` is obsolete diagnostic R&D and must not be merged/cherry-picked.
-- Temporal semantic law: `TemporalChangeFrame = PAIR | SPAN` is provider-free GREEN.
-- A3 latest paid evidence: run `37237863865` was `2/4 PARTIAL`; Intake READY and correct CHANGE ranking executed, but ranking Evidence admission/continuation did not close.
-- A3 recovery Product law: an exact material-attested native CHANGE occurrence may project a final derived rowset without repeating the intermediate governed time column; proofless CHANGE and plain comparison remain fail-closed.
-- Recovery certification: Phase-1 `37241841231 = SUCCESS`; Phase-2 `37241841255 = SUCCESS`; semantic/Wave A/Wave B/mutation `37241788680 = SUCCESS`; frozen-family `37241798779 = SUCCESS`.
-- Paid authorization: OFF.
-- Broad / actual 30-case: FORBIDDEN until the directive gate is satisfied.
+- Branch: `feat/dima-brain-v2-1-specification-closure`.
+- Final root-recovery Product candidate: `de4c03f288b62ffcad4aece57f0bebf102b381bd`.
+- Recovery baseline: `505caec6e7c3fbd5346dc6a4c310e8f656d324ae`.
+- Certified/frozen engine: `686671fa7e55f715e4fb5ac155f9e66019fd12d8` / `0.63.18-dima.11.2`.
+- Runtime tag: `v0.63.18-dima.11.2.1`.
+- Engine digest: `sha256:fe1b6fb67be6dbadea1af5d415f3ba2e033d46f91289f5c3c9844bee20c379bd`.
+- Provider-free prerequisites: GREEN — focused `37525079508`, frozen-family `37525079621`, semantic/Wave A/Wave B/mutation `37525079655`; 192 generated metamorphic scenarios GREEN.
+- Single paid root-recovery panel: run `37533803018` = **RED**.
+- Paid panel outcome: 10/12 mechanically successful; R10 and R11 abort follow-up execution with `R1_METRIC_SCOPE_REQUIRED`; fair score `30/48`, FULL `1/12`.
+- Invariant counters: duplicate native `0`; stale Evidence `0`; report-only continuation native delta `0`; Agent API `0`; no observed causal overclaim/security violation.
+- R12 proves SAME_SCOPE report-only behavior preserves `scope_v1` and does not open a new native acquisition.
+- Remaining structural blocker: follow-up refinement/deepening can lose metric authority before analytical material compilation/execution.
+- Remaining presentation weakness: P20 provider call often succeeds but typed synthesis closure degrades accepted presentation requirements to explicit LIMITED.
+- Adaptive weakness: P19/P17 information-gain deepening is not consistently opened on independent adaptive shapes.
+- Paid authorization: **OFF / consumed**.
+- Second paid Product-correction wave: **FORBIDDEN** in this recovery round (no harness defect established).
+- Broad actual 30-case: **NOT RUN / FORBIDDEN without new explicit user authorization and a new legal recovery cycle**.
 - Frontend/UI/demo implementation: FORBIDDEN in this program.
-- Current first unproven boundary: live A3 original quality on Product `957fea98...`.
-- Next legal action: execute exactly one A3 original on Product `957fea98...`, require `4/4 FULL`, then one semantic sibling `4/4 FULL`. Only then may Phase 4 begin.
-- Operational blocker: the canonical spec-closure workflow still hard-pins prior Product `447847e4...`; the connected safe GitHub write surface currently rejects workflow-file modification. Do not bypass this by low-level Git-object writes. No alternate workflow may be treated as qualifying evidence unless it preserves the same frozen Product, engine, one-case authorization, provider ceilings, artifact integrity and manual 4/4 adjudication.
-- Alternate-live audit: `dima-brain-v2-phase1-live.yml` is not a qualifying substitute. It triggers only `feat/dima-brain-v2` / `feat/dima-brain-v2-1-discovery-simplification`, exposes a fixed probe set that does not include A3/F06_M, and caps Metabase source calls at 7 whereas the latest A3 original required 9 Metabase calls. Reusing it would change the test contract rather than prove the recovered A3 law.
+- `90+ POTENTIAL`: **NOT SUPPORTED** by the final recovery panel.
+- `30-CASE EXECUTION READY`: **NO**.
+- Immutable final receipt: `backend/belgeler/metabase/DIMA_BRAIN_V2_1_ROOT_RECOVERY_PANEL_2026-10-07.md`.
+
+No further paid retry or final Phase-1/Phase-2 readiness seal is legal from this round because the R8 prerequisite is RED.
 
 ---
 
