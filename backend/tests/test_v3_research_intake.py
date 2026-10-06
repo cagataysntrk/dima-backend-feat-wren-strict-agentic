@@ -3056,7 +3056,20 @@ def test_r6_follow_up_narrowing_advances_scope_from_two_periods_to_one():
     )
     assert initial.brief is not None
 
-    narrowed_payload = {
+    current_payload = ready_payload(
+        kind="breakdown",
+        subject=("metric.downtime", "metric.fault_count"),
+        related=("dimension.department",),
+    )
+    current_payload["scope_mutation_kind"] = "CHANGE_PERIOD"
+    current_payload["time_periods"] = [
+        _r6_period(
+            "June only",
+            "2026-06-01",
+            "2026-07-01",
+        )
+    ]
+    patch_payload = {
         "terminal": "READY",
         "operations": [
             {
@@ -3074,7 +3087,7 @@ def test_r6_follow_up_narrowing_advances_scope_from_two_periods_to_one():
         ],
     }
     narrowed = ResearchIntakeCompiler(
-        transport=FakeTransport(narrowed_payload)
+        transport=SequenceTransport([current_payload, patch_payload])
     ).compile(
         question="Now narrow to June only.",
         catalog=_r6_temporal_catalog(),
@@ -3133,23 +3146,15 @@ def test_r6_follow_up_surface_rewording_does_not_mint_new_scope_version():
     )
     assert first.brief is not None
 
-    reworded_payload = {
-        "terminal": "READY",
-        "operations": [
-            {
-                "facet": "PERIOD",
-                "operation": "SET",
-                "periods": [
-                    _r6_period(
-                        "the June 2026 window",
-                        "2026-06-01",
-                        "2026-07-01",
-                    )
-                ],
-                "source_fragment": "June 2026 window",
-            }
-        ],
-    }
+    reworded_payload = ready_payload()
+    reworded_payload["scope_mutation_kind"] = None
+    reworded_payload["time_periods"] = [
+        _r6_period(
+            "the June 2026 window",
+            "2026-06-01",
+            "2026-07-01",
+        )
+    ]
     reworded = ResearchIntakeCompiler(
         transport=FakeTransport(reworded_payload)
     ).compile(
@@ -3207,20 +3212,24 @@ def test_r6_exact_structured_period_repeat_is_idempotent():
     )
 
 
-def test_r6_duplicate_typed_period_identity_is_rejected_even_with_new_wording():
+def test_r6_duplicate_typed_period_identity_coalesces_across_wording():
     payload = ready_payload()
     payload["time_periods"] = [
         _r6_period("June 2026", "2026-06-01", "2026-07-01"),
         _r6_period("June window", "2026-06-01", "2026-07-01"),
     ]
-    with pytest.raises(ResearchIntakeError) as exc:
-        ResearchIntakeCompiler(
-            transport=FakeTransport(payload)
-        ).compile(
-            question="Inspect June.",
-            catalog=_r6_temporal_catalog(),
-        )
-    assert exc.value.code == "INTAKE_TIME_PERIOD_DUPLICATE"
+    result = ResearchIntakeCompiler(
+        transport=FakeTransport(payload)
+    ).compile(
+        question="Inspect June.",
+        catalog=_r6_temporal_catalog(),
+    )
+    assert result.brief is not None
+    assert len(result.brief.scope.periods) == 1
+    assert (
+        result.brief.scope.periods[0].start,
+        result.brief.scope.periods[0].end,
+    ) == ("2026-06-01", "2026-07-01")
 
 
 def test_r6_same_bounds_can_bind_distinct_temporal_roles():
@@ -3446,7 +3455,7 @@ def test_typed_causal_unknown_candidate_fails_closed():
     assert exc.value.code == "INTAKE_UNKNOWN_SEMANTIC_REF"
 
 
-def test_typed_causal_unrelated_comparison_expansion_fails_closed():
+def test_typed_causal_comparison_ref_is_admitted_at_scope_level():
     payload = ready_payload(
         kind="root_cause",
         subject=("metric.downtime",),
@@ -3465,15 +3474,18 @@ def test_typed_causal_unrelated_comparison_expansion_fails_closed():
         "diagnostic_dimension_ids": ["dimension.department"],
     }
 
-    with pytest.raises(ResearchIntakeError) as exc:
-        ResearchIntakeCompiler(
-            transport=FakeTransport(payload)
-        ).compile(
-            question="Test the requested explanation.",
-            catalog=catalog(),
-        )
+    result = ResearchIntakeCompiler(
+        transport=FakeTransport(payload)
+    ).compile(
+        question="Test the requested explanation.",
+        catalog=catalog(),
+    )
 
-    assert exc.value.code == "INTAKE_COMPARISON_SEMANTIC_OUTSIDE_GOAL_SCOPE"
+    assert result.brief is not None
+    assert "metric.performance" in {
+        item.candidate_id for item in result.brief.scope.semantic_refs
+    }
+    assert result.brief.questions[0].comparisons[0].semantic_id == "metric.performance"
 
 
 def test_relationship_provider_cannot_reconstruct_left_right_dimension_tuple():
@@ -3679,7 +3691,7 @@ def test_relationship_fixture_without_new_intent_defaults_fail_conservative_busi
 
 
 
-def test_change_ranking_two_neutral_periods_canonicalize_by_chronology() -> None:
+def test_change_ranking_two_neutral_periods_do_not_manufacture_pair() -> None:
     question = "Rank the governed metric by change from May to June."
     payload = ready_payload(
         kind="ranking",
@@ -3710,21 +3722,14 @@ def test_change_ranking_two_neutral_periods_canonicalize_by_chronology() -> None
         ),
     ]
 
-    result = ResearchIntakeCompiler(
-        transport=FakeTransport(payload)
-    ).compile(
-        question=question,
-        catalog=_r6_temporal_catalog(),
-    )
-
-    assert result.brief is not None
-    by_start = {
-        item.start: item.role for item in result.brief.scope.periods
-    }
-    assert by_start == {
-        "2026-05-01": TemporalRole.BASELINE_PERIOD,
-        "2026-06-01": TemporalRole.COMPARISON_PERIOD,
-    }
+    with pytest.raises(ResearchIntakeError) as exc:
+        ResearchIntakeCompiler(
+            transport=FakeTransport(payload)
+        ).compile(
+            question=question,
+            catalog=_r6_temporal_catalog(),
+        )
+    assert exc.value.code == "INTAKE_CHANGE_RANKING_TEMPORAL_FRAME_REQUIRED"
 
 
 def _collapsed_change_period_payload(
