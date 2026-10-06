@@ -50,6 +50,8 @@ from app.v3.product.completion import (
 )
 from app.v3.product.contracts import ProductInvestigationRequirementKind
 from app.v3.report_document import (
+    DeliverableCoverageEntry,
+    DeliverableCoverageStatus,
     P20ReportError,
     ReportDocumentStore,
     ReportDraft,
@@ -88,6 +90,7 @@ from app.v3.root_cause_candidate_contract import (
 )
 from control_plane.authorize import Principal
 
+from .report_synthesis import StructuredP20SynthesisManager
 from .completion_policy import (
     material_limitation_disposition,
     project_material_limitation_terminals,
@@ -331,6 +334,7 @@ class DimaBrainV2Activities(BrainActivities):
         epistemics: HypothesisRootCauseStore,
         epistemic_manager,
         reports: ReportDocumentStore,
+        report_synthesis_manager: StructuredP20SynthesisManager | None = None,
         relationships: BusinessRelationshipPolicyStore | None = None,
         relationship_interpreter=None,
         native_session_token: str | None,
@@ -348,6 +352,7 @@ class DimaBrainV2Activities(BrainActivities):
         self._epistemics = epistemics
         self._epistemic_manager = epistemic_manager
         self._reports = reports
+        self._report_synthesis_manager = report_synthesis_manager
         self._relationships = relationships
         self._relationship_interpreter = relationship_interpreter
         self._relationship_results = (
