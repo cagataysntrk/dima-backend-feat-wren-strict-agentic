@@ -1,5 +1,8 @@
 # Dima Brain V2.1 — Final Root Recovery
 
+> **FINAL STATUS — 2026-10-07:** R1-R7 are complete and provider-free GREEN. The single authorized paid recovery wave `37533803018` completed **RED** because R10 and R11 failed with `R1_METRIC_SCOPE_REQUIRED`. R9 is blocked. `30-CASE EXECUTION READY = NO`. The broad 30-case was not run. The immutable adjudication receipt is `DIMA_BRAIN_V2_1_ROOT_RECOVERY_PANEL_2026-10-07.md`.
+
+
 Date: 2026-10-06  
 Branch: `feat/dima-brain-v2-1-specification-closure`  
 Recovery baseline: `505caec6e7c3fbd5346dc6a4c310e8f656d324ae`  
@@ -40,7 +43,7 @@ Dima accepts governed semantic intent and protects authority. Metabase/Metabot d
 
 ### R1 — Thin semantic admission
 
-Status: NOT STARTED
+Status: IMPLEMENTED
 
 - Remove closed V1 analytical grammar from Product admission.
 - Keep grammar helpers only as conformance/test/telemetry surfaces.
@@ -49,7 +52,7 @@ Status: NOT STARTED
 
 ### R2 — Canonical scope-level temporal authority
 
-Status: NOT STARTED
+Status: IMPLEMENTED
 
 - Remove goal-local duplicate semantic membership checks for accepted comparison refs.
 - Accepted `ResearchScope` is the semantic authority.
@@ -60,7 +63,7 @@ Status: NOT STARTED
 
 ### R3 — Turn transition != ScopeVersion transition
 
-Status: NOT STARTED
+Status: IMPLEMENTED
 
 Introduce exactly two generic turn transitions:
 
@@ -77,7 +80,7 @@ Rules:
 
 ### R4 — Adaptive authorization collapse
 
-Status: NOT STARTED
+Status: IMPLEMENTED
 
 - ROOT_CAUSE already authorizes bounded investigation.
 - ROOT_CAUSE + unresolved competing hypotheses + legal information gain may open P19 -> P17 NextTest without a duplicate FOLLOW_VERIFIED_MATERIAL requirement.
@@ -87,7 +90,7 @@ Status: NOT STARTED
 
 ### R5 — Governed P20 synthesis
 
-Status: NOT STARTED
+Status: IMPLEMENTED
 
 P20 becomes the presentation synthesis owner, not a row serializer.
 
@@ -107,7 +110,7 @@ Forbidden:
 
 ### R6 — Deliverable-aware completion
 
-Status: NOT STARTED
+Status: IMPLEMENTED
 
 - `report_ref != None` is not sufficient proof that a report MUST is fulfilled.
 - P20 must emit typed deliverable coverage:
@@ -116,7 +119,7 @@ Status: NOT STARTED
 
 ### R7 — Metamorphic anti-new-family closure
 
-Status: NOT STARTED
+Status: GREEN — 192 generated scenarios + Wave A/B + mutation
 
 Before any paid validation, run >=100 deterministic/generated provider-free scenarios spanning:
 
@@ -146,7 +149,7 @@ Required invariants:
 
 ### R8 — One independent paid recovery panel
 
-Status: BLOCKED ON R1-R7
+Status: RED — paid recovery run `37533803018`
 
 Only after provider-free closure:
 
@@ -167,7 +170,7 @@ No second paid correction wave except a proven harness defect.
 
 ### R9 — Final same-SHA freeze
 
-Status: BLOCKED ON R8
+Status: BLOCKED — R8 is RED
 
 After the recovery panel is GREEN:
 
@@ -235,3 +238,20 @@ Security/provenance status:
 - tenant/principal/currentness/Evidence lineage/native identity gates remain fail-closed.
 
 Paid validation remains BLOCKED until the entire provider-free closure, including Wave A/B and mutation canaries, is GREEN. The frozen 30-case corpus remains unauthorized and unexecuted.
+
+
+## Final recovery closure — 2026-10-07
+
+- R1 thin semantic admission: COMPLETE.
+- R2 canonical scope-level temporal authority: COMPLETE.
+- R3 turn transition / ScopeVersion separation: COMPLETE.
+- R4 adaptive duplicate-authorization collapse: COMPLETE.
+- R5 governed P20 synthesis owner: IMPLEMENTED; live typed closure remains a quality weakness in several report cases.
+- R6 deliverable-aware completion: COMPLETE.
+- R7 provider-free/metamorphic closure: GREEN — focused `37525079508`, frozen-family `37525079621`, semantic/Wave A/Wave B/mutation `37525079655`, 192 generated scenarios.
+- R8 single 12-shape paid recovery panel: **RED** — `37533803018`.
+- R9 final same-SHA readiness seal: **BLOCKED**.
+
+First remaining Product boundary: follow-up refinement/deepening can lose executable metric authority and fail with `R1_METRIC_SCOPE_REQUIRED`. Separate quality weakness: P20 bounded synthesis frequently returns explicit LIMITED after post-provider typed closure failure. Adaptive information-gain deepening is also not demonstrated consistently.
+
+Supervisor stop law is active: the single paid correction wave has been consumed and the failures are Product failures, not a proven harness defect. No second paid correction wave, no broad 30-case, and no `30-CASE EXECUTION READY = YES` seal are legal in this round.
