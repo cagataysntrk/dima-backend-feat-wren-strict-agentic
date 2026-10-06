@@ -1840,22 +1840,31 @@ class DimaBrainV2Activities(BrainActivities):
         # available without touching P17 at all. This preserves the ONE_PASS
         # invariant: P17 is consulted only after P19 actually emits a typed
         # NextTestRequest. Final callability remains fail-closed below.
-        parent_verified = any(
-            item.obligation_id == goal.goal_id
-            and str(getattr(item.state, "value", item.state)) == "VERIFIED"
-            for item in session.obligations
-        )
         typed_adaptive_intent = (
             goal.goal_id in set(state.follow_verified_material_goal_ids)
         )
+        # ROOT_CAUSE is already bounded investigation authority. Requiring the
+        # same turn to also carry FOLLOW_VERIFIED_MATERIAL would create a second
+        # semantic authorization for P19's discriminating NextTest seam.
+        adaptive_authorized = (
+            goal.kind == ResearchGoalKind.ROOT_CAUSE
+            or typed_adaptive_intent
+        )
         competing_set_available = len(snapshot.hypotheses) >= 2
+        investigation_snapshot = self._investigation.snapshot(
+            session_id=session.session_id,
+            principal=self._principal,
+        )
+        deterministic_capacity = discriminating_test_capacity_available(
+            snapshot=investigation_snapshot,
+            evidence_surface_available=bool(self._native_session_token),
+            target_obligation_id=goal.goal_id,
+        )
         discrimination_capacity = (
             competing_set_available
-            and typed_adaptive_intent
+            and adaptive_authorized
             and state.adaptive_reentries < state.max_adaptive_reentries
-            and bool(self._native_session_token)
-            and parent_verified
-            and bool(state.evidence_ids)
+            and deterministic_capacity
         )
         key = self._cognition_key(
             state=state,
@@ -1870,6 +1879,9 @@ class DimaBrainV2Activities(BrainActivities):
                     ],
                     "scope": state.scope_version_id,
                     "typed_adaptive_intent": typed_adaptive_intent,
+                    "root_cause_authority": (
+                        goal.kind == ResearchGoalKind.ROOT_CAUSE
+                    ),
                     "discriminating_test_capacity": discrimination_capacity,
                 }
             ),
@@ -1936,11 +1948,6 @@ class DimaBrainV2Activities(BrainActivities):
             scope_lineage_id=session.lineage_id,
             scope_version_id=state.scope_version_id or "scope_v1",
         )
-        if request is not None:
-            investigation_snapshot = self._investigation.snapshot(
-                session_id=session.session_id,
-                principal=self._principal,
-            )
         if request is not None and not discriminating_test_is_callable(
             snapshot=investigation_snapshot,
             request=request,
