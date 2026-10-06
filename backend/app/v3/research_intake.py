@@ -15,10 +15,6 @@ from typing import Any, Literal, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from app.v3.analytical_boundary import (
-    AnalyticalBoundaryError,
-    validate_v1_research_brief,
-)
 from app.v3.product.contracts import (
     ProductInvestigationRequirement,
     ProductInvestigationRequirementKind,
@@ -3917,22 +3913,6 @@ class ResearchIntakeCompiler:
             context_version=catalog.context_version,
             status=ResearchBriefStatus.READY_FOR_RESEARCH,
         )
-        try:
-            validate_v1_research_brief(
-                brief,
-                scope_patch=scope_contract is not None,
-            )
-        except AnalyticalBoundaryError as exc:
-            return ResearchIntakeResult(
-                terminal=ResearchIntakeTerminal.UNSUPPORTED,
-                unsupported_reason=(
-                    "The typed request is outside the closed V1 analytical "
-                    f"grammar ({exc.code})."
-                ),
-                catalog_fingerprint=catalog.fingerprint,
-                model_calls=calls,
-            )
-
         return ResearchIntakeResult(
             terminal=ResearchIntakeTerminal.READY,
             brief=brief,
