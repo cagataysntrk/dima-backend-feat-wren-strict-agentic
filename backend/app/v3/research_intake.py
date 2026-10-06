@@ -3785,7 +3785,14 @@ class ResearchIntakeCompiler:
                     str(exc),
                 ) from exc
         try:
-            temporal_authority = resolve_temporal_authority(tuple(periods))
+            temporal_authority = resolve_temporal_authority(
+                tuple(periods),
+                require_change_frame=any(
+                    goal.ranking is not None
+                    and goal.ranking.basis == RankingBasis.CHANGE
+                    for goal in draft.goals
+                ),
+            )
         except TemporalAuthorityError as exc:
             return ResearchIntakeResult(
                 terminal=ResearchIntakeTerminal.CLARIFY,
