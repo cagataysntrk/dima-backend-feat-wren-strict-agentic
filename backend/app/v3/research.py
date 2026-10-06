@@ -130,6 +130,10 @@ class ResearchSession(Frozen):
     session_id: str = Field(pattern=r"^rs_[a-f0-9]{24}$")
     revision: int = 1
     authority_id: str
+    # Monotonic accepted-turn authority revision. This is intentionally
+    # independent from ScopeVersion: same-scope continuation increments this
+    # revision while preserving the exact accepted scope version.
+    authority_revision: int = Field(default=1, ge=1)
     lineage_id: str
     source_message_hash: str = Field(pattern=r"^[a-f0-9]{64}$")
     context_version: str
@@ -243,6 +247,7 @@ class ResearchManager:
         stamp=_now(now)
         return ResearchSession(
             session_id=session_id or "rs_"+uuid4().hex[:24], authority_id=authority.contract_id,
+            authority_revision=authority.version,
             lineage_id=authority.lineage_id, source_message_hash=authority.source_message_hash,
             context_version=authority.context_version, tenant_binding=tenant_binding,
             principal_subject=principal_subject, objective=objective.strip(),
