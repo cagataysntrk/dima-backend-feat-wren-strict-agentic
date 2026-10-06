@@ -2,27 +2,29 @@
 
 Updated: 2026-10-06
 
-## 0. Final freeze status
+## 0. Current freeze status
 
-This specification-closure candidate is now frozen for actual 30-case evaluation.
+Current branch:
 
-Canonical semantic Product:
+`feat/dima-brain-v2-1-specification-closure`
+
+Canonical frozen Product semantics:
 
 `ae4e0348601774082b0270f23d6de126e71e6055`
 
-Certified engine:
+Certified engine identity:
 
-- SHA: `a54a13be978985b58aa53b3ca70a6a51ecb3de3b`
+- SHA: `686671fa7e55f715e4fb5ac155f9e66019fd12d8`
 - release: `0.63.18-dima.11.2`
 - runtime tag: `v0.63.18-dima.11.2.1`
-- digest: `sha256:34a3acec8d9cd8743c894f3ef4314b406eaeee08c67526328a55ed8e639be763`
-- certification run: `37383555448`
+- certification run: `37449462486`
+- digest: `sha256:fe1b6fb67be6dbadea1af5d415f3ba2e033d46f91289f5c3c9844bee20c379bd`
 
-Acceptance-baseline backend HEAD before documentation-only freeze commits:
+Engine integration / provider-free acceptance head:
 
-`5bbf02f9d088d1060ab5e388f41629337ef4e770`
+`4251622e65b6275735a9619d1a09a37dc60f280a`
 
-Current readiness terminology:
+Current terminology:
 
 `30-CASE EXECUTION READY = YES`
 
@@ -32,89 +34,136 @@ Current readiness terminology:
 
 These statements are intentionally different.
 
-“30-CASE EXECUTION READY” means that one immutable Product+engine candidate exists, the required provider-free closure is GREEN, certified engine identity is pinned, security/currentness/dedup infrastructure is GREEN, and the evaluation infrastructure is ready to run the actual frozen 30-case.
+“30-CASE EXECUTION READY” means:
 
-It does **not** mean that 90+ quality has already been demonstrated.
+- one immutable semantic Product exists;
+- one certified engine identity is pinned;
+- all required provider-free closure gates are GREEN;
+- security/currentness/dedup invariants are GREEN;
+- evaluation infrastructure is ready for one separately authorized frozen 30-case run.
 
-## 1. Freeze law
+It does NOT mean 90+ quality has already been demonstrated.
 
-From this point:
+Actual frozen 30-case is NOT authorized yet.
 
-- do not change Product semantic code;
-- do not change engine code/build;
-- do not fix S3;
-- do not add semantic families;
-- do not run another sentinel panel;
-- do not change prompts, grammar, LangGraph semantics, Metabot behavior or provider ceilings;
-- do not run the 30-case without separate explicit user authorization.
+Paid/broad authorization is OFF.
 
-Paid/broad authorization remains OFF.
+Frontend is NOT authorized.
 
-Frontend remains NOT AUTHORIZED.
+---
 
-The pre-30-case perfection loop is closed.
+## 1. Final engine integration
 
-## 2. Provider-free closure
+The final engine integration is complete.
 
-Final accepted provider-free runs under the frozen Product plus certified dima.11.2 runtime:
+Gitlink:
 
-- focused Brain V2: `37391242111` — GREEN
-- Phase-2/headless: `37391242219` — GREEN
-- Phase-1 aggregate: `37391242264` — GREEN
-- frozen-family closure: `37391441309` — GREEN
-- semantic conformance: `37391441484` — GREEN
-  - main conformance GREEN
-  - Wave A GREEN
-  - independent Wave B GREEN
-  - mutation canaries GREEN
+`engine/metabase -> 686671fa7e55f715e4fb5ac155f9e66019fd12d8`
+
+Runtime lock:
+
+`backend/lab/metabase/core_b/runtime/engine_runtime_lock.json`
+
+contains the same:
+
+- engine SHA;
+- runtime tag;
+- registry digest;
+- certification run;
+- build identity.
+
+Machine-readable release manifest:
+
+`backend/lab/metabase/brain_v2/release_validation_manifest.json`
+
+contains the same frozen Product + engine identity.
+
+Semantic Product was not changed.
+
+Audit from Product `ae4e0348...` to current branch shows:
+
+- `backend/app/**` semantic changes: 0
+- `backend/pyproject.toml` changes: 0
+- intended engine gitlink change: yes
+
+No LangGraph, grammar, prompt, Metabot or provider-cap change is part of this final engine integration.
+
+---
+
+## 2. Required provider-free recertification
+
+All required gates are GREEN on the certified engine integration checkout:
+
+- focused Brain V2: `37461980401` — GREEN
+- Phase-2/headless: `37461980519` — GREEN
+- Phase-1 aggregate: `37461980584` — GREEN
+- frozen-family closure: `37461980475` — GREEN
+- semantic conformance + Wave A + independent Wave B + mutation canaries: `37461980396` — GREEN
 
 Migration remains single-head:
 
 `ff5b8e2c1a73`
 
-## 3. Known open release-validation risk — S3
+This is the canonical deterministic readiness basis for:
 
-The known S3 risk is **not hidden and is not called PASS**.
+`30-CASE EXECUTION READY = YES`
 
-Diagnostic:
+---
 
-- run: `37391843531`
-- job: `112038501786`
-- probe: `CHANGE_DEPENDENT_DRILLDOWN_V1`
-- Product quality: `2/4 PARTIAL`
+## 3. Known S3 quality risk remains explicit
+
+An extra same-SHA sentinel panel later ran:
+
+`37462642488`
+
+This panel was not required for the final 30-case-execution-ready seal and is not used to claim 90+ quality.
+
+Observed mechanical results:
+
+- S1 Direct Analytics — GREEN
+- S2 Temporal Comparison — GREEN
+- S3 CHANGE + dependent drilldown — RED
+- S4 Adaptive RCA — GREEN
+- S5 Relationship — GREEN
+- S6 Scope Resume — GREEN
+- S7 Contextual Report — GREEN
+- S8 Multi-intent — GREEN
+- S9 Safety / unsupported — GREEN
+
+S3:
+
 - mechanical verdict: RED
-
-Observed state:
-
+- manual/canonical quality risk: `2/4 PARTIAL`
 - workflow status: `WAITING`
 - last node: `MATERIAL_GROUP_WAITING`
-- parent obligation: `LIMITED`
-- child obligation: `READY`
-- native occurrence count: 1
-- native occurrence status: `LIMITED`
-- native acquisitions: 0
+- one native occurrence: `LIMITED`
 - VERIFIED Evidence: absent
 - SelectionBinding: absent
-- child machine drilldown: not completed
-
-Observed safety for that diagnostic:
-
-- exception: 0
-- blocked provider requests: 0
+- child machine drilldown: incomplete
 - duplicate native: 0
+- exception: 0
 - scope current: yes
-- P17 provider calls: 0
-- P19 provider calls: 0
+- provider safety: clean
 
-This S3 result is an explicit release-validation risk. It is accepted only as an unresolved risk going into the actual frozen 30-case. It must remain visible in final adjudication.
+This risk is not hidden and is not called PASS.
 
-Canonical machine-readable record:
+It blocks any claim that 90+ quality is already established.
+
+It does NOT invalidate “30-CASE EXECUTION READY”, whose definition is deterministic/evaluation readiness of the frozen candidate.
+
+Canonical risk record:
 
 `backend/lab/metabase/brain_v2/release_validation_manifest.json`
+
+---
 
 ## 4. Authorization state
 
 Final sentinel authorization:
+
+OFF.
+
+S3 diagnostic authorization:
 
 OFF.
 
@@ -130,85 +179,77 @@ Frontend:
 
 NOT AUTHORIZED.
 
-The difference between “execution ready” and “authorized to execute” is deliberate:
+No further S3 retry or sentinel run is authorized.
 
-- execution readiness = technical/evaluation readiness of the frozen candidate;
-- authorization = explicit permission to spend/run the actual 30-case.
+---
 
 ## 5. Actual frozen 30-case protocol
 
-When and only when the user explicitly authorizes it, execute exactly one frozen 30-case using the exact Product+engine identity above.
+Only after explicit user authorization, run exactly one frozen 30-case using:
 
-Required rules:
-
-1. `fail-fast = false`;
-2. all 30 cases must complete;
-3. no fix, commit, semantic change or engine change during the corpus;
-4. raw mechanical results and manual adjudication remain separate;
-5. produce per-case scores;
-6. produce per-family scores;
-7. separately report:
-   - exception;
-   - silent-wrong;
-   - security;
-   - causal overclaim;
-   - duplicate-native;
-8. do not hide the known S3 risk;
-9. do not mix older sentinel scores into the frozen 30-case score.
-
-If final score is `>=90` and safety invariants are clean:
-
-`90+ PROVEN = YES`
-
-Then this specification-closure program closes and STOP.
-
-If final score is `<90`:
-
-- do not immediately start another broad fix loop;
-- adjudicate all 30 cases as one corpus;
-- extract only the small number of genuine root architecture families;
-- wait for a separate user decision before opening implementation work.
-
-## 6. Canonical release identity
-
-Product semantics:
+Product:
 
 `ae4e0348601774082b0270f23d6de126e71e6055`
 
 Engine:
 
-`a54a13be978985b58aa53b3ca70a6a51ecb3de3b`
-
-Release:
-
-`0.63.18-dima.11.2`
+`686671fa7e55f715e4fb5ac155f9e66019fd12d8`
 
 Digest:
 
-`sha256:34a3acec8d9cd8743c894f3ef4314b406eaeee08c67526328a55ed8e639be763`
+`sha256:fe1b6fb67be6dbadea1af5d415f3ba2e033d46f91289f5c3c9844bee20c379bd`
 
-Grammar:
+Required protocol:
 
-`dima_analytical_grammar_v1`
+1. `fail-fast = false`;
+2. all 30 cases complete;
+3. no fix, commit, Product change or engine change during the corpus;
+4. raw mechanical results and manual adjudication remain separate;
+5. produce per-case scores;
+6. produce per-family scores;
+7. separately report:
+   - exception;
+   - silent wrong;
+   - security;
+   - causal overclaim;
+   - duplicate native;
+8. do not hide the known S3 risk;
+9. do not mix old sentinel scores into the 30-case score.
 
-AnalyticalIntent:
+If final score is `>=90` and safety invariants are clean:
 
-`dima_analytical_intent_v1`
+`90+ PROVEN = YES`
 
-ExecutionManifest:
+Then specification closure is complete and STOP.
 
-`dima_analytical_execution_manifest_v1`
+If score is `<90`:
 
-SelectionBinding:
+- do not immediately open another large fix loop;
+- adjudicate the entire 30-case corpus first;
+- derive only a small number of genuine root architecture families;
+- wait for a separate user decision.
 
-`dima_selection_binding_v1`
+---
 
-Model topology:
+## 6. Permanent freeze rules
 
-- Dima cognition: `openai/gpt-5.6-luna`
-- Metabot: `openrouter/openai/gpt-5.6-luna`
-- cascade: NONE
+Until separate authorization:
 
-## 7. One-line handoff
+- Product semantic code: FROZEN
+- engine code/build: FROZEN
+- LangGraph semantics: FROZEN
+- grammar: FROZEN
+- prompts: FROZEN
+- Metabot behavior: FROZEN
+- provider ceilings: FROZEN
+- new semantic families: FORBIDDEN
+- S3 retries: FORBIDDEN
+- sentinel retries: FORBIDDEN
+- 30-case execution: REQUIRES EXPLICIT USER AUTHORIZATION
+- frontend: NOT AUTHORIZED
 
-`FROZEN: Product ae4e0348... + certified dima.11.2; provider-free closure GREEN; known S3 = 2/4 PARTIAL and explicitly recorded; 30-CASE EXECUTION READY = YES; 90+ PROVEN = NO; all paid/broad authorization OFF; actual frozen 30-case requires separate explicit user permission; STOP.`
+---
+
+## 7. Canonical one-line handoff
+
+`FROZEN: Product ae4e0348... + certified engine 686671fa... / dima.11.2 / digest fe1b6f...; required provider-free closure GREEN; semantic Product diff zero; known S3 = 2/4 PARTIAL and explicitly recorded; 30-CASE EXECUTION READY = YES; 90+ PROVEN = NO; all paid/sentinel auth OFF; actual frozen 30-case requires separate explicit user permission; STOP.`
