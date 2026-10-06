@@ -79,13 +79,16 @@ def _period_identity(
 
 def resolve_temporal_authority(
     periods: tuple[ResearchTimePeriod, ...],
+    *,
+    require_change_frame: bool = False,
 ) -> CanonicalTemporalAuthority:
     """Canonicalize exact duplicate frames and resolve one scope-level frame.
 
-    Exact duplicate typed periods are coalesced.  A true role-bound baseline /
-    comparison pair is PAIR.  One bounded MATERIAL_WINDOW is SPAN.  Distinct
-    simultaneous change frames are not guessed or ordered; they require a
-    clarification at the caller boundary.
+    Exact duplicate typed periods are coalesced. A true role-bound baseline /
+    comparison pair is PAIR. A bounded MATERIAL_WINDOW becomes SPAN only when
+    the accepted analytical semantics explicitly require a CHANGE frame.
+    Neutral material windows remain neutral. Distinct simultaneous change
+    frames are never guessed or ordered.
     """
 
     canonical: list[ResearchTimePeriod] = []
@@ -136,11 +139,11 @@ def resolve_temporal_authority(
             comparison_period=comparison[0],
         )
 
-    if spans:
+    if require_change_frame and spans:
         if len(spans) != 1:
             raise TemporalAuthorityError(
                 "TEMPORAL_SPAN_AMBIGUOUS",
-                "multiple distinct bounded SPAN frames require clarification",
+                "multiple distinct bounded SPAN change frames require clarification",
             )
         return CanonicalTemporalAuthority(
             periods=tuple(canonical),
@@ -148,6 +151,10 @@ def resolve_temporal_authority(
             span_period=spans[0],
         )
 
+    # MATERIAL_WINDOW is neutral temporal material unless the accepted
+    # analytical semantics explicitly require a CHANGE frame. Multiple neutral
+    # windows are legal governed scope and must not be promoted to ambiguity by
+    # a presentation-independent temporal resolver.
     return CanonicalTemporalAuthority(periods=tuple(canonical))
 
 
