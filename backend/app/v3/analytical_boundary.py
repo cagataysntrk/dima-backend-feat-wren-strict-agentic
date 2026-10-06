@@ -280,6 +280,10 @@ _OPERATION_BY_GOAL = {
     ResearchGoalKind.BREAKDOWN: AnalyticalOperation.BREAKDOWN,
     ResearchGoalKind.RANKING: AnalyticalOperation.RANK,
     ResearchGoalKind.ROOT_CAUSE: AnalyticalOperation.RCA,
+    # OTHER is a meta/product intent, not a capability veto. When Research has
+    # already grounded legal material refs, route the analytical floor as a
+    # generic observation and leave realization to Metabase/Metabot.
+    ResearchGoalKind.OTHER: AnalyticalOperation.OBSERVE,
 }
 
 
