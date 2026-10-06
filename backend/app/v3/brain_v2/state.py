@@ -84,7 +84,7 @@ class BrainGraphState(BaseModel):
     )
     latest_p19_route: BrainP19Route | None = None
     adaptive_reentries: int = Field(default=0, ge=0)
-    max_adaptive_reentries: int = Field(default=1, ge=0, le=4)
+    max_adaptive_reentries: int = Field(default=2, ge=0, le=4)
 
     p18_requirement_ids: tuple[str, ...] = ()
     p18_result_refs: tuple[str, ...] = ()
