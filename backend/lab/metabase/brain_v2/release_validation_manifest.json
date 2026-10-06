@@ -1,6 +1,6 @@
 {
   "schema_version": "dima_brain_v2_1_release_validation_v1",
-  "status": "30_CASE_EXECUTION_READY",
+  "status": "ACTUAL_FROZEN_30_CASE_COMPLETE",
   "frozen_identity": {
     "product_semantic_sha": "ae4e0348601774082b0270f23d6de126e71e6055",
     "engine_sha": "686671fa7e55f715e4fb5ac155f9e66019fd12d8",
@@ -22,10 +22,13 @@
     "engine_integration_provider_free_head": "4251622e65b6275735a9619d1a09a37dc60f280a"
   },
   "readiness": {
-    "thirty_case_execution_ready": true,
+    "thirty_case_execution_ready": false,
+    "thirty_case_execution_completed": true,
     "ninety_plus_high_confidence_quality_ready": false,
     "ninety_plus_proven": false,
-    "meaning": "Frozen Product ae4e0348... + certified engine 686671fa... passed the required full provider-free closure. Evaluation infrastructure is ready for one separately authorized frozen 30-case. This does not claim 90+ quality."
+    "eighty_plus_proven": false,
+    "final_quality_score": 68.25,
+    "meaning": "The separately authorized frozen 30-case completed on Product ae4e0348... + certified engine 686671fa.... Manual adjudication under the unchanged Round-2 rubric is 68.25/100. 90+ and 80+ are not proven. No automatic retry or broad fix loop is authorized."
   },
   "provider_free_closure": {
     "status": "GREEN",
@@ -72,7 +75,8 @@
     "final_sentinel": false,
     "s3_diagnostic": false,
     "frontend": false,
-    "note": "All paid/sentinel authorization is OFF. One actual frozen 30-case may run only after separate explicit user authorization."
+    "automatic_retry": false,
+    "note": "Actual frozen 30-case run 37470794678 completed. All paid/broad/sentinel authorization is closed. No rerun or Product/engine correction is authorized by this receipt."
   },
   "actual_frozen_30_case_protocol": {
     "required_identity_match": true,
@@ -102,5 +106,67 @@
     "engine_sha": "686671fa7e55f715e4fb5ac155f9e66019fd12d8",
     "result_summary": "8 mechanical GREEN, S3 mechanical RED; aggregate quality not used as release proof under the final freeze terminology.",
     "acceptance_for_90_plus": "NOT CLAIMED"
+  },
+  "actual_frozen_30_case_result": {
+    "status": "COMPLETE",
+    "run_id": 37470794678,
+    "job_id": 112293435226,
+    "artifact_id": 11417995791,
+    "artifact_digest": "sha256:762fa89d79d6b796d95cb73a0bbacf2d84c50b267dbf8ec308863775601cce74",
+    "benchmark_checkout_sha": "dc9aefb30ec1a8261ff5e73e99a9efa28c948238",
+    "benchmark_branch": "benchmark/brain-v2-1-round2-20261006",
+    "cases_completed": 30,
+    "raw_harness_passed": 14,
+    "manual_quality_score": 68.25,
+    "ordinal_distribution": {
+      "FULL": 13,
+      "STRONG_PARTIAL": 9,
+      "PARTIAL": 3,
+      "LOW_UTILITY": 3,
+      "FAIL": 2
+    },
+    "difficulty_scores": {
+      "simple": 87.5,
+      "medium": 77.5,
+      "hard": 55
+    },
+    "feature_scores": {
+      "F01": 50,
+      "F02": 100,
+      "F03": 50,
+      "F04": 80,
+      "F05": 80,
+      "F06": 37.5,
+      "F07": 75,
+      "F08": 50,
+      "F09": 100,
+      "F10": 60
+    },
+    "mechanical": {
+      "case_exceptions": 10,
+      "duplicate_native": 0,
+      "stale_evidence": 0,
+      "blocked_provider_requests": 0,
+      "provider_requests": 132,
+      "prompt_tokens": 1740602,
+      "completion_tokens": 38669,
+      "reasoning_tokens": 8134,
+      "provider_reported_cost_usd": 0.24467439,
+      "mean_case_latency_ms": 19632.93,
+      "median_case_latency_ms": 18894,
+      "p90_case_latency_ms": 40226,
+      "max_case_latency_ms": 47325
+    },
+    "proof": {
+      "ninety_plus_proven": false,
+      "eighty_plus_proven": false
+    },
+    "dominant_root_families": [
+      "INTAKE_COMPARISON_TEMPORAL_OWNERSHIP",
+      "ADAPTIVE_INVESTIGATION_CLOSURE",
+      "REPORTING_SYNTHESIS_COVERAGE",
+      "MULTI_TURN_SCOPE_CURRENTNESS_CONTINUATION"
+    ],
+    "adjudication_document": "backend/belgeler/metabase/DIMA_BRAIN_V2_1_ROUND2_FINAL_ADJUDICATION_2026-10-06.md"
   }
 }
