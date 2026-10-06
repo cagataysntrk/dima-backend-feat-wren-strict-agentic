@@ -715,7 +715,13 @@ def analytical_scope_contract(
         )
 
     try:
-        temporal_authority = resolve_temporal_authority(periods)
+        temporal_authority = resolve_temporal_authority(
+            periods,
+            require_change_frame=(
+                question.ranking is not None
+                and question.ranking.basis == RankingBasis.CHANGE
+            ),
+        )
     except TemporalAuthorityError as exc:
         # Intake/ScopePatch must already have resolved this. Reaching this
         # boundary with ambiguous temporal authority is scope drift, not a new
