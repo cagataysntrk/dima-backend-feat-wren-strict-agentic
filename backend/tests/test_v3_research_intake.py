@@ -4241,7 +4241,7 @@ def test_change_ranking_conflicting_period_role_fails_closed() -> None:
             catalog=_r6_temporal_catalog(),
         )
 
-    assert exc.value.code == "INTAKE_CHANGE_RANKING_PERIOD_ROLE_CONFLICT"
+    assert exc.value.code == "INTAKE_CHANGE_RANKING_TEMPORAL_FRAME_REQUIRED"
 
 
 # Phase-1B 30-case readiness: LEVEL vs CHANGE is deliberate typed Intake authority.
