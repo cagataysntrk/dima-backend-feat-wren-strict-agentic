@@ -8758,3 +8758,66 @@ do not immediately open another fix loop. First adjudicate the complete 30-case 
 
 NEXT LEGAL ACTION:
 STOP / FREEZE. Wait for explicit authorization to run the actual frozen 30-case.
+
+
+---
+
+### FINAL ENGINE INTEGRATION — 30-CASE EXECUTION READY SEAL
+
+DATE:
+2026-10-06
+
+STATUS:
+GREEN — EXECUTION READY / QUALITY NOT YET PROVEN
+
+Frozen semantic Product:
+`ae4e0348601774082b0270f23d6de126e71e6055`
+
+Certified engine:
+- SHA: `686671fa7e55f715e4fb5ac155f9e66019fd12d8`
+- release: `0.63.18-dima.11.2`
+- runtime tag: `v0.63.18-dima.11.2.1`
+- certification run: `37449462486`
+- digest: `sha256:fe1b6fb67be6dbadea1af5d415f3ba2e033d46f91289f5c3c9844bee20c379bd`
+
+Engine integration:
+- `engine/metabase` gitlink pinned to `686671fa...`
+- `engine_runtime_lock.json` pinned to the same SHA/tag/digest/build identity/certification run
+- `release_validation_manifest.json` pinned to the same Product+engine identity
+
+Product freeze audit:
+- `backend/app/**` semantic diff from Product `ae4e0348...`: 0
+- `backend/pyproject.toml` diff: 0
+- intended engine gitlink change: present
+- no LangGraph/prompt/grammar/Metabot/provider-cap semantic change
+
+Provider-free recertification:
+- focused Brain V2 `37461980401` — GREEN
+- Phase-2/headless `37461980519` — GREEN
+- Phase-1 aggregate `37461980584` — GREEN
+- frozen-family `37461980475` — GREEN
+- semantic conformance + Wave A + independent Wave B + mutation `37461980396` — GREEN
+- migration graph remains single-head `ff5b8e2c1a73`
+
+Readiness terminology:
+- `30-CASE EXECUTION READY = YES`
+- `90+ HIGH-CONFIDENCE QUALITY READY = NOT DECLARED`
+- `90+ PROVEN = NO`
+
+Known release-validation risk:
+An extra same-SHA nine-sentinel run `37462642488` later completed. Eight probes were mechanical GREEN; S3 `CHANGE_DEPENDENT_DRILLDOWN_V1` remained mechanical RED / `2/4 PARTIAL`. S3 had one LIMITED native occurrence, no VERIFIED Evidence, no SelectionBinding and no completed child drilldown; duplicate native = 0, exception = 0 and provider safety remained clean.
+
+This extra sentinel run is recorded for transparency but is NOT used to claim 90+ quality and is NOT required for the 30-case-execution-ready seal.
+
+Authorization:
+- final sentinel: OFF
+- S3 diagnostic: OFF
+- broad paid: OFF
+- actual frozen 30-case: OFF until explicit user authorization
+- frontend: NOT AUTHORIZED
+
+Next legal action:
+STOP. No more pre-30-case perfection loop. Only after explicit user authorization, execute exactly one frozen 30-case using Product `ae4e0348...` + engine `686671fa...`, fail-fast=false, with no intervening fixes/commits and with raw mechanical results separated from manual adjudication.
+
+Seal:
+`30-CASE EXECUTION READY = YES`
