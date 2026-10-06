@@ -1132,7 +1132,7 @@ def test_zero_ref_other_instruction_is_not_a_second_analytical_goal_beside_one_r
     )
 
 
-def test_other_goal_with_distinct_governed_scope_is_explicitly_unsupported():
+def test_other_goal_with_distinct_governed_scope_uses_observe_floor():
     clause = "Determine which governed explanation better accounts for downtime."
     separate_clause = "Also inspect machine-level context."
     question = clause + " " + separate_clause
@@ -1182,12 +1182,15 @@ def test_other_goal_with_distinct_governed_scope_is_explicitly_unsupported():
         catalog=catalog(),
     )
 
-    # Closed V1 grammar must not silently absorb an unknown analytical
-    # primitive into RCA or manufacture a new execution path.
-    assert result.terminal == ResearchIntakeTerminal.UNSUPPORTED
-    assert result.brief is None
-    assert result.unsupported_reason is not None
-    assert "ANALYTICAL_V1_OPERATION_UNSUPPORTED" in result.unsupported_reason
+    assert result.terminal == ResearchIntakeTerminal.READY
+    assert result.brief is not None
+    assert tuple(item.kind for item in result.brief.questions) == (
+        ResearchGoalKind.ROOT_CAUSE,
+        ResearchGoalKind.OTHER,
+    )
+    assert "dimension.machine_id" in {
+        item.candidate_id for item in result.brief.scope.semantic_refs
+    }
 
 
 def test_ready_breakdown_compiles_to_typed_research_brief():
@@ -1604,8 +1607,56 @@ def prior_brief() -> ResearchBrief:
     )
 
 
-def test_followup_scope_patch_rejects_ungrounded_current_turn_fragment():
+def _full_followup_payload(
+    *,
+    metric_ids=("metric.downtime", "metric.fault_count"),
+    mutation_kind=None,
+    report=False,
+):
+    current = "Continue the governed investigation."
+    goals = [
+        {
+            "goal_key": f"goal-{index}",
+            "kind": "breakdown",
+            "source_text": current,
+            "subject_semantic_ids": [metric_id],
+            "related_semantic_ids": ["dimension.department"],
+            "ranking": None,
+            "comparisons": [],
+            "result_dependency": None,
+            "causal_competition": None,
+        }
+        for index, metric_id in enumerate(metric_ids, start=1)
+    ]
     payload = {
+        "terminal": "READY",
+        "objective": "Continue the governed investigation.",
+        "goals": goals,
+        "deliverables": (
+            [
+                {
+                    "key": "report-current",
+                    "kind": "report",
+                    "source_text": "Report the governed current scope.",
+                }
+            ]
+            if report
+            else []
+        ),
+        "investigation_directives": [],
+        "time_periods": [],
+        "required_domains": ["machine_operations"],
+        "scope_mutation_kind": mutation_kind,
+    }
+    return payload
+
+
+def test_followup_scope_patch_rejects_ungrounded_current_turn_fragment():
+    full = _full_followup_payload(
+        metric_ids=("metric.downtime",),
+        mutation_kind="CHANGE_METRIC",
+    )
+    patch = {
         "terminal": "READY",
         "operations": [
             {
@@ -1618,9 +1669,9 @@ def test_followup_scope_patch_rejects_ungrounded_current_turn_fragment():
     }
     with pytest.raises(ResearchIntakeError) as exc:
         ResearchIntakeCompiler(
-            transport=FakeTransport(payload)
+            transport=SequenceTransport([full, patch])
         ).compile(
-            question="Keep this investigation otherwise unchanged.",
+            question="Correction: include downtime only.",
             catalog=catalog(),
             prior_brief=prior_brief(),
         )
@@ -1628,15 +1679,11 @@ def test_followup_scope_patch_rejects_ungrounded_current_turn_fragment():
     assert exc.value.code == "INTAKE_SCOPE_PATCH_SOURCE_UNGROUNDED"
 
 
-def test_followup_scope_patch_noop_inherits_prior_scope_without_new_version():
+def test_same_scope_report_continuation_inherits_scope_without_new_version():
     prior = prior_brief()
+    payload = _full_followup_payload(report=True)
     result = ResearchIntakeCompiler(
-        transport=FakeTransport(
-            {
-                "terminal": "READY",
-                "operations": [],
-            }
-        )
+        transport=FakeTransport(payload)
     ).compile(
         question="Report this without changing the analytical scope.",
         catalog=catalog(),
@@ -1645,16 +1692,26 @@ def test_followup_scope_patch_noop_inherits_prior_scope_without_new_version():
 
     assert result.brief is not None
     assert result.scope_contract is None
+    assert result.turn_transition == TurnTransitionKind.SAME_SCOPE_CONTINUATION
     assert result.brief.scope == prior.scope
     assert (
         result.brief.scope.scope_version.version_id
         == prior.scope.scope_version.version_id
     )
     assert result.brief.scope_fingerprint == prior.scope_fingerprint
+    assert result.brief.deliverables[0].kind == PresentationKind.REPORT
 
 
 def test_explicit_repair_does_not_restore_removed_prior_obligation():
-    payload = {
+    current = (
+        "Correction: include downtime only; exclude fault count "
+        "from the current request."
+    )
+    full = _full_followup_payload(
+        metric_ids=("metric.downtime",),
+        mutation_kind="CHANGE_METRIC",
+    )
+    patch = {
         "terminal": "READY",
         "operations": [
             {
@@ -1665,14 +1722,11 @@ def test_explicit_repair_does_not_restore_removed_prior_obligation():
             }
         ],
     }
-    transport = FakeTransport(payload)
+    transport = SequenceTransport([full, patch])
     result = ResearchIntakeCompiler(
         transport=transport
     ).compile(
-        question=(
-            "Correction: include downtime only; exclude fault count "
-            "from the current request."
-        ),
+        question=current,
         catalog=catalog(),
         prior_brief=prior_brief(),
     )
@@ -1685,9 +1739,13 @@ def test_explicit_repair_does_not_restore_removed_prior_obligation():
     assert "metric.downtime" in refs
     assert "metric.fault_count" not in refs
     assert result.scope_contract is not None
+    assert result.turn_transition == TurnTransitionKind.SCOPE_MUTATION
     assert result.brief.scope.scope_version.version_id == "scope_v2"
     assert result.brief.scope.scope_version.parent_version_id == "scope_v1"
-    sent = transport.calls[0]["user"]
+
+    # The second call is the only scope-patch authority. The first call owns
+    # current-turn intent/routing and does not itself mutate ScopeVersion.
+    sent = transport.calls[1]["user"]
     prior = sent["prior_brief"]
     assert prior["context_version"] == "ctx-core-b-neutral-v1"
     assert prior["scope"]["semantic_ids"] == [
@@ -4424,16 +4482,15 @@ def test_goal_local_fragment_becomes_research_obligation_text() -> None:
     assert child.source_text != question
 
 
-def test_closed_v1_grammar_returns_unsupported_for_unknown_analytical_primitive() -> None:
+def test_governed_other_intent_is_not_rejected_by_closed_grammar() -> None:
     payload = ready_payload(kind="other")
     result = ResearchIntakeCompiler(
         transport=FakeTransport(payload),
     ).compile(
-        question="Use a governed analytical primitive outside the current V1 grammar.",
+        question="Observe the governed material for this meta analytical request.",
         catalog=catalog(),
     )
 
-    assert result.terminal == ResearchIntakeTerminal.UNSUPPORTED
-    assert result.brief is None
-    assert result.unsupported_reason is not None
-    assert "ANALYTICAL_V1_OPERATION_UNSUPPORTED" in result.unsupported_reason
+    assert result.terminal == ResearchIntakeTerminal.READY
+    assert result.brief is not None
+    assert result.brief.questions[0].kind == ResearchGoalKind.OTHER
