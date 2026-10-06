@@ -18,6 +18,7 @@ on:
       - "backend/tests/test_v3_product_composition.py"
       - "backend/tests/test_v3_brain_v2_semantic_conformance.py"
       - "backend/tests/test_v3_brain_v2_semantic_stateful.py"
+      - "backend/tests/test_v3_brain_v2_semantic_authority_metamorphic.py"
       - "backend/tests/test_v3_brain_v2_adaptive_material_delta.py"
       - "backend/tests/test_v3_brain_v2_graph.py"
       - "backend/tests/test_v3_brain_v2_owner_integration.py"
@@ -42,8 +43,10 @@ on:
       - "backend/app/v3/brain_v2/graph.py"
       - "backend/app/v3/brain_v2/adaptive_test_design.py"
       - "backend/app/v3/brain_v2/adaptive_owner_adapter.py"
+      - "backend/app/v3/brain_v2/adaptive_policy.py"
       - "backend/app/v3/brain_v2/completion_policy.py"
       - "backend/app/v3/brain_v2/owner_adapter.py"
+      - "backend/app/v3/brain_v2/report_synthesis.py"
       - "backend/app/v3/research_material_repair.py"
       - "backend/app/v3/research_product.py"
       - "backend/app/v3/research_native_gateway.py"
@@ -109,7 +112,29 @@ jobs:
 
       - name: Semantic conformance
         working-directory: backend
-        run: pytest -q tests/test_v3_analytical_boundary.py tests/test_v3_selection_binding.py tests/test_v3_v1_analytical_grammar.py tests/test_v3_v1_completion_ledger.py tests/test_v3_product_composition.py tests/test_v3_p14_native_gateway.py tests/test_v3_brain_v2_semantic_conformance.py tests/test_v3_brain_v2_semantic_stateful.py tests/test_v3_brain_v2_adaptive_material_delta.py tests/test_v3_brain_v2_graph.py tests/test_v3_brain_v2_completion_policy.py tests/test_v3_brain_v2_material_repair.py tests/test_v3_brain_v2_temporal_roles.py tests/test_v3_research_scope_patch.py tests/test_v3_research_scope_patch_stateful.py tests/test_v3_p14_product.py tests/test_v3_p17_native_continuation_history.py tests/test_v3_p20_report_document.py tests/test_v3_brain_v2_owner_integration.py::test_real_owner_adaptive_runs_one_typed_followup_without_duplicate_native
+        run: pytest -q tests/test_v3_analytical_boundary.py tests/test_v3_selection_binding.py tests/test_v3_v1_analytical_grammar.py tests/test_v3_v1_completion_ledger.py tests/test_v3_product_composition.py tests/test_v3_p14_native_gateway.py tests/test_v3_brain_v2_semantic_conformance.py tests/test_v3_brain_v2_semantic_stateful.py tests/test_v3_brain_v2_semantic_authority_metamorphic.py tests/test_v3_brain_v2_adaptive_material_delta.py tests/test_v3_brain_v2_graph.py tests/test_v3_brain_v2_completion_policy.py tests/test_v3_brain_v2_material_repair.py tests/test_v3_brain_v2_temporal_roles.py tests/test_v3_research_scope_patch.py tests/test_v3_research_scope_patch_stateful.py tests/test_v3_p14_product.py tests/test_v3_p17_native_continuation_history.py tests/test_v3_p20_report_document.py tests/test_v3_brain_v2_owner_integration.py::test_real_owner_adaptive_runs_one_typed_followup_without_duplicate_native
+
+      - name: Emit semantic authority metamorphic receipt
+        working-directory: backend
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from tests.test_v3_brain_v2_semantic_authority_metamorphic import SCENARIOS
+          assert len(SCENARIOS) >= 100
+          Path("artifacts/semantic-authority-metamorphic.json").write_text(
+              json.dumps(
+                  {
+                      "status": "GREEN",
+                      "generated_scenarios": len(SCENARIOS),
+                      "minimum_required": 100,
+                  },
+                  sort_keys=True,
+                  indent=2,
+              ) + "\n",
+              encoding="utf-8",
+          )
+          PY
 
       - name: Semantic saturation Wave A
         working-directory: backend
