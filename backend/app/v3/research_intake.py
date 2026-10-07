@@ -3516,15 +3516,30 @@ class ResearchIntakeCompiler:
             and draft.terminal == ResearchIntakeTerminal.CLARIFY
             and len(catalog.temporal_dimension_ids) == 1
         ):
+            # A first-pass clarification is not itself temporal authority.
+            # Re-run the same bounded intake owner once with a machine-readable
+            # canonical frame policy. This is not a wording parser and cannot
+            # mint another period: bounded change over one accepted interval is
+            # SPAN; PAIR exists only when two periods must remain distinguishable.
             draft = invoke_provider(
                 instruction=(
-                    "Reconsider once. Preserve CLARIFY unless the sole blocker is "
-                    "calendar anchoring that calendar_reference_date resolves under "
-                    "the system rule. Do not guess metrics, entities, or unavailable data."
+                    "Return the complete CURRENT intent only. Prior brief is context, "
+                    "not authority to restore obligations the user removed."
                 ),
                 reconsideration={
-                    "kind": "TEMPORAL_CLARIFICATION_ONLY",
+                    "kind": "CANONICAL_TEMPORAL_AUTHORITY",
                     "prior_clarification_question": draft.clarification_question,
+                    "governed_time_dimension_id": (
+                        catalog.temporal_dimension_ids[0]
+                    ),
+                    "calendar_reference_date": self._calendar_reference_date,
+                    "frame_policy": {
+                        "bounded_change_without_explicit_pair": (
+                            "SPAN_MATERIAL_WINDOW"
+                        ),
+                        "explicit_two_period_comparison": "PAIR",
+                        "invent_additional_comparison_period": False,
+                    },
                 },
             )
         elif (
@@ -4161,10 +4176,78 @@ class ResearchIntakeCompiler:
                 )
 
             if draft.scope_mutation_kind is None:
-                # SAME_SCOPE_CONTINUATION: the current turn may mention only a
-                # subset of the accepted scope while asking for deeper analysis
-                # or a new presentation. Omission is not a removal operation.
-                accepted_scope = prior_brief.scope
+                # SAME_SCOPE_CONTINUATION normally inherits exact accepted
+                # scope. A newly accepted typed temporal frame is different:
+                # it is an objective PERIOD facet delta, so ScopePatch owns the
+                # exact +1 transition even when the provider routing hint was
+                # omitted. No wording/morphology inference participates.
+                prior_periods = {
+                    (
+                        item.time_dimension_candidate_id,
+                        item.start,
+                        item.end,
+                        item.role.value,
+                    )
+                    for item in prior_brief.scope.periods
+                }
+                draft_periods = {
+                    (
+                        item.time_dimension_candidate_id,
+                        item.start,
+                        item.end,
+                        item.role.value,
+                    )
+                    for item in draft_scope.periods
+                }
+                temporal_delta = bool(draft_periods) and (
+                    draft_periods != prior_periods
+                    or set(draft_scope.temporal_dimension_ids)
+                    != set(prior_brief.scope.temporal_dimension_ids)
+                )
+                if temporal_delta:
+                    temporal_ids = set(draft_scope.temporal_dimension_ids)
+                    temporal_refs = tuple(
+                        item
+                        for item in draft_scope.semantic_refs
+                        if item.candidate_id in temporal_ids
+                    )
+                    temporal_bindings = tuple(
+                        item
+                        for item in draft_scope.native_verification_bindings
+                        if item.candidate_id in temporal_ids
+                    )
+                    try:
+                        resolved_temporal = resolve_scope_patch(
+                            prior_brief.scope,
+                            TurnScopePatch(
+                                source_scope_version_id=(
+                                    prior_brief.scope.scope_version.version_id
+                                ),
+                                operations=(
+                                    ScopePatchOperation(
+                                        facet=ScopePatchFacet.PERIOD,
+                                        operation=ScopePatchOperationKind.SET,
+                                        semantic_refs=temporal_refs,
+                                        periods=draft_scope.periods,
+                                        native_verification_bindings=(
+                                            temporal_bindings
+                                        ),
+                                        source_fragment=current,
+                                    ),
+                                ),
+                            ),
+                            context_version=catalog.context_version,
+                        )
+                    except ValueError as exc:
+                        raise ResearchIntakeError(
+                            "INTAKE_SCOPE_PATCH_INVALID",
+                            str(exc),
+                        ) from exc
+                    accepted_scope = resolved_temporal.current_scope
+                    scope_contract = resolved_temporal.scope_contract
+                else:
+                    # Omission is not a removal operation.
+                    accepted_scope = prior_brief.scope
             else:
                 if (
                     followup_scope_result is None
