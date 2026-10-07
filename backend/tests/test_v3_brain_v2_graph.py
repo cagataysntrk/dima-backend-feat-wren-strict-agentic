@@ -54,10 +54,17 @@ class FakeActivities:
     def intake(self, state: BrainGraphState) -> IntakeActivityResult:
         self.calls["intake"] += 1
         continuing = state.research_session_id is not None
+        same_scope_continuation = (
+            continuing and self.mode == "relationship_same_scope"
+        )
         return IntakeActivityResult(
             research_session_id="rs_" + ("d" if continuing else "c") * 24,
             accepted_brief_ref=("brief:fixture:v2" if continuing else "brief:fixture:v1"),
-            scope_version_id=("scope_v2" if continuing else "scope_v1"),
+            scope_version_id=(
+                "scope_v1"
+                if not continuing or same_scope_continuation
+                else "scope_v2"
+            ),
             open_requirement_ids=("goal-1",),
             material_requirement_ids=("goal-1",),
             discovery_required=self.mode.startswith("discovery"),
@@ -87,6 +94,19 @@ class FakeActivities:
         self, state: BrainGraphState
     ) -> RequirementPlanActivityResult:
         self.calls["requirements_plan"] += 1
+        relationship_turn = (
+            self.mode in {"relationship", "relationship_same_scope"}
+            or (
+                self.mode == "relationship_on_second"
+                and self.calls["intake"] >= 2
+            )
+        )
+        if relationship_turn:
+            return RequirementPlanActivityResult(
+                material_group_ids=("mg_" + "a" * 24,),
+                relationship_requirement_ids=("goal-1",),
+                activity_fingerprint=self._fp("requirements-plan", state),
+            )
         if self.mode in {
             "material_group_waiting",
             "material_group_waiting_then_evidence",
@@ -131,7 +151,26 @@ class FakeActivities:
     def adjudicate_relationship(
         self, state: BrainGraphState
     ) -> P18ActivityResult:
-        raise AssertionError("pure RCA fixture must not invoke P18")
+        relationship_turn = (
+            self.mode in {"relationship", "relationship_same_scope"}
+            or (
+                self.mode == "relationship_on_second"
+                and self.calls["intake"] >= 2
+            )
+        )
+        if not relationship_turn:
+            raise AssertionError("pure RCA fixture must not invoke P18")
+        self.calls["p18"] += 1
+        ordinal = self.calls["p18"]
+        requirement_id = state.active_requirement_id or "goal-1"
+        token = str(ordinal % 10)
+        return P18ActivityResult(
+            requirement_id=requirement_id,
+            result_ref="p18r_" + token * 24,
+            claim_ref="clm_" + token * 24,
+            policy_use_ref="bru_" + token * 24,
+            activity_fingerprint=self._fp(f"p18-{ordinal}", state),
+        )
 
     def evaluate_completion(
         self, state: BrainGraphState
@@ -607,6 +646,132 @@ def test_continue_turn_advances_scope_without_reusing_old_current_evidence() -> 
     assert set(first_evidence).isdisjoint(second.evidence_ids)
     assert activities.calls["intake"] == 2
     assert activities.calls["material"] == 2
+
+
+def _p18_projection(state: BrainGraphState) -> tuple[tuple[str, ...], ...]:
+    return (
+        state.p18_requirement_ids,
+        state.p18_result_refs,
+        state.p18_claim_refs,
+        state.p18_policy_use_refs,
+    )
+
+
+def test_relationship_turn_then_same_scope_continuation_resets_p18_atomically() -> None:
+    activities = FakeActivities("relationship_same_scope")
+    service = BrainV2Service(activities=activities)
+    first = service.run(
+        BrainGraphState(
+            thread_id="thread-p18-same-scope",
+            tenant_binding="id:tenant",
+            principal_ref="user-1",
+            current_user_input="Assess the governed relationship.",
+        )
+    )
+    historical_projection = _p18_projection(first)
+
+    second = service.continue_turn(
+        thread_id=first.thread_id,
+        tenant_binding=first.tenant_binding,
+        principal_ref=first.principal_ref,
+        user_input="Continue inside the same governed scope.",
+    )
+
+    assert first.scope_version_id == "scope_v1"
+    assert second.scope_version_id == "scope_v1"
+    assert first.tenant_binding == second.tenant_binding == "id:tenant"
+    assert first.principal_ref == second.principal_ref == "user-1"
+    assert all(len(items) == 1 for items in historical_projection)
+    assert all(len(items) == 1 for items in _p18_projection(second))
+    assert second.p18_result_refs != first.p18_result_refs
+    assert activities.calls["p18"] == 2
+    assert activities.calls["material_group"] == 2
+
+
+def test_relationship_turn_then_scope_mutation_resets_p18_atomically() -> None:
+    activities = FakeActivities("relationship")
+    service = BrainV2Service(activities=activities)
+    first = service.run(
+        BrainGraphState(
+            thread_id="thread-p18-scope-mutation",
+            tenant_binding="id:tenant",
+            principal_ref="user-1",
+            current_user_input="Assess the governed relationship.",
+        )
+    )
+
+    second = service.continue_turn(
+        thread_id=first.thread_id,
+        tenant_binding=first.tenant_binding,
+        principal_ref=first.principal_ref,
+        user_input="Apply a real governed scope mutation.",
+    )
+
+    assert first.scope_version_id == "scope_v1"
+    assert second.scope_version_id == "scope_v2"
+    assert first.tenant_binding == second.tenant_binding
+    assert first.principal_ref == second.principal_ref
+    assert all(len(items) == 1 for items in _p18_projection(first))
+    assert all(len(items) == 1 for items in _p18_projection(second))
+    assert second.p18_result_refs != first.p18_result_refs
+    assert activities.calls["p18"] == 2
+    assert activities.calls["material_group"] == 2
+
+
+def test_non_relationship_turn_then_relationship_turn_gets_fresh_p18_bundle() -> None:
+    activities = FakeActivities("relationship_on_second")
+    service = BrainV2Service(activities=activities)
+    first = service.run(
+        BrainGraphState(
+            thread_id="thread-p18-late-relationship",
+            tenant_binding="id:tenant",
+            principal_ref="user-1",
+            current_user_input="Run the initial governed analysis.",
+        )
+    )
+
+    second = service.continue_turn(
+        thread_id=first.thread_id,
+        tenant_binding=first.tenant_binding,
+        principal_ref=first.principal_ref,
+        user_input="Now assess the governed relationship.",
+    )
+
+    assert _p18_projection(first) == ((), (), (), ())
+    assert all(len(items) == 1 for items in _p18_projection(second))
+    assert first.tenant_binding == second.tenant_binding
+    assert first.principal_ref == second.principal_ref
+    assert activities.calls["p18"] == 1
+    assert activities.calls["material_group"] == 2
+
+
+def test_relationship_report_only_continuation_preserves_p18_without_native_reopen() -> None:
+    activities = FakeActivities("relationship")
+    service = BrainV2Service(activities=activities)
+    first = service.run(
+        BrainGraphState(
+            thread_id="thread-p18-report-only",
+            tenant_binding="id:tenant",
+            principal_ref="user-1",
+            current_user_input="Assess the governed relationship.",
+        )
+    )
+    before = activities.calls.copy()
+    p18_before = _p18_projection(first)
+
+    second = service.continue_report_turn(
+        thread_id=first.thread_id,
+        tenant_binding=first.tenant_binding,
+        principal_ref=first.principal_ref,
+        user_input="Turn the governed result into a report.",
+    )
+
+    assert _p18_projection(second) == p18_before
+    assert second.tenant_binding == first.tenant_binding
+    assert second.principal_ref == first.principal_ref
+    assert activities.calls["p18"] == before["p18"]
+    assert activities.calls["material_group"] == before["material_group"]
+    assert activities.calls["report"] == before["report"] + 1
 
 
 def test_report_only_continuation_reuses_research_and_opens_zero_analytics() -> None:
