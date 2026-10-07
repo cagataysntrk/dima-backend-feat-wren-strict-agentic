@@ -50,6 +50,7 @@ from app.v3.product.completion import (
 )
 from app.v3.product.contracts import ProductInvestigationRequirementKind
 from app.v3.report_document import (
+    CoverageStatus,
     DeliverableCoverageEntry,
     DeliverableCoverageStatus,
     P20ReportError,
@@ -65,6 +66,7 @@ from app.v3.report_document import (
     stable_statement_id,
 )
 from app.v3.research_contracts import (
+    PresentationKind,
     RelationshipIntent,
     ResearchGoalKind,
     ResearchQuestion,
@@ -2714,10 +2716,12 @@ class DimaBrainV2Activities(BrainActivities):
             *,
             code: str,
             detail: str,
+            target_deliverables=deliverables,
+            base_coverage: tuple[DeliverableCoverageEntry, ...] = (),
         ) -> ReportDraft:
             limitations = list(draft.limitations)
-            coverage: list[DeliverableCoverageEntry] = []
-            for item in deliverables:
+            coverage: list[DeliverableCoverageEntry] = list(base_coverage)
+            for item in target_deliverables:
                 limitation_id = stable_limitation_id(
                     {
                         "session_id": session.session_id,
@@ -2748,15 +2752,6 @@ class DimaBrainV2Activities(BrainActivities):
                 }
             )
 
-        if self._report_synthesis_manager is None:
-            return limited(
-                code="P20_SYNTHESIS_OWNER_UNAVAILABLE",
-                detail=(
-                    "Governed analytical material is available, but no bounded "
-                    "P20 presentation-synthesis owner is configured."
-                ),
-            )
-
         governed = self._reports.validated_governed_statements(
             draft=draft,
             principal=self._principal,
@@ -2764,6 +2759,57 @@ class DimaBrainV2Activities(BrainActivities):
         governed_with_sources = tuple(
             item for item in governed if item.source_refs
         )
+
+        # TABLE/CHART are direct projections of already publication-gated
+        # governed statements when every analytical MUST is represented.
+        # They do not require free-form cognition and must not become LIMITED
+        # merely because an optional presentation synthesizer is unavailable.
+        # REPORT/EXPLAIN still require bounded cognition because they author
+        # new presentation prose.
+        analytical_complete = all(
+            item.coverage_status == CoverageStatus.REPRESENTED
+            for item in draft.coverage
+        )
+        direct_statement_ids = tuple(
+            item.statement_id for item in governed_with_sources
+        )
+        direct_deliverables = tuple(
+            item
+            for item in deliverables
+            if (
+                analytical_complete
+                and direct_statement_ids
+                and item.kind in {PresentationKind.TABLE, PresentationKind.CHART}
+            )
+        )
+        direct_ids = {item.requirement_id for item in direct_deliverables}
+        direct_coverage = tuple(
+            DeliverableCoverageEntry(
+                requirement_id=item.requirement_id,
+                coverage_status=DeliverableCoverageStatus.FULFILLED,
+                statement_ids=direct_statement_ids,
+            )
+            for item in direct_deliverables
+        )
+        cognition_deliverables = tuple(
+            item for item in deliverables
+            if item.requirement_id not in direct_ids
+        )
+        if not cognition_deliverables:
+            return draft.model_copy(
+                update={"deliverable_coverage": direct_coverage}
+            )
+        if self._report_synthesis_manager is None:
+            return limited(
+                code="P20_SYNTHESIS_OWNER_UNAVAILABLE",
+                detail=(
+                    "Governed analytical material is available, but no bounded "
+                    "P20 presentation-synthesis owner is configured."
+                ),
+                target_deliverables=cognition_deliverables,
+                base_coverage=direct_coverage,
+            )
+
         evidence_digests = tuple(
             {
                 "statement_id": item.statement_id,
@@ -2784,7 +2830,7 @@ class DimaBrainV2Activities(BrainActivities):
                 "kind": item.kind.value,
                 "source_text": item.source_text,
             }
-            for item in deliverables
+            for item in cognition_deliverables
         )
         p19_assessment = None
         if state.latest_p19_assessment_ref is not None:
@@ -2822,12 +2868,14 @@ class DimaBrainV2Activities(BrainActivities):
                     "Governed presentation synthesis could not be completed "
                     "within the bounded cognition contract."
                 ),
+                target_deliverables=cognition_deliverables,
+                base_coverage=direct_coverage,
             )
 
         by_statement = {item.statement_id: item for item in governed}
         statements = list(draft.statements)
         limitations = list(draft.limitations)
-        coverage: list[DeliverableCoverageEntry] = []
+        coverage: list[DeliverableCoverageEntry] = list(direct_coverage)
 
         for item in proposal.deliverables:
             if item.status == "LIMITED":
