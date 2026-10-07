@@ -17,6 +17,7 @@ _REPAIRABLE = (
     "R1_RESULT_CHANGE_TEMPORAL_COLUMN_REQUIRED",
     "R1_NATIVE_RANKING_REQUIRED_MISSING",
     "R1_NATIVE_RANKING_BASIS_MISMATCH",
+    "NATIVE_MATERIAL_RANKING_TARGET_UNSUPPORTED",
 )
 
 _NON_REPAIRABLE = (
@@ -137,3 +138,31 @@ def test_ranking_or_authority_mismatch_never_becomes_repairable(code: str) -> No
         prior_repair_attempts=0,
     )
     assert decision.disposition == MaterialRepairDisposition.TERMINAL_LIMIT
+
+
+def test_engine_observer_ranking_shape_miss_preserves_typed_expected_authority() -> None:
+    expected = {
+        "ranking": {
+            "kind": "native_metric",
+            "measure": "metric.symbolic",
+            "direction": "desc",
+            "limit": 2,
+            "basis": "change",
+        },
+        "temporal_change_frame": {
+            "mode": "PAIR",
+            "time_dimension": "dimension.time",
+        },
+    }
+    decision = decide_material_repair(
+        validation_code="NATIVE_MATERIAL_RANKING_TARGET_UNSUPPORTED",
+        validation_detail="ranking target has no stable governed identity",
+        prior_repair_attempts=0,
+        expected_semantic_shape=expected,
+    )
+
+    feedback = material_repair_feedback(decision)
+
+    assert decision.disposition == MaterialRepairDisposition.REPAIR
+    assert feedback["expected_semantic_shape"] == expected
+    assert feedback["preserve_material_contract"] is True
