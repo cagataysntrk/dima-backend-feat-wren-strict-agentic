@@ -515,6 +515,67 @@ class ModelChangePeriodReconsiderationEnvelope(Frozen):
     result: ModelResolvedChangePeriodPair | ModelClarifyResearchIntake
 
 
+class ModelResolvedChangeSpan(Frozen):
+    """One bounded CHANGE interval; no hidden baseline/comparison roles."""
+
+    terminal: Literal["RESOLVED"]
+    frame: Literal["SPAN"]
+    span: ModelTimePeriodDraft
+
+    @model_validator(mode="after")
+    def coherent(self):
+        if self.span.role != TemporalRole.MATERIAL_WINDOW:
+            raise ValueError("SPAN must carry one MATERIAL_WINDOW")
+        ResearchTimePeriod(
+            source_text=self.span.source_text,
+            time_dimension_candidate_id=self.span.time_dimension_semantic_id,
+            start=self.span.start,
+            end=self.span.end,
+            role=self.span.role,
+        )
+        return self
+
+
+class ModelResolvedChangeFramePair(Frozen):
+    """Two explicitly distinguishable periods for one CHANGE frame."""
+
+    terminal: Literal["RESOLVED"]
+    frame: Literal["PAIR"]
+    baseline_period: ModelTimePeriodDraft
+    comparison_period: ModelTimePeriodDraft
+
+    @model_validator(mode="after")
+    def coherent(self):
+        if self.baseline_period.role != TemporalRole.BASELINE_PERIOD:
+            raise ValueError("PAIR baseline must keep BASELINE_PERIOD")
+        if self.comparison_period.role != TemporalRole.COMPARISON_PERIOD:
+            raise ValueError("PAIR comparison must keep COMPARISON_PERIOD")
+        if (
+            self.baseline_period.time_dimension_semantic_id
+            != self.comparison_period.time_dimension_semantic_id
+        ):
+            raise ValueError("PAIR must use one governed time dimension")
+        for item in (self.baseline_period, self.comparison_period):
+            ResearchTimePeriod(
+                source_text=item.source_text,
+                time_dimension_candidate_id=item.time_dimension_semantic_id,
+                start=item.start,
+                end=item.end,
+                role=item.role,
+            )
+        return self
+
+
+class ModelChangeFrameResolutionEnvelope(Frozen):
+    """Closed scope-level temporal authority; no analytical fields are writable."""
+
+    result: (
+        ModelResolvedChangeSpan
+        | ModelResolvedChangeFramePair
+        | ModelClarifyResearchIntake
+    )
+
+
 class ResearchIntakeResult(Frozen):
     terminal: ResearchIntakeTerminal
     brief: ResearchBrief | None = None
@@ -717,6 +778,31 @@ Authority rules:
 - Calendar context resolves calendar references only; it never proves data availability.
 - Do not plan a query, calculate a delta, write SQL/MBQL, choose an entity, or inspect results.
 - Never use keyword lists, regex, morphology rules, benchmark identity, or hidden defaults.
+"""
+
+
+_CHANGE_FRAME_RESOLUTION_SYSTEM = """You are Dima's bounded scope-level temporal-frame resolver.
+You receive one already-grounded CHANGE analytical goal, its exact current user message and source
+fragment, one governed time dimension, and calendar context. You may write TEMPORAL AUTHORITY ONLY.
+
+Return exactly one of:
+- RESOLVED frame=SPAN with one MATERIAL_WINDOW when the user asks for change over one bounded
+  interval without requiring two periods to remain separately distinguishable;
+- RESOLVED frame=PAIR with one BASELINE_PERIOD and one COMPARISON_PERIOD only when the user's
+  semantics require an explicit two-period A-vs-B comparison; or
+- CLARIFY when neither typed frame can be resolved without inventing temporal meaning.
+
+Authority rules:
+- Use the supplied governed time dimension exactly; never select another semantic id.
+- Resolve only exact ISO-8601 half-open bounds and typed temporal roles.
+- Every period.source_text must be an exact verbatim substring of the CURRENT user message.
+- SPAN must not invent hidden baseline/comparison periods.
+- PAIR must not be manufactured merely because the request contains a bounded interval.
+- Calendar context may resolve calendar references but never proves data availability.
+- Do not change goals, metrics, entities, dimensions, ranking basis/direction/limit, adaptive
+  routing, deliverables, scope version, or any other semantic state.
+- Do not plan or execute analytics, SQL, MBQL, native queries, or inspect results.
+- Never use benchmark identity, keyword lists, regex, morphology rules, or hidden defaults.
 """
 
 
@@ -1122,6 +1208,33 @@ def _change_period_reconsideration_schema(
     if not isinstance(period_properties, dict):
         raise ResearchIntakeError(
             "INTAKE_CHANGE_PERIOD_SCHEMA_INVALID",
+            "ModelTimePeriodDraft properties are absent",
+        )
+    period_properties["time_dimension_semantic_id"] = {
+        "type": "string",
+        "enum": [time_dimension_semantic_id],
+    }
+    validate_provider_strict_schema(schema)
+    return schema
+
+
+def _change_frame_resolution_schema(
+    time_dimension_semantic_id: str,
+) -> dict[str, Any]:
+    """Close a missing CHANGE frame to one governed temporal dimension."""
+
+    schema = strict_json_schema(ModelChangeFrameResolutionEnvelope)
+    definitions = schema.get("$defs") or {}
+    period_definition = definitions.get("ModelTimePeriodDraft")
+    if not isinstance(period_definition, dict):
+        raise ResearchIntakeError(
+            "INTAKE_CHANGE_FRAME_SCHEMA_INVALID",
+            "ModelTimePeriodDraft definition is absent",
+        )
+    period_properties = period_definition.get("properties")
+    if not isinstance(period_properties, dict):
+        raise ResearchIntakeError(
+            "INTAKE_CHANGE_FRAME_SCHEMA_INVALID",
             "ModelTimePeriodDraft properties are absent",
         )
     period_properties["time_dimension_semantic_id"] = {
@@ -2201,6 +2314,49 @@ class ResearchIntakeCompiler:
             "comparison_source_fragments": list(comparison_fragments),
             "baseline_period": baseline.model_dump(mode="json"),
             "comparison_period": comparison.model_dump(mode="json"),
+        }
+
+    @staticmethod
+    def _missing_change_ranking_frame_issue(
+        draft: ModelResearchBriefDraft,
+        *,
+        current: str,
+        catalog: ResearchIntakeCatalog,
+        calendar_reference_date: str,
+    ) -> dict[str, Any] | None:
+        """Expose only a proven missing typed frame to the narrow resolver."""
+
+        if draft.terminal != ResearchIntakeTerminal.READY:
+            return None
+        change_goals = tuple(
+            goal
+            for goal in draft.goals
+            if (
+                goal.ranking is not None
+                and goal.ranking.basis == RankingBasis.CHANGE
+            )
+        )
+        if len(change_goals) != 1 or draft.time_periods:
+            return None
+        if len(catalog.temporal_dimension_ids) != 1:
+            return None
+        goal = change_goals[0]
+        fragment = goal.source_fragment_text
+        if (
+            fragment is None
+            or fragment != fragment.strip()
+            or fragment not in current
+        ):
+            raise ResearchIntakeError(
+                "INTAKE_CHANGE_FRAME_SOURCE_FRAGMENT_REQUIRED",
+                "missing CHANGE frame resolution requires exact user provenance",
+            )
+        return {
+            "kind": "MISSING_CHANGE_TEMPORAL_FRAME",
+            "governed_time_dimension_id": catalog.temporal_dimension_ids[0],
+            "calendar_reference_date": calendar_reference_date,
+            "source_fragment": fragment,
+            "ranking_measure_semantic_id": goal.ranking.measure_semantic_id,
         }
 
     @staticmethod
@@ -3388,6 +3544,66 @@ class ResearchIntakeCompiler:
                 }
             )
 
+        def resolve_missing_change_frame(
+            draft: ModelResearchBriefDraft,
+            issue: dict[str, Any],
+        ) -> ModelResearchBriefDraft:
+            time_dimension = str(issue["governed_time_dimension_id"])
+            raw = self._transport.structured_json(
+                _CHANGE_FRAME_RESOLUTION_SYSTEM,
+                _canonical(
+                    {
+                        "current_user_message": current,
+                        "change_frame_issue": issue,
+                        "instruction": (
+                            "Return only typed scope-level temporal authority "
+                            "or CLARIFY. All non-temporal state is immutable."
+                        ),
+                    }
+                ),
+                schema=_change_frame_resolution_schema(time_dimension),
+                schema_name=self._schema_name + "_change_frame",
+            )
+            try:
+                envelope = ModelChangeFrameResolutionEnvelope.model_validate_json(
+                    raw
+                )
+            except Exception as exc:
+                raise ResearchIntakeError(
+                    "INTAKE_CHANGE_FRAME_MODEL_OUTPUT_INVALID",
+                    "change-frame output failed the closed typed contract",
+                ) from exc
+            provider_result = envelope.result
+            if isinstance(provider_result, ModelClarifyResearchIntake):
+                return ModelResearchBriefDraft(
+                    terminal=ResearchIntakeTerminal.CLARIFY,
+                    clarification_question=provider_result.clarification_question,
+                )
+
+            if isinstance(provider_result, ModelResolvedChangeSpan):
+                periods = (provider_result.span,)
+            else:
+                periods = (
+                    provider_result.baseline_period,
+                    provider_result.comparison_period,
+                )
+
+            for item in periods:
+                if item.time_dimension_semantic_id != time_dimension:
+                    raise ResearchIntakeError(
+                        "INTAKE_CHANGE_FRAME_TIME_DIMENSION_DRIFT",
+                        item.time_dimension_semantic_id,
+                    )
+                if (
+                    item.source_text != item.source_text.strip()
+                    or item.source_text not in current
+                ):
+                    raise ResearchIntakeError(
+                        "INTAKE_CHANGE_FRAME_SOURCE_NOT_VERBATIM",
+                        item.source_text,
+                    )
+            return draft.model_copy(update={"time_periods": periods})
+
         draft = invoke_provider(
             instruction=(
                 "Return the complete CURRENT intent only. Prior brief is context, "
@@ -3481,10 +3697,11 @@ class ResearchIntakeCompiler:
                 ",".join(duplicate_root_keys),
             )
 
-        # At most one bounded reconsideration is allowed inside the same intake owner.
-        # It is not a retry loop: the provider ceiling remains two calls. The
-        # second pass receives no new authority, only deterministic calendar /
-        # single-domain context already present in this request.
+        # Bounded reconsideration is not a retry loop. The main intake may be
+        # reconsidered once; if that produces a grounded CHANGE goal but omits
+        # its typed temporal frame, one additional CLOSED temporal-frame resolver
+        # may write SPAN/PAIR authority only. No analytical authority is writable
+        # in that narrow third call.
         ranking_basis_issue = self._ranking_basis_reconsideration_issue(
             draft,
             current=current,
@@ -3577,6 +3794,21 @@ class ResearchIntakeCompiler:
             raise ResearchIntakeError(
                 "INTAKE_DUPLICATE_ANALYTICAL_GOAL",
                 ",".join(duplicate_root_keys),
+            )
+
+        missing_change_frame_issue = self._missing_change_ranking_frame_issue(
+            draft,
+            current=current,
+            catalog=catalog,
+            calendar_reference_date=self._calendar_reference_date,
+        )
+        if (
+            missing_change_frame_issue is not None
+            and self.call_count < 3
+        ):
+            draft = resolve_missing_change_frame(
+                draft,
+                missing_change_frame_issue,
             )
 
         self._assert_change_ranking_temporal_contract(draft)
