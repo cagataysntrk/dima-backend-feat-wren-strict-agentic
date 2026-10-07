@@ -347,7 +347,10 @@ class NativeResearchOccurrenceRunner:
             }
             if analytical_scope is not None:
                 material_kwargs["analytical_scope"] = analytical_scope
-            if consumer_obligation_ids is not None:
+            if (
+                consumer_obligation_ids is not None
+                and len(consumer_obligation_ids) > 1
+            ):
                 material_kwargs["consumer_obligation_ids"] = consumer_obligation_ids
             outcome = self._materials.execute(**material_kwargs)
 
