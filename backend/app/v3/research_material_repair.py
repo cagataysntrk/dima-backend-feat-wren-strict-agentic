@@ -44,6 +44,11 @@ _REPAIRABLE_MATERIAL_VALIDATION_CODES = frozenset(
         "R1_RESULT_CHANGE_TEMPORAL_COLUMN_REQUIRED",
         "R1_NATIVE_RANKING_REQUIRED_MISSING",
         "R1_NATIVE_RANKING_BASIS_MISMATCH",
+        # The frozen native observer uses this code when Metabot produced an
+        # ORDER BY target whose governed metric/change lineage cannot be proven.
+        # This is a planner-output shape miss under an otherwise accepted
+        # contract, so one bounded regeneration is legal.
+        "NATIVE_MATERIAL_RANKING_TARGET_UNSUPPORTED",
     }
 )
 
