@@ -1,11 +1,11 @@
 DIMA Brain V2.1 final root recovery acceptance trigger
 
-mode: final-temporal-pinpoints
-candidate_product_sha: f5d4206dd4f09a2187aefc1bc995100e8aac59b8
+mode: final-adaptive-pinpoint
+candidate_product_sha: 159af8a85193e482a39c533fb386b54545d94472
 engine_sha: 686671fa7e55f715e4fb5ac155f9e66019fd12d8
-case_count: 2
-provider_free_semantic_run: 37616220749
-provider_free_frozen_run: 37615956960
+case_count: 1
+provider_free_semantic_run: 37617779073
+provider_free_frozen_run: 37617779282
 r11_runtime_green_receipt: 37611273173
 hard_provider_case_ceiling: 30
 p20_ceiling: one_per_turn
