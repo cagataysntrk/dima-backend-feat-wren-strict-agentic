@@ -782,8 +782,9 @@ Authority rules:
 
 
 _CHANGE_FRAME_RESOLUTION_SYSTEM = """You are Dima's bounded scope-level temporal-frame resolver.
-You receive one already-grounded CHANGE analytical goal, its exact current user message and source
-fragment, one governed time dimension, and calendar context. You may write TEMPORAL AUTHORITY ONLY.
+You receive one or more already-grounded CHANGE analytical goals sharing one scope-level temporal
+frame, their exact current user message/source fragments, one governed time dimension, and calendar
+context. You may write TEMPORAL AUTHORITY ONLY.
 
 Return exactly one of:
 - RESOLVED frame=SPAN with one MATERIAL_WINDOW when the user asks for change over one bounded
