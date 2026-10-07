@@ -1158,6 +1158,25 @@ def _build_action_profile(
         if node.branch_id in candidate_branches
         and node.contract_depth < max_depth
     )
+    # A P19 discriminating test is a first-class bounded investigation move.
+    # It may start directly from VERIFIED governed Evidence when no P17 node
+    # exists yet, and a later test may deepen the immediately preceding
+    # discriminating-test branch while depth/budget remain. This keeps the
+    # legal action profile as the single callability authority instead of
+    # relying on a separate direct-P19 exception.
+    discriminating_advancing = tuple(
+        node.step_id
+        for node in open_nodes
+        if (
+            node.intent
+            in {
+                InvestigationIntent.EXPLORE_ALTERNATIVES,
+                InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE,
+            }
+            and node.contract_depth < max_depth
+        )
+    )
+    direct_discrimination_from_evidence = bool(evidence_results) and not graph.nodes
     rules: list[InvestigationActionRule] = []
 
     def add(
@@ -1214,8 +1233,9 @@ def _build_action_profile(
     if remaining_followup_native_turns > 0:
         add(
             InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE,
-            parents=candidate_advancing,
-            behavior=InvestigationBranchBehavior.INHERIT_BRANCH,
+            parents=discriminating_advancing,
+            allow_parentless=direct_discrimination_from_evidence,
+            behavior=InvestigationBranchBehavior.ROOT_OR_INHERIT,
             branch_key=InvestigationBranchKeyPolicy.FORBIDDEN,
             depth_delta=1,
         )
