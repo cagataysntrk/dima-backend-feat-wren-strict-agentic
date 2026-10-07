@@ -1895,30 +1895,30 @@ class ResearchIntakeCompiler:
         )
         if not comparison_goals:
             return draft
-        if len(comparison_goals) != 1:
-            raise ResearchIntakeError(
-                "INTAKE_TEMPORAL_COMPARISON_AMBIGUOUS",
-                "role-bound temporal periods require exactly one comparison owner",
+        # Accepted ResearchScope owns the role-bound PAIR. Goal count is
+        # not a second temporal authority: multiple analytical comparison goals
+        # may consume the same canonical pair. Ambiguity exists only when the
+        # typed scope contains competing frames, which is validated above.
+        owners = {goal.goal_key: goal for goal in comparison_goals}
+        projected_by_key: dict[str, ModelGoalDraft] = {}
+        for owner in comparison_goals:
+            label = owner.source_fragment_text or owner.source_text
+            projected_by_key[owner.goal_key] = owner.model_copy(
+                update={
+                    "comparisons": (
+                        *owner.comparisons,
+                        ModelComparisonDraft(
+                            text=label,
+                            role=ComparisonRole.TEMPORAL_PERIOD,
+                            semantic_id=None,
+                        ),
+                    )
+                }
             )
-
-        owner = comparison_goals[0]
-        label = owner.source_fragment_text or owner.source_text
-        projected = owner.model_copy(
-            update={
-                "comparisons": (
-                    *owner.comparisons,
-                    ModelComparisonDraft(
-                        text=label,
-                        role=ComparisonRole.TEMPORAL_PERIOD,
-                        semantic_id=None,
-                    ),
-                )
-            }
-        )
         return draft.model_copy(
             update={
                 "goals": tuple(
-                    projected if goal.goal_key == owner.goal_key else goal
+                    projected_by_key.get(goal.goal_key, goal)
                     for goal in draft.goals
                 )
             }
@@ -3302,18 +3302,6 @@ class ResearchIntakeCompiler:
                     time_dimension,
                 )
 
-            resolved_sources = (
-                provider_result.baseline_period.source_text,
-                provider_result.comparison_period.source_text,
-            )
-            if any(
-                source != source.strip() or source not in current
-                for source in resolved_sources
-            ):
-                raise ResearchIntakeError(
-                    "INTAKE_CHANGE_PERIOD_SOURCE_FRAGMENT_NOT_VERBATIM",
-                    "resolved temporal authority must retain exact user source provenance",
-                )
             original_baselines = tuple(
                 item
                 for item in draft.time_periods
@@ -3331,17 +3319,61 @@ class ResearchIntakeCompiler:
                 )
             original_baseline = original_baselines[0]
             original_comparison = original_comparisons[0]
+
+            def exact_provenance(
+                *,
+                provider_source: str,
+                original_source: str,
+            ) -> str:
+                # Reconsideration may normalize calendar bounds, but it cannot
+                # mint new source wording. Prefer a provider-returned exact
+                # substring only when it is genuinely verbatim; otherwise
+                # preserve the already accepted exact role surface. If that
+                # surface was the reason for reconsideration, fall back to the
+                # exact ranking fragment that authorized this bounded temporal
+                # deliberation. One shared exact fragment may lawfully support
+                # both role-bound periods.
+                candidates = (
+                    provider_source,
+                    original_source,
+                    str(issue["ranking_source_fragment"]),
+                )
+                for source in candidates:
+                    if (
+                        source == source.strip()
+                        and source
+                        and source in current
+                    ):
+                        return source
+                raise ResearchIntakeError(
+                    "INTAKE_CHANGE_PERIOD_SOURCE_FRAGMENT_NOT_VERBATIM",
+                    (
+                        "resolved temporal authority has no exact accepted "
+                        "user source provenance"
+                    ),
+                )
+
             replacement_by_role = {
                 TemporalRole.BASELINE_PERIOD: original_baseline.model_copy(
                     update={
-                        "source_text": provider_result.baseline_period.source_text,
+                        "source_text": exact_provenance(
+                            provider_source=(
+                                provider_result.baseline_period.source_text
+                            ),
+                            original_source=original_baseline.source_text,
+                        ),
                         "start": provider_result.baseline_period.start,
                         "end": provider_result.baseline_period.end,
                     }
                 ),
                 TemporalRole.COMPARISON_PERIOD: original_comparison.model_copy(
                     update={
-                        "source_text": provider_result.comparison_period.source_text,
+                        "source_text": exact_provenance(
+                            provider_source=(
+                                provider_result.comparison_period.source_text
+                            ),
+                            original_source=original_comparison.source_text,
+                        ),
                         "start": provider_result.comparison_period.start,
                         "end": provider_result.comparison_period.end,
                     }
