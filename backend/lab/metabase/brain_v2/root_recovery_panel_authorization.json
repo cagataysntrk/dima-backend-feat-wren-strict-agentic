@@ -122,12 +122,14 @@
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
   "frontend_allowed": false,
-  "note": "R07 live pinpoint armed after final temporal-owner transition passed semantic conformance, 192 metamorphic scenarios, Wave A/B, mutation, and frozen-family. Broad 30-case and frontend remain forbidden.",
+  "note": "FINAL 12-slot independent recovery acceptance armed after R07 final pinpoint GREEN on the same Product SHA. Broad 30-case and frontend remain forbidden.",
   "final_result": {
-    "status": "R07_FINAL_PINPOINT_PENDING",
+    "status": "FINAL_12_CASE_PENDING",
     "candidate_product_sha": "04d662f9cf8aae713cf5c126f109ccf8b051988a",
-    "prior_live_run_id": 37628841499,
-    "root_fix": "narrow CHANGE-period reconsideration now carries temporal authority into the closed scope-level SPAN/PAIR owner before any user-facing CLARIFY",
+    "r07_pinpoint_run_id": 37630162123,
+    "r07_pinpoint": "GREEN",
+    "r10_pinpoint": "GREEN",
+    "r11_runtime": "GREEN_EXCEPTION_FREE",
     "thirty_case_execution_ready": false
   },
   "prior_final_result": {
