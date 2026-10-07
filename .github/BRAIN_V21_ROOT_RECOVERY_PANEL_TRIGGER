@@ -1,11 +1,11 @@
 DIMA Brain V2.1 root recovery pinpoint trigger
 
-mode: typed-persistent-temporal-clarification
+mode: final-temporal-owner-pinpoint
 slot: R07_ADAPTIVE_ORIGINAL
-candidate_product_sha: 80b2138ec85b520fa284a835a04053bbbd050bcb
+candidate_product_sha: 04d662f9cf8aae713cf5c126f109ccf8b051988a
 engine_sha: 686671fa7e55f715e4fb5ac155f9e66019fd12d8
-provider_free_semantic_run: 37628348441
-provider_free_frozen_run: 37628279686
+provider_free_semantic_run: 37629542646
+provider_free_frozen_run: 37629492737
 hard_provider_case_ceiling: 30
 broad_30_case: forbidden
 frontend: forbidden
