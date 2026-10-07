@@ -782,9 +782,8 @@ Authority rules:
 
 
 _CHANGE_FRAME_RESOLUTION_SYSTEM = """You are Dima's bounded scope-level temporal-frame resolver.
-You receive one or more already-grounded CHANGE analytical goals sharing one scope-level temporal
-frame, their exact current user message/source fragments, one governed time dimension, and calendar
-context. You may write TEMPORAL AUTHORITY ONLY.
+You receive already-grounded CHANGE analytical material, its exact current user message/source
+provenance, one governed time dimension, and calendar context. You may write TEMPORAL AUTHORITY ONLY.
 
 Return exactly one of:
 - RESOLVED frame=SPAN with one MATERIAL_WINDOW when the user asks for change over one bounded
@@ -3615,6 +3614,83 @@ class ResearchIntakeCompiler:
                     )
             return draft.model_copy(update={"time_periods": periods})
 
+        def resolve_persistent_temporal_clarification(
+            clarification: ModelResearchBriefDraft,
+        ) -> tuple[ModelTimePeriodDraft, ...] | None:
+            """Resolve only temporal frame after bounded full-intake reconsideration.
+
+            This owner is invoked only after the ordinary intake owner has twice
+            returned CLARIFY while exactly one governed time dimension exists.
+            It may write SPAN/PAIR temporal authority only. It cannot create an
+            analytical goal, metric, entity, ranking, deliverable, or query.
+            """
+
+            if clarification.terminal != ResearchIntakeTerminal.CLARIFY:
+                return None
+            time_dimension = catalog.temporal_dimension_ids[0]
+            raw = self._transport.structured_json(
+                _CHANGE_FRAME_RESOLUTION_SYSTEM,
+                _canonical(
+                    {
+                        "current_user_message": current,
+                        "change_frame_issue": {
+                            "kind": "PERSISTENT_TEMPORAL_CLARIFICATION",
+                            "governed_time_dimension_id": time_dimension,
+                            "calendar_reference_date": self._calendar_reference_date,
+                            "source_provenance": current,
+                            "prior_clarification_question": (
+                                clarification.clarification_question
+                            ),
+                            "frame_policy": {
+                                "bounded_change_without_explicit_pair": (
+                                    "SPAN_MATERIAL_WINDOW"
+                                ),
+                                "explicit_two_period_comparison": "PAIR",
+                                "invent_additional_comparison_period": False,
+                            },
+                        },
+                        "instruction": (
+                            "Return only typed scope-level temporal authority "
+                            "or CLARIFY. All non-temporal state is immutable."
+                        ),
+                    }
+                ),
+                schema=_change_frame_resolution_schema(time_dimension),
+                schema_name=self._schema_name + "_persistent_change_frame",
+            )
+            try:
+                envelope = ModelChangeFrameResolutionEnvelope.model_validate_json(
+                    raw
+                )
+            except Exception as exc:
+                raise ResearchIntakeError(
+                    "INTAKE_CHANGE_FRAME_MODEL_OUTPUT_INVALID",
+                    "persistent change-frame output failed the closed typed contract",
+                ) from exc
+            result = envelope.result
+            if isinstance(result, ModelClarifyResearchIntake):
+                return None
+            periods = (
+                (result.span,)
+                if isinstance(result, ModelResolvedChangeSpan)
+                else (result.baseline_period, result.comparison_period)
+            )
+            for item in periods:
+                if item.time_dimension_semantic_id != time_dimension:
+                    raise ResearchIntakeError(
+                        "INTAKE_CHANGE_FRAME_TIME_DIMENSION_DRIFT",
+                        item.time_dimension_semantic_id,
+                    )
+                if (
+                    item.source_text != item.source_text.strip()
+                    or item.source_text not in current
+                ):
+                    raise ResearchIntakeError(
+                        "INTAKE_CHANGE_FRAME_SOURCE_NOT_VERBATIM",
+                        item.source_text,
+                    )
+            return periods
+
         draft = invoke_provider(
             instruction=(
                 "Return the complete CURRENT intent only. Prior brief is context, "
@@ -3790,6 +3866,51 @@ class ResearchIntakeCompiler:
                     "prior_unsupported_reason": draft.unsupported_reason,
                 },
             )
+
+        if (
+            prior_brief is None
+            and temporal_authority_reconsidered
+            and draft.terminal == ResearchIntakeTerminal.CLARIFY
+            and len(catalog.temporal_dimension_ids) == 1
+            and self.call_count < 3
+        ):
+            resolved_periods = resolve_persistent_temporal_clarification(draft)
+            if resolved_periods is not None:
+                resolved_frame = (
+                    "SPAN" if len(resolved_periods) == 1 else "PAIR"
+                )
+                draft = invoke_provider(
+                    instruction=(
+                        "Return the complete CURRENT intent only. Prior brief is context, "
+                        "not authority to restore obligations the user removed."
+                    ),
+                    reconsideration={
+                        "kind": "RESOLVED_CANONICAL_TEMPORAL_AUTHORITY",
+                        "governed_time_dimension_id": (
+                            catalog.temporal_dimension_ids[0]
+                        ),
+                        "calendar_reference_date": self._calendar_reference_date,
+                        "frame": resolved_frame,
+                        "periods": [
+                            item.model_dump(mode="json")
+                            for item in resolved_periods
+                        ],
+                    },
+                )
+                if (
+                    isinstance(draft, ModelResearchBriefDraft)
+                    and draft.terminal == ResearchIntakeTerminal.READY
+                ):
+                    # The closed resolver, not the second full-intake pass, owns
+                    # temporal authority. Re-bind its exact frame deterministically.
+                    draft = draft.model_copy(
+                        update={
+                            "time_periods": tuple(resolved_periods),
+                            "time_surfaces": tuple(
+                                item.source_text for item in resolved_periods
+                            ),
+                        }
+                    )
 
         draft = self._canonicalize_analytical_goals(
             draft,
