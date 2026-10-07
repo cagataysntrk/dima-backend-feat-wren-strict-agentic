@@ -4056,6 +4056,113 @@ def test_change_ranking_collapsed_pair_gets_one_structured_reconsideration() -> 
     assert result.brief.scope.periods[1].source_text == "June"
 
 
+def test_temporal_reconsideration_preserves_exact_existing_provenance() -> None:
+    """Normalized period bounds cannot mint non-verbatim source wording."""
+
+    question = (
+        "Compare May and June 2026 governed downtime, then rank departments "
+        "by the governed change."
+    )
+    first = _collapsed_change_period_payload(question)
+    for period in first["time_periods"]:
+        period["source_text"] = "May and June 2026"
+    resolved = {
+        "terminal": "RESOLVED",
+        "baseline_period": _r6_period(
+            "May 2026",
+            "2026-05-01",
+            "2026-06-01",
+            role="baseline_period",
+        ),
+        "comparison_period": _r6_period(
+            "June 2026",
+            "2026-06-01",
+            "2026-07-01",
+            role="comparison_period",
+        ),
+    }
+
+    result = ResearchIntakeCompiler(
+        transport=SequenceTransport([first, resolved]),
+        calendar_reference_date="2026-10-04",
+    ).compile(
+        question=question,
+        catalog=_r6_temporal_catalog(),
+    )
+
+    assert result.terminal == ResearchIntakeTerminal.READY
+    assert result.brief is not None
+    assert all(
+        period.source_text in question
+        for period in result.brief.scope.periods
+    )
+    assert result.brief.scope.periods[0].source_text == "May and June 2026"
+    assert result.brief.scope.periods[1].source_text == "June 2026"
+
+
+def test_role_bound_pair_is_shared_by_multiple_comparison_goals() -> None:
+    """Goal count does not create a second temporal authority."""
+
+    question = "Compare two governed views across May and June."
+    payload = ready_payload(
+        kind="comparison",
+        subject=("metric.downtime",),
+        related=("dimension.department",),
+    )
+    payload["goals"][0].update(
+        {
+            "goal_key": "g-comparison-a",
+            "source_text": "Compare governed downtime.",
+            "source_fragment_text": "Compare governed downtime.",
+            "comparisons": [],
+            "ranking": None,
+        }
+    )
+    payload["goals"].append(
+        {
+            **payload["goals"][0],
+            "goal_key": "g-comparison-b",
+            "source_text": "Compare the second governed view.",
+            "source_fragment_text": "Compare the second governed view.",
+        }
+    )
+    # Exact source fragments remain within the current user message.
+    question = (
+        "Compare governed downtime. Compare the second governed view. "
+        "Use May and June."
+    )
+    payload["objective"] = question
+    payload["time_periods"] = [
+        _r6_period(
+            "May",
+            "2026-05-01",
+            "2026-06-01",
+            role="baseline_period",
+        ),
+        _r6_period(
+            "June",
+            "2026-06-01",
+            "2026-07-01",
+            role="comparison_period",
+        ),
+    ]
+
+    result = ResearchIntakeCompiler(
+        transport=FakeTransport(payload)
+    ).compile(
+        question=question,
+        catalog=_r6_temporal_catalog(),
+    )
+
+    assert result.terminal == ResearchIntakeTerminal.READY
+    assert result.brief is not None
+    assert len(result.brief.questions) == 2
+    assert all(
+        any(item.role == ComparisonRole.TEMPORAL_PERIOD for item in goal.comparisons)
+        for goal in result.brief.questions
+    )
+
+
 def test_change_ranking_collapsed_pair_fails_closed_after_one_reconsideration() -> None:
     question = "Compare May and June, then rank departments by change."
     collapsed = _collapsed_change_period_payload(question)
