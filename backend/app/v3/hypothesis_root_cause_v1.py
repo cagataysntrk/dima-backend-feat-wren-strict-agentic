@@ -242,15 +242,14 @@ def discriminating_test_capacity_available(
     rule = snapshot.action_profile.rule_for(
         InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE
     )
-    if rule is not None:
+    if rule is None:
+        return False
+    if target_obligation_id is None:
         return True
 
-    # Direct P19 is intentionally legal for user-seeded hypotheses and may
-    # therefore have zero prior P17 nodes. Capacity still exists when the exact
-    # parent obligation is VERIFIED, its governed Evidence is present, and no
-    # prior scoped P17 node has consumed that direct re-entry seam.
-    if target_obligation_id is None:
-        return False
+    # The legal action profile is the sole move-capability authority. Exact
+    # target-obligation Evidence remains a provenance/currentness prerequisite
+    # for that move; it is not a second semantic authorization.
     parent_verified = any(
         item.obligation_id == target_obligation_id
         and str(getattr(item.state, "value", item.state)) == "VERIFIED"
@@ -258,19 +257,11 @@ def discriminating_test_capacity_available(
     )
     if not parent_verified:
         return False
-    exact_evidence = any(
+    return any(
         item.obligation_id == target_obligation_id
         and item.evidence_id in set(snapshot.evidence_refs)
         for item in snapshot.evidence_results
     )
-    if not exact_evidence:
-        return False
-    scoped_nodes = tuple(
-        node
-        for node in snapshot.investigation.nodes
-        if node.root_obligation_id == target_obligation_id
-    )
-    return not scoped_nodes
 
 
 def discriminating_test_is_callable(
