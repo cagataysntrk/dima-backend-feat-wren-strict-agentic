@@ -599,7 +599,19 @@ def analytical_scope_contract(
         question_refs,
         {SemanticTargetKind.METRIC, SemanticTargetKind.KPI},
     )
-    if not goal_metrics:
+    # The accepted ResearchScope is the canonical material authority. A
+    # continuation goal may deliberately omit a metric facet because omission
+    # means "inherit current scope", not "clear metric authority". Preserve an
+    # explicit goal-local metric selection when present; otherwise inherit the
+    # governed metric/KPI set from the accepted scope. This is a semantic
+    # projection only: no metric is invented and no physical query shape is
+    # selected here.
+    scope_metrics = _unique_refs(
+        tuple(brief.scope.semantic_refs),
+        {SemanticTargetKind.METRIC, SemanticTargetKind.KPI},
+    )
+    material_metric_authority = goal_metrics or scope_metrics
+    if not material_metric_authority:
         raise ResearchAnalyticalScopeError(
             "R1_METRIC_SCOPE_REQUIRED",
             "native analytical occurrence requires at least one accepted metric/KPI",
@@ -610,7 +622,7 @@ def analytical_scope_contract(
         item.candidate_id: item for item in brief.scope.semantic_refs
     }
     if projection is None:
-        material_metrics = goal_metrics
+        material_metrics = material_metric_authority
         material_dimension_refs = _unique_refs(
             question_refs,
             {SemanticTargetKind.DIMENSION},
@@ -820,7 +832,9 @@ def analytical_scope_contract(
                         "bounded MATERIAL_WINDOW SPAN"
                     ),
                 )
-        goal_metric_ids = {item.candidate_id for item in goal_metrics}
+        goal_metric_ids = {
+            item.candidate_id for item in material_metric_authority
+        }
         explicit_measure = value.measure_semantic_id
         if explicit_measure is not None and explicit_measure not in goal_metric_ids:
             raise ResearchAnalyticalScopeError(
@@ -829,10 +843,11 @@ def analytical_scope_contract(
             )
 
         native_measure = explicit_measure
-        if native_measure is None and len(goal_metrics) == 1:
-            # Exactly-one metric scope is structurally unambiguous. Destructure
-            # the singleton so no ordered-tuple "first metric" authority exists.
-            (sole_metric,) = goal_metrics
+        if native_measure is None and len(material_metric_authority) == 1:
+            # Exactly-one accepted metric authority is structurally
+            # unambiguous. Destructure the singleton so no ordered-tuple
+            # "first metric" authority exists.
+            (sole_metric,) = material_metric_authority
             native_measure = sole_metric.candidate_id
 
         if native_measure is not None:
