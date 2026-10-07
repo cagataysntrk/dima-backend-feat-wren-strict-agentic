@@ -3891,3 +3891,82 @@ def test_discriminating_reentry_requires_exact_verified_obligation():
             downstream_reentry_obligation_id="g_foreign",
         )
     assert exc.value.code == "P17_TEST_REENTRY_OBLIGATION_INVALID"
+
+
+def test_discriminating_reentry_can_chain_once_after_new_verified_evidence():
+    db = db_engine()
+    store, session, _, _, claims, _ = setup_state(db)
+    followup = LineagedFollowup(db, store)
+    service = ResearchInvestigationManager(
+        research_store=store,
+        claim_store=claims,
+        followup_executor=followup,
+        db_engine=db,
+    )
+
+    def proposal_for(request_ref: str, parent_step_id: str | None):
+        def propose(snapshot):
+            rule = snapshot.action_profile.rule_for(
+                InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE
+            )
+            assert rule is not None
+            if parent_step_id is None:
+                assert rule.allow_parentless is True
+            else:
+                assert parent_step_id in rule.legal_parent_step_ids
+            return ManagerProposal(
+                proposal_id="p19-next-" + request_ref[-8:],
+                source_revision=snapshot.source_revision,
+                target_parent_obligation="g1",
+                action=ManagerAction.EXPLORE_NATIVE,
+                intent=InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE,
+                parent_step_id=parent_step_id,
+                branch_key=None,
+                target_kind=InvestigationTargetKind.EXPLANATION,
+                target_ref=request_ref,
+                objective_key="next." + request_ref[-8:],
+                bounded_objective="Run one bounded discriminating Evidence test.",
+                rationale="Current competing hypotheses still admit information gain.",
+                inspected_evidence_refs=snapshot.evidence_refs,
+                inspected_claim_refs=(),
+                inspected_material_refs=(),
+                expected_information_gain="A distinct verified result can narrow ambiguity.",
+            )
+        return propose
+
+    first, first_task = service.run_one(
+        session_id=session.session_id,
+        principal=principal(),
+        manager=ScriptedManager(
+            proposal_for("ntr_" + "b" * 24, None)
+        ),
+        native_session_token="provider-free",
+        downstream_reentry_intent=(
+            InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE
+        ),
+        downstream_reentry_obligation_id="g1",
+    )
+    assert first_task is not None
+
+    second, second_task = service.run_one(
+        session_id=session.session_id,
+        principal=principal(),
+        manager=ScriptedManager(
+            proposal_for("ntr_" + "c" * 24, first.step_id)
+        ),
+        native_session_token="provider-free",
+        downstream_reentry_intent=(
+            InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE
+        ),
+        downstream_reentry_obligation_id="g1",
+    )
+
+    assert second_task is not None
+    assert second.parent_step_id == first.step_id
+    assert second.depth == first.depth + 1
+    assert second.branch_id == first.branch_id
+    snapshot = service.snapshot(
+        session_id=session.session_id,
+        principal=principal(),
+    )
+    assert len(snapshot.evidence_results) >= 3
