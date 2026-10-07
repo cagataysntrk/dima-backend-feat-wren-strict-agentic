@@ -1,11 +1,11 @@
 {
   "schema_version": "dima_brain_v2_1_root_recovery_panel_v1",
-  "enabled": false,
+  "enabled": true,
   "candidate_product_sha": "ff9dbd146da5759e3830611a4c9d763f85b47cd6",
   "recovery_baseline": "505caec6e7c3fbd5346dc6a4c310e8f656d324ae",
-  "provider_free_status": "PENDING_CURRENT_PRODUCT",
-  "provider_free_focused_run_id": 37580934806,
-  "provider_free_semantic_run_id": 37581832437,
+  "provider_free_status": "GREEN",
+  "provider_free_focused_run_id": 37571091342,
+  "provider_free_semantic_run_id": 37608629442,
   "provider_free_frozen_run_id": 37608629579,
   "generated_metamorphic_scenarios": 192,
   "engine_sha": "686671fa7e55f715e4fb5ac155f9e66019fd12d8",
@@ -122,12 +122,13 @@
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
   "frontend_allowed": false,
-  "note": "Cycle 2 generic root-fix candidate pinned. Paid pinpoint is intentionally DISARMED until current Product semantic/metamorphic closure is GREEN; broad 30-case and frontend remain forbidden.",
+  "note": "Cycle 2 targeted R11 pinpoint armed after current Product provider-free semantic/metamorphic and frozen-family GREEN. Broad 30-case and frontend remain forbidden.",
   "final_result": {
-    "status": "PINPOINT_BLOCKED_ON_PROVIDER_FREE",
+    "status": "PINPOINT_PENDING",
     "candidate_product_sha": "ff9dbd146da5759e3830611a4c9d763f85b47cd6",
     "prior_pinpoint_run_id": 37582547368,
     "first_invalid_boundary": "INTAKE_FOLLOWUP_REF_OUTSIDE_ACCEPTED_SCOPE",
+    "current_fix": "ScopePatch sole mutation ref authority",
     "thirty_case_execution_ready": false
   },
   "prior_final_result": {
