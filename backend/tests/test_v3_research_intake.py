@@ -1906,6 +1906,104 @@ def test_scope_mutation_patch_owns_negative_entity_mentions() -> None:
     assert result.brief.scope.scope_version.version_id == "scope_v2"
 
 
+def test_noop_scope_patch_hint_becomes_same_scope_continuation() -> None:
+    """A mutation routing hint cannot mint ScopeVersion without material delta."""
+
+    assembly = ResearchSemanticRef(
+        source_mention="Assembly",
+        candidate_id="entity.department.assembly",
+        target_kind=SemanticTargetKind.ENTITY_VALUE,
+        canonical_name="Assembly",
+        dimension_name="Department",
+        value="Assembly",
+        cube_names=("machine_operations",),
+    )
+    packaging = ResearchSemanticRef(
+        source_mention="Packaging",
+        candidate_id="entity.department.packaging",
+        target_kind=SemanticTargetKind.ENTITY_VALUE,
+        canonical_name="Packaging",
+        dimension_name="Department",
+        value="Packaging",
+        cube_names=("machine_operations",),
+    )
+    base = catalog()
+    scoped_catalog = base.model_copy(
+        update={"semantic_refs": (*base.semantic_refs, assembly, packaging)}
+    )
+
+    first_text = "Focus only Assembly; remove Packaging from the current scope."
+    first_full = _full_followup_payload(
+        metric_ids=("metric.downtime",),
+        mutation_kind="NARROW_ENTITY",
+    )
+    first_full["goals"][0]["source_text"] = first_text
+    first_full["goals"][0]["source_fragment_text"] = first_text
+    first_full["goals"][0]["related_semantic_ids"] = [
+        "dimension.department",
+        "entity.department.assembly",
+        "entity.department.packaging",
+    ]
+    first_patch = {
+        "terminal": "READY",
+        "operations": [
+            {
+                "facet": "ENTITY",
+                "operation": "SET",
+                "semantic_ids": ["entity.department.assembly"],
+                "source_fragment": "Focus only Assembly",
+            }
+        ],
+    }
+    narrowed = ResearchIntakeCompiler(
+        transport=SequenceTransport([first_full, first_patch])
+    ).compile(
+        question=first_text,
+        catalog=scoped_catalog,
+        prior_brief=prior_brief(),
+    )
+    assert narrowed.brief is not None
+    assert narrowed.scope_contract is not None
+    assert narrowed.brief.scope.scope_version.version_id == "scope_v2"
+
+    continuation_text = "Within Assembly, deepen the current analysis."
+    continuation_full = _full_followup_payload(
+        metric_ids=("metric.downtime",),
+        mutation_kind="NARROW_ENTITY",
+    )
+    continuation_full["goals"][0]["source_text"] = continuation_text
+    continuation_full["goals"][0]["source_fragment_text"] = continuation_text
+    continuation_full["goals"][0]["related_semantic_ids"] = [
+        "dimension.department",
+        "entity.department.assembly",
+    ]
+    noop_patch = {
+        "terminal": "READY",
+        "operations": [
+            {
+                "facet": "ENTITY",
+                "operation": "SET",
+                "semantic_ids": ["entity.department.assembly"],
+                "source_fragment": "Within Assembly",
+            }
+        ],
+    }
+    continued = ResearchIntakeCompiler(
+        transport=SequenceTransport([continuation_full, noop_patch])
+    ).compile(
+        question=continuation_text,
+        catalog=scoped_catalog,
+        prior_brief=narrowed.brief,
+    )
+
+    assert continued.terminal == ResearchIntakeTerminal.READY
+    assert continued.scope_contract is None
+    assert continued.turn_transition == TurnTransitionKind.SAME_SCOPE_CONTINUATION
+    assert continued.brief is not None
+    assert continued.brief.scope == narrowed.brief.scope
+    assert continued.brief.scope.scope_version.version_id == "scope_v2"
+
+
 def test_provider_catalog_contains_semantic_choices_not_runtime_binding_state():
     payload = ResearchIntakeCompiler._catalog_payload(catalog())
     serialized = json.dumps(payload, sort_keys=True)
