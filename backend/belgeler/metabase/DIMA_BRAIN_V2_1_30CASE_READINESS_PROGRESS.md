@@ -36,42 +36,50 @@ This block supersedes all older phase/freeze sections below.
 - Frozen engine: `686671fa7e55f715e4fb5ac155f9e66019fd12d8` / `0.63.18-dima.11.2`.
 - Runtime tag: `v0.63.18-dima.11.2.1`.
 - Engine digest: `sha256:fe1b6fb67be6dbadea1af5d415f3ba2e033d46f91289f5c3c9844bee20c379bd`.
-- Permanent semantic constitution:
+- Permanent constitution:
   `DIMA_BRAIN_V2_1_SEMANTIC_AUTHORITY_CONSTITUTION.md`.
 - Machine-readable owner map:
   `backend/lab/metabase/brain_v2/semantic_authority_registry.json`.
-- Fix B atomic P18 turn reset: provider-free GREEN.
-- Fix A acquisition identity / N-consumer fulfillment: provider-free GREEN.
-- Product candidate provider-free closure:
+- Provider-free Product closure:
   focused `37667461124`, frozen-family `37667461009`,
   semantic + 192 metamorphic + Wave A/B + mutation `37667461012` = GREEN.
-- Constitution enforcement recertification:
-  focused `37669106020` and semantic/Wave A/B/mutation `37669106073` = GREEN.
-- One authorized final recovery run: `37668955073`.
-- R01/R03/R04 observed GREEN.
-- R02 observed RED.
-- R02 provider ceiling is no longer the blocker: blocked provider `0`,
-  duplicate native `0`, stale Evidence `0`.
-- R02 now fails before native execution: attestation 200 followed by
-  `native-query-material-observation` HTTP 422; native acquisitions `0`,
-  Evidence `0`.
-- Pinned engine source confirms the observer reconstructs period-pair CHANGE
-  from physical previous-stage representation and Metabase Lib equality matching.
-  Live ambiguity therefore makes a structural observer a de-facto semantic veto.
-- This is a constitution-level blocker: **physical query representation must not be
-  a second owner of business meaning.**
-- Representation-by-representation engine observer patches are forbidden.
-- Required future proof direction:
-  `Metabase/Metabot -> stable execution-semantic manifest bound to exact occurrence/result
-  -> verify_analytical_fulfillment_v1 -> Evidence`.
-- Structural attestation/currentness/security/exact-occurrence proof remains mandatory.
-- Paid authorization: OFF / no second paid wave.
-- Broad actual 30-case: FORBIDDEN.
-- Frontend/UI/demo: FORBIDDEN.
+- Constitution/registry recertification:
+  focused `37669106020`, semantic/Wave A/B/mutation `37669106073` = GREEN.
+- One and only final recovery run: `37668955073` = **10/12 GREEN, 2/12 RED**.
+- GREEN: R01, R03, R04, R05, R06, R08, R09, R10, R11, R12.
+- RED: R02, R07.
+- Fix B / atomic P18 reset: **LIVE CLOSED**; R10/R11/R12 all GREEN.
+- Fix A / acquisition identity: old sibling fragmentation/provider-ceiling root is closed; shared grouping
+  and N-consumer fulfillment are provider-free GREEN.
+- Both RED slots fail at one remaining architecture boundary:
+  exact attestation HTTP 200 -> native material observation HTTP 422 -> native execution 0 -> Evidence 0.
+- R02: provider requests 8, blocked provider 0, duplicate native 0, stale Evidence 0.
+- R07: provider requests 10, blocked provider 0, duplicate native 0, stale Evidence 0.
+- Root classification:
+  **transitional native material observation remains a second semantic veto by reconstructing
+  business meaning from physical query representation.**
+- Representation-specific observer patches are forbidden.
+- Required exit:
+  Metabase/Metabot exposes stable execution-semantic facts bound to exact occurrence/result;
+  `AnalyticalExecutionManifestV1` records those observed facts;
+  `verify_analytical_fulfillment_v1` remains the sole Intent-to-Execution semantic judge;
+  Evidence is minted only after that judgment.
+- Structural tenant/principal/currentness/exact-occurrence/engine/fingerprint/dedup proof remains mandatory.
+- Paid recovery authorization: **OFF**.
+- Second paid wave: **FORBIDDEN**.
+- R9: **NOT AUTHORIZED** because final recovery acceptance is RED.
+- Broad actual 30-case: **NOT RUN / FORBIDDEN**.
+- Frontend/UI/demo: **FORBIDDEN**.
 - `30-CASE EXECUTION READY = NO`.
 
-The current fail-fast=false recovery may finish to expose the full slot distribution,
-especially R10 after the atomic P18 reset. Its completion does not authorize a retry.
+Canonical receipt:
+`backend/belgeler/metabase/DIMA_BRAIN_V2_1_FINAL_12CASE_RECOVERY_2026-10-07.md`.
+
+Next legal implementation, only under explicit authorization, is one architecture migration:
+remove semantic-veto ownership from transitional observer/material-scope/result-coverage layers while
+preserving their structural/fact-producing proof responsibilities. Populate ExecutionManifest from
+observed execution facts rather than accepted-contract echo. Re-run the complete provider-free
+constitutional suite before any future paid validation.
 
 
 ---
