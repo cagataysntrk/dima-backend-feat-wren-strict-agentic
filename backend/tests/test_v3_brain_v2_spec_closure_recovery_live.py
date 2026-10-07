@@ -2,7 +2,23 @@ from lab.metabase.brain_v2.spec_closure_recovery_live import (
     _case_with_question_override,
     _case_with_turns_override,
     _raw_harness_gate,
+    _recovery_terminal_accepted,
 )
+
+
+def test_recovery_answer_terminal_is_not_rejected_by_legacy_broad_label() -> None:
+    assert _recovery_terminal_accepted(
+        "ANSWER",
+        ("REPORT", "PARTIAL"),
+    )
+    assert _recovery_terminal_accepted(
+        "PARTIAL",
+        ("REPORT",),
+    )
+    assert not _recovery_terminal_accepted(
+        "UNSUPPORTED",
+        ("REPORT", "PARTIAL"),
+    )
 
 
 def test_multimetric_single_evidence_is_not_failed_by_legacy_cardinality_proxy() -> None:
