@@ -4501,3 +4501,58 @@ def test_governed_other_intent_is_not_rejected_by_closed_grammar() -> None:
     assert result.terminal == ResearchIntakeTerminal.READY
     assert result.brief is not None
     assert result.brief.questions[0].kind == ResearchGoalKind.OTHER
+
+
+def test_change_ranking_adjacent_shared_pair_without_comparison_coalesces_to_span() -> None:
+    question = "Across the bounded window, rank governed downtime deterioration."
+    payload = ready_payload(
+        kind="ranking",
+        subject=("metric.downtime",),
+        related=("dimension.department",),
+    )
+    payload["goals"][0].update(
+        {
+            "source_text": question,
+            "source_fragment_text": question,
+            "ranking": {
+                "source_text": question,
+                "direction": "desc",
+                "limit": 2,
+                "measure_semantic_id": "metric.downtime",
+                "basis": "change",
+            },
+            "comparisons": [],
+        }
+    )
+    payload["time_periods"] = [
+        _r6_period(
+            "bounded-window",
+            "2026-01-01",
+            "2026-02-01",
+            role="baseline_period",
+        ),
+        _r6_period(
+            "bounded-window",
+            "2026-02-01",
+            "2026-03-01",
+            role="comparison_period",
+        ),
+    ]
+    transport = FakeTransport(payload)
+
+    result = ResearchIntakeCompiler(
+        transport=transport,
+        calendar_reference_date="2026-10-07",
+    ).compile(
+        question=question,
+        catalog=_r6_temporal_catalog(),
+    )
+
+    assert result.terminal == ResearchIntakeTerminal.READY
+    assert result.model_calls == 1
+    assert result.brief is not None
+    assert len(result.brief.scope.periods) == 1
+    (span,) = result.brief.scope.periods
+    assert span.role == TemporalRole.MATERIAL_WINDOW
+    assert span.source_text == "bounded-window"
+    assert (span.start, span.end) == ("2026-01-01", "2026-03-01")
