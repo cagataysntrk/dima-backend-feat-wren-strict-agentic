@@ -747,11 +747,36 @@ class ResearchAskOrchestrator:
             session_id=session.session_id,
             obligation_id=obligation_id,
         )
+        expected_shape = failure.expected_semantic_shape
+        if (
+            expected_shape is None
+            and failure.code == "NATIVE_MATERIAL_RANKING_TARGET_UNSUPPORTED"
+            and analytical_scope is not None
+            and analytical_scope.ranking is not None
+        ):
+            # The engine error is emitted before Dima can observe the invalid
+            # ranking target, so it cannot return an expected semantic shape.
+            # Re-project only the already accepted WHAT from the immutable
+            # contract into repair feedback; query construction remains
+            # entirely Metabot-owned.
+            expected_shape = {
+                "ranking": analytical_scope.ranking.model_dump(mode="json"),
+                "temporal_change_frame": (
+                    analytical_scope.temporal_change_frame.model_dump(mode="json")
+                    if analytical_scope.temporal_change_frame is not None
+                    else None
+                ),
+                "comparison": (
+                    analytical_scope.comparison.model_dump(mode="json")
+                    if analytical_scope.comparison is not None
+                    else None
+                ),
+            }
         decision = decide_material_repair(
             validation_code=failure.code,
             validation_detail=failure.detail,
             prior_repair_attempts=attempts,
-            expected_semantic_shape=failure.expected_semantic_shape,
+            expected_semantic_shape=expected_shape,
             observed_semantic_shape=failure.observed_semantic_shape,
         )
         if decision.disposition != MaterialRepairDisposition.REPAIR:
