@@ -48,6 +48,30 @@ def _append_fingerprint(
     return (*state.activity_fingerprints, fingerprint)
 
 
+def _fresh_requirement_turn_projection() -> dict[str, Any]:
+    """Atomically clear current-turn requirement/P18 orchestration refs.
+
+    Canonical and historical P18 artefacts remain in their durable Dima stores.
+    This projection owns only LangGraph refs for the newly accepted user turn.
+    """
+    return {
+        "material_group_ids": (),
+        "completed_material_group_ids": (),
+        "active_material_group_id": None,
+        "active_requirement_id": None,
+        "terminal_requirement_ids": (),
+        "direct_requirement_ids": (),
+        "relationship_requirement_ids": (),
+        "root_cause_requirement_ids": (),
+        "report_requirement_ids": (),
+        "p18_requirement_ids": (),
+        "p18_result_refs": (),
+        "p18_claim_refs": (),
+        "p18_policy_use_refs": (),
+        "completion_revision": 0,
+    }
+
+
 def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
     """Build the explicit Phase-1 graph over injected canonical-owner activities."""
 
@@ -193,19 +217,7 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
             "scope_version_id": result.scope_version_id,
             "open_requirement_ids": result.open_requirement_ids,
             "material_requirement_ids": result.material_requirement_ids,
-            "material_group_ids": (),
-            "completed_material_group_ids": (),
-            "active_material_group_id": None,
-            "active_requirement_id": None,
-            "terminal_requirement_ids": (),
-            "direct_requirement_ids": (),
-            "relationship_requirement_ids": (),
-            "root_cause_requirement_ids": (),
-            "report_requirement_ids": (),
-            "p18_requirement_ids": (),
-            "p18_claim_refs": (),
-            "p18_policy_use_refs": (),
-            "completion_revision": 0,
+            **_fresh_requirement_turn_projection(),
             "investigation_requirement_ids": result.investigation_requirement_ids,
             "follow_verified_material_goal_ids": (
                 result.follow_verified_material_goal_ids
@@ -261,11 +273,8 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
             ).result()
         )
         return {
+            **_fresh_requirement_turn_projection(),
             "material_group_ids": result.material_group_ids,
-            "completed_material_group_ids": (),
-            "active_material_group_id": None,
-            "active_requirement_id": None,
-            "terminal_requirement_ids": (),
             "direct_requirement_ids": result.direct_requirement_ids,
             "relationship_requirement_ids": (
                 result.relationship_requirement_ids
@@ -274,10 +283,6 @@ def build_brain_v2_graph(*, activities: BrainActivities, checkpointer=None):
                 result.root_cause_requirement_ids
             ),
             "report_requirement_ids": result.report_requirement_ids,
-            "p18_requirement_ids": (),
-            "p18_claim_refs": (),
-            "p18_policy_use_refs": (),
-            "completion_revision": 0,
             "last_completed_node": "REQUIREMENTS_PLAN",
             "activity_fingerprints": _append_fingerprint(
                 current, result.activity_fingerprint
