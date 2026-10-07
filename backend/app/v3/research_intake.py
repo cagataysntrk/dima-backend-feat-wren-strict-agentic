@@ -2631,6 +2631,7 @@ class ResearchIntakeCompiler:
         current: str,
         catalog: ResearchIntakeCatalog,
         prior_brief: ResearchBrief,
+        current_draft: ModelResearchBriefDraft,
     ) -> ResearchIntakeResult:
         if prior_brief.context_version != catalog.context_version:
             raise ResearchIntakeError(
@@ -2696,7 +2697,24 @@ class ResearchIntakeCompiler:
             if item.facet == ScopePatchFacet.PERIOD:
                 periods: list[ResearchTimePeriod] = []
                 temporal_refs: dict[str, ResearchSemanticRef] = {}
-                for period in item.periods:
+                # Temporal meaning was already resolved by the current-turn
+                # intake owner. ScopePatch is a FieldMask-style delta reducer,
+                # not a second temporal interpreter. For SET/ADD/REMOVE use the
+                # canonical current-turn periods; CLEAR remains explicitly empty.
+                canonical_periods = (
+                    ()
+                    if item.operation == ScopePatchOperationKind.CLEAR
+                    else current_draft.time_periods
+                )
+                if (
+                    item.operation != ScopePatchOperationKind.CLEAR
+                    and not canonical_periods
+                ):
+                    raise ResearchIntakeError(
+                        "INTAKE_SCOPE_PATCH_PERIOD_AUTHORITY_REQUIRED",
+                        "period mutation has no canonical current-turn temporal authority",
+                    )
+                for period in canonical_periods:
                     if (
                         period.time_dimension_semantic_id
                         not in set(catalog.temporal_dimension_ids)
@@ -3313,6 +3331,7 @@ class ResearchIntakeCompiler:
                 current=current,
                 catalog=catalog,
                 prior_brief=prior_brief,
+                current_draft=draft,
             )
             if (
                 followup_scope_result.terminal
