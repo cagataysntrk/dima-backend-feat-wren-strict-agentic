@@ -730,6 +730,7 @@ def test_non_relationship_turn_then_relationship_turn_gets_fresh_p18_bundle() ->
         )
     )
 
+    material_groups_before = activities.calls["material_group"]
     second = service.continue_turn(
         thread_id=first.thread_id,
         tenant_binding=first.tenant_binding,
@@ -742,7 +743,7 @@ def test_non_relationship_turn_then_relationship_turn_gets_fresh_p18_bundle() ->
     assert first.tenant_binding == second.tenant_binding
     assert first.principal_ref == second.principal_ref
     assert activities.calls["p18"] == 1
-    assert activities.calls["material_group"] == 2
+    assert activities.calls["material_group"] == material_groups_before + 1
 
 
 def test_relationship_report_only_continuation_preserves_p18_without_native_reopen() -> None:
