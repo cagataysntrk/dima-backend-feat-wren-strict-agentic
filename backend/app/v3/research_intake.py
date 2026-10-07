@@ -758,6 +758,7 @@ def _intake_provider_schema(
     catalog: ResearchIntakeCatalog,
     *,
     has_prior_brief: bool = False,
+    prior_question_count: int = 0,
 ) -> dict[str, Any]:
     """Close every provider-selected authority ID to this exact catalog.
 
@@ -836,7 +837,15 @@ def _intake_provider_schema(
                 "INTAKE_SCHEMA_INVALID",
                 "provider CONTINUE properties are absent",
             )
-        refs = [f"q{index}" for index in range(1, 257)]
+        if prior_question_count < 1:
+            raise ResearchIntakeError(
+                "INTAKE_SCHEMA_INVALID",
+                "provider CONTINUE requires at least one prior question",
+            )
+        refs = [
+            f"q{index}"
+            for index in range(1, prior_question_count + 1)
+        ]
         prior_refs = continue_properties.get("prior_question_refs")
         if not isinstance(prior_refs, dict):
             raise ResearchIntakeError(
@@ -2967,6 +2976,11 @@ class ResearchIntakeCompiler:
                 schema=_intake_provider_schema(
                     catalog,
                     has_prior_brief=prior_brief is not None,
+                    prior_question_count=(
+                        len(prior_brief.questions)
+                        if prior_brief is not None
+                        else 0
+                    ),
                 ),
                 schema_name=self._schema_name,
             )
