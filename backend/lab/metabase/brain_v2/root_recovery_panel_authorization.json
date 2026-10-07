@@ -1,12 +1,12 @@
 {
   "schema_version": "dima_brain_v2_1_root_recovery_panel_v1",
-  "enabled": false,
-  "candidate_product_sha": "04d662f9cf8aae713cf5c126f109ccf8b051988a",
+  "enabled": true,
+  "candidate_product_sha": "eee7583cb67d50779784805c469230ef2b82a5a2",
   "recovery_baseline": "505caec6e7c3fbd5346dc6a4c310e8f656d324ae",
-  "provider_free_status": "BLOCKED_ON_R02_R10_ROOT_FIXES",
-  "provider_free_focused_run_id": 37571091342,
-  "provider_free_semantic_run_id": 37629542646,
-  "provider_free_frozen_run_id": 37629492737,
+  "provider_free_status": "GREEN",
+  "provider_free_focused_run_id": 37668611845,
+  "provider_free_semantic_run_id": 37667461012,
+  "provider_free_frozen_run_id": 37667461009,
   "generated_metamorphic_scenarios": 192,
   "engine_sha": "686671fa7e55f715e4fb5ac155f9e66019fd12d8",
   "engine_release": "0.63.18-dima.11.2",
@@ -122,32 +122,15 @@
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
   "frontend_allowed": false,
-  "note": "Final 12-slot recovery run 37630766907 completed 10 GREEN / 2 RED. Paid authorization is DISARMED while generic R02 material-plan and R10 atomic P18 turn-reset roots are repaired provider-free. Broad 30-case and frontend remain forbidden.",
+  "note": "ONE final 12-case recovery wave authorized after the two generic roots closed: Fix B atomic P18 turn projection reset and Fix A shared analytical acquisition with N independent fulfillment checks. Product semantics are frozen at eee7583... for this recovery. Provider-free focused/semantic-192-WaveA-WaveB-mutation/frozen gates are GREEN. Broad paid, actual 30-case and frontend remain forbidden.",
   "final_result": {
-    "status": "FINAL_12_CASE_10_GREEN_2_RED_ROOT_FIX",
-    "workflow_run_id": 37630766907,
-    "candidate_product_sha": "04d662f9cf8aae713cf5c126f109ccf8b051988a",
-    "green_slots": [
-      "R01",
-      "R03",
-      "R04",
-      "R05",
-      "R06",
-      "R07",
-      "R08",
-      "R09",
-      "R11",
-      "R12"
-    ],
-    "red_slots": [
-      {
-        "slot_id": "R02_COMPARISON_SEMANTIC",
-        "boundary": "shared comparison/ranking material fragmented; ranking obligations LIMITED and provider ceiling blocked"
-      },
-      {
-        "slot_id": "R10_CONTINUATION_ORIGINAL",
-        "boundary": "new-turn P18 durable bundle reset was non-atomic"
-      }
+    "status": "PENDING_FINAL_12_CASE_POST_ROOT_FIX_RECOVERY",
+    "prior_workflow_run_id": 37630766907,
+    "candidate_product_sha": "eee7583cb67d50779784805c469230ef2b82a5a2",
+    "prior_green_count": 10,
+    "repaired_root_slots": [
+      "R02_COMPARISON_SEMANTIC",
+      "R10_CONTINUATION_ORIGINAL"
     ],
     "thirty_case_execution_ready": false
   },
