@@ -25,6 +25,10 @@ from app.v3.research import (
     ResearchManager,
     ResearchSession,
 )
+from app.v3.research_analytical_scope import (
+    ResearchAnalyticalScopeError,
+    analytical_scope_contract,
+)
 from app.v3.research_scope_patch import scope_fingerprint
 from app.v3.research_material_repair import (
     MaterialRepairDisposition,
@@ -984,6 +988,28 @@ class ResearchAskOrchestrator:
                     detail="declared result dependency produced no execution-local binding",
                 )
             analytical_scope = resolution.contract
+
+        if analytical_scope is None:
+            try:
+                analytical_scope = analytical_scope_contract(
+                    session=session,
+                    obligation_id=selected,
+                )
+            except ResearchAnalyticalScopeError as exc:
+                return self._limit(
+                    session=session,
+                    obligation_id=selected,
+                    code=exc.code,
+                    detail=exc.detail,
+                    last_valid_boundary=exc.last_valid_boundary,
+                    first_invalid_boundary=exc.first_invalid_boundary,
+                    expected_fingerprint=exc.expected_fingerprint,
+                    observed_fingerprint=exc.observed_fingerprint,
+                    scope_fingerprint=exc.scope_fingerprint,
+                    material_fingerprint=exc.material_fingerprint,
+                    expected_semantic_shape=exc.expected_semantic_shape,
+                    observed_semantic_shape=exc.observed_semantic_shape,
+                )
 
         pending = self._store.pending_link(
             session_id=session.session_id,
