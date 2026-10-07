@@ -1158,25 +1158,6 @@ def _build_action_profile(
         if node.branch_id in candidate_branches
         and node.contract_depth < max_depth
     )
-    # A P19 discriminating test is a first-class bounded investigation move.
-    # It may start directly from VERIFIED governed Evidence when no P17 node
-    # exists yet, and a later test may deepen the immediately preceding
-    # discriminating-test branch while depth/budget remain. This keeps the
-    # legal action profile as the single callability authority instead of
-    # relying on a separate direct-P19 exception.
-    discriminating_advancing = tuple(
-        node.step_id
-        for node in open_nodes
-        if (
-            node.intent
-            in {
-                InvestigationIntent.EXPLORE_ALTERNATIVES,
-                InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE,
-            }
-            and node.contract_depth < max_depth
-        )
-    )
-    direct_discrimination_from_evidence = bool(evidence_results) and not graph.nodes
     rules: list[InvestigationActionRule] = []
 
     def add(
@@ -1233,9 +1214,8 @@ def _build_action_profile(
     if remaining_followup_native_turns > 0:
         add(
             InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE,
-            parents=discriminating_advancing,
-            allow_parentless=direct_discrimination_from_evidence,
-            behavior=InvestigationBranchBehavior.ROOT_OR_INHERIT,
+            parents=candidate_advancing,
+            behavior=InvestigationBranchBehavior.INHERIT_BRANCH,
             branch_key=InvestigationBranchKeyPolicy.FORBIDDEN,
             depth_delta=1,
         )
@@ -1288,6 +1268,87 @@ def _build_action_profile(
     return InvestigationActionProfile(
         rules=tuple(rules),
         max_depth=max_depth,
+    )
+
+
+def project_discriminating_test_reentry_rule(
+    *,
+    snapshot: ResearchManagerSnapshot,
+    obligation_id: str,
+) -> InvestigationActionRule | None:
+    """Project the single legal typed P19 -> P17 NextTest move.
+
+    Generic P17 state does not gain TEST_DISCRIMINATING_EVIDENCE merely because
+    Evidence exists. The move becomes legal only when P19 supplies the exact
+    downstream obligation. This projector is then shared by P19 capacity checks
+    and P17 execution, eliminating duplicate adaptive authorization.
+    """
+
+    if snapshot.remaining_followup_native_turns <= 0:
+        return None
+
+    parent = next(
+        (
+            item
+            for item in snapshot.parent_obligations
+            if item.obligation_id == obligation_id
+        ),
+        None,
+    )
+    if (
+        parent is None
+        or str(getattr(parent.state, "value", parent.state)) != "VERIFIED"
+    ):
+        return None
+
+    current_evidence = set(snapshot.evidence_refs)
+    if not any(
+        item.obligation_id == obligation_id
+        and item.evidence_id in current_evidence
+        for item in snapshot.evidence_results
+    ):
+        return None
+
+    open_branches = set(snapshot.investigation.open_branch_ids)
+    scoped_open = tuple(
+        node
+        for node in snapshot.investigation.nodes
+        if (
+            node.root_obligation_id == obligation_id
+            and node.branch_id in open_branches
+            and node.stop_scope != StopScope.INVESTIGATION
+        )
+    )
+    compatible = tuple(
+        node
+        for node in scoped_open
+        if node.intent
+        in {
+            InvestigationIntent.EXPLORE_ALTERNATIVES,
+            InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE,
+        }
+    )
+    advancing = tuple(
+        node.step_id
+        for node in compatible
+        if node.contract_depth < snapshot.action_profile.max_depth
+    )
+
+    if not scoped_open:
+        allow_parentless = True
+    elif advancing:
+        allow_parentless = False
+    else:
+        return None
+
+    return InvestigationActionRule(
+        intent=InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE,
+        legal_parent_step_ids=advancing,
+        allow_parentless=allow_parentless,
+        branch_behavior=InvestigationBranchBehavior.ROOT_OR_INHERIT,
+        branch_key_policy=InvestigationBranchKeyPolicy.FORBIDDEN,
+        depth_delta=1,
+        gain_requirement=InvestigationGainRequirement.POSITIVE_EXPECTED_GAIN,
     )
 
 
@@ -2460,36 +2521,15 @@ class ResearchInvestigationManager:
                 obligation_id,
             )
 
-        open_branches = set(snapshot.investigation.open_branch_ids)
-        scoped_open = tuple(
-            node
-            for node in snapshot.investigation.nodes
-            if (
-                node.root_obligation_id == obligation_id
-                and node.branch_id in open_branches
-                and node.stop_scope != StopScope.INVESTIGATION
-            )
+        test_rule = project_discriminating_test_reentry_rule(
+            snapshot=snapshot,
+            obligation_id=obligation_id,
         )
-        advancing = tuple(
-            node.step_id
-            for node in scoped_open
-            if node.contract_depth < snapshot.action_profile.max_depth
-        )
-        if scoped_open and not advancing:
+        if test_rule is None:
             raise ResearchManagerMaturationError(
-                "P17_TEST_REENTRY_DEPTH_EXHAUSTED",
+                "P17_TEST_REENTRY_NOT_CALLABLE",
                 obligation_id,
             )
-
-        test_rule = InvestigationActionRule(
-            intent=InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE,
-            legal_parent_step_ids=advancing,
-            allow_parentless=not scoped_open,
-            branch_behavior=InvestigationBranchBehavior.ROOT_OR_INHERIT,
-            branch_key_policy=InvestigationBranchKeyPolicy.FORBIDDEN,
-            depth_delta=1,
-            gain_requirement=InvestigationGainRequirement.POSITIVE_EXPECTED_GAIN,
-        )
         rules = tuple(
             rule
             for rule in snapshot.action_profile.rules
