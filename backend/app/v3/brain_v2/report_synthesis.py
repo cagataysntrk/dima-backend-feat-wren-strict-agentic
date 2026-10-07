@@ -190,6 +190,52 @@ def _numeric_tokens_from_value(value: Any) -> frozenset[str]:
     return frozenset()
 
 
+def _p20_synthesis_schema(
+    *,
+    deliverable_ids: tuple[str, ...],
+    statement_ids: tuple[str, ...],
+) -> dict[str, Any]:
+    """Close provider-selected identities to the exact governed input set."""
+
+    schema = strict_json_schema(P20SynthesisEnvelope)
+    definitions = schema.get("$defs")
+    if not isinstance(definitions, dict):
+        raise ValueError("P20 synthesis schema definitions are absent")
+    deliverable = definitions.get("P20DeliverableSynthesis")
+    section = definitions.get("P20SynthesisSection")
+    if not isinstance(deliverable, dict) or not isinstance(section, dict):
+        raise ValueError("P20 synthesis schema definitions are incomplete")
+    deliverable_props = deliverable.get("properties")
+    section_props = section.get("properties")
+    if not isinstance(deliverable_props, dict) or not isinstance(section_props, dict):
+        raise ValueError("P20 synthesis schema properties are incomplete")
+
+    requirement = deliverable_props.get("requirement_id")
+    selected = deliverable_props.get("selected_statement_ids")
+    supporting = section_props.get("supporting_statement_ids")
+    if not isinstance(requirement, dict):
+        raise ValueError("P20 requirement id schema is absent")
+    if not isinstance(selected, dict) or not isinstance(supporting, dict):
+        raise ValueError("P20 statement id schemas are absent")
+
+    requirement["enum"] = list(deliverable_ids)
+    for field in (selected, supporting):
+        items = field.get("items")
+        if not isinstance(items, dict):
+            raise ValueError("P20 statement id item schema is absent")
+        items["enum"] = list(statement_ids)
+
+    root_props = schema.get("properties")
+    if not isinstance(root_props, dict):
+        raise ValueError("P20 envelope schema properties are absent")
+    deliverables = root_props.get("deliverables")
+    if not isinstance(deliverables, dict):
+        raise ValueError("P20 deliverables schema is absent")
+    deliverables["minItems"] = len(deliverable_ids)
+    deliverables["maxItems"] = len(deliverable_ids)
+    return schema
+
+
 class StructuredP20SynthesisManager:
     """One-call typed P20 cognition adapter with deterministic ID closure."""
 
@@ -254,7 +300,10 @@ class StructuredP20SynthesisManager:
                 allow_nan=False,
                 default=str,
             ),
-            schema=strict_json_schema(P20SynthesisEnvelope),
+            schema=_p20_synthesis_schema(
+                deliverable_ids=deliverable_ids,
+                statement_ids=statement_ids,
+            ),
             schema_name="dima_p20_governed_synthesis_v1",
         )
         result = P20SynthesisEnvelope.model_validate_json(raw)
