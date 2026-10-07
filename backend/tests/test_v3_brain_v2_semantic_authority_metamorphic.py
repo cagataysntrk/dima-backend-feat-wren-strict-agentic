@@ -314,11 +314,21 @@ def _contract(
 
 
 class _SynthesisTransport:
-    def __init__(self, *, requirement_id: str, statement_id: str) -> None:
+    def __init__(
+        self,
+        *,
+        requirement_id: str,
+        statement_id: str,
+        section_text: str = (
+            "Governed evidence supports a focused management response while "
+            "preserving the stated limitation."
+        ),
+    ) -> None:
         self.call_count = 0
         self.native_call_count = 0
         self.requirement_id = requirement_id
         self.statement_id = statement_id
+        self.section_text = section_text
 
     def structured_json(self, system, user, *, schema, schema_name):
         self.call_count += 1
@@ -333,10 +343,7 @@ class _SynthesisTransport:
                     "sections": [
                         {
                             "kind": "management_implication",
-                            "text": (
-                                "Governed evidence supports a focused management "
-                                "response while preserving the stated limitation."
-                            ),
+                            "text": self.section_text,
                             "supporting_statement_ids": [self.statement_id],
                         }
                     ],
@@ -693,3 +700,79 @@ def test_explicit_goal_metric_still_narrows_scope_metric_authority() -> None:
     )
 
     assert contract.metric_refs == ("metric.m2",)
+
+
+def test_p20_numeric_synthesis_reuses_only_governed_supported_values() -> None:
+    statement_id = "p20s_" + "d" * 24
+    requirement_id = "deliverable.numeric"
+    transport = _SynthesisTransport(
+        requirement_id=requirement_id,
+        statement_id=statement_id,
+        section_text="The governed observation reports a value of 34.",
+    )
+    manager = StructuredP20SynthesisManager(transport=transport)
+    result = manager.synthesize(
+        accepted_deliverables=(
+            {
+                "requirement_id": requirement_id,
+                "kind": "report",
+                "source_text": "report the governed observation",
+            },
+        ),
+        scope_version_id="scope_v1",
+        evidence_digests=(
+            {
+                "statement_id": statement_id,
+                "statement_kind": "OBSERVATION",
+                "text": "Observation: Sales Order Count=34",
+                "payload": {"metrics": [{"label": "Sales Order Count", "value": 34}]},
+                "upstream_epistemic_ceiling": "EXACT_GOVERNED_OBSERVATION",
+                "source_refs": [{"source_ref": "evidence.numeric"}],
+            },
+        ),
+        p18_results=(),
+        p19_assessment=None,
+        limitations=(),
+    )
+    assert result.deliverables[0].status == "FULFILLED"
+    assert transport.call_count == 1
+    assert transport.native_call_count == 0
+
+
+def test_p20_numeric_synthesis_rejects_value_absent_from_governed_support() -> None:
+    statement_id = "p20s_" + "e" * 24
+    requirement_id = "deliverable.numeric"
+    transport = _SynthesisTransport(
+        requirement_id=requirement_id,
+        statement_id=statement_id,
+        section_text="The governed observation reports a value of 35.",
+    )
+    manager = StructuredP20SynthesisManager(transport=transport)
+    with pytest.raises(ValueError, match="numeric truth absent"):
+        manager.synthesize(
+            accepted_deliverables=(
+                {
+                    "requirement_id": requirement_id,
+                    "kind": "report",
+                    "source_text": "report the governed observation",
+                },
+            ),
+            scope_version_id="scope_v1",
+            evidence_digests=(
+                {
+                    "statement_id": statement_id,
+                    "statement_kind": "OBSERVATION",
+                    "text": "Observation: Sales Order Count=34",
+                    "payload": {
+                        "metrics": [
+                            {"label": "Sales Order Count", "value": 34}
+                        ]
+                    },
+                    "upstream_epistemic_ceiling": "EXACT_GOVERNED_OBSERVATION",
+                    "source_refs": [{"source_ref": "evidence.numeric"}],
+                },
+            ),
+            p18_results=(),
+            p19_assessment=None,
+            limitations=(),
+        )
