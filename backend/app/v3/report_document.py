@@ -8,6 +8,7 @@ from __future__ import annotations
 import hashlib
 import json
 from datetime import datetime, timezone
+from decimal import Decimal, InvalidOperation
 from enum import StrEnum
 from typing import Any
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -286,6 +287,77 @@ def _json_object(raw: str | None, *, code: str) -> Any:
 
 def _render_scalar(value: Any) -> str:
     return json.dumps(value, ensure_ascii=False, separators=(',', ':'), allow_nan=False)
+
+def _canonical_numeric_token(value: str) -> str | None:
+    token = value.strip()
+    if not token:
+        return None
+    if "," in token and "." not in token:
+        token = token.replace(",", ".")
+    try:
+        number = Decimal(token)
+    except InvalidOperation:
+        return None
+    if not number.is_finite():
+        return None
+    if number == 0:
+        number = Decimal(0)
+    normalized = format(number.normalize(), "f")
+    if "." in normalized:
+        normalized = normalized.rstrip("0").rstrip(".")
+    return normalized or "0"
+
+def _numeric_tokens(text: str) -> frozenset[str]:
+    output: set[str] = set()
+    current: list[str] = []
+    value = str(text)
+
+    def flush() -> None:
+        if not current:
+            return
+        token = _canonical_numeric_token("".join(current))
+        if token is not None:
+            output.add(token)
+        current.clear()
+
+    for index, char in enumerate(value):
+        next_char = value[index + 1] if index + 1 < len(value) else ""
+        if char.isdigit():
+            current.append(char)
+            continue
+        if char in {"+", "-"} and not current and next_char.isdigit():
+            current.append(char)
+            continue
+        if (
+            char in {".", ","}
+            and current
+            and any(item.isdigit() for item in current)
+            and next_char.isdigit()
+        ):
+            current.append(char)
+            continue
+        flush()
+    flush()
+    return frozenset(output)
+
+def _numeric_tokens_from_value(value: Any) -> frozenset[str]:
+    output: set[str] = set()
+    if isinstance(value, bool) or value is None:
+        return frozenset()
+    if isinstance(value, (int, float, Decimal)):
+        token = _canonical_numeric_token(str(value))
+        return frozenset((token,)) if token is not None else frozenset()
+    if isinstance(value, str):
+        return _numeric_tokens(value)
+    if isinstance(value, dict):
+        for item in value.values():
+            output.update(_numeric_tokens_from_value(item))
+        return frozenset(output)
+    if isinstance(value, (list, tuple)):
+        for item in value:
+            output.update(_numeric_tokens_from_value(item))
+        return frozenset(output)
+    return frozenset()
 
 def stable_statement_id(value: Any) -> str:
     return 'p20s_' + _canonical_json(value, code='P20_STATEMENT_ID_NOT_CANONICAL')[1][:24]
@@ -1126,13 +1198,6 @@ class ReportClaimGate:
                     'P20_SYNTHESIS_PAYLOAD_INVALID',
                     statement.statement_id,
                 )
-            # Free-form synthesis never carries new numbers. Exact numeric
-            # statements remain separate governed Evidence-backed statements.
-            if any(char.isdigit() for char in text):
-                raise P20ReportError(
-                    'P20_SYNTHESIS_NUMERIC_FORBIDDEN',
-                    statement.statement_id,
-                )
             if statement.upstream_epistemic_ceiling != 'GOVERNED_SYNTHESIS':
                 raise P20ReportError(
                     'P20_SYNTHESIS_CEILING_INVALID',
@@ -1223,6 +1288,25 @@ class ReportClaimGate:
             support_statements = tuple(
                 item for item in supporting if item is not None
             )
+            synthesis_numeric = _numeric_tokens(
+                str(statement.payload.get('text') or '')
+            )
+            if synthesis_numeric:
+                governed_numeric: set[str] = set()
+                for item in support_statements:
+                    governed_numeric.update(
+                        _numeric_tokens_from_value(
+                            {
+                                'text': item.text,
+                                'payload': item.payload,
+                            }
+                        )
+                    )
+                if not synthesis_numeric.issubset(governed_numeric):
+                    raise P20ReportError(
+                        'P20_SYNTHESIS_NUMERIC_UNGROUNDED',
+                        statement.statement_id,
+                    )
             expected_obligations = tuple(
                 sorted(
                     {
