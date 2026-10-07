@@ -929,7 +929,8 @@ class ResearchAskOrchestrator:
         )
         selected = self._select_obligation(session, delegatable, obligation_id)
         question = self.accepted_material_question(session, selected)
-        analytical_scope: AnalyticalRequestContract | None = None
+        execution_analytical_scope: AnalyticalRequestContract | None = None
+        canonical_analytical_scope: AnalyticalRequestContract | None = None
         if question.result_dependency is not None:
             resolver = getattr(material_executor, "resolve_result_dependency", None)
             if not callable(resolver):
@@ -987,11 +988,12 @@ class ResearchAskOrchestrator:
                     code="P14_RESULT_DEPENDENCY_RESOLUTION_MISSING",
                     detail="declared result dependency produced no execution-local binding",
                 )
-            analytical_scope = resolution.contract
+            execution_analytical_scope = resolution.contract
+            canonical_analytical_scope = resolution.contract
 
-        if analytical_scope is None:
+        if canonical_analytical_scope is None:
             try:
-                analytical_scope = analytical_scope_contract(
+                canonical_analytical_scope = analytical_scope_contract(
                     session=session,
                     obligation_id=selected,
                 )
@@ -1047,7 +1049,7 @@ class ResearchAskOrchestrator:
             prepared = ResearchManager.prepare_native_delegation(
                 session,
                 obligation_id=selected,
-                analytical_scope=analytical_scope,
+                analytical_scope=execution_analytical_scope,
             )
             session = self._store.save(
                 prepared.session,
@@ -1091,7 +1093,7 @@ class ResearchAskOrchestrator:
                     link=link,
                     request=request,
                     native_session_token=native_session_token,
-                    analytical_scope=analytical_scope,
+                    analytical_scope=execution_analytical_scope,
                     repair_parent_link_id=repair_parent_link_id,
                 )
             except ResearchMaterialObservationUnavailable as first_exc:
@@ -1115,7 +1117,7 @@ class ResearchAskOrchestrator:
                         link=persisted,
                         request=None,
                         native_session_token=native_session_token,
-                        analytical_scope=analytical_scope,
+                        analytical_scope=execution_analytical_scope,
                         repair_parent_link_id=repair_parent_link_id,
                     )
                 except ResearchMaterialObservationUnavailable as retry_exc:
@@ -1144,7 +1146,7 @@ class ResearchAskOrchestrator:
                 obligation_id=selected,
                 parent_link=pending,
                 failure=exc,
-                analytical_scope=analytical_scope,
+                analytical_scope=canonical_analytical_scope,
             )
             if repair is None:
                 return self._limit(
