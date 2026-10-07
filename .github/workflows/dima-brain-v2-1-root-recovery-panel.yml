@@ -331,10 +331,10 @@ jobs:
           assert r["stale_evidence"]==0, r
           assert r["agent_api_request_count"]==0, r
           provider=r["provider_total"]
+          case=r["cases"][0]
           assert provider["actual_provider_request_count"] <= 30, provider
           assert provider["blocked_request_count"] == 0, provider
           assert provider["provider_requests_by_source"].get("p20_synthesis",0) <= case["turn_count_expected"], provider
-          case=r["cases"][0]
           assert case["all_turns_executed"] is True, case
           assert case["accepted_terminal"] is True, case
           assert case["mechanical_safety"] is True, case
