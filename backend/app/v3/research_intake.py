@@ -4137,12 +4137,16 @@ class ResearchIntakeCompiler:
                 if (
                     followup_scope_result is None
                     or followup_scope_result.brief is None
-                    or followup_scope_result.scope_contract is None
                 ):
                     raise ResearchIntakeError(
-                        "INTAKE_SCOPE_MUTATION_CONTRACT_REQUIRED",
+                        "INTAKE_SCOPE_MUTATION_RESULT_REQUIRED",
                         draft.scope_mutation_kind.value,
                     )
+                # Provider mutation kind is only a routing hint that opens the
+                # typed ScopePatch owner. The patch result decides whether a
+                # real ScopeVersion transition occurred. If the requested SET
+                # already equals the accepted scope, the material delta is zero
+                # and this turn is a SAME_SCOPE_CONTINUATION.
                 accepted_scope = followup_scope_result.brief.scope
                 scope_contract = followup_scope_result.scope_contract
 
