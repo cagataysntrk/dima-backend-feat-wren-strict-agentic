@@ -255,3 +255,74 @@ Paid validation remains BLOCKED until the entire provider-free closure, includin
 First remaining Product boundary: follow-up refinement/deepening can lose executable metric authority and fail with `R1_METRIC_SCOPE_REQUIRED`. Separate quality weakness: P20 bounded synthesis frequently returns explicit LIMITED after post-provider typed closure failure. Adaptive information-gain deepening is also not demonstrated consistently.
 
 Supervisor stop law is active: the single paid correction wave has been consumed and the failures are Product failures, not a proven harness defect. No second paid correction wave, no broad 30-case, and no `30-CASE EXECUTION READY = YES` seal are legal in this round.
+
+
+## User-authorized recovery cycle 2 — 2026-10-07
+
+This section supersedes the prior RED stop receipt as the **current recovery state**.
+The earlier run `37533803018` remains immutable historical evidence; it is not
+rewritten or hidden.
+
+Purpose of this cycle:
+
+- close the shared semantic-authority defects exposed by the first recovery wave;
+- preserve the frozen engine/Metabot boundary;
+- re-establish the independent 12-shape recovery acceptance gate;
+- if GREEN, run the final same-Product provider-free closure and seal
+  `30-CASE EXECUTION READY = YES`;
+- do **not** execute the actual broad 30-case corpus.
+
+Current semantic Product candidate:
+
+`a8d3d68ff03696231eca05b23b345df660853629`
+
+Engine remains frozen:
+
+`686671fa7e55f715e4fb5ac155f9e66019fd12d8` / `0.63.18-dima.11.2`
+
+Generic root closures added after the first RED wave:
+
+1. Same-scope metric authority: an omitted metric facet inherits exact accepted
+   ResearchScope authority instead of becoming `R1_METRIC_SCOPE_REQUIRED`.
+2. Native ranking repair: canonical AnalyticalRequestContract authority is now
+   available to bounded repair without widening the executor interface.
+3. P20 identity closure: provider-selected deliverable/statement refs are closed
+   by JSON Schema to the exact accepted governed ID set.
+4. P20 numeric provenance: numeric synthesis is legal only when every numeric
+   token is already present in supporting governed material; new numbers remain
+   forbidden.
+5. Direct TABLE/CHART coverage: fully represented governed analytical material
+   can satisfy tabular/chart presentation without an unnecessary cognition call;
+   REPORT/EXPLAIN still require bounded P20 synthesis.
+6. Temporal CHANGE authority: a single adjacent shared bounded change frame can
+   remain SPAN when no typed temporal-comparison owner exists; explicit
+   comparison remains PAIR.
+7. ScopePatch temporal authority: ScopePatch now projects the already-resolved
+   current-turn canonical period authority instead of reinterpreting the same
+   temporal meaning a second time.
+8. Same-scope analytical continuation: provider-local `qN` refs can select an
+   exact prior accepted analytical goal through the typed `CONTINUE` DTO.
+   CONTINUE cannot mint a new semantic ref or ScopeVersion.
+
+Provider-free evidence for the Product candidate:
+
+- semantic conformance + 192 generated metamorphic scenarios + Wave A/B +
+  mutation: run `37581832437` — GREEN;
+- frozen-family closure: run `37581832390` — GREEN;
+- the test-only continuation HEAD also passed semantic conformance + generated
+  metamorphic closure in run `37581893679`.
+
+Paid evidence in this cycle:
+
+- diagnostic 12-shape run `37579997277` completed all 12 slots and exposed four
+  first-wrong boundaries. Each boundary is covered by the generic fixes above;
+  it is diagnostic evidence, not the final R8 seal.
+- targeted continuation pinpoint `37582138826` is the current live validation
+  of typed same-scope continuation.
+
+Current gate:
+
+- R1-R7: implemented / provider-free GREEN.
+- R8 final independent 12-shape recovery panel: PENDING after pinpoint.
+- R9 final same-Product closure: PENDING R8 GREEN.
+- broad 30-case: NOT RUN and NOT authorized by this recovery cycle.
