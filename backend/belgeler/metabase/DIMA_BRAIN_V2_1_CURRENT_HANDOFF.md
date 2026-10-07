@@ -1,6 +1,131 @@
 # DIMA BRAIN V2.1 — CURRENT HANDOFF
 
-Updated: 2026-10-06
+Updated: 2026-10-07
+
+## 0. CURRENT AUTHORITATIVE STATE — SEMANTIC AUTHORITY RECOVERY
+
+This section supersedes every older status/freeze narrative later in this file.
+
+Branch:
+
+`feat/dima-brain-v2-1-specification-closure`
+
+Current semantic Product candidate under recovery:
+
+`eee7583cb67d50779784805c469230ef2b82a5a2`
+
+Frozen engine:
+
+- SHA: `686671fa7e55f715e4fb5ac155f9e66019fd12d8`
+- release: `0.63.18-dima.11.2`
+- runtime tag: `v0.63.18-dima.11.2.1`
+- certification: `37449462486`
+- digest: `sha256:fe1b6fb67be6dbadea1af5d415f3ba2e033d46f91289f5c3c9844bee20c379bd`
+
+Permanent architecture authority:
+
+- `DIMA_BRAIN_V2_1_SEMANTIC_AUTHORITY_CONSTITUTION.md`
+- `backend/lab/metabase/brain_v2/semantic_authority_registry.json`
+- `backend/tests/test_v3_brain_v2_runtime_guardrails.py`
+
+The permanent rule is:
+
+~~~text
+one business-semantic fact -> one canonical owner
+ResearchScope / AnalyticalIntentV1
+-> Metabase / Metabot HOW
+-> AnalyticalExecutionManifestV1
+-> verify_analytical_fulfillment_v1
+-> Evidence
+~~~
+
+MaterialGroup is acquisition planning only. LangGraph is orchestration only. Completion is
+ledger only. P20 is synthesis only. Closed V1 grammar is conformance-only and may not be a
+forward-runtime veto. Native attestation/observation is structural provenance and must not
+reconstruct business meaning from physical query representation.
+
+### Root fixes closed provider-free
+
+Fix B — atomic new-turn P18 reset:
+
+- implemented;
+- `p18_requirement_ids`, `p18_result_refs`, `p18_claim_refs`,
+  `p18_policy_use_refs` reset as one turn-owned projection;
+- durable historical artifacts remain intact.
+
+Fix A — shared analytical acquisition:
+
+- requirement identity separated from acquisition identity;
+- compatible comparison/change-ranking/top-k consumers share one governed acquisition;
+- one result is checked independently against N consumers;
+- one shared Evidence package carries explicit consumer identities;
+- result-dependent child work remains a later occurrence.
+
+Provider-free closure on the Product candidate:
+
+- focused Brain V2: `37667461124` GREEN;
+- frozen-family: `37667461009` GREEN;
+- semantic conformance + 192 generated metamorphic scenarios + Wave A + Wave B + mutation:
+  `37667461012` GREEN.
+
+Constitution/registry enforcement recertification:
+
+- focused provider-free: `37669106020` GREEN;
+- semantic conformance + metamorphic + Wave A/B + mutation: `37669106073` GREEN.
+
+### Final one-wave recovery — in flight, already not 12/12
+
+Authorized recovery run:
+
+`37668955073`
+
+Candidate remains exactly `eee7583c...`; frozen engine remains exactly `686671fa...`.
+
+Observed so far:
+
+- R01 comparison original: GREEN;
+- R03 comparison wording: GREEN;
+- R04 temporal original: GREEN;
+- R02 comparison semantic: RED.
+
+R02 is **not** the prior provider-ceiling/duplicate-material failure:
+
+- provider blocked requests = `0`;
+- duplicate native = `0`;
+- stale Evidence = `0`;
+- attestation = HTTP 200;
+- native material observation = HTTP 422 twice;
+- native acquisitions = `0`;
+- Evidence count = `0`;
+- terminal exception = `P20_RESEARCH_SESSION_NOT_SEALED` because analytical Research never
+  reached a verified terminal material state.
+
+Pinned engine inspection shows the material observer attempts to reconstruct period-pair CHANGE
+ranking from physical previous-stage query columns via Metabase Lib equality matching. The live
+query produced an ambiguous physical match before execution. This is now classified as a
+**semantic-authority architecture blocker**, not another R02-specific representation patch.
+
+The forbidden response is another engine observer shape patch. The required architectural
+direction is proof migration:
+
+~~~text
+Metabase / Metabot HOW
+-> stable execution-semantic manifest bound to exact occurrence/result
+-> Dima sole fulfillment verifier
+-> Evidence
+~~~
+
+The observer may remain for structural provenance, but it must not be the business-semantic
+authority that decides whether a legal comparison/change intent exists.
+
+Paid authorization was immediately DISARMED after R02 RED. The current fail-fast=false panel may
+finish for adjudication, but no second paid wave is authorized. Actual broad 30-case remains
+forbidden. `30-CASE EXECUTION READY = NO`.
+
+## 0H. HISTORICAL STATE BELOW
+
+Everything below this marker is historical context unless explicitly referenced above.
+
 
 ## 0. FINAL CURRENT STATE
 
