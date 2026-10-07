@@ -3814,6 +3814,12 @@ class ResearchIntakeCompiler:
                 draft,
                 change_period_issue,
             )
+            # This was already a bounded temporal-authority transition. If the
+            # PAIR-only resolver cannot justify two distinguishable periods and
+            # returns CLARIFY, the scope-level SPAN/PAIR owner gets the final
+            # temporal decision instead of surfacing duplicate temporal
+            # authority to the user.
+            temporal_authority_reconsidered = True
         elif (
             prior_brief is None
             and self.call_count < 2
