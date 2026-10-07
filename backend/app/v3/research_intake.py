@@ -3798,15 +3798,16 @@ class ResearchIntakeCompiler:
                 ",".join(duplicate_root_keys),
             )
 
-        missing_change_frame_issue = self._missing_change_ranking_frame_issue(
-            draft,
-            current=current,
-            catalog=catalog,
-            calendar_reference_date=self._calendar_reference_date,
-        )
+        missing_change_frame_issue = None
+        if temporal_authority_reconsidered:
+            missing_change_frame_issue = self._missing_change_ranking_frame_issue(
+                draft,
+                current=current,
+                catalog=catalog,
+                calendar_reference_date=self._calendar_reference_date,
+            )
         if (
-            temporal_authority_reconsidered
-            and missing_change_frame_issue is not None
+            missing_change_frame_issue is not None
             and self.call_count < 3
         ):
             draft = resolve_missing_change_frame(
