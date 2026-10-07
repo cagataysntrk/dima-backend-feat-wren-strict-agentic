@@ -7,6 +7,7 @@ execution facts and never reverse-engineers MBQL/query topology here.
 """
 from __future__ import annotations
 
+from datetime import date, datetime, time, timezone
 from enum import StrEnum
 from typing import Any, Literal
 
@@ -240,6 +241,20 @@ class AnalyticalManifestDataV1(FrozenModel):
     rows: tuple[Any, ...] = ()
 
 
+class AnalyticalObservedTemporalScopeV1(FrozenModel):
+    """Role-neutral time facts observed from native execution/result material."""
+
+    time_dimension_semantic_id: str = Field(min_length=1)
+    start: str = Field(min_length=1)
+    end: str = Field(min_length=1)
+    source: Literal[
+        "native_filter",
+        "result_bucket",
+        "change_baseline",
+        "change_comparison",
+    ]
+
+
 class AnalyticalExecutionManifestV1(FrozenModel):
     """Metabase -> Dima stable execution facts; never a physical query plan."""
 
@@ -247,13 +262,21 @@ class AnalyticalExecutionManifestV1(FrozenModel):
         "dima_analytical_execution_manifest_v1"
     )
     execution_id: str = Field(min_length=1)
-    fulfilled_intent_ids: tuple[str, ...] = Field(min_length=1)
+    # Runtime uses consumer_intent_ids only as correlation. Fulfillment is not
+    # claimed until verify_analytical_fulfillment_v1 returns successfully.
+    consumer_intent_ids: tuple[str, ...] = ()
+    fulfilled_intent_ids: tuple[str, ...] = ()
     metrics: tuple[str, ...] = Field(min_length=1)
     dimensions: tuple[str, ...] = ()
     filters: tuple[AnalyticalFilterV1, ...] = ()
+    # temporal_periods/ranking remain backward-compatible fixture surfaces.
+    # Canonical runtime populates observed_temporal_scopes/rankings from native
+    # execution facts instead of echoing AnalyticalIntent.
     temporal_periods: tuple[AnalyticalPeriodV1, ...] = ()
+    observed_temporal_scopes: tuple[AnalyticalObservedTemporalScopeV1, ...] = ()
     temporal_observation_dimension: str | None = None
     ranking: AnalyticalRankingV1 | None = None
+    rankings: tuple[AnalyticalRankingV1, ...] = ()
     row_grain: tuple[str, ...] = ()
     result_dependency: AnalyticalDependencyV1 | None = None
     semantic_context_version: str = Field(min_length=1)
@@ -493,48 +516,59 @@ def project_analytical_intent_v1(
 
 def project_execution_manifest_v1(
     *,
-    intent: AnalyticalIntentV1,
-    observation: AnalyticalRequestObservation,
     execution_id: str,
+    consumer_intent_ids: tuple[str, ...],
+    metrics: tuple[str, ...],
+    dimensions: tuple[str, ...],
+    filters: tuple[AnalyticalFilterV1, ...],
+    observed_temporal_scopes: tuple[AnalyticalObservedTemporalScopeV1, ...],
+    temporal_observation_dimension: str | None,
+    rankings: tuple[AnalyticalRankingV1, ...],
+    row_grain: tuple[str, ...],
+    semantic_context_version: str,
+    scope_lineage_id: str,
+    scope_version_id: str,
+    scope_fingerprint: str | None,
+    tenant_id: str,
+    principal_id: str,
+    currentness_token: str,
+    security_fingerprint: str,
     query_fingerprint: str,
     result_hash: str,
     engine_identity: AnalyticalEngineIdentityV1,
     data_columns: tuple[Any, ...],
     data_rows: tuple[Any, ...],
-    fulfilled_intent_ids: tuple[str, ...] | None = None,
     resource_entity_ids: tuple[str, ...] = (),
+    result_dependency: AnalyticalDependencyV1 | None = None,
     metadata: dict[str, Any] | None = None,
 ) -> AnalyticalExecutionManifestV1:
-    """Project an already-verified stable semantic observation; no MBQL inspection."""
+    """Project stable observed execution facts into the canonical manifest.
+
+    No accepted intent field is copied as an execution-semantic fact here.
+    Consumer ids and scope/currentness fields are correlation/governance
+    context only; semantic fulfillment is decided exactly once downstream.
+    """
 
     return AnalyticalExecutionManifestV1(
         execution_id=execution_id,
-        fulfilled_intent_ids=tuple(
-            dict.fromkeys(fulfilled_intent_ids or (intent.intent_id,))
-        ),
-        metrics=observation.metric_refs,
-        dimensions=observation.dimension_refs,
-        filters=_filters_from_contract(observation),
-        temporal_periods=intent.temporal_periods,
-        temporal_observation_dimension=(
-            observation.temporal_observation.time_dimension
-            if observation.temporal_observation is not None
-            else None
-        ),
-        ranking=_ranking_from_contract(observation.ranking),
-        row_grain=tuple(
-            dict.fromkeys((*observation.dimension_refs, *observation.grain_constraints))
-        ),
-        result_dependency=intent.dependency,
-        semantic_context_version=intent.semantic_context_version,
-        scope_lineage_id=observation.scope_identity.lineage_id,
-        scope_version_id=observation.scope_identity.version_id,
-        scope_fingerprint=intent.scope_fingerprint,
-        tenant_id=intent.tenant_id,
-        principal_id=intent.principal_id,
+        consumer_intent_ids=tuple(dict.fromkeys(consumer_intent_ids)),
+        metrics=tuple(dict.fromkeys(metrics)),
+        dimensions=tuple(dict.fromkeys(dimensions)),
+        filters=filters,
+        observed_temporal_scopes=observed_temporal_scopes,
+        temporal_observation_dimension=temporal_observation_dimension,
+        rankings=rankings,
+        row_grain=tuple(dict.fromkeys(row_grain)),
+        result_dependency=result_dependency,
+        semantic_context_version=semantic_context_version,
+        scope_lineage_id=scope_lineage_id,
+        scope_version_id=scope_version_id,
+        scope_fingerprint=scope_fingerprint,
+        tenant_id=tenant_id,
+        principal_id=principal_id,
         resource_entity_ids=resource_entity_ids,
-        currentness_token=intent.currentness_token,
-        security_fingerprint=intent.security_fingerprint,
+        currentness_token=currentness_token,
+        security_fingerprint=security_fingerprint,
         query_fingerprint=query_fingerprint,
         result_hash=result_hash,
         engine_identity=engine_identity,
@@ -543,16 +577,30 @@ def project_execution_manifest_v1(
     )
 
 
-def _filter_key(value: AnalyticalFilterV1) -> tuple[str, str, str]:
-    return (value.semantic_ref, value.dimension_semantic_id, value.value)
+def _filter_key(value: AnalyticalFilterV1) -> tuple[str, str]:
+    # semantic_ref is provenance/correlation text. Business filter fulfillment
+    # is the governed dimension identity plus the exact literal value.
+    return (value.dimension_semantic_id, value.value)
 
 
-def _period_key(value: AnalyticalPeriodV1) -> tuple[str, str, str, str]:
+def _temporal_boundary(value: str) -> datetime:
+    raw = value.strip()
+    if "T" not in raw:
+        return datetime.combine(date.fromisoformat(raw), time.min, tzinfo=timezone.utc)
+    parsed = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        return parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def _same_temporal_scope(
+    required: AnalyticalPeriodV1,
+    observed: AnalyticalObservedTemporalScopeV1,
+) -> bool:
     return (
-        value.role.value,
-        value.time_dimension_semantic_id,
-        value.start,
-        value.end,
+        required.time_dimension_semantic_id == observed.time_dimension_semantic_id
+        and _temporal_boundary(required.start) == _temporal_boundary(observed.start)
+        and _temporal_boundary(required.end) == _temporal_boundary(observed.end)
     )
 
 
@@ -604,9 +652,12 @@ def verify_analytical_fulfillment_v1(
                 f"{label}: expected={required!r} observed={observed!r}",
             )
 
-    if intent.intent_id not in set(manifest.fulfilled_intent_ids):
+    correlated_consumers = (
+        manifest.consumer_intent_ids or manifest.fulfilled_intent_ids
+    )
+    if correlated_consumers and intent.intent_id not in set(correlated_consumers):
         raise AnalyticalBoundaryError(
-            "ANALYTICAL_V1_INTENT_NOT_FULFILLED",
+            "ANALYTICAL_V1_INTENT_CORRELATION_MISMATCH",
             intent.intent_id,
         )
     if tuple(intent.expected_resource_entity_ids) != tuple(manifest.resource_entity_ids):
@@ -644,30 +695,72 @@ def verify_analytical_fulfillment_v1(
             "execution filters differ from accepted intent",
         )
 
-    required_periods = {_period_key(item) for item in intent.temporal_periods}
-    observed_periods = {_period_key(item) for item in manifest.temporal_periods}
-    if required_periods != observed_periods:
-        raise AnalyticalBoundaryError(
-            "ANALYTICAL_V1_TEMPORAL_SCOPE_MISMATCH",
-            "execution periods/roles differ from accepted intent",
+    if manifest.observed_temporal_scopes:
+        missing_periods = tuple(
+            required
+            for required in intent.temporal_periods
+            if not any(
+                _same_temporal_scope(required, observed)
+                for observed in manifest.observed_temporal_scopes
+            )
         )
+        if missing_periods:
+            raise AnalyticalBoundaryError(
+                "ANALYTICAL_V1_TEMPORAL_SCOPE_MISMATCH",
+                "required governed periods are not present in observed execution facts",
+            )
+    else:
+        # Legacy fixtures may still carry role-labelled periods. Canonical
+        # runtime never populates this path from AnalyticalIntent.
+        required_periods = {
+            (
+                item.role.value,
+                item.time_dimension_semantic_id,
+                _temporal_boundary(item.start),
+                _temporal_boundary(item.end),
+            )
+            for item in intent.temporal_periods
+        }
+        observed_periods = {
+            (
+                item.role.value,
+                item.time_dimension_semantic_id,
+                _temporal_boundary(item.start),
+                _temporal_boundary(item.end),
+            )
+            for item in manifest.temporal_periods
+        }
+        if required_periods != observed_periods:
+            raise AnalyticalBoundaryError(
+                "ANALYTICAL_V1_TEMPORAL_SCOPE_MISMATCH",
+                "execution periods/roles differ from accepted intent",
+            )
     if intent.temporal_observation_dimension != manifest.temporal_observation_dimension:
         raise AnalyticalBoundaryError(
             "ANALYTICAL_V1_TEMPORAL_OBSERVATION_MISMATCH",
             "governed temporal observation identity differs",
         )
-    if not _ranking_requirement_fulfilled(intent.ranking, manifest.ranking):
+    observed_rankings = manifest.rankings or (
+        (manifest.ranking,) if manifest.ranking is not None else ()
+    )
+    if intent.ranking is not None and not any(
+        _ranking_requirement_fulfilled(intent.ranking, observed)
+        for observed in observed_rankings
+    ):
         raise AnalyticalBoundaryError(
             "ANALYTICAL_V1_RANKING_MISMATCH",
-            "ranking requirement is not fulfilled by the governed result",
+            "ranking requirement is not fulfilled by observed execution facts",
         )
     if not set(intent.row_grain).issubset(manifest.row_grain):
         raise AnalyticalBoundaryError(
             "ANALYTICAL_V1_ROW_GRAIN_MISMATCH",
             "required row grain is not fulfilled",
         )
-    if intent.dependency != manifest.result_dependency:
+    if (
+        manifest.result_dependency is not None
+        and intent.dependency != manifest.result_dependency
+    ):
         raise AnalyticalBoundaryError(
             "ANALYTICAL_V1_DEPENDENCY_MISMATCH",
-            "result dependency differs from accepted intent",
+            "observed dependency provenance differs from accepted intent",
         )

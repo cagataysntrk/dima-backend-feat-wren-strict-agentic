@@ -9,6 +9,7 @@ from app.v3.analytical_boundary import (
     AnalyticalFilterV1,
     AnalyticalIntentV1,
     AnalyticalManifestDataV1,
+    AnalyticalObservedTemporalScopeV1,
     AnalyticalOperation,
     AnalyticalPeriodV1,
     AnalyticalRankingV1,
@@ -405,3 +406,57 @@ def test_bounded_result_cannot_fulfill_unbounded_ranking_consumer() -> None:
     with pytest.raises(AnalyticalBoundaryError) as exc:
         verify_analytical_fulfillment_v1(intent, manifest)
     assert exc.value.code == "ANALYTICAL_V1_RANKING_MISMATCH"
+
+
+def test_role_neutral_execution_time_facts_are_judged_only_by_final_verifier() -> None:
+    intent = _intent()
+    manifest = _manifest(intent).model_copy(
+        update={
+            "fulfilled_intent_ids": (),
+            "consumer_intent_ids": (intent.intent_id,),
+            "temporal_periods": (),
+            "observed_temporal_scopes": (
+                AnalyticalObservedTemporalScopeV1(
+                    time_dimension_semantic_id="dimension.date",
+                    start="2026-05-01T00:00:00.000Z",
+                    end="2026-06-01T00:00:00.000Z",
+                    source="change_baseline",
+                ),
+                AnalyticalObservedTemporalScopeV1(
+                    time_dimension_semantic_id="dimension.date",
+                    start="2026-06-01T00:00:00.000Z",
+                    end="2026-07-01T00:00:00.000Z",
+                    source="change_comparison",
+                ),
+            ),
+            "rankings": (intent.ranking,),
+            "ranking": None,
+        }
+    )
+
+    verify_analytical_fulfillment_v1(intent, manifest)
+
+
+def test_execution_fact_period_mismatch_fails_only_at_final_verifier() -> None:
+    intent = _intent()
+    manifest = _manifest(intent).model_copy(
+        update={
+            "fulfilled_intent_ids": (),
+            "consumer_intent_ids": (intent.intent_id,),
+            "temporal_periods": (),
+            "observed_temporal_scopes": (
+                AnalyticalObservedTemporalScopeV1(
+                    time_dimension_semantic_id="dimension.date",
+                    start="2026-04-01T00:00:00Z",
+                    end="2026-05-01T00:00:00Z",
+                    source="result_bucket",
+                ),
+            ),
+            "rankings": (intent.ranking,),
+            "ranking": None,
+        }
+    )
+
+    with pytest.raises(AnalyticalBoundaryError) as exc:
+        verify_analytical_fulfillment_v1(intent, manifest)
+    assert exc.value.code == "ANALYTICAL_V1_TEMPORAL_SCOPE_MISMATCH"

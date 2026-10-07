@@ -1094,6 +1094,28 @@ class MaterialBridge:
                     "dima/error-code": "NATIVE_QUERY_EXECUTION_PERMISSION_DENIED"
                 },
             )
+        try:
+            material = self.observe_native_query_material(
+                conversation_id=conversation_id,
+                native_query_id=native_query_id,
+            )
+            execution_facts = {
+                "status": "OBSERVED",
+                "observation": material.model_dump(mode="json"),
+            }
+        except NativeEngineBridgeError as exc:
+            execution_facts = {
+                "status": "UNAVAILABLE",
+                "error_code": (
+                    exc.error_code
+                    if isinstance(exc, NativeEngineEndpointError)
+                    else "P14_NATIVE_EXECUTION_FACTS_UNAVAILABLE"
+                ),
+                "detail": str(exc),
+            }
+        attestation = attestation_payload(query)
+        attestation["manifest"]["native_conversation_id"] = str(conversation_id)
+        attestation["manifest"]["native_query_id"] = native_query_id
         return NativeExactOccurrenceExecutionObservation(
             status_code=200,
             latency_ms=3,
@@ -1108,10 +1130,8 @@ class MaterialBridge:
                 "row_count": 1,
                 "data": {"rows": [["Web", 4]], "cols": []},
             },
-            attestation=self.attest_native_query(
-                conversation_id=conversation_id,
-                native_query_id=native_query_id,
-            ),
+            attestation=attestation,
+            execution_facts=execution_facts,
         )
 
 
@@ -1166,9 +1186,11 @@ def test_attestation_422_is_deterministic_limitation_before_execution(error_code
     assert store.execution_link(link.id).status == "CANDIDATE_CAPTURED"
 
 
-def test_p14_architecture_observes_before_exact_occurrence_execution():
+def test_p14_architecture_executes_before_read_only_execution_fact_admission():
     execute_source = inspect.getsource(NativeResearchMaterialExecutor.execute)
-    observe_source = inspect.getsource(NativeResearchMaterialExecutor._observe_scope)
+    observe_source = inspect.getsource(
+        NativeResearchMaterialExecutor._observe_executed_occurrence
+    )
     attest_source = inspect.getsource(NativeResearchMaterialExecutor._attest_occurrence)
 
     assert "attest_native_query" in attest_source
@@ -1176,14 +1198,13 @@ def test_p14_architecture_observes_before_exact_occurrence_execution():
     assert "execute_native_query" in execute_source
     assert "execute_dataset" not in execute_source
     assert execute_source.index("_attest_occurrence(") < execute_source.index(
-        "_observe_scope("
-    )
-    assert execute_source.index("_observe_scope(") < execute_source.index(
         "mark_execution_started("
     )
     assert execute_source.index("mark_execution_started(") < execute_source.index(
         "execute_native_query("
     )
+    assert "assert_material_native_scope" not in execute_source
+    assert "assert_material_result_coverage" not in execute_source
 
 
 def test_legacy_direct_dataset_path_is_not_canonical_p14():
@@ -2567,8 +2588,8 @@ def test_r5_material_occurrence_locator_mismatch_still_blocks_verified_evidence(
             execution_link_id=link.id,
         )
 
-    assert exc.value.code == "R1_NATIVE_OCCURRENCE_SCOPE_MISMATCH"
-    assert store.execution_link(link.id).status == "CANDIDATE_CAPTURED"
+    assert exc.value.code == "P14_NATIVE_EXECUTION_FACT_OCCURRENCE_MISMATCH"
+    assert store.execution_link(link.id).status == "EXECUTED"
 
 
 def test_r5_stale_scope_occurrence_cannot_cross_research_session_identity():
@@ -2814,7 +2835,7 @@ def test_executed_occurrence_resumes_from_durable_result_without_second_dataset_
     assert len(second_bridge.material_observation_calls) == 1
 
 
-def test_observation_not_ready_waits_before_execution_then_reuses_same_candidate():
+def test_post_execution_fact_unavailable_resumes_without_native_replay():
     engine = db_engine()
     seed(engine)
     store, session, link, query = session_and_link(engine)
@@ -2833,7 +2854,7 @@ def test_observation_not_ready_waits_before_execution_then_reuses_same_candidate
             operation="native material observation",
             status_code=404,
             error_code="NATIVE_QUERY_OCCURRENCE_NOT_FOUND",
-            detail="producer occurrence is not visible yet",
+            detail="execution facts are not visible yet",
             payload={"dima/error-code": "NATIVE_QUERY_OCCURRENCE_NOT_FOUND"},
         )
     )
@@ -2852,10 +2873,10 @@ def test_observation_not_ready_waits_before_execution_then_reuses_same_candidate
         )
     assert exc.value.code == "NATIVE_QUERY_OCCURRENCE_NOT_FOUND"
     persisted = store.execution_link(link.id)
-    assert persisted.status == "CANDIDATE_CAPTURED"
-    assert persisted.native_result_json is None
-    assert first_bridge.calls == []
-    assert first_bridge.call_order == ["attest", "observe"]
+    assert persisted.status == "EXECUTED"
+    assert persisted.native_result_json is not None
+    assert first_bridge.calls == [query]
+    assert first_bridge.call_order[:3] == ["attest", "execute", "observe"]
 
     retry_session = ResearchManager.record_retryable_limitation(
         session,
@@ -2865,7 +2886,7 @@ def test_observation_not_ready_waits_before_execution_then_reuses_same_candidate
     )
     assert retry_session.obligations[0].state == ObligationState.DELEGATED
 
-    second_bridge = MaterialBridge()
+    second_bridge = MaterialBridge(fail_on_execute=True)
     outcome = executor.execute(
         principal=principal(),
         session=retry_session,
@@ -2878,12 +2899,11 @@ def test_observation_not_ready_waits_before_execution_then_reuses_same_candidate
         execution_link_id=link.id,
     )
     assert outcome.evidence.verified
-    assert second_bridge.calls == [query]
-    assert second_bridge.call_order[:3] == ["attest", "observe", "execute"]
+    assert second_bridge.calls == []
+    assert second_bridge.call_order[:2] == ["attest", "observe"]
     assert store.execution_link(link.id).status == "EXECUTED"
 
-
-def test_observer_422_and_state_mismatch_are_deterministic_no_retry():
+def test_observer_semantic_422_cannot_prevent_exact_execution():
     engine = db_engine()
     seed(engine)
     store, session, link, query = session_and_link(engine)
@@ -2897,37 +2917,74 @@ def test_observer_422_and_state_mismatch_are_deterministic_no_retry():
         store=store,
         expected_identity=expected_identity(),
     )
-
-    for status, code in (
-        (422, "NATIVE_MATERIAL_CHANGE_RANKING_UNPROVABLE"),
-        (409, "NATIVE_QUERY_STATE_MISMATCH"),
-    ):
-        bridge = MaterialBridge(
-            observation_error=NativeEngineEndpointError(
-                operation="native material observation",
-                status_code=status,
-                error_code=code,
-                detail="deterministic observer failure",
-                payload={"dima/error-code": code},
-            )
+    bridge = MaterialBridge(
+        observation_error=NativeEngineEndpointError(
+            operation="native material observation",
+            status_code=422,
+            error_code="NATIVE_MATERIAL_CHANGE_RANKING_UNPROVABLE",
+            detail="legacy semantic observer cannot classify physical shape",
+            payload={
+                "dima/error-code":
+                "NATIVE_MATERIAL_CHANGE_RANKING_UNPROVABLE"
+            },
         )
-        with pytest.raises(ResearchMaterialLimitation) as exc:
-            executor.execute(
-                principal=principal(),
-                session=session,
-                obligation_id="g1",
-                bridge=bridge,
-                native_conversation_id=link.native_conversation_id,
-                native_query_id=link.native_query_id,
-                native_query=query,
-                query_fingerprint=link.native_query_fingerprint,
-                execution_link_id=link.id,
-            )
-        assert exc.value.code == code
-        assert f"HTTP {status}" in exc.value.detail
-        assert bridge.calls == []
-        assert store.execution_link(link.id).status == "CANDIDATE_CAPTURED"
+    )
 
+    with pytest.raises(ResearchMaterialObservationUnavailable) as exc:
+        executor.execute(
+            principal=principal(),
+            session=session,
+            obligation_id="g1",
+            bridge=bridge,
+            native_conversation_id=link.native_conversation_id,
+            native_query_id=link.native_query_id,
+            native_query=query,
+            query_fingerprint=link.native_query_fingerprint,
+            execution_link_id=link.id,
+        )
+    assert exc.value.code == "NATIVE_MATERIAL_CHANGE_RANKING_UNPROVABLE"
+    assert bridge.calls == [query]
+    assert store.execution_link(link.id).status == "EXECUTED"
+
+
+def test_attestation_state_mismatch_remains_pre_execution_fail_closed():
+    engine = db_engine()
+    seed(engine)
+    store, session, link, query = session_and_link(engine)
+    subjects = NativeSubjectSessionProvider(
+        base_url="http://native.test",
+        expected_identity=expected_identity(),
+        db_engine=engine,
+    )
+    executor = NativeResearchMaterialExecutor(
+        subject_provider=subjects,
+        store=store,
+        expected_identity=expected_identity(),
+    )
+    bridge = MaterialBridge(
+        attestation_error=NativeEngineEndpointError(
+            operation="native attestation",
+            status_code=409,
+            error_code="NATIVE_QUERY_STATE_MISMATCH",
+            detail="persisted occurrence state drift",
+            payload={"dima/error-code": "NATIVE_QUERY_STATE_MISMATCH"},
+        )
+    )
+    with pytest.raises(ResearchMaterialLimitation) as exc:
+        executor.execute(
+            principal=principal(),
+            session=session,
+            obligation_id="g1",
+            bridge=bridge,
+            native_conversation_id=link.native_conversation_id,
+            native_query_id=link.native_query_id,
+            native_query=query,
+            query_fingerprint=link.native_query_fingerprint,
+            execution_link_id=link.id,
+        )
+    assert exc.value.code == "NATIVE_QUERY_STATE_MISMATCH"
+    assert bridge.calls == []
+    assert store.execution_link(link.id).status == "CANDIDATE_CAPTURED"
 
 def test_gateway_p14_has_no_second_planner_or_direct_dataset_escape():
     source = inspect.getsource(gateway_module)

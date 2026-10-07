@@ -583,6 +583,7 @@ class NativeEngineBridge:
             runtime_identity=body.get("runtime_identity"),
             payload=result,
             attestation=body.get("attestation"),
+            execution_facts=body.get("execution_facts"),
         )
 
     @staticmethod

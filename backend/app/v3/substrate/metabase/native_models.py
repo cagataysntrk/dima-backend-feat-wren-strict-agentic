@@ -78,6 +78,9 @@ class NativeExactOccurrenceExecutionObservation(BaseModel):
     runtime_identity: dict[str, Any]
     payload: dict[str, Any]
     attestation: dict[str, Any]
+    # Engine-owned post-execution fact extraction. This may be UNAVAILABLE
+    # without invalidating the already completed exact native execution.
+    execution_facts: dict[str, Any] | None = None
 
 
 class NativeProducedQuery(BaseModel):
@@ -153,6 +156,13 @@ class NativeMaterialRankingTarget(BaseModel):
     table_id: int | None = Field(default=None, gt=0)
 
 
+class NativeMaterialChangePeriods(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    baseline: NativeMaterialTemporalScope
+    comparison: NativeMaterialTemporalScope
+
+
 class NativeMaterialRanking(BaseModel):
     model_config = ConfigDict(frozen=True)
 
@@ -162,6 +172,7 @@ class NativeMaterialRanking(BaseModel):
     direction: Literal["asc", "desc"]
     limit: int | None = Field(default=None, ge=0)
     basis: Literal["level", "change"]
+    change_periods: NativeMaterialChangePeriods | None = None
 
 
 class NativeMaterialObservation(BaseModel):

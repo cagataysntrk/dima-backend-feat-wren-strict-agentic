@@ -16,7 +16,8 @@ from __future__ import annotations
 import hashlib
 import uuid
 from contextlib import contextmanager
-from datetime import datetime, timezone
+from calendar import monthrange
+from datetime import date, datetime, time, timedelta, timezone
 from typing import Any, Callable
 
 from sqlmodel import Session, select
@@ -24,6 +25,9 @@ from sqlmodel import Session, select
 from app.v3.analytical_boundary import (
     AnalyticalBoundaryError,
     AnalyticalEngineIdentityV1,
+    AnalyticalFilterV1,
+    AnalyticalObservedTemporalScopeV1,
+    AnalyticalRankingV1,
     project_analytical_intent_v1,
     project_execution_manifest_v1,
     verify_analytical_fulfillment_v1,
@@ -39,18 +43,12 @@ from app.v3.execution_identity import (
 from app.v3.research import ResearchSession
 from app.v3.research_analytical_scope import (
     NativeMaterialBinding,
-    ResearchAnalyticalScopeError,
     analytical_scope_contract,
-    assert_material_native_scope,
 )
 from app.v3.research_product import (
     ResearchMaterialLimitation,
     ResearchMaterialObservationUnavailable,
     ResearchMaterialOutcome,
-)
-from app.v3.research_material_coverage import (
-    ResearchMaterialCoverageError,
-    assert_material_result_coverage,
 )
 from app.v3.research_result_dependency import (
     ResultDependencyProjectionError,
@@ -67,6 +65,7 @@ from app.v3.substrate.metabase.native_engine import (
 from app.v3.substrate.metabase.native_models import (
     NativeEngineIdentity,
     NativeEngineRequest,
+    NativeMaterialObservation,
 )
 from control_plane.authorize import Principal
 from control_plane.db import engine as control_plane_engine
@@ -662,7 +661,7 @@ class NativeResearchMaterialExecutor:
         native_conversation_id: uuid.UUID,
         native_query_id: str,
         metabase_user_id: int,
-    ) -> tuple[str, str]:
+    ) -> tuple[str, str, int]:
         try:
             envelope = bridge.attest_native_query(
                 conversation_id=native_conversation_id,
@@ -713,92 +712,530 @@ class NativeResearchMaterialExecutor:
         self._subjects.assert_engine_identity(runtime)
         fingerprint = str(manifest.get("exact_pmbql_fingerprint") or "")
         attestation_id = str(manifest.get("attestation_id") or "")
-        if len(fingerprint) != 64 or not attestation_id:
+        database_id = manifest.get("database_id")
+        if (
+            len(fingerprint) != 64
+            or not attestation_id
+            or not isinstance(database_id, int)
+            or database_id <= 0
+        ):
             raise ResearchMaterialLimitation(
                 "P14_NATIVE_ATTESTATION_IDENTITY_INCOMPLETE",
-                "attestation lacks exact persisted fingerprint or attestation id",
+                "attestation lacks exact persisted fingerprint, attestation id, or database id",
                 last_valid_boundary="dima.native.generate",
                 first_invalid_boundary="dima.native.attest",
             )
-        return fingerprint, attestation_id
+        return fingerprint, attestation_id, database_id
 
-    def _observe_scope(
+    def _validate_execution_facts_provenance(
         self,
         *,
-        principal: Principal,
-        bridge: NativeEngineBridge,
-        session: ResearchSession,
-        obligation_id: str,
+        observation: NativeMaterialObservation,
         native_conversation_id: uuid.UUID,
         native_query_id: str,
-        query_fingerprint: str,
         metabase_user_id: int,
-        analytical_scope: AnalyticalRequestContract | None = None,
-    ):
-        contract = analytical_scope or analytical_scope_contract(
-            session=session,
-            obligation_id=obligation_id,
-        )
-        self._assert_scope_fingerprint(
-            session=session,
-            contract=contract,
-        )
-        bindings = self._material_bindings(
-            principal=principal,
-            session=session,
-            contract=contract,
-        )
+    ) -> NativeMaterialObservation:
+        """Validate only occurrence/runtime provenance; never business meaning."""
+
+        if (
+            observation.conversation_id != native_conversation_id
+            or observation.native_query_id != native_query_id
+        ):
+            raise ResearchMaterialLimitation(
+                "P14_NATIVE_EXECUTION_FACT_OCCURRENCE_MISMATCH",
+                "execution facts belong to another native occurrence",
+                last_valid_boundary="dima.native.execute",
+                first_invalid_boundary="dima.native.observe",
+            )
+        if observation.authenticated_metabase_subject != int(metabase_user_id):
+            raise ResearchMaterialLimitation(
+                "P14_NATIVE_SUBJECT_MISMATCH",
+                "execution facts belong to another native subject",
+                last_valid_boundary="dima.native.execute",
+                first_invalid_boundary="dima.native.observe",
+            )
+        self._subjects.assert_engine_identity(observation.runtime_identity)
+        return observation
+
+    def _observe_executed_occurrence(
+        self,
+        *,
+        bridge: NativeEngineBridge,
+        native_conversation_id: uuid.UUID,
+        native_query_id: str,
+        metabase_user_id: int,
+    ) -> NativeMaterialObservation:
+        """Read structural facts after exact execution; never execute analytics."""
+
         try:
             observation = bridge.observe_native_query_material(
                 conversation_id=native_conversation_id,
                 native_query_id=native_query_id,
             )
         except NativeEngineBridgeError as exc:
-            self._raise_readiness_failure(
-                exc,
-                boundary="dima.native.observe",
+            if isinstance(exc, NativeEngineEndpointError):
+                code = exc.error_code or f"P14_NATIVE_FACT_HTTP_{exc.status_code}"
+                detail = self._engine_failure_detail(exc)
+            else:
+                code = "P14_NATIVE_EXECUTION_FACTS_UNAVAILABLE"
+                detail = str(exc)
+            raise ResearchMaterialObservationUnavailable(
+                code,
+                detail,
+                last_valid_boundary="dima.native.execute",
+                first_invalid_boundary="dima.native.observe",
+            ) from exc
+        return self._validate_execution_facts_provenance(
+            observation=observation,
+            native_conversation_id=native_conversation_id,
+            native_query_id=native_query_id,
+            metabase_user_id=metabase_user_id,
+        )
+
+    def _execution_fact_observation(
+        self,
+        *,
+        bridge: NativeEngineBridge,
+        execution_observation,
+        native_conversation_id: uuid.UUID,
+        native_query_id: str,
+        metabase_user_id: int,
+    ) -> NativeMaterialObservation:
+        facts = execution_observation.execution_facts
+        if isinstance(facts, dict):
+            status = str(facts.get("status") or "")
+            raw_observation = facts.get("observation")
+            if status == "OBSERVED" and isinstance(raw_observation, dict):
+                try:
+                    observation = NativeMaterialObservation.model_validate(
+                        raw_observation
+                    )
+                except ValueError as exc:
+                    raise ResearchMaterialLimitation(
+                        "P14_NATIVE_EXECUTION_FACTS_INVALID",
+                        str(exc),
+                        last_valid_boundary="dima.native.execute",
+                        first_invalid_boundary="dima.native.observe",
+                    ) from exc
+                return self._validate_execution_facts_provenance(
+                    observation=observation,
+                    native_conversation_id=native_conversation_id,
+                    native_query_id=native_query_id,
+                    metabase_user_id=metabase_user_id,
+                )
+            if status == "UNAVAILABLE":
+                raise ResearchMaterialObservationUnavailable(
+                    str(
+                        facts.get("error_code")
+                        or "P14_NATIVE_EXECUTION_FACTS_UNAVAILABLE"
+                    ),
+                    str(facts.get("detail") or "execution facts are unavailable"),
+                    last_valid_boundary="dima.native.execute",
+                    first_invalid_boundary="dima.native.observe",
+                )
+        # Backward-compatible seam for a pre-11.3 engine during provider-free
+        # migration. It is still post-execution and read-only.
+        return self._observe_executed_occurrence(
+            bridge=bridge,
+            native_conversation_id=native_conversation_id,
+            native_query_id=native_query_id,
+            metabase_user_id=metabase_user_id,
+        )
+
+    def _projection_bindings(
+        self,
+        *,
+        principal: Principal,
+        session: ResearchSession,
+    ) -> tuple[NativeResourceBinding, ...]:
+        """Load accepted-scope native identities without selecting by intent."""
+
+        brief = session.accepted_brief
+        if brief is None:
+            raise ResearchMaterialLimitation(
+                "ANALYTICAL_V1_ACCEPTED_BRIEF_REQUIRED",
+                "execution fact projection requires immutable accepted scope",
             )
-            raise AssertionError("unreachable")
-        if (
-            observation.conversation_id != native_conversation_id
-            or observation.native_query_id != native_query_id
+        accepted_ids = {item.candidate_id for item in brief.scope.semantic_refs}
+        tenant_id = _tenant_uuid(principal, session)
+        with Session(self._subjects.db_engine) as db:
+            rows = db.exec(
+                select(NativeResourceBinding)
+                .where(NativeResourceBinding.tenant_id == tenant_id)
+                .where(
+                    NativeResourceBinding.semantic_context_version
+                    == session.context_version
+                )
+                .where(NativeResourceBinding.enabled == True)  # noqa: E712
+            ).all()
+        return tuple(row for row in rows if row.candidate_id in accepted_ids)
+
+    @staticmethod
+    def _one_projection_binding(
+        matches: list[NativeResourceBinding],
+        *,
+        fact: str,
+    ) -> NativeResourceBinding:
+        if len(matches) != 1:
+            raise ResearchMaterialLimitation(
+                "ANALYTICAL_V1_EXECUTION_FACT_BINDING_AMBIGUOUS",
+                f"{fact}: expected one governed native binding, observed {len(matches)}",
+                last_valid_boundary="dima.native.observe",
+                first_invalid_boundary="dima.execution_manifest.project",
+            )
+        return matches[0]
+
+    @classmethod
+    def _metric_projection_binding(
+        cls,
+        bindings: tuple[NativeResourceBinding, ...],
+        *,
+        metric_id: int | None,
+        metric_entity_id: str | None,
+    ) -> NativeResourceBinding:
+        matches = [
+            item
+            for item in bindings
+            if item.candidate_kind in {"metric", "kpi"}
+            and (
+                metric_id is None
+                or item.metabase_metric_id == metric_id
+            )
+            and (
+                not metric_entity_id
+                or item.metabase_entity_id == metric_entity_id
+            )
+        ]
+        return cls._one_projection_binding(matches, fact="native metric")
+
+    @classmethod
+    def _field_projection_binding(
+        cls,
+        bindings: tuple[NativeResourceBinding, ...],
+        *,
+        field_id: int,
+        table_id: int | None,
+        literal: object | None = None,
+    ) -> NativeResourceBinding:
+        matches = [
+            item
+            for item in bindings
+            if item.metabase_field_id == field_id
+            and (table_id is None or item.metabase_table_id == table_id)
+        ]
+        if literal is not None:
+            literal_text = str(literal)
+            entity_matches = [
+                item
+                for item in matches
+                if item.candidate_kind == "entity_value"
+                and (
+                    item.canonical_name == literal_text
+                    or item.candidate_id == literal_text
+                )
+            ]
+            if len(entity_matches) == 1:
+                return entity_matches[0]
+        dimension_matches = [
+            item for item in matches if item.candidate_kind == "dimension"
+        ]
+        if len(dimension_matches) == 1:
+            return dimension_matches[0]
+        return cls._one_projection_binding(matches, fact=f"native field:{field_id}")
+
+    @staticmethod
+    def _parse_temporal_value(value: object) -> datetime | None:
+        if isinstance(value, datetime):
+            parsed = value
+        elif isinstance(value, date):
+            parsed = datetime.combine(value, time.min)
+        elif isinstance(value, str):
+            raw = value.strip()
+            try:
+                if "T" not in raw:
+                    parsed = datetime.combine(date.fromisoformat(raw), time.min)
+                else:
+                    parsed = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+            except ValueError:
+                return None
+        else:
+            return None
+        if parsed.tzinfo is None or parsed.utcoffset() is None:
+            return parsed.replace(tzinfo=timezone.utc)
+        return parsed.astimezone(timezone.utc)
+
+    @staticmethod
+    def _wire_temporal_value(value: object) -> str:
+        parsed = NativeResearchMaterialExecutor._parse_temporal_value(value)
+        if parsed is None:
+            return str(value)
+        return parsed.isoformat().replace("+00:00", "Z")
+
+    @staticmethod
+    def _advance_temporal_bucket(value: datetime, grain: str) -> datetime | None:
+        if grain == "minute":
+            return value + timedelta(minutes=1)
+        if grain == "hour":
+            return value + timedelta(hours=1)
+        if grain == "day":
+            return value + timedelta(days=1)
+        if grain == "week":
+            return value + timedelta(weeks=1)
+        months = {"month": 1, "quarter": 3, "year": 12}.get(grain)
+        if months is None:
+            return None
+        ordinal = value.year * 12 + (value.month - 1) + months
+        year, month0 = divmod(ordinal, 12)
+        month = month0 + 1
+        day = min(value.day, monthrange(year, month)[1])
+        return value.replace(year=year, month=month, day=day)
+
+    def _project_execution_manifest(
+        self,
+        *,
+        principal: Principal,
+        session: ResearchSession,
+        contract: AnalyticalRequestContract,
+        consumer_ids: tuple[str, ...],
+        observation: NativeMaterialObservation,
+        runtime: RuntimeIdentity,
+        execution_link_id: uuid.UUID,
+        query_fingerprint: str,
+        result: ExecutionResultSnapshot,
+    ):
+        """Pure native-fact -> ExecutionManifest projection; no fulfillment verdict."""
+
+        bindings = self._projection_bindings(
+            principal=principal,
+            session=session,
+        )
+        if any(
+            item.metabase_database_id != observation.database_id
+            for item in bindings
+            if (
+                item.metabase_metric_id is not None
+                or item.metabase_field_id is not None
+            )
         ):
             raise ResearchMaterialLimitation(
-                "R1_NATIVE_OCCURRENCE_SCOPE_MISMATCH",
-                "material observation belongs to another native occurrence",
+                "ANALYTICAL_V1_EXECUTION_DATABASE_MISMATCH",
+                "observed native facts and accepted-scope bindings use different databases",
+                last_valid_boundary="dima.native.observe",
+                first_invalid_boundary="dima.execution_manifest.project",
             )
-        # The execution fingerprint and the material-observation fingerprint are
-        # exact identities in different representation domains:
-        #   - query_fingerprint: raw generated query A, proven unchanged at /api/dataset
-        #   - observation.query_fingerprint: the same persisted occurrence after
-        #     Metabase's own Lib restore/exact-serialization boundary.
-        # Do not compare those byte hashes across domains. Occurrence identity remains
-        # fail-closed through conversation_id + native_query_id, authenticated subject,
-        # engine identity, and the engine's producer/state equality checks.
-        try:
-            request = assert_material_native_scope(
-                session=session,
-                obligation_id=obligation_id,
-                contract=contract,
-                observation=observation,
-                bindings=bindings,
-                expected_engine=self._expected,
-                expected_metabase_subject=metabase_user_id,
+
+        metrics = tuple(
+            dict.fromkeys(
+                self._metric_projection_binding(
+                    bindings,
+                    metric_id=item.metabase_metric_id,
+                    metric_entity_id=item.metabase_metric_entity_id,
+                ).candidate_id
+                for item in observation.native_metrics
             )
-        except ResearchAnalyticalScopeError as exc:
-            raise ResearchMaterialLimitation(
-                exc.code,
-                exc.detail,
-                last_valid_boundary=exc.last_valid_boundary,
-                first_invalid_boundary=exc.first_invalid_boundary,
-                expected_fingerprint=exc.expected_fingerprint,
-                observed_fingerprint=exc.observed_fingerprint,
-                scope_fingerprint=exc.scope_fingerprint,
-                material_fingerprint=exc.material_fingerprint,
-                expected_semantic_shape=exc.expected_semantic_shape,
-                observed_semantic_shape=exc.observed_semantic_shape,
-            ) from exc
-        return request, observation
+        )
+
+        dimension_pairs: list[tuple[str, object]] = []
+        for item in observation.dimensions:
+            if item.role != "breakout":
+                continue
+            projected = self._field_projection_binding(
+                bindings,
+                field_id=item.field_id,
+                table_id=item.table_id,
+            )
+            dimension_pairs.append((projected.candidate_id, item))
+        dimensions = tuple(dict.fromkeys(item[0] for item in dimension_pairs))
+        row_grain = dimensions
+
+        filters: list[AnalyticalFilterV1] = []
+        for item in observation.filters:
+            if item.operator != "=" or len(item.values) != 1:
+                raise ResearchMaterialLimitation(
+                    "ANALYTICAL_V1_EXECUTION_FILTER_FACT_UNSUPPORTED",
+                    "canonical filter projection requires one observed equality literal",
+                    last_valid_boundary="dima.native.observe",
+                    first_invalid_boundary="dima.execution_manifest.project",
+                )
+            projected = self._field_projection_binding(
+                bindings,
+                field_id=item.field_id,
+                table_id=item.table_id,
+                literal=item.values[0],
+            )
+            filters.append(
+                AnalyticalFilterV1(
+                    semantic_ref=f"native-field:{item.field_id}",
+                    dimension_semantic_id=projected.candidate_id,
+                    value=str(item.values[0]),
+                )
+            )
+
+        temporal_scopes: list[AnalyticalObservedTemporalScopeV1] = []
+        temporal_candidates: list[str] = []
+        for item in observation.temporal_scopes:
+            if item.lower_bound is None or item.upper_bound is None:
+                continue
+            projected = self._field_projection_binding(
+                bindings,
+                field_id=item.time_field_id,
+                table_id=item.table_id,
+            )
+            temporal_candidates.append(projected.candidate_id)
+            temporal_scopes.append(
+                AnalyticalObservedTemporalScopeV1(
+                    time_dimension_semantic_id=projected.candidate_id,
+                    start=self._wire_temporal_value(item.lower_bound),
+                    end=self._wire_temporal_value(item.upper_bound),
+                    source="native_filter",
+                )
+            )
+
+        rankings: list[AnalyticalRankingV1] = []
+        for item in observation.ranking:
+            if item.target.kind != "metric":
+                continue
+            projected = self._metric_projection_binding(
+                bindings,
+                metric_id=item.target.metabase_metric_id,
+                metric_entity_id=item.target.metabase_metric_entity_id,
+            )
+            rankings.append(
+                AnalyticalRankingV1(
+                    kind="native_metric",
+                    metric=projected.candidate_id,
+                    basis=item.basis,
+                    direction=item.direction,
+                    top_k=item.limit if item.limit and item.limit > 0 else None,
+                )
+            )
+            if item.change_periods is not None:
+                for source, scope in (
+                    ("change_baseline", item.change_periods.baseline),
+                    ("change_comparison", item.change_periods.comparison),
+                ):
+                    if scope.lower_bound is None or scope.upper_bound is None:
+                        continue
+                    time_binding = self._field_projection_binding(
+                        bindings,
+                        field_id=scope.time_field_id,
+                        table_id=scope.table_id,
+                    )
+                    temporal_candidates.append(time_binding.candidate_id)
+                    temporal_scopes.append(
+                        AnalyticalObservedTemporalScopeV1(
+                            time_dimension_semantic_id=time_binding.candidate_id,
+                            start=self._wire_temporal_value(scope.lower_bound),
+                            end=self._wire_temporal_value(scope.upper_bound),
+                            source=source,
+                        )
+                    )
+
+        data = result.payload.get("data")
+        data = data if isinstance(data, dict) else {}
+        columns = tuple(data.get("cols") or ())
+        rows = tuple(data.get("rows") or ())
+        for semantic_id, dimension in dimension_pairs:
+            grain = getattr(dimension, "temporal_grain", None)
+            if not grain:
+                continue
+            column_index = next(
+                (
+                    index
+                    for index, column in enumerate(columns)
+                    if isinstance(column, dict)
+                    and column.get("id") == dimension.field_id
+                    and (
+                        dimension.table_id is None
+                        or column.get("table_id") == dimension.table_id
+                    )
+                ),
+                None,
+            )
+            if column_index is None:
+                continue
+            temporal_candidates.append(semantic_id)
+            seen_values: set[str] = set()
+            for row in rows:
+                if not isinstance(row, (list, tuple)) or column_index >= len(row):
+                    continue
+                start = self._parse_temporal_value(row[column_index])
+                if start is None:
+                    continue
+                end = self._advance_temporal_bucket(start, grain)
+                if end is None:
+                    continue
+                key = start.isoformat()
+                if key in seen_values:
+                    continue
+                seen_values.add(key)
+                temporal_scopes.append(
+                    AnalyticalObservedTemporalScopeV1(
+                        time_dimension_semantic_id=semantic_id,
+                        start=self._wire_temporal_value(start),
+                        end=self._wire_temporal_value(end),
+                        source="result_bucket",
+                    )
+                )
+
+        temporal_ids = tuple(dict.fromkeys(temporal_candidates))
+        temporal_observation_dimension = (
+            temporal_ids[0] if len(temporal_ids) == 1 else None
+        )
+        currentness_token = (
+            f"{session.lineage_id}:{contract.scope_identity.version_id}"
+        )
+        native_subject_ref = (
+            f"metabase-user:{observation.authenticated_metabase_subject}"
+        )
+        security_fingerprint = hashlib.sha256(
+            "|".join(
+                (
+                    session.tenant_binding,
+                    session.principal_subject,
+                    native_subject_ref,
+                    ",".join(sorted(principal.roles)),
+                )
+            ).encode("utf-8")
+        ).hexdigest()
+        return project_execution_manifest_v1(
+            execution_id=f"native-occurrence:{execution_link_id}",
+            consumer_intent_ids=consumer_ids,
+            metrics=metrics,
+            dimensions=dimensions,
+            filters=tuple(filters),
+            observed_temporal_scopes=tuple(
+                dict.fromkeys(temporal_scopes)
+            ),
+            temporal_observation_dimension=temporal_observation_dimension,
+            rankings=tuple(rankings),
+            row_grain=row_grain,
+            semantic_context_version=contract.semantic_context_version,
+            scope_lineage_id=contract.scope_identity.lineage_id,
+            scope_version_id=contract.scope_identity.version_id,
+            scope_fingerprint=contract.scope_fingerprint,
+            tenant_id=session.tenant_binding,
+            principal_id=session.principal_subject,
+            currentness_token=currentness_token,
+            security_fingerprint=security_fingerprint,
+            query_fingerprint=query_fingerprint,
+            result_hash=result.result_hash,
+            engine_identity=AnalyticalEngineIdentityV1(
+                repository=runtime.repository or self._expected.repository,
+                revision_sha=runtime.revision_sha,
+                runtime_tag=runtime.runtime_tag,
+                image_digest=runtime.image_digest,
+            ),
+            data_columns=columns,
+            data_rows=rows,
+            metadata={
+                "native_conversation_id": str(observation.conversation_id),
+                "native_query_id": observation.native_query_id,
+                "material_observation_schema": observation.schema_version,
+                "observed_query_fingerprint": observation.query_fingerprint,
+            },
+        )
+
 
     @staticmethod
     def _row_count(payload: dict[str, Any]) -> int:
@@ -896,27 +1333,17 @@ class NativeResearchMaterialExecutor:
             contract=contract,
         )
 
-        # Lifecycle law: readiness/attestation and semantic material observation
-        # must succeed before analytical execution is allowed to start.
+        # Structural readiness is fail-closed before execution. Business
+        # fulfillment is deliberately absent from this pre-execution boundary.
         (
             exact_pmbql_fingerprint,
             attestation_id,
+            attested_database_id,
         ) = self._attest_occurrence(
             bridge=bridge,
             native_conversation_id=native_conversation_id,
             native_query_id=native_query_id,
             metabase_user_id=int(binding.metabase_user_id),
-        )
-        scope_observation, material_observation = self._observe_scope(
-            principal=principal,
-            bridge=bridge,
-            session=session,
-            obligation_id=obligation_id,
-            native_conversation_id=native_conversation_id,
-            native_query_id=native_query_id,
-            query_fingerprint=query_fingerprint,
-            metabase_user_id=int(binding.metabase_user_id),
-            analytical_scope=contract,
         )
 
         if link.status == "EXECUTED":
@@ -942,6 +1369,12 @@ class NativeResearchMaterialExecutor:
                     "persisted native result hash no longer matches its payload",
                 )
             runtime = RuntimeIdentity.model_validate(runtime_payload)
+            material_observation = self._observe_executed_occurrence(
+                bridge=bridge,
+                native_conversation_id=native_conversation_id,
+                native_query_id=native_query_id,
+                metabase_user_id=int(binding.metabase_user_id),
+            )
         else:
             self._store.mark_execution_started(
                 execution_link_id,
@@ -958,7 +1391,7 @@ class NativeResearchMaterialExecutor:
                 raise ResearchMaterialLimitation(
                     "P14_NATIVE_EXECUTION_OUTCOME_UNKNOWN",
                     str(exc),
-                    last_valid_boundary="dima.native.observe",
+                    last_valid_boundary="dima.native.attest",
                     first_invalid_boundary="dima.native.execute",
                 ) from exc
             except NativeEngineEndpointError as exc:
@@ -966,14 +1399,14 @@ class NativeResearchMaterialExecutor:
                     exc.error_code
                     or f"P14_NATIVE_EXECUTION_HTTP_{exc.status_code}",
                     self._engine_failure_detail(exc),
-                    last_valid_boundary="dima.native.observe",
+                    last_valid_boundary="dima.native.attest",
                     first_invalid_boundary="dima.native.execute",
                 ) from exc
             except NativeEngineBridgeError as exc:
                 raise ResearchMaterialLimitation(
                     "P14_NATIVE_EXECUTION_PROTOCOL_FAILED",
                     str(exc),
-                    last_valid_boundary="dima.native.observe",
+                    last_valid_boundary="dima.native.attest",
                     first_invalid_boundary="dima.native.execute",
                 ) from exc
 
@@ -984,21 +1417,21 @@ class NativeResearchMaterialExecutor:
                 raise ResearchMaterialLimitation(
                     "P14_NATIVE_EXECUTION_OCCURRENCE_MISMATCH",
                     "exact-occurrence execution returned another native occurrence",
-                    last_valid_boundary="dima.native.observe",
+                    last_valid_boundary="dima.native.attest",
                     first_invalid_boundary="dima.native.execute",
                 )
             if observed.executed_pmbql_fingerprint != exact_pmbql_fingerprint:
                 raise ResearchMaterialLimitation(
                     "P14_NATIVE_EXECUTION_FINGERPRINT_MISMATCH",
                     "executed pMBQL fingerprint differs from the authorized occurrence",
-                    last_valid_boundary="dima.native.observe",
+                    last_valid_boundary="dima.native.attest",
                     first_invalid_boundary="dima.native.execute",
                 )
             if observed.attestation_id != attestation_id:
                 raise ResearchMaterialLimitation(
                     "P14_NATIVE_EXECUTION_ATTESTATION_MISMATCH",
                     "execution attestation differs from the pre-execution attestation",
-                    last_valid_boundary="dima.native.observe",
+                    last_valid_boundary="dima.native.attest",
                     first_invalid_boundary="dima.native.execute",
                 )
 
@@ -1009,9 +1442,11 @@ class NativeResearchMaterialExecutor:
             )
             runtime = self._runtime_identity(
                 raw=observed.runtime_identity,
-                database_id=material_observation.database_id,
+                database_id=attested_database_id,
             )
             executed_at = datetime.now(timezone.utc)
+            # Persist exact execution before any read-only fact extraction can
+            # fail. Resume may re-observe facts but never replay native work.
             self._store.mark_executed(
                 execution_link_id,
                 native_subject_ref=native_subject_ref,
@@ -1020,30 +1455,28 @@ class NativeResearchMaterialExecutor:
                 result_hash=result.result_hash,
                 executed_at=executed_at,
             )
-        coverage_bindings = self._material_bindings(
+            material_observation = self._execution_fact_observation(
+                bridge=bridge,
+                execution_observation=observed,
+                native_conversation_id=native_conversation_id,
+                native_query_id=native_query_id,
+                metabase_user_id=int(binding.metabase_user_id),
+            )
+
+        # The ExecutionManifest is projected from observed native/result facts.
+        # There is no material-scope or result-coverage business verdict here.
+        execution_manifest = self._project_execution_manifest(
             principal=principal,
             session=session,
             contract=contract,
+            consumer_ids=consumer_ids,
+            observation=material_observation,
+            runtime=runtime,
+            execution_link_id=execution_link_id,
+            query_fingerprint=query_fingerprint,
+            result=result,
         )
-        try:
-            result_coverage = assert_material_result_coverage(
-                contract=contract,
-                result_payload=result_payload,
-                bindings=coverage_bindings,
-                # _observe_scope above already proved the exact persisted
-                # occurrence against accepted native material semantics.
-                # Result coverage may therefore accept a derived CHANGE
-                # projection that no longer repeats the intermediate time
-                # column; this is proof propagation, not relaxed planning.
-                attested_native_material=True,
-            )
-        except ResearchMaterialCoverageError as exc:
-            raise ResearchMaterialLimitation(exc.code, exc.detail) from exc
 
-        # Final V1 anti-corruption admission. R5/native-scope and result-coverage
-        # remain independent proof producers; this boundary is the one final
-        # business/material compatibility decision before governed Evidence can
-        # be minted. It never inspects SQL/MBQL or replans Metabase work.
         brief = session.accepted_brief
         if brief is None:
             raise ResearchMaterialLimitation(
@@ -1072,15 +1505,6 @@ class NativeResearchMaterialExecutor:
             ).encode("utf-8")
         ).hexdigest()
         try:
-            acquisition_intent = project_analytical_intent_v1(
-                question=questions_by_id[obligation_id],
-                scope=brief.scope,
-                contract=contract,
-                tenant_id=session.tenant_binding,
-                principal_id=session.principal_subject,
-                currentness_token=currentness_token,
-                security_fingerprint=security_fingerprint,
-            )
             consumer_intents = tuple(
                 project_analytical_intent_v1(
                     question=questions_by_id[consumer_id],
@@ -1096,30 +1520,6 @@ class NativeResearchMaterialExecutor:
                 )
                 for consumer_id in consumer_ids
             )
-            data = result_payload.get("data")
-            data = data if isinstance(data, dict) else {}
-            execution_manifest = project_execution_manifest_v1(
-                intent=acquisition_intent,
-                observation=scope_observation,
-                execution_id=f"native-occurrence:{execution_link_id}",
-                query_fingerprint=query_fingerprint,
-                result_hash=result.result_hash,
-                engine_identity=AnalyticalEngineIdentityV1(
-                    repository=runtime.repository or self._expected.repository,
-                    revision_sha=runtime.revision_sha,
-                    runtime_tag=runtime.runtime_tag,
-                    image_digest=runtime.image_digest,
-                ),
-                data_columns=tuple(data.get("cols") or ()),
-                data_rows=tuple(data.get("rows") or ()),
-                fulfilled_intent_ids=consumer_ids,
-                metadata={
-                    "native_conversation_id": str(native_conversation_id),
-                    "native_query_id": native_query_id,
-                    "material_observation_schema": material_observation.schema_version,
-                    "result_coverage_status": result_coverage.status,
-                },
-            )
             for consumer_intent in consumer_intents:
                 verify_analytical_fulfillment_v1(
                     consumer_intent,
@@ -1129,7 +1529,7 @@ class NativeResearchMaterialExecutor:
             raise ResearchMaterialLimitation(
                 exc.code,
                 exc.detail,
-                last_valid_boundary="dima.native.result_coverage",
+                last_valid_boundary="dima.execution_manifest.project",
                 first_invalid_boundary="dima.evidence.admit",
                 scope_fingerprint=contract.scope_fingerprint,
                 material_fingerprint=contract.material_fingerprint,
@@ -1177,9 +1577,7 @@ class NativeResearchMaterialExecutor:
                 "attestation_id": attestation_id,
                 "exact_pmbql_fingerprint": exact_pmbql_fingerprint,
                 "observed_query_fingerprint": material_observation.query_fingerprint,
-                "scope_identity": scope_observation.scope_identity.model_dump(
-                    mode="json"
-                ),
+                "scope_identity": contract.scope_identity.model_dump(mode="json"),
                 "material_native_metrics": [
                     item.model_dump(mode="json")
                     for item in material_observation.native_metrics
@@ -1200,9 +1598,7 @@ class NativeResearchMaterialExecutor:
                     item.model_dump(mode="json")
                     for item in material_observation.ranking
                 ],
-                "material_result_coverage": result_coverage.model_dump(
-                    mode="json"
-                ),
+                "execution_manifest": execution_manifest.model_dump(mode="json"),
                 "fulfilled_intent_ids": list(consumer_ids),
                 "native_subject_ref": native_subject_ref,
                 "result_hash": result.result_hash,
