@@ -38,6 +38,7 @@ from app.v3.research_contracts import (
     TemporalChangeFrameMode,
     TemporalRole,
 )
+from app.v3.research_analytical_scope import analytical_scope_contract
 from app.v3.research_product import ResearchBriefAuthoritySealer
 from app.v3.research_scope_patch import (
     ScopePatchFacet,
@@ -593,3 +594,102 @@ def test_semantic_authority_collapse_metamorphic_matrix(
         assert result.deliverables[0].status == "FULFILLED"
         assert transport.call_count == 1
         assert transport.native_call_count == 0
+
+
+def test_same_scope_continuation_inherits_governed_metric_authority() -> None:
+    """Omitted metric facet inherits accepted scope; it is not a clear operation."""
+
+    scope = _scope(
+        metric_count=3,
+        dimension_id="dimension.d1",
+        frame="SPAN",
+        reverse=False,
+    )
+    continuation = ResearchQuestion(
+        goal_id="goal.continuation",
+        kind=ResearchGoalKind.COMPARISON,
+        source_text="compare change inside the current narrowed scope",
+        subject_refs=(),
+        related_refs=(_dimension("dimension.d1"),),
+        status=ResearchGoalStatus.RESOLVED,
+    )
+    brief = ResearchBrief(
+        brief_id="brief.continuation",
+        objective="continue analysis inside the accepted scope",
+        scope=scope,
+        questions=(continuation,),
+        deliverables=(),
+        must_requirement_ids=(continuation.goal_id,),
+        context_version="ctx-semantic-authority-v1",
+        status=ResearchBriefStatus.READY_FOR_RESEARCH,
+    )
+    session = SimpleNamespace(
+        accepted_brief=brief,
+        context_version=brief.context_version,
+        authority_id="authority.continuation",
+        session_id="session.continuation",
+        lineage_id="lineage.continuation",
+        scope_fingerprint=scope_fingerprint(
+            scope,
+            context_version=brief.context_version,
+        ),
+    )
+
+    contract = analytical_scope_contract(
+        session=session,
+        obligation_id=continuation.goal_id,
+    )
+
+    assert set(contract.metric_refs) == {
+        "metric.m1",
+        "metric.m2",
+        "metric.m3",
+    }
+    assert contract.scope_identity.version_id == "scope_v1"
+
+
+def test_explicit_goal_metric_still_narrows_scope_metric_authority() -> None:
+    """Explicit current-turn metric authority wins over inherited scope metrics."""
+
+    scope = _scope(
+        metric_count=3,
+        dimension_id="dimension.d1",
+        frame="SPAN",
+        reverse=False,
+    )
+    continuation = ResearchQuestion(
+        goal_id="goal.explicit",
+        kind=ResearchGoalKind.OTHER,
+        source_text="continue with the explicitly selected measure",
+        subject_refs=(_metric("metric.m2"),),
+        related_refs=(_dimension("dimension.d1"),),
+        status=ResearchGoalStatus.RESOLVED,
+    )
+    brief = ResearchBrief(
+        brief_id="brief.explicit",
+        objective="continue with one governed measure",
+        scope=scope,
+        questions=(continuation,),
+        deliverables=(),
+        must_requirement_ids=(continuation.goal_id,),
+        context_version="ctx-semantic-authority-v1",
+        status=ResearchBriefStatus.READY_FOR_RESEARCH,
+    )
+    session = SimpleNamespace(
+        accepted_brief=brief,
+        context_version=brief.context_version,
+        authority_id="authority.explicit",
+        session_id="session.explicit",
+        lineage_id="lineage.explicit",
+        scope_fingerprint=scope_fingerprint(
+            scope,
+            context_version=brief.context_version,
+        ),
+    )
+
+    contract = analytical_scope_contract(
+        session=session,
+        obligation_id=continuation.goal_id,
+    )
+
+    assert contract.metric_refs == ("metric.m2",)
