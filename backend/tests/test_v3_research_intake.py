@@ -1494,7 +1494,7 @@ def test_non_temporal_clarification_remains_fail_closed_after_bounded_reconsider
         "terminal": "CLARIFY",
         "clarification_question": "Which governed metric do you mean?",
     }
-    transport = SequenceTransport([clarify, clarify])
+    transport = SequenceTransport([clarify, clarify, clarify])
     result = ResearchIntakeCompiler(
         transport=transport,
         calendar_reference_date="2026-09-30",
@@ -1503,8 +1503,9 @@ def test_non_temporal_clarification_remains_fail_closed_after_bounded_reconsider
         catalog=_temporal_catalog(),
     )
     assert result.terminal == ResearchIntakeTerminal.CLARIFY
-    assert result.model_calls == 2
+    assert result.model_calls == 3
     assert result.brief is None
+    assert transport.calls[2]["schema_name"].endswith("_persistent_change_frame")
 
 
 def test_single_domain_report_only_intent_gets_one_grounded_overview_reconsideration():
@@ -2646,6 +2647,74 @@ def test_temporal_clarification_reconsideration_accepts_bounded_root_change_span
         == "SPAN_MATERIAL_WINDOW"
     )
     assert reconsideration["frame_policy"]["invent_additional_comparison_period"] is False
+
+
+def test_persistent_temporal_clarification_uses_closed_frame_then_rebinds_intent():
+    question = (
+        "Investigate governed change over the accepted bounded interval and "
+        "rank the most deteriorated department."
+    )
+    clarify = {
+        "terminal": "CLARIFY",
+        "clarification_question": (
+            "Which baseline and comparison periods should define the change?"
+        ),
+    }
+    resolved_span = {
+        "terminal": "RESOLVED",
+        "frame": "SPAN",
+        "span": _r6_period(
+            "accepted bounded interval",
+            "2026-05-01",
+            "2026-07-01",
+            role="material_window",
+        ),
+    }
+    ready = ready_payload(
+        kind="ranking",
+        subject=("metric.downtime",),
+        related=("dimension.department",),
+    )
+    ready["goals"][0].update(
+        {
+            "source_text": question,
+            "source_fragment_text": question,
+            "ranking": {
+                "source_text": question,
+                "direction": "desc",
+                "limit": 1,
+                "measure_semantic_id": "metric.downtime",
+                "basis": "change",
+            },
+        }
+    )
+    ready["time_periods"] = []
+
+    transport = SequenceTransport(
+        [clarify, clarify, resolved_span, ready]
+    )
+    result = ResearchIntakeCompiler(
+        transport=transport,
+        calendar_reference_date="2026-10-07",
+    ).compile(
+        question=question,
+        catalog=_r6_temporal_catalog(),
+    )
+
+    assert result.terminal == ResearchIntakeTerminal.READY
+    assert result.model_calls == 4
+    assert result.brief is not None
+    assert len(result.brief.scope.periods) == 1
+    (period,) = result.brief.scope.periods
+    assert period.role == TemporalRole.MATERIAL_WINDOW
+    assert (period.start, period.end) == ("2026-05-01", "2026-07-01")
+    assert transport.calls[2]["schema_name"].endswith(
+        "_persistent_change_frame"
+    )
+    reconsideration = transport.calls[3]["user"]["reconsideration"]
+    assert reconsideration["kind"] == "RESOLVED_CANONICAL_TEMPORAL_AUTHORITY"
+    assert reconsideration["frame"] == "SPAN"
+    assert reconsideration["periods"][0]["role"] == "material_window"
 
 
 def test_missing_change_ranking_frame_uses_closed_span_resolver():
