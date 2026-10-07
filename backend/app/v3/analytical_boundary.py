@@ -501,6 +501,7 @@ def project_execution_manifest_v1(
     engine_identity: AnalyticalEngineIdentityV1,
     data_columns: tuple[Any, ...],
     data_rows: tuple[Any, ...],
+    fulfilled_intent_ids: tuple[str, ...] | None = None,
     resource_entity_ids: tuple[str, ...] = (),
     metadata: dict[str, Any] | None = None,
 ) -> AnalyticalExecutionManifestV1:
@@ -508,7 +509,9 @@ def project_execution_manifest_v1(
 
     return AnalyticalExecutionManifestV1(
         execution_id=execution_id,
-        fulfilled_intent_ids=(intent.intent_id,),
+        fulfilled_intent_ids=tuple(
+            dict.fromkeys(fulfilled_intent_ids or (intent.intent_id,))
+        ),
         metrics=observation.metric_refs,
         dimensions=observation.dimension_refs,
         filters=_filters_from_contract(observation),
@@ -551,6 +554,31 @@ def _period_key(value: AnalyticalPeriodV1) -> tuple[str, str, str, str]:
         value.start,
         value.end,
     )
+
+
+def _ranking_requirement_fulfilled(
+    required: AnalyticalRankingV1 | None,
+    observed: AnalyticalRankingV1 | None,
+) -> bool:
+    """Check consumer ranking coverage without taking analytical HOW ownership."""
+
+    if required is None:
+        return True
+    if observed is None or required.kind != observed.kind:
+        return False
+    if required.kind != "native_metric":
+        return required == observed
+    if (
+        required.metric != observed.metric
+        or required.basis != observed.basis
+        or required.direction != observed.direction
+    ):
+        return False
+    if required.top_k is None:
+        return observed.top_k is None
+    if observed.top_k is None:
+        return True
+    return observed.top_k >= required.top_k
 
 
 def verify_analytical_fulfillment_v1(
@@ -628,10 +656,10 @@ def verify_analytical_fulfillment_v1(
             "ANALYTICAL_V1_TEMPORAL_OBSERVATION_MISMATCH",
             "governed temporal observation identity differs",
         )
-    if intent.ranking != manifest.ranking:
+    if not _ranking_requirement_fulfilled(intent.ranking, manifest.ranking):
         raise AnalyticalBoundaryError(
             "ANALYTICAL_V1_RANKING_MISMATCH",
-            "ranking basis/metric/direction/top-k differs",
+            "ranking requirement is not fulfilled by the governed result",
         )
     if not set(intent.row_grain).issubset(manifest.row_grain):
         raise AnalyticalBoundaryError(
