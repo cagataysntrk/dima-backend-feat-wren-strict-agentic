@@ -1,9 +1,9 @@
 {
   "schema_version": "dima_brain_v2_1_root_recovery_panel_v1",
-  "enabled": true,
-  "candidate_product_sha": "619dd27eb57bbdff099f355b81afa01dbc703c8e",
+  "enabled": false,
+  "candidate_product_sha": "f5d4206dd4f09a2187aefc1bc995100e8aac59b8",
   "recovery_baseline": "505caec6e7c3fbd5346dc6a4c310e8f656d324ae",
-  "provider_free_status": "GREEN",
+  "provider_free_status": "PENDING_CURRENT_PRODUCT",
   "provider_free_focused_run_id": 37571091342,
   "provider_free_semantic_run_id": 37610236056,
   "provider_free_frozen_run_id": 37610235952,
@@ -122,14 +122,15 @@
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
   "frontend_allowed": false,
-  "note": "FINAL 12-shape recovery acceptance armed after generic Product root fixes and proven harness defects were corrected. Broad 30-case and frontend remain forbidden.",
+  "note": "Cycle 2 final Product candidate pinned after generic scope-level temporal fixes. Paid recovery is DISARMED until current semantic/metamorphic and frozen-family closure are GREEN. Broad 30-case and frontend remain forbidden.",
   "final_result": {
-    "status": "FINAL_12_PENDING",
-    "candidate_product_sha": "619dd27eb57bbdff099f355b81afa01dbc703c8e",
-    "r11_live_runtime_receipt_run_id": 37611273173,
-    "r11_runtime_raw_harness_pass": true,
-    "r11_runtime_exception_count": 0,
-    "r11_runtime_blocked_provider_requests": 0,
+    "status": "PINPOINT_BLOCKED_ON_PROVIDER_FREE",
+    "candidate_product_sha": "f5d4206dd4f09a2187aefc1bc995100e8aac59b8",
+    "prior_final_12_run_id": 37611768411,
+    "remaining_boundaries": [
+      "bounded ROOT_CAUSE change incorrectly clarified as requiring PAIR",
+      "follow-up typed PERIOD delta escaped prior accepted scope"
+    ],
     "thirty_case_execution_ready": false
   },
   "prior_final_result": {
