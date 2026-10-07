@@ -1681,6 +1681,57 @@ def test_followup_scope_patch_rejects_ungrounded_current_turn_fragment():
     assert exc.value.code == "INTAKE_SCOPE_PATCH_SOURCE_UNGROUNDED"
 
 
+def test_typed_same_scope_continuation_reuses_exact_prior_goal_authority():
+    prior = prior_brief()
+    payload = {
+        "terminal": "CONTINUE",
+        "objective": "Deepen the current accepted analysis without changing scope.",
+        "prior_question_refs": ["q1"],
+    }
+    transport = FakeTransport(payload)
+
+    result = ResearchIntakeCompiler(
+        transport=transport
+    ).compile(
+        question="Go deeper within the current accepted analysis.",
+        catalog=catalog(),
+        prior_brief=prior,
+    )
+
+    assert result.terminal == ResearchIntakeTerminal.READY
+    assert result.turn_transition == TurnTransitionKind.SAME_SCOPE_CONTINUATION
+    assert result.scope_contract is None
+    assert result.brief is not None
+    assert result.brief.scope == prior.scope
+    assert result.brief.questions == (prior.questions[0],)
+    assert result.brief.must_requirement_ids == (prior.questions[0].goal_id,)
+    assert transport.call_count == 1
+    prior_payload = transport.calls[0]["user"]["prior_brief"]
+    assert [item["question_ref"] for item in prior_payload["questions"]] == [
+        "q1",
+        "q2",
+    ]
+
+
+def test_followup_provider_schema_closes_continue_refs_to_exact_prior_questions():
+    schema = _intake_provider_schema(
+        catalog(),
+        has_prior_brief=True,
+        prior_question_count=2,
+    )
+    result_refs = {
+        item["$ref"].rsplit("/", 1)[-1]
+        for item in schema["properties"]["result"]["anyOf"]
+        if "$ref" in item
+    }
+    assert "ModelContinueResearchIntake" in result_refs
+    continuation = schema["$defs"]["ModelContinueResearchIntake"]
+    assert continuation["properties"]["prior_question_refs"]["items"]["enum"] == [
+        "q1",
+        "q2",
+    ]
+
+
 def test_same_scope_report_continuation_inherits_scope_without_new_version():
     prior = prior_brief()
     payload = _full_followup_payload(report=True)
