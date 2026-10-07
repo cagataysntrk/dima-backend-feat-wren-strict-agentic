@@ -1,9 +1,9 @@
 {
   "schema_version": "dima_brain_v2_1_root_recovery_panel_v1",
-  "enabled": true,
-  "candidate_product_sha": "ff9dbd146da5759e3830611a4c9d763f85b47cd6",
+  "enabled": false,
+  "candidate_product_sha": "619dd27eb57bbdff099f355b81afa01dbc703c8e",
   "recovery_baseline": "505caec6e7c3fbd5346dc6a4c310e8f656d324ae",
-  "provider_free_status": "GREEN",
+  "provider_free_status": "PENDING_CURRENT_PRODUCT",
   "provider_free_focused_run_id": 37571091342,
   "provider_free_semantic_run_id": 37608629442,
   "provider_free_frozen_run_id": 37608629579,
@@ -122,13 +122,13 @@
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
   "frontend_allowed": false,
-  "note": "Cycle 2 targeted R11 pinpoint armed after current Product provider-free semantic/metamorphic and frozen-family GREEN. Broad 30-case and frontend remain forbidden.",
+  "note": "Cycle 2 current Product candidate pinned after generic no-op ScopePatch transition fix. Paid recovery is disarmed until semantic/metamorphic + frozen-family closure is GREEN. Broad 30-case remains forbidden.",
   "final_result": {
-    "status": "PINPOINT_PENDING",
-    "candidate_product_sha": "ff9dbd146da5759e3830611a4c9d763f85b47cd6",
-    "prior_pinpoint_run_id": 37582547368,
-    "first_invalid_boundary": "INTAKE_FOLLOWUP_REF_OUTSIDE_ACCEPTED_SCOPE",
-    "current_fix": "ScopePatch sole mutation ref authority",
+    "status": "BLOCKED_ON_PROVIDER_FREE",
+    "candidate_product_sha": "619dd27eb57bbdff099f355b81afa01dbc703c8e",
+    "last_live_run_id": 37609798961,
+    "last_live_boundary": "INTAKE_SCOPE_MUTATION_CONTRACT_REQUIRED",
+    "current_fix": "ScopePatch material delta decides mutation vs same-scope continuation",
     "thirty_case_execution_ready": false
   },
   "prior_final_result": {
