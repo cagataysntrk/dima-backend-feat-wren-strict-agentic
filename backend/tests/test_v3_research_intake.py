@@ -3979,19 +3979,42 @@ def test_change_ranking_overlapping_pair_gets_narrow_temporal_reconsideration() 
 def _shared_surface_change_period_payload() -> tuple[str, dict]:
     question = "Compare May and June governed downtime, then rank departments by change."
     payload = ready_payload(
-        kind="ranking",
-        subject=("dimension.department",),
-        related=("metric.downtime", "dimension.event_date"),
+        kind="comparison",
+        subject=("metric.downtime",),
+        related=("dimension.event_date",),
     )
-    payload["goals"][0]["source_text"] = question
-    payload["goals"][0]["source_fragment_text"] = question
-    payload["goals"][0]["ranking"] = {
-        "source_text": question,
-        "direction": "desc",
-        "limit": 1,
-        "measure_semantic_id": "metric.downtime",
-        "basis": "change",
-    }
+    payload["goals"][0].update(
+        {
+            "goal_key": "g-temporal-comparison",
+            "source_text": question,
+            "source_fragment_text": question,
+            "ranking": None,
+            "comparisons": [],
+            "result_dependency": None,
+        }
+    )
+    payload["goals"].append(
+        {
+            "goal_key": "g-change-ranking",
+            "kind": "ranking",
+            "source_text": question,
+            "source_fragment_text": question,
+            "subject_semantic_ids": ["dimension.department"],
+            "related_semantic_ids": ["metric.downtime", "dimension.event_date"],
+            "ranking": {
+                "source_text": question,
+                "direction": "desc",
+                "limit": 1,
+                "measure_semantic_id": "metric.downtime",
+                "basis": "change",
+            },
+            "comparisons": [],
+            "result_dependency": None,
+            "causal_competition": None,
+            "temporal_material": None,
+            "material_parent_goal_key": None,
+        }
+    )
     payload["time_periods"] = [
         _r6_period(
             "May and June",
@@ -4526,13 +4549,13 @@ def test_change_ranking_adjacent_shared_pair_without_comparison_coalesces_to_spa
     )
     payload["time_periods"] = [
         _r6_period(
-            "bounded-window",
+            "bounded window",
             "2026-01-01",
             "2026-02-01",
             role="baseline_period",
         ),
         _r6_period(
-            "bounded-window",
+            "bounded window",
             "2026-02-01",
             "2026-03-01",
             role="comparison_period",
@@ -4554,5 +4577,5 @@ def test_change_ranking_adjacent_shared_pair_without_comparison_coalesces_to_spa
     assert len(result.brief.scope.periods) == 1
     (span,) = result.brief.scope.periods
     assert span.role == TemporalRole.MATERIAL_WINDOW
-    assert span.source_text == "bounded-window"
+    assert span.source_text == "bounded window"
     assert (span.start, span.end) == ("2026-01-01", "2026-03-01")
