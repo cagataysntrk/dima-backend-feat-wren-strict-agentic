@@ -2004,6 +2004,76 @@ def test_noop_scope_patch_hint_becomes_same_scope_continuation() -> None:
     assert continued.brief.scope.scope_version.version_id == "scope_v2"
 
 
+def test_new_typed_temporal_frame_is_a_real_followup_period_scope_delta():
+    current = "Within the accepted scope, compare May 2026 with June 2026."
+    payload = ready_payload(
+        kind="comparison",
+        subject=("metric.downtime",),
+        related=("dimension.department",),
+    )
+    payload["goals"][0]["source_text"] = current
+    payload["goals"][0]["source_fragment_text"] = current
+    payload["goals"][0]["comparisons"] = [
+        {
+            "text": current,
+            "role": "temporal_period",
+            "semantic_id": None,
+        }
+    ]
+    payload["time_periods"] = [
+        _r6_period(
+            "May 2026",
+            "2026-05-01",
+            "2026-06-01",
+            role="baseline_period",
+        ),
+        _r6_period(
+            "June 2026",
+            "2026-06-01",
+            "2026-07-01",
+            role="comparison_period",
+        ),
+    ]
+    payload["scope_mutation_kind"] = None
+
+    result = ResearchIntakeCompiler(
+        transport=FakeTransport(payload),
+        calendar_reference_date="2026-10-07",
+    ).compile(
+        question=current,
+        catalog=_r6_temporal_catalog(),
+        prior_brief=prior_brief(),
+    )
+
+    assert result.terminal == ResearchIntakeTerminal.READY
+    assert result.scope_contract is not None
+    assert result.turn_transition == TurnTransitionKind.SCOPE_MUTATION
+    assert result.brief is not None
+    assert result.brief.scope.scope_version.version_id == "scope_v2"
+    assert result.brief.scope.scope_version.parent_version_id == "scope_v1"
+    assert result.brief.scope.temporal_dimension_ids == (
+        "dimension.event_date",
+    )
+    assert [(p.start, p.end, p.role) for p in result.brief.scope.periods] == [
+        (
+            "2026-05-01",
+            "2026-06-01",
+            TemporalRole.BASELINE_PERIOD,
+        ),
+        (
+            "2026-06-01",
+            "2026-07-01",
+            TemporalRole.COMPARISON_PERIOD,
+        ),
+    ]
+    # PERIOD is the only changed facet; all prior governed metric authority
+    # remains present by patch semantics.
+    accepted_ids = {
+        item.candidate_id for item in result.brief.scope.semantic_refs
+    }
+    assert {"metric.downtime", "metric.fault_count"} <= accepted_ids
+
+
 def test_provider_catalog_contains_semantic_choices_not_runtime_binding_state():
     payload = ResearchIntakeCompiler._catalog_payload(catalog())
     serialized = json.dumps(payload, sort_keys=True)
@@ -2517,6 +2587,62 @@ def test_root_causal_change_observation_is_durable_typed_authority(
     assert [(item.start, item.end) for item in result.brief.scope.periods] == [
         (start, end)
     ]
+
+
+def test_temporal_clarification_reconsideration_accepts_bounded_root_change_span():
+    question = "Investigate governed change over one accepted bounded interval."
+    clarify = {
+        "terminal": "CLARIFY",
+        "clarification_question": (
+            "Which additional comparison period should define the change?"
+        ),
+    }
+    ready = ready_payload(
+        kind="root_cause",
+        subject=("metric.downtime", "metric.fault_count"),
+        related=("dimension.department",),
+    )
+    ready["goals"][0]["source_text"] = question
+    ready["goals"][0]["source_fragment_text"] = question
+    ready["goals"][0]["causal_competition"] = {
+        "effect_semantic_id": "metric.downtime",
+        "effect_observation": "change",
+        "candidate_mechanism_semantic_ids": ["metric.fault_count"],
+        "diagnostic_dimension_ids": ["dimension.department"],
+    }
+    ready["goals"][0]["temporal_material"] = {
+        "mode": "window",
+        "window": _r6_period(
+            question,
+            "2026-05-01",
+            "2026-07-01",
+        ),
+    }
+    ready["time_periods"] = []
+
+    transport = SequenceTransport([clarify, ready])
+    result = ResearchIntakeCompiler(
+        transport=transport,
+        calendar_reference_date="2026-10-07",
+    ).compile(
+        question=question,
+        catalog=_r6_temporal_catalog(),
+    )
+
+    assert result.terminal == ResearchIntakeTerminal.READY
+    assert result.model_calls == 2
+    assert result.brief is not None
+    assert len(result.brief.scope.periods) == 1
+    assert result.brief.scope.periods[0].role == TemporalRole.MATERIAL_WINDOW
+    reconsideration = transport.calls[1]["user"]["reconsideration"]
+    assert reconsideration["kind"] == "CANONICAL_TEMPORAL_AUTHORITY"
+    assert (
+        reconsideration["frame_policy"][
+            "bounded_change_without_explicit_pair"
+        ]
+        == "SPAN_MATERIAL_WINDOW"
+    )
+    assert reconsideration["frame_policy"]["invent_additional_comparison_period"] is False
 
 
 def test_root_causal_level_observation_does_not_invent_change_authority():
