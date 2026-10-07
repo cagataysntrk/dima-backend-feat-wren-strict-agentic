@@ -2336,27 +2336,36 @@ class ResearchIntakeCompiler:
                 and goal.ranking.basis == RankingBasis.CHANGE
             )
         )
-        if len(change_goals) != 1 or draft.time_periods:
+        if not change_goals or draft.time_periods:
             return None
         if len(catalog.temporal_dimension_ids) != 1:
             return None
-        goal = change_goals[0]
-        fragment = goal.source_fragment_text
-        if (
-            fragment is None
-            or fragment != fragment.strip()
-            or fragment not in current
-        ):
-            raise ResearchIntakeError(
-                "INTAKE_CHANGE_FRAME_SOURCE_FRAGMENT_REQUIRED",
-                "missing CHANGE frame resolution requires exact user provenance",
-            )
+
+        fragments: list[str] = []
+        measures: list[str] = []
+        for goal in change_goals:
+            fragment = goal.source_fragment_text
+            if (
+                fragment is None
+                or fragment != fragment.strip()
+                or fragment not in current
+            ):
+                raise ResearchIntakeError(
+                    "INTAKE_CHANGE_FRAME_SOURCE_FRAGMENT_REQUIRED",
+                    "missing CHANGE frame resolution requires exact provenance",
+                )
+            fragments.append(fragment)
+            assert goal.ranking is not None
+            if goal.ranking.measure_semantic_id is not None:
+                measures.append(goal.ranking.measure_semantic_id)
+
         return {
             "kind": "MISSING_CHANGE_TEMPORAL_FRAME",
             "governed_time_dimension_id": catalog.temporal_dimension_ids[0],
             "calendar_reference_date": calendar_reference_date,
-            "source_fragment": fragment,
-            "ranking_measure_semantic_id": goal.ranking.measure_semantic_id,
+            "source_fragments": list(dict.fromkeys(fragments)),
+            "ranking_measure_semantic_ids": list(dict.fromkeys(measures)),
+            "consumer_count": len(change_goals),
         }
 
     @staticmethod
