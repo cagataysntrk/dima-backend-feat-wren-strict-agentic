@@ -2748,7 +2748,13 @@ def test_missing_change_ranking_frame_pair_requires_explicit_typed_pair():
             role="comparison_period",
         ),
     }
-    transport = SequenceTransport([ready, pair])
+    clarify = {
+        "terminal": "CLARIFY",
+        "clarification_question": (
+            "Which temporal frame should govern the requested change?"
+        ),
+    }
+    transport = SequenceTransport([clarify, ready, pair])
 
     result = ResearchIntakeCompiler(
         transport=transport,
@@ -2759,7 +2765,7 @@ def test_missing_change_ranking_frame_pair_requires_explicit_typed_pair():
     )
 
     assert result.terminal == ResearchIntakeTerminal.READY
-    assert result.model_calls == 2
+    assert result.model_calls == 3
     assert result.brief is not None
     assert tuple(p.role for p in result.brief.scope.periods) == (
         TemporalRole.BASELINE_PERIOD,
