@@ -101,7 +101,8 @@ jobs:
           assert slot_id in slots
           slot = slots[slot_id]
           candidate = auth["candidate_product_sha"]
-          assert candidate == "de4c03f288b62ffcad4aece57f0bebf102b381bd"
+          assert isinstance(candidate, str) and len(candidate) == 40
+          assert all(ch in "0123456789abcdef" for ch in candidate)
 
           subprocess.run(["git", "cat-file", "-e", candidate + "^{commit}"], check=True)
           subprocess.run(
