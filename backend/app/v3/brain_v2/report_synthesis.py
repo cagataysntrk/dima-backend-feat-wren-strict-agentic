@@ -7,6 +7,7 @@ performs no analytics, and cannot mint semantic or causal authority.
 from __future__ import annotations
 
 import json
+from decimal import Decimal, InvalidOperation
 from enum import StrEnum
 from typing import Any
 
@@ -39,11 +40,6 @@ class P20SynthesisSection(Frozen):
             set(self.supporting_statement_ids)
         ):
             raise ValueError("synthesis support ids must be unique")
-        # Numeric truth is never authored in free-form synthesis. Existing
-        # governed numeric statements remain separately publishable with exact
-        # Evidence lineage.
-        if any(char.isdigit() for char in self.text):
-            raise ValueError("synthesis text cannot author numeric claims")
         return self
 
 
@@ -108,6 +104,90 @@ Hard boundaries:
 - if support is insufficient, return LIMITED with one explicit limitation;
 - every synthesis section must cite one or more supplied statement IDs.
 """
+
+
+def _canonical_numeric_token(value: str) -> str | None:
+    """Canonicalize one already-scanned numeric token without semantic inference."""
+
+    token = value.strip()
+    if not token:
+        return None
+    if "," in token and "." not in token:
+        token = token.replace(",", ".")
+    try:
+        number = Decimal(token)
+    except InvalidOperation:
+        return None
+    if not number.is_finite():
+        return None
+    if number == 0:
+        number = Decimal(0)
+    normalized = format(number.normalize(), "f")
+    if "." in normalized:
+        normalized = normalized.rstrip("0").rstrip(".")
+    return normalized or "0"
+
+
+def _numeric_tokens(text: str) -> frozenset[str]:
+    """Extract decimal tokens with a tiny deterministic scanner, never regex."""
+
+    output: set[str] = set()
+    current: list[str] = []
+    value = str(text)
+
+    def flush() -> None:
+        if not current:
+            return
+        token = _canonical_numeric_token("".join(current))
+        if token is not None:
+            output.add(token)
+        current.clear()
+
+    for index, char in enumerate(value):
+        next_char = value[index + 1] if index + 1 < len(value) else ""
+        if char.isdigit():
+            current.append(char)
+            continue
+        if (
+            char in {"+", "-"}
+            and not current
+            and next_char.isdigit()
+        ):
+            current.append(char)
+            continue
+        if (
+            char in {".", ","}
+            and current
+            and any(item.isdigit() for item in current)
+            and next_char.isdigit()
+        ):
+            current.append(char)
+            continue
+        flush()
+    flush()
+    return frozenset(output)
+
+
+def _numeric_tokens_from_value(value: Any) -> frozenset[str]:
+    """Collect numeric literals already present in one governed statement."""
+
+    output: set[str] = set()
+    if isinstance(value, bool) or value is None:
+        return frozenset()
+    if isinstance(value, (int, float, Decimal)):
+        token = _canonical_numeric_token(str(value))
+        return frozenset((token,)) if token is not None else frozenset()
+    if isinstance(value, str):
+        return _numeric_tokens(value)
+    if isinstance(value, dict):
+        for item in value.values():
+            output.update(_numeric_tokens_from_value(item))
+        return frozenset(output)
+    if isinstance(value, (list, tuple)):
+        for item in value:
+            output.update(_numeric_tokens_from_value(item))
+        return frozenset(output)
+    return frozenset()
 
 
 class StructuredP20SynthesisManager:
@@ -190,6 +270,10 @@ class StructuredP20SynthesisManager:
                 "P20 synthesis must exactly cover accepted deliverable ids"
             )
         legal_statement_ids = set(statement_ids)
+        statements_by_id = {
+            str(item["statement_id"]): item
+            for item in evidence_digests
+        }
         for item in result.deliverables:
             if not set(item.selected_statement_ids).issubset(
                 legal_statement_ids
@@ -210,4 +294,27 @@ class StructuredP20SynthesisManager:
                     raise ValueError(
                         "P20 synthesis section escaped deliverable support set"
                     )
+
+                # Numeric synthesis is legal only when every literal already
+                # exists in the governed supporting statements. This enforces
+                # Evidence-backed numeric provenance without turning P20 into
+                # an analytics/calculation owner and without blanket-rejecting
+                # safe restatement of an existing governed value.
+                authored_numbers = _numeric_tokens(section.text)
+                if authored_numbers:
+                    supported_numbers: set[str] = set()
+                    for statement_id in section.supporting_statement_ids:
+                        source = statements_by_id[statement_id]
+                        supported_numbers.update(
+                            _numeric_tokens_from_value(source.get("text"))
+                        )
+                        supported_numbers.update(
+                            _numeric_tokens_from_value(source.get("payload"))
+                        )
+                    invented = authored_numbers - supported_numbers
+                    if invented:
+                        raise ValueError(
+                            "P20 synthesis authored numeric truth absent from "
+                            "its governed support"
+                        )
         return result
