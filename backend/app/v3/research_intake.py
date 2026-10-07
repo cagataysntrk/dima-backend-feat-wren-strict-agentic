@@ -2690,6 +2690,162 @@ class ResearchIntakeCompiler:
             )
         return tuple(output)
 
+    @staticmethod
+    def _ref_patch_facet(
+        ref: ResearchSemanticRef,
+        *,
+        temporal_dimension_ids: set[str],
+    ) -> ScopePatchFacet | None:
+        if ref.target_kind == SemanticTargetKind.ENTITY_VALUE:
+            return ScopePatchFacet.ENTITY
+        if ref.target_kind in {
+            SemanticTargetKind.METRIC,
+            SemanticTargetKind.KPI,
+        }:
+            return ScopePatchFacet.METRIC
+        if ref.target_kind == SemanticTargetKind.DIMENSION:
+            return (
+                ScopePatchFacet.PERIOD
+                if ref.candidate_id in temporal_dimension_ids
+                else ScopePatchFacet.BREAKDOWN
+            )
+        return None
+
+    @classmethod
+    def _project_mutation_questions_to_scope(
+        cls,
+        *,
+        questions: tuple[ResearchQuestion, ...],
+        prior_scope: ResearchScope,
+        accepted_scope: ResearchScope,
+    ) -> tuple[ResearchQuestion, ...]:
+        """Apply one canonical ScopePatch result to current-turn goal refs.
+
+        The scope-patch owner is the sole mutation authority. A current-turn
+        draft may mention a value specifically to remove it (for example,
+        "only A; remove B"). Such a negative mention must not re-open B as a
+        second semantic authority after the typed patch has already excluded
+        it. Refs outside the accepted scope are therefore discardable only
+        when their facet materially changed in this exact mutation. Any
+        escaped ref on an unchanged facet still fails closed.
+        """
+
+        accepted_ids = {
+            item.candidate_id for item in accepted_scope.semantic_refs
+        }
+        prior_temporal = set(prior_scope.temporal_dimension_ids)
+        accepted_temporal = set(accepted_scope.temporal_dimension_ids)
+        temporal_ids = prior_temporal | accepted_temporal
+
+        def ids_for(scope: ResearchScope, facet: ScopePatchFacet) -> set[str]:
+            if facet == ScopePatchFacet.PERIOD:
+                return set(scope.temporal_dimension_ids)
+            return {
+                item.candidate_id
+                for item in scope.semantic_refs
+                if cls._ref_patch_facet(
+                    item,
+                    temporal_dimension_ids=temporal_ids,
+                )
+                == facet
+            }
+
+        changed_facets = {
+            facet
+            for facet in (
+                ScopePatchFacet.ENTITY,
+                ScopePatchFacet.METRIC,
+                ScopePatchFacet.BREAKDOWN,
+            )
+            if ids_for(prior_scope, facet) != ids_for(accepted_scope, facet)
+        }
+        prior_periods = {
+            (
+                item.time_dimension_candidate_id,
+                item.start,
+                item.end,
+                item.role.value,
+            )
+            for item in prior_scope.periods
+        }
+        accepted_periods = {
+            (
+                item.time_dimension_candidate_id,
+                item.start,
+                item.end,
+                item.role.value,
+            )
+            for item in accepted_scope.periods
+        }
+        if (
+            prior_periods != accepted_periods
+            or prior_temporal != accepted_temporal
+        ):
+            changed_facets.add(ScopePatchFacet.PERIOD)
+
+        def keep_or_reject(ref: ResearchSemanticRef) -> bool:
+            if ref.candidate_id in accepted_ids:
+                return True
+            facet = cls._ref_patch_facet(
+                ref,
+                temporal_dimension_ids=temporal_ids,
+            )
+            if facet in changed_facets:
+                return False
+            raise ResearchIntakeError(
+                "INTAKE_FOLLOWUP_REF_OUTSIDE_ACCEPTED_SCOPE",
+                ref.candidate_id,
+            )
+
+        output: list[ResearchQuestion] = []
+        for question in questions:
+            subject = tuple(
+                item for item in question.subject_refs if keep_or_reject(item)
+            )
+            related = tuple(
+                item for item in question.related_refs if keep_or_reject(item)
+            )
+
+            structured_ids: set[str] = set()
+            if (
+                question.ranking is not None
+                and question.ranking.measure_semantic_id is not None
+            ):
+                structured_ids.add(question.ranking.measure_semantic_id)
+            structured_ids.update(
+                item.semantic_id
+                for item in question.comparisons
+                if item.semantic_id is not None
+            )
+            if question.result_dependency is not None:
+                structured_ids.add(
+                    question.result_dependency.dimension_semantic_id
+                )
+            if question.causal_competition is not None:
+                causal = question.causal_competition
+                structured_ids.add(causal.effect_semantic_id)
+                structured_ids.update(
+                    causal.candidate_mechanism_semantic_ids
+                )
+                structured_ids.update(causal.diagnostic_dimension_ids)
+
+            escaped_structured = sorted(structured_ids - accepted_ids)
+            if escaped_structured:
+                raise ResearchIntakeError(
+                    "INTAKE_SCOPE_MUTATION_STRUCTURED_AUTHORITY_CONFLICT",
+                    ",".join(escaped_structured),
+                )
+
+            output.append(
+                question.model_copy(
+                    update={
+                        "subject_refs": subject,
+                        "related_refs": related,
+                    }
+                )
+            )
+        return tuple(output)
+
     def _compile_followup_scope_patch(
         self,
         *,
@@ -3993,17 +4149,29 @@ class ResearchIntakeCompiler:
             accepted_ids = {
                 item.candidate_id for item in accepted_scope.semantic_refs
             }
-            escaped_refs = sorted(
-                {
-                    item.candidate_id
-                    for item in draft_scope.semantic_refs
-                }
-                - accepted_ids
-            )
-            if escaped_refs:
-                raise ResearchIntakeError(
-                    "INTAKE_FOLLOWUP_REF_OUTSIDE_ACCEPTED_SCOPE",
-                    ",".join(escaped_refs),
+            if scope_contract is None:
+                escaped_refs = sorted(
+                    {
+                        item.candidate_id
+                        for item in draft_scope.semantic_refs
+                    }
+                    - accepted_ids
+                )
+                if escaped_refs:
+                    raise ResearchIntakeError(
+                        "INTAKE_FOLLOWUP_REF_OUTSIDE_ACCEPTED_SCOPE",
+                        ",".join(escaped_refs),
+                    )
+            else:
+                # The typed ScopePatch is the sole mutation authority. Project
+                # current-turn goal refs onto its accepted result so negative
+                # mentions on a changed facet cannot re-open removed scope.
+                questions = list(
+                    self._project_mutation_questions_to_scope(
+                        questions=tuple(questions),
+                        prior_scope=prior_brief.scope,
+                        accepted_scope=accepted_scope,
+                    )
                 )
 
             accepted_periods = {
