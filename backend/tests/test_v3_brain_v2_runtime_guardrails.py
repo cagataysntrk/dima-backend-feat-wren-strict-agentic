@@ -16,6 +16,7 @@ LIVE_WORKFLOW = REPO_ROOT / ".github" / "workflows" / "dima-brain-v2-phase1-live
 BRAIN_LIVE = BACKEND_ROOT / "lab" / "metabase" / "brain_v2" / "phase1_live.py"
 LIVE_SUPPORT = BACKEND_ROOT / "lab" / "metabase" / "brain_v2" / "live_support.py"
 SEMANTIC_AUTHORITY_REGISTRY = BACKEND_ROOT / "lab" / "metabase" / "brain_v2" / "semantic_authority_registry.json"
+ROOT_RECOVERY_AUTHORIZATION = BACKEND_ROOT / "lab" / "metabase" / "brain_v2" / "root_recovery_panel_authorization.json"
 
 
 def test_all_final_probes_use_brain_v2_runtime():
@@ -222,3 +223,19 @@ def test_completion_remains_ledger_not_analytics():
             "execute_native_query(",
         ):
             assert forbidden not in source
+
+
+def test_open_semantic_authority_blocker_disarms_paid_recovery():
+    registry = json.loads(
+        SEMANTIC_AUTHORITY_REGISTRY.read_text(encoding="utf-8")
+    )
+    compliance = registry.get("runtime_compliance") or {}
+    blockers = compliance.get("blockers") or []
+    if blockers:
+        authorization = json.loads(
+            ROOT_RECOVERY_AUTHORIZATION.read_text(encoding="utf-8")
+        )
+        assert authorization["enabled"] is False
+        assert authorization["broad_paid_allowed"] is False
+        assert authorization["thirty_case_allowed"] is False
+        assert authorization["frontend_allowed"] is False
