@@ -73,54 +73,93 @@ Constitution/registry enforcement recertification:
 - focused provider-free: `37669106020` GREEN;
 - semantic conformance + metamorphic + Wave A/B + mutation: `37669106073` GREEN.
 
-### Final one-wave recovery — in flight, already not 12/12
+### Final one-wave recovery — COMPLETE / 10 of 12
 
-Authorized recovery run:
+The single authorized recovery run `37668955073` is complete on semantic Product
+`eee7583cb67d50779784805c469230ef2b82a5a2` and frozen engine
+`686671fa7e55f715e4fb5ac155f9e66019fd12d8`.
 
-`37668955073`
+Mechanical result:
 
-Candidate remains exactly `eee7583c...`; frozen engine remains exactly `686671fa...`.
+- GREEN: R01, R03, R04, R05, R06, R08, R09, R10, R11, R12.
+- RED: R02, R07.
+- completed = `12/12`.
+- successful = `10/12`.
+- `12/12 GREEN = NO`.
+- `30-CASE EXECUTION READY = NO`.
+- R9 post-recovery certification = NOT AUTHORIZED.
+- actual 30-case = NOT RUN / NOT AUTHORIZED.
+- paid retry = OFF.
 
-Observed so far:
+### Root adjudication
 
-- R01 comparison original: GREEN;
-- R03 comparison wording: GREEN;
-- R04 temporal original: GREEN;
-- R02 comparison semantic: RED.
+**Fix B — atomic P18/new-turn reset is CLOSED live.**
 
-R02 is **not** the prior provider-ceiling/duplicate-material failure:
+R10, R11 and R12 are all GREEN. The prior continuation failure
+`P18 requirement/result refs must be paired` did not recur. Current-turn P18 requirement/result/
+claim/policy refs remain one atomic projection bundle; durable historical P18 artifacts remain
+outside that reset.
 
-- provider blocked requests = `0`;
-- duplicate native = `0`;
-- stale Evidence = `0`;
-- attestation = HTTP 200;
-- native material observation = HTTP 422 twice;
-- native acquisitions = `0`;
-- Evidence count = `0`;
-- terminal exception = `P20_RESEARCH_SESSION_NOT_SEALED` because analytical Research never
-  reached a verified terminal material state.
+**Fix A — acquisition identity vs requirement identity is CLOSED as a Product grouping law.**
 
-Pinned engine inspection shows the material observer attempts to reconstruct period-pair CHANGE
-ranking from physical previous-stage query columns via Metabase Lib equality matching. The live
-query produced an ambiguous physical match before execution. This is now classified as a
-**semantic-authority architecture blocker**, not another R02-specific representation patch.
+The old sibling-fragmentation/provider-ceiling failure is gone: the RED slots have blocked
+provider = 0, duplicate native = 0 and stale Evidence = 0. Comparison/ranking/top-k consumer
+identity no longer forces independent acquisitions merely because fulfillment contracts differ.
 
-The forbidden response is another engine observer shape patch. The required architectural
-direction is proof migration:
+The remaining RED is downstream of grouping and upstream of native execution.
+
+### One remaining architecture blocker — R02 and R07 are one root
+
+Both RED slots share the same first wrong boundary:
 
 ~~~text
-Metabase / Metabot HOW
--> stable execution-semantic manifest bound to exact occurrence/result
--> Dima sole fulfillment verifier
+Metabot produces native query
+-> exact native attestation HTTP 200
+-> native-query-material-observation HTTP 422
+-> exact native execution never starts
+-> Evidence = 0
+~~~
+
+R02 used 8 provider requests; R07 used 10. Both used one base material attempt plus one bounded
+repair. Neither hit provider blocking, duplicate-native or stale-Evidence limits.
+
+The downstream R02 `P20_RESEARCH_SESSION_NOT_SEALED` is secondary: Research never reached a
+VERIFIED material state because the pre-execution observer vetoed the occurrence.
+
+This is now classified as **semantic-owner debt**, not a new benchmark family. The certified
+material observer reconstructs derived CHANGE/ranking meaning from physical query representation;
+representation ambiguity can therefore reject a legal typed intent before the sole fulfillment
+verifier sees an execution result.
+
+Product transitional proof code also duplicates authority:
+`assert_material_native_scope()` checks metric/filter/time/dimension/ranking before final
+fulfillment, while result coverage adds another admission layer.
+
+The forbidden response is another query-shape-specific observer patch, prompt/regex/fuzzy fix,
+provider-ceiling increase, Dima/Python CHANGE calculation, Intent echo disguised as observed facts,
+or weakened final fulfillment.
+
+Required exit architecture:
+
+~~~text
+ResearchScope / AnalyticalIntentV1
+-> Metabase / Metabot HOW
+-> stable execution-semantic facts bound to exact occurrence/result
+-> AnalyticalExecutionManifestV1
+-> verify_analytical_fulfillment_v1   (sole semantic judge)
 -> Evidence
 ~~~
 
-The observer may remain for structural provenance, but it must not be the business-semantic
-authority that decides whether a legal comparison/change intent exists.
+Tenant/principal, ScopeVersion/currentness, exact occurrence, engine identity, permissions,
+query/result fingerprints, dedup and durable-resume proof remain fail-closed structural checks.
+Observer/coverage layers may extract facts; they must not become second business-semantic owners.
 
-Paid authorization was immediately DISARMED after R02 RED. The current fail-fast=false panel may
-finish for adjudication, but no second paid wave is authorized. Actual broad 30-case remains
-forbidden. `30-CASE EXECUTION READY = NO`.
+This blocker is machine-registered in
+`backend/lab/metabase/brain_v2/semantic_authority_registry.json`, and CI disarms paid recovery
+while it remains open.
+
+Canonical recovery receipt:
+`backend/belgeler/metabase/DIMA_BRAIN_V2_1_FINAL_12CASE_RECOVERY_2026-10-07.md`.
 
 ## 0H. HISTORICAL STATE BELOW
 
