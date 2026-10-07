@@ -2931,6 +2931,8 @@ class DimaBrainV2Activities(BrainActivities):
                             "The bounded synthesis selected material without "
                             "publishable governed provenance."
                         ),
+                        target_deliverables=cognition_deliverables,
+                        base_coverage=direct_coverage,
                     )
                 sources = tuple(
                     source_by_key[key]
