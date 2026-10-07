@@ -322,3 +322,86 @@ def test_projection_is_a_strangler_view_over_existing_authority() -> None:
         TemporalRole.BASELINE_PERIOD,
         TemporalRole.COMPARISON_PERIOD,
     ]
+
+
+def test_one_manifest_can_fulfill_comparison_and_topk_independently() -> None:
+    acquisition = _intent().model_copy(
+        update={
+            "intent_id": "goal-acquisition",
+            "ranking": _intent().ranking.model_copy(update={"top_k": None}),
+        }
+    )
+    comparison = acquisition.model_copy(
+        update={
+            "intent_id": "goal-comparison",
+            "operation": AnalyticalOperation.COMPARE,
+            "ranking": None,
+        }
+    )
+    top2 = acquisition.model_copy(
+        update={
+            "intent_id": "goal-top2",
+            "ranking": acquisition.ranking.model_copy(update={"top_k": 2}),
+        }
+    )
+    manifest = _manifest(acquisition).model_copy(
+        update={
+            "fulfilled_intent_ids": (
+                comparison.intent_id,
+                top2.intent_id,
+            )
+        }
+    )
+
+    verify_analytical_fulfillment_v1(comparison, manifest)
+    verify_analytical_fulfillment_v1(top2, manifest)
+
+
+def test_shared_manifest_requires_each_consumer_verifier_to_pass() -> None:
+    acquisition = _intent().model_copy(
+        update={
+            "intent_id": "goal-acquisition",
+            "ranking": _intent().ranking.model_copy(update={"top_k": None}),
+        }
+    )
+    top2 = acquisition.model_copy(
+        update={
+            "intent_id": "goal-top2",
+            "ranking": acquisition.ranking.model_copy(update={"top_k": 2}),
+        }
+    )
+    wrong_basis = top2.model_copy(
+        update={
+            "intent_id": "goal-wrong-basis",
+            "ranking": top2.ranking.model_copy(update={"basis": RankingBasis.LEVEL}),
+        }
+    )
+    manifest = _manifest(acquisition).model_copy(
+        update={
+            "fulfilled_intent_ids": (
+                top2.intent_id,
+                wrong_basis.intent_id,
+            )
+        }
+    )
+
+    verify_analytical_fulfillment_v1(top2, manifest)
+    with pytest.raises(AnalyticalBoundaryError) as exc:
+        verify_analytical_fulfillment_v1(wrong_basis, manifest)
+    assert exc.value.code == "ANALYTICAL_V1_RANKING_MISMATCH"
+
+
+def test_bounded_result_cannot_fulfill_unbounded_ranking_consumer() -> None:
+    intent = _intent().model_copy(
+        update={
+            "intent_id": "goal-unbounded",
+            "ranking": _intent().ranking.model_copy(update={"top_k": None}),
+        }
+    )
+    manifest = _manifest(intent).model_copy(
+        update={"ranking": intent.ranking.model_copy(update={"top_k": 2})}
+    )
+
+    with pytest.raises(AnalyticalBoundaryError) as exc:
+        verify_analytical_fulfillment_v1(intent, manifest)
+    assert exc.value.code == "ANALYTICAL_V1_RANKING_MISMATCH"
