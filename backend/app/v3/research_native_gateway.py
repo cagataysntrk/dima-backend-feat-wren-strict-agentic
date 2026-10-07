@@ -854,6 +854,7 @@ class NativeResearchMaterialExecutor:
         query_fingerprint: str,
         execution_link_id: uuid.UUID,
         analytical_scope: AnalyticalRequestContract | None = None,
+        consumer_obligation_ids: tuple[str, ...] | None = None,
     ) -> ResearchMaterialOutcome:
         binding = self._subjects.binding_for(principal=principal, session=session)
         native_subject_ref = f"metabase-user:{binding.metabase_user_id}"
@@ -862,6 +863,14 @@ class NativeResearchMaterialExecutor:
             raise ResearchMaterialLimitation(
                 "P14_NATIVE_OBLIGATION_CORRELATION_MISMATCH",
                 "execution link belongs to another Research session or obligation",
+            )
+        consumer_ids = tuple(
+            dict.fromkeys(consumer_obligation_ids or (obligation_id,))
+        )
+        if obligation_id not in set(consumer_ids):
+            raise ResearchMaterialLimitation(
+                "ANALYTICAL_V1_SHARED_ANCHOR_REQUIRED",
+                "shared analytical fulfillment must include the execution anchor",
             )
 
         if link.status == "EXECUTION_STARTED":
@@ -1041,13 +1050,13 @@ class NativeResearchMaterialExecutor:
                 "ANALYTICAL_V1_ACCEPTED_BRIEF_REQUIRED",
                 "final analytical admission requires the immutable accepted brief",
             )
-        questions = tuple(
-            item for item in brief.questions if item.goal_id == obligation_id
-        )
-        if len(questions) != 1:
+        questions_by_id = {
+            item.goal_id: item for item in brief.questions
+        }
+        if any(item not in questions_by_id for item in consumer_ids):
             raise ResearchMaterialLimitation(
                 "ANALYTICAL_V1_INTENT_IDENTITY_MISMATCH",
-                "exactly one accepted analytical goal must own the native result",
+                "shared fulfillment references an unknown accepted analytical goal",
             )
         currentness_token = (
             f"{session.lineage_id}:{contract.scope_identity.version_id}"
@@ -1063,8 +1072,8 @@ class NativeResearchMaterialExecutor:
             ).encode("utf-8")
         ).hexdigest()
         try:
-            analytical_intent = project_analytical_intent_v1(
-                question=questions[0],
+            acquisition_intent = project_analytical_intent_v1(
+                question=questions_by_id[obligation_id],
                 scope=brief.scope,
                 contract=contract,
                 tenant_id=session.tenant_binding,
@@ -1072,10 +1081,25 @@ class NativeResearchMaterialExecutor:
                 currentness_token=currentness_token,
                 security_fingerprint=security_fingerprint,
             )
+            consumer_intents = tuple(
+                project_analytical_intent_v1(
+                    question=questions_by_id[consumer_id],
+                    scope=brief.scope,
+                    contract=analytical_scope_contract(
+                        session=session,
+                        obligation_id=consumer_id,
+                    ),
+                    tenant_id=session.tenant_binding,
+                    principal_id=session.principal_subject,
+                    currentness_token=currentness_token,
+                    security_fingerprint=security_fingerprint,
+                )
+                for consumer_id in consumer_ids
+            )
             data = result_payload.get("data")
             data = data if isinstance(data, dict) else {}
             execution_manifest = project_execution_manifest_v1(
-                intent=analytical_intent,
+                intent=acquisition_intent,
                 observation=scope_observation,
                 execution_id=f"native-occurrence:{execution_link_id}",
                 query_fingerprint=query_fingerprint,
@@ -1088,6 +1112,7 @@ class NativeResearchMaterialExecutor:
                 ),
                 data_columns=tuple(data.get("cols") or ()),
                 data_rows=tuple(data.get("rows") or ()),
+                fulfilled_intent_ids=consumer_ids,
                 metadata={
                     "native_conversation_id": str(native_conversation_id),
                     "native_query_id": native_query_id,
@@ -1095,10 +1120,11 @@ class NativeResearchMaterialExecutor:
                     "result_coverage_status": result_coverage.status,
                 },
             )
-            verify_analytical_fulfillment_v1(
-                analytical_intent,
-                execution_manifest,
-            )
+            for consumer_intent in consumer_intents:
+                verify_analytical_fulfillment_v1(
+                    consumer_intent,
+                    execution_manifest,
+                )
         except AnalyticalBoundaryError as exc:
             raise ResearchMaterialLimitation(
                 exc.code,
@@ -1117,7 +1143,7 @@ class NativeResearchMaterialExecutor:
         receipt = DimaQueryReceiptSealer.seal_research_execution(
             authority_id=session.authority_id,
             research_session_id=session.session_id,
-            obligation_ids=(obligation_id,),
+            obligation_ids=consumer_ids,
             tenant_binding=session.tenant_binding,
             principal_subject=session.principal_subject,
             roles=tuple(sorted(principal.roles)),
@@ -1138,7 +1164,7 @@ class NativeResearchMaterialExecutor:
                 receipt.receipt_id.encode("utf-8")
             ).hexdigest()[:24],
             authority_id=receipt.authority_id,
-            obligation_ids=(obligation_id,),
+            obligation_ids=consumer_ids,
             query_receipt_refs=(receipt.receipt_id,),
             evidence_kind="p14_native_research_material",
             state=EvidenceState.VERIFIED,
@@ -1177,6 +1203,7 @@ class NativeResearchMaterialExecutor:
                 "material_result_coverage": result_coverage.model_dump(
                     mode="json"
                 ),
+                "fulfilled_intent_ids": list(consumer_ids),
                 "native_subject_ref": native_subject_ref,
                 "result_hash": result.result_hash,
                 "row_count": result.row_count,

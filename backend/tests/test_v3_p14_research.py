@@ -501,6 +501,41 @@ def test_verified_receipted_evidence_updates_obligation_hypothesis_and_stopping_
     assert updated.stopping.status == StoppingStatus.COMPLETE
 
 
+def test_shared_receipted_evidence_atomically_verifies_all_consumers_once():
+    session = _session("obl-p14-a", "obl-p14-b")
+    receipt, evidence = _evidence("obl-p14-a")
+    receipt = receipt.model_copy(
+        update={"obligation_ids": ("obl-p14-a", "obl-p14-b")}
+    )
+    evidence = evidence.model_copy(
+        update={"obligation_ids": ("obl-p14-a", "obl-p14-b")}
+    )
+
+    updated = ResearchManager.admit_shared_receipted_evidence(
+        session,
+        obligation_ids=("obl-p14-a", "obl-p14-b"),
+        receipt=receipt,
+        evidence=evidence,
+        satisfies_obligation=True,
+        now=NOW,
+    )
+
+    assert {
+        item.obligation_id: item.state for item in updated.obligations
+    } == {
+        "obl-p14-a": ObligationState.VERIFIED,
+        "obl-p14-b": ObligationState.VERIFIED,
+    }
+    assert updated.budget.material_executions_used == 1
+    assert updated.stopping.status == StoppingStatus.COMPLETE
+    assert {
+        item.obligation_id for item in updated.evidence_refs
+    } == {"obl-p14-a", "obl-p14-b"}
+    assert {
+        item.evidence_id for item in updated.evidence_refs
+    } == {evidence.artifact_id}
+
+
 def test_unverified_or_unreceipted_material_result_cannot_enter_research_epistemics():
     session = _session("obl-p14-1")
     receipt, evidence = _evidence("obl-p14-1", state=EvidenceState.EXECUTED)

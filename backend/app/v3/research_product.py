@@ -121,6 +121,7 @@ class ResearchMaterialExecutor(Protocol):
         query_fingerprint: str,
         execution_link_id: UUID,
         analytical_scope: AnalyticalRequestContract | None = None,
+        consumer_obligation_ids: tuple[str, ...] | None = None,
     ) -> ResearchMaterialOutcome: ...
 
 
@@ -180,6 +181,7 @@ class NativeResearchOccurrenceRunner:
         request: NativeEngineRequest | None,
         native_session_token: str | None,
         analytical_scope: AnalyticalRequestContract | None = None,
+        consumer_obligation_ids: tuple[str, ...] | None = None,
         repair_parent_link_id: UUID | None = None,
     ) -> NativeResearchOccurrenceResult:
         resumed_exact = False
@@ -345,6 +347,8 @@ class NativeResearchOccurrenceRunner:
             }
             if analytical_scope is not None:
                 material_kwargs["analytical_scope"] = analytical_scope
+            if consumer_obligation_ids is not None:
+                material_kwargs["consumer_obligation_ids"] = consumer_obligation_ids
             outcome = self._materials.execute(**material_kwargs)
 
         if outcome.native_conversation_id != link.native_conversation_id:
@@ -909,6 +913,8 @@ class ResearchAskOrchestrator:
         session_id: str,
         principal: Principal,
         obligation_id: str | None = None,
+        consumer_obligation_ids: tuple[str, ...] | None = None,
+        analytical_scope: AnalyticalRequestContract | None = None,
         native_session_token: str | None = None,
         result_dependency_source_obligation_id: str | None = None,
     ) -> ResearchAskResponse:
@@ -929,8 +935,33 @@ class ResearchAskOrchestrator:
         )
         selected = self._select_obligation(session, delegatable, obligation_id)
         question = self.accepted_material_question(session, selected)
-        execution_analytical_scope: AnalyticalRequestContract | None = None
-        canonical_analytical_scope: AnalyticalRequestContract | None = None
+        consumer_ids = tuple(
+            dict.fromkeys(consumer_obligation_ids or (selected,))
+        )
+        if selected not in set(consumer_ids):
+            raise ResearchProductError(
+                "P14_SHARED_ANCHOR_REQUIRED",
+                "shared material consumers must include the execution anchor",
+            )
+        if not set(consumer_ids).issubset(set(delegatable)):
+            raise ResearchProductError(
+                "P14_SHARED_CONSUMER_NOT_DELEGATABLE",
+                "shared consumers must be accepted analytical obligations",
+            )
+        consumer_questions = tuple(
+            self.accepted_material_question(session, item)
+            for item in consumer_ids
+        )
+        if len(consumer_ids) > 1 and any(
+            item.result_dependency is not None
+            for item in consumer_questions
+        ):
+            raise ResearchProductError(
+                "P14_SHARED_RESULT_DEPENDENCY_FORBIDDEN",
+                "result-dependent child material requires a later occurrence",
+            )
+        execution_analytical_scope: AnalyticalRequestContract | None = analytical_scope
+        canonical_analytical_scope: AnalyticalRequestContract | None = analytical_scope
         if question.result_dependency is not None:
             resolver = getattr(material_executor, "resolve_result_dependency", None)
             if not callable(resolver):
@@ -1094,6 +1125,7 @@ class ResearchAskOrchestrator:
                     request=request,
                     native_session_token=native_session_token,
                     analytical_scope=execution_analytical_scope,
+                    consumer_obligation_ids=consumer_ids,
                     repair_parent_link_id=repair_parent_link_id,
                 )
             except ResearchMaterialObservationUnavailable as first_exc:
@@ -1118,6 +1150,7 @@ class ResearchAskOrchestrator:
                         request=None,
                         native_session_token=native_session_token,
                         analytical_scope=execution_analytical_scope,
+                        consumer_obligation_ids=consumer_ids,
                         repair_parent_link_id=repair_parent_link_id,
                     )
                 except ResearchMaterialObservationUnavailable as retry_exc:
@@ -1236,13 +1269,22 @@ class ResearchAskOrchestrator:
         resumed_exact = occurrence.resumed_exact_occurrence
 
         before = session.revision
-        updated = ResearchManager.admit_receipted_evidence(
-            session,
-            obligation_id=selected,
-            receipt=outcome.receipt,
-            evidence=outcome.evidence,
-            satisfies_obligation=outcome.satisfies_obligation,
-        )
+        if len(consumer_ids) > 1:
+            updated = ResearchManager.admit_shared_receipted_evidence(
+                session,
+                obligation_ids=consumer_ids,
+                receipt=outcome.receipt,
+                evidence=outcome.evidence,
+                satisfies_obligation=outcome.satisfies_obligation,
+            )
+        else:
+            updated = ResearchManager.admit_receipted_evidence(
+                session,
+                obligation_id=selected,
+                receipt=outcome.receipt,
+                evidence=outcome.evidence,
+                satisfies_obligation=outcome.satisfies_obligation,
+            )
         self._store.save(updated, expected_revision=before)
         self._store.mark_verified(
             pending.id,

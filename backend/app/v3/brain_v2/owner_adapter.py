@@ -122,6 +122,7 @@ from .activities import (
 from .keys import CognitionPurpose, CognitionRequestKey, NativeMaterialRequestKey
 from .material_groups import (
     MaterialGroupDependencyError,
+    material_group_acquisition_contract,
     project_material_groups,
     result_dependency_execution_anchor,
     select_pending_material_group,
@@ -850,9 +851,9 @@ class DimaBrainV2Activities(BrainActivities):
                 session.session_id,
             )
 
-        contract = analytical_scope_contract(
+        contract = material_group_acquisition_contract(
             session=session,
-            obligation_id=group.anchor_requirement_id,
+            group=group,
         )
         if contract.scope_fingerprint != brief.scope_fingerprint:
             raise BrainV2OwnerError(
@@ -908,10 +909,25 @@ class DimaBrainV2Activities(BrainActivities):
             native_acquisition_count=1,
             dedup_hit=False,
         ):
+            questions_by_id = {
+                item.goal_id: item for item in brief.questions
+            }
+            shared_direct_consumers = (
+                group.consumer_requirement_ids
+                if len(group.consumer_requirement_ids) > 1
+                and all(
+                    questions_by_id[item].kind
+                    in {ResearchGoalKind.COMPARISON, ResearchGoalKind.RANKING}
+                    for item in group.consumer_requirement_ids
+                )
+                else (group.anchor_requirement_id,)
+            )
             response = self._research.run_next(
                 session_id=session.session_id,
                 principal=self._principal,
                 obligation_id=group.anchor_requirement_id,
+                consumer_obligation_ids=shared_direct_consumers,
+                analytical_scope=contract,
                 native_session_token=self._native_session_token,
                 result_dependency_source_obligation_id=(
                     dependency_source_obligation_id

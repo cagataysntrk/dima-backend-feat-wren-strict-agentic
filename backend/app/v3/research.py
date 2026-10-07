@@ -616,6 +616,90 @@ class ResearchManager:
         return cls.advance(session,now=now,obligations=cls.replace(session,item),hypotheses=tuple(hypotheses),evidence_refs=(*session.evidence_refs,eref),counter_evidence_refs=tuple(counters),budget=budget)
 
     @classmethod
+    def admit_shared_receipted_evidence(
+        cls,
+        session,
+        *,
+        obligation_ids,
+        receipt,
+        evidence,
+        satisfies_obligation,
+        now=None,
+    ):
+        """Admit one native material execution against N verified direct consumers."""
+
+        ids = tuple(dict.fromkeys(obligation_ids))
+        if not ids:
+            raise ResearchStateError(
+                "P14_SHARED_OBLIGATION_REQUIRED",
+                "shared material admission requires at least one obligation",
+            )
+        if not satisfies_obligation:
+            raise ResearchStateError(
+                "P14_SHARED_PARTIAL_ADMISSION_FORBIDDEN",
+                "every shared consumer verifier must pass before admission",
+            )
+        items = tuple(cls.obligation(session, oid) for oid in ids)
+        if any(item.state == ObligationState.LIMITED for item in items):
+            raise ResearchStateError(
+                "P14_SHARED_OBLIGATION_TERMINAL",
+                "limited consumer cannot be rewritten by shared Evidence",
+            )
+        for oid in ids:
+            cls.check_evidence(session, oid, receipt, evidence)
+        if any(
+            item.evidence_id == evidence.artifact_id
+            for item in session.evidence_refs
+        ):
+            raise ResearchStateError(
+                "P14_SHARED_EVIDENCE_DUPLICATE",
+                evidence.artifact_id,
+            )
+        if session.budget.material_executions_used >= session.budget.max_material_executions:
+            raise ResearchStateError(
+                "P14_MATERIAL_EXECUTION_BUDGET_EXHAUSTED",
+                "budget exhausted",
+            )
+
+        by_id = {item.obligation_id: item for item in session.obligations}
+        for oid in ids:
+            item = by_id[oid]
+            by_id[oid] = item.model_copy(
+                update={
+                    "state": ObligationState.VERIFIED,
+                    "evidence_refs": tuple(
+                        dict.fromkeys((*item.evidence_refs, evidence.artifact_id))
+                    ),
+                }
+            )
+        obligations = tuple(
+            by_id[item.obligation_id] for item in session.obligations
+        )
+        evidence_refs = tuple(
+            EvidenceRef(
+                evidence_id=evidence.artifact_id,
+                receipt_id=receipt.receipt_id,
+                authority_id=receipt.authority_id,
+                obligation_id=oid,
+            )
+            for oid in ids
+        )
+        budget = session.budget.model_copy(
+            update={
+                "material_executions_used": (
+                    session.budget.material_executions_used + 1
+                )
+            }
+        )
+        return cls.advance(
+            session,
+            now=now,
+            obligations=obligations,
+            evidence_refs=(*session.evidence_refs, *evidence_refs),
+            budget=budget,
+        )
+
+    @classmethod
     def record_limitation(cls,session,*,obligation_id,code,detail,now=None):
         item=cls.obligation(session,obligation_id)
         if item.state==ObligationState.VERIFIED: raise ResearchStateError("P14_VERIFIED_OBLIGATION_IMMUTABLE",obligation_id)
