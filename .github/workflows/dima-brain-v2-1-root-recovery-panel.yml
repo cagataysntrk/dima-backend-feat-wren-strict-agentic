@@ -36,18 +36,7 @@ jobs:
       max-parallel: 2
       matrix:
         slot_id:
-          - R01_COMPARISON_ORIGINAL
-          - R02_COMPARISON_SEMANTIC
-          - R03_COMPARISON_WORDING
-          - R04_TEMPORAL_ORIGINAL
-          - R05_TEMPORAL_SEMANTIC
-          - R06_TEMPORAL_WORDING
-          - R07_ADAPTIVE_ORIGINAL
-          - R08_ADAPTIVE_SEMANTIC
-          - R09_ADAPTIVE_WORDING
-          - R10_CONTINUATION_ORIGINAL
           - R11_CONTINUATION_DEEPENING
-          - R12_CONTINUATION_REPORT_ONLY
 
     runs-on: ubuntu-latest
     timeout-minutes: 90
