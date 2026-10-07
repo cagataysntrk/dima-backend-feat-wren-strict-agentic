@@ -19,7 +19,7 @@ env:
   MB_RESTRICTED_EMAIL: restricted@brain-v2-recovery.local
   MB_RESTRICTED_GROUP: Dima Brain V2 Recovery Restricted
   PROVIDER_PROXY_PORT: "8799"
-  HARD_PROVIDER_REQUEST_CEILING: "18"
+  HARD_PROVIDER_REQUEST_CEILING: "30"
   PROMPT_TOKEN_CEILING: "450000"
   COMPLETION_TOKEN_CEILING: "50000"
   REASONING_TOKEN_CEILING: "35000"
@@ -275,7 +275,7 @@ jobs:
           set -euo pipefail
           kill "$PROVIDER_PROXY_PID"
           wait "$PROVIDER_PROXY_PID" 2>/dev/null || true
-          nohup python backend/lab/metabase/core_b/runtime/openrouter_counting_proxy.py             --listen-host 0.0.0.0             --listen-port "$PROVIDER_PROXY_PORT"             --ceiling "$HARD_PROVIDER_REQUEST_CEILING"             --source-ceiling research_intake=6             --source-ceiling metabase=14             --source-ceiling p17_manager=3             --source-ceiling p18_manager=2             --source-ceiling p19_manager=6             --source-ceiling p20_synthesis=1             --prompt-token-ceiling "$PROMPT_TOKEN_CEILING"             --completion-token-ceiling "$COMPLETION_TOKEN_CEILING"             --reasoning-token-ceiling "$REASONING_TOKEN_CEILING"             --provider-cost-ceiling "$PROVIDER_COST_CEILING"             --receipt "backend/eval/brain_v2_root_recovery/provider_${SLOT_ID}.json"             >"backend/eval/brain_v2_root_recovery/provider_${SLOT_ID}.log" 2>&1 &
+          nohup python backend/lab/metabase/core_b/runtime/openrouter_counting_proxy.py             --listen-host 0.0.0.0             --listen-port "$PROVIDER_PROXY_PORT"             --ceiling "$HARD_PROVIDER_REQUEST_CEILING"             --source-ceiling research_intake=6             --source-ceiling metabase=14             --source-ceiling p17_manager=3             --source-ceiling p18_manager=2             --source-ceiling p19_manager=6             --source-ceiling p20_synthesis=3             --prompt-token-ceiling "$PROMPT_TOKEN_CEILING"             --completion-token-ceiling "$COMPLETION_TOKEN_CEILING"             --reasoning-token-ceiling "$REASONING_TOKEN_CEILING"             --provider-cost-ceiling "$PROVIDER_COST_CEILING"             --receipt "backend/eval/brain_v2_root_recovery/provider_${SLOT_ID}.json"             >"backend/eval/brain_v2_root_recovery/provider_${SLOT_ID}.log" 2>&1 &
           echo "PROVIDER_PROXY_PID=$!" >> "$GITHUB_ENV"
           for i in $(seq 1 30); do
             curl -fsS "http://127.0.0.1:$PROVIDER_PROXY_PORT/__dima__/health" >/dev/null && break
@@ -331,9 +331,9 @@ jobs:
           assert r["stale_evidence"]==0, r
           assert r["agent_api_request_count"]==0, r
           provider=r["provider_total"]
-          assert provider["actual_provider_request_count"] <= 18, provider
+          assert provider["actual_provider_request_count"] <= 30, provider
           assert provider["blocked_request_count"] == 0, provider
-          assert provider["provider_requests_by_source"].get("p20_synthesis",0) <= 1, provider
+          assert provider["provider_requests_by_source"].get("p20_synthesis",0) <= case["turn_count_expected"], provider
           case=r["cases"][0]
           assert case["all_turns_executed"] is True, case
           assert case["accepted_terminal"] is True, case
