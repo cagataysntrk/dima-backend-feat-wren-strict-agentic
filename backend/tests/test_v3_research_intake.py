@@ -2648,6 +2648,125 @@ def test_temporal_clarification_reconsideration_accepts_bounded_root_change_span
     assert reconsideration["frame_policy"]["invent_additional_comparison_period"] is False
 
 
+def test_missing_change_ranking_frame_uses_closed_span_resolver():
+    question = (
+        "Investigate governed change over the accepted bounded interval and "
+        "rank the most deteriorated department."
+    )
+    clarify = {
+        "terminal": "CLARIFY",
+        "clarification_question": (
+            "Which additional comparison period should define the change?"
+        ),
+    }
+    ready = ready_payload(
+        kind="ranking",
+        subject=("metric.downtime",),
+        related=("dimension.department",),
+    )
+    ready["goals"][0].update(
+        {
+            "source_text": question,
+            "source_fragment_text": question,
+            "ranking": {
+                "source_text": question,
+                "direction": "desc",
+                "limit": 1,
+                "measure_semantic_id": "metric.downtime",
+                "basis": "change",
+            },
+        }
+    )
+    ready["time_periods"] = []
+    resolved_span = {
+        "terminal": "RESOLVED",
+        "frame": "SPAN",
+        "span": _r6_period(
+            "accepted bounded interval",
+            "2026-05-01",
+            "2026-07-01",
+            role="material_window",
+        ),
+    }
+    transport = SequenceTransport([clarify, ready, resolved_span])
+
+    result = ResearchIntakeCompiler(
+        transport=transport,
+        calendar_reference_date="2026-10-07",
+    ).compile(
+        question=question,
+        catalog=_r6_temporal_catalog(),
+    )
+
+    assert result.terminal == ResearchIntakeTerminal.READY
+    assert result.model_calls == 3
+    assert result.brief is not None
+    assert len(result.brief.scope.periods) == 1
+    (period,) = result.brief.scope.periods
+    assert period.role == TemporalRole.MATERIAL_WINDOW
+    assert (period.start, period.end) == ("2026-05-01", "2026-07-01")
+    assert transport.calls[2]["schema_name"].endswith("_change_frame")
+    issue = transport.calls[2]["user"]["change_frame_issue"]
+    assert issue["kind"] == "MISSING_CHANGE_TEMPORAL_FRAME"
+    assert issue["governed_time_dimension_id"] == "dimension.event_date"
+
+
+def test_missing_change_ranking_frame_pair_requires_explicit_typed_pair():
+    question = "Compare two explicit accepted periods by governed downtime change."
+    ready = ready_payload(
+        kind="ranking",
+        subject=("metric.downtime",),
+        related=("dimension.department",),
+    )
+    ready["goals"][0].update(
+        {
+            "source_text": question,
+            "source_fragment_text": question,
+            "ranking": {
+                "source_text": question,
+                "direction": "desc",
+                "limit": 1,
+                "measure_semantic_id": "metric.downtime",
+                "basis": "change",
+            },
+        }
+    )
+    ready["time_periods"] = []
+    pair = {
+        "terminal": "RESOLVED",
+        "frame": "PAIR",
+        "baseline_period": _r6_period(
+            "two explicit accepted periods",
+            "2026-05-01",
+            "2026-06-01",
+            role="baseline_period",
+        ),
+        "comparison_period": _r6_period(
+            "two explicit accepted periods",
+            "2026-06-01",
+            "2026-07-01",
+            role="comparison_period",
+        ),
+    }
+    transport = SequenceTransport([ready, pair])
+
+    result = ResearchIntakeCompiler(
+        transport=transport,
+        calendar_reference_date="2026-10-07",
+    ).compile(
+        question=question,
+        catalog=_r6_temporal_catalog(),
+    )
+
+    assert result.terminal == ResearchIntakeTerminal.READY
+    assert result.model_calls == 2
+    assert result.brief is not None
+    assert tuple(p.role for p in result.brief.scope.periods) == (
+        TemporalRole.BASELINE_PERIOD,
+        TemporalRole.COMPARISON_PERIOD,
+    )
+
+
 def test_root_causal_level_observation_does_not_invent_change_authority():
     payload = ready_payload(
         kind="root_cause",
