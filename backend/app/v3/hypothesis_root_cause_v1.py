@@ -25,6 +25,7 @@ from app.v3.hypothesis_root_cause import (
 from app.v3.research_manager import (
     InvestigationIntent,
     ResearchManagerSnapshot,
+    project_discriminating_test_reentry_rule,
 )
 
 
@@ -234,33 +235,14 @@ def discriminating_test_capacity_available(
 
     if not evidence_surface_available:
         return False
-    if snapshot.remaining_followup_native_turns <= 0:
-        return False
-    if snapshot.investigation.max_contract_depth >= snapshot.action_profile.max_depth:
-        return False
-
-    rule = snapshot.action_profile.rule_for(
-        InvestigationIntent.TEST_DISCRIMINATING_EVIDENCE
-    )
-    if rule is None:
-        return False
     if target_obligation_id is None:
-        return True
-
-    # The legal action profile is the sole move-capability authority. Exact
-    # target-obligation Evidence remains a provenance/currentness prerequisite
-    # for that move; it is not a second semantic authorization.
-    parent_verified = any(
-        item.obligation_id == target_obligation_id
-        and str(getattr(item.state, "value", item.state)) == "VERIFIED"
-        for item in snapshot.parent_obligations
-    )
-    if not parent_verified:
         return False
-    return any(
-        item.obligation_id == target_obligation_id
-        and item.evidence_id in set(snapshot.evidence_refs)
-        for item in snapshot.evidence_results
+    return (
+        project_discriminating_test_reentry_rule(
+            snapshot=snapshot,
+            obligation_id=target_obligation_id,
+        )
+        is not None
     )
 
 
