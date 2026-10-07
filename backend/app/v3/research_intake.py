@@ -427,6 +427,14 @@ class ModelReadyResearchIntake(Frozen):
     scope_mutation_kind: ScopeMutationKind | None = None
 
 
+class ModelContinueResearchIntake(Frozen):
+    """Reuse exact prior accepted analytical goals without minting new semantics."""
+
+    terminal: Literal["CONTINUE"]
+    objective: str = Field(min_length=1)
+    prior_question_refs: tuple[str, ...] = Field(min_length=1)
+
+
 class ModelClarifyResearchIntake(Frozen):
     terminal: Literal["CLARIFY"]
     clarification_question: str = Field(min_length=1)
@@ -442,6 +450,7 @@ class ModelResearchIntakeEnvelope(Frozen):
 
     result: (
         ModelReadyResearchIntake
+        | ModelContinueResearchIntake
         | ModelClarifyResearchIntake
         | ModelUnsupportedResearchIntake
     )
@@ -805,6 +814,52 @@ def _intake_provider_schema(
     else:
         ready_properties.pop("required_domains", None)
     ready_definition["required"] = list(ready_properties)
+
+    result_schema = (schema.get("properties") or {}).get("result")
+    if not isinstance(result_schema, dict):
+        raise ResearchIntakeError(
+            "INTAKE_SCHEMA_INVALID",
+            "provider result schema is absent",
+        )
+    result_choices = result_schema.get("anyOf") or []
+    continue_ref = "#/$defs/ModelContinueResearchIntake"
+    if has_prior_brief:
+        continue_definition = definitions.get("ModelContinueResearchIntake")
+        if not isinstance(continue_definition, dict):
+            raise ResearchIntakeError(
+                "INTAKE_SCHEMA_INVALID",
+                "provider CONTINUE definition is absent",
+            )
+        continue_properties = continue_definition.get("properties")
+        if not isinstance(continue_properties, dict):
+            raise ResearchIntakeError(
+                "INTAKE_SCHEMA_INVALID",
+                "provider CONTINUE properties are absent",
+            )
+        refs = [f"q{index}" for index in range(1, 257)]
+        prior_refs = continue_properties.get("prior_question_refs")
+        if not isinstance(prior_refs, dict):
+            raise ResearchIntakeError(
+                "INTAKE_SCHEMA_INVALID",
+                "provider CONTINUE question refs are absent",
+            )
+        items = prior_refs.get("items")
+        if not isinstance(items, dict):
+            raise ResearchIntakeError(
+                "INTAKE_SCHEMA_INVALID",
+                "provider CONTINUE question ref items are absent",
+            )
+        items["enum"] = refs
+    else:
+        result_schema["anyOf"] = [
+            item
+            for item in result_choices
+            if not (
+                isinstance(item, dict)
+                and item.get("$ref") == continue_ref
+            )
+        ]
+        definitions.pop("ModelContinueResearchIntake", None)
 
     semantic_ids = tuple(
         sorted(item.candidate_id for item in catalog.semantic_refs)
@@ -1240,6 +1295,7 @@ class ResearchIntakeCompiler:
             },
             "questions": [
                 {
+                    "question_ref": f"q{index}",
                     "kind": question.kind.value,
                     "relationship_intent": (
                         question.relationship_intent.value
@@ -1270,7 +1326,7 @@ class ResearchIntakeCompiler:
                         else None
                     ),
                 }
-                for question in brief.questions
+                for index, question in enumerate(brief.questions, start=1)
             ],
             "deliverables": [
                 {
@@ -2895,7 +2951,7 @@ class ResearchIntakeCompiler:
             *,
             instruction: str,
             reconsideration: dict[str, Any] | None = None,
-        ) -> ModelResearchBriefDraft:
+        ) -> ModelResearchBriefDraft | ModelContinueResearchIntake:
             user_payload: dict[str, Any] = {
                 "current_user_message": current,
                 "grounded_catalog": self._catalog_payload(catalog),
@@ -2917,6 +2973,8 @@ class ResearchIntakeCompiler:
             try:
                 envelope = ModelResearchIntakeEnvelope.model_validate_json(raw)
                 provider_result = envelope.result
+                if isinstance(provider_result, ModelContinueResearchIntake):
+                    return provider_result
                 if isinstance(provider_result, ModelReadyResearchIntake):
                     return ModelResearchBriefDraft(
                         terminal=ResearchIntakeTerminal.READY,
@@ -3134,6 +3192,72 @@ class ResearchIntakeCompiler:
                 "not authority to restore obligations the user removed."
             ),
         )
+
+        if isinstance(draft, ModelContinueResearchIntake):
+            if prior_brief is None:
+                raise ResearchIntakeError(
+                    "INTAKE_CONTINUATION_PRIOR_REQUIRED",
+                    "CONTINUE requires one prior accepted ResearchBrief",
+                )
+            prior_by_ref = {
+                f"q{index}": question
+                for index, question in enumerate(prior_brief.questions, start=1)
+            }
+            selected_refs = tuple(dict.fromkeys(draft.prior_question_refs))
+            unknown = tuple(
+                item for item in selected_refs if item not in prior_by_ref
+            )
+            if unknown:
+                raise ResearchIntakeError(
+                    "INTAKE_CONTINUATION_REF_INVALID",
+                    ",".join(unknown),
+                )
+            selected_questions = tuple(
+                prior_by_ref[item] for item in selected_refs
+            )
+            if not selected_questions:
+                raise ResearchIntakeError(
+                    "INTAKE_CONTINUATION_GOAL_REQUIRED",
+                    "CONTINUE must reference at least one prior accepted question",
+                )
+            identity = {
+                "prior_brief_id": prior_brief.brief_id,
+                "current_user_message": current,
+                "prior_question_refs": selected_refs,
+                "scope_fingerprint": hashlib.sha256(
+                    _canonical(
+                        prior_brief.scope.model_dump(mode="json")
+                    ).encode("utf-8")
+                ).hexdigest(),
+            }
+            brief = ResearchBrief(
+                brief_id=(
+                    "rb_"
+                    + hashlib.sha256(
+                        _canonical(identity).encode("utf-8")
+                    ).hexdigest()[:24]
+                ),
+                objective=draft.objective.strip(),
+                scope=prior_brief.scope,
+                required_domains=prior_brief.required_domains,
+                questions=selected_questions,
+                deliverables=(),
+                must_requirement_ids=tuple(
+                    item.goal_id for item in selected_questions
+                ),
+                blocking_goal_ids=(),
+                context_version=prior_brief.context_version,
+                status=ResearchBriefStatus.READY_FOR_RESEARCH,
+            )
+            return ResearchIntakeResult(
+                terminal=ResearchIntakeTerminal.READY,
+                brief=brief,
+                investigation_requirements=(),
+                scope_contract=None,
+                turn_transition=TurnTransitionKind.SAME_SCOPE_CONTINUATION,
+                catalog_fingerprint=catalog.fingerprint,
+                model_calls=self.call_count,
+            )
 
         draft = self._canonicalize_analytical_goals(
             draft,
