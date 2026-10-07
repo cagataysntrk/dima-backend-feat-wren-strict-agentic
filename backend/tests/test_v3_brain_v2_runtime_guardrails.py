@@ -1,4 +1,5 @@
 from pathlib import Path
+import json
 import re
 import subprocess
 import sys
@@ -14,6 +15,7 @@ BACKEND_ROOT = REPO_ROOT / "backend"
 LIVE_WORKFLOW = REPO_ROOT / ".github" / "workflows" / "dima-brain-v2-phase1-live.yml"
 BRAIN_LIVE = BACKEND_ROOT / "lab" / "metabase" / "brain_v2" / "phase1_live.py"
 LIVE_SUPPORT = BACKEND_ROOT / "lab" / "metabase" / "brain_v2" / "live_support.py"
+SEMANTIC_AUTHORITY_REGISTRY = BACKEND_ROOT / "lab" / "metabase" / "brain_v2" / "semantic_authority_registry.json"
 
 
 def test_all_final_probes_use_brain_v2_runtime():
@@ -177,3 +179,46 @@ def test_epistemic_and_synthesis_owners_do_not_execute_native_analytics():
             if symbol in source:
                 offenders.append(f"{path.relative_to(BACKEND_ROOT)}:{symbol}")
     assert not offenders, offenders
+
+
+def test_semantic_authority_registry_matches_constitution():
+    registry = json.loads(
+        SEMANTIC_AUTHORITY_REGISTRY.read_text(encoding="utf-8")
+    )
+    assert registry["schema_version"] == "dima_semantic_authority_law_v1"
+    assert registry["sole_fulfillment_judge"] == "verify_analytical_fulfillment_v1"
+    assert registry["laws"]["closed_grammar_runtime_veto_forbidden"] is True
+    assert registry["laws"]["new_duplicate_semantic_owner_forbidden"] is True
+    assert registry["laws"]["acquisition_identity_not_requirement_identity"] is True
+    assert registry["laws"]["p18_turn_bundle_atomic_reset"] is True
+
+
+def test_langgraph_remains_orchestration_not_semantic_owner():
+    source = (
+        BACKEND_ROOT / "app" / "v3" / "brain_v2" / "graph.py"
+    ).read_text(encoding="utf-8")
+    for forbidden in (
+        "analytical_scope_contract(",
+        "verify_analytical_fulfillment_v1",
+        "assert_material_native_scope",
+        "assert_material_result_coverage",
+        "NativeEngineBridge",
+    ):
+        assert forbidden not in source
+
+
+def test_completion_remains_ledger_not_analytics():
+    for relative in (
+        "app/v3/brain_v2/completion_policy.py",
+        "app/v3/product/completion.py",
+    ):
+        source = (BACKEND_ROOT / relative).read_text(encoding="utf-8")
+        for forbidden in (
+            "analytical_scope_contract(",
+            "verify_analytical_fulfillment_v1",
+            "assert_material_native_scope",
+            "assert_material_result_coverage",
+            "NativeEngineBridge",
+            "execute_native_query(",
+        ):
+            assert forbidden not in source

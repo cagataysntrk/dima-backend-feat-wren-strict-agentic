@@ -1,0 +1,59 @@
+{
+  "schema_version": "dima_semantic_authority_law_v1",
+  "decision_document": "backend/belgeler/metabase/DIMA_BRAIN_V2_1_SEMANTIC_AUTHORITY_CONSTITUTION.md",
+  "canonical_chain": [
+    {
+      "fact": "accepted_business_what_and_scope",
+      "owner": "ResearchBrief/ResearchScope"
+    },
+    {
+      "fact": "executable_analytical_what",
+      "owner": "AnalyticalIntentV1"
+    },
+    {
+      "fact": "analytical_how",
+      "owner": "Metabase/Metabot"
+    },
+    {
+      "fact": "observed_execution",
+      "owner": "AnalyticalExecutionManifestV1"
+    },
+    {
+      "fact": "intent_execution_fulfillment",
+      "owner": "verify_analytical_fulfillment_v1"
+    },
+    {
+      "fact": "governed_observed_truth",
+      "owner": "Evidence"
+    }
+  ],
+  "projections": {
+    "AnalyticalRequestContract": "deterministic_transport_projection_only",
+    "MaterialGroup": "minimum_acquisition_grouping_only",
+    "LangGraph": "orchestration_checkpoint_resume_only",
+    "CompletionLedger": "terminal_accounting_only",
+    "P20": "governed_synthesis_only"
+  },
+  "epistemic_owners": {
+    "P18": "relationship_interpretation_over_evidence",
+    "P19": "rca_hypothesis_epistemics_over_evidence",
+    "P17": "bounded_next_test_information_gain_only"
+  },
+  "conformance_only": [
+    "assert_v1_analytical_composition",
+    "validate_v1_research_brief"
+  ],
+  "sole_fulfillment_judge": "verify_analytical_fulfillment_v1",
+  "transitional_proof_producers": [
+    "app.v3.research_analytical_scope.assert_material_native_scope",
+    "app.v3.research_material_coverage.assert_material_result_coverage"
+  ],
+  "laws": {
+    "acquisition_identity_not_requirement_identity": true,
+    "p18_turn_bundle_atomic_reset": true,
+    "metabase_owns_how": true,
+    "dima_owns_what_governance_evidence_epistemics": true,
+    "closed_grammar_runtime_veto_forbidden": true,
+    "new_duplicate_semantic_owner_forbidden": true
+  }
+}

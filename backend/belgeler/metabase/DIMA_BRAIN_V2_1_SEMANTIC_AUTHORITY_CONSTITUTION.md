@@ -309,6 +309,12 @@ validation.
 
 ## 13. Executable enforcement
 
+Machine-readable authority registry:
+
+`backend/lab/metabase/brain_v2/semantic_authority_registry.json`
+
+Any deliberate owner-map change must update the constitution, registry and executable guard in the same change.
+
 Primary guardrails:
 
 - `backend/tests/test_v3_brain_v2_runtime_guardrails.py`
