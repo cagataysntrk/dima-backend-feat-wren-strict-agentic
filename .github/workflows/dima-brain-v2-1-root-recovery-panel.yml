@@ -37,7 +37,6 @@ jobs:
       matrix:
         slot_id:
           - R07_ADAPTIVE_ORIGINAL
-          - R10_CONTINUATION_ORIGINAL
 
     runs-on: ubuntu-latest
     timeout-minutes: 90
