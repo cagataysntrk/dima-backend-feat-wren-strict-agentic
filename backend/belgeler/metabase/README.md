@@ -3,9 +3,9 @@
 > **Status:** CURRENT AUTHORITY  
 > **Working recovery branch:** `feat/dima-brain-v2-1-specification-closure`  
 > **Current readiness program:** `DIMA_BRAIN_V2_1_30CASE_READINESS_PROGRESS.md`  
-> **Active semantic recovery candidate:** `34d0bbd461222e2a0859ed196a5a950e362c8622` — provider-free GREEN, not final-frozen  
-> **Certified engine:** `4c49b8da6b424b0fa4d8ef340ca1b238d12980c1` / `0.63.18-dima.11.1`  
-> **Engine digest:** `sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d`
+> **Active semantic recovery candidate:** `eee7583cb67d50779784805c469230ef2b82a5a2` — Fix A/B provider-free GREEN, not final-frozen  
+> **Certified engine:** `686671fa7e55f715e4fb5ac155f9e66019fd12d8` / `0.63.18-dima.11.2`  
+> **Engine digest:** `sha256:fe1b6fb67be6dbadea1af5d415f3ba2e033d46f91289f5c3c9844bee20c379bd`
 
 This directory intentionally contains only the current Brain V2.1 authority set plus
 `legacy/`. If a developer is unsure what is current, start here. During the active
@@ -19,25 +19,28 @@ not override its latest phase status or next legal action.
    Canonical first-principles architecture, owner model, runtime topology, T1–T7
    capability foundation, UX-readiness boundary and final readiness status.
 
-2. **[DIMA_BRAIN_V2_1_ENGINEERING_PLAYBOOK.md](./DIMA_BRAIN_V2_1_ENGINEERING_PLAYBOOK.md)**  
+2. **[DIMA_BRAIN_V2_1_SEMANTIC_AUTHORITY_CONSTITUTION.md](./DIMA_BRAIN_V2_1_SEMANTIC_AUTHORITY_CONSTITUTION.md)**  
+   Permanent semantic-owner law: exactly one owner per business-semantic fact; projections/transport/structural validation may not become second veto authorities.
+
+3. **[DIMA_BRAIN_V2_1_ENGINEERING_PLAYBOOK.md](./DIMA_BRAIN_V2_1_ENGINEERING_PLAYBOOK.md)**  
    Mandatory development method: owner analysis, RED loop, provider-free first,
    stateful/metamorphic testing, paid-live discipline, observability, security,
    commit discipline and repository-wide anti-patterns.
 
-3. **[DIMA_BRAIN_V2_1_CURRENT_HANDOFF.md](./DIMA_BRAIN_V2_1_CURRENT_HANDOFF.md)**  
+4. **[DIMA_BRAIN_V2_1_CURRENT_HANDOFF.md](./DIMA_BRAIN_V2_1_CURRENT_HANDOFF.md)**  
    Exact current closure receipt and next legal action. This is the operational
    starting point for the next developer.
 
-4. **[DIMA_BRAIN_V2_1_ROUND2_FINAL_ADJUDICATION_2026-10-02.md](./DIMA_BRAIN_V2_1_ROUND2_FINAL_ADJUDICATION_2026-10-02.md)**  
+5. **[DIMA_BRAIN_V2_1_ROUND2_FINAL_ADJUDICATION_2026-10-02.md](./DIMA_BRAIN_V2_1_ROUND2_FINAL_ADJUDICATION_2026-10-02.md)**  
    Immutable broad 30-case quality/speed/cost receipt and the current benchmark verdict.
 
-5. **[DIMA_BRAIN_V2_1_30CASE_READINESS_PROGRESS.md](./DIMA_BRAIN_V2_1_30CASE_READINESS_PROGRESS.md)**  
+6. **[DIMA_BRAIN_V2_1_30CASE_READINESS_PROGRESS.md](./DIMA_BRAIN_V2_1_30CASE_READINESS_PROGRESS.md)**  
    Single canonical Phase 0–10 readiness log, exact current candidate, gates and next legal action.
 
-6. **[DIMA_BRAIN_V2_1_SPECIFICATION_CLOSURE_PROGRESS.md](./DIMA_BRAIN_V2_1_SPECIFICATION_CLOSURE_PROGRESS.md)**  
+7. **[DIMA_BRAIN_V2_1_SPECIFICATION_CLOSURE_PROGRESS.md](./DIMA_BRAIN_V2_1_SPECIFICATION_CLOSURE_PROGRESS.md)**  
    Earlier specification-closure evidence retained for forensics; not the latest readiness authority.
 
-7. **[DIMA_BRAIN_V2_1_FORWARD_RUNTIME_LAWS.md](./DIMA_BRAIN_V2_1_FORWARD_RUNTIME_LAWS.md)**  
+8. **[DIMA_BRAIN_V2_1_FORWARD_RUNTIME_LAWS.md](./DIMA_BRAIN_V2_1_FORWARD_RUNTIME_LAWS.md)**  
    Compact permanent architecture laws backed by executable CI guardrails.
 
 ## Authority precedence
@@ -46,6 +49,8 @@ When documents appear to disagree, use this order:
 
 ~~~text
 executable Product contracts / tests / receipts
+>
+DIMA_BRAIN_V2_1_SEMANTIC_AUTHORITY_CONSTITUTION.md
 >
 DIMA_BRAIN_V2_1_FORWARD_RUNTIME_LAWS.md
 >

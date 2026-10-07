@@ -3,9 +3,9 @@
 > **Status:** FINAL / ARCHITECTURE FROZEN  
 > **Working recovery branch:** `feat/dima-brain-v2-1-specification-closure`  
 > **Architecture:** frozen; readiness recovery may change Product semantics only through the canonical owner protocol  
-> **Active semantic recovery candidate:** `34d0bbd461222e2a0859ed196a5a950e362c8622` — not final-frozen  
-> **Certified engine:** `4c49b8da6b424b0fa4d8ef340ca1b238d12980c1` / `0.63.18-dima.11.1`  
-> **Engine digest:** `sha256:0ff1e378b532cc986d871ed3945e677a7a6d0bfb28686b344dfa4ec8d397327d`  
+> **Active semantic recovery candidate:** `eee7583cb67d50779784805c469230ef2b82a5a2` — Fix A/B provider-free GREEN, not final-frozen  
+> **Certified engine:** `686671fa7e55f715e4fb5ac155f9e66019fd12d8` / `0.63.18-dima.11.2`  
+> **Engine digest:** `sha256:fe1b6fb67be6dbadea1af5d415f3ba2e033d46f91289f5c3c9844bee20c379bd`  
 > **Read current phase status:** `DIMA_BRAIN_V2_1_30CASE_READINESS_PROGRESS.md`
 
 This document is the canonical technical explanation of the final Brain V2.1 architecture.
@@ -158,6 +158,72 @@ P19 = RCA JUDGE
 P17 = INFORMATION-GAIN CONTROLLER
 P20 = GOVERNED SYNTHESIS
 ~~~
+
+---
+
+## 3A. Semantic authority collapse
+
+The permanent rule is stricter than "one layer per concern":
+
+> **Every business-semantic fact has exactly one canonical owner.**
+
+Downstream components may project, transport, structurally observe, verify fulfillment,
+or consume that fact. They may not reinterpret the same fact and become a second veto authority.
+
+The canonical analytical chain is:
+
+~~~text
+ResearchBrief / ResearchScope
+        |
+        | canonical WHAT + currentness
+        v
+AnalyticalIntentV1
+        |
+        | execution-facing projection, not a second business truth
+        v
+METABASE / METABOT
+        |
+        | owns HOW
+        v
+ExecutionManifest
+        |
+        | records what happened; does not redefine the request
+        v
+verify_analytical_fulfillment_v1
+        |
+        | single Intent <-> Execution semantic judge
+        v
+Evidence
+~~~
+
+`AnalyticalRequestContract` remains an internal deterministic projection/transport contract.
+It does not outrank `ResearchBrief / ResearchScope` and must not independently reinterpret
+the business request.
+
+`MaterialGroup` is an execution planner only. Its central identity law is:
+
+~~~text
+USER_MUST requirement identity != native acquisition identity
+~~~
+
+Compatible comparison/ranking/top-k consumers may share one governed analytical acquisition,
+then each consumer is verified independently against the same `ExecutionManifest`. A result-
+dependent child still opens only after its parent result exists.
+
+Native attestation/observation is structural provenance: exact occurrence, engine identity,
+query/result identity, tenant/principal and execution correlation. Physical SQL/MBQL shape
+is not business-semantic authority.
+
+Closed V1 grammar is retained for conformance/specification testing. It is not a production
+runtime veto over an otherwise legal typed analytical intent.
+
+P18, P19 and P20 consume governed Evidence. They do not recreate analytical truth.
+P17 controls only a typed information-gain NextTest re-entry. Completion is a ledger,
+not a semantic interpreter. LangGraph orchestrates refs/revisions/checkpoints; it owns no
+business truth.
+
+For the normative rules and executable enforcement, see
+`DIMA_BRAIN_V2_1_SEMANTIC_AUTHORITY_CONSTITUTION.md`.
 
 ---
 

@@ -3,8 +3,8 @@
 > **Status:** CURRENT / MANDATORY DEVELOPMENT METHOD  
 > **Branch family:** Brain V2.1 forward runtime  
 > **Current recovery branch:** `feat/dima-brain-v2-1-specification-closure`  
-> **Active semantic candidate:** `34d0bbd461222e2a0859ed196a5a950e362c8622` — provider-free GREEN, not final-frozen  
-> **Certified engine:** `4c49b8da6b424b0fa4d8ef340ca1b238d12980c1` / `0.63.18-dima.11.1`  
+> **Active semantic candidate:** `eee7583cb67d50779784805c469230ef2b82a5a2` — Fix A/B provider-free GREEN, not final-frozen  
+> **Certified engine:** `686671fa7e55f715e4fb5ac155f9e66019fd12d8` / `0.63.18-dima.11.2`  
 > **Read first:** `DIMA_BRAIN_V2_1_FINAL_ARCHITECTURE.md`; for execution status read `DIMA_BRAIN_V2_1_30CASE_READINESS_PROGRESS.md`
 
 This playbook explains **how Dima must be developed** after Brain V2.1 closure.
@@ -46,8 +46,12 @@ Permanent owner map:
 |---|---|
 | accepted requirement | Dima Research / Requirement contracts |
 | scope/currentness | ScopeVersion + canonical reducer |
-| minimum analytical need | typed material contracts / MaterialGroup projection |
+| canonical business WHAT/currentness | ResearchBrief / ResearchScope |
+| execution-facing WHAT projection | AnalyticalIntentV1 (projection, not second truth) |
+| minimum acquisition grouping | MaterialGroup execution projection |
 | analytical cognition/execution | Metabase / Metabot |
+| execution observation | ExecutionManifest |
+| Intent <-> execution admission | `verify_analytical_fulfillment_v1` only |
 | Evidence identity/currentness/provenance | Dima Evidence layer |
 | candidate identity | CandidateSetProjector |
 | relationship epistemics | P18 |
@@ -59,6 +63,50 @@ Permanent owner map:
 | observability | BoundaryTrace + OpenTelemetry bridge |
 
 Do not fix an owner-A defect in owner B because B is easier to edit.
+
+---
+
+## 1A. Semantic-owner admission gate
+
+Before adding any validator, contract, store or runtime gate, answer:
+
+~~~text
+Which canonical semantic fact do I own?
+Does that fact already have an owner?
+~~~
+
+If the fact already has an owner, **do not add a new semantic validator**.
+Project the existing authority into the consumer boundary instead.
+
+Allowed downstream responsibilities:
+
+- projection;
+- transport;
+- structural provenance/identity checks;
+- one canonical fulfillment check;
+- Evidence consumption;
+- ledger accounting.
+
+Forbidden downstream responsibilities:
+
+- reinterpreting accepted metric/entity/time/ranking meaning;
+- inferring business meaning from physical query shape;
+- turning a representation mismatch into a new semantic owner;
+- creating a second currentness/scope truth;
+- using closed grammar as a runtime capability whitelist.
+
+Canonical analytical chain:
+
+~~~text
+ResearchScope / ResearchBrief
+-> AnalyticalIntentV1
+-> Metabase / Metabot
+-> ExecutionManifest
+-> verify_analytical_fulfillment_v1
+-> Evidence
+~~~
+
+If a proposed change creates another semantic judge between these nodes, redesign it.
 
 ---
 
@@ -133,7 +181,9 @@ USER_MUST
 ~~~
 
 Multiple requirements may consume one MaterialGroup.
-One MaterialGroup may not silently fulfill multiple requirements.
+One MaterialGroup may drive one native acquisition for multiple compatible consumers,
+but each consumer must pass its own fulfillment verifier before the single governed
+Evidence package is admitted for that consumer.
 
 This distinction is essential for multi-intent requests.
 
@@ -783,6 +833,10 @@ A reviewer should reject a change if any answer is unclear:
 - Can it reintroduce Agent API or legacy composer?
 - Does resume replay completed paid/native work?
 - Is a new store duplicating existing truth?
+- Does this add a second semantic veto for a fact that already has an owner?
+- Could a closed grammar/composition table reject a typed intent at runtime?
+- Is a structural attestation/observer trying to infer business meaning from query shape?
+- Is `verify_analytical_fulfillment_v1` still the sole Intent <-> Execution semantic judge?
 - Is the change observable at the first wrong boundary?
 
 ---
@@ -793,6 +847,7 @@ Current docs are only:
 
 - `README.md`;
 - `DIMA_BRAIN_V2_1_FINAL_ARCHITECTURE.md`;
+- `DIMA_BRAIN_V2_1_SEMANTIC_AUTHORITY_CONSTITUTION.md`;
 - `DIMA_BRAIN_V2_1_ENGINEERING_PLAYBOOK.md`;
 - `DIMA_BRAIN_V2_1_CURRENT_HANDOFF.md`;
 - `DIMA_BRAIN_V2_1_FORWARD_RUNTIME_LAWS.md`.

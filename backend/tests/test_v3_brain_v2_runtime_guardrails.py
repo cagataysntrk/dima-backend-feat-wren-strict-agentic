@@ -108,3 +108,72 @@ def test_normal_relationship_owner_never_routes_through_p17():
         assert forbidden not in source
     assert "_relationship_interpreter.interpret" in source
     assert "load_verified_evidence_digests" in source
+
+
+
+def test_closed_v1_grammar_is_conformance_only_not_runtime_veto():
+    """Closed grammar may describe/test compositions; it must not veto production flow."""
+
+    production = BACKEND_ROOT / "app" / "v3"
+    forbidden = (
+        "assert_v1_analytical_composition",
+        "validate_v1_research_brief",
+    )
+    offenders = []
+    for path in sorted(production.rglob("*.py")):
+        if path.name == "analytical_boundary.py":
+            continue
+        source = path.read_text(encoding="utf-8")
+        for symbol in forbidden:
+            if symbol in source:
+                offenders.append(f"{path.relative_to(BACKEND_ROOT)}:{symbol}")
+    assert not offenders, offenders
+
+
+def test_fulfillment_verifier_has_one_runtime_admission_owner():
+    """Intent <-> ExecutionManifest semantic admission has exactly one runtime owner."""
+
+    production = BACKEND_ROOT / "app" / "v3"
+    owners = {
+        path.relative_to(BACKEND_ROOT).as_posix()
+        for path in sorted(production.rglob("*.py"))
+        if "verify_analytical_fulfillment_v1" in path.read_text(encoding="utf-8")
+    }
+    assert owners == {
+        "app/v3/analytical_boundary.py",
+        "app/v3/research_native_gateway.py",
+    }
+
+
+def test_material_group_is_execution_projection_not_semantic_judge():
+    source = (
+        BACKEND_ROOT / "app" / "v3" / "brain_v2" / "material_groups.py"
+    ).read_text(encoding="utf-8")
+    for forbidden in (
+        "verify_analytical_fulfillment_v1",
+        "AnalyticalExecutionManifestV1",
+        "EvidenceArtifact",
+        "execute_native_query(",
+    ):
+        assert forbidden not in source
+
+
+def test_epistemic_and_synthesis_owners_do_not_execute_native_analytics():
+    paths = (
+        BACKEND_ROOT / "app" / "v3" / "p18_relationship_interpreter.py",
+        BACKEND_ROOT / "app" / "v3" / "hypothesis_root_cause.py",
+        BACKEND_ROOT / "app" / "v3" / "brain_v2" / "report_synthesis.py",
+    )
+    forbidden = (
+        "execute_native_query(",
+        "NativeEngineBridge",
+        "analytical_scope_contract(",
+        ".run_next(",
+    )
+    offenders = []
+    for path in paths:
+        source = path.read_text(encoding="utf-8")
+        for symbol in forbidden:
+            if symbol in source:
+                offenders.append(f"{path.relative_to(BACKEND_ROOT)}:{symbol}")
+    assert not offenders, offenders
