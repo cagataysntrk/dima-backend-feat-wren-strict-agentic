@@ -365,6 +365,29 @@ def _collect_turn(
             "claims": [_safe(x) for x in getattr(p17_snapshot, "claims", ())],
             "investigation": _safe(getattr(p17_snapshot, "investigation", None)),
             "evidence_results": [_safe(x) for x in getattr(p17_snapshot, "evidence_results", ())],
+            "remaining_followup_native_turns": getattr(
+                p17_snapshot,
+                "remaining_followup_native_turns",
+                None,
+            ),
+            "remaining_reasoning_steps": getattr(
+                p17_snapshot,
+                "remaining_reasoning_steps",
+                None,
+            ),
+            "legal_intents": [
+                str(getattr(item, "value", item))
+                for item in getattr(
+                    getattr(p17_snapshot, "action_profile", None),
+                    "legal_intents",
+                    (),
+                )
+            ],
+            "max_contract_depth": getattr(
+                getattr(p17_snapshot, "investigation", None),
+                "max_contract_depth",
+                None,
+            ),
         } if p17_snapshot is not None else None,
         "p18": [_safe(x) for x in p18_uses],
         "p19": {
