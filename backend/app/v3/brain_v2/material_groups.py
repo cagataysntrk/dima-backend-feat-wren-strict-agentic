@@ -17,6 +17,7 @@ from app.v3.research_analytical_scope import (
     analytical_scope_contract,
     coorigin_material_requirements,
 )
+from app.v3.research_contracts import ResearchGoalKind
 
 
 class Frozen(BaseModel):
@@ -127,14 +128,173 @@ def _filters(contract) -> tuple[MaterialFilterRef, ...]:
     )
 
 
+def _execution_contract(*, session, obligation_id: str):
+    return analytical_scope_contract(
+        session=session,
+        obligation_id=obligation_id,
+    ).model_copy(update={"requested_output_surfaces": ()})
+
+
+def _acquisition_base(contract) -> str:
+    """Identity of one governed acquisition before consumer ranking facets."""
+
+    payload = {
+        "semantic_context_version": contract.semantic_context_version,
+        "scope_identity": contract.scope_identity.model_dump(mode="json"),
+        "scope_fingerprint": contract.scope_fingerprint,
+        "metric_refs": sorted(contract.metric_refs),
+        "dimension_refs": sorted(contract.dimension_refs),
+        "filters": sorted(
+            (item.model_dump(mode="json") for item in contract.filters),
+            key=lambda item: (
+                item["semantic_ref"],
+                item["source_candidate_id"],
+                item["dimension_name"],
+                item["value"],
+            ),
+        ),
+        "period": (
+            contract.period.model_dump(mode="json")
+            if contract.period is not None else None
+        ),
+        "comparison": (
+            contract.comparison.model_dump(mode="json")
+            if contract.comparison is not None else None
+        ),
+        "temporal_observation": (
+            contract.temporal_observation.model_dump(mode="json")
+            if contract.temporal_observation is not None else None
+        ),
+        "grain_constraints": sorted(contract.grain_constraints),
+    }
+    return hashlib.sha256(_canonical(payload).encode("utf-8")).hexdigest()
+
+
+def _ranking_family(contract) -> str | None:
+    ranking = contract.ranking
+    if ranking is None or getattr(ranking, "kind", None) != "native_metric":
+        return None
+    value = ranking.model_dump(mode="json")
+    value["limit"] = None
+    payload = {
+        "ranking": value,
+        "temporal_change_frame": (
+            contract.temporal_change_frame.model_dump(mode="json")
+            if contract.temporal_change_frame is not None else None
+        ),
+    }
+    return hashlib.sha256(_canonical(payload).encode("utf-8")).hexdigest()
+
+
+def _shared_direct_clusters(session) -> tuple[tuple[str, ...], ...]:
+    """Find exact comparison/ranking siblings that can share one acquisition."""
+
+    brief = session.accepted_brief
+    assert brief is not None
+    by_base: dict[str, list[tuple[str, str | None]]] = {}
+    for question in brief.questions:
+        if (
+            question.kind not in {ResearchGoalKind.COMPARISON, ResearchGoalKind.RANKING}
+            or question.result_dependency is not None
+        ):
+            continue
+        contract = _execution_contract(
+            session=session,
+            obligation_id=question.goal_id,
+        )
+        family = _ranking_family(contract)
+        if question.kind == ResearchGoalKind.RANKING and family is None:
+            continue
+        by_base.setdefault(_acquisition_base(contract), []).append(
+            (question.goal_id, family)
+        )
+
+    clusters: list[tuple[str, ...]] = []
+    for items in by_base.values():
+        families = {family for _, family in items if family is not None}
+        comparisons = tuple(goal_id for goal_id, family in items if family is None)
+        if len(families) == 1:
+            (family,) = tuple(families)
+            members = tuple(
+                sorted(
+                    goal_id
+                    for goal_id, item_family in items
+                    if item_family in {None, family}
+                )
+            )
+            if len(members) > 1:
+                clusters.append(members)
+            continue
+        # Ambiguous ranking families never borrow comparison authority.
+        for family in sorted(families):
+            members = tuple(
+                sorted(
+                    goal_id
+                    for goal_id, item_family in items
+                    if item_family == family
+                )
+            )
+            if len(members) > 1:
+                clusters.append(members)
+        del comparisons
+    return tuple(sorted(clusters))
+
+
+def _shared_acquisition_contract(*, session, consumers: tuple[str, ...]):
+    brief = session.accepted_brief
+    assert brief is not None
+    by_id = {item.goal_id: item for item in brief.questions}
+    questions = tuple(by_id[item] for item in consumers)
+    if not questions or any(
+        item.kind not in {ResearchGoalKind.COMPARISON, ResearchGoalKind.RANKING}
+        or item.result_dependency is not None
+        for item in questions
+    ):
+        return None, None
+
+    contracts = {
+        item.goal_id: _execution_contract(
+            session=session,
+            obligation_id=item.goal_id,
+        )
+        for item in questions
+    }
+    if len({_acquisition_base(item) for item in contracts.values()}) != 1:
+        return None, None
+
+    ranked = tuple(
+        (goal_id, contract)
+        for goal_id, contract in contracts.items()
+        if _ranking_family(contract) is not None
+    )
+    if not ranked or len({_ranking_family(item) for _, item in ranked}) != 1:
+        return None, None
+
+    # Prefer an unbounded ranking contract. Otherwise choose the widest top-k.
+    def priority(item):
+        goal_id, contract = item
+        limit = contract.ranking.limit
+        return (0 if limit is None else 1, -(limit or 0), goal_id)
+
+    anchor, base = sorted(ranked, key=priority)[0]
+    limits = tuple(contract.ranking.limit for _, contract in ranked)
+    comparison_present = any(
+        item.kind == ResearchGoalKind.COMPARISON for item in questions
+    )
+    limit = (
+        None
+        if comparison_present or any(value is None for value in limits)
+        else max(value for value in limits if value is not None)
+    )
+    return anchor, base.model_copy(
+        update={"ranking": base.ranking.model_copy(update={"limit": limit})}
+    )
+
+
 def _group(*, session, anchor_requirement_id: str, consumers: tuple[str, ...]):
     brief = session.accepted_brief
     if brief is None:
         raise ValueError("MaterialGroup projection requires accepted ResearchBrief")
-    contract = analytical_scope_contract(
-        session=session,
-        obligation_id=anchor_requirement_id,
-    )
     consumer_ids = tuple(sorted(dict.fromkeys(consumers)))
     questions_by_id = {item.goal_id: item for item in brief.questions}
     dependency_ids = tuple(
@@ -147,21 +307,30 @@ def _group(*, session, anchor_requirement_id: str, consumers: tuple[str, ...]):
             }
         )
     )
-    # Presentation belongs to the requirement/outcome plane, not the
-    # material plane. Reuse the canonical AnalyticalRequestContract identity
-    # with presentation surfaces erased so adding REPORT/EXPLAIN cannot mint a
-    # second native material need.
-    execution_contract = contract.model_copy(
-        update={"requested_output_surfaces": ()}
+    shared_anchor, shared_contract = _shared_acquisition_contract(
+        session=session,
+        consumers=consumer_ids,
     )
+    if shared_contract is not None:
+        anchor_requirement_id = shared_anchor
+        execution_contract = shared_contract
+    else:
+        execution_contract = _execution_contract(
+            session=session,
+            obligation_id=anchor_requirement_id,
+        )
     material_fingerprint = execution_contract.material_fingerprint
     identity = {
+        "tenant_binding": getattr(session, "tenant_binding", ""),
+        "principal_subject": getattr(session, "principal_subject", ""),
+        "lineage_id": getattr(session, "lineage_id", ""),
+        "authority_revision": getattr(session, "authority_revision", 1),
+        "semantic_context_version": execution_contract.semantic_context_version,
         "scope_version_id": brief.scope.scope_version.version_id,
-        "consumer_requirement_ids": list(consumer_ids),
+        "scope_fingerprint": execution_contract.scope_fingerprint,
         "material_fingerprint": material_fingerprint,
+        "dependency_requirement_ids": list(dependency_ids),
     }
-    if dependency_ids:
-        identity["dependency_requirement_ids"] = list(dependency_ids)
     digest = hashlib.sha256(_canonical(identity).encode("utf-8")).hexdigest()
     return MaterialGroup(
         material_group_id="mg_" + digest[:24],
@@ -169,21 +338,36 @@ def _group(*, session, anchor_requirement_id: str, consumers: tuple[str, ...]):
         scope_version_id=brief.scope.scope_version.version_id,
         consumer_requirement_ids=consumer_ids,
         dependency_requirement_ids=dependency_ids,
-        required_metric_refs=tuple(dict.fromkeys(contract.metric_refs)),
-        required_dimension_refs=tuple(dict.fromkeys(contract.dimension_refs)),
-        required_periods=_periods(contract),
-        required_filters=_filters(contract),
+        required_metric_refs=tuple(dict.fromkeys(execution_contract.metric_refs)),
+        required_dimension_refs=tuple(dict.fromkeys(execution_contract.dimension_refs)),
+        required_periods=_periods(execution_contract),
+        required_filters=_filters(execution_contract),
         material_fingerprint=material_fingerprint,
     )
 
 
-def project_material_groups(session) -> tuple[MaterialGroup, ...]:
-    """Project every analytical requirement into minimum typed material groups.
+def material_group_acquisition_contract(*, session, group: MaterialGroup):
+    """Re-project the exact accepted-WHAT acquisition envelope for a group."""
 
-    Exact co-origin compatibility from Research analytical authority is used
-    first. Remaining analytical requirements receive one group each. Groups are
-    merged only when their full material fingerprints and scope versions are
-    identical. Presentation deliverables never create MaterialGroups.
+    _, shared = _shared_acquisition_contract(
+        session=session,
+        consumers=group.consumer_requirement_ids,
+    )
+    contract = shared or _execution_contract(
+        session=session,
+        obligation_id=group.anchor_requirement_id,
+    )
+    if contract.material_fingerprint != group.material_fingerprint:
+        raise ValueError("MaterialGroup acquisition contract fingerprint drift")
+    return contract
+
+
+def project_material_groups(session) -> tuple[MaterialGroup, ...]:
+    """Project analytical USER_MUSTs into minimum governed acquisitions.
+
+    Acquisition identity is distinct from consumer fulfillment identity.
+    Ranking/top-k facets may share one acquisition only when canonical metric,
+    filters, periods, grain, scope/currentness and dependency boundary match.
     """
 
     brief = session.accepted_brief
@@ -194,12 +378,21 @@ def project_material_groups(session) -> tuple[MaterialGroup, ...]:
     assigned: set[str] = set()
     projected: list[MaterialGroup] = []
 
+    for consumers in _shared_direct_clusters(session):
+        group = _group(
+            session=session,
+            anchor_requirement_id=consumers[0],
+            consumers=consumers,
+        )
+        projected.append(group)
+        assigned.update(consumers)
+
     for requirement in coorigin_material_requirements(session):
         consumers = tuple(
             item for item in requirement.source_goal_ids
             if item in questions_by_id
         )
-        if not consumers:
+        if not consumers or assigned.intersection(consumers):
             continue
         if any(
             question.result_dependency is not None
@@ -207,16 +400,7 @@ def project_material_groups(session) -> tuple[MaterialGroup, ...]:
             for consumer_id in consumers
             if (question := questions_by_id.get(consumer_id)) is not None
         ):
-            # A result-dependent child needs a second occurrence after the
-            # parent's governed result exists; it cannot co-origin-share that
-            # occurrence even when static base material looks compatible.
             continue
-        overlap = assigned.intersection(consumers)
-        if overlap:
-            raise ValueError(
-                "analytical requirement belongs to multiple MaterialGroups: "
-                + ",".join(sorted(overlap))
-            )
         projected.append(
             _group(
                 session=session,
@@ -238,9 +422,6 @@ def project_material_groups(session) -> tuple[MaterialGroup, ...]:
         )
         assigned.add(question.goal_id)
 
-    # Exact material identity is sufficient for sharing. This is not fuzzy
-    # clause similarity: AnalyticalRequestContract already encodes the complete
-    # typed material need including scope, filters, time, ranking and outputs.
     by_identity: dict[tuple[str, str, tuple[str, ...]], MaterialGroup] = {}
     for group in projected:
         key = (
@@ -259,12 +440,17 @@ def project_material_groups(session) -> tuple[MaterialGroup, ...]:
                 )
             )
         )
-        anchor = min(prior.anchor_requirement_id, group.anchor_requirement_id)
-        by_identity[key] = _group(
+        merged = _group(
             session=session,
-            anchor_requirement_id=anchor,
+            anchor_requirement_id=min(
+                prior.anchor_requirement_id,
+                group.anchor_requirement_id,
+            ),
             consumers=consumers,
         )
+        if merged.material_fingerprint != group.material_fingerprint:
+            raise ValueError("MaterialGroup exact-identity merge changed acquisition")
+        by_identity[key] = merged
 
     output = tuple(
         sorted(
