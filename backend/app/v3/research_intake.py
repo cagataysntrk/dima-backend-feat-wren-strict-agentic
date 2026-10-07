@@ -3263,6 +3263,7 @@ class ResearchIntakeCompiler:
         prior_brief: ResearchBrief | None = None,
     ) -> ResearchIntakeResult:
         current = str(question or "").strip()
+        temporal_authority_reconsidered = False
         if not current:
             raise ResearchIntakeError(
                 "INTAKE_QUESTION_REQUIRED",
@@ -3759,6 +3760,7 @@ class ResearchIntakeCompiler:
                     },
                 },
             )
+            temporal_authority_reconsidered = True
         elif (
             prior_brief is None
             and self.call_count < 2
@@ -3803,7 +3805,8 @@ class ResearchIntakeCompiler:
             calendar_reference_date=self._calendar_reference_date,
         )
         if (
-            missing_change_frame_issue is not None
+            temporal_authority_reconsidered
+            and missing_change_frame_issue is not None
             and self.call_count < 3
         ):
             draft = resolve_missing_change_frame(
