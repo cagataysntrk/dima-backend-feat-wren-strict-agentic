@@ -29,31 +29,50 @@ The engineering objective is specification closure, not benchmark memorization:
 
 ## CURRENT CANONICAL STATUS — 2026-10-07
 
-This block supersedes all older phase/freeze sections below for current orientation.
+This block supersedes all older phase/freeze sections below.
 
 - Branch: `feat/dima-brain-v2-1-specification-closure`.
-- Final root-recovery Product candidate: `de4c03f288b62ffcad4aece57f0bebf102b381bd`.
-- Recovery baseline: `505caec6e7c3fbd5346dc6a4c310e8f656d324ae`.
-- Certified/frozen engine: `686671fa7e55f715e4fb5ac155f9e66019fd12d8` / `0.63.18-dima.11.2`.
+- Active semantic Product candidate: `eee7583cb67d50779784805c469230ef2b82a5a2`.
+- Frozen engine: `686671fa7e55f715e4fb5ac155f9e66019fd12d8` / `0.63.18-dima.11.2`.
 - Runtime tag: `v0.63.18-dima.11.2.1`.
 - Engine digest: `sha256:fe1b6fb67be6dbadea1af5d415f3ba2e033d46f91289f5c3c9844bee20c379bd`.
-- Provider-free prerequisites: GREEN — focused `37525079508`, frozen-family `37525079621`, semantic/Wave A/Wave B/mutation `37525079655`; 192 generated metamorphic scenarios GREEN.
-- Single paid root-recovery panel: run `37533803018` = **RED**.
-- Paid panel outcome: 10/12 mechanically successful; R10 and R11 abort follow-up execution with `R1_METRIC_SCOPE_REQUIRED`; fair score `30/48`, FULL `1/12`.
-- Invariant counters: duplicate native `0`; stale Evidence `0`; report-only continuation native delta `0`; Agent API `0`; no observed causal overclaim/security violation.
-- R12 proves SAME_SCOPE report-only behavior preserves `scope_v1` and does not open a new native acquisition.
-- Remaining structural blocker: follow-up refinement/deepening can lose metric authority before analytical material compilation/execution.
-- Remaining presentation weakness: P20 provider call often succeeds but typed synthesis closure degrades accepted presentation requirements to explicit LIMITED.
-- Adaptive weakness: P19/P17 information-gain deepening is not consistently opened on independent adaptive shapes.
-- Paid authorization: **OFF / consumed**.
-- Second paid Product-correction wave: **FORBIDDEN** in this recovery round (no harness defect established).
-- Broad actual 30-case: **NOT RUN / FORBIDDEN without new explicit user authorization and a new legal recovery cycle**.
-- Frontend/UI/demo implementation: FORBIDDEN in this program.
-- `90+ POTENTIAL`: **NOT SUPPORTED** by the final recovery panel.
-- `30-CASE EXECUTION READY`: **NO**.
-- Immutable final receipt: `backend/belgeler/metabase/DIMA_BRAIN_V2_1_ROOT_RECOVERY_PANEL_2026-10-07.md`.
+- Permanent semantic constitution:
+  `DIMA_BRAIN_V2_1_SEMANTIC_AUTHORITY_CONSTITUTION.md`.
+- Machine-readable owner map:
+  `backend/lab/metabase/brain_v2/semantic_authority_registry.json`.
+- Fix B atomic P18 turn reset: provider-free GREEN.
+- Fix A acquisition identity / N-consumer fulfillment: provider-free GREEN.
+- Product candidate provider-free closure:
+  focused `37667461124`, frozen-family `37667461009`,
+  semantic + 192 metamorphic + Wave A/B + mutation `37667461012` = GREEN.
+- Constitution enforcement recertification:
+  focused `37669106020` and semantic/Wave A/B/mutation `37669106073` = GREEN.
+- One authorized final recovery run: `37668955073`.
+- R01/R03/R04 observed GREEN.
+- R02 observed RED.
+- R02 provider ceiling is no longer the blocker: blocked provider `0`,
+  duplicate native `0`, stale Evidence `0`.
+- R02 now fails before native execution: attestation 200 followed by
+  `native-query-material-observation` HTTP 422; native acquisitions `0`,
+  Evidence `0`.
+- Pinned engine source confirms the observer reconstructs period-pair CHANGE
+  from physical previous-stage representation and Metabase Lib equality matching.
+  Live ambiguity therefore makes a structural observer a de-facto semantic veto.
+- This is a constitution-level blocker: **physical query representation must not be
+  a second owner of business meaning.**
+- Representation-by-representation engine observer patches are forbidden.
+- Required future proof direction:
+  `Metabase/Metabot -> stable execution-semantic manifest bound to exact occurrence/result
+  -> verify_analytical_fulfillment_v1 -> Evidence`.
+- Structural attestation/currentness/security/exact-occurrence proof remains mandatory.
+- Paid authorization: OFF / no second paid wave.
+- Broad actual 30-case: FORBIDDEN.
+- Frontend/UI/demo: FORBIDDEN.
+- `30-CASE EXECUTION READY = NO`.
 
-No further paid retry or final Phase-1/Phase-2 readiness seal is legal from this round because the R8 prerequisite is RED.
+The current fail-fast=false recovery may finish to expose the full slot distribution,
+especially R10 after the atomic P18 reset. Its completion does not authorize a retry.
+
 
 ---
 
