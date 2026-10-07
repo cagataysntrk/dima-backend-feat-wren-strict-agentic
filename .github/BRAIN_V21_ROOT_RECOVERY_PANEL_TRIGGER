@@ -1,9 +1,8 @@
-DIMA Brain V2.1 root recovery panel trigger
+DIMA Brain V2.1 root recovery pinpoint trigger
 
-authorized_panel: dima_brain_v2_1_root_recovery_panel_v1
-cycle: 2026-10-07-user-authorized-root-fix-validation
-candidate_product_sha: 0a5daf0fc838ca3fdd2e0f73757f760ff6606328
+mode: continuation-pinpoint
+slot: R11_CONTINUATION_DEEPENING
+candidate_product_sha: a8d3d68ff03696231eca05b23b345df660853629
 engine_sha: 686671fa7e55f715e4fb5ac155f9e66019fd12d8
-case_count: 12
 broad_30_case: forbidden
 frontend: forbidden
