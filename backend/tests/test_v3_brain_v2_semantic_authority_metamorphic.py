@@ -776,3 +776,72 @@ def test_p20_numeric_synthesis_rejects_value_absent_from_governed_support() -> N
             p19_assessment=None,
             limitations=(),
         )
+
+
+def test_p20_provider_schema_closes_governed_identity_space() -> None:
+    requirement_id = "deliverable.closed"
+    statement_id = "p20s_" + "d" * 24
+
+    class ClosedTransport:
+        call_count = 0
+
+        def structured_json(self, system, user, *, schema, schema_name):
+            self.call_count += 1
+            defs = schema["$defs"]
+            deliverable = defs["P20DeliverableSynthesis"]["properties"]
+            section = defs["P20SynthesisSection"]["properties"]
+            assert deliverable["requirement_id"]["enum"] == [requirement_id]
+            assert deliverable["selected_statement_ids"]["items"]["enum"] == [
+                statement_id
+            ]
+            assert section["supporting_statement_ids"]["items"]["enum"] == [
+                statement_id
+            ]
+            assert schema["properties"]["deliverables"]["minItems"] == 1
+            assert schema["properties"]["deliverables"]["maxItems"] == 1
+            return json.dumps(
+                {
+                    "deliverables": [
+                        {
+                            "requirement_id": requirement_id,
+                            "status": "FULFILLED",
+                            "selected_statement_ids": [statement_id],
+                            "sections": [
+                                {
+                                    "kind": "management_implication",
+                                    "text": "Governed material supports focused review.",
+                                    "supporting_statement_ids": [statement_id],
+                                }
+                            ],
+                            "limitation_detail": None,
+                        }
+                    ]
+                }
+            )
+
+    transport = ClosedTransport()
+    result = StructuredP20SynthesisManager(transport=transport).synthesize(
+        accepted_deliverables=(
+            {
+                "requirement_id": requirement_id,
+                "kind": "report",
+                "source_text": "governed report",
+            },
+        ),
+        scope_version_id="scope_v1",
+        evidence_digests=(
+            {
+                "statement_id": statement_id,
+                "statement_kind": "OBSERVATION",
+                "text": "Governed observation.",
+                "payload": {},
+                "upstream_epistemic_ceiling": "EXACT_GOVERNED_OBSERVATION",
+                "source_refs": [{"source_ref": "evidence.closed"}],
+            },
+        ),
+        p18_results=(),
+        p19_assessment=None,
+        limitations=(),
+    )
+    assert result.deliverables[0].status == "FULFILLED"
+    assert transport.call_count == 1
