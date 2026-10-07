@@ -2711,6 +2711,96 @@ def test_missing_change_ranking_frame_uses_closed_span_resolver():
     assert issue["governed_time_dimension_id"] == "dimension.event_date"
 
 
+def test_multiple_change_goals_share_one_missing_scope_level_frame():
+    question = (
+        "Investigate governed change over the accepted bounded interval, "
+        "rank departments and machines by deterioration."
+    )
+    clarify = {
+        "terminal": "CLARIFY",
+        "clarification_question": (
+            "Which additional comparison period should define the change?"
+        ),
+    }
+    ready = ready_payload(
+        kind="ranking",
+        subject=("metric.downtime",),
+        related=("dimension.department",),
+    )
+    first = ready["goals"][0]
+    first.update(
+        {
+            "goal_key": "rank-departments",
+            "source_text": question,
+            "source_fragment_text": question,
+            "ranking": {
+                "source_text": question,
+                "direction": "desc",
+                "limit": 3,
+                "measure_semantic_id": "metric.downtime",
+                "basis": "change",
+            },
+        }
+    )
+    ready["goals"].append(
+        {
+            "goal_key": "rank-machines",
+            "kind": "ranking",
+            "source_text": question,
+            "source_fragment_text": question,
+            "subject_semantic_ids": ["metric.fault_count"],
+            "related_semantic_ids": ["dimension.machine_id"],
+            "ranking": {
+                "source_text": question,
+                "direction": "desc",
+                "limit": 3,
+                "measure_semantic_id": "metric.fault_count",
+                "basis": "change",
+            },
+            "comparisons": [],
+            "causal_competition": None,
+            "temporal_material": None,
+            "result_dependency": None,
+            "material_parent_goal_key": None,
+        }
+    )
+    ready["time_periods"] = []
+    resolved_span = {
+        "terminal": "RESOLVED",
+        "frame": "SPAN",
+        "span": _r6_period(
+            "accepted bounded interval",
+            "2026-05-01",
+            "2026-07-01",
+            role="material_window",
+        ),
+    }
+    transport = SequenceTransport([clarify, ready, resolved_span])
+
+    result = ResearchIntakeCompiler(
+        transport=transport,
+        calendar_reference_date="2026-10-07",
+    ).compile(
+        question=question,
+        catalog=_r6_temporal_catalog(),
+    )
+
+    assert result.terminal == ResearchIntakeTerminal.READY
+    assert result.model_calls == 3
+    assert result.brief is not None
+    assert len(result.brief.questions) == 2
+    assert len(result.brief.scope.periods) == 1
+    assert result.brief.scope.periods[0].role == TemporalRole.MATERIAL_WINDOW
+    issue = transport.calls[2]["user"]["change_frame_issue"]
+    assert issue["kind"] == "MISSING_CHANGE_TEMPORAL_FRAME"
+    assert issue["consumer_count"] == 2
+    assert issue["source_fragments"] == [question]
+    assert set(issue["ranking_measure_semantic_ids"]) == {
+        "metric.downtime",
+        "metric.fault_count",
+    }
+
+
 def test_missing_change_ranking_frame_pair_requires_explicit_typed_pair():
     question = "Compare two explicit accepted periods by governed downtime change."
     ready = ready_payload(
