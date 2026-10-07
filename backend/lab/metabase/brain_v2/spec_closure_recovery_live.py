@@ -401,6 +401,27 @@ def _collect_turn(
     }
 
 
+def _recovery_terminal_accepted(
+    terminal_state: str | None,
+    legacy_statuses: tuple[str, ...] | list[str],
+) -> bool:
+    """Recovery-panel terminal law, independent from legacy broad labels.
+
+    The supervisor recovery gate evaluates exception-free execution plus manual
+    task quality. ANSWER/REPORT/PARTIAL are therefore mechanically valid
+    answerable terminal classes; the 0-4 adjudication decides whether the
+    actual answer is strong enough. CLARIFY/UNSUPPORTED remain legal only when
+    the frozen source case explicitly allows them.
+    """
+
+    if terminal_state in {"ANSWER", "REPORT", "PARTIAL"}:
+        return True
+    return bool(
+        terminal_state is not None
+        and terminal_state in set(legacy_statuses)
+    )
+
+
 def _raw_harness_gate(
     *,
     mechanical_safety: bool,
@@ -545,9 +566,14 @@ def _run_case(
     provider = _provider_delta(before_provider, after_provider)
     final = turn_records[-1] if turn_records else None
     all_turns = len(turn_records) == len(turns)
-    accepted_status = bool(
+    final_terminal = final["derived_terminal"] if final else None
+    legacy_accepted_status = bool(
         final is not None
-        and final["derived_terminal"] in set(case.get("statuses") or ())
+        and final_terminal in set(case.get("statuses") or ())
+    )
+    accepted_status = _recovery_terminal_accepted(
+        final_terminal,
+        tuple(case.get("statuses") or ()),
     )
     min_evidence = int(case.get("min_evidence", 0))
     evidence_count = len(final["evidence_ids"]) if final else 0
@@ -590,6 +616,7 @@ def _run_case(
         "latency_ms": int((time.monotonic() - started) * 1000),
         "all_turns_executed": all_turns,
         "accepted_terminal": accepted_status,
+        "legacy_manifest_terminal_accepted": legacy_accepted_status,
         "mechanical_safety": mechanical_safety,
         "raw_harness_pass": raw_harness_pass,
         "exception": exception,
