@@ -356,6 +356,7 @@ class LineagedFollowup:
         self.store = store
         self.link = None
         self.lead = None
+        self.calls = 0
 
     def execute(
         self,
@@ -367,6 +368,8 @@ class LineagedFollowup:
         native_session_token=None,
     ):
         del principal, native_session_token
+        self.calls += 1
+        ordinal = self.calls + 1
         request_id = f"p17-test-{step.step_id}-{task.task_id}"
         conversation = session.native_conversation
         assert conversation is not None
@@ -386,12 +389,16 @@ class LineagedFollowup:
             "query": {
                 "source-table": 10,
                 "aggregation": [["count"]],
-                "filter": ["=", ["field", 20, None], "Partner"],
+                "filter": [
+                    "=",
+                    ["field", 20, None],
+                    "Partner" if self.calls == 1 else f"Channel-{ordinal}",
+                ],
             },
         }
         link = self.store.mark_candidate(
             link.id,
-            native_query_id="p17-followup-query",
+            native_query_id=f"p17-followup-query-{ordinal}",
             native_query=query,
             query_fingerprint=h(query),
         )
@@ -402,7 +409,12 @@ class LineagedFollowup:
         result = {
             "database_id": 1,
             "row_count": 1,
-            "data": {"rows": [["Partner", 41]]},
+            "data": {
+                "rows": [[
+                    "Partner" if self.calls == 1 else f"Channel-{ordinal}",
+                    40 + ordinal,
+                ]]
+            },
         }
         self.store.mark_executed(
             link.id,
@@ -417,8 +429,8 @@ class LineagedFollowup:
             result_hash=h(result),
             executed_at=STAMP + timedelta(minutes=1),
         )
-        evidence_id = "evi_" + "2" * 24
-        receipt_id = "dqr_" + "2" * 24
+        evidence_id = "evi_" + str(ordinal) * 24
+        receipt_id = "dqr_" + str(ordinal) * 24
         link = self.store.mark_verified(
             link.id,
             receipt_id=receipt_id,
