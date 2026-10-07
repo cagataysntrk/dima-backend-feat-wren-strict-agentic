@@ -57,18 +57,32 @@
     "new_duplicate_semantic_owner_forbidden": true
   },
   "runtime_compliance": {
-    "status": "BLOCKED_ON_NATIVE_OBSERVER_SEMANTIC_VETO",
+    "status": "BLOCKED_ON_TRANSITIONAL_NATIVE_OBSERVER_SEMANTIC_VETO",
+    "last_recovery_run_id": 37668955073,
+    "last_recovery_result": "10_OF_12_GREEN",
+    "live_closed_roots": {
+      "atomic_p18_turn_reset": "CLOSED__R10_R11_R12_GREEN",
+      "shared_acquisition_identity": "CLOSED_AS_GROUPING_LAW__OBSERVER_VETO_DOWNSTREAM"
+    },
     "blockers": [
       {
         "id": "NATIVE_OBSERVER_QUERY_SHAPE_SEMANTIC_VETO",
         "evidence_run_id": 37668955073,
-        "evidence_slot": "R02_COMPARISON_SEMANTIC",
+        "evidence_slots": [
+          "R02_COMPARISON_SEMANTIC",
+          "R07_ADAPTIVE_ORIGINAL"
+        ],
         "candidate_product_sha": "eee7583cb67d50779784805c469230ef2b82a5a2",
         "engine_sha": "686671fa7e55f715e4fb5ac155f9e66019fd12d8",
-        "observation": "attestation HTTP 200; native material observation HTTP 422 twice; native_acquisitions=0; Evidence=0; blocked provider=0; duplicate native=0",
-        "root": "certified native material observer reconstructs period-pair CHANGE from physical previous-stage query representation; ambiguous Lib column matching can veto legal typed intent before execution",
-        "forbidden_fix": "representation-by-representation observer patch",
-        "required_exit": "Metabase/Metabot exposes stable execution-semantic facts bound to exact occurrence/result; Dima performs the sole Intent-to-Execution fulfillment judgment; observer remains structural provenance only"
+        "observation": "Both RED slots: exact attestation HTTP 200 followed by native material observation HTTP 422; native execution/acquisition=0; Evidence=0; blocked provider=0; duplicate native=0; stale Evidence=0.",
+        "root": "Transitional native material observer and Product material-scope proof reconstruct business semantics from physical query representation before the canonical fulfillment verifier. Representation ambiguity can veto a legal typed intent before execution.",
+        "duplicate_authority_debt": [
+          "engine native-query-material-observation semantic classification/fail-closed 422",
+          "app.v3.research_analytical_scope.assert_material_native_scope",
+          "app.v3.research_material_coverage.assert_material_result_coverage"
+        ],
+        "forbidden_fix": "Representation-by-representation observer patch; prompt/regex/fuzzy patch; provider ceiling increase; Dima-side analytics; Intent echo masquerading as observed ExecutionManifest; or weakened final fulfillment.",
+        "required_exit": "Metabase/Metabot exposes stable execution-semantic facts bound to exact occurrence/result; AnalyticalExecutionManifestV1 is populated from those observed facts; Dima performs one verify_analytical_fulfillment_v1 judgment; observer/coverage retain structural or fact-producing roles only."
       }
     ]
   }
