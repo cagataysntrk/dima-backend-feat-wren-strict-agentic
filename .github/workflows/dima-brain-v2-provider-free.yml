@@ -14,6 +14,10 @@ on:
       - "backend/app/v3/business_relationship_v1.py"
       - "backend/app/v3/research_native_gateway.py"
       - "backend/app/v3/research_product.py"
+      - "backend/app/v3/research_manager.py"
+      - "backend/app/v3/hypothesis_root_cause_v1.py"
+      - "backend/tests/test_v3_p17_research_manager.py"
+      - "backend/tests/test_v3_p19_hypothesis_root_cause.py"
       - "backend/app/v3/substrate/metabase/native_engine.py"
       - "backend/tests/test_v3_p14_native_gateway.py"
       - "backend/tests/test_v3_p14_product.py"
@@ -96,6 +100,8 @@ jobs:
             tests/test_v3_brain_v2_graph.py \
             tests/test_v3_brain_v2_discovery_stateful.py \
             tests/test_v3_brain_v2_owner_integration.py \
+            tests/test_v3_p17_research_manager.py \
+            tests/test_v3_p19_hypothesis_root_cause.py \
             tests/test_v3_brain_v2_telemetry.py \
             tests/test_v3_brain_v2_runtime_guardrails.py \
             tests/test_v3_brain_v2_forward_phase2.py \
