@@ -2265,15 +2265,63 @@ class ResearchIntakeCompiler:
     def _canonicalize_change_ranking_period_roles(
         draft: ModelResearchBriefDraft,
     ) -> ModelResearchBriefDraft:
-        """Do not manufacture PAIR authority from neutral temporal windows.
+        """Collapse one typed bounded CHANGE span without manufacturing PAIR.
 
-        RankingBasis.CHANGE says what quantity is requested, not whether the
-        user established A-vs-B roles. PAIR must already be typed by accepted
-        temporal-comparison authority; one bounded MATERIAL_WINDOW may remain a
-        SPAN. Two neutral windows are not silently ordered into a pair.
+        A provider may split one bounded change window into adjacent
+        baseline/comparison roles even though no typed temporal-comparison goal
+        exists. When both roles share exact provenance and are contiguous,
+        their union is one MATERIAL_WINDOW SPAN. A genuine comparison goal,
+        distinct provenance, a gap, or a different time dimension remains
+        untouched and therefore follows the stricter PAIR rules.
         """
 
-        return draft
+        if draft.terminal != ResearchIntakeTerminal.READY:
+            return draft
+        change_goals = tuple(
+            goal
+            for goal in draft.goals
+            if (
+                goal.ranking is not None
+                and goal.ranking.basis == RankingBasis.CHANGE
+            )
+        )
+        if len(change_goals) != 1 or len(draft.time_periods) != 2:
+            return draft
+        if any(
+            item.role == ComparisonRole.TEMPORAL_PERIOD
+            for goal in draft.goals
+            for item in goal.comparisons
+        ):
+            return draft
+
+        left, right = draft.time_periods
+        if {left.role, right.role} != {
+            TemporalRole.BASELINE_PERIOD,
+            TemporalRole.COMPARISON_PERIOD,
+        }:
+            return draft
+        if (
+            left.time_dimension_semantic_id
+            != right.time_dimension_semantic_id
+            or left.source_text != right.source_text
+        ):
+            return draft
+
+        if left.end == right.start:
+            first, second = left, right
+        elif right.end == left.start:
+            first, second = right, left
+        else:
+            return draft
+
+        span = first.model_copy(
+            update={
+                "start": first.start,
+                "end": second.end,
+                "role": TemporalRole.MATERIAL_WINDOW,
+            }
+        )
+        return draft.model_copy(update={"time_periods": (span,)})
 
     @staticmethod
     def _canonicalize_typed_temporal_comparison(
