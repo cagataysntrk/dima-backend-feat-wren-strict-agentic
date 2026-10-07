@@ -1,6 +1,6 @@
 {
   "schema_version": "dima_brain_v2_1_release_validation_v1",
-  "status": "SEMANTIC_AUTHORITY_RECOVERY_R02_OBSERVER_BLOCKER",
+  "status": "SEMANTIC_AUTHORITY_RECOVERY_COMPLETE_10_OF_12_OBSERVER_BLOCKER",
   "frozen_identity": {
     "product_semantic_sha": "ae4e0348601774082b0270f23d6de126e71e6055",
     "engine_sha": "686671fa7e55f715e4fb5ac155f9e66019fd12d8",
@@ -19,26 +19,31 @@
       "cascade": "NONE"
     },
     "engine_certification_run": 37449462486,
-    "engine_integration_provider_free_head": "4251622e65b6275735a9619d1a09a37dc60f280a"
+    "engine_integration_provider_free_head": "4251622e65b6275735a9619d1a09a37dc60f280a",
+    "role": "HISTORICAL_LAST_COMPLETED_30_CASE_RELEASE"
   },
   "readiness": {
     "thirty_case_execution_ready": false,
-    "thirty_case_execution_completed": true,
+    "thirty_case_execution_completed": false,
     "ninety_plus_high_confidence_quality_ready": false,
     "ninety_plus_proven": false,
     "eighty_plus_proven": false,
     "final_quality_score": 68.25,
-    "meaning": "Current semantic recovery candidate eee7583... is provider-free GREEN and constitutionally guarded, but final 12-case recovery run 37668955073 has an R02 pre-execution native material-observation RED. 30-CASE EXECUTION READY = NO; paid retry is OFF."
+    "meaning": "Final one-wave 12-case recovery 37668955073 completed on Product eee7583... at 10/12 GREEN. R10/R11/R12 are GREEN and the atomic continuation/P18 reset root is live closed. R02 and R07 are RED at the same pre-execution native material-observation semantic-veto boundary: attestation 200, observation 422, native execution/Evidence 0. Recovery acceptance failed; R9 and actual 30-case are not authorized; paid retry is OFF.",
+    "historical_last_completed_30_case_score": 68.25,
+    "final_quality_score_source": "HISTORICAL_LAST_COMPLETED_30_CASE_RELEASE"
   },
   "provider_free_closure": {
     "status": "GREEN",
+    "candidate_product_sha": "eee7583cb67d50779784805c469230ef2b82a5a2",
     "runs": {
-      "focused_brain_v2": 37461980401,
-      "phase2_headless": 37461980519,
-      "phase1_aggregate": 37461980584,
-      "frozen_family": 37461980475,
-      "semantic_conformance_wave_a_wave_b_mutation": 37461980396
-    }
+      "focused_brain_v2": 37667461124,
+      "frozen_family": 37667461009,
+      "semantic_conformance_192_metamorphic_wave_a_wave_b_mutation": 37667461012,
+      "constitution_focused": 37669106020,
+      "constitution_semantic_wave_a_wave_b_mutation": 37669106073
+    },
+    "generated_metamorphic_scenarios": 192
   },
   "known_release_validation_risks": [
     {
@@ -76,7 +81,7 @@
     "s3_diagnostic": false,
     "frontend": false,
     "automatic_retry": false,
-    "note": "Post-root recovery run 37668955073 is allowed to finish, but R02 is already RED. All future paid retry authorization is OFF. No actual 30-case run is authorized.",
+    "note": "Final recovery 37668955073 is complete and RED at 10/12. All paid retry, broad 30-case, R9 and frontend authorization remain OFF while semantic_authority_registry.runtime_compliance has an open blocker.",
     "root_recovery_retry": false
   },
   "actual_frozen_30_case_protocol": {
@@ -171,12 +176,34 @@
     "adjudication_document": "backend/belgeler/metabase/DIMA_BRAIN_V2_1_ROUND2_FINAL_ADJUDICATION_2026-10-06.md"
   },
   "active_recovery": {
-    "status": "IN_FLIGHT_R02_RED_NO_RETRY",
+    "status": "COMPLETE_10_OF_12_RED__ONE_ARCHITECTURE_BLOCKER",
     "candidate_product_sha": "eee7583cb67d50779784805c469230ef2b82a5a2",
     "engine_sha": "686671fa7e55f715e4fb5ac155f9e66019fd12d8",
     "recovery_run_id": 37668955073,
+    "completed_slots": 12,
+    "mechanically_successful_slots": 10,
+    "green_slots": [
+      "R01_COMPARISON_ORIGINAL",
+      "R03_COMPARISON_WORDING",
+      "R04_TEMPORAL_ORIGINAL",
+      "R05_TEMPORAL_SEMANTIC",
+      "R06_TEMPORAL_WORDING",
+      "R08_ADAPTIVE_SEMANTIC",
+      "R09_ADAPTIVE_WORDING",
+      "R10_CONTINUATION_ORIGINAL",
+      "R11_CONTINUATION_DEEPENING",
+      "R12_CONTINUATION_REPORT_ONLY"
+    ],
+    "red_slots": [
+      "R02_COMPARISON_SEMANTIC",
+      "R07_ADAPTIVE_ORIGINAL"
+    ],
+    "fix_b_live_status": "CLOSED__R10_R11_R12_GREEN",
+    "fix_a_live_status": "ACQUISITION_GROUPING_CLOSED__DOWNSTREAM_OBSERVER_SEMANTIC_VETO_REMAINS",
     "paid_authorization": false,
+    "r9_authorized": false,
     "thirty_case_execution_ready": false,
+    "actual_30_case_run_authorized": false,
     "provider_free": {
       "focused_run_id": 37667461124,
       "frozen_family_run_id": 37667461009,
@@ -186,24 +213,32 @@
       "generated_metamorphic_scenarios": 192,
       "status": "GREEN"
     },
-    "observed_slots": {
-      "R01_COMPARISON_ORIGINAL": "GREEN",
-      "R02_COMPARISON_SEMANTIC": "RED",
-      "R03_COMPARISON_WORDING": "GREEN",
-      "R04_TEMPORAL_ORIGINAL": "GREEN"
-    },
-    "r02_first_wrong_boundary": {
+    "shared_first_wrong_boundary": {
       "phase": "pre_execution_native_material_observation",
+      "affected_slots": [
+        "R02_COMPARISON_SEMANTIC",
+        "R07_ADAPTIVE_ORIGINAL"
+      ],
       "attestation_http_status": 200,
       "material_observation_http_status": 422,
+      "native_execution_started": false,
       "native_acquisitions": 0,
       "evidence_count": 0,
       "blocked_provider_requests": 0,
       "duplicate_native": 0,
       "stale_evidence": 0,
-      "terminal_exception": "P20_RESEARCH_SESSION_NOT_SEALED",
-      "classification": "physical query representation remains a de-facto business-semantic veto in the certified native material observer"
+      "classification": "transitional native material observer remains a de-facto business-semantic veto by reconstructing meaning from physical query representation"
     },
-    "constitutional_direction": "Metabase/Metabot must emit or expose stable execution-semantic facts bound to the exact occurrence/result; Dima verifies AnalyticalIntentV1 against AnalyticalExecutionManifestV1 once, then admits Evidence. Structural provenance remains fail-closed; query-shape business reconstruction does not."
+    "constitutional_direction": "Metabase/Metabot exposes stable execution-semantic facts bound to the exact occurrence/result; AnalyticalExecutionManifestV1 records observed facts; verify_analytical_fulfillment_v1 performs the sole Intent-to-Execution semantic judgment; attestation/observer/result coverage retain structural or fact-producing roles only.",
+    "recovery_receipt": "backend/belgeler/metabase/DIMA_BRAIN_V2_1_FINAL_12CASE_RECOVERY_2026-10-07.md"
+  },
+  "active_candidate_identity": {
+    "product_semantic_sha": "eee7583cb67d50779784805c469230ef2b82a5a2",
+    "engine_sha": "686671fa7e55f715e4fb5ac155f9e66019fd12d8",
+    "engine_release": "0.63.18-dima.11.2",
+    "engine_runtime_tag": "v0.63.18-dima.11.2.1",
+    "engine_digest": "sha256:fe1b6fb67be6dbadea1af5d415f3ba2e033d46f91289f5c3c9844bee20c379bd",
+    "recovery_semantic_product_frozen": true,
+    "broad_30_case_executed_on_this_candidate": false
   }
 }
