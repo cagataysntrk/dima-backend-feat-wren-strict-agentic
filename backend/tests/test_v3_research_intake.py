@@ -1480,10 +1480,13 @@ def test_temporal_only_clarification_gets_one_bounded_calendar_reconsideration()
     assert result.brief.scope.periods[0].start == "2026-05-01"
     assert result.brief.scope.periods[0].end == "2026-07-01"
     assert transport.calls[0]["user"]["calendar_reference_date"] == "2026-09-30"
-    assert (
-        transport.calls[1]["user"]["reconsideration"]["kind"]
-        == "TEMPORAL_CLARIFICATION_ONLY"
-    )
+    reconsideration = transport.calls[1]["user"]["reconsideration"]
+    assert reconsideration["kind"] == "CANONICAL_TEMPORAL_AUTHORITY"
+    assert reconsideration["frame_policy"] == {
+        "bounded_change_without_explicit_pair": "SPAN_MATERIAL_WINDOW",
+        "explicit_two_period_comparison": "PAIR",
+        "invent_additional_comparison_period": False,
+    }
 
 
 def test_non_temporal_clarification_remains_fail_closed_after_bounded_reconsideration():
