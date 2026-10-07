@@ -1,8 +1,9 @@
 DIMA Brain V2.1 root recovery pinpoint trigger
 
-mode: continuation-pinpoint
+mode: continuation-pinpoint-harness-defect-retry
 slot: R11_CONTINUATION_DEEPENING
 candidate_product_sha: a8d3d68ff03696231eca05b23b345df660853629
 engine_sha: 686671fa7e55f715e4fb5ac155f9e66019fd12d8
+harness_fix: p19 source ceiling 3 -> 6; hard total remains 18
 broad_30_case: forbidden
 frontend: forbidden
