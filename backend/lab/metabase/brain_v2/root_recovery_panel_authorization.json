@@ -122,9 +122,9 @@
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
   "frontend_allowed": false,
-  "note": "Single authorized 12-case recovery wave 37668955073 has started and is now consumed. R02 failed in that wave with P20_RESEARCH_SESSION_NOT_SEALED after two material_executor attempts, 0 native acquisitions, 8 provider requests, blocked_provider=0, duplicate_native=0, stale_evidence=0. No second paid wave is authorized. Remaining slots may finish on the immutable run checkout for corpus evidence only.",
+  "note": "Final post-root recovery run 37668955073 is already in flight on frozen Product eee7583c...; R02_COMPARISON_SEMANTIC has failed before native execution at the certified native material-observation boundary (attestation 200, material observation 422, blocked provider=0, duplicate native=0, Evidence=0). No second paid wave is authorized. Let the current fail-fast=false panel finish for full adjudication; broad 30-case and frontend remain forbidden.",
   "final_result": {
-    "status": "RECOVERY_WAVE_RUNNING__R02_RED__NO_SECOND_PAID_WAVE",
+    "status": "IN_FLIGHT_R02_RED_NO_PAID_RETRY",
     "workflow_run_id": 37668955073,
     "candidate_product_sha": "eee7583cb67d50779784805c469230ef2b82a5a2",
     "first_observed_red": {
@@ -137,7 +137,13 @@
       "duplicate_native": 0,
       "stale_evidence": 0
     },
-    "thirty_case_execution_ready": false
+    "thirty_case_execution_ready": false,
+    "observed_red_slots": [
+      {
+        "slot_id": "R02_COMPARISON_SEMANTIC",
+        "boundary": "certified native material observation returned HTTP 422 before native execution; Product ended with P20_RESEARCH_SESSION_NOT_SEALED, native_acquisitions=0, evidence_count=0, blocked_provider=0, duplicate_native=0"
+      }
+    ]
   },
   "prior_final_result": {
     "status": "RED",
