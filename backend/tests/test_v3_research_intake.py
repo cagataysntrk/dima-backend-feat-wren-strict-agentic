@@ -1821,6 +1821,91 @@ def test_explicit_repair_does_not_restore_removed_prior_obligation():
     assert "Absent facets inherit from prior scope" in sent["instruction"]
 
 
+def test_scope_mutation_patch_owns_negative_entity_mentions() -> None:
+    """A removed entity mention cannot re-open scope after typed SET authority."""
+
+    assembly = ResearchSemanticRef(
+        source_mention="Assembly",
+        candidate_id="entity.department.assembly",
+        target_kind=SemanticTargetKind.ENTITY_VALUE,
+        canonical_name="Assembly",
+        dimension_name="Department",
+        value="Assembly",
+        cube_names=("machine_operations",),
+    )
+    packaging = ResearchSemanticRef(
+        source_mention="Packaging",
+        candidate_id="entity.department.packaging",
+        target_kind=SemanticTargetKind.ENTITY_VALUE,
+        canonical_name="Packaging",
+        dimension_name="Department",
+        value="Packaging",
+        cube_names=("machine_operations",),
+    )
+    base = catalog()
+    scoped_catalog = base.model_copy(
+        update={
+            "semantic_refs": (
+                *base.semantic_refs,
+                assembly,
+                packaging,
+            )
+        }
+    )
+    current = (
+        "Correction: focus only Assembly; remove Packaging from the current scope."
+    )
+    full = _full_followup_payload(
+        metric_ids=("metric.downtime",),
+        mutation_kind="NARROW_ENTITY",
+    )
+    full["objective"] = "Narrow the existing governed analysis to Assembly."
+    full["goals"][0]["source_text"] = current
+    full["goals"][0]["source_fragment_text"] = current
+    full["goals"][0]["related_semantic_ids"] = [
+        "dimension.department",
+        "entity.department.assembly",
+        "entity.department.packaging",
+    ]
+    patch = {
+        "terminal": "READY",
+        "operations": [
+            {
+                "facet": "ENTITY",
+                "operation": "SET",
+                "semantic_ids": ["entity.department.assembly"],
+                "source_fragment": "focus only Assembly",
+            }
+        ],
+    }
+
+    result = ResearchIntakeCompiler(
+        transport=SequenceTransport([full, patch])
+    ).compile(
+        question=current,
+        catalog=scoped_catalog,
+        prior_brief=prior_brief(),
+    )
+
+    assert result.terminal == ResearchIntakeTerminal.READY
+    assert result.turn_transition == TurnTransitionKind.SCOPE_MUTATION
+    assert result.scope_contract is not None
+    assert result.brief is not None
+    accepted_ids = {
+        item.candidate_id for item in result.brief.scope.semantic_refs
+    }
+    question_ids = {
+        item.candidate_id
+        for question in result.brief.questions
+        for item in (*question.subject_refs, *question.related_refs)
+    }
+    assert "entity.department.assembly" in accepted_ids
+    assert "entity.department.packaging" not in accepted_ids
+    assert "entity.department.assembly" in question_ids
+    assert "entity.department.packaging" not in question_ids
+    assert result.brief.scope.scope_version.version_id == "scope_v2"
+
+
 def test_provider_catalog_contains_semantic_choices_not_runtime_binding_state():
     payload = ResearchIntakeCompiler._catalog_payload(catalog())
     serialized = json.dumps(payload, sort_keys=True)
