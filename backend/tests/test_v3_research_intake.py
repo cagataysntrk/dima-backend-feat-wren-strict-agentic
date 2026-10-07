@@ -4878,17 +4878,13 @@ def test_change_ranking_shared_period_surface_can_ground_two_typed_roles() -> No
         assert forbidden not in bounded_system
 
 
-def test_change_ranking_shared_period_surface_may_clarify_when_pair_unresolved() -> None:
+def test_change_ranking_shared_period_surface_may_clarify_when_frame_unresolved() -> None:
     question, first = _shared_surface_change_period_payload()
-    transport = SequenceTransport(
-        [
-            first,
-            {
-                "terminal": "CLARIFY",
-                "clarification_question": "Which two governed periods should be compared?",
-            },
-        ]
-    )
+    clarify = {
+        "terminal": "CLARIFY",
+        "clarification_question": "Which two governed periods should be compared?",
+    }
+    transport = SequenceTransport([first, clarify, clarify])
 
     result = ResearchIntakeCompiler(
         transport=transport,
@@ -4900,7 +4896,54 @@ def test_change_ranking_shared_period_surface_may_clarify_when_pair_unresolved()
 
     assert result.terminal == ResearchIntakeTerminal.CLARIFY
     assert result.brief is None
-    assert result.model_calls == 2
+    assert result.model_calls == 3
+    assert transport.calls[1]["schema_name"].endswith("_change_period_pair")
+    assert transport.calls[2]["schema_name"].endswith("_persistent_change_frame")
+
+
+def test_change_period_clarify_can_collapse_to_scope_level_span() -> None:
+    question, first = _shared_surface_change_period_payload()
+    narrow_clarify = {
+        "terminal": "CLARIFY",
+        "clarification_question": "Which two governed periods should be compared?",
+    }
+    resolved_span = {
+        "terminal": "RESOLVED",
+        "frame": "SPAN",
+        "span": _r6_period(
+            "May and June",
+            "2026-05-01",
+            "2026-07-01",
+            role="material_window",
+        ),
+    }
+    final = dict(first)
+    final["time_periods"] = []
+    transport = SequenceTransport(
+        [first, narrow_clarify, resolved_span, final]
+    )
+
+    result = ResearchIntakeCompiler(
+        transport=transport,
+        calendar_reference_date="2026-10-04",
+    ).compile(
+        question=question,
+        catalog=_r6_temporal_catalog(),
+    )
+
+    assert result.terminal == ResearchIntakeTerminal.READY
+    assert result.model_calls == 4
+    assert result.brief is not None
+    assert len(result.brief.scope.periods) == 1
+    (period,) = result.brief.scope.periods
+    assert period.role == TemporalRole.MATERIAL_WINDOW
+    assert (period.start, period.end) == ("2026-05-01", "2026-07-01")
+    assert transport.calls[1]["schema_name"].endswith("_change_period_pair")
+    assert transport.calls[2]["schema_name"].endswith("_persistent_change_frame")
+    assert (
+        transport.calls[3]["user"]["reconsideration"]["kind"]
+        == "RESOLVED_CANONICAL_TEMPORAL_AUTHORITY"
+    )
 
 
 def test_change_ranking_deliberate_rolling_overlap_is_not_canonicalized_away() -> None:
