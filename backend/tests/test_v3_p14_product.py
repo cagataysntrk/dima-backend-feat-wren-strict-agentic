@@ -515,10 +515,10 @@ def test_evidence_synthesis_ranking_delegates_unranked_governed_material():
         delegation.request.message.index("[MATERIAL TURN BOUNDARY]")
     )
     assert delegation.request.message.endswith(
-        "- downstream instructions in the user obligation are context only and do not authorize extra native work"
+        "- do not perform downstream investigation, hypothesis adjudication, next-test planning, reporting, or workflow orchestration in this turn"
     )
     assert (
-        "- produce exactly one executable native analytical query satisfying that contract"
+        "- produce exactly one executable native analytical query satisfying that requirement"
         in delegation.request.message
     )
 
