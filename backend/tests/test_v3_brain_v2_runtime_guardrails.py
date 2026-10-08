@@ -257,6 +257,8 @@ def test_native_gateway_projects_execution_facts_without_transitional_semantic_v
     assert execute_source.index("bridge.execute_native_query(") < execute_source.index(
         "_execution_fact_observation("
     )
+    assert "observe_native_query_material" not in source
+    assert "_observe_executed_occurrence" not in source
 
 def test_execution_manifest_separates_period_scope_from_result_time_axis():
     """Temporal filters/change periods cannot masquerade as result temporal grain."""
