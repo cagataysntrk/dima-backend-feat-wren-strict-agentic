@@ -1,12 +1,12 @@
 {
   "schema_version": "dima_brain_v2_1_root_recovery_panel_v1",
-  "enabled": false,
-  "candidate_product_sha": "b89eb6a0490ec0e51f025fcd524414ee6631612e",
+  "enabled": true,
+  "candidate_product_sha": "b28e0aa99e57556ffd1625045cca33ef27115715",
   "recovery_baseline": "505caec6e7c3fbd5346dc6a4c310e8f656d324ae",
   "provider_free_status": "GREEN",
-  "provider_free_focused_run_id": 37733897628,
-  "provider_free_semantic_run_id": 37733897642,
-  "provider_free_frozen_run_id": 37733897655,
+  "provider_free_focused_run_id": 37740990588,
+  "provider_free_semantic_run_id": 37740990661,
+  "provider_free_frozen_run_id": 37740938076,
   "generated_metamorphic_scenarios": 192,
   "engine_sha": "656a449b46246c46529c9bb83929df17818e2fea",
   "engine_release": "0.63.18-dima.11.3",
@@ -122,29 +122,22 @@
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
   "frontend_allowed": false,
-  "note": "Final run 37738806053 is complete at 8/12. Paid recovery is disarmed while generic execution-fact projection correction separates temporal scope facts from the final result time-axis fact. Broad 30-case/frontend remain forbidden.",
+  "note": "User-directed final closure validation for Product semantic candidate b28e0aa9... after generic temporal fact-role projection fix. Provider-free 37740990588, semantic+192-metamorphic+Wave-A/Wave-B+mutation 37740990661, and frozen-family 37740938076 are GREEN. Exactly one 12-case acceptance wave is authorized for this candidate. Broad 30-case/frontend remain forbidden and no automatic retry is authorized.",
   "final_result": {
-    "status": "COMPLETE_8_OF_12__PROJECTION_FIX_PROVIDER_FREE_PENDING",
-    "workflow_run_id": 37738806053,
-    "candidate_product_sha": "b89eb6a0490ec0e51f025fcd524414ee6631612e",
-    "green_slots": [
-      "R01_COMPARISON_ORIGINAL",
-      "R04_TEMPORAL_ORIGINAL",
-      "R05_TEMPORAL_SEMANTIC",
-      "R08_ADAPTIVE_SEMANTIC",
-      "R09_ADAPTIVE_WORDING",
-      "R10_CONTINUATION_ORIGINAL",
-      "R11_CONTINUATION_DEEPENING",
-      "R12_CONTINUATION_REPORT_ONLY"
-    ],
-    "red_slots": [
+    "status": "AUTHORIZED_B28_FINAL_12CASE_PENDING_TRIGGER",
+    "workflow_run_id": null,
+    "candidate_product_sha": "b28e0aa99e57556ffd1625045cca33ef27115715",
+    "thirty_case_execution_ready": false,
+    "paid_scope": "ONE_12_CASE_ACCEPTANCE_ONLY",
+    "prior_run_id": 37738806053,
+    "prior_result": "8_OF_12_GREEN",
+    "prior_red_slots": [
       "R02_COMPARISON_SEMANTIC",
       "R03_COMPARISON_WORDING",
       "R06_TEMPORAL_WORDING",
       "R07_ADAPTIVE_ORIGINAL"
     ],
-    "thirty_case_execution_ready": false,
-    "paid_scope": "OFF_UNTIL_PROVIDER_FREE_REVALIDATION"
+    "generic_fix_sha": "b28e0aa99e57556ffd1625045cca33ef27115715"
   },
   "prior_final_result": {
     "status": "RED",
