@@ -54,7 +54,7 @@
     "new_duplicate_semantic_owner_forbidden": true
   },
   "runtime_compliance": {
-    "status": "ARCHITECTURE_CLOSED__INFRA_ONLY_12CASE_REVALIDATION_AUTHORIZED",
+    "status": "ARCHITECTURE_CLOSED__ADAPTIVE_PROVIDER_INFRA_REVALIDATION_AUTHORIZED",
     "last_recovery_run_id": 37813851937,
     "last_recovery_result": "6_OF_12_GREEN__5_PROVIDER_402__1_FIXTURE_SEED_FAILURE",
     "live_closed_roots": {
@@ -148,10 +148,11 @@
     },
     "next_work_category": "SEPARATE_METABOT_PROVIDER_AND_HOW_RELIABILITY_WORK__NOT_SEMANTIC_LAYER_COLLAPSE",
     "infrastructure_revalidation": {
-      "prior_run_id": 37813851937,
-      "openrouter_402_slots": 5,
-      "fixture_seed_failure_slots": 1,
-      "completion_token_transport_ceiling": 7000,
+      "prior_run_id": 37831138286,
+      "static_7000_openrouter_402": true,
+      "completion_token_case_ceiling": 50000,
+      "request_max_tokens": 2048,
+      "one_affordability_retry": true,
       "fixture_seed_connect_attempts": 15,
       "product_sha": "0f84769a76532800f3ed3f26268fa31ccb67639f",
       "engine_sha": "656a449b46246c46529c9bb83929df17818e2fea",

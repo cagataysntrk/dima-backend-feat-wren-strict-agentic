@@ -1,6 +1,6 @@
 {
   "schema_version": "dima_brain_v2_1_release_validation_v1",
-  "status": "SEMANTIC_LAYER_COLLAPSE_ARCHITECTURE_CLOSED__INFRA_REVALIDATION_AUTHORIZED",
+  "status": "SEMANTIC_LAYER_COLLAPSE_ARCHITECTURE_CLOSED__ADAPTIVE_PROVIDER_INFRA_REVALIDATION_AUTHORIZED",
   "frozen_identity": {
     "product_semantic_sha": "ae4e0348601774082b0270f23d6de126e71e6055",
     "engine_sha": "686671fa7e55f715e4fb5ac155f9e66019fd12d8",
@@ -29,7 +29,7 @@
     "ninety_plus_proven": false,
     "eighty_plus_proven": false,
     "final_quality_score": 68.25,
-    "meaning": "Product 0f84769a... remains unchanged and provider-free/frozen/semantic+192-metamorphic closure is GREEN. Prior live 12-case proof was invalidated by five OpenRouter HTTP 402 affordability failures and one transient PostgreSQL fixture seed failure. User explicitly authorized one infrastructure-only revalidation: same model/provider/prompts with eval transport completion ceiling 7000 and bounded DB seed retry. READY remains NO until 12/12 GREEN.",
+    "meaning": "Product 0f84769a... remains unchanged. Fixture seed retry is proven effective; static 7000 max_tokens still received upstream OpenRouter 402. One final infrastructure-only revalidation uses the same model/provider/prompts with per-request transport max_tokens=2048, case-total completion budget=50000, and one audited numeric-affordability retry on HTTP 402. READY remains NO until 12/12 GREEN.",
     "historical_last_completed_30_case_score": 68.25,
     "final_quality_score_source": "HISTORICAL_LAST_COMPLETED_30_CASE_RELEASE"
   },
@@ -79,7 +79,7 @@
     "s3_diagnostic": false,
     "frontend": false,
     "automatic_retry": false,
-    "note": "One infrastructure-only 12-case revalidation explicitly authorized by user. No Product semantic patch/refactor, engine change, model substitution, broad 30-case, or frontend work.",
+    "note": "One user-authorized infrastructure-only revalidation. No Product semantic patch/refactor, engine change, model substitution, broad 30-case, or frontend work.",
     "root_recovery_retry": true
   },
   "actual_frozen_30_case_protocol": {
@@ -174,23 +174,15 @@
     "adjudication_document": "backend/belgeler/metabase/DIMA_BRAIN_V2_1_ROUND2_FINAL_ADJUDICATION_2026-10-06.md"
   },
   "active_recovery": {
-    "status": "AUTHORIZED_INFRA_ONLY_REVALIDATION_PENDING_TRIGGER",
+    "status": "AUTHORIZED_ADAPTIVE_PROVIDER_INFRA_REVALIDATION_PENDING_TRIGGER",
     "candidate_product_sha": "0f84769a76532800f3ed3f26268fa31ccb67639f",
     "engine_sha": "656a449b46246c46529c9bb83929df17818e2fea",
-    "prior_run_id": 37813851937,
-    "prior_result": "6/12 GREEN; five OpenRouter 402; R12 seed failure",
-    "provider_free": {
-      "status": "GREEN",
-      "candidate_product_sha": "0f84769a76532800f3ed3f26268fa31ccb67639f",
-      "runs": {
-        "focused_brain_v2": 37813400494,
-        "frozen_family": 37803854168,
-        "semantic_conformance_192_metamorphic_wave_a_wave_b_mutation": 37813400464
-      },
-      "generated_metamorphic_scenarios": 192
-    },
+    "prior_run_id": 37831138286,
+    "prior_result": "Provider 402 on first cognition request despite 7000 static cap",
     "infrastructure_changes": {
-      "completion_token_transport_ceiling": 7000,
+      "completion_token_case_ceiling": 50000,
+      "request_max_tokens": 2048,
+      "one_affordability_retry": true,
       "fixture_seed_bounded_retry": true,
       "model_unchanged": true,
       "product_code_unchanged": true

@@ -8,6 +8,7 @@ import pytest
 from lab.metabase.core_b.runtime.openrouter_counting_proxy import (
     CountingOpenRouterProxy,
     ProviderCeilingExceeded,
+    affordable_completion_tokens,
     bounded_chat_request_body,
     ProviderRequestLedger,
     response_usage,
@@ -393,3 +394,105 @@ def test_numeric_ceiling_reached_blocks_next_request_locally(tmp_path):
     assert len(calls) == 1
     assert receipt["prompt_tokens"] == 11
     assert receipt["events"][-1]["blocked_reason"] == "PROVIDER_PROMPT_TOKEN_CEILING_REACHED"
+
+
+def test_affordable_completion_tokens_extracts_only_numeric_hint():
+    body = json.dumps(
+        {
+            "error": {
+                "message": (
+                    "This request requires more credits, or fewer max_tokens. "
+                    "You requested up to 50000 tokens, but can only afford 7252."
+                )
+            }
+        }
+    ).encode()
+    assert affordable_completion_tokens(body) == 7252
+    assert affordable_completion_tokens(b'{"error":{"message":"other"}}') is None
+
+
+def test_request_transport_cap_is_separate_from_case_completion_budget(tmp_path):
+    calls: list[httpx.Request] = []
+    ledger = ProviderRequestLedger(
+        ceiling=4,
+        receipt_path=tmp_path / "receipt.json",
+        completion_token_ceiling=50000,
+    )
+    proxy = CountingOpenRouterProxy(
+        upstream_base_url="https://provider.invalid/api",
+        ledger=ledger,
+        client=_client(calls),
+        request_max_tokens=2048,
+    )
+    proxy.forward(
+        method="POST",
+        request_path="/source/research_intake/v1/chat/completions",
+        headers={},
+        body=b'{"messages":[],"max_tokens":50000}',
+    )
+    forwarded = json.loads(calls[0].content)
+    assert forwarded["max_tokens"] == 2048
+    receipt = ledger.snapshot()
+    assert receipt["completion_token_ceiling"] == 50000
+    assert receipt["completion_tokens"] == 7
+
+
+def test_402_affordability_hint_gets_one_audited_lower_token_retry(tmp_path):
+    calls: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls.append(request)
+        if len(calls) == 1:
+            return httpx.Response(
+                402,
+                headers={"Content-Type": "application/json"},
+                json={
+                    "error": {
+                        "message": (
+                            "This request requires more credits, or fewer "
+                            "max_tokens. You requested up to 2048 tokens, "
+                            "but can only afford 1500."
+                        )
+                    }
+                },
+            )
+        return httpx.Response(
+            200,
+            headers={"Content-Type": "application/json"},
+            json={
+                "choices": [{"message": {"content": "{}"}}],
+                "usage": {
+                    "prompt_tokens": 10,
+                    "completion_tokens": 5,
+                    "cost": 0.001,
+                },
+            },
+        )
+
+    ledger = ProviderRequestLedger(
+        ceiling=4,
+        receipt_path=tmp_path / "receipt.json",
+        completion_token_ceiling=50000,
+    )
+    proxy = CountingOpenRouterProxy(
+        upstream_base_url="https://provider.invalid/api",
+        ledger=ledger,
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+        request_max_tokens=2048,
+    )
+    status, _headers, _body = proxy.forward(
+        method="POST",
+        request_path="/source/research_intake/v1/chat/completions",
+        headers={},
+        body=b'{"messages":[],"max_tokens":50000}',
+    )
+    assert status == 200
+    assert len(calls) == 2
+    assert json.loads(calls[0].content)["max_tokens"] == 2048
+    assert json.loads(calls[1].content)["max_tokens"] == 1372
+    receipt = ledger.snapshot()
+    assert receipt["actual_provider_request_count"] == 2
+    assert receipt["transport_affordability_retry_count"] == 1
+    assert receipt["last_affordable_completion_tokens"] == 1500
+    assert receipt["last_applied_request_max_tokens"] == 1372
+    assert [event["upstream_status"] for event in receipt["events"]] == [402, 200]

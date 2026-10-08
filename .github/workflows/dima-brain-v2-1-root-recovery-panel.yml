@@ -21,7 +21,8 @@ env:
   PROVIDER_PROXY_PORT: "8799"
   HARD_PROVIDER_REQUEST_CEILING: "30"
   PROMPT_TOKEN_CEILING: "450000"
-  COMPLETION_TOKEN_CEILING: "7000"
+  COMPLETION_TOKEN_CEILING: "50000"
+  REQUEST_MAX_TOKENS: "2048"
   REASONING_TOKEN_CEILING: "35000"
   PROVIDER_COST_CEILING: "0.40"
 
@@ -157,7 +158,7 @@ jobs:
         run: |
           set -euo pipefail
           python -m py_compile lab/metabase/brain_v2/spec_closure_recovery_live.py
-          pytest -q tests/test_v3_brain_v2_spec_closure_recovery_live.py
+          pytest -q tests/test_v3_openrouter_counting_proxy.py tests/test_v3_brain_v2_spec_closure_recovery_live.py
 
       - name: Derive ephemeral credentials
         shell: bash
@@ -286,7 +287,7 @@ jobs:
           set -euo pipefail
           kill "$PROVIDER_PROXY_PID"
           wait "$PROVIDER_PROXY_PID" 2>/dev/null || true
-          nohup python backend/lab/metabase/core_b/runtime/openrouter_counting_proxy.py             --listen-host 0.0.0.0             --listen-port "$PROVIDER_PROXY_PORT"             --ceiling "$HARD_PROVIDER_REQUEST_CEILING"             --source-ceiling research_intake=6             --source-ceiling metabase=14             --source-ceiling p17_manager=3             --source-ceiling p18_manager=2             --source-ceiling p19_manager=6             --source-ceiling p20_synthesis=3             --prompt-token-ceiling "$PROMPT_TOKEN_CEILING"             --completion-token-ceiling "$COMPLETION_TOKEN_CEILING"             --reasoning-token-ceiling "$REASONING_TOKEN_CEILING"             --provider-cost-ceiling "$PROVIDER_COST_CEILING"             --receipt "backend/eval/brain_v2_root_recovery/provider_${SLOT_ID}.json"             >"backend/eval/brain_v2_root_recovery/provider_${SLOT_ID}.log" 2>&1 &
+          nohup python backend/lab/metabase/core_b/runtime/openrouter_counting_proxy.py             --listen-host 0.0.0.0             --listen-port "$PROVIDER_PROXY_PORT"             --ceiling "$HARD_PROVIDER_REQUEST_CEILING"             --source-ceiling research_intake=6             --source-ceiling metabase=14             --source-ceiling p17_manager=3             --source-ceiling p18_manager=2             --source-ceiling p19_manager=6             --source-ceiling p20_synthesis=3             --prompt-token-ceiling "$PROMPT_TOKEN_CEILING"             --completion-token-ceiling "$COMPLETION_TOKEN_CEILING"             --request-max-tokens "$REQUEST_MAX_TOKENS"             --reasoning-token-ceiling "$REASONING_TOKEN_CEILING"             --provider-cost-ceiling "$PROVIDER_COST_CEILING"             --receipt "backend/eval/brain_v2_root_recovery/provider_${SLOT_ID}.json"             >"backend/eval/brain_v2_root_recovery/provider_${SLOT_ID}.log" 2>&1 &
           echo "PROVIDER_PROXY_PID=$!" >> "$GITHUB_ENV"
           for i in $(seq 1 30); do
             curl -fsS "http://127.0.0.1:$PROVIDER_PROXY_PORT/__dima__/health" >/dev/null && break

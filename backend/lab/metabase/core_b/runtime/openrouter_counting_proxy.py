@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import threading
 import time
 from collections import Counter
@@ -119,6 +120,42 @@ def bounded_chat_request_body(
         ensure_ascii=False,
         separators=(",", ":"),
     ).encode("utf-8")
+
+
+def request_max_tokens(body: bytes) -> int | None:
+    """Return only the numeric transport max_tokens value, if present."""
+    try:
+        payload = json.loads(body)
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return None
+    if not isinstance(payload, dict):
+        return None
+    value = _non_negative_int(payload.get("max_tokens"))
+    return value if value and value > 0 else None
+
+
+def affordable_completion_tokens(body: bytes) -> int | None:
+    """Extract only OpenRouter's numeric affordability hint from a 402 body.
+
+    No response text is persisted or returned by this helper.
+    """
+    try:
+        text = body.decode("utf-8", errors="ignore")
+    except Exception:
+        return None
+    match = re.search(
+        r"can\s+only\s+afford\s+([0-9][0-9_,]*)",
+        text,
+        flags=re.IGNORECASE,
+    )
+    if match is None:
+        return None
+    digits = match.group(1).replace(",", "").replace("_", "")
+    try:
+        value = int(digits)
+    except ValueError:
+        return None
+    return value if value > 0 else None
 
 
 def response_usage(content_type: str, body: bytes) -> dict[str, int | float | None]:
@@ -232,6 +269,9 @@ class ProviderRequestLedger:
         self._provider_reported_cost = 0.0
         self._cost_observed = False
         self._responses_with_usage = 0
+        self._affordability_retries = 0
+        self._last_affordable_completion_tokens: int | None = None
+        self._last_applied_request_max_tokens: int | None = None
         self._events: list[dict[str, Any]] = []
         self.persist()
 
@@ -330,6 +370,22 @@ class ProviderRequestLedger:
                 self._responses_with_usage += 1
             self._persist_locked()
 
+    def record_affordability_retry(
+        self,
+        *,
+        affordable_completion_tokens: int,
+        applied_request_max_tokens: int,
+    ) -> None:
+        with self._lock:
+            self._affordability_retries += 1
+            self._last_affordable_completion_tokens = int(
+                affordable_completion_tokens
+            )
+            self._last_applied_request_max_tokens = int(
+                applied_request_max_tokens
+            )
+            self._persist_locked()
+
     def snapshot(self) -> dict[str, Any]:
         with self._lock:
             return self._snapshot_locked()
@@ -361,6 +417,9 @@ class ProviderRequestLedger:
                 round(self._provider_reported_cost, 12) if self._cost_observed else None
             ),
             "responses_with_usage_telemetry": self._responses_with_usage,
+            "transport_affordability_retry_count": self._affordability_retries,
+            "last_affordable_completion_tokens": self._last_affordable_completion_tokens,
+            "last_applied_request_max_tokens": self._last_applied_request_max_tokens,
             "privacy_contract": {
                 "request_headers_persisted": False,
                 "request_body_persisted": False,
@@ -391,9 +450,11 @@ class CountingOpenRouterProxy:
         upstream_base_url: str,
         ledger: ProviderRequestLedger,
         client: httpx.Client | None = None,
+        request_max_tokens: int | None = None,
     ) -> None:
         self.upstream_base_url = upstream_base_url.rstrip("/")
         self.ledger = ledger
+        self.request_max_tokens = request_max_tokens
         self.client = client or httpx.Client(
             timeout=httpx.Timeout(120.0, connect=15.0),
             follow_redirects=False,
@@ -417,10 +478,16 @@ class CountingOpenRouterProxy:
         suffix = f"?{split.query}" if split.query else ""
         reservation = None
         outbound_body = body
-        if method.upper() == "POST" and upstream_path == _CHAT_PATH:
+        is_chat = method.upper() == "POST" and upstream_path == _CHAT_PATH
+        if is_chat:
+            transport_cap = (
+                self.request_max_tokens
+                if self.request_max_tokens is not None
+                else self.ledger.completion_token_ceiling
+            )
             outbound_body = bounded_chat_request_body(
                 body,
-                completion_token_ceiling=self.ledger.completion_token_ceiling,
+                completion_token_ceiling=transport_cap,
             )
             reservation = self.ledger.reserve(source)
 
@@ -429,13 +496,17 @@ class CountingOpenRouterProxy:
             for key, value in headers.items()
             if key.casefold() not in _HOP_BY_HOP
         }
-        try:
-            response = self.client.request(
+
+        def send_once(payload: bytes):
+            return self.client.request(
                 method.upper(),
                 self.upstream_base_url + upstream_path + suffix,
                 headers=outbound_headers,
-                content=outbound_body,
+                content=payload,
             )
+
+        try:
+            response = send_once(outbound_body)
             response_body = response.content
         except Exception:
             if reservation is not None:
@@ -460,6 +531,49 @@ class CountingOpenRouterProxy:
                     response_body,
                 ),
             )
+
+        if is_chat and response.status_code == 402:
+            affordable = affordable_completion_tokens(response_body)
+            current_max = request_max_tokens(outbound_body)
+            if (
+                affordable is not None
+                and current_max is not None
+                and affordable < current_max
+                and affordable > 256
+            ):
+                retry_max = max(128, affordable - 128)
+                retry_body = bounded_chat_request_body(
+                    outbound_body,
+                    completion_token_ceiling=retry_max,
+                )
+                self.ledger.record_affordability_retry(
+                    affordable_completion_tokens=affordable,
+                    applied_request_max_tokens=retry_max,
+                )
+                retry_reservation = self.ledger.reserve(source)
+                try:
+                    response = send_once(retry_body)
+                    response_body = response.content
+                except Exception:
+                    self.ledger.complete(
+                        retry_reservation,
+                        upstream_status=None,
+                        usage={
+                            "prompt_tokens": None,
+                            "completion_tokens": None,
+                            "reasoning_tokens": None,
+                            "provider_reported_cost": None,
+                        },
+                    )
+                    raise
+                self.ledger.complete(
+                    retry_reservation,
+                    upstream_status=response.status_code,
+                    usage=response_usage(
+                        response.headers.get("content-type", ""),
+                        response_body,
+                    ),
+                )
         response_headers = [
             (key, value)
             for key, value in response.headers.items()
@@ -560,6 +674,7 @@ def main() -> int:
     ap.add_argument("--source-ceiling", action="append", default=[], metavar="SOURCE=LIMIT")
     ap.add_argument("--prompt-token-ceiling", type=int)
     ap.add_argument("--completion-token-ceiling", type=int)
+    ap.add_argument("--request-max-tokens", type=int)
     ap.add_argument("--reasoning-token-ceiling", type=int)
     ap.add_argument("--provider-cost-ceiling", type=float)
     ap.add_argument("--receipt", type=Path, required=True)
@@ -589,6 +704,7 @@ def main() -> int:
     proxy = CountingOpenRouterProxy(
         upstream_base_url=args.upstream_base_url,
         ledger=ledger,
+        request_max_tokens=args.request_max_tokens,
     )
     server = ThreadingHTTPServer(
         (args.listen_host, args.listen_port),
