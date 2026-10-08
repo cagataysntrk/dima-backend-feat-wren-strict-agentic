@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-import argparse, hashlib, json, os
+import argparse, hashlib, json, os, time
 from pathlib import Path
 import psycopg
 from psycopg import sql
@@ -19,7 +19,31 @@ def main() -> int:
     host=os.environ.get("PGHOST","127.0.0.1"); port=int(os.environ.get("PGPORT","5432"))
     db=os.environ["PGDATABASE"]; user=os.environ["PGUSER"]; password=os.environ["PGPASSWORD"]
     readonly=os.environ["CORE_B_READONLY_USER"]; readonly_password=os.environ["CORE_B_READONLY_PASSWORD"]
-    conn=psycopg.connect(host=host,port=port,dbname=db,user=user,password=password,autocommit=True)
+    conn=None
+    last_error=None
+    for attempt in range(1, 16):
+        try:
+            candidate=psycopg.connect(
+                host=host,
+                port=port,
+                dbname=db,
+                user=user,
+                password=password,
+                autocommit=True,
+                connect_timeout=3,
+            )
+            with candidate.cursor() as readiness:
+                readiness.execute("SELECT 1")
+                readiness.fetchone()
+            conn=candidate
+            break
+        except psycopg.OperationalError as exc:
+            last_error=exc
+            if attempt == 15:
+                raise
+            time.sleep(min(0.5 * attempt, 3.0))
+    if conn is None:
+        raise RuntimeError("postgres fixture seed connection unavailable") from last_error
     with conn, conn.cursor() as cur:
         cur.execute("DROP TABLE IF EXISTS machine_operations")
         cur.execute("""

@@ -1,4 +1,4 @@
-DIMA Brain V2.1 final semantic-layer-collapse acceptance trigger
+DIMA Brain V2.1 infrastructure-only final acceptance trigger
 
 mode: final-12-case-independent-recovery-panel
 candidate_product_sha: 0f84769a76532800f3ed3f26268fa31ccb67639f
@@ -11,11 +11,16 @@ provider_free_focused_run: 37813400494
 provider_free_semantic_run: 37813400464
 provider_free_frozen_run: 37803854168
 generated_metamorphic_scenarios: 192
-stale_test_fix_commit: 345359d66f55968d03d993f3b1c96e439b6dbbbb
+prior_invalidated_run: 37813851937
+same_model: openrouter/openai/gpt-5.6-luna
+completion_token_transport_ceiling: 7000
+fixture_seed_bounded_retry: 15
+product_semantic_change: false
+engine_change: false
 case_count: 12
 hard_provider_case_ceiling: 30
-final_acceptance: explicitly-authorized
+final_acceptance: explicitly-user-authorized-infrastructure-revalidation
 broad_30_case: forbidden
 frontend: forbidden
 automatic_retry: forbidden
-authorization_revision: 0f847-final-v1
+authorization_revision: 0f847-infra-revalidation-v1

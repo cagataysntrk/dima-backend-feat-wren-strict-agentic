@@ -1,6 +1,6 @@
 {
   "schema_version": "dima_brain_v2_1_root_recovery_panel_v1",
-  "enabled": false,
+  "enabled": true,
   "candidate_product_sha": "0f84769a76532800f3ed3f26268fa31ccb67639f",
   "recovery_baseline": "505caec6e7c3fbd5346dc6a4c310e8f656d324ae",
   "provider_free_status": "GREEN",
@@ -122,46 +122,18 @@
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
   "frontend_allowed": false,
-  "note": "Final 0f847 acceptance run 37813851937 completed 6/12 GREEN. Five RED slots were invalidated by OpenRouter/Metabot upstream HTTP 402 insufficient credits before native acquisition; R12 failed during frozen fixture seeding with no case artifact. No new Semantic Layer Collapse production defect is inferred from this run. Per closure rule, no further paid retry, semantic patch, cleanup, or refactor is authorized. Production remains unchanged at 0f84769a....",
+  "note": "User explicitly authorized one infrastructure-only acceptance revalidation. Product remains frozen at 0f84769a... and engine at dima.11.3. Prior run 37813851937 had five OpenRouter HTTP 402 affordability failures and one transient PostgreSQL fixture-seed failure. Harness-only changes: provider proxy completion/output transport ceiling 7000 (same openrouter/openai/gpt-5.6-luna model and prompts) and bounded PostgreSQL seed connection retry. No Product semantic/backend/app/engine change is authorized or present.",
   "final_result": {
-    "status": "COMPLETE_6_OF_12__ACCEPTANCE_NOT_PROVEN__NO_RETRY",
-    "workflow_run_id": 37813851937,
+    "status": "AUTHORIZED_INFRA_ONLY_REVALIDATION_PENDING_TRIGGER",
+    "workflow_run_id": null,
     "candidate_product_sha": "0f84769a76532800f3ed3f26268fa31ccb67639f",
-    "completed_slots": 12,
-    "mechanically_successful_slots": 6,
-    "green_slots": [
-      "R01_COMPARISON_ORIGINAL",
-      "R03_COMPARISON_WORDING",
-      "R05_TEMPORAL_SEMANTIC",
-      "R08_ADAPTIVE_SEMANTIC",
-      "R09_ADAPTIVE_WORDING",
-      "R10_CONTINUATION_ORIGINAL"
-    ],
-    "red_slots": [
-      "R02_COMPARISON_SEMANTIC",
-      "R04_TEMPORAL_ORIGINAL",
-      "R06_TEMPORAL_WORDING",
-      "R07_ADAPTIVE_ORIGINAL",
-      "R11_CONTINUATION_DEEPENING",
-      "R12_CONTINUATION_REPORT_ONLY"
-    ],
-    "failure_classification": {
-      "R02_COMPARISON_SEMANTIC": "PROVIDER_INFRA_OPENROUTER_402_INSUFFICIENT_CREDITS",
-      "R04_TEMPORAL_ORIGINAL": "PROVIDER_INFRA_OPENROUTER_402_INSUFFICIENT_CREDITS",
-      "R06_TEMPORAL_WORDING": "PROVIDER_INFRA_OPENROUTER_402_INSUFFICIENT_CREDITS",
-      "R07_ADAPTIVE_ORIGINAL": "PROVIDER_INFRA_OPENROUTER_402_INSUFFICIENT_CREDITS",
-      "R11_CONTINUATION_DEEPENING": "PROVIDER_INFRA_OPENROUTER_402_INSUFFICIENT_CREDITS",
-      "R12_CONTINUATION_REPORT_ONLY": "HARNESS_FIXTURE_SEED_FAILURE__NO_ARTIFACT"
-    },
-    "duplicate_native": 0,
-    "stale_evidence": 0,
-    "semantic_layer_collapse_new_blocker_proven": false,
-    "provider_infrastructure_invalidated_slots": 5,
-    "harness_infrastructure_invalidated_slots": 1,
-    "paid_recovery_authorized": false,
-    "semantic_cleanup_or_refactor_authorized": false,
     "thirty_case_execution_ready": false,
-    "actual_30_case_run_authorized": false
+    "prior_run_id": 37813851937,
+    "prior_result": "6_OF_12_GREEN__5_PROVIDER_402__1_FIXTURE_SEED",
+    "infrastructure_only": true,
+    "product_semantic_change": false,
+    "engine_change": false,
+    "paid_scope": "ONE_12_CASE_INFRA_REVALIDATION_ONLY"
   },
   "prior_final_result": {
     "status": "RED",
@@ -209,5 +181,13 @@
       }
     ]
   },
-  "provider_free_detail": "Focused 37770921471 GREEN; frozen-family 37770691002 GREEN; semantic+192 metamorphic+Wave A/B+mutation 37771209711 GREEN."
+  "provider_free_detail": "Focused 37770921471 GREEN; frozen-family 37770691002 GREEN; semantic+192 metamorphic+Wave A/B+mutation 37771209711 GREEN.",
+  "infrastructure_revalidation": {
+    "explicitly_user_authorized": true,
+    "completion_token_transport_ceiling": 7000,
+    "fixture_seed_connect_attempts": 15,
+    "same_model": "openrouter/openai/gpt-5.6-luna",
+    "same_product_sha": "0f84769a76532800f3ed3f26268fa31ccb67639f",
+    "same_engine_sha": "656a449b46246c46529c9bb83929df17818e2fea"
+  }
 }
