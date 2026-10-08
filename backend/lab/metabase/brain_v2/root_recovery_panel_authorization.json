@@ -1,12 +1,12 @@
 {
   "schema_version": "dima_brain_v2_1_root_recovery_panel_v1",
   "enabled": true,
-  "candidate_product_sha": "e5c91312c3dd0d5acbf4229de723396791bff9a0",
+  "candidate_product_sha": "3921dc7d8b380f36db7d5b8be6a2506f70a244b0",
   "recovery_baseline": "505caec6e7c3fbd5346dc6a4c310e8f656d324ae",
   "provider_free_status": "GREEN",
-  "provider_free_focused_run_id": 37783368944,
-  "provider_free_semantic_run_id": 37783368988,
-  "provider_free_frozen_run_id": 37782789136,
+  "provider_free_focused_run_id": 37800905919,
+  "provider_free_semantic_run_id": 37800905758,
+  "provider_free_frozen_run_id": 37800905722,
   "generated_metamorphic_scenarios": 192,
   "engine_sha": "656a449b46246c46529c9bb83929df17818e2fea",
   "engine_release": "0.63.18-dima.11.3",
@@ -122,27 +122,23 @@
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
   "frontend_allowed": false,
-  "note": "Final user-directed semantic-layer-collapse acceptance. Exact Product code candidate is e5c91312... (same semantic behavior as f297b845..., plus execution_facts default compatibility in research_store). Latest provider-free 37783368944 GREEN, semantic+192-metamorphic+Wave-A/Wave-B+mutation 37783368988 GREEN, frozen-family 37782789136 GREEN on this exact backend/app identity. Prior 47bf2cb9 gate attempt consumed no provider/case execution. Exactly one 12-case case-executing acceptance wave is authorized; broad 30-case/frontend remain forbidden; no automatic retry.",
+  "note": "Final user-directed root semantic-layer-collapse acceptance. Exact Product code candidate 3921dc7d... removes provider-owned source-fragment veto, collapses planner WHAT to one compact envelope, and prevents P17 exact-fingerprint duplicate native acquisition through structural VERIFIED reuse. Provider-free 37800905919 GREEN; frozen-family 37800905722 GREEN; semantic+192-metamorphic+Wave-A/Wave-B+mutation 37800905758 GREEN. Exactly one 12-case case-executing acceptance wave is authorized. Broad 30-case/frontend remain forbidden; no automatic retry.",
   "final_result": {
-    "status": "AUTHORIZED_E5C_FINAL_12CASE_PENDING_TRIGGER",
+    "status": "AUTHORIZED_392_FINAL_12CASE_PENDING_TRIGGER",
     "workflow_run_id": null,
-    "candidate_product_sha": "e5c91312c3dd0d5acbf4229de723396791bff9a0",
+    "candidate_product_sha": "3921dc7d8b380f36db7d5b8be6a2506f70a244b0",
     "thirty_case_execution_ready": false,
     "paid_scope": "ONE_FINAL_12_CASE_ACCEPTANCE_ONLY",
-    "prior_run_id": 37771729826,
-    "prior_result": "10_OF_12_GREEN__PRE_LAYER_COLLAPSE",
+    "prior_case_run_id": 37789838447,
+    "prior_result": "8_OF_12_GREEN_PRE_ROOT_LAYER_REMOVAL",
     "prior_red_slots": [
+      "R01_COMPARISON_ORIGINAL",
       "R02_COMPARISON_SEMANTIC",
-      "R03_COMPARISON_WORDING"
+      "R10_CONTINUATION_ORIGINAL",
+      "R11_CONTINUATION_DEEPENING"
     ],
-    "layer_collapse_commits": [
-      "33ba218230dcd70ba7d11b3b99fc200b08cf4297",
-      "58305c90de01c6630968876a120945f919b5be7f",
-      "0a4c5136a34a26a10904f1c37bbdd8fbec0774e6",
-      "160b6d2eea3adcd71c9cd2416fa002665c54d1b4",
-      "f297b8458031c4aa77adc54414fbf5552dbb4c59"
-    ],
-    "prior_gate_only_run_id": 37789577092
+    "root_layer_removal_sha": "a8f17c742470ffde949f3bdb5e09bc7f2018d1d7",
+    "exact_product_code_sha": "3921dc7d8b380f36db7d5b8be6a2506f70a244b0"
   },
   "prior_final_result": {
     "status": "RED",
