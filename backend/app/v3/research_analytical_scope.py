@@ -1047,6 +1047,11 @@ def native_material_requirement(
             else None
         ),
         "required_temporal_dimension": coverage.time_dimension_ref,
+        "temporal_observation": (
+            contract.temporal_observation.model_dump(mode="json")
+            if contract.temporal_observation is not None
+            else None
+        ),
         "material_coverage_period": (
             coverage_period.model_dump(mode="json")
             if coverage_period is not None
@@ -1067,24 +1072,9 @@ def native_material_requirement(
 
 
 def native_request_context(contract: AnalyticalRequestContract) -> dict[str, Any]:
-    """Semantic-only context given to Metabot; physical verifier bindings stay out."""
+    """Single WHAT transport surface for Metabot; no parallel semantic contract."""
 
-    scope = contract.model_dump(mode="json")
-    coverage_period = material_coverage_period(contract)
-    scope["material_coverage_period"] = (
-        coverage_period.model_dump(mode="json")
-        if coverage_period is not None
-        else None
-    )
-    scope["material_coverage"] = material_coverage_contract(
-        contract
-    ).model_dump(mode="json")
-    if contract.temporal_observation is None:
-        # Preserve the sealed context shape for capabilities that do not carry
-        # the new CHANGE authority. Only the affected family gets a new field.
-        scope.pop("temporal_observation", None)
     return {
-        "dima_analytical_scope": scope,
         "dima_material_requirement": native_material_requirement(contract),
     }
 
