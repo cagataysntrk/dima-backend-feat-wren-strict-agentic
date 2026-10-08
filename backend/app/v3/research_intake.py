@@ -2033,8 +2033,9 @@ class ResearchIntakeCompiler:
     ) -> dict[str, Any] | None:
         """Detect structurally coupled temporal-comparison ranking authority.
 
-        This function infers nothing from wording. Exact user fragments are
-        forwarded to one bounded typed reconsideration call.
+        This function infers nothing from wording. The immutable CURRENT turn
+        is the only language provenance passed to bounded typed reconsideration;
+        provider-selected goal fragments are not an authority layer.
         """
 
         if draft.terminal != ResearchIntakeTerminal.READY:
@@ -2101,24 +2102,11 @@ class ResearchIntakeCompiler:
             )
 
         ranking_goal, owners = candidates[0]
-        ranking_fragment = ranking_goal.source_fragment_text
-        comparison_fragments = tuple(
-            owner.source_fragment_text for owner in owners
-        )
-        if (
-            ranking_fragment is None
-            or ranking_fragment != ranking_fragment.strip()
-            or ranking_fragment not in current
-            or any(
-                fragment is None
-                or fragment != fragment.strip()
-                or fragment not in current
-                for fragment in comparison_fragments
-            )
-        ):
+        current_source = current.strip()
+        if not current_source:
             raise ResearchIntakeError(
-                "INTAKE_RANKING_BASIS_SOURCE_FRAGMENT_REQUIRED",
-                "ranking-basis deliberation requires exact verbatim user fragments",
+                "INTAKE_CURRENT_TURN_REQUIRED",
+                "ranking-basis deliberation requires the immutable current turn",
             )
 
         measure = ranking_goal.ranking.measure_semantic_id
@@ -2144,8 +2132,8 @@ class ResearchIntakeCompiler:
             "kind": "RANKING_BASIS_DELIBERATION",
             "ranking_goal_key": ranking_goal.goal_key,
             "current_basis": RankingBasis.LEVEL.value,
-            "ranking_source_fragment": ranking_fragment,
-            "comparison_source_fragments": list(comparison_fragments),
+            "ranking_source_fragment": current_source,
+            "comparison_source_fragments": [current_source],
             "accepted_metric_refs": accepted_metric_refs,
             "typed_periods": [
                 baseline.model_dump(mode="json"),
@@ -2165,7 +2153,7 @@ class ResearchIntakeCompiler:
 
         Exact collapse is always invalid. Partial overlap is not automatically
         invalid because rolling comparisons are legitimate; one narrow model
-        adjudication decides only period bounds from exact user fragments.
+        adjudication decides only period bounds from the immutable CURRENT turn.
         """
 
         if draft.terminal != ResearchIntakeTerminal.READY:
@@ -2248,41 +2236,13 @@ class ResearchIntakeCompiler:
             return None
 
         ranking_goal = change_goals[0]
-        ranking_fragment = ranking_goal.source_fragment_text
-        if (
-            ranking_fragment is None
-            or ranking_fragment != ranking_fragment.strip()
-            or ranking_fragment not in current
-        ):
+        current_source = current.strip()
+        if not current_source:
             raise ResearchIntakeError(
-                "INTAKE_CHANGE_PERIOD_SOURCE_FRAGMENT_REQUIRED",
-                "temporal deliberation requires an exact ranking source fragment",
+                "INTAKE_CURRENT_TURN_REQUIRED",
+                "temporal deliberation requires the immutable current turn",
             )
-
         measure = ranking_goal.ranking.measure_semantic_id
-        comparison_fragments = tuple(
-            goal.source_fragment_text
-            for goal in draft.goals
-            if (
-                goal.kind == ResearchGoalKind.COMPARISON
-                and measure is not None
-                and measure
-                in {
-                    *goal.subject_semantic_ids,
-                    *goal.related_semantic_ids,
-                }
-            )
-        )
-        if any(
-            fragment is None
-            or fragment != fragment.strip()
-            or fragment not in current
-            for fragment in comparison_fragments
-        ):
-            raise ResearchIntakeError(
-                "INTAKE_CHANGE_PERIOD_SOURCE_FRAGMENT_REQUIRED",
-                "temporal deliberation requires exact comparison source fragments",
-            )
 
         return {
             "kind": "CHANGE_PERIOD_PAIR_DELIBERATION",
@@ -2297,8 +2257,8 @@ class ResearchIntakeCompiler:
             ),
             "time_dimension_semantic_id": baseline.time_dimension_semantic_id,
             "calendar_reference_date": calendar_reference_date,
-            "ranking_source_fragment": ranking_fragment,
-            "comparison_source_fragments": list(comparison_fragments),
+            "ranking_source_fragment": current_source,
+            "comparison_source_fragments": [current_source],
             "baseline_period": baseline.model_dump(mode="json"),
             "comparison_period": comparison.model_dump(mode="json"),
         }
@@ -2328,20 +2288,14 @@ class ResearchIntakeCompiler:
         if len(catalog.temporal_dimension_ids) != 1:
             return None
 
-        fragments: list[str] = []
+        current_source = current.strip()
+        if not current_source:
+            raise ResearchIntakeError(
+                "INTAKE_CURRENT_TURN_REQUIRED",
+                "missing CHANGE frame resolution requires the immutable current turn",
+            )
         measures: list[str] = []
         for goal in change_goals:
-            fragment = goal.source_fragment_text
-            if (
-                fragment is None
-                or fragment != fragment.strip()
-                or fragment not in current
-            ):
-                raise ResearchIntakeError(
-                    "INTAKE_CHANGE_FRAME_SOURCE_FRAGMENT_REQUIRED",
-                    "missing CHANGE frame resolution requires exact provenance",
-                )
-            fragments.append(fragment)
             assert goal.ranking is not None
             if goal.ranking.measure_semantic_id is not None:
                 measures.append(goal.ranking.measure_semantic_id)
@@ -2350,7 +2304,7 @@ class ResearchIntakeCompiler:
             "kind": "MISSING_CHANGE_TEMPORAL_FRAME",
             "governed_time_dimension_id": catalog.temporal_dimension_ids[0],
             "calendar_reference_date": calendar_reference_date,
-            "source_fragments": list(dict.fromkeys(fragments)),
+            "source_fragments": [current_source],
             "ranking_measure_semantic_ids": list(dict.fromkeys(measures)),
             "consumer_count": len(change_goals),
         }
