@@ -3,7 +3,7 @@
   "enabled": true,
   "candidate_product_sha": "045d12ac0dfa4cc5e9955c0a0931f6c38eb09edd",
   "recovery_baseline": "505caec6e7c3fbd5346dc6a4c310e8f656d324ae",
-  "provider_free_status": "GREEN_POST_SEMANTIC_LAYER_COLLAPSE",
+  "provider_free_status": "GREEN",
   "provider_free_focused_run_id": 37731298384,
   "provider_free_semantic_run_id": 37731298303,
   "provider_free_frozen_run_id": 37731298328,
@@ -122,7 +122,7 @@
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
   "frontend_allowed": false,
-  "note": "Final semantic-layer-collapse validation is explicitly authorized for candidate 045d12ac... after provider-free focused/frozen/semantic+192-metamorphic+Wave-A/Wave-B+mutation GREEN. Exactly one 12-case recovery wave may run. Broad 30-case, frontend, automatic retry, and any second correction wave remain forbidden.",
+  "note": "Final semantic-layer-collapse validation is explicitly authorized for candidate 045d12ac... after full provider-free closure. Exactly one case-executing 12-case recovery wave may run. Authorization-gate-only workflow attempts do not consume that wave. Broad 30-case, frontend, automatic retry, and any second correction wave remain forbidden.",
   "final_result": {
     "status": "AUTHORIZED_PENDING_TRIGGER",
     "workflow_run_id": null,
@@ -175,5 +175,6 @@
         "boundary": "certified native material observation returned HTTP 422 before native execution; Product ended with P20_RESEARCH_SESSION_NOT_SEALED, native_acquisitions=0, evidence_count=0, blocked_provider=0, duplicate_native=0"
       }
     ]
-  }
+  },
+  "provider_free_detail": "Semantic-layer-collapse provider-free closure is GREEN: focused 37731714641, frozen 37731298328, semantic+192-metamorphic+Wave-A+Wave-B+mutation 37731714637."
 }
