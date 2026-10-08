@@ -850,6 +850,7 @@ class ResearchAskOrchestrator:
             session,
             obligation_id=obligation_id,
             analytical_scope=analytical_scope,
+            analytical_intent=analytical_intent,
         )
         feedback = material_repair_feedback(decision)
         context = dict(prepared.request.context)
@@ -866,7 +867,7 @@ class ResearchAskOrchestrator:
                 ),
                 "[DIMA MATERIAL REPAIR BOUNDARY]",
                 "- regenerate exactly one new native analytical query",
-                "- preserve the accepted material requirement, ScopeVersion, principal, tenant, filters, and periods",
+                "- preserve the accepted analytical intent, ScopeVersion, principal, tenant, filters, and periods",
                 "- correct only the validation mismatch described above",
                 "- do not broaden scope or perform downstream investigation/reporting",
             )
