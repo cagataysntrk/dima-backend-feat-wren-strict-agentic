@@ -54,9 +54,9 @@
     "new_duplicate_semantic_owner_forbidden": true
   },
   "runtime_compliance": {
-    "status": "PROVIDER_FREE_CLOSED_0F847_FINAL_12CASE_AUTHORIZED",
-    "last_recovery_run_id": 37789838447,
-    "last_recovery_result": "8_OF_12_GREEN__PRE_ROOT_LAYER_REMOVAL",
+    "status": "SEMANTIC_LAYER_COLLAPSE_ARCHITECTURE_CLOSED__LIVE_ACCEPTANCE_NOT_PROVEN",
+    "last_recovery_run_id": 37813851937,
+    "last_recovery_result": "6_OF_12_GREEN__5_PROVIDER_402__1_FIXTURE_SEED_FAILURE",
     "live_closed_roots": {
       "atomic_p18_turn_reset": "CLOSED__R10_R11_R12_GREEN",
       "shared_acquisition_identity": "CLOSED__ONE_ACQUISITION__CONSUMERS_VERIFIED_SEPARATELY",
@@ -116,7 +116,37 @@
     ],
     "blockers": [],
     "exact_product_code_candidate": "e5c91312c3dd0d5acbf4229de723396791bff9a0",
-    "semantic_behavior_anchor": "f297b8458031c4aa77adc54414fbf5552dbb4c59"
+    "semantic_behavior_anchor": "f297b8458031c4aa77adc54414fbf5552dbb4c59",
+    "acceptance": {
+      "run_id": 37813851937,
+      "result": "6_OF_12_GREEN",
+      "green_slots": [
+        "R01_COMPARISON_ORIGINAL",
+        "R03_COMPARISON_WORDING",
+        "R05_TEMPORAL_SEMANTIC",
+        "R08_ADAPTIVE_SEMANTIC",
+        "R09_ADAPTIVE_WORDING",
+        "R10_CONTINUATION_ORIGINAL"
+      ],
+      "red_slots": [
+        "R02_COMPARISON_SEMANTIC",
+        "R04_TEMPORAL_ORIGINAL",
+        "R06_TEMPORAL_WORDING",
+        "R07_ADAPTIVE_ORIGINAL",
+        "R11_CONTINUATION_DEEPENING",
+        "R12_CONTINUATION_REPORT_ONLY"
+      ],
+      "failure_classification": {
+        "R02_COMPARISON_SEMANTIC": "PROVIDER_INFRA_OPENROUTER_402_INSUFFICIENT_CREDITS",
+        "R04_TEMPORAL_ORIGINAL": "PROVIDER_INFRA_OPENROUTER_402_INSUFFICIENT_CREDITS",
+        "R06_TEMPORAL_WORDING": "PROVIDER_INFRA_OPENROUTER_402_INSUFFICIENT_CREDITS",
+        "R07_ADAPTIVE_ORIGINAL": "PROVIDER_INFRA_OPENROUTER_402_INSUFFICIENT_CREDITS",
+        "R11_CONTINUATION_DEEPENING": "PROVIDER_INFRA_OPENROUTER_402_INSUFFICIENT_CREDITS",
+        "R12_CONTINUATION_REPORT_ONLY": "HARNESS_FIXTURE_SEED_FAILURE__NO_ARTIFACT"
+      },
+      "conclusion": "No new duplicate semantic authority or Semantic Layer Collapse production blocker was proven. Acceptance proof is invalid/incomplete because external provider credit failures and one harness fixture-seed failure prevented 12/12."
+    },
+    "next_work_category": "SEPARATE_METABOT_PROVIDER_AND_HOW_RELIABILITY_WORK__NOT_SEMANTIC_LAYER_COLLAPSE"
   },
   "retired_runtime_semantic_vetoes": [
     "app.v3.research_analytical_scope.assert_material_native_scope",

@@ -1,6 +1,6 @@
 {
   "schema_version": "dima_brain_v2_1_release_validation_v1",
-  "status": "0F847_FINAL_12CASE_AUTHORIZED",
+  "status": "SEMANTIC_LAYER_COLLAPSE_ARCHITECTURE_CLOSED__FINAL_ACCEPTANCE_NOT_PROVEN",
   "frozen_identity": {
     "product_semantic_sha": "ae4e0348601774082b0270f23d6de126e71e6055",
     "engine_sha": "686671fa7e55f715e4fb5ac155f9e66019fd12d8",
@@ -29,7 +29,7 @@
     "ninety_plus_proven": false,
     "eighty_plus_proven": false,
     "final_quality_score": 68.25,
-    "meaning": "Production Product SHA 0f84769a... is unchanged after the final Semantic Layer Collapse. The only subsequent code change is stale-test expectation alignment. Provider-free 37803854319 GREEN (test-only rerun 37813400494 GREEN), frozen-family 37803854168 GREEN, and semantic+192-metamorphic+Wave-A/Wave-B+mutation 37813400464 GREEN. Exactly one final 12-case acceptance is authorized; broad 30-case remains forbidden until 12/12 GREEN.",
+    "meaning": "Production Product SHA 0f84769a... has provider-free, frozen-family, and semantic+192-metamorphic/Wave-A/Wave-B/mutation GREEN. Final 12-case run 37813851937 completed 6/12 GREEN; five RED slots were caused by OpenRouter/Metabot upstream HTTP 402 insufficient credits before native acquisition, and R12 failed during frozen fixture seeding with no artifact. Therefore 12/12 proof was not obtained and 30-CASE EXECUTION READY remains NO. No further Semantic Layer Collapse production patch/cleanup/refactor or paid retry is authorized.",
     "historical_last_completed_30_case_score": 68.25,
     "final_quality_score_source": "HISTORICAL_LAST_COMPLETED_30_CASE_RELEASE"
   },
@@ -79,8 +79,8 @@
     "s3_diagnostic": false,
     "frontend": false,
     "automatic_retry": false,
-    "note": "One final 12-case acceptance only. Production code frozen at 0f84769a... during validation. No automatic retry. Broad 30-case/frontend remain OFF.",
-    "root_recovery_retry": true
+    "note": "STOP Semantic Layer Collapse closure work. No more production patches, semantic cleanup/refactor, or paid recovery on this closure loop. Any future work must be a separately authorized Metabot/provider/HOW reliability effort.",
+    "root_recovery_retry": false
   },
   "actual_frozen_30_case_protocol": {
     "required_identity_match": true,
@@ -174,9 +174,35 @@
     "adjudication_document": "backend/belgeler/metabase/DIMA_BRAIN_V2_1_ROUND2_FINAL_ADJUDICATION_2026-10-06.md"
   },
   "active_recovery": {
-    "status": "AUTHORIZED_PENDING_TRIGGER",
+    "status": "CLOSED_NO_RETRY__ACCEPTANCE_NOT_PROVEN",
     "candidate_product_sha": "0f84769a76532800f3ed3f26268fa31ccb67639f",
     "engine_sha": "656a449b46246c46529c9bb83929df17818e2fea",
+    "final_run_id": 37813851937,
+    "result": "6/12 GREEN",
+    "green_slots": [
+      "R01_COMPARISON_ORIGINAL",
+      "R03_COMPARISON_WORDING",
+      "R05_TEMPORAL_SEMANTIC",
+      "R08_ADAPTIVE_SEMANTIC",
+      "R09_ADAPTIVE_WORDING",
+      "R10_CONTINUATION_ORIGINAL"
+    ],
+    "red_slots": [
+      "R02_COMPARISON_SEMANTIC",
+      "R04_TEMPORAL_ORIGINAL",
+      "R06_TEMPORAL_WORDING",
+      "R07_ADAPTIVE_ORIGINAL",
+      "R11_CONTINUATION_DEEPENING",
+      "R12_CONTINUATION_REPORT_ONLY"
+    ],
+    "failure_classification": {
+      "R02_COMPARISON_SEMANTIC": "PROVIDER_INFRA_OPENROUTER_402_INSUFFICIENT_CREDITS",
+      "R04_TEMPORAL_ORIGINAL": "PROVIDER_INFRA_OPENROUTER_402_INSUFFICIENT_CREDITS",
+      "R06_TEMPORAL_WORDING": "PROVIDER_INFRA_OPENROUTER_402_INSUFFICIENT_CREDITS",
+      "R07_ADAPTIVE_ORIGINAL": "PROVIDER_INFRA_OPENROUTER_402_INSUFFICIENT_CREDITS",
+      "R11_CONTINUATION_DEEPENING": "PROVIDER_INFRA_OPENROUTER_402_INSUFFICIENT_CREDITS",
+      "R12_CONTINUATION_REPORT_ONLY": "HARNESS_FIXTURE_SEED_FAILURE__NO_ARTIFACT"
+    },
     "provider_free": {
       "focused_run_id": 37813400494,
       "frozen_family_run_id": 37803854168,
@@ -184,8 +210,8 @@
       "generated_metamorphic_scenarios": 192,
       "status": "GREEN"
     },
-    "stale_test_fix_commit": "345359d66f55968d03d993f3b1c96e439b6dbbbb",
-    "paid_authorization": true,
+    "paid_authorization": false,
+    "semantic_cleanup_or_refactor_authorized": false,
     "thirty_case_execution_ready": false,
     "actual_30_case_run_authorized": false
   },

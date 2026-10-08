@@ -1,6 +1,6 @@
 {
   "schema_version": "dima_brain_v2_1_root_recovery_panel_v1",
-  "enabled": true,
+  "enabled": false,
   "candidate_product_sha": "0f84769a76532800f3ed3f26268fa31ccb67639f",
   "recovery_baseline": "505caec6e7c3fbd5346dc6a4c310e8f656d324ae",
   "provider_free_status": "GREEN",
@@ -122,17 +122,46 @@
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
   "frontend_allowed": false,
-  "note": "Final user-directed acceptance for production Product SHA 0f84769a... after stale test-only repair. Production code is unchanged after 0f84769a. Provider-free 37803854319 GREEN (test-only rerun 37813400494 GREEN), frozen-family 37803854168 GREEN, semantic+192-metamorphic+Wave-A/Wave-B+mutation 37813400464 GREEN. Exactly one case-executing 12-case acceptance wave is authorized. Broad 30-case/frontend remain forbidden; no automatic retry.",
+  "note": "Final 0f847 acceptance run 37813851937 completed 6/12 GREEN. Five RED slots were invalidated by OpenRouter/Metabot upstream HTTP 402 insufficient credits before native acquisition; R12 failed during frozen fixture seeding with no case artifact. No new Semantic Layer Collapse production defect is inferred from this run. Per closure rule, no further paid retry, semantic patch, cleanup, or refactor is authorized. Production remains unchanged at 0f84769a....",
   "final_result": {
-    "status": "AUTHORIZED_0F847_FINAL_12CASE_PENDING_TRIGGER",
-    "workflow_run_id": null,
+    "status": "COMPLETE_6_OF_12__ACCEPTANCE_NOT_PROVEN__NO_RETRY",
+    "workflow_run_id": 37813851937,
     "candidate_product_sha": "0f84769a76532800f3ed3f26268fa31ccb67639f",
+    "completed_slots": 12,
+    "mechanically_successful_slots": 6,
+    "green_slots": [
+      "R01_COMPARISON_ORIGINAL",
+      "R03_COMPARISON_WORDING",
+      "R05_TEMPORAL_SEMANTIC",
+      "R08_ADAPTIVE_SEMANTIC",
+      "R09_ADAPTIVE_WORDING",
+      "R10_CONTINUATION_ORIGINAL"
+    ],
+    "red_slots": [
+      "R02_COMPARISON_SEMANTIC",
+      "R04_TEMPORAL_ORIGINAL",
+      "R06_TEMPORAL_WORDING",
+      "R07_ADAPTIVE_ORIGINAL",
+      "R11_CONTINUATION_DEEPENING",
+      "R12_CONTINUATION_REPORT_ONLY"
+    ],
+    "failure_classification": {
+      "R02_COMPARISON_SEMANTIC": "PROVIDER_INFRA_OPENROUTER_402_INSUFFICIENT_CREDITS",
+      "R04_TEMPORAL_ORIGINAL": "PROVIDER_INFRA_OPENROUTER_402_INSUFFICIENT_CREDITS",
+      "R06_TEMPORAL_WORDING": "PROVIDER_INFRA_OPENROUTER_402_INSUFFICIENT_CREDITS",
+      "R07_ADAPTIVE_ORIGINAL": "PROVIDER_INFRA_OPENROUTER_402_INSUFFICIENT_CREDITS",
+      "R11_CONTINUATION_DEEPENING": "PROVIDER_INFRA_OPENROUTER_402_INSUFFICIENT_CREDITS",
+      "R12_CONTINUATION_REPORT_ONLY": "HARNESS_FIXTURE_SEED_FAILURE__NO_ARTIFACT"
+    },
+    "duplicate_native": 0,
+    "stale_evidence": 0,
+    "semantic_layer_collapse_new_blocker_proven": false,
+    "provider_infrastructure_invalidated_slots": 5,
+    "harness_infrastructure_invalidated_slots": 1,
+    "paid_recovery_authorized": false,
+    "semantic_cleanup_or_refactor_authorized": false,
     "thirty_case_execution_ready": false,
-    "paid_scope": "ONE_FINAL_12_CASE_ACCEPTANCE_ONLY",
-    "stale_test_fix_commit": "345359d66f55968d03d993f3b1c96e439b6dbbbb",
-    "provider_free_run_id": 37813400494,
-    "frozen_family_run_id": 37803854168,
-    "semantic_conformance_run_id": 37813400464
+    "actual_30_case_run_authorized": false
   },
   "prior_final_result": {
     "status": "RED",
