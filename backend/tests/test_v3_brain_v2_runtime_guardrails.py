@@ -278,3 +278,37 @@ def test_execution_manifest_separates_period_scope_from_result_time_axis():
     assert '"change_baseline"' in source
     assert '"change_comparison"' in source
 
+def test_planner_material_envelope_has_no_duplicate_change_semantic_surfaces():
+    source = (
+        BACKEND_ROOT / "app" / "v3" / "research_analytical_scope.py"
+    ).read_text(encoding="utf-8")
+    start = source.index("def native_material_requirement(")
+    end = source.index("def native_request_context(", start)
+    body = source[start:end]
+    for forbidden in (
+        '"change_semantics"',
+        '"temporal_change_frame"',
+        '"material_coverage_period"',
+        '"required_metric_refs"',
+        '"required_breakout_refs"',
+    ):
+        assert forbidden not in body
+    assert '"temporal_periods"' in body
+    assert '"metrics"' in body
+    assert '"dimensions"' in body
+
+
+def test_p17_exact_query_reuse_is_structural_and_pre_execution():
+    product = (
+        BACKEND_ROOT / "app" / "v3" / "research_product.py"
+    ).read_text(encoding="utf-8")
+    store = (
+        BACKEND_ROOT / "app" / "v3" / "research_store.py"
+    ).read_text(encoding="utf-8")
+    assert "verified_link_for_query_fingerprint" in store
+    assert "P17_NATIVE_QUERY_ALREADY_VERIFIED" in product
+    capture = product.index("produced = bridge.capture_produced_query(")
+    material = product.index("outcome = self._materials.execute(")
+    reuse = product.index("verified_link_for_query_fingerprint", capture)
+    assert capture < reuse < material
+

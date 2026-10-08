@@ -24,7 +24,10 @@ from app.v3.research_manager import (
     ResearchReasoningStep,
 )
 from app.v3.research_product import NativeResearchOccurrenceRunner
-from app.v3.research_store import ResearchSessionStore
+from app.v3.research_store import (
+    ResearchPersistenceError,
+    ResearchSessionStore,
+)
 from app.v3.substrate.metabase.native_engine import NativeEngineBridgeError
 from app.v3.substrate.metabase.native_models import NativeEngineRequest
 from control_plane.authorize import Principal
@@ -198,6 +201,27 @@ class NativeResearchFollowupExecutor:
                 request=(request if created else None),
                 native_session_token=native_session_token,
                 analytical_scope=task.analytical_scope,
+            )
+        except ResearchPersistenceError as exc:
+            if exc.code != "P17_NATIVE_QUERY_ALREADY_VERIFIED":
+                raise
+            reused = self._store.execution_link(exc.detail)
+            if not reused.receipt_id or not reused.evidence_id:
+                raise ResearchManagerMaturationError(
+                    "P17_REUSED_EVIDENCE_PROVENANCE_INCOMPLETE",
+                    exc.detail,
+                ) from exc
+            material_refs = self._material_ref(
+                session=session,
+                link_id=reused.id,
+                principal=principal,
+                native_session_token=native_session_token,
+                intent=step.intent,
+            )
+            return FollowupResult(
+                native_execution_refs=(str(reused.id),),
+                material_refs=material_refs,
+                evidence_refs=(reused.evidence_id,),
             )
         except NativeEngineBridgeError as exc:
             link = self._store.mark_limited(

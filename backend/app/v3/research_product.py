@@ -300,6 +300,25 @@ class NativeResearchOccurrenceRunner:
                     observation,
                     prior_state=request.state,
                 )
+                if link.execution_kind == "P17_FOLLOWUP":
+                    existing_verified = (
+                        self._store.verified_link_for_query_fingerprint(
+                            session_id=session.session_id,
+                            obligation_id=obligation_id,
+                            query_fingerprint=produced.query_fingerprint,
+                        )
+                    )
+                    if existing_verified is not None:
+                        self._store.mark_limited(
+                            link.id,
+                            code="P17_NATIVE_QUERY_ALREADY_VERIFIED",
+                            detail=str(existing_verified.id),
+                        )
+                        raise ResearchPersistenceError(
+                            "P17_NATIVE_QUERY_ALREADY_VERIFIED",
+                            str(existing_verified.id),
+                        )
+
                 if link.execution_kind == "P14_REPAIR":
                     assert repair_parent_link_id is not None
                     parent = self._store.execution_link(repair_parent_link_id)

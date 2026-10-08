@@ -660,10 +660,8 @@ Authority rules:
   (BASELINE_PERIOD and COMPARISON_PERIOD). ROOT_CAUSE uses its closed temporal_material contract.
   Dima deterministically projects the corresponding TEMPORAL_PERIOD surface after validation.
 - Preserve every current MUST analytical/presentation obligation as a separate goal/deliverable.
-- For every READY goal emit source_fragment_text as one exact verbatim substring of the CURRENT
-  user message that directly supports that goal. Never paraphrase the fragment.
-- If multiple goals decompose the same user clause, repeat the same maximal supporting clause
-  verbatim for each of those goals. Different clauses must keep different fragment text.
+- Goal source_text is semantic obligation wording only. Dima binds source provenance
+  deterministically to the CURRENT user turn; do not manufacture separate fragment authority.
 - Adaptive instructions such as "if verified evidence reveals a new material direction, follow it"
   or "if current governed Evidence cannot discriminate the accepted alternatives, run one bounded
   discriminating test" are Core-B product-routing intent, NOT a second analytical goal. Emit the
@@ -1075,7 +1073,6 @@ def _intake_provider_schema(
     common_names = (
         "goal_key",
         "source_text",
-        "source_fragment_text",
         "ranking",
         "comparisons",
         "result_dependency",
@@ -1093,9 +1090,6 @@ def _intake_provider_schema(
                 name: copy.deepcopy(base_properties[name])
                 for name in common_names
             }
-            properties["source_fragment_text"] = copy.deepcopy(
-                source_fragment_schema
-            )
             properties["kind"] = {
                 "type": "string",
                 "enum": [kind.value],
@@ -1113,9 +1107,6 @@ def _intake_provider_schema(
                 name: copy.deepcopy(base_properties[name])
                 for name in common_names
             }
-            properties["source_fragment_text"] = copy.deepcopy(
-                source_fragment_schema
-            )
             properties["kind"] = {
                 "type": "string",
                 "enum": [kind.value],
@@ -4188,18 +4179,14 @@ class ResearchIntakeCompiler:
                     goal.goal_key,
                 )
             seen_goal_keys.add(goal.goal_key)
-            source_fragment_identity = None
-            if goal.source_fragment_text is not None:
-                fragment = goal.source_fragment_text
-                if fragment != fragment.strip() or fragment not in current:
-                    raise ResearchIntakeError(
-                        "INTAKE_SOURCE_FRAGMENT_NOT_VERBATIM",
-                        goal.goal_key,
-                    )
-                source_fragment_identity = (
-                    "fragment-sha256:"
-                    + hashlib.sha256(fragment.encode("utf-8")).hexdigest()
-                )
+            # Provenance is a deterministic property of the accepted CURRENT
+            # user turn, not an LLM-selected semantic fragment. Provider
+            # source_fragment_text remains compatibility-only for old fixtures
+            # and cannot veto or rewrite accepted meaning.
+            source_fragment_identity = (
+                "fragment-sha256:"
+                + hashlib.sha256(current.encode("utf-8")).hexdigest()
+            )
             relationship = self._relationship_for_goal(
                 goal,
                 catalog=catalog,
@@ -4348,14 +4335,10 @@ class ResearchIntakeCompiler:
                 ResearchQuestion(
                     goal_id=goal_id,
                     kind=goal.kind,
-                    # The exact grounded fragment is the canonical local
-                    # obligation wording.  Broad provider source_text remains
-                    # compatibility-only when no verbatim fragment exists.
-                    source_text=(
-                        goal.source_fragment_text
-                        if goal.source_fragment_text is not None
-                        else goal.source_text
-                    ),
+                    # Provider wording describes the accepted goal; source
+                    # provenance is separately bound to the immutable current
+                    # user turn and is never delegated to the model.
+                    source_text=goal.source_text,
                     source_fragment_identity=source_fragment_identity,
                     subject_refs=subject,
                     related_refs=related,

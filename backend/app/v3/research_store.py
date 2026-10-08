@@ -406,6 +406,40 @@ class ResearchSessionStore:
                 .order_by(ResearchExecutionLink.created_at.desc())
             ).first()
 
+    def verified_link_for_query_fingerprint(
+        self,
+        *,
+        session_id: str,
+        obligation_id: str,
+        query_fingerprint: str,
+    ) -> ResearchExecutionLink | None:
+        """Return an already VERIFIED acquisition with exact query identity.
+
+        This is structural dedup/current-scope reuse only. It does not compare
+        analytical meaning and never promotes an unverified occurrence.
+        """
+
+        with Session(self._engine) as db:
+            rows = tuple(
+                db.exec(
+                    select(ResearchExecutionLink)
+                    .where(ResearchExecutionLink.session_id == session_id)
+                    .where(ResearchExecutionLink.obligation_id == obligation_id)
+                    .where(
+                        ResearchExecutionLink.native_query_fingerprint
+                        == query_fingerprint
+                    )
+                    .where(ResearchExecutionLink.status == "VERIFIED")
+                    .order_by(ResearchExecutionLink.created_at)
+                ).all()
+            )
+        if len(rows) > 1:
+            raise ResearchPersistenceError(
+                "P17_VERIFIED_QUERY_IDENTITY_DUPLICATE",
+                query_fingerprint,
+            )
+        return rows[0] if rows else None
+
     def verified_link(
         self,
         *,

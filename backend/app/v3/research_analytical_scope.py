@@ -1017,44 +1017,59 @@ def _change_material_semantics(
 def native_material_requirement(
     contract: AnalyticalRequestContract,
 ) -> dict[str, Any]:
-    """Read-only planner-facing WHAT projection of accepted analytical authority.
+    """Minimal planner-facing WHAT transport.
 
-    This is not a query plan. It contains only semantic material requirements
-    already owned by AnalyticalRequestContract and MaterialCoverageContract.
+    AnalyticalRequestContract is compatibility/persistence transport only.
+    This projection deliberately removes duplicate semantic representations
+    (coverage contracts, change_semantics, temporal_change_frame and material
+    coverage windows). Metabot receives one compact accepted WHAT surface and
+    owns the analytical HOW.
     """
 
-    coverage = material_coverage_contract(contract)
-    coverage_period = material_coverage_period(contract)
+    temporal_periods: list[dict[str, Any]] = []
+    if contract.comparison is not None:
+        baseline = contract.comparison.reference_period
+        comparison = contract.comparison.base_period
+        temporal_periods.extend(
+            (
+                {
+                    "role": TemporalRole.BASELINE_PERIOD.value,
+                    "time_dimension_semantic_id": baseline.time_dimension,
+                    "start": baseline.start,
+                    "end": baseline.end,
+                },
+                {
+                    "role": TemporalRole.COMPARISON_PERIOD.value,
+                    "time_dimension_semantic_id": comparison.time_dimension,
+                    "start": comparison.start,
+                    "end": comparison.end,
+                },
+            )
+        )
+    elif contract.period is not None:
+        temporal_periods.append(
+            {
+                "role": TemporalRole.MATERIAL_WINDOW.value,
+                "time_dimension_semantic_id": contract.period.time_dimension,
+                "start": contract.period.start,
+                "end": contract.period.end,
+            }
+        )
+
     return {
-        "schema": "dima_material_requirement_v1",
+        "schema": "dima_material_requirement_v2",
         "scope_version_id": contract.scope_identity.version_id,
         "material_fingerprint": contract.material_fingerprint,
-        "metric_refs": list(contract.metric_refs),
-        "required_metric_refs": list(coverage.required_metric_refs),
-        "required_breakout_refs": list(coverage.required_breakout_refs),
+        "metrics": list(contract.metric_refs),
+        "dimensions": list(contract.dimension_refs),
         "accepted_filters": [
             item.model_dump(mode="json")
             for item in contract.filters
         ],
-        "period": (
-            contract.period.model_dump(mode="json")
-            if contract.period is not None
-            else None
-        ),
-        "comparison": (
-            contract.comparison.model_dump(mode="json")
-            if contract.comparison is not None
-            else None
-        ),
-        "required_temporal_dimension": coverage.time_dimension_ref,
-        "temporal_observation": (
-            contract.temporal_observation.model_dump(mode="json")
+        "temporal_periods": temporal_periods,
+        "temporal_observation_dimension": (
+            contract.temporal_observation.time_dimension
             if contract.temporal_observation is not None
-            else None
-        ),
-        "material_coverage_period": (
-            coverage_period.model_dump(mode="json")
-            if coverage_period is not None
             else None
         ),
         "ranking": (
@@ -1062,14 +1077,12 @@ def native_material_requirement(
             if contract.ranking is not None
             else None
         ),
-        "temporal_change_frame": (
-            _effective_temporal_change_frame(contract).model_dump(mode="json")
-            if _effective_temporal_change_frame(contract) is not None
-            else None
+        "row_grain": list(
+            dict.fromkeys(
+                (*contract.dimension_refs, *contract.grain_constraints)
+            )
         ),
-        "change_semantics": _change_material_semantics(contract, coverage),
     }
-
 
 def native_request_context(contract: AnalyticalRequestContract) -> dict[str, Any]:
     """Single WHAT transport surface for Metabot; no parallel semantic contract."""

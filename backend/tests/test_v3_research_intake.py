@@ -5499,3 +5499,26 @@ def test_nonredundant_temporal_window_is_not_collapsed_into_pair():
     assert result.terminal == ResearchIntakeTerminal.CLARIFY
     assert result.brief is None
 
+def test_goal_source_fragment_is_not_provider_authority_or_runtime_veto():
+    question = "Inspect governed downtime by department."
+    payload = ready_payload()
+    payload["goals"][0]["source_fragment_text"] = "not verbatim and not authoritative"
+    transport = FakeTransport(payload)
+
+    result = ResearchIntakeCompiler(
+        transport=transport,
+        calendar_reference_date="2026-10-08",
+    ).compile(question=question, catalog=catalog())
+
+    assert result.terminal == ResearchIntakeTerminal.READY
+    assert result.brief is not None
+    accepted = result.brief.questions[0]
+    assert accepted.source_text == payload["goals"][0]["source_text"]
+    assert accepted.source_fragment_identity is not None
+    schema = transport.calls[0]["schema"]
+    variants = schema["$defs"]["ModelGoalDraft"]["anyOf"]
+    assert all(
+        "source_fragment_text" not in variant["properties"]
+        for variant in variants
+    )
+
