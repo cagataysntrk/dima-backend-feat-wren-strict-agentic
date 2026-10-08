@@ -1081,7 +1081,10 @@ class NativeResearchMaterialExecutor:
             )
 
         temporal_scopes: list[AnalyticalObservedTemporalScopeV1] = []
-        temporal_candidates: list[str] = []
+        # A temporal scope constrains WHICH rows participated; it does not mean
+        # the final result is observed at a temporal row grain. Keep scope facts
+        # separate from the result-time-axis fact consumed by the sole verifier.
+        temporal_observation_candidates: list[str] = []
         for item in observation.temporal_scopes:
             if item.lower_bound is None or item.upper_bound is None:
                 continue
@@ -1090,7 +1093,6 @@ class NativeResearchMaterialExecutor:
                 field_id=item.time_field_id,
                 table_id=item.table_id,
             )
-            temporal_candidates.append(projected.candidate_id)
             temporal_scopes.append(
                 AnalyticalObservedTemporalScopeV1(
                     time_dimension_semantic_id=projected.candidate_id,
@@ -1130,7 +1132,6 @@ class NativeResearchMaterialExecutor:
                         field_id=scope.time_field_id,
                         table_id=scope.table_id,
                     )
-                    temporal_candidates.append(time_binding.candidate_id)
                     temporal_scopes.append(
                         AnalyticalObservedTemporalScopeV1(
                             time_dimension_semantic_id=time_binding.candidate_id,
@@ -1163,7 +1164,7 @@ class NativeResearchMaterialExecutor:
             )
             if column_index is None:
                 continue
-            temporal_candidates.append(semantic_id)
+            temporal_observation_candidates.append(semantic_id)
             seen_values: set[str] = set()
             for row in rows:
                 if not isinstance(row, (list, tuple)) or column_index >= len(row):
@@ -1187,7 +1188,7 @@ class NativeResearchMaterialExecutor:
                     )
                 )
 
-        temporal_ids = tuple(dict.fromkeys(temporal_candidates))
+        temporal_ids = tuple(dict.fromkeys(temporal_observation_candidates))
         temporal_observation_dimension = (
             temporal_ids[0] if len(temporal_ids) == 1 else None
         )

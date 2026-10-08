@@ -54,9 +54,9 @@
     "new_duplicate_semantic_owner_forbidden": true
   },
   "runtime_compliance": {
-    "status": "PROVIDER_FREE_CLOSED_FINAL_12CASE_REVALIDATION_AUTHORIZED",
-    "last_recovery_run_id": 37732166187,
-    "last_recovery_result": "8_OF_12_GREEN__POST_COLLAPSE__R02_GREEN",
+    "status": "PROJECTION_ROLE_FIX_PROVIDER_FREE_PENDING",
+    "last_recovery_run_id": 37738806053,
+    "last_recovery_result": "8_OF_12_GREEN__R02_R03_R06_R07_RED",
     "live_closed_roots": {
       "atomic_p18_turn_reset": "CLOSED__R10_R11_R12_GREEN",
       "shared_acquisition_identity": "CLOSED__ONE_ACQUISITION__CONSUMERS_VERIFIED_SEPARATELY",
@@ -101,7 +101,22 @@
         "closure": "Execution now precedes non-veto fact extraction; Product projects observed native/result facts into AnalyticalExecutionManifestV1; only verify_analytical_fulfillment_v1 compares execution facts with AnalyticalIntent."
       }
     ],
-    "blockers": []
+    "blockers": [
+      {
+        "id": "TEMPORAL_SCOPE_RESULT_AXIS_ROLE_COLLAPSE",
+        "evidence_run_id": 37738806053,
+        "evidence_slots": [
+          "R02_COMPARISON_SEMANTIC",
+          "R03_COMPARISON_WORDING",
+          "R06_TEMPORAL_WORDING",
+          "R07_ADAPTIVE_ORIGINAL"
+        ],
+        "root": "ExecutionManifest projection used temporal filter/change-period scope identities to populate temporal_observation_dimension even when the final result had no temporal row axis. The sole verifier then rejected otherwise valid comparison/ranking execution facts.",
+        "correction": "Keep observed temporal scopes as scope facts; populate temporal_observation_dimension only from an actually observed temporal result bucket/row axis.",
+        "semantic_owner_change": false,
+        "provider_free_status": "PENDING"
+      }
+    ]
   },
   "retired_runtime_semantic_vetoes": [
     "app.v3.research_analytical_scope.assert_material_native_scope",

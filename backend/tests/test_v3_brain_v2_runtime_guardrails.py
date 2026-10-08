@@ -258,3 +258,18 @@ def test_native_gateway_projects_execution_facts_without_transitional_semantic_v
         "_execution_fact_observation("
     )
 
+def test_execution_manifest_separates_period_scope_from_result_time_axis():
+    """Temporal filters/change periods cannot masquerade as result temporal grain."""
+
+    source = inspect.getsource(
+        research_native_gateway.NativeResearchMaterialExecutor._project_execution_manifest
+    )
+    assert "temporal_observation_candidates" in source
+    assert "temporal_candidates" not in source
+    # Only the result-bucket branch may add the result time axis.
+    assert source.count("temporal_observation_candidates.append(") == 1
+    assert 'source="native_filter"' in source
+    assert 'source="change_baseline"' not in source  # tuple label, not authority
+    assert '"change_baseline"' in source
+    assert '"change_comparison"' in source
+

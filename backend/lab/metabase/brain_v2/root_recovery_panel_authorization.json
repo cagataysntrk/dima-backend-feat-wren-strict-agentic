@@ -1,6 +1,6 @@
 {
   "schema_version": "dima_brain_v2_1_root_recovery_panel_v1",
-  "enabled": true,
+  "enabled": false,
   "candidate_product_sha": "b89eb6a0490ec0e51f025fcd524414ee6631612e",
   "recovery_baseline": "505caec6e7c3fbd5346dc6a4c310e8f656d324ae",
   "provider_free_status": "GREEN",
@@ -122,25 +122,29 @@
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
   "frontend_allowed": false,
-  "note": "User-directed final revalidation after two generic post-recovery corrections. Candidate b89eb6a0... is provider-free GREEN (focused 37733897628, semantic+192-metamorphic+Wave-A+Wave-B+mutation 37733897642, frozen-family 37733897655). Prior 801a429d authorization-gate attempt consumed no provider calls. This is the final case-executing acceptance wave for this candidate; no automatic/further paid retry is authorized. Broad 30-case and frontend remain forbidden.",
+  "note": "Final run 37738806053 is complete at 8/12. Paid recovery is disarmed while generic execution-fact projection correction separates temporal scope facts from the final result time-axis fact. Broad 30-case/frontend remain forbidden.",
   "final_result": {
-    "status": "AUTHORIZED_FINAL_REVALIDATION_PENDING_TRIGGER",
-    "workflow_run_id": null,
+    "status": "COMPLETE_8_OF_12__PROJECTION_FIX_PROVIDER_FREE_PENDING",
+    "workflow_run_id": 37738806053,
     "candidate_product_sha": "b89eb6a0490ec0e51f025fcd524414ee6631612e",
-    "thirty_case_execution_ready": false,
-    "paid_scope": "FINAL_12_CASE_REVALIDATION_ONLY",
-    "prior_case_executing_run_id": 37732166187,
-    "prior_result": "8_GREEN_4_RED",
-    "prior_red_slots": [
+    "green_slots": [
+      "R01_COMPARISON_ORIGINAL",
       "R04_TEMPORAL_ORIGINAL",
       "R05_TEMPORAL_SEMANTIC",
+      "R08_ADAPTIVE_SEMANTIC",
+      "R09_ADAPTIVE_WORDING",
+      "R10_CONTINUATION_ORIGINAL",
+      "R11_CONTINUATION_DEEPENING",
+      "R12_CONTINUATION_REPORT_ONLY"
+    ],
+    "red_slots": [
+      "R02_COMPARISON_SEMANTIC",
+      "R03_COMPARISON_WORDING",
       "R06_TEMPORAL_WORDING",
       "R07_ADAPTIVE_ORIGINAL"
     ],
-    "post_run_generic_fixes": [
-      "e5580aa3f27f85f0a6c2922d5f36a67b1c2a80a2",
-      "b89eb6a0490ec0e51f025fcd524414ee6631612e"
-    ]
+    "thirty_case_execution_ready": false,
+    "paid_scope": "OFF_UNTIL_PROVIDER_FREE_REVALIDATION"
   },
   "prior_final_result": {
     "status": "RED",
