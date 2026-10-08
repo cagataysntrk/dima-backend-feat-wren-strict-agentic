@@ -4734,10 +4734,8 @@ def test_change_ranking_overlapping_pair_gets_narrow_temporal_reconsideration() 
     assert reconsideration["kind"] == "CHANGE_PERIOD_PAIR_DELIBERATION"
     assert reconsideration["reason"] == "OVERLAPPING"
     assert reconsideration["time_dimension_semantic_id"] == "dimension.event_date"
-    assert reconsideration["ranking_source_fragment"] == first["goals"][1]["source_fragment_text"]
-    assert reconsideration["comparison_source_fragments"] == [
-        first["goals"][0]["source_fragment_text"]
-    ]
+    assert reconsideration["ranking_source_fragment"] == question
+    assert reconsideration["comparison_source_fragments"] == [question]
     resolved_period_pair = second_call["schema"]["$defs"][
         "ModelResolvedChangePeriodPair"
     ]
@@ -5174,10 +5172,8 @@ def test_temporal_ranking_level_gets_bounded_typed_basis_reconsideration() -> No
     assert reconsideration["kind"] == "RANKING_BASIS_DELIBERATION"
     assert reconsideration["ranking_goal_key"] == "g-ranking"
     assert reconsideration["candidate_ranking_measure"] == "metric.downtime"
-    assert reconsideration["ranking_source_fragment"] in question
-    assert reconsideration["comparison_source_fragments"] == [
-        "Compare May and June governed downtime."
-    ]
+    assert reconsideration["ranking_source_fragment"] == question
+    assert reconsideration["comparison_source_fragments"] == [question]
     assert set(transport.calls[1]["schema"]["$defs"]["RankingBasis"]["enum"]) == {
         "level",
         "change",
