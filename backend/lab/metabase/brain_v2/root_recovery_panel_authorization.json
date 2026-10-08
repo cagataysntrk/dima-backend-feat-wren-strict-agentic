@@ -1,11 +1,11 @@
 {
   "schema_version": "dima_brain_v2_1_root_recovery_panel_v1",
-  "enabled": false,
+  "enabled": true,
   "candidate_product_sha": "f919d64580851e2405a218ab661e3f6c02421c15",
   "recovery_baseline": "505caec6e7c3fbd5346dc6a4c310e8f656d324ae",
-  "provider_free_status": "PENDING_SEMANTIC_REVALIDATION",
+  "provider_free_status": "GREEN",
   "provider_free_focused_run_id": 37770921471,
-  "provider_free_semantic_run_id": null,
+  "provider_free_semantic_run_id": 37771209711,
   "provider_free_frozen_run_id": 37770691002,
   "generated_metamorphic_scenarios": 192,
   "engine_sha": "656a449b46246c46529c9bb83929df17818e2fea",
@@ -122,13 +122,13 @@
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
   "frontend_allowed": false,
-  "note": "Product f919d645... closes the last typed execution-fact repair classification and aligns the declared two-attempt repair policy with runtime execution. Focused provider-free 37770921471 and frozen-family 37770691002 are GREEN. Semantic+192-metamorphic+Wave-A/Wave-B+mutation revalidation is pending. Paid 12-case panel is disarmed until that gate is GREEN; broad 30-case/frontend remain forbidden.",
+  "note": "Final user-directed semantic-layer-collapse acceptance for Product f919d645... after provider-free focused 37770921471 GREEN, frozen-family 37770691002 GREEN, and semantic+192-metamorphic+Wave-A/Wave-B+mutation 37771209711 GREEN. This is one final 12-case acceptance run. Broad 30-case/frontend remain forbidden; no automatic retry.",
   "final_result": {
-    "status": "F919_PROVIDER_FREE_PARTIAL_GREEN__SEMANTIC_PENDING",
+    "status": "AUTHORIZED_F919_FINAL_12CASE_PENDING_TRIGGER",
     "workflow_run_id": null,
     "candidate_product_sha": "f919d64580851e2405a218ab661e3f6c02421c15",
     "thirty_case_execution_ready": false,
-    "paid_scope": "OFF_UNTIL_SEMANTIC_REVALIDATION",
+    "paid_scope": "ONE_FINAL_12_CASE_ACCEPTANCE_ONLY",
     "prior_run_id": 37768788024,
     "prior_result": "11_OF_12_GREEN",
     "prior_red_slots": [
@@ -182,5 +182,5 @@
       }
     ]
   },
-  "provider_free_detail": "Semantic-layer-collapse provider-free closure is GREEN: focused 37731714641, frozen 37731298328, semantic+192-metamorphic+Wave-A+Wave-B+mutation 37731714637."
+  "provider_free_detail": "Focused 37770921471 GREEN; frozen-family 37770691002 GREEN; semantic+192 metamorphic+Wave A/B+mutation 37771209711 GREEN."
 }

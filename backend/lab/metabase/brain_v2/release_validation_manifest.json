@@ -1,6 +1,6 @@
 {
   "schema_version": "dima_brain_v2_1_release_validation_v1",
-  "status": "F919_SEMANTIC_REVALIDATION_PENDING",
+  "status": "F919_FINAL_12CASE_AUTHORIZED",
   "frozen_identity": {
     "product_semantic_sha": "ae4e0348601774082b0270f23d6de126e71e6055",
     "engine_sha": "686671fa7e55f715e4fb5ac155f9e66019fd12d8",
@@ -29,17 +29,17 @@
     "ninety_plus_proven": false,
     "eighty_plus_proven": false,
     "final_quality_score": 68.25,
-    "meaning": "Product semantic candidate f919d645... closes the remaining R07 typed execution-fact repair classification and executes the already-declared maximum-two bounded HOW-repair policy. Focused provider-free 37770921471 and frozen-family 37770691002 are GREEN. Semantic+192-metamorphic+Wave-A/Wave-B+mutation revalidation is pending. 30-case remains forbidden until semantic gate and final 12/12 acceptance are GREEN.",
+    "meaning": "Product semantic candidate f919d645... preserves the sole semantic chain and closes the last R07 execution-fact classification gap through existing bounded Metabot HOW repair. Provider-free focused 37770921471, frozen-family 37770691002, and semantic+192-metamorphic+Wave-A/Wave-B+mutation 37771209711 are GREEN. Final 12-case acceptance is authorized; broad 30-case remains forbidden until 12/12 GREEN.",
     "historical_last_completed_30_case_score": 68.25,
     "final_quality_score_source": "HISTORICAL_LAST_COMPLETED_30_CASE_RELEASE"
   },
   "provider_free_closure": {
-    "status": "PARTIAL_GREEN_SEMANTIC_PENDING",
+    "status": "GREEN",
     "candidate_product_sha": "f919d64580851e2405a218ab661e3f6c02421c15",
     "runs": {
       "focused_brain_v2": 37770921471,
       "frozen_family": 37770691002,
-      "semantic_conformance_192_metamorphic_wave_a_wave_b_mutation": null
+      "semantic_conformance_192_metamorphic_wave_a_wave_b_mutation": 37771209711
     },
     "generated_metamorphic_scenarios": 192
   },
@@ -79,8 +79,8 @@
     "s3_diagnostic": false,
     "frontend": false,
     "automatic_retry": false,
-    "note": "Paid panel OFF until f919 semantic/metamorphic gate is GREEN. Broad 30-case/frontend remain OFF.",
-    "root_recovery_retry": false
+    "note": "User-directed one final 12-case acceptance for f919d645... after complete provider-free closure. No automatic retry; broad 30-case/frontend remain OFF.",
+    "root_recovery_retry": true
   },
   "actual_frozen_30_case_protocol": {
     "required_identity_match": true,
@@ -174,20 +174,20 @@
     "adjudication_document": "backend/belgeler/metabase/DIMA_BRAIN_V2_1_ROUND2_FINAL_ADJUDICATION_2026-10-06.md"
   },
   "active_recovery": {
-    "status": "SEMANTIC_REVALIDATION_PENDING",
+    "status": "AUTHORIZED_PENDING_TRIGGER",
     "candidate_product_sha": "f919d64580851e2405a218ab661e3f6c02421c15",
     "engine_sha": "656a449b46246c46529c9bb83929df17818e2fea",
     "prior_recovery_run_id": 37768788024,
-    "prior_result": "11/12 GREEN; only R07 RED before typed execution-fact repair classification",
+    "prior_result": "11/12 GREEN; only R07 RED before typed execution-fact defect routing",
     "generic_fix_sha": "f919d64580851e2405a218ab661e3f6c02421c15",
     "provider_free": {
       "focused_run_id": 37770921471,
       "frozen_family_run_id": 37770691002,
-      "semantic_wave_mutation_run_id": null,
+      "semantic_wave_mutation_run_id": 37771209711,
       "generated_metamorphic_scenarios": 192,
-      "status": "PENDING_SEMANTIC_REVALIDATION"
+      "status": "GREEN"
     },
-    "paid_authorization": false,
+    "paid_authorization": true,
     "thirty_case_execution_ready": false,
     "actual_30_case_run_authorized": false
   },

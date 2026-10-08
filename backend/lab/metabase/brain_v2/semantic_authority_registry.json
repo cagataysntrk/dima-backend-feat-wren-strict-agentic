@@ -54,7 +54,7 @@
     "new_duplicate_semantic_owner_forbidden": true
   },
   "runtime_compliance": {
-    "status": "F919_SEMANTIC_REVALIDATION_PENDING",
+    "status": "PROVIDER_FREE_CLOSED_F919_FINAL_12CASE_AUTHORIZED",
     "last_recovery_run_id": 37768788024,
     "last_recovery_result": "11_OF_12_GREEN__R07_RED__ROOT_TYPED",
     "live_closed_roots": {
@@ -79,9 +79,9 @@
       "engine_digest": "sha256:84f20edbc253b6c137b2a7c5c1508e4a9c7873981381f9f60868b5f7cf667a95",
       "focused_run_id": 37770921471,
       "frozen_family_run_id": 37770691002,
-      "semantic_metamorphic_wave_a_wave_b_mutation_run_id": null,
+      "semantic_metamorphic_wave_a_wave_b_mutation_run_id": 37771209711,
       "generated_metamorphic_scenarios": 192,
-      "status": "PENDING_SEMANTIC_REVALIDATION"
+      "status": "GREEN"
     },
     "closed_blockers": [
       {
