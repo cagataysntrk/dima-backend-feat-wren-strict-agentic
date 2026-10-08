@@ -3176,7 +3176,7 @@ def test_change_material_requirement_projection_is_exact_and_planner_visible() -
     assert visible == requirement
     assert "[DIMA ACCEPTED ANALYTICAL CONTRACT]" not in message
     assert message.count("[DIMA MATERIAL REQUIREMENT JSON]") == 1
-    assert "dima_material_requirement is the only analytical WHAT contract" in message
+    assert "dima_material_requirement is a compatibility projection for this child turn" in message
     assert "dimension.department" in encoded
     lowered = message.lower()
     for forbidden in ("select ", "group by", "sum-where", "aggregation-options", "lib/uuid"):
@@ -3215,7 +3215,7 @@ def test_span_change_material_requirement_is_typed_without_hidden_pair() -> None
     )
     assert "[DIMA ACCEPTED ANALYTICAL CONTRACT]" not in message
     assert message.count("[DIMA MATERIAL REQUIREMENT JSON]") == 1
-    assert "dima_material_requirement is the only analytical WHAT contract" in message
+    assert "dima_material_requirement is a compatibility projection for this child turn" in message
     lowered = message.lower()
     for forbidden in ("select ", "group by", "sum-where", "aggregation-options", "lib/uuid"):
         assert forbidden not in lowered
