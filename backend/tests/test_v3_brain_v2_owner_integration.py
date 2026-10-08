@@ -1786,9 +1786,9 @@ def test_real_owner_adaptive_runs_one_typed_followup_without_duplicate_native() 
     followup_scope = bridge.metabot_requests[1]["context"]["dima_material_requirement"]
     assert "dima_analytical_scope" not in bridge.metabot_requests[0]["context"]
     assert "dima_analytical_scope" not in bridge.metabot_requests[1]["context"]
-    assert "dimension.event_date" not in initial_scope["required_breakout_refs"]
-    assert set(followup_scope["required_breakout_refs"]) == (
-        set(initial_scope["required_breakout_refs"]) | {"dimension.event_date"}
+    assert "dimension.event_date" not in initial_scope["dimensions"]
+    assert set(followup_scope["dimensions"]) == (
+        set(initial_scope["dimensions"]) | {"dimension.event_date"}
     )
     followup_message = bridge.metabot_requests[1]["message"]
     assert followup_message.startswith("[DIMA MATERIAL REQUIREMENT JSON]\n")
