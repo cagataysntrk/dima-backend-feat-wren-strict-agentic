@@ -54,7 +54,7 @@
     "new_duplicate_semantic_owner_forbidden": true
   },
   "runtime_compliance": {
-    "status": "PROVIDER_FREE_CLOSED_392_FINAL_12CASE_AUTHORIZED",
+    "status": "PROVIDER_FREE_CLOSED_0F847_FINAL_12CASE_AUTHORIZED",
     "last_recovery_run_id": 37789838447,
     "last_recovery_result": "8_OF_12_GREEN__PRE_ROOT_LAYER_REMOVAL",
     "live_closed_roots": {
@@ -75,18 +75,18 @@
       "execution_fact_resume": "CLOSED__DURABLE_EXACT_FACTS_NO_REOBSERVE",
       "provider_source_fragment_shadow_authority": "REMOVED__CURRENT_TURN_HASH_PROVENANCE",
       "planner_duplicate_comparison_how_surfaces": "REMOVED__COMPACT_WHAT_ENVELOPE_ONLY",
-      "p17_duplicate_exact_acquisition": "CLOSED__VERIFIED_FINGERPRINT_REUSE_BEFORE_EXECUTION"
+      "p17_duplicate_exact_acquisition": "CLOSED__VERIFIED_FINGERPRINT_REUSE_BEFORE_EXECUTION",
+      "canonical_intent_repair_feedback": "CLOSED__ANALYTICAL_INTENT_V1_PRESERVED_ACROSS_HOW_REPAIR"
     },
     "provider_free_validation": {
-      "candidate_product_sha": "3921dc7d8b380f36db7d5b8be6a2506f70a244b0",
-      "semantic_behavior_anchor": "a8f17c742470ffde949f3bdb5e09bc7f2018d1d7",
+      "candidate_product_sha": "0f84769a76532800f3ed3f26268fa31ccb67639f",
       "engine_sha": "656a449b46246c46529c9bb83929df17818e2fea",
       "engine_release": "0.63.18-dima.11.3",
       "engine_runtime_tag": "v0.63.18-dima.11.3.1",
       "engine_digest": "sha256:84f20edbc253b6c137b2a7c5c1508e4a9c7873981381f9f60868b5f7cf667a95",
-      "focused_run_id": 37800905919,
-      "frozen_family_run_id": 37800905722,
-      "semantic_metamorphic_wave_a_wave_b_mutation_run_id": 37800905758,
+      "focused_run_id": 37813400494,
+      "frozen_family_run_id": 37803854168,
+      "semantic_metamorphic_wave_a_wave_b_mutation_run_id": 37813400464,
       "generated_metamorphic_scenarios": 192,
       "status": "GREEN"
     },

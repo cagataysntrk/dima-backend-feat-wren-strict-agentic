@@ -1,6 +1,6 @@
 {
   "schema_version": "dima_brain_v2_1_release_validation_v1",
-  "status": "ROOT_SEMANTIC_LAYER_REMOVAL_FINAL_12CASE_AUTHORIZED",
+  "status": "0F847_FINAL_12CASE_AUTHORIZED",
   "frozen_identity": {
     "product_semantic_sha": "ae4e0348601774082b0270f23d6de126e71e6055",
     "engine_sha": "686671fa7e55f715e4fb5ac155f9e66019fd12d8",
@@ -29,17 +29,17 @@
     "ninety_plus_proven": false,
     "eighty_plus_proven": false,
     "final_quality_score": 68.25,
-    "meaning": "Exact Product code candidate 3921dc7d... contains root layer removal: provider source-fragment shadow authority is gone, Metabot receives one compact WHAT envelope without duplicated comparison/change HOW semantics, and P17 exact query identity reuses current VERIFIED acquisition instead of executing duplicate native material. Provider-free 37800905919, frozen-family 37800905722, and semantic+192-metamorphic+Wave-A/Wave-B+mutation 37800905758 are GREEN. Final 12-case acceptance is authorized; broad 30-case remains forbidden until 12/12 GREEN.",
+    "meaning": "Production Product SHA 0f84769a... is unchanged after the final Semantic Layer Collapse. The only subsequent code change is stale-test expectation alignment. Provider-free 37803854319 GREEN (test-only rerun 37813400494 GREEN), frozen-family 37803854168 GREEN, and semantic+192-metamorphic+Wave-A/Wave-B+mutation 37813400464 GREEN. Exactly one final 12-case acceptance is authorized; broad 30-case remains forbidden until 12/12 GREEN.",
     "historical_last_completed_30_case_score": 68.25,
     "final_quality_score_source": "HISTORICAL_LAST_COMPLETED_30_CASE_RELEASE"
   },
   "provider_free_closure": {
     "status": "GREEN",
-    "candidate_product_sha": "3921dc7d8b380f36db7d5b8be6a2506f70a244b0",
+    "candidate_product_sha": "0f84769a76532800f3ed3f26268fa31ccb67639f",
     "runs": {
-      "focused_brain_v2": 37800905919,
-      "frozen_family": 37800905722,
-      "semantic_conformance_192_metamorphic_wave_a_wave_b_mutation": 37800905758
+      "focused_brain_v2": 37813400494,
+      "frozen_family": 37803854168,
+      "semantic_conformance_192_metamorphic_wave_a_wave_b_mutation": 37813400464
     },
     "generated_metamorphic_scenarios": 192
   },
@@ -79,7 +79,7 @@
     "s3_diagnostic": false,
     "frontend": false,
     "automatic_retry": false,
-    "note": "User-directed one final 12-case acceptance after root semantic-layer removal. No automatic retry; broad 30-case/frontend remain OFF.",
+    "note": "One final 12-case acceptance only. Production code frozen at 0f84769a... during validation. No automatic retry. Broad 30-case/frontend remain OFF.",
     "root_recovery_retry": true
   },
   "actual_frozen_30_case_protocol": {
@@ -175,25 +175,22 @@
   },
   "active_recovery": {
     "status": "AUTHORIZED_PENDING_TRIGGER",
-    "candidate_product_sha": "3921dc7d8b380f36db7d5b8be6a2506f70a244b0",
+    "candidate_product_sha": "0f84769a76532800f3ed3f26268fa31ccb67639f",
     "engine_sha": "656a449b46246c46529c9bb83929df17818e2fea",
-    "prior_recovery_run_id": 37789838447,
-    "prior_result": "8/12 GREEN before root layer removal; R01/R02/R10/R11 RED",
-    "root_layer_removal_sha": "a8f17c742470ffde949f3bdb5e09bc7f2018d1d7",
     "provider_free": {
-      "focused_run_id": 37800905919,
-      "frozen_family_run_id": 37800905722,
-      "semantic_wave_mutation_run_id": 37800905758,
+      "focused_run_id": 37813400494,
+      "frozen_family_run_id": 37803854168,
+      "semantic_wave_mutation_run_id": 37813400464,
       "generated_metamorphic_scenarios": 192,
       "status": "GREEN"
     },
+    "stale_test_fix_commit": "345359d66f55968d03d993f3b1c96e439b6dbbbb",
     "paid_authorization": true,
     "thirty_case_execution_ready": false,
     "actual_30_case_run_authorized": false
   },
   "active_candidate_identity": {
-    "product_semantic_sha": "3921dc7d8b380f36db7d5b8be6a2506f70a244b0",
-    "semantic_behavior_anchor": "a8f17c742470ffde949f3bdb5e09bc7f2018d1d7",
+    "product_semantic_sha": "0f84769a76532800f3ed3f26268fa31ccb67639f",
     "engine_sha": "656a449b46246c46529c9bb83929df17818e2fea",
     "engine_release": "0.63.18-dima.11.3",
     "engine_runtime_tag": "v0.63.18-dima.11.3.1",

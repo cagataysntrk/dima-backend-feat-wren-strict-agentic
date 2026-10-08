@@ -1,23 +1,21 @@
-DIMA Brain V2.1 root semantic-layer-removal final acceptance trigger
+DIMA Brain V2.1 final semantic-layer-collapse acceptance trigger
 
 mode: final-12-case-independent-recovery-panel
-candidate_product_sha: 3921dc7d8b380f36db7d5b8be6a2506f70a244b0
-semantic_behavior_anchor: a8f17c742470ffde949f3bdb5e09bc7f2018d1d7
+candidate_product_sha: 0f84769a76532800f3ed3f26268fa31ccb67639f
 engine_sha: 656a449b46246c46529c9bb83929df17818e2fea
 engine_release: 0.63.18-dima.11.3
 engine_runtime_tag: v0.63.18-dima.11.3.1
 engine_certification_run: 37681817311
 engine_digest: sha256:84f20edbc253b6c137b2a7c5c1508e4a9c7873981381f9f60868b5f7cf667a95
-provider_free_focused_run: 37800905919
-provider_free_semantic_run: 37800905758
-provider_free_frozen_run: 37800905722
+provider_free_focused_run: 37813400494
+provider_free_semantic_run: 37813400464
+provider_free_frozen_run: 37803854168
 generated_metamorphic_scenarios: 192
-prior_case_executing_run: 37789838447
-root_layer_removal_sha: a8f17c742470ffde949f3bdb5e09bc7f2018d1d7
+stale_test_fix_commit: 345359d66f55968d03d993f3b1c96e439b6dbbbb
 case_count: 12
 hard_provider_case_ceiling: 30
 final_acceptance: explicitly-authorized
 broad_30_case: forbidden
 frontend: forbidden
 automatic_retry: forbidden
-authorization_revision: 392-root-layer-removal-final-v1
+authorization_revision: 0f847-final-v1
