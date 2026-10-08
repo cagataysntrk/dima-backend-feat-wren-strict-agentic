@@ -54,7 +54,7 @@
     "new_duplicate_semantic_owner_forbidden": true
   },
   "runtime_compliance": {
-    "status": "SOLE_VERIFIER_HOW_REPAIR_PROVIDER_FREE_PENDING",
+    "status": "PROVIDER_FREE_CLOSED_C33_FINAL_12CASE_AUTHORIZED",
     "last_recovery_run_id": 37742438384,
     "last_recovery_result": "10_OF_12_GREEN__R04_R07_RED",
     "live_closed_roots": {
@@ -64,17 +64,18 @@
       "native_execution_facts_lifecycle": "CLOSED_PROVIDER_FREE__ATTEST_EXECUTE_FACTS_VERIFY",
       "temporal_pair_envelope_projection": "CLOSED_PROVIDER_FREE__EXACT_UNION_ONLY",
       "unverifiable_native_fact_how_repair": "CLOSED_PROVIDER_FREE__BOUNDED_TYPED_REPAIR_ONLY",
-      "temporal_scope_result_axis_role_separation": "CLOSED_PROVIDER_FREE__SCOPE_FACTS_NOT_RESULT_AXIS"
+      "temporal_scope_result_axis_role_separation": "CLOSED_PROVIDER_FREE__SCOPE_FACTS_NOT_RESULT_AXIS",
+      "sole_verifier_how_repair_projection": "CLOSED_PROVIDER_FREE__BOUNDED_METABOT_REPAIR"
     },
     "provider_free_validation": {
-      "candidate_product_sha": "b28e0aa99e57556ffd1625045cca33ef27115715",
+      "candidate_product_sha": "c33b1b74d4a94a5f50ef6d2f00ef8f8c740ec5b3",
       "engine_sha": "656a449b46246c46529c9bb83929df17818e2fea",
       "engine_release": "0.63.18-dima.11.3",
       "engine_runtime_tag": "v0.63.18-dima.11.3.1",
       "engine_digest": "sha256:84f20edbc253b6c137b2a7c5c1508e4a9c7873981381f9f60868b5f7cf667a95",
-      "focused_run_id": 37740990588,
-      "frozen_family_run_id": 37740938076,
-      "semantic_metamorphic_wave_a_wave_b_mutation_run_id": 37740990661,
+      "focused_run_id": 37744735149,
+      "frozen_family_run_id": 37744322987,
+      "semantic_metamorphic_wave_a_wave_b_mutation_run_id": 37744735053,
       "generated_metamorphic_scenarios": 192,
       "status": "GREEN"
     },
@@ -102,20 +103,7 @@
         "closure": "Execution now precedes non-veto fact extraction; Product projects observed native/result facts into AnalyticalExecutionManifestV1; only verify_analytical_fulfillment_v1 compares execution facts with AnalyticalIntent."
       }
     ],
-    "blockers": [
-      {
-        "id": "SOLE_VERIFIER_HOW_MISMATCH_REPAIR_GAP",
-        "evidence_run_id": 37742438384,
-        "evidence_slots": [
-          "R04_TEMPORAL_ORIGINAL",
-          "R07_ADAPTIVE_ORIGINAL"
-        ],
-        "root": "Valid exact native executions reach the canonical fulfillment boundary, but post-collapse repair classification still recognizes legacy R1 material-shape codes more completely than ANALYTICAL_V1 sole-verifier HOW-coverage mismatches; optional allowed result time-axis facts can also be over-constrained when not required by the intent.",
-        "correction": "Route only repairable ANALYTICAL_V1 HOW-coverage mismatches to the existing bounded Metabot repair owner using a deterministic projection of accepted AnalyticalRequestContract; keep exact context, correlation, resource identity, foreign scope, dependency and integrity failures terminal. Treat an unrequested result time axis as legal only when it is inside allowed semantic scope.",
-        "semantic_owner_change": false,
-        "provider_free_status": "PENDING"
-      }
-    ]
+    "blockers": []
   },
   "retired_runtime_semantic_vetoes": [
     "app.v3.research_analytical_scope.assert_material_native_scope",
