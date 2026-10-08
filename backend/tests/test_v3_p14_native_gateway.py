@@ -552,12 +552,13 @@ def test_execution_local_overlay_reaches_metabot_contract_projection():
         analytical_scope=overlay,
     )
 
-    projected = prepared.request.context["dima_analytical_scope"]
-    assert projected["scope_identity"] == base.scope_identity.model_dump(mode="json")
-    assert projected["scope_fingerprint"] == base.scope_fingerprint
-    assert projected["filters"][-1]["value"] == "Web"
-    assert projected["filters"][-1]["source_candidate_id"] == "cand_sales_order_channel"
-    assert "Sales Order Channel = \"Web\"" in prepared.request.message
+    projected = prepared.request.context["dima_material_requirement"]
+    assert projected["scope_version_id"] == base.scope_identity.version_id
+    assert projected["material_fingerprint"] == overlay.material_fingerprint
+    assert projected["accepted_filters"][-1]["value"] == "Web"
+    assert projected["accepted_filters"][-1]["source_candidate_id"] == "cand_sales_order_channel"
+    assert "dima_analytical_scope" not in prepared.request.context
+    assert "\"value\":\"Web\"" in prepared.request.message
 
 
 def test_verified_material_result_reports_parent_pending_without_replay():
@@ -655,9 +656,10 @@ def test_native_request_context_preloads_only_required_governed_resources():
         request=prepared.request,
     )
 
-    assert enriched.context["dima_analytical_scope"] == (
-        prepared.request.context["dima_analytical_scope"]
+    assert enriched.context["dima_material_requirement"] == (
+        prepared.request.context["dima_material_requirement"]
     )
+    assert "dima_analytical_scope" not in enriched.context
     assert enriched.context["user_is_viewing"] == [
         {"type": "metric", "id": 501},
     ]
@@ -1186,16 +1188,22 @@ def test_attestation_422_is_deterministic_limitation_before_execution(error_code
     assert store.execution_link(link.id).status == "CANDIDATE_CAPTURED"
 
 
-def test_p14_architecture_executes_before_read_only_execution_fact_admission():
+def test_p14_architecture_uses_exact_execution_facts_without_observer_fallback():
     execute_source = inspect.getsource(NativeResearchMaterialExecutor.execute)
-    observe_source = inspect.getsource(
-        NativeResearchMaterialExecutor._observe_executed_occurrence
+    facts_source = inspect.getsource(
+        NativeResearchMaterialExecutor._execution_fact_observation
     )
-    attest_source = inspect.getsource(NativeResearchMaterialExecutor._attest_occurrence)
+    attest_source = inspect.getsource(
+        NativeResearchMaterialExecutor._attest_occurrence
+    )
 
     assert "attest_native_query" in attest_source
-    assert "observe_native_query_material" in observe_source
     assert "execute_native_query" in execute_source
+    assert "observe_native_query_material" not in execute_source
+    assert "observe_native_query_material" not in facts_source
+    assert "_observe_executed_occurrence" not in inspect.getsource(
+        NativeResearchMaterialExecutor
+    )
     assert "execute_dataset" not in execute_source
     assert execute_source.index("_attest_occurrence(") < execute_source.index(
         "mark_execution_started("
@@ -2832,10 +2840,11 @@ def test_executed_occurrence_resumes_from_durable_result_without_second_dataset_
     assert first.receipt.result_hash == second.receipt.result_hash
     assert len(first_bridge.calls) == 1
     assert second_bridge.calls == []
-    assert len(second_bridge.material_observation_calls) == 1
+    assert second_bridge.material_observation_calls == []
+    assert second_bridge.call_order == ["attest"]
 
 
-def test_post_execution_fact_unavailable_resumes_without_native_replay():
+def test_post_execution_fact_unavailable_is_durable_without_observer_replay():
     engine = db_engine()
     seed(engine)
     store, session, link, query = session_and_link(engine)
@@ -2852,10 +2861,10 @@ def test_post_execution_fact_unavailable_resumes_without_native_replay():
     first_bridge = MaterialBridge(
         observation_error=NativeEngineEndpointError(
             operation="native material observation",
-            status_code=404,
-            error_code="NATIVE_QUERY_OCCURRENCE_NOT_FOUND",
-            detail="execution facts are not visible yet",
-            payload={"dima/error-code": "NATIVE_QUERY_OCCURRENCE_NOT_FOUND"},
+            status_code=422,
+            error_code="NATIVE_EXECUTION_FACTS_UNAVAILABLE",
+            detail="generated query has no complete execution fact projection",
+            payload={"dima/error-code": "NATIVE_EXECUTION_FACTS_UNAVAILABLE"},
         )
     )
 
@@ -2871,37 +2880,31 @@ def test_post_execution_fact_unavailable_resumes_without_native_replay():
             query_fingerprint=link.native_query_fingerprint,
             execution_link_id=link.id,
         )
-    assert exc.value.code == "NATIVE_QUERY_OCCURRENCE_NOT_FOUND"
+    assert exc.value.code == "NATIVE_EXECUTION_FACTS_UNAVAILABLE"
     persisted = store.execution_link(link.id)
     assert persisted.status == "EXECUTED"
     assert persisted.native_result_json is not None
+    assert persisted.execution_facts_json is not None
     assert first_bridge.calls == [query]
-    assert first_bridge.call_order[:3] == ["attest", "execute", "observe"]
-
-    retry_session = ResearchManager.record_retryable_limitation(
-        session,
-        obligation_id="g1",
-        code=exc.value.code,
-        detail=exc.value.detail,
-    )
-    assert retry_session.obligations[0].state == ObligationState.DELEGATED
 
     second_bridge = MaterialBridge(fail_on_execute=True)
-    outcome = executor.execute(
-        principal=principal(),
-        session=retry_session,
-        obligation_id="g1",
-        bridge=second_bridge,
-        native_conversation_id=link.native_conversation_id,
-        native_query_id=link.native_query_id,
-        native_query=query,
-        query_fingerprint=link.native_query_fingerprint,
-        execution_link_id=link.id,
-    )
-    assert outcome.evidence.verified
+    with pytest.raises(ResearchMaterialLimitation) as resumed:
+        executor.execute(
+            principal=principal(),
+            session=session,
+            obligation_id="g1",
+            bridge=second_bridge,
+            native_conversation_id=link.native_conversation_id,
+            native_query_id=link.native_query_id,
+            native_query=query,
+            query_fingerprint=link.native_query_fingerprint,
+            execution_link_id=link.id,
+        )
+    assert resumed.value.code == "NATIVE_EXECUTION_FACTS_UNAVAILABLE"
     assert second_bridge.calls == []
-    assert second_bridge.call_order[:2] == ["attest", "observe"]
-    assert store.execution_link(link.id).status == "EXECUTED"
+    assert second_bridge.material_observation_calls == []
+    assert second_bridge.call_order == ["attest"]
+
 
 def test_change_ranking_execution_fact_defect_routes_to_bounded_repair():
     engine = db_engine()
@@ -3049,7 +3052,7 @@ def test_gateway_p14_has_no_second_planner_or_direct_dataset_escape():
     ):
         assert forbidden not in source
     assert "attest_native_query" in source
-    assert "observe_native_query_material" in source
+    assert "observe_native_query_material" not in source
     assert "execute_native_query" in source
     assert "execute_dataset" not in inspect.getsource(
         NativeResearchMaterialExecutor.execute
@@ -3169,12 +3172,10 @@ def test_change_material_requirement_projection_is_exact_and_planner_visible() -
     encoded = message.split(marker, 1)[1].splitlines()[0]
     visible = json.loads(encoded)["dima_material_requirement"]
     assert visible == requirement
-    assert "accepted PAIR change frame" in message
-    assert "accepted baseline and comparison periods" in message
-    assert "CHANGE material law" in message
-    assert "rank by the governed CHANGE quantity" in message
-    assert "do not order by the raw metric level" in message
-    assert "dimension.department" in message
+    assert "[DIMA ACCEPTED ANALYTICAL CONTRACT]" not in message
+    assert message.count("[DIMA MATERIAL REQUIREMENT JSON]") == 1
+    assert "dima_material_requirement is the only analytical WHAT contract" in message
+    assert "dimension.department" in encoded
     lowered = message.lower()
     for forbidden in ("select ", "group by", "sum-where", "aggregation-options", "lib/uuid"):
         assert forbidden not in lowered
@@ -3209,10 +3210,9 @@ def test_span_change_material_requirement_is_typed_without_hidden_pair() -> None
         objective="symbolic bounded deterioration ranking",
         analytical_scope=contract,
     )
-    assert "accepted SPAN change frame" in message
-    assert "do not invent hidden baseline/comparison roles" in message
-    assert "Metabot-owned analytical realization" in message
-    assert "do not order by the raw metric level" in message
+    assert "[DIMA ACCEPTED ANALYTICAL CONTRACT]" not in message
+    assert message.count("[DIMA MATERIAL REQUIREMENT JSON]") == 1
+    assert "dima_material_requirement is the only analytical WHAT contract" in message
     lowered = message.lower()
     for forbidden in ("select ", "group by", "sum-where", "aggregation-options", "lib/uuid"):
         assert forbidden not in lowered
