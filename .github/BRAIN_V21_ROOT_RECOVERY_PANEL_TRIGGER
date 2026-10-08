@@ -1,7 +1,8 @@
 DIMA Brain V2.1 final semantic-layer-collapse acceptance trigger
 
 mode: final-12-case-independent-recovery-panel
-candidate_product_sha: f297b8458031c4aa77adc54414fbf5552dbb4c59
+candidate_product_sha: e5c91312c3dd0d5acbf4229de723396791bff9a0
+semantic_behavior_anchor: f297b8458031c4aa77adc54414fbf5552dbb4c59
 engine_sha: 656a449b46246c46529c9bb83929df17818e2fea
 engine_release: 0.63.18-dima.11.3
 engine_runtime_tag: v0.63.18-dima.11.3.1
@@ -11,12 +12,11 @@ provider_free_focused_run: 37783368944
 provider_free_semantic_run: 37783368988
 provider_free_frozen_run: 37782789136
 generated_metamorphic_scenarios: 192
-prior_case_executing_run: 37771729826
-layer_collapse_product_sha: f297b8458031c4aa77adc54414fbf5552dbb4c59
+prior_gate_only_run: 37789577092
 case_count: 12
 hard_provider_case_ceiling: 30
 final_acceptance: explicitly-authorized
 broad_30_case: forbidden
 frontend: forbidden
 automatic_retry: forbidden
-authorization_revision: f297-layer-collapse-final-v1
+authorization_revision: e5c-layer-collapse-final-v2

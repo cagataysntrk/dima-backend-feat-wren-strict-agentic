@@ -54,7 +54,7 @@
     "new_duplicate_semantic_owner_forbidden": true
   },
   "runtime_compliance": {
-    "status": "PROVIDER_FREE_CLOSED_F297_FINAL_12CASE_AUTHORIZED",
+    "status": "PROVIDER_FREE_CLOSED_E5C_FINAL_12CASE_AUTHORIZED",
     "last_recovery_run_id": 37771729826,
     "last_recovery_result": "10_OF_12_GREEN__PRE_FINAL_LAYER_COLLAPSE",
     "live_closed_roots": {
@@ -75,7 +75,7 @@
       "execution_fact_resume": "CLOSED__DURABLE_EXACT_FACTS_NO_REOBSERVE"
     },
     "provider_free_validation": {
-      "candidate_product_sha": "f297b8458031c4aa77adc54414fbf5552dbb4c59",
+      "candidate_product_sha": "e5c91312c3dd0d5acbf4229de723396791bff9a0",
       "engine_sha": "656a449b46246c46529c9bb83929df17818e2fea",
       "engine_release": "0.63.18-dima.11.3",
       "engine_runtime_tag": "v0.63.18-dima.11.3.1",
@@ -110,7 +110,9 @@
         "closure": "Execution now precedes non-veto fact extraction; Product projects observed native/result facts into AnalyticalExecutionManifestV1; only verify_analytical_fulfillment_v1 compares execution facts with AnalyticalIntent."
       }
     ],
-    "blockers": []
+    "blockers": [],
+    "exact_product_code_candidate": "e5c91312c3dd0d5acbf4229de723396791bff9a0",
+    "semantic_behavior_anchor": "f297b8458031c4aa77adc54414fbf5552dbb4c59"
   },
   "retired_runtime_semantic_vetoes": [
     "app.v3.research_analytical_scope.assert_material_native_scope",

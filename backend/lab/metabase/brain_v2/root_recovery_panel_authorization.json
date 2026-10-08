@@ -1,7 +1,7 @@
 {
   "schema_version": "dima_brain_v2_1_root_recovery_panel_v1",
   "enabled": true,
-  "candidate_product_sha": "f297b8458031c4aa77adc54414fbf5552dbb4c59",
+  "candidate_product_sha": "e5c91312c3dd0d5acbf4229de723396791bff9a0",
   "recovery_baseline": "505caec6e7c3fbd5346dc6a4c310e8f656d324ae",
   "provider_free_status": "GREEN",
   "provider_free_focused_run_id": 37783368944,
@@ -122,11 +122,11 @@
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
   "frontend_allowed": false,
-  "note": "Final user-directed semantic-layer-collapse acceptance after removing post-execution observer fallback and duplicate Metabot WHAT prompt/context surfaces. Product semantic candidate f297b845...; provider-free 37783368944 GREEN, semantic+192-metamorphic+Wave-A/Wave-B+mutation 37783368988 GREEN, frozen-family 37782789136 GREEN on the same production code identity. Exactly one 12-case acceptance wave is authorized. Broad 30-case/frontend remain forbidden; no automatic retry.",
+  "note": "Final user-directed semantic-layer-collapse acceptance. Exact Product code candidate is e5c91312... (same semantic behavior as f297b845..., plus execution_facts default compatibility in research_store). Latest provider-free 37783368944 GREEN, semantic+192-metamorphic+Wave-A/Wave-B+mutation 37783368988 GREEN, frozen-family 37782789136 GREEN on this exact backend/app identity. Prior 47bf2cb9 gate attempt consumed no provider/case execution. Exactly one 12-case case-executing acceptance wave is authorized; broad 30-case/frontend remain forbidden; no automatic retry.",
   "final_result": {
-    "status": "AUTHORIZED_F297_FINAL_12CASE_PENDING_TRIGGER",
+    "status": "AUTHORIZED_E5C_FINAL_12CASE_PENDING_TRIGGER",
     "workflow_run_id": null,
-    "candidate_product_sha": "f297b8458031c4aa77adc54414fbf5552dbb4c59",
+    "candidate_product_sha": "e5c91312c3dd0d5acbf4229de723396791bff9a0",
     "thirty_case_execution_ready": false,
     "paid_scope": "ONE_FINAL_12_CASE_ACCEPTANCE_ONLY",
     "prior_run_id": 37771729826,
@@ -141,7 +141,8 @@
       "0a4c5136a34a26a10904f1c37bbdd8fbec0774e6",
       "160b6d2eea3adcd71c9cd2416fa002665c54d1b4",
       "f297b8458031c4aa77adc54414fbf5552dbb4c59"
-    ]
+    ],
+    "prior_gate_only_run_id": 37789577092
   },
   "prior_final_result": {
     "status": "RED",
