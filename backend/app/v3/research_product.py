@@ -1191,76 +1191,72 @@ class ResearchAskOrchestrator:
                 detail=exc.detail,
             )
         except ResearchMaterialLimitation as exc:
-            repair = self._prepare_material_repair(
-                session=session,
-                obligation_id=selected,
-                parent_link=pending,
-                failure=exc,
-                analytical_scope=canonical_analytical_scope,
-            )
-            if repair is None:
-                return self._limit(
+            repair_failure = exc
+            repair_parent = pending
+            while True:
+                repair = self._prepare_material_repair(
                     session=session,
                     obligation_id=selected,
-                    code=exc.code,
-                    detail=exc.detail,
-                    link_id=pending.id,
-                    last_valid_boundary=exc.last_valid_boundary,
-                    first_invalid_boundary=exc.first_invalid_boundary,
-                    expected_fingerprint=exc.expected_fingerprint,
-                    observed_fingerprint=exc.observed_fingerprint,
-                    scope_fingerprint=exc.scope_fingerprint,
-                    material_fingerprint=exc.material_fingerprint,
-                    expected_semantic_shape=exc.expected_semantic_shape,
-                    observed_semantic_shape=exc.observed_semantic_shape,
+                    parent_link=repair_parent,
+                    failure=repair_failure,
+                    analytical_scope=canonical_analytical_scope,
                 )
-            session, repair_request, repair_link = repair
-            try:
-                occurrence = execute_occurrence_with_observation_resume(
-                    link=repair_link,
-                    request=repair_request,
-                    repair_parent_link_id=pending.id,
-                )
-            except ResearchMaterialObservationUnavailable as repair_exc:
-                return self._retryable_observation_limit(
-                    session=session,
-                    obligation_id=selected,
-                    code=repair_exc.code,
-                    detail=repair_exc.detail,
-                )
-            except ResearchMaterialLimitation as repair_exc:
-                return self._limit(
-                    session=session,
-                    obligation_id=selected,
-                    code=repair_exc.code,
-                    detail=repair_exc.detail,
-                    link_id=repair_link.id,
-                    last_valid_boundary=repair_exc.last_valid_boundary,
-                    first_invalid_boundary=repair_exc.first_invalid_boundary,
-                    expected_fingerprint=repair_exc.expected_fingerprint,
-                    observed_fingerprint=repair_exc.observed_fingerprint,
-                    scope_fingerprint=repair_exc.scope_fingerprint,
-                    material_fingerprint=repair_exc.material_fingerprint,
-                    expected_semantic_shape=repair_exc.expected_semantic_shape,
-                    observed_semantic_shape=repair_exc.observed_semantic_shape,
-                )
-            except NativeEngineBridgeError as repair_exc:
-                return self._limit(
-                    session=session,
-                    obligation_id=selected,
-                    code="P14_NATIVE_TRANSPORT_FAILED",
-                    detail=str(repair_exc),
-                    link_id=repair_link.id,
-                )
-            except ResearchPersistenceError as repair_exc:
-                return self._limit(
-                    session=session,
-                    obligation_id=selected,
-                    code=repair_exc.code,
-                    detail=repair_exc.detail,
-                    link_id=repair_link.id,
-                )
-            pending = repair_link
+                if repair is None:
+                    return self._limit(
+                        session=session,
+                        obligation_id=selected,
+                        code=repair_failure.code,
+                        detail=repair_failure.detail,
+                        link_id=repair_parent.id,
+                        last_valid_boundary=repair_failure.last_valid_boundary,
+                        first_invalid_boundary=repair_failure.first_invalid_boundary,
+                        expected_fingerprint=repair_failure.expected_fingerprint,
+                        observed_fingerprint=repair_failure.observed_fingerprint,
+                        scope_fingerprint=repair_failure.scope_fingerprint,
+                        material_fingerprint=repair_failure.material_fingerprint,
+                        expected_semantic_shape=repair_failure.expected_semantic_shape,
+                        observed_semantic_shape=repair_failure.observed_semantic_shape,
+                    )
+                session, repair_request, repair_link = repair
+                try:
+                    occurrence = execute_occurrence_with_observation_resume(
+                        link=repair_link,
+                        request=repair_request,
+                        repair_parent_link_id=repair_parent.id,
+                    )
+                except ResearchMaterialObservationUnavailable as repair_exc:
+                    return self._retryable_observation_limit(
+                        session=session,
+                        obligation_id=selected,
+                        code=repair_exc.code,
+                        detail=repair_exc.detail,
+                    )
+                except ResearchMaterialLimitation as repair_exc:
+                    # One more bounded regeneration is legal only when the
+                    # existing repair policy classifies the typed HOW defect as
+                    # repairable. The third miss is terminal by policy.
+                    repair_failure = repair_exc
+                    repair_parent = repair_link
+                    pending = repair_link
+                    continue
+                except NativeEngineBridgeError as repair_exc:
+                    return self._limit(
+                        session=session,
+                        obligation_id=selected,
+                        code="P14_NATIVE_TRANSPORT_FAILED",
+                        detail=str(repair_exc),
+                        link_id=repair_link.id,
+                    )
+                except ResearchPersistenceError as repair_exc:
+                    return self._limit(
+                        session=session,
+                        obligation_id=selected,
+                        code=repair_exc.code,
+                        detail=repair_exc.detail,
+                        link_id=repair_link.id,
+                    )
+                pending = repair_link
+                break
         except NativeEngineBridgeError as exc:
             return self._limit(
                 session=session,

@@ -1166,7 +1166,7 @@ def test_attestation_422_is_deterministic_limitation_before_execution(error_code
         )
     )
 
-    with pytest.raises(ResearchMaterialLimitation) as exc:
+    with pytest.raises(ResearchMaterialObservationUnavailable) as exc:
         executor.execute(
             principal=principal(),
             session=session,
@@ -2859,7 +2859,7 @@ def test_post_execution_fact_unavailable_resumes_without_native_replay():
         )
     )
 
-    with pytest.raises(ResearchMaterialObservationUnavailable) as exc:
+    with pytest.raises(ResearchMaterialLimitation) as exc:
         executor.execute(
             principal=principal(),
             session=session,
@@ -2903,7 +2903,7 @@ def test_post_execution_fact_unavailable_resumes_without_native_replay():
     assert second_bridge.call_order[:2] == ["attest", "observe"]
     assert store.execution_link(link.id).status == "EXECUTED"
 
-def test_observer_semantic_422_cannot_prevent_exact_execution():
+def test_change_ranking_execution_fact_defect_routes_to_bounded_repair():
     engine = db_engine()
     seed(engine)
     store, session, link, query = session_and_link(engine)
@@ -2930,7 +2930,7 @@ def test_observer_semantic_422_cannot_prevent_exact_execution():
         )
     )
 
-    with pytest.raises(ResearchMaterialObservationUnavailable) as exc:
+    with pytest.raises(ResearchMaterialLimitation) as exc:
         executor.execute(
             principal=principal(),
             session=session,

@@ -783,10 +783,39 @@ def test_repairable_material_miss_uses_one_durable_same_metabot_repair():
     }
 
 
-def test_second_repairable_material_miss_is_terminal_without_third_turn():
+def test_second_repairable_material_miss_uses_final_bounded_regeneration():
     engine = _db_engine()
     factory = BridgeFactory()
     executor = MaterialExecutor(repairable_failures=2)
+    product = _product(engine, factory, executor)
+    session = _start(product, two=False)
+
+    response = product.run_next(
+        session_id=session.session_id,
+        principal=_principal(),
+    )
+    restored = product.resume_state(
+        session_id=session.session_id,
+        principal=_principal(),
+    )
+    store = ResearchSessionStore(engine)
+
+    assert response.evidence_id is not None
+    assert response.limitation_code is None
+    assert restored.obligations[0].state == ObligationState.VERIFIED
+    assert factory.metabot_posts == 3
+    assert len(executor.calls) == 3
+    assert len({call[3] for call in executor.calls}) == 3
+    assert store.material_repair_attempt_count(
+        session_id=session.session_id,
+        obligation_id="g1",
+    ) == 2
+
+
+def test_third_repairable_material_miss_is_terminal_without_fourth_turn():
+    engine = _db_engine()
+    factory = BridgeFactory()
+    executor = MaterialExecutor(repairable_failures=3)
     product = _product(engine, factory, executor)
     session = _start(product, two=False)
 
@@ -805,8 +834,8 @@ def test_second_repairable_material_miss_is_terminal_without_third_turn():
         == "R1_RESULT_COMPARISON_COVERAGE_INCOMPLETE"
     )
     assert restored.obligations[0].state == ObligationState.LIMITED
-    assert factory.metabot_posts == 2
-    assert len(executor.calls) == 2
+    assert factory.metabot_posts == 3
+    assert len(executor.calls) == 3
 
 
 def test_repair_must_generate_new_query_fingerprint():

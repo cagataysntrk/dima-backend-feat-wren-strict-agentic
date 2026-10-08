@@ -57,6 +57,7 @@ _REPAIRABLE_MATERIAL_VALIDATION_CODES = frozenset(
         # The native fact extractor uses this code when a Metabot-produced
         # ranking target has no provable governed metric/change lineage.
         "NATIVE_MATERIAL_RANKING_TARGET_UNSUPPORTED",
+        "NATIVE_MATERIAL_CHANGE_RANKING_UNPROVABLE",
     }
 )
 
