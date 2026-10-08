@@ -8,11 +8,10 @@ from typing import Literal
 from uuid import UUID, uuid4
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from app.v3.analytical_request_contract import AnalyticalRequestContract, material_coverage_contract
+from app.v3.analytical_request_contract import AnalyticalRequestContract
 from app.v3.research_contracts import ResearchBrief, ResearchBriefStatus
 from app.v3.research_analytical_scope import (
     analytical_scope_contract,
-    material_coverage_period,
     native_material_requirement,
     native_request_context,
 )
@@ -273,233 +272,28 @@ class ResearchManager:
         analytical_scope,
         semantic_labels: dict[str, str] | None = None,
     ):
-        """Deliver the accepted material contract on Metabot's visible message surface.
+        """Expose exactly one deterministic analytical WHAT envelope to Metabot."""
 
-        The block is a deterministic projection of AnalyticalRequestContract only.
-        It declares WHAT must remain true and never emits SQL, MBQL, query plans,
-        benchmark knowledge, or inferred semantics.
-        """
-
-        labels = semantic_labels or {}
-
-        def semantic_display(value: str) -> str:
-            label = str(labels.get(value) or "").strip()
-            return f"{value} :: {label}" if label else value
-
-        def section(name, values, *, semantic: bool = False):
-            lines = [f"{name}:"]
-            values = tuple(values)
-            lines.extend(
-                f"- {semantic_display(value) if semantic else value}"
-                for value in values
-            )
-            if not values:
-                lines.append("- none")
-            return lines
-
-        def period_line(label, value):
-            end = value.end if value.end is not None else "open"
-            return (
-                f"- {label}: {value.time_dimension} "
-                f"[{value.start}, {end})"
-            )
-
-        coverage = material_coverage_contract(analytical_scope)
+        del semantic_labels
         requirement = native_material_requirement(analytical_scope)
-        lines = [
-            "[DIMA MATERIAL REQUIREMENT JSON]",
-            json.dumps(
-                {"dima_material_requirement": requirement},
-                ensure_ascii=False,
-                sort_keys=True,
-                separators=(",", ":"),
-            ),
-            "[DIMA ACCEPTED ANALYTICAL CONTRACT]",
-            f"scope_version: {analytical_scope.scope_identity.version_id}",
-            *section(
-                "metrics",
-                analytical_scope.metric_refs,
-                semantic=True,
-            ),
-            *section(
-                "required_metrics",
-                coverage.required_metric_refs,
-                semantic=True,
-            ),
-            *section(
-                "allowed_metrics",
-                coverage.allowed_metric_refs,
-                semantic=True,
-            ),
-            *section(
-                "required_breakouts",
-                coverage.required_breakout_refs,
-                semantic=True,
-            ),
-            *section(
-                "allowed_breakouts",
-                coverage.allowed_breakout_refs,
-                semantic=True,
-            ),
-            *section(
-                "dimensions",
-                analytical_scope.dimension_refs,
-                semantic=True,
-            ),
-            "filters:",
-        ]
-        if analytical_scope.filters:
-            lines.extend(
-                (
-                    f"- {value.source_candidate_id}: "
-                    f"{value.dimension_name} = "
-                    f"{json.dumps(value.value, ensure_ascii=False)}"
-                )
-                for value in analytical_scope.filters
-            )
-        else:
-            lines.append("- none")
-
-        lines.append("periods:")
-        if analytical_scope.comparison is not None:
-            lines.append(
-                period_line(
-                    "reference",
-                    analytical_scope.comparison.reference_period,
-                )
-            )
-            lines.append(
-                period_line(
-                    "base",
-                    analytical_scope.comparison.base_period,
-                )
-            )
-        elif analytical_scope.period is not None:
-            lines.append(period_line("accepted", analytical_scope.period))
-        else:
-            lines.append("- none")
-
-        coverage_period = material_coverage_period(analytical_scope)
-        lines.append("material_coverage_period:")
-        if coverage_period is None:
-            lines.append("- none")
-        else:
-            lines.append(period_line("required", coverage_period))
-
-        temporal_observation = analytical_scope.temporal_observation
-        lines.append("temporal_observation:")
-        if temporal_observation is None:
-            lines.append("- none")
-        else:
-            lines.extend(
-                (
-                    f"- kind: {temporal_observation.kind}",
-                    f"- time_dimension: {temporal_observation.time_dimension}",
-                    (
-                        "- minimum_distinct_values: "
-                        f"{temporal_observation.minimum_distinct_values}"
-                    ),
-                )
-            )
-
-        ranking = analytical_scope.ranking
-        lines.append("ranking:")
-        if ranking is None:
-            lines.append("- kind: none")
-        elif ranking.kind == "evidence_synthesis":
-            lines.extend(
-                (
-                    "- kind: evidence_synthesis",
-                    "- native_measure: none",
-                    "- native_limit: none",
-                )
-            )
-        else:
-            lines.extend(
-                (
-                    "- kind: native_metric",
-                    f"- measure: {ranking.measure}",
-                    f"- basis: {ranking.basis.value}",
-                    f"- direction: {ranking.direction}",
-                    f"- limit: {ranking.limit if ranking.limit is not None else 'none'}",
-                )
-            )
-
-        lines.extend(section("grain_constraints", analytical_scope.grain_constraints))
-        lines.extend(
-            section(
-                "output_surfaces",
-                analytical_scope.requested_output_surfaces,
-            )
-        )
-        lines.extend(
+        return "\n".join(
             (
-                "rules:",
-                "- preserve the accepted metric identities exactly",
-                "- every required metric must be observable in the same native occurrence",
-                "- no metric outside allowed_metrics may enter the occurrence",
-                "- preserve the accepted filters and temporal bounds exactly",
-                "- do not broaden the accepted scope",
-                "- preserve the governed temporal observation material exactly",
-            )
-        )
-        if ranking is not None and ranking.kind == "evidence_synthesis":
-            lines.extend(
-                (
-                    "- do not choose or invent a native ranking metric, composite score, or result limit",
-                    "- return unranked analytical material for downstream governed evidence synthesis",
-                )
-            )
-        elif ranking is not None:
-            lines.append("- preserve the governed native ranking basis exactly")
-            if ranking.basis.value == "change":
-                change = requirement.get("change_semantics") or {}
-                frame = requirement.get("temporal_change_frame") or {}
-                entity_refs = (
-                    ", ".join(change.get("entity_breakout_refs") or ())
-                    or "accepted entity grain"
-                )
-                if frame.get("mode") == "PAIR":
-                    lines.extend(
-                        (
-                            "- preserve the accepted PAIR change frame; do not collapse it into pooled level",
-                            "- keep the accepted baseline and comparison periods distinguishable in governed material",
-                            (
-                                "- CHANGE material law: produce one comparable entity-grain result for "
-                                f"{entity_refs}; the accepted metric CHANGE must reflect the governed "
-                                "baseline and comparison periods for that same entity grain"
-                            ),
-                            "- rank by the governed CHANGE quantity in the accepted direction",
-                        )
-                    )
-                elif frame.get("mode") == "SPAN":
-                    lines.extend(
-                        (
-                            "- preserve the accepted SPAN change frame; do not invent hidden baseline/comparison roles",
-                            (
-                                "- CHANGE material law: produce one comparable entity-grain result for "
-                                f"{entity_refs}; analyze governed metric change over the accepted bounded "
-                                "span using Metabot-owned analytical realization"
-                            ),
-                            "- rank by the governed CHANGE quantity in the accepted direction",
-                        )
-                    )
-                lines.append(
-                    "- do not order by the raw metric level when the contract requires CHANGE"
-                )
-
-        lines.extend(
-            (
+                "[DIMA MATERIAL REQUIREMENT JSON]",
+                json.dumps(
+                    {"dima_material_requirement": requirement},
+                    ensure_ascii=False,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                ),
                 "[USER OBLIGATION]",
                 objective,
                 "[MATERIAL TURN BOUNDARY]",
-                "- this native turn acquires only the analytical material defined by the accepted contract above",
-                "- produce exactly one executable native analytical query satisfying that contract",
+                "- dima_material_requirement is the only analytical WHAT contract for this turn",
+                "- produce exactly one executable native analytical query satisfying that requirement",
+                "- Metabase/Metabot owns analytical realization; do not invent additional scope",
                 "- do not perform downstream investigation, hypothesis adjudication, next-test planning, reporting, or workflow orchestration in this turn",
-                "- downstream instructions in the user obligation are context only and do not authorize extra native work",
             )
         )
-        return "\n".join(lines)
 
     @staticmethod
     def _native_material_message(item, analytical_scope):
