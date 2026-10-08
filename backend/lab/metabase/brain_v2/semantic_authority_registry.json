@@ -54,7 +54,7 @@
     "new_duplicate_semantic_owner_forbidden": true
   },
   "runtime_compliance": {
-    "status": "ARCHITECTURE_CLOSED__FINAL_LOW_CREDIT_INFRA_REVALIDATION",
+    "status": "SEMANTIC_AUTHORITY_CLOSED__LIVE_ACCEPTANCE_BLOCKED_EXTERNAL_PROVIDER_CREDIT",
     "last_recovery_run_id": 37813851937,
     "last_recovery_result": "6_OF_12_GREEN__5_PROVIDER_402__1_FIXTURE_SEED_FAILURE",
     "live_closed_roots": {
@@ -159,6 +159,24 @@
       "semantic_change": false,
       "fallback_request_max_tokens": 512,
       "on_second_402": "STOP_EXTERNAL_CREDIT_BLOCKER"
+    },
+    "external_acceptance_blocker": {
+      "id": "OPENROUTER_HTTP_402_CREDIT_OR_KEY_BUDGET",
+      "run_id": 37832593720,
+      "job_id": 113501951899,
+      "product_sha": "0f84769a76532800f3ed3f26268fa31ccb67639f",
+      "engine_sha": "656a449b46246c46529c9bb83929df17818e2fea",
+      "first_max_tokens": 2048,
+      "first_status": 402,
+      "fallback_max_tokens": 512,
+      "fallback_status": 402,
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "reasoning_tokens": 0,
+      "native_acquisition_started": false,
+      "semantic_authority_debt": false,
+      "product_fix_required": false,
+      "exit_condition": "OpenRouter credits/key budget restored; same 12-case acceptance rerun without Product/engine changes."
     }
   },
   "retired_runtime_semantic_vetoes": [

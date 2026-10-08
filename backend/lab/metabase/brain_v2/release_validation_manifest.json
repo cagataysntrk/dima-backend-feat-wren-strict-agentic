@@ -1,6 +1,6 @@
 {
   "schema_version": "dima_brain_v2_1_release_validation_v1",
-  "status": "SEMANTIC_LAYER_COLLAPSE_ARCHITECTURE_CLOSED__FINAL_LOW_CREDIT_INFRA_REVALIDATION",
+  "status": "SEMANTIC_LAYER_COLLAPSE_ARCHITECTURE_CLOSED__LIVE_PROOF_BLOCKED_EXTERNAL_OPENROUTER_CREDITS",
   "frozen_identity": {
     "product_semantic_sha": "ae4e0348601774082b0270f23d6de126e71e6055",
     "engine_sha": "686671fa7e55f715e4fb5ac155f9e66019fd12d8",
@@ -29,7 +29,7 @@
     "ninety_plus_proven": false,
     "eighty_plus_proven": false,
     "final_quality_score": 68.25,
-    "meaning": "Frozen Product 0f84769a... remains unchanged. Current OpenRouter 402 responses omit numeric affordability hints. One final infrastructure-only revalidation allows exactly one 512 max_tokens retry after an initial 2048-token 402, with identical model/prompt/semantic payload. A second 402 is an external credit blocker. READY remains NO until 12/12 GREEN.",
+    "meaning": "Semantic Layer Collapse architecture is closed on frozen Product 0f84769a... / certified engine dima.11.3, with provider-free/frozen/semantic+192-metamorphic closure GREEN. Live 12-case proof cannot complete because OpenRouter rejects the first research_intake request with HTTP 402 even after one audited infrastructure-only reduction from max_tokens 2048 to 512. Usage remains zero and native acquisition never starts. No further Product/engine/semantic patch is justified. Restore external OpenRouter credits/key budget, then rerun the identical 12-case panel; only 12/12 GREEN may set READY=YES.",
     "historical_last_completed_30_case_score": 68.25,
     "final_quality_score_source": "HISTORICAL_LAST_COMPLETED_30_CASE_RELEASE"
   },
@@ -79,8 +79,8 @@
     "s3_diagnostic": false,
     "frontend": false,
     "automatic_retry": false,
-    "note": "One user-authorized infrastructure-only revalidation. No Product semantic patch/refactor, engine change, model substitution, broad 30-case, or frontend work.",
-    "root_recovery_retry": true
+    "note": "Paid retry disabled after definitive external OpenRouter credit blocker proof. No further repository workaround is authorized; restore external provider credits/key budget first.",
+    "root_recovery_retry": false
   },
   "actual_frozen_30_case_protocol": {
     "required_identity_match": true,
@@ -174,22 +174,24 @@
     "adjudication_document": "backend/belgeler/metabase/DIMA_BRAIN_V2_1_ROUND2_FINAL_ADJUDICATION_2026-10-06.md"
   },
   "active_recovery": {
-    "status": "AUTHORIZED_FINAL_LOW_CREDIT_INFRA_REVALIDATION_PENDING_TRIGGER",
+    "status": "BLOCKED_EXTERNAL_OPENROUTER_CREDITS",
     "candidate_product_sha": "0f84769a76532800f3ed3f26268fa31ccb67639f",
     "engine_sha": "656a449b46246c46529c9bb83929df17818e2fea",
-    "prior_run_id": 37831869203,
-    "prior_result": "Provider 402 on first cognition request despite 7000 static cap",
-    "infrastructure_changes": {
-      "completion_token_case_ceiling": 50000,
-      "request_max_tokens": 2048,
-      "one_affordability_retry": true,
-      "fixture_seed_bounded_retry": true,
-      "model_unchanged": true,
-      "product_code_unchanged": true,
-      "fallback_request_max_tokens": 512,
-      "on_second_402": "STOP_EXTERNAL_CREDIT_BLOCKER"
+    "run_id": 37832593720,
+    "evidence_job_id": 113501951899,
+    "evidence": {
+      "first_max_tokens": 2048,
+      "first_status": 402,
+      "fallback_max_tokens": 512,
+      "fallback_status": 402,
+      "provider_requests": 2,
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "reasoning_tokens": 0
     },
-    "paid_authorization": true,
+    "product_semantic_change_required": false,
+    "external_action_required": "RESTORE_OPENROUTER_CREDITS_OR_KEY_BUDGET",
+    "paid_authorization": false,
     "thirty_case_execution_ready": false,
     "actual_30_case_run_authorized": false
   },

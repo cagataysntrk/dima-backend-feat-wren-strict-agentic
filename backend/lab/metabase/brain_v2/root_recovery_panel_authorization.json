@@ -1,6 +1,6 @@
 {
   "schema_version": "dima_brain_v2_1_root_recovery_panel_v1",
-  "enabled": true,
+  "enabled": false,
   "candidate_product_sha": "0f84769a76532800f3ed3f26268fa31ccb67639f",
   "recovery_baseline": "505caec6e7c3fbd5346dc6a4c310e8f656d324ae",
   "provider_free_status": "GREEN",
@@ -122,18 +122,30 @@
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
   "frontend_allowed": false,
-  "note": "Final infrastructure-only revalidation on frozen Product 0f84769a... and dima.11.3. OpenRouter 402 currently omits a numeric affordability hint. The eval-only proxy therefore performs at most one fallback retry at max_tokens=512 after an initial 2048-token 402. Same model, same prompt, same semantic payload; only numeric output reservation changes. If the 512 retry is also 402, closure is externally blocked on OpenRouter credits and no further repository workaround is authorized.",
+  "note": "Semantic Layer Collapse Product remains frozen at 0f84769a... with certified engine dima.11.3. Final infrastructure validation proved OpenRouter external credit rejection: run 37832593720 R02 first request max_tokens=2048 returned upstream 402; the single audited fallback max_tokens=512 also returned upstream 402; prompt/completion/reasoning usage all remained zero and native acquisition never began. Further repository retries/token reductions are forbidden because they would no longer be a faithful acceptance proof. Re-enable only after OpenRouter credits/key budget are restored; then rerun the same 12-case panel with no Product/engine change.",
   "final_result": {
-    "status": "AUTHORIZED_FINAL_LOW_CREDIT_INFRA_REVALIDATION_PENDING_TRIGGER",
-    "workflow_run_id": null,
+    "status": "BLOCKED_EXTERNAL_OPENROUTER_CREDITS",
+    "workflow_run_id": 37832593720,
+    "evidence_job_id": 113501951899,
     "candidate_product_sha": "0f84769a76532800f3ed3f26268fa31ccb67639f",
+    "engine_sha": "656a449b46246c46529c9bb83929df17818e2fea",
     "thirty_case_execution_ready": false,
-    "prior_run_id": 37831869203,
-    "prior_result": "OPENROUTER_402_NO_NUMERIC_HINT",
-    "infrastructure_only": true,
-    "product_semantic_change": false,
-    "engine_change": false,
-    "paid_scope": "ONE_FINAL_12_CASE_INFRA_REVALIDATION_ONLY"
+    "semantic_architecture_closed": true,
+    "product_semantic_change_required": false,
+    "evidence": {
+      "source": "research_intake",
+      "first_request_max_tokens": 2048,
+      "first_upstream_status": 402,
+      "fallback_request_max_tokens": 512,
+      "fallback_upstream_status": 402,
+      "transport_affordability_retry_count": 1,
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "reasoning_tokens": 0,
+      "native_acquisition_started": false
+    },
+    "required_external_action": "RESTORE_OPENROUTER_CREDITS_OR_KEY_BUDGET_THEN_RERUN_SAME_12_CASE",
+    "automatic_retry_authorized": false
   },
   "prior_final_result": {
     "status": "RED",
