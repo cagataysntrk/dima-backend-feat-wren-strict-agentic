@@ -1,17 +1,17 @@
 {
   "schema_version": "dima_brain_v2_1_root_recovery_panel_v1",
-  "enabled": false,
-  "candidate_product_sha": "eee7583cb67d50779784805c469230ef2b82a5a2",
+  "enabled": true,
+  "candidate_product_sha": "045d12ac0dfa4cc5e9955c0a0931f6c38eb09edd",
   "recovery_baseline": "505caec6e7c3fbd5346dc6a4c310e8f656d324ae",
-  "provider_free_status": "GREEN_POST_ROOT_FIXES__PAID_WAVE_CONSUMED",
-  "provider_free_focused_run_id": 37668611845,
-  "provider_free_semantic_run_id": 37667461012,
-  "provider_free_frozen_run_id": 37667461009,
+  "provider_free_status": "GREEN_POST_SEMANTIC_LAYER_COLLAPSE",
+  "provider_free_focused_run_id": 37731298384,
+  "provider_free_semantic_run_id": 37731298303,
+  "provider_free_frozen_run_id": 37731298328,
   "generated_metamorphic_scenarios": 192,
-  "engine_sha": "686671fa7e55f715e4fb5ac155f9e66019fd12d8",
-  "engine_release": "0.63.18-dima.11.2",
-  "engine_runtime_tag": "v0.63.18-dima.11.2.1",
-  "engine_digest": "sha256:fe1b6fb67be6dbadea1af5d415f3ba2e033d46f91289f5c3c9844bee20c379bd",
+  "engine_sha": "656a449b46246c46529c9bb83929df17818e2fea",
+  "engine_release": "0.63.18-dima.11.3",
+  "engine_runtime_tag": "v0.63.18-dima.11.3.1",
+  "engine_digest": "sha256:84f20edbc253b6c137b2a7c5c1508e4a9c7873981381f9f60868b5f7cf667a95",
   "panel_policy": {
     "case_count": 12,
     "minimum_score_each": 3,
@@ -122,28 +122,13 @@
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
   "frontend_allowed": false,
-  "note": "Final post-root recovery run 37668955073 is already in flight on frozen Product eee7583c...; R02_COMPARISON_SEMANTIC has failed before native execution at the certified native material-observation boundary (attestation 200, material observation 422, blocked provider=0, duplicate native=0, Evidence=0). No second paid wave is authorized. Let the current fail-fast=false panel finish for full adjudication; broad 30-case and frontend remain forbidden.",
+  "note": "Final semantic-layer-collapse validation is explicitly authorized for candidate 045d12ac... after provider-free focused/frozen/semantic+192-metamorphic+Wave-A/Wave-B+mutation GREEN. Exactly one 12-case recovery wave may run. Broad 30-case, frontend, automatic retry, and any second correction wave remain forbidden.",
   "final_result": {
-    "status": "IN_FLIGHT_R02_RED_NO_PAID_RETRY",
-    "workflow_run_id": 37668955073,
-    "candidate_product_sha": "eee7583cb67d50779784805c469230ef2b82a5a2",
-    "first_observed_red": {
-      "slot_id": "R02_COMPARISON_SEMANTIC",
-      "terminal_exception": "P20_RESEARCH_SESSION_NOT_SEALED",
-      "material_executor_attempts": 2,
-      "native_acquisitions": 0,
-      "provider_requests": 8,
-      "blocked_provider_requests": 0,
-      "duplicate_native": 0,
-      "stale_evidence": 0
-    },
+    "status": "AUTHORIZED_PENDING_TRIGGER",
+    "workflow_run_id": null,
+    "candidate_product_sha": "045d12ac0dfa4cc5e9955c0a0931f6c38eb09edd",
     "thirty_case_execution_ready": false,
-    "observed_red_slots": [
-      {
-        "slot_id": "R02_COMPARISON_SEMANTIC",
-        "boundary": "certified native material observation returned HTTP 422 before native execution; Product ended with P20_RESEARCH_SESSION_NOT_SEALED, native_acquisitions=0, evidence_count=0, blocked_provider=0, duplicate_native=0"
-      }
-    ]
+    "paid_scope": "ONE_FINAL_12_CASE_RECOVERY_ONLY"
   },
   "prior_final_result": {
     "status": "RED",
@@ -168,5 +153,27 @@
     "report_only_native_delta": 0,
     "second_paid_wave_authorized": false,
     "thirty_case_execution_ready": false
+  },
+  "previous_semantic_authority_recovery_result": {
+    "status": "IN_FLIGHT_R02_RED_NO_PAID_RETRY",
+    "workflow_run_id": 37668955073,
+    "candidate_product_sha": "eee7583cb67d50779784805c469230ef2b82a5a2",
+    "first_observed_red": {
+      "slot_id": "R02_COMPARISON_SEMANTIC",
+      "terminal_exception": "P20_RESEARCH_SESSION_NOT_SEALED",
+      "material_executor_attempts": 2,
+      "native_acquisitions": 0,
+      "provider_requests": 8,
+      "blocked_provider_requests": 0,
+      "duplicate_native": 0,
+      "stale_evidence": 0
+    },
+    "thirty_case_execution_ready": false,
+    "observed_red_slots": [
+      {
+        "slot_id": "R02_COMPARISON_SEMANTIC",
+        "boundary": "certified native material observation returned HTTP 422 before native execution; Product ended with P20_RESEARCH_SESSION_NOT_SEALED, native_acquisitions=0, evidence_count=0, blocked_provider=0, duplicate_native=0"
+      }
+    ]
   }
 }

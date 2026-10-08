@@ -44,10 +44,7 @@
     "validate_v1_research_brief"
   ],
   "sole_fulfillment_judge": "verify_analytical_fulfillment_v1",
-  "transitional_proof_producers": [
-    "app.v3.research_analytical_scope.assert_material_native_scope",
-    "app.v3.research_material_coverage.assert_material_result_coverage"
-  ],
+  "transitional_proof_producers": [],
   "laws": {
     "acquisition_identity_not_requirement_identity": true,
     "p18_turn_bundle_atomic_reset": true,
@@ -57,14 +54,28 @@
     "new_duplicate_semantic_owner_forbidden": true
   },
   "runtime_compliance": {
-    "status": "BLOCKED_ON_TRANSITIONAL_NATIVE_OBSERVER_SEMANTIC_VETO",
+    "status": "PROVIDER_FREE_CLOSED_AWAITING_FINAL_12CASE",
     "last_recovery_run_id": 37668955073,
-    "last_recovery_result": "10_OF_12_GREEN",
+    "last_recovery_result": "10_OF_12_GREEN__HISTORICAL_PRE_COLLAPSE",
     "live_closed_roots": {
       "atomic_p18_turn_reset": "CLOSED__R10_R11_R12_GREEN",
-      "shared_acquisition_identity": "CLOSED_AS_GROUPING_LAW__OBSERVER_VETO_DOWNSTREAM"
+      "shared_acquisition_identity": "CLOSED__ONE_ACQUISITION__CONSUMERS_VERIFIED_SEPARATELY",
+      "semantic_admission_collapse": "CLOSED_PROVIDER_FREE__FINAL_VERIFIER_ONLY",
+      "native_execution_facts_lifecycle": "CLOSED_PROVIDER_FREE__ATTEST_EXECUTE_FACTS_VERIFY"
     },
-    "blockers": [
+    "provider_free_validation": {
+      "candidate_product_sha": "045d12ac0dfa4cc5e9955c0a0931f6c38eb09edd",
+      "engine_sha": "656a449b46246c46529c9bb83929df17818e2fea",
+      "engine_release": "0.63.18-dima.11.3",
+      "engine_runtime_tag": "v0.63.18-dima.11.3.1",
+      "engine_digest": "sha256:84f20edbc253b6c137b2a7c5c1508e4a9c7873981381f9f60868b5f7cf667a95",
+      "focused_run_id": 37731298384,
+      "frozen_family_run_id": 37731298328,
+      "semantic_metamorphic_wave_a_wave_b_mutation_run_id": 37731298303,
+      "generated_metamorphic_scenarios": 192,
+      "status": "GREEN"
+    },
+    "closed_blockers": [
       {
         "id": "NATIVE_OBSERVER_QUERY_SHAPE_SEMANTIC_VETO",
         "evidence_run_id": 37668955073,
@@ -82,8 +93,16 @@
           "app.v3.research_material_coverage.assert_material_result_coverage"
         ],
         "forbidden_fix": "Representation-by-representation observer patch; prompt/regex/fuzzy patch; provider ceiling increase; Dima-side analytics; Intent echo masquerading as observed ExecutionManifest; or weakened final fulfillment.",
-        "required_exit": "Metabase/Metabot exposes stable execution-semantic facts bound to exact occurrence/result; AnalyticalExecutionManifestV1 is populated from those observed facts; Dima performs one verify_analytical_fulfillment_v1 judgment; observer/coverage retain structural or fact-producing roles only."
+        "required_exit": "Metabase/Metabot exposes stable execution-semantic facts bound to exact occurrence/result; AnalyticalExecutionManifestV1 is populated from those observed facts; Dima performs one verify_analytical_fulfillment_v1 judgment; observer/coverage retain structural or fact-producing roles only.",
+        "closed_by_candidate_product_sha": "045d12ac0dfa4cc5e9955c0a0931f6c38eb09edd",
+        "closed_engine_sha": "656a449b46246c46529c9bb83929df17818e2fea",
+        "closure": "Execution now precedes non-veto fact extraction; Product projects observed native/result facts into AnalyticalExecutionManifestV1; only verify_analytical_fulfillment_v1 compares execution facts with AnalyticalIntent."
       }
-    ]
-  }
+    ],
+    "blockers": []
+  },
+  "retired_runtime_semantic_vetoes": [
+    "app.v3.research_analytical_scope.assert_material_native_scope",
+    "app.v3.research_material_coverage.assert_material_result_coverage"
+  ]
 }

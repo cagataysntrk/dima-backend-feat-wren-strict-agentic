@@ -239,3 +239,21 @@ def test_open_semantic_authority_blocker_disarms_paid_recovery():
         assert authorization["broad_paid_allowed"] is False
         assert authorization["thirty_case_allowed"] is False
         assert authorization["frontend_allowed"] is False
+
+def test_native_gateway_projects_execution_facts_without_transitional_semantic_vetoes():
+    """P14 may correlate/project facts; business fulfillment belongs only to final verifier."""
+
+    source = (
+        BACKEND_ROOT / "app" / "v3" / "research_native_gateway.py"
+    ).read_text(encoding="utf-8")
+    for forbidden in (
+        "assert_material_native_scope",
+        "assert_material_result_coverage",
+    ):
+        assert forbidden not in source
+    assert "project_execution_manifest_v1" in source
+    assert "verify_analytical_fulfillment_v1" in source
+    assert source.index("bridge.execute_native_query(") < source.index(
+        "_execution_fact_observation("
+    )
+
