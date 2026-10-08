@@ -1442,10 +1442,14 @@ def test_real_owner_scope_repair_creates_new_scope_without_stale_evidence_reuse(
     )
     assert second_session.obligations[0].objective == "Boyahane ile sınırla."
     followup_message = bridge.metabot_requests[1]["message"]
-    assert "[USER OBLIGATION]\nBoyahane ile sınırla.\n" in followup_message
+    followup_intent = bridge.metabot_requests[1]["context"]["dima_analytical_intent"]
+    assert followup_message.startswith("[DIMA ANALYTICAL INTENT V1 JSON]\n")
+    assert "[USER OBLIGATION]" not in followup_message
+    assert followup_intent["scope_version_id"] == "scope_v2"
+    assert "Boyahane ile sınırla." not in followup_message
     assert (
-        "[USER OBLIGATION]\nDuruş artışını bakım gecikmesi mi "
-        "yedek parça gecikmesi mi daha iyi açıklıyor?\n"
+        "Duruş artışını bakım gecikmesi mi yedek parça gecikmesi mi "
+        "daha iyi açıklıyor?"
         not in followup_message
     )
     assert store.assert_lineage_head(second_session) == second_session
