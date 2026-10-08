@@ -50,6 +50,9 @@ from app.v3.research_product import (
     ResearchMaterialObservationUnavailable,
     ResearchMaterialOutcome,
 )
+from app.v3.research_material_repair import (
+    is_repairable_material_validation_code,
+)
 from app.v3.research_result_dependency import (
     ResultDependencyProjectionError,
     ResultSelectionResolution,
@@ -824,11 +827,17 @@ class NativeResearchMaterialExecutor:
                     metabase_user_id=metabase_user_id,
                 )
             if status == "UNAVAILABLE":
-                raise ResearchMaterialObservationUnavailable(
-                    str(
-                        facts.get("error_code")
-                        or "P14_NATIVE_EXECUTION_FACTS_UNAVAILABLE"
-                    ),
+                code = str(
+                    facts.get("error_code")
+                    or "P14_NATIVE_EXECUTION_FACTS_UNAVAILABLE"
+                )
+                error_type = (
+                    ResearchMaterialLimitation
+                    if is_repairable_material_validation_code(code)
+                    else ResearchMaterialObservationUnavailable
+                )
+                raise error_type(
+                    code,
                     str(facts.get("detail") or "execution facts are unavailable"),
                     last_valid_boundary="dima.native.execute",
                     first_invalid_boundary="dima.native.observe",

@@ -2947,6 +2947,51 @@ def test_observer_semantic_422_cannot_prevent_exact_execution():
     assert store.execution_link(link.id).status == "EXECUTED"
 
 
+def test_repairable_execution_fact_defect_routes_to_bounded_material_repair():
+    engine = db_engine()
+    seed(engine)
+    store, session, link, query = session_and_link(engine)
+    subjects = NativeSubjectSessionProvider(
+        base_url="http://native.test",
+        expected_identity=expected_identity(),
+        db_engine=engine,
+    )
+    executor = NativeResearchMaterialExecutor(
+        subject_provider=subjects,
+        store=store,
+        expected_identity=expected_identity(),
+    )
+    bridge = MaterialBridge(
+        observation_error=NativeEngineEndpointError(
+            operation="native material observation",
+            status_code=422,
+            error_code="NATIVE_MATERIAL_RANKING_TARGET_UNSUPPORTED",
+            detail="generated query has no verifiable governed ranking lineage",
+            payload={
+                "dima/error-code":
+                "NATIVE_MATERIAL_RANKING_TARGET_UNSUPPORTED"
+            },
+        )
+    )
+
+    with pytest.raises(ResearchMaterialLimitation) as exc:
+        executor.execute(
+            principal=principal(),
+            session=session,
+            obligation_id="g1",
+            bridge=bridge,
+            native_conversation_id=link.native_conversation_id,
+            native_query_id=link.native_query_id,
+            native_query=query,
+            query_fingerprint=link.native_query_fingerprint,
+            execution_link_id=link.id,
+        )
+
+    assert exc.value.code == "NATIVE_MATERIAL_RANKING_TARGET_UNSUPPORTED"
+    assert bridge.calls == [query]
+    assert store.execution_link(link.id).status == "EXECUTED"
+
+
 def test_attestation_state_mismatch_remains_pre_execution_fail_closed():
     engine = db_engine()
     seed(engine)

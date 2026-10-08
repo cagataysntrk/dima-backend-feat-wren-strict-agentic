@@ -53,6 +53,12 @@ _REPAIRABLE_MATERIAL_VALIDATION_CODES = frozenset(
 )
 
 
+def is_repairable_material_validation_code(validation_code: str) -> bool:
+    """Classify an existing typed planner-output defect; no semantic judgment."""
+
+    return validation_code in _REPAIRABLE_MATERIAL_VALIDATION_CODES
+
+
 def decide_material_repair(
     *,
     validation_code: str,
@@ -65,7 +71,7 @@ def decide_material_repair(
         raise ValueError("prior repair attempts cannot be negative")
 
     repairable = (
-        validation_code in _REPAIRABLE_MATERIAL_VALIDATION_CODES
+        is_repairable_material_validation_code(validation_code)
         and prior_repair_attempts == 0
     )
     return MaterialRepairDecision(
