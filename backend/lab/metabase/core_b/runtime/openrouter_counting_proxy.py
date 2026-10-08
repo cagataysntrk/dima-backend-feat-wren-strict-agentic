@@ -272,6 +272,7 @@ class ProviderRequestLedger:
         self._affordability_retries = 0
         self._last_affordable_completion_tokens: int | None = None
         self._last_applied_request_max_tokens: int | None = None
+        self._last_affordability_retry_mode: str | None = None
         self._events: list[dict[str, Any]] = []
         self.persist()
 
@@ -375,6 +376,7 @@ class ProviderRequestLedger:
         *,
         affordable_completion_tokens: int,
         applied_request_max_tokens: int,
+        mode: str = "numeric_hint",
     ) -> None:
         with self._lock:
             self._affordability_retries += 1
@@ -384,6 +386,7 @@ class ProviderRequestLedger:
             self._last_applied_request_max_tokens = int(
                 applied_request_max_tokens
             )
+            self._last_affordability_retry_mode = str(mode)
             self._persist_locked()
 
     def snapshot(self) -> dict[str, Any]:
@@ -420,6 +423,7 @@ class ProviderRequestLedger:
             "transport_affordability_retry_count": self._affordability_retries,
             "last_affordable_completion_tokens": self._last_affordable_completion_tokens,
             "last_applied_request_max_tokens": self._last_applied_request_max_tokens,
+            "last_affordability_retry_mode": self._last_affordability_retry_mode,
             "privacy_contract": {
                 "request_headers_persisted": False,
                 "request_body_persisted": False,
@@ -535,6 +539,9 @@ class CountingOpenRouterProxy:
         if is_chat and response.status_code == 402:
             affordable = affordable_completion_tokens(response_body)
             current_max = request_max_tokens(outbound_body)
+            retry_max = None
+            retry_mode = None
+            recorded_affordable = 0
             if (
                 affordable is not None
                 and current_max is not None
@@ -542,13 +549,26 @@ class CountingOpenRouterProxy:
                 and affordable > 256
             ):
                 retry_max = max(128, affordable - 128)
+                retry_mode = "numeric_hint"
+                recorded_affordable = affordable
+            elif current_max is not None and current_max > 512:
+                # Some OpenRouter 402 responses omit the numeric affordability
+                # hint. One fixed low-credit retry keeps the same model,
+                # prompt and semantic payload while reducing only the potential
+                # output reservation. There is never a third transport attempt.
+                retry_max = 512
+                retry_mode = "fallback_low_credit"
+                recorded_affordable = 0
+
+            if retry_max is not None:
                 retry_body = bounded_chat_request_body(
                     outbound_body,
                     completion_token_ceiling=retry_max,
                 )
                 self.ledger.record_affordability_retry(
-                    affordable_completion_tokens=affordable,
+                    affordable_completion_tokens=recorded_affordable,
                     applied_request_max_tokens=retry_max,
+                    mode=retry_mode or "unknown",
                 )
                 retry_reservation = self.ledger.reserve(source)
                 try:

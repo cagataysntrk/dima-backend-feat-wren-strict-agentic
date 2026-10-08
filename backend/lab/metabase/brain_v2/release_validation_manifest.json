@@ -1,6 +1,6 @@
 {
   "schema_version": "dima_brain_v2_1_release_validation_v1",
-  "status": "SEMANTIC_LAYER_COLLAPSE_ARCHITECTURE_CLOSED__ADAPTIVE_PROVIDER_INFRA_REVALIDATION_AUTHORIZED",
+  "status": "SEMANTIC_LAYER_COLLAPSE_ARCHITECTURE_CLOSED__FINAL_LOW_CREDIT_INFRA_REVALIDATION",
   "frozen_identity": {
     "product_semantic_sha": "ae4e0348601774082b0270f23d6de126e71e6055",
     "engine_sha": "686671fa7e55f715e4fb5ac155f9e66019fd12d8",
@@ -29,7 +29,7 @@
     "ninety_plus_proven": false,
     "eighty_plus_proven": false,
     "final_quality_score": 68.25,
-    "meaning": "Product 0f84769a... remains unchanged. Fixture seed retry is proven effective; static 7000 max_tokens still received upstream OpenRouter 402. One final infrastructure-only revalidation uses the same model/provider/prompts with per-request transport max_tokens=2048, case-total completion budget=50000, and one audited numeric-affordability retry on HTTP 402. READY remains NO until 12/12 GREEN.",
+    "meaning": "Frozen Product 0f84769a... remains unchanged. Current OpenRouter 402 responses omit numeric affordability hints. One final infrastructure-only revalidation allows exactly one 512 max_tokens retry after an initial 2048-token 402, with identical model/prompt/semantic payload. A second 402 is an external credit blocker. READY remains NO until 12/12 GREEN.",
     "historical_last_completed_30_case_score": 68.25,
     "final_quality_score_source": "HISTORICAL_LAST_COMPLETED_30_CASE_RELEASE"
   },
@@ -174,10 +174,10 @@
     "adjudication_document": "backend/belgeler/metabase/DIMA_BRAIN_V2_1_ROUND2_FINAL_ADJUDICATION_2026-10-06.md"
   },
   "active_recovery": {
-    "status": "AUTHORIZED_ADAPTIVE_PROVIDER_INFRA_REVALIDATION_PENDING_TRIGGER",
+    "status": "AUTHORIZED_FINAL_LOW_CREDIT_INFRA_REVALIDATION_PENDING_TRIGGER",
     "candidate_product_sha": "0f84769a76532800f3ed3f26268fa31ccb67639f",
     "engine_sha": "656a449b46246c46529c9bb83929df17818e2fea",
-    "prior_run_id": 37831138286,
+    "prior_run_id": 37831869203,
     "prior_result": "Provider 402 on first cognition request despite 7000 static cap",
     "infrastructure_changes": {
       "completion_token_case_ceiling": 50000,
@@ -185,7 +185,9 @@
       "one_affordability_retry": true,
       "fixture_seed_bounded_retry": true,
       "model_unchanged": true,
-      "product_code_unchanged": true
+      "product_code_unchanged": true,
+      "fallback_request_max_tokens": 512,
+      "on_second_402": "STOP_EXTERNAL_CREDIT_BLOCKER"
     },
     "paid_authorization": true,
     "thirty_case_execution_ready": false,

@@ -122,18 +122,18 @@
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
   "frontend_allowed": false,
-  "note": "User explicitly authorized infrastructure-only revalidation. Product remains 0f84769a... and engine dima.11.3. Prior 204abba run proved fixture seed retry but OpenRouter still returned 402 at a static 7000 request cap. Harness now separates case-total completion budget (50000) from per-request max_tokens (2048) and performs at most one audited 402 affordability retry using only OpenRouter's numeric affordable-token hint. Model, prompts, Product, engine and semantic code are unchanged.",
+  "note": "Final infrastructure-only revalidation on frozen Product 0f84769a... and dima.11.3. OpenRouter 402 currently omits a numeric affordability hint. The eval-only proxy therefore performs at most one fallback retry at max_tokens=512 after an initial 2048-token 402. Same model, same prompt, same semantic payload; only numeric output reservation changes. If the 512 retry is also 402, closure is externally blocked on OpenRouter credits and no further repository workaround is authorized.",
   "final_result": {
-    "status": "AUTHORIZED_ADAPTIVE_AFFORDABILITY_INFRA_REVALIDATION_PENDING_TRIGGER",
+    "status": "AUTHORIZED_FINAL_LOW_CREDIT_INFRA_REVALIDATION_PENDING_TRIGGER",
     "workflow_run_id": null,
     "candidate_product_sha": "0f84769a76532800f3ed3f26268fa31ccb67639f",
     "thirty_case_execution_ready": false,
-    "prior_run_id": 37831138286,
-    "prior_result": "EARLY_402_PROVIDER_REJECTION__NO_PRODUCT_INFERENCE",
+    "prior_run_id": 37831869203,
+    "prior_result": "OPENROUTER_402_NO_NUMERIC_HINT",
     "infrastructure_only": true,
     "product_semantic_change": false,
     "engine_change": false,
-    "paid_scope": "ONE_12_CASE_INFRA_REVALIDATION_ONLY"
+    "paid_scope": "ONE_FINAL_12_CASE_INFRA_REVALIDATION_ONLY"
   },
   "prior_final_result": {
     "status": "RED",
@@ -190,6 +190,8 @@
     "fixture_seed_connect_attempts": 15,
     "same_model": "openrouter/openai/gpt-5.6-luna",
     "same_product_sha": "0f84769a76532800f3ed3f26268fa31ccb67639f",
-    "same_engine_sha": "656a449b46246c46529c9bb83929df17818e2fea"
+    "same_engine_sha": "656a449b46246c46529c9bb83929df17818e2fea",
+    "fallback_request_max_tokens": 512,
+    "on_second_402": "STOP_EXTERNAL_CREDIT_BLOCKER"
   }
 }

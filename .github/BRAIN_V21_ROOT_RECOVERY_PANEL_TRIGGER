@@ -1,4 +1,4 @@
-DIMA Brain V2.1 adaptive-affordability infrastructure acceptance trigger
+DIMA Brain V2.1 final low-credit infrastructure acceptance trigger
 
 mode: final-12-case-independent-recovery-panel
 candidate_product_sha: 0f84769a76532800f3ed3f26268fa31ccb67639f
@@ -11,11 +11,12 @@ provider_free_focused_run: 37813400494
 provider_free_semantic_run: 37813400464
 provider_free_frozen_run: 37803854168
 generated_metamorphic_scenarios: 192
-prior_infra_run: 37831138286
+prior_infra_run: 37831869203
 same_model: openrouter/openai/gpt-5.6-luna
 case_completion_token_ceiling: 50000
 request_max_tokens: 2048
-one_affordability_retry: true
+fallback_request_max_tokens_after_402_without_hint: 512
+max_transport_attempts_per_provider_call: 2
 fixture_seed_bounded_retry: 15
 product_semantic_change: false
 engine_change: false
@@ -25,4 +26,5 @@ final_acceptance: explicitly-user-authorized-infrastructure-revalidation
 broad_30_case: forbidden
 frontend: forbidden
 automatic_retry: forbidden
-authorization_revision: 0f847-infra-revalidation-v2
+on_second_402: STOP_EXTERNAL_CREDIT_BLOCKER
+authorization_revision: 0f847-infra-revalidation-v3

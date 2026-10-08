@@ -496,3 +496,57 @@ def test_402_affordability_hint_gets_one_audited_lower_token_retry(tmp_path):
     assert receipt["last_affordable_completion_tokens"] == 1500
     assert receipt["last_applied_request_max_tokens"] == 1372
     assert [event["upstream_status"] for event in receipt["events"]] == [402, 200]
+
+
+def test_402_without_numeric_hint_gets_one_512_token_fallback_retry(tmp_path):
+    calls: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls.append(request)
+        if len(calls) == 1:
+            return httpx.Response(
+                402,
+                headers={"Content-Type": "application/json"},
+                json={"error": {"message": "OpenRouter has insufficient credits"}},
+            )
+        return httpx.Response(
+            200,
+            headers={"Content-Type": "application/json"},
+            json={
+                "choices": [{"message": {"content": "{}"}}],
+                "usage": {
+                    "prompt_tokens": 10,
+                    "completion_tokens": 5,
+                    "cost": 0.001,
+                },
+            },
+        )
+
+    ledger = ProviderRequestLedger(
+        ceiling=4,
+        receipt_path=tmp_path / "receipt.json",
+        completion_token_ceiling=50000,
+    )
+    proxy = CountingOpenRouterProxy(
+        upstream_base_url="https://provider.invalid/api",
+        ledger=ledger,
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+        request_max_tokens=2048,
+    )
+    status, _headers, _body = proxy.forward(
+        method="POST",
+        request_path="/source/research_intake/v1/chat/completions",
+        headers={},
+        body=b'{"messages":[],"max_tokens":50000}',
+    )
+    assert status == 200
+    assert len(calls) == 2
+    assert json.loads(calls[0].content)["max_tokens"] == 2048
+    assert json.loads(calls[1].content)["max_tokens"] == 512
+    receipt = ledger.snapshot()
+    assert receipt["actual_provider_request_count"] == 2
+    assert receipt["transport_affordability_retry_count"] == 1
+    assert receipt["last_affordable_completion_tokens"] == 0
+    assert receipt["last_applied_request_max_tokens"] == 512
+    assert receipt["last_affordability_retry_mode"] == "fallback_low_credit"
+    assert [event["upstream_status"] for event in receipt["events"]] == [402, 200]

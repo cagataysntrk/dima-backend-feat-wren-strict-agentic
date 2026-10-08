@@ -54,7 +54,7 @@
     "new_duplicate_semantic_owner_forbidden": true
   },
   "runtime_compliance": {
-    "status": "ARCHITECTURE_CLOSED__ADAPTIVE_PROVIDER_INFRA_REVALIDATION_AUTHORIZED",
+    "status": "ARCHITECTURE_CLOSED__FINAL_LOW_CREDIT_INFRA_REVALIDATION",
     "last_recovery_run_id": 37813851937,
     "last_recovery_result": "6_OF_12_GREEN__5_PROVIDER_402__1_FIXTURE_SEED_FAILURE",
     "live_closed_roots": {
@@ -156,7 +156,9 @@
       "fixture_seed_connect_attempts": 15,
       "product_sha": "0f84769a76532800f3ed3f26268fa31ccb67639f",
       "engine_sha": "656a449b46246c46529c9bb83929df17818e2fea",
-      "semantic_change": false
+      "semantic_change": false,
+      "fallback_request_max_tokens": 512,
+      "on_second_402": "STOP_EXTERNAL_CREDIT_BLOCKER"
     }
   },
   "retired_runtime_semantic_vetoes": [
