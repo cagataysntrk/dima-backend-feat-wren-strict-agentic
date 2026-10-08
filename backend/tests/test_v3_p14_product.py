@@ -506,8 +506,8 @@ def test_evidence_synthesis_ranking_delegates_unranked_governed_material():
     assert ranking["kind"] == "evidence_synthesis"
     assert ranking["limit"] is None
     assert "dima_analytical_scope" not in delegation.request.context
-    assert "cand_sales_order_count" in requirement["metric_refs"]
-    assert "cand_return_count" in requirement["metric_refs"]
+    assert "cand_sales_order_count" in requirement["metrics"]
+    assert "cand_return_count" in requirement["metrics"]
     assert delegation.request.message.count("[DIMA MATERIAL REQUIREMENT JSON]") == 1
     assert ranking_question.source_text in delegation.request.message
     assert "[MATERIAL TURN BOUNDARY]" in delegation.request.message
@@ -591,14 +591,18 @@ def test_causal_change_authority_projects_to_native_material_contract():
     )
     scope = delegation.request.context["dima_material_requirement"]
 
-    assert scope["comparison"] is None
-    assert scope["period"]["start"] == "2026-05-01"
-    assert scope["period"]["end"] == "2026-07-01"
-    assert scope["temporal_observation"] == {
-        "kind": "change",
-        "time_dimension": "cand_sales_order_date",
-        "minimum_distinct_values": 2,
-    }
+    assert scope["temporal_periods"] == [
+        {
+            "role": "material_window",
+            "time_dimension_semantic_id": "cand_sales_order_date",
+            "start": "2026-05-01",
+            "end": "2026-07-01",
+        }
+    ]
+    assert scope["temporal_observation_dimension"] == "cand_sales_order_date"
+    assert "comparison" not in scope
+    assert "period" not in scope
+    assert "change_semantics" not in scope
 
 
 

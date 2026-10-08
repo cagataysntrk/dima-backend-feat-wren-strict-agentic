@@ -1077,10 +1077,6 @@ def _intake_provider_schema(
         "comparisons",
         "result_dependency",
     )
-    source_fragment_schema = {
-        "type": "string",
-        "minLength": 1,
-    }
     variants: list[dict[str, Any]] = []
     for kind in ResearchGoalKind:
         if kind == ResearchGoalKind.RELATIONSHIP:

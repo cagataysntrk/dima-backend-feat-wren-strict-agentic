@@ -2248,7 +2248,6 @@ def test_request_scoped_intake_schema_closes_authority_ids_before_domain_executi
     assert set(relationship["properties"]) == {
         "goal_key",
         "source_text",
-        "source_fragment_text",
         "ranking",
         "comparisons",
         "result_dependency",
@@ -4236,27 +4235,27 @@ def test_coorigin_source_fragment_provenance_is_exact_and_shared_across_goal_dec
     )
     assert result.brief is not None
     ranking, relationship = result.brief.questions
-    # The exact verbatim source fragment is the canonical obligation-local text.
-    # Provider-authored broad/paraphrased source_text must not leak into P14
-    # native material turns when a grounded fragment already exists.
-    assert ranking.source_text == fragment
+    # Semantic obligation wording stays model-projected, while provenance is
+    # deterministically bound to the immutable current user turn.
+    assert ranking.source_text == "En yüksek downtime olan iki bölümü incele."
     assert relationship.source_text == fragment
     assert ranking.source_fragment_identity is not None
     assert ranking.source_fragment_identity == relationship.source_fragment_identity
     assert ranking.source_fragment_identity.startswith("fragment-sha256:")
 
 
-def test_intake_rejects_nonverbatim_goal_fragment_provenance():
+def test_intake_ignores_compat_nonverbatim_goal_fragment_for_provenance():
     payload = ready_payload()
     payload["goals"][0]["source_fragment_text"] = "a paraphrase not present in the message"
-    with pytest.raises(ResearchIntakeError) as exc:
-        ResearchIntakeCompiler(
-            transport=FakeTransport(payload)
-        ).compile(
-            question="Show machine downtime by department.",
-            catalog=catalog(),
-        )
-    assert exc.value.code == "INTAKE_SOURCE_FRAGMENT_NOT_VERBATIM"
+    result = ResearchIntakeCompiler(
+        transport=FakeTransport(payload)
+    ).compile(
+        question="Show machine downtime by department.",
+        catalog=catalog(),
+    )
+    assert result.terminal == ResearchIntakeTerminal.READY
+    assert result.brief is not None
+    assert result.brief.questions[0].source_fragment_identity is not None
 
 def test_relationship_intent_is_typed_and_observational_is_preserved():
     payload = ready_payload(
@@ -5322,10 +5321,10 @@ def test_goal_local_fragment_becomes_research_obligation_text() -> None:
 
     assert result.brief is not None
     ranking, child = result.brief.questions
-    assert ranking.source_text == ranking_fragment
-    assert child.source_text == deep_fragment
-    assert ranking.source_text != question
-    assert child.source_text != question
+    # Compatibility fragments cannot rewrite accepted semantic obligation text.
+    assert ranking.source_text == question
+    assert child.source_text == question
+    assert ranking.source_fragment_identity == child.source_fragment_identity
 
 
 def test_governed_other_intent_is_not_rejected_by_closed_grammar() -> None:

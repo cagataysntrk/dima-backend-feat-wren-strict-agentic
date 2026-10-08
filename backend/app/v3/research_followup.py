@@ -6,6 +6,8 @@ to materialize native Exploration for that exact verified occurrence.
 """
 from __future__ import annotations
 
+from uuid import UUID
+
 from app.v3.analytical_request_contract import (
     AnalyticalRequestMismatch,
     assert_child_request_scope,
@@ -205,7 +207,7 @@ class NativeResearchFollowupExecutor:
         except ResearchPersistenceError as exc:
             if exc.code != "P17_NATIVE_QUERY_ALREADY_VERIFIED":
                 raise
-            reused = self._store.execution_link(exc.detail)
+            reused = self._store.execution_link(UUID(exc.detail))
             if not reused.receipt_id or not reused.evidence_id:
                 raise ResearchManagerMaturationError(
                     "P17_REUSED_EVIDENCE_PROVENANCE_INCOMPLETE",

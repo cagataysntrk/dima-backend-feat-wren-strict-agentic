@@ -3126,16 +3126,26 @@ def test_change_material_requirement_projection_is_exact_and_planner_visible() -
     context = scope_module.native_request_context(contract)
     requirement = context["dima_material_requirement"]
 
-    assert requirement["schema"] == "dima_material_requirement_v1"
+    assert requirement["schema"] == "dima_material_requirement_v2"
     assert requirement["scope_version_id"] == contract.scope_identity.version_id
     assert requirement["material_fingerprint"] == contract.material_fingerprint
-    assert requirement["metric_refs"] == ["metric.downtime"]
-    assert requirement["required_metric_refs"] == ["metric.downtime"]
-    assert requirement["required_breakout_refs"] == [
-        "dimension.department",
-        "time.event_date",
+    assert requirement["metrics"] == ["metric.downtime"]
+    assert requirement["dimensions"] == ["dimension.department"]
+    assert requirement["row_grain"] == ["dimension.department"]
+    assert requirement["temporal_periods"] == [
+        {
+            "role": "baseline_period",
+            "time_dimension_semantic_id": "time.event_date",
+            "start": contract.comparison.reference_period.start,
+            "end": contract.comparison.reference_period.end,
+        },
+        {
+            "role": "comparison_period",
+            "time_dimension_semantic_id": "time.event_date",
+            "start": contract.comparison.base_period.start,
+            "end": contract.comparison.base_period.end,
+        },
     ]
-    assert requirement["required_temporal_dimension"] == "time.event_date"
     assert requirement["ranking"] == {
         "kind": "native_metric",
         "measure": "metric.downtime",
@@ -3143,25 +3153,17 @@ def test_change_material_requirement_projection_is_exact_and_planner_visible() -
         "limit": 5,
         "basis": "change",
     }
-    assert requirement["comparison"] == contract.comparison.model_dump(mode="json")
-    assert requirement["temporal_change_frame"] == {
-        "mode": "PAIR",
-        "time_dimension": "time.event_date",
-        "span_period": None,
-        "baseline_period": contract.comparison.reference_period.model_dump(mode="json"),
-        "comparison_period": contract.comparison.base_period.model_dump(mode="json"),
-    }
-    assert requirement["change_semantics"] == {
-        "frame_mode": "PAIR",
-        "operation": "comparison_minus_baseline",
-        "metric_ref": "metric.downtime",
-        "entity_breakout_refs": ["dimension.department"],
-        "time_dimension": "time.event_date",
-        "baseline_period": contract.comparison.reference_period.model_dump(mode="json"),
-        "comparison_period": contract.comparison.base_period.model_dump(mode="json"),
-        "ranking_direction": "desc",
-        "ranking_limit": 5,
-    }
+    for retired in (
+        "comparison",
+        "period",
+        "required_metric_refs",
+        "required_breakout_refs",
+        "required_temporal_dimension",
+        "temporal_change_frame",
+        "change_semantics",
+        "material_coverage_period",
+    ):
+        assert retired not in requirement
 
     message = ResearchManager.native_material_message(
         objective="symbolic period-over-period ranking",
@@ -3181,30 +3183,31 @@ def test_change_material_requirement_projection_is_exact_and_planner_visible() -
         assert forbidden not in lowered
 
 
+
 def test_span_change_material_requirement_is_typed_without_hidden_pair() -> None:
     contract = _span_change_ranking_contract()
     requirement = scope_module.native_material_requirement(contract)
 
-    assert requirement["comparison"] is None
-    assert requirement["period"] == contract.period.model_dump(mode="json")
-    assert requirement["required_temporal_dimension"] == "time.event_date"
-    assert requirement["temporal_change_frame"] == {
-        "mode": "SPAN",
-        "time_dimension": "time.event_date",
-        "span_period": contract.period.model_dump(mode="json"),
-        "baseline_period": None,
-        "comparison_period": None,
-    }
-    assert requirement["change_semantics"] == {
-        "frame_mode": "SPAN",
-        "operation": "change_over_span",
-        "metric_ref": "metric.downtime",
-        "entity_breakout_refs": ["dimension.department"],
-        "time_dimension": "time.event_date",
-        "ranking_direction": "desc",
-        "ranking_limit": 5,
-        "span_period": contract.period.model_dump(mode="json"),
-    }
+    assert requirement["schema"] == "dima_material_requirement_v2"
+    assert requirement["metrics"] == ["metric.downtime"]
+    assert requirement["dimensions"] == ["dimension.department"]
+    assert requirement["temporal_periods"] == [
+        {
+            "role": "material_window",
+            "time_dimension_semantic_id": "time.event_date",
+            "start": contract.period.start,
+            "end": contract.period.end,
+        }
+    ]
+    assert requirement["ranking"]["basis"] == "change"
+    for retired in (
+        "comparison",
+        "period",
+        "required_temporal_dimension",
+        "temporal_change_frame",
+        "change_semantics",
+    ):
+        assert retired not in requirement
 
     message = ResearchManager.native_material_message(
         objective="symbolic bounded deterioration ranking",
@@ -3216,6 +3219,7 @@ def test_span_change_material_requirement_is_typed_without_hidden_pair() -> None
     lowered = message.lower()
     for forbidden in ("select ", "group by", "sum-where", "aggregation-options", "lib/uuid"):
         assert forbidden not in lowered
+
 
 
 def test_span_change_basis_mismatch_is_one_repair_eligible_material_defect() -> None:
@@ -3493,8 +3497,8 @@ def test_level_material_requirement_has_no_change_semantics() -> None:
     )
     requirement = scope_module.native_material_requirement(contract)
     assert requirement["ranking"]["basis"] == "level"
-    assert requirement["temporal_change_frame"] is None
-    assert requirement["change_semantics"] is None
+    assert "temporal_change_frame" not in requirement
+    assert "change_semantics" not in requirement
 
 
 def test_basis_mismatch_feedback_carries_full_change_semantics() -> None:
