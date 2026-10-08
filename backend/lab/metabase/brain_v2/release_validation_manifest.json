@@ -1,6 +1,6 @@
 {
   "schema_version": "dima_brain_v2_1_release_validation_v1",
-  "status": "SEMANTIC_AUTHORITY_RECOVERY_COMPLETE_10_OF_12_OBSERVER_BLOCKER",
+  "status": "SEMANTIC_LAYER_COLLAPSE_FINAL_REVALIDATION_AUTHORIZED",
   "frozen_identity": {
     "product_semantic_sha": "ae4e0348601774082b0270f23d6de126e71e6055",
     "engine_sha": "686671fa7e55f715e4fb5ac155f9e66019fd12d8",
@@ -29,19 +29,17 @@
     "ninety_plus_proven": false,
     "eighty_plus_proven": false,
     "final_quality_score": 68.25,
-    "meaning": "Final one-wave 12-case recovery 37668955073 completed on Product eee7583... at 10/12 GREEN. R10/R11/R12 are GREEN and the atomic continuation/P18 reset root is live closed. R02 and R07 are RED at the same pre-execution native material-observation semantic-veto boundary: attestation 200, observation 422, native execution/Evidence 0. Recovery acceptance failed; R9 and actual 30-case are not authorized; paid retry is OFF.",
+    "meaning": "Semantic-layer-collapse runtime authority debt is provider-free closed on Product b89eb6a0... with certified engine 656a449b.../dima.11.3. Prior live recovery 37732166187 made R02 GREEN but left R04/R05/R06 temporal intake and R07 adaptive HOW-verifiability RED. Generic fixes e5580aa3... and b89eb6a0... are provider-free/frozen/semantic+192-metamorphic+Wave-A/Wave-B+mutation GREEN. Final 12-case revalidation is authorized; 30-case remains forbidden until 12/12 GREEN.",
     "historical_last_completed_30_case_score": 68.25,
     "final_quality_score_source": "HISTORICAL_LAST_COMPLETED_30_CASE_RELEASE"
   },
   "provider_free_closure": {
     "status": "GREEN",
-    "candidate_product_sha": "eee7583cb67d50779784805c469230ef2b82a5a2",
+    "candidate_product_sha": "b89eb6a0490ec0e51f025fcd524414ee6631612e",
     "runs": {
-      "focused_brain_v2": 37667461124,
-      "frozen_family": 37667461009,
-      "semantic_conformance_192_metamorphic_wave_a_wave_b_mutation": 37667461012,
-      "constitution_focused": 37669106020,
-      "constitution_semantic_wave_a_wave_b_mutation": 37669106073
+      "focused_brain_v2": 37733897628,
+      "frozen_family": 37733897655,
+      "semantic_conformance_192_metamorphic_wave_a_wave_b_mutation": 37733897642
     },
     "generated_metamorphic_scenarios": 192
   },
@@ -81,8 +79,8 @@
     "s3_diagnostic": false,
     "frontend": false,
     "automatic_retry": false,
-    "note": "Final recovery 37668955073 is complete and RED at 10/12. All paid retry, broad 30-case, R9 and frontend authorization remain OFF while semantic_authority_registry.runtime_compliance has an open blocker.",
-    "root_recovery_retry": false
+    "note": "Final 12-case revalidation explicitly user-directed after two generic corrections; no automatic/further retry. Broad 30-case, final sentinel, S3 diagnostic and frontend remain OFF.",
+    "root_recovery_retry": true
   },
   "actual_frozen_30_case_protocol": {
     "required_identity_match": true,
@@ -176,69 +174,33 @@
     "adjudication_document": "backend/belgeler/metabase/DIMA_BRAIN_V2_1_ROUND2_FINAL_ADJUDICATION_2026-10-06.md"
   },
   "active_recovery": {
-    "status": "COMPLETE_10_OF_12_RED__ONE_ARCHITECTURE_BLOCKER",
-    "candidate_product_sha": "eee7583cb67d50779784805c469230ef2b82a5a2",
-    "engine_sha": "686671fa7e55f715e4fb5ac155f9e66019fd12d8",
-    "recovery_run_id": 37668955073,
-    "completed_slots": 12,
-    "mechanically_successful_slots": 10,
-    "green_slots": [
-      "R01_COMPARISON_ORIGINAL",
-      "R03_COMPARISON_WORDING",
-      "R04_TEMPORAL_ORIGINAL",
-      "R05_TEMPORAL_SEMANTIC",
-      "R06_TEMPORAL_WORDING",
-      "R08_ADAPTIVE_SEMANTIC",
-      "R09_ADAPTIVE_WORDING",
-      "R10_CONTINUATION_ORIGINAL",
-      "R11_CONTINUATION_DEEPENING",
-      "R12_CONTINUATION_REPORT_ONLY"
+    "status": "FINAL_REVALIDATION_AUTHORIZED_PENDING_TRIGGER",
+    "candidate_product_sha": "b89eb6a0490ec0e51f025fcd524414ee6631612e",
+    "engine_sha": "656a449b46246c46529c9bb83929df17818e2fea",
+    "prior_recovery_run_id": 37732166187,
+    "prior_result": "8/12 GREEN; R02 is GREEN; R04/R05/R06/R07 RED",
+    "post_run_generic_fixes": [
+      "e5580aa3f27f85f0a6c2922d5f36a67b1c2a80a2",
+      "b89eb6a0490ec0e51f025fcd524414ee6631612e"
     ],
-    "red_slots": [
-      "R02_COMPARISON_SEMANTIC",
-      "R07_ADAPTIVE_ORIGINAL"
-    ],
-    "fix_b_live_status": "CLOSED__R10_R11_R12_GREEN",
-    "fix_a_live_status": "ACQUISITION_GROUPING_CLOSED__DOWNSTREAM_OBSERVER_SEMANTIC_VETO_REMAINS",
-    "paid_authorization": false,
-    "r9_authorized": false,
-    "thirty_case_execution_ready": false,
-    "actual_30_case_run_authorized": false,
     "provider_free": {
-      "focused_run_id": 37667461124,
-      "frozen_family_run_id": 37667461009,
-      "semantic_wave_mutation_run_id": 37667461012,
-      "constitution_focused_run_id": 37669106020,
-      "constitution_semantic_run_id": 37669106073,
+      "focused_run_id": 37733897628,
+      "frozen_family_run_id": 37733897655,
+      "semantic_wave_mutation_run_id": 37733897642,
       "generated_metamorphic_scenarios": 192,
       "status": "GREEN"
     },
-    "shared_first_wrong_boundary": {
-      "phase": "pre_execution_native_material_observation",
-      "affected_slots": [
-        "R02_COMPARISON_SEMANTIC",
-        "R07_ADAPTIVE_ORIGINAL"
-      ],
-      "attestation_http_status": 200,
-      "material_observation_http_status": 422,
-      "native_execution_started": false,
-      "native_acquisitions": 0,
-      "evidence_count": 0,
-      "blocked_provider_requests": 0,
-      "duplicate_native": 0,
-      "stale_evidence": 0,
-      "classification": "transitional native material observer remains a de-facto business-semantic veto by reconstructing meaning from physical query representation"
-    },
-    "constitutional_direction": "Metabase/Metabot exposes stable execution-semantic facts bound to the exact occurrence/result; AnalyticalExecutionManifestV1 records observed facts; verify_analytical_fulfillment_v1 performs the sole Intent-to-Execution semantic judgment; attestation/observer/result coverage retain structural or fact-producing roles only.",
-    "recovery_receipt": "backend/belgeler/metabase/DIMA_BRAIN_V2_1_FINAL_12CASE_RECOVERY_2026-10-07.md"
+    "paid_authorization": true,
+    "thirty_case_execution_ready": false,
+    "actual_30_case_run_authorized": false
   },
   "active_candidate_identity": {
-    "product_semantic_sha": "eee7583cb67d50779784805c469230ef2b82a5a2",
-    "engine_sha": "686671fa7e55f715e4fb5ac155f9e66019fd12d8",
-    "engine_release": "0.63.18-dima.11.2",
-    "engine_runtime_tag": "v0.63.18-dima.11.2.1",
-    "engine_digest": "sha256:fe1b6fb67be6dbadea1af5d415f3ba2e033d46f91289f5c3c9844bee20c379bd",
-    "recovery_semantic_product_frozen": true,
+    "product_semantic_sha": "b89eb6a0490ec0e51f025fcd524414ee6631612e",
+    "engine_sha": "656a449b46246c46529c9bb83929df17818e2fea",
+    "engine_release": "0.63.18-dima.11.3",
+    "engine_runtime_tag": "v0.63.18-dima.11.3.1",
+    "engine_digest": "sha256:84f20edbc253b6c137b2a7c5c1508e4a9c7873981381f9f60868b5f7cf667a95",
+    "recovery_semantic_product_frozen": false,
     "broad_30_case_executed_on_this_candidate": false
   }
 }

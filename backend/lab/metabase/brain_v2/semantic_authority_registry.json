@@ -54,24 +54,26 @@
     "new_duplicate_semantic_owner_forbidden": true
   },
   "runtime_compliance": {
-    "status": "PROVIDER_FREE_CLOSED_AWAITING_FINAL_12CASE",
-    "last_recovery_run_id": 37668955073,
-    "last_recovery_result": "10_OF_12_GREEN__HISTORICAL_PRE_COLLAPSE",
+    "status": "PROVIDER_FREE_CLOSED_FINAL_12CASE_REVALIDATION_AUTHORIZED",
+    "last_recovery_run_id": 37732166187,
+    "last_recovery_result": "8_OF_12_GREEN__POST_COLLAPSE__R02_GREEN",
     "live_closed_roots": {
       "atomic_p18_turn_reset": "CLOSED__R10_R11_R12_GREEN",
       "shared_acquisition_identity": "CLOSED__ONE_ACQUISITION__CONSUMERS_VERIFIED_SEPARATELY",
       "semantic_admission_collapse": "CLOSED_PROVIDER_FREE__FINAL_VERIFIER_ONLY",
-      "native_execution_facts_lifecycle": "CLOSED_PROVIDER_FREE__ATTEST_EXECUTE_FACTS_VERIFY"
+      "native_execution_facts_lifecycle": "CLOSED_PROVIDER_FREE__ATTEST_EXECUTE_FACTS_VERIFY",
+      "temporal_pair_envelope_projection": "CLOSED_PROVIDER_FREE__EXACT_UNION_ONLY",
+      "unverifiable_native_fact_how_repair": "CLOSED_PROVIDER_FREE__BOUNDED_TYPED_REPAIR_ONLY"
     },
     "provider_free_validation": {
-      "candidate_product_sha": "045d12ac0dfa4cc5e9955c0a0931f6c38eb09edd",
+      "candidate_product_sha": "b89eb6a0490ec0e51f025fcd524414ee6631612e",
       "engine_sha": "656a449b46246c46529c9bb83929df17818e2fea",
       "engine_release": "0.63.18-dima.11.3",
       "engine_runtime_tag": "v0.63.18-dima.11.3.1",
       "engine_digest": "sha256:84f20edbc253b6c137b2a7c5c1508e4a9c7873981381f9f60868b5f7cf667a95",
-      "focused_run_id": 37731298384,
-      "frozen_family_run_id": 37731298328,
-      "semantic_metamorphic_wave_a_wave_b_mutation_run_id": 37731298303,
+      "focused_run_id": 37733897628,
+      "frozen_family_run_id": 37733897655,
+      "semantic_metamorphic_wave_a_wave_b_mutation_run_id": 37733897642,
       "generated_metamorphic_scenarios": 192,
       "status": "GREEN"
     },

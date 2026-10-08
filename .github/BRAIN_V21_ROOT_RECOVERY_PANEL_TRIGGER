@@ -1,20 +1,21 @@
-DIMA Brain V2.1 final semantic-layer-collapse recovery acceptance trigger
+DIMA Brain V2.1 final semantic-layer-collapse revalidation trigger
 
 mode: final-12-case-independent-recovery-panel
-candidate_product_sha: 045d12ac0dfa4cc5e9955c0a0931f6c38eb09edd
+candidate_product_sha: b89eb6a0490ec0e51f025fcd524414ee6631612e
 engine_sha: 656a449b46246c46529c9bb83929df17818e2fea
 engine_release: 0.63.18-dima.11.3
 engine_runtime_tag: v0.63.18-dima.11.3.1
 engine_certification_run: 37681817311
 engine_digest: sha256:84f20edbc253b6c137b2a7c5c1508e4a9c7873981381f9f60868b5f7cf667a95
-provider_free_focused_run: 37731714641
-provider_free_semantic_run: 37731714637
-provider_free_frozen_run: 37731298328
+provider_free_focused_run: 37733897628
+provider_free_semantic_run: 37733897642
+provider_free_frozen_run: 37733897655
 generated_metamorphic_scenarios: 192
+prior_case_executing_run: 37732166187
+post_run_generic_fixes: e5580aa3f27f85f0a6c2922d5f36a67b1c2a80a2,b89eb6a0490ec0e51f025fcd524414ee6631612e
 case_count: 12
 hard_provider_case_ceiling: 30
-single_paid_wave: authorized
+final_revalidation: explicitly-authorized
 broad_30_case: forbidden
 frontend: forbidden
 automatic_retry: forbidden
-authorization_status: GREEN
