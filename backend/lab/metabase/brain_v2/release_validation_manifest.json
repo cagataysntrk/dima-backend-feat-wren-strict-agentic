@@ -1,6 +1,6 @@
 {
   "schema_version": "dima_brain_v2_1_release_validation_v1",
-  "status": "F919_FINAL_12CASE_AUTHORIZED",
+  "status": "F297_FINAL_LAYER_COLLAPSE_12CASE_AUTHORIZED",
   "frozen_identity": {
     "product_semantic_sha": "ae4e0348601774082b0270f23d6de126e71e6055",
     "engine_sha": "686671fa7e55f715e4fb5ac155f9e66019fd12d8",
@@ -29,17 +29,17 @@
     "ninety_plus_proven": false,
     "eighty_plus_proven": false,
     "final_quality_score": 68.25,
-    "meaning": "Product semantic candidate f919d645... preserves the sole semantic chain and closes the last R07 execution-fact classification gap through existing bounded Metabot HOW repair. Provider-free focused 37770921471, frozen-family 37770691002, and semantic+192-metamorphic+Wave-A/Wave-B+mutation 37771209711 are GREEN. Final 12-case acceptance is authorized; broad 30-case remains forbidden until 12/12 GREEN.",
+    "meaning": "Product semantic candidate f297b845... removes the post-execution observer fallback and duplicate Metabot WHAT surfaces. Exact execution carries one durable execution-facts snapshot; incomplete facts route only through bounded HOW repair; one canonical material requirement envelope is sent to Metabot. Provider-free 37783368944, frozen-family 37782789136, and semantic+192-metamorphic+Wave-A/Wave-B+mutation 37783368988 are GREEN. Final 12-case acceptance is authorized; broad 30-case remains forbidden until 12/12 GREEN.",
     "historical_last_completed_30_case_score": 68.25,
     "final_quality_score_source": "HISTORICAL_LAST_COMPLETED_30_CASE_RELEASE"
   },
   "provider_free_closure": {
     "status": "GREEN",
-    "candidate_product_sha": "f919d64580851e2405a218ab661e3f6c02421c15",
+    "candidate_product_sha": "f297b8458031c4aa77adc54414fbf5552dbb4c59",
     "runs": {
-      "focused_brain_v2": 37770921471,
-      "frozen_family": 37770691002,
-      "semantic_conformance_192_metamorphic_wave_a_wave_b_mutation": 37771209711
+      "focused_brain_v2": 37783368944,
+      "frozen_family": 37782789136,
+      "semantic_conformance_192_metamorphic_wave_a_wave_b_mutation": 37783368988
     },
     "generated_metamorphic_scenarios": 192
   },
@@ -79,7 +79,7 @@
     "s3_diagnostic": false,
     "frontend": false,
     "automatic_retry": false,
-    "note": "User-directed one final 12-case acceptance for f919d645... after complete provider-free closure. No automatic retry; broad 30-case/frontend remain OFF.",
+    "note": "User-directed one final 12-case acceptance after actual semantic-layer collapse. No automatic retry. Broad 30-case/frontend remain OFF.",
     "root_recovery_retry": true
   },
   "actual_frozen_30_case_protocol": {
@@ -175,15 +175,14 @@
   },
   "active_recovery": {
     "status": "AUTHORIZED_PENDING_TRIGGER",
-    "candidate_product_sha": "f919d64580851e2405a218ab661e3f6c02421c15",
+    "candidate_product_sha": "f297b8458031c4aa77adc54414fbf5552dbb4c59",
     "engine_sha": "656a449b46246c46529c9bb83929df17818e2fea",
-    "prior_recovery_run_id": 37768788024,
-    "prior_result": "11/12 GREEN; only R07 RED before typed execution-fact defect routing",
-    "generic_fix_sha": "f919d64580851e2405a218ab661e3f6c02421c15",
+    "prior_recovery_run_id": 37771729826,
+    "prior_result": "10/12 GREEN before observer/WHAT-surface collapse; R02/R03 RED",
     "provider_free": {
-      "focused_run_id": 37770921471,
-      "frozen_family_run_id": 37770691002,
-      "semantic_wave_mutation_run_id": 37771209711,
+      "focused_run_id": 37783368944,
+      "frozen_family_run_id": 37782789136,
+      "semantic_wave_mutation_run_id": 37783368988,
       "generated_metamorphic_scenarios": 192,
       "status": "GREEN"
     },
@@ -192,7 +191,7 @@
     "actual_30_case_run_authorized": false
   },
   "active_candidate_identity": {
-    "product_semantic_sha": "f919d64580851e2405a218ab661e3f6c02421c15",
+    "product_semantic_sha": "f297b8458031c4aa77adc54414fbf5552dbb4c59",
     "engine_sha": "656a449b46246c46529c9bb83929df17818e2fea",
     "engine_release": "0.63.18-dima.11.3",
     "engine_runtime_tag": "v0.63.18-dima.11.3.1",

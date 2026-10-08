@@ -54,9 +54,9 @@
     "new_duplicate_semantic_owner_forbidden": true
   },
   "runtime_compliance": {
-    "status": "PROVIDER_FREE_CLOSED_F919_FINAL_12CASE_AUTHORIZED",
-    "last_recovery_run_id": 37768788024,
-    "last_recovery_result": "11_OF_12_GREEN__R07_RED__ROOT_TYPED",
+    "status": "PROVIDER_FREE_CLOSED_F297_FINAL_12CASE_AUTHORIZED",
+    "last_recovery_run_id": 37771729826,
+    "last_recovery_result": "10_OF_12_GREEN__PRE_FINAL_LAYER_COLLAPSE",
     "live_closed_roots": {
       "atomic_p18_turn_reset": "CLOSED__R10_R11_R12_GREEN",
       "shared_acquisition_identity": "CLOSED__ONE_ACQUISITION__CONSUMERS_VERIFIED_SEPARATELY",
@@ -69,17 +69,20 @@
       "second_bounded_how_regeneration": "CLOSED_PROVIDER_FREE__MAX_TWO_REPAIRS",
       "collapsed_pair_final_frame_delegation": "CLOSED_PROVIDER_FREE__EXISTING_TEMPORAL_FRAME_OWNER",
       "change_ranking_execution_fact_repair_classification": "CLOSED_PROVIDER_FREE__PLANNER_OUTPUT_DEFECT",
-      "two_attempt_repair_execution_loop": "CLOSED_PROVIDER_FREE__THIRD_MISS_TERMINAL"
+      "two_attempt_repair_execution_loop": "CLOSED_PROVIDER_FREE__THIRD_MISS_TERMINAL",
+      "post_execution_observer_fallback": "REMOVED__EXACT_EXECUTION_FACTS_SNAPSHOT_ONLY",
+      "metabot_duplicate_what_surfaces": "REMOVED__ONE_MATERIAL_REQUIREMENT_ENVELOPE",
+      "execution_fact_resume": "CLOSED__DURABLE_EXACT_FACTS_NO_REOBSERVE"
     },
     "provider_free_validation": {
-      "candidate_product_sha": "f919d64580851e2405a218ab661e3f6c02421c15",
+      "candidate_product_sha": "f297b8458031c4aa77adc54414fbf5552dbb4c59",
       "engine_sha": "656a449b46246c46529c9bb83929df17818e2fea",
       "engine_release": "0.63.18-dima.11.3",
       "engine_runtime_tag": "v0.63.18-dima.11.3.1",
       "engine_digest": "sha256:84f20edbc253b6c137b2a7c5c1508e4a9c7873981381f9f60868b5f7cf667a95",
-      "focused_run_id": 37770921471,
-      "frozen_family_run_id": 37770691002,
-      "semantic_metamorphic_wave_a_wave_b_mutation_run_id": 37771209711,
+      "focused_run_id": 37783368944,
+      "frozen_family_run_id": 37782789136,
+      "semantic_metamorphic_wave_a_wave_b_mutation_run_id": 37783368988,
       "generated_metamorphic_scenarios": 192,
       "status": "GREEN"
     },
