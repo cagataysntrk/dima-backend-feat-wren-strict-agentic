@@ -3,7 +3,7 @@
   "enabled": true,
   "candidate_product_sha": "b89eb6a0490ec0e51f025fcd524414ee6631612e",
   "recovery_baseline": "505caec6e7c3fbd5346dc6a4c310e8f656d324ae",
-  "provider_free_status": "GREEN_POST_FINAL_GENERIC_CORRECTIONS",
+  "provider_free_status": "GREEN",
   "provider_free_focused_run_id": 37733897628,
   "provider_free_semantic_run_id": 37733897642,
   "provider_free_frozen_run_id": 37733897655,
@@ -122,7 +122,7 @@
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
   "frontend_allowed": false,
-  "note": "User-directed final revalidation after two generic post-recovery corrections. Candidate b89eb6a0... is provider-free GREEN (focused 37733897628, semantic+192-metamorphic+Wave-A+Wave-B+mutation 37733897642, frozen-family 37733897655). This is the final acceptance wave for this candidate; no automatic or further paid retry is authorized. Broad 30-case and frontend remain forbidden.",
+  "note": "User-directed final revalidation after two generic post-recovery corrections. Candidate b89eb6a0... is provider-free GREEN (focused 37733897628, semantic+192-metamorphic+Wave-A+Wave-B+mutation 37733897642, frozen-family 37733897655). Prior 801a429d authorization-gate attempt consumed no provider calls. This is the final case-executing acceptance wave for this candidate; no automatic/further paid retry is authorized. Broad 30-case and frontend remain forbidden.",
   "final_result": {
     "status": "AUTHORIZED_FINAL_REVALIDATION_PENDING_TRIGGER",
     "workflow_run_id": null,
