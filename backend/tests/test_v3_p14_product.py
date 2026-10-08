@@ -501,17 +501,14 @@ def test_evidence_synthesis_ranking_delegates_unranked_governed_material():
         obligation_id="g2",
     )
 
-    ranking = delegation.request.context["dima_analytical_scope"]["ranking"]
+    requirement = delegation.request.context["dima_material_requirement"]
+    ranking = requirement["ranking"]
     assert ranking["kind"] == "evidence_synthesis"
     assert ranking["limit"] is None
-    assert "metrics:" in delegation.request.message
-    assert "- cand_sales_order_count" in delegation.request.message
-    assert "- cand_return_count" in delegation.request.message
-    assert "- kind: evidence_synthesis" in delegation.request.message
-    assert "- native_measure: none" in delegation.request.message
-    assert "- native_limit: none" in delegation.request.message
-    assert "do not choose or invent a native ranking metric, composite score, or result limit" in delegation.request.message
-    assert "return unranked analytical material for downstream governed evidence synthesis" in delegation.request.message
+    assert "dima_analytical_scope" not in delegation.request.context
+    assert "cand_sales_order_count" in requirement["metric_refs"]
+    assert "cand_return_count" in requirement["metric_refs"]
+    assert delegation.request.message.count("[DIMA MATERIAL REQUIREMENT JSON]") == 1
     assert ranking_question.source_text in delegation.request.message
     assert "[MATERIAL TURN BOUNDARY]" in delegation.request.message
     assert delegation.request.message.index(ranking_question.source_text) < (
@@ -592,7 +589,7 @@ def test_causal_change_authority_projects_to_native_material_contract():
         session,
         obligation_id="g-change",
     )
-    scope = delegation.request.context["dima_analytical_scope"]
+    scope = delegation.request.context["dima_material_requirement"]
 
     assert scope["comparison"] is None
     assert scope["period"]["start"] == "2026-05-01"
@@ -742,10 +739,8 @@ def test_repairable_material_miss_uses_one_durable_same_metabot_repair():
     assert second["conversation_id"] == first["conversation_id"]
     assert second["history"]
     assert second["state"]
-    assert (
-        second["context"]["dima_analytical_scope"]
-        == first["context"]["dima_analytical_scope"]
-    )
+    assert "dima_analytical_scope" not in first["context"]
+    assert "dima_analytical_scope" not in second["context"]
     assert (
         second["context"]["dima_material_requirement"]
         == first["context"]["dima_material_requirement"]
