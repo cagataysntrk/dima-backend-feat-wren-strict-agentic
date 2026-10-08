@@ -255,8 +255,12 @@ def test_native_gateway_projects_execution_facts_without_transitional_semantic_v
     assert "verify_analytical_fulfillment_v1" in source
     execute_source = source[source.index("    def execute("):]
     assert execute_source.index("bridge.execute_native_query(") < execute_source.index(
+        "execution_facts=observed.execution_facts"
+    )
+    assert execute_source.index("execution_facts=observed.execution_facts") < execute_source.rindex(
         "_execution_fact_observation("
     )
+    assert "execution_facts=persisted_execution_facts" in execute_source
     assert "observe_native_query_material" not in source
     assert "_observe_executed_occurrence" not in source
 
