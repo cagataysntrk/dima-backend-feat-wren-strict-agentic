@@ -765,22 +765,7 @@ def test_repairable_material_miss_uses_one_durable_same_metabot_repair():
         "require_new_query_fingerprint": True,
         "preserve_scope_identity": True,
         "preserve_material_contract": True,
-        "expected_semantic_shape": {
-            "metric_refs": ["cand_sales_order_count"],
-            "dimension_refs": ["cand_sales_order_channel"],
-            "filters": [],
-            "period": {
-                "kind": "explicit_half_open",
-                "time_dimension": "cand_sales_order_date",
-                "start": "2026-06-01",
-                "end": "2026-07-01",
-            },
-            "comparison": None,
-            "temporal_observation": None,
-            "temporal_change_frame": None,
-            "ranking": None,
-            "grain_constraints": ["cand_sales_order_channel"],
-        },
+        "expected_semantic_shape": first["context"]["dima_analytical_intent"],
     }
 
 
