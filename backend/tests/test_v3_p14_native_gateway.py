@@ -1166,7 +1166,7 @@ def test_attestation_422_is_deterministic_limitation_before_execution(error_code
         )
     )
 
-    with pytest.raises(ResearchMaterialObservationUnavailable) as exc:
+    with pytest.raises(ResearchMaterialLimitation) as exc:
         executor.execute(
             principal=principal(),
             session=session,
