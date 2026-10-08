@@ -724,6 +724,7 @@ class ResearchSessionStore:
         native_subject_ref: str,
         runtime_identity: dict,
         result_payload: dict,
+        execution_facts: dict | None,
         result_hash: str,
         executed_at: datetime,
     ) -> ResearchExecutionLink:
@@ -743,6 +744,18 @@ class ResearchSessionStore:
                 allow_nan=False,
                 default=str,
             )
+            facts_json = (
+                json.dumps(
+                    execution_facts,
+                    ensure_ascii=False,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                    allow_nan=False,
+                    default=str,
+                )
+                if execution_facts is not None
+                else None
+            )
         except (TypeError, ValueError) as exc:
             raise ResearchPersistenceError(
                 "P14_NATIVE_EXECUTION_RESULT_NOT_CANONICAL_JSON",
@@ -759,6 +772,7 @@ class ResearchSessionStore:
             native_subject_ref=native_subject_ref,
             runtime_identity_json=runtime_json,
             native_result_json=result_json,
+            execution_facts_json=facts_json,
             result_hash=result_hash,
             executed_at=executed_at,
             status="EXECUTED",
@@ -767,7 +781,7 @@ class ResearchSessionStore:
     def captured_execution(
         self,
         link: ResearchExecutionLink,
-    ) -> tuple[dict, dict, str, str, datetime]:
+    ) -> tuple[dict, dict, dict | None, str, str, datetime]:
         if (
             link.status != "EXECUTED"
             or not link.native_result_json
@@ -783,12 +797,21 @@ class ResearchSessionStore:
         try:
             result = json.loads(link.native_result_json)
             runtime = json.loads(link.runtime_identity_json)
+            facts = (
+                json.loads(link.execution_facts_json)
+                if link.execution_facts_json is not None
+                else None
+            )
         except json.JSONDecodeError as exc:
             raise ResearchPersistenceError(
                 "P14_NATIVE_EXECUTION_PROVENANCE_INVALID",
                 "persisted native execution provenance is invalid JSON",
             ) from exc
-        if not isinstance(result, dict) or not isinstance(runtime, dict):
+        if (
+            not isinstance(result, dict)
+            or not isinstance(runtime, dict)
+            or (facts is not None and not isinstance(facts, dict))
+        ):
             raise ResearchPersistenceError(
                 "P14_NATIVE_EXECUTION_PROVENANCE_INVALID",
                 "persisted native execution provenance has invalid shape",
@@ -806,7 +829,14 @@ class ResearchSessionStore:
                 "P14_NATIVE_RESULT_FINGERPRINT_MISMATCH",
                 "persisted native result changed after execution",
             )
-        return result, runtime, link.result_hash, link.native_subject_ref, link.executed_at
+        return (
+            result,
+            runtime,
+            facts,
+            link.result_hash,
+            link.native_subject_ref,
+            link.executed_at,
+        )
 
     def mark_verified(
         self,
