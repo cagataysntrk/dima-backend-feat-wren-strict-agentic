@@ -16,6 +16,13 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.v3.analytical_boundary import (
+    AnalyticalIntentV1,
+    analytical_currentness_token,
+    analytical_security_fingerprint,
+    planner_analytical_intent_payload,
+    project_analytical_intent_v1,
+)
 from app.v3.analytical_request_contract import AnalyticalRequestContract
 from app.v3.research_contracts import ResearchBrief, ResearchBriefStatus
 from app.v3.authority import AcceptedResearchAuthority
@@ -765,6 +772,7 @@ class ResearchAskOrchestrator:
         parent_link,
         failure: ResearchMaterialLimitation,
         analytical_scope: AnalyticalRequestContract | None = None,
+        analytical_intent: AnalyticalIntentV1 | None = None,
     ):
         """Open at most two P14-owned repair occurrences for material-shape misses.
 
@@ -778,6 +786,10 @@ class ResearchAskOrchestrator:
             obligation_id=obligation_id,
         )
         expected_shape = failure.expected_semantic_shape
+        if expected_shape is None and analytical_intent is not None:
+            expected_shape = planner_analytical_intent_payload(
+                analytical_intent
+            )
         if expected_shape is None and analytical_scope is not None:
             # Repair feedback is a deterministic projection of the already
             # accepted WHAT. It is not a second semantic judge and contains no
@@ -996,6 +1008,32 @@ class ResearchAskOrchestrator:
                 "P14_SHARED_RESULT_DEPENDENCY_FORBIDDEN",
                 "result-dependent child material requires a later occurrence",
             )
+        brief = session.accepted_brief
+        assert brief is not None
+        direct_currentness = analytical_currentness_token(
+            scope_lineage_id=session.lineage_id,
+            scope_version_id=brief.scope.scope_version.version_id,
+        )
+        direct_security = analytical_security_fingerprint(
+            tenant_id=session.tenant_binding,
+            principal_id=session.principal_subject,
+            roles=tuple(sorted(principal.roles)),
+        )
+        canonical_intents = {
+            consumer_id: project_analytical_intent_v1(
+                question=self.accepted_material_question(session, consumer_id),
+                scope=brief.scope,
+                tenant_id=session.tenant_binding,
+                principal_id=session.principal_subject,
+                currentness_token=direct_currentness,
+                security_fingerprint=direct_security,
+                semantic_context_version=session.context_version,
+                scope_lineage_id=session.lineage_id,
+                scope_fingerprint=brief.scope_fingerprint,
+            )
+            for consumer_id in consumer_ids
+        }
+        planner_intent = canonical_intents[selected]
         execution_analytical_scope: AnalyticalRequestContract | None = analytical_scope
         canonical_analytical_scope: AnalyticalRequestContract | None = analytical_scope
         if question.result_dependency is not None:
@@ -1117,6 +1155,11 @@ class ResearchAskOrchestrator:
                 session,
                 obligation_id=selected,
                 analytical_scope=execution_analytical_scope,
+                analytical_intent=(
+                    None
+                    if question.result_dependency is not None
+                    else planner_intent
+                ),
             )
             session = self._store.save(
                 prepared.session,
@@ -1219,6 +1262,11 @@ class ResearchAskOrchestrator:
                     parent_link=repair_parent,
                     failure=repair_failure,
                     analytical_scope=canonical_analytical_scope,
+                    analytical_intent=(
+                        None
+                        if question.result_dependency is not None
+                        else planner_intent
+                    ),
                 )
                 if repair is None:
                     return self._limit(

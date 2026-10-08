@@ -8,6 +8,10 @@ from typing import Literal
 from uuid import UUID, uuid4
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from app.v3.analytical_boundary import (
+    AnalyticalIntentV1,
+    planner_analytical_intent_payload,
+)
 from app.v3.analytical_request_contract import AnalyticalRequestContract
 from app.v3.research_contracts import ResearchBrief, ResearchBriefStatus
 from app.v3.research_analytical_scope import (
@@ -269,12 +273,30 @@ class ResearchManager:
     def native_material_message(
         *,
         objective: str,
-        analytical_scope,
+        analytical_scope=None,
+        analytical_intent: AnalyticalIntentV1 | None = None,
         semantic_labels: dict[str, str] | None = None,
     ):
-        """Expose exactly one deterministic analytical WHAT envelope to Metabot."""
-
+        """Expose one typed WHAT surface; base P14 uses canonical AnalyticalIntentV1."""
         del semantic_labels
+        if analytical_intent is not None:
+            payload = planner_analytical_intent_payload(analytical_intent)
+            return "\n".join(
+                (
+                    "[DIMA ANALYTICAL INTENT V1 JSON]",
+                    json.dumps(
+                        {"dima_analytical_intent": payload},
+                        ensure_ascii=False,
+                        sort_keys=True,
+                        separators=(",", ":"),
+                    ),
+                    "[MATERIAL TURN BOUNDARY]",
+                    "- dima_analytical_intent is the only analytical WHAT contract for this turn",
+                    "- produce exactly one executable native analytical query satisfying that intent",
+                    "- Metabase/Metabot owns analytical realization; do not invent additional scope",
+                    "- do not perform downstream investigation, hypothesis adjudication, next-test planning, reporting, or workflow orchestration in this turn",
+                )
+            )
         requirement = native_material_requirement(analytical_scope)
         return "\n".join(
             (
@@ -288,7 +310,7 @@ class ResearchManager:
                 "[USER OBLIGATION]",
                 objective,
                 "[MATERIAL TURN BOUNDARY]",
-                "- dima_material_requirement is the only analytical WHAT contract for this turn",
+                "- dima_material_requirement is a compatibility projection for this child turn",
                 "- produce exactly one executable native analytical query satisfying that requirement",
                 "- Metabase/Metabot owns analytical realization; do not invent additional scope",
                 "- do not perform downstream investigation, hypothesis adjudication, next-test planning, reporting, or workflow orchestration in this turn",
@@ -313,6 +335,7 @@ class ResearchManager:
         metabot_id=None,
         now=None,
         analytical_scope: AnalyticalRequestContract | None = None,
+        analytical_intent: AnalyticalIntentV1 | None = None,
     ):
         if session.stopping.status!=StoppingStatus.ACTIVE: raise ResearchStateError("P14_RESEARCH_NOT_ACTIVE",session.stopping.status)
         item=cls.obligation(session,obligation_id)
@@ -335,15 +358,25 @@ class ResearchManager:
                 for ref in brief.scope.semantic_refs
                 if ref.candidate_id in required_semantic_ids
             }
+        planner_context = (
+            {
+                "dima_analytical_intent": planner_analytical_intent_payload(
+                    analytical_intent
+                )
+            }
+            if analytical_intent is not None
+            else native_request_context(analytical_scope)
+        )
         req=NativeEngineRequest(
             profile_id=conv.profile_id,
             metabot_id=conv.metabot_id,
             message=cls.native_material_message(
                 objective=item.objective,
                 analytical_scope=analytical_scope,
+                analytical_intent=analytical_intent,
                 semantic_labels=semantic_labels,
             ),
-            context=native_request_context(analytical_scope),
+            context=planner_context,
             conversation_id=conv.conversation_id,
             history=None,
             state={},

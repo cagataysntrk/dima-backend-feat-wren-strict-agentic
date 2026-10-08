@@ -312,3 +312,46 @@ def test_p17_exact_query_reuse_is_structural_and_pre_execution():
     reuse = product.index("verified_link_for_query_fingerprint", capture)
     assert capture < reuse < material
 
+
+
+def test_base_p14_planner_and_verifier_use_canonical_intent_not_request_contract():
+    boundary = (
+        BACKEND_ROOT / "app" / "v3" / "analytical_boundary.py"
+    ).read_text(encoding="utf-8")
+    research = (
+        BACKEND_ROOT / "app" / "v3" / "research.py"
+    ).read_text(encoding="utf-8")
+    gateway = (
+        BACKEND_ROOT / "app" / "v3" / "research_native_gateway.py"
+    ).read_text(encoding="utf-8")
+
+    start = boundary.index("def project_analytical_intent_v1(")
+    end = boundary.index("def planner_analytical_intent_payload(", start)
+    direct = boundary[start:end]
+    for forbidden in (
+        "contract.metric_refs",
+        "contract.dimension_refs",
+        "contract.filters",
+        "contract.ranking",
+        "contract.temporal_observation",
+    ):
+        assert forbidden not in direct
+
+    direct_message = research[
+        research.index("if analytical_intent is not None:"):
+        research.index(
+            "requirement = native_material_requirement(",
+            research.index("if analytical_intent is not None:"),
+        )
+    ]
+    assert '"dima_analytical_intent": payload' in direct_message
+    assert "[USER OBLIGATION]" not in direct_message
+
+    verify_start = gateway.index("consumer_intents = tuple(")
+    verify_end = gateway.index(
+        "for consumer_intent in consumer_intents:",
+        verify_start,
+    )
+    verify_block = gateway[verify_start:verify_end]
+    assert "project_analytical_intent_v1(" in verify_block
+    assert "analytical_scope_contract(" not in verify_block

@@ -7,6 +7,7 @@ execution facts and never reverse-engineers MBQL/query topology here.
 """
 from __future__ import annotations
 
+import hashlib
 from datetime import date, datetime, time, timezone
 from enum import StrEnum
 from typing import Any, Literal
@@ -20,6 +21,7 @@ from app.v3.analytical_request_contract import (
     AnalyticalRankingInvariant,
 )
 from app.v3.research_contracts import (
+    CausalEffectObservation,
     PresentationKind,
     RankingBasis,
     ResearchBrief,
@@ -398,17 +400,151 @@ def validate_v1_research_brief(
     return tuple(projected)
 
 
-def _ranking_from_contract(
-    value: AnalyticalRankingInvariant
-    | AnalyticalEvidenceSynthesisRankingInvariant
-    | None,
+def analytical_security_fingerprint(
+    *,
+    tenant_id: str,
+    principal_id: str,
+    roles: tuple[str, ...] = (),
+) -> str:
+    """One governance fingerprint; native-subject provenance is checked separately."""
+    raw = "|".join(
+        (
+            tenant_id,
+            principal_id,
+            ",".join(sorted(dict.fromkeys(roles))),
+        )
+    )
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
+def analytical_currentness_token(
+    *,
+    scope_lineage_id: str,
+    scope_version_id: str,
+) -> str:
+    return f"{scope_lineage_id}:{scope_version_id}"
+
+
+def _question_refs(question: ResearchQuestion):
+    return (*question.subject_refs, *question.related_refs)
+
+
+def _direct_metric_refs(
+    question: ResearchQuestion,
+    scope: ResearchScope,
+) -> tuple[str, ...]:
+    metrics = tuple(
+        dict.fromkeys(
+            item.candidate_id
+            for item in _question_refs(question)
+            if item.target_kind in {SemanticTargetKind.METRIC, SemanticTargetKind.KPI}
+        )
+    )
+    if metrics:
+        return metrics
+    return tuple(
+        dict.fromkeys(
+            item.candidate_id
+            for item in scope.semantic_refs
+            if item.target_kind in {SemanticTargetKind.METRIC, SemanticTargetKind.KPI}
+        )
+    )
+
+
+def _binding_column_key(scope: ResearchScope, candidate_id: str):
+    binding = next(
+        (
+            item
+            for item in scope.native_verification_bindings
+            if item.candidate_id == candidate_id
+        ),
+        None,
+    )
+    if binding is None or binding.column_name is None:
+        return None
+    return (binding.schema_name, binding.table_name, binding.column_name)
+
+
+def _direct_dimension_refs(
+    question: ResearchQuestion,
+    scope: ResearchScope,
+) -> tuple[str, ...]:
+    filtered_entity_ids = {
+        item.candidate_id
+        for item in scope.semantic_refs
+        if item.target_kind == SemanticTargetKind.ENTITY_VALUE
+        and item.value is not None
+    }
+    fixed_columns = {
+        key
+        for candidate_id in filtered_entity_ids
+        if (key := _binding_column_key(scope, candidate_id)) is not None
+    }
+    output: list[str] = []
+    temporal = set(scope.temporal_dimension_ids)
+    for item in _question_refs(question):
+        if item.target_kind != SemanticTargetKind.DIMENSION:
+            continue
+        if item.candidate_id in temporal:
+            continue
+        key = _binding_column_key(scope, item.candidate_id)
+        if key is not None and key in fixed_columns:
+            continue
+        if item.candidate_id not in output:
+            output.append(item.candidate_id)
+    return tuple(output)
+
+
+def _direct_filters(scope: ResearchScope) -> tuple[AnalyticalFilterV1, ...]:
+    return tuple(
+        AnalyticalFilterV1(
+            semantic_ref=item.candidate_id,
+            dimension_semantic_id=item.candidate_id,
+            value=str(item.value),
+        )
+        for item in scope.semantic_refs
+        if item.target_kind == SemanticTargetKind.ENTITY_VALUE
+        and item.value is not None
+    )
+
+
+def _direct_periods(scope: ResearchScope) -> tuple[AnalyticalPeriodV1, ...]:
+    return tuple(
+        AnalyticalPeriodV1(
+            role=item.role,
+            time_dimension_semantic_id=item.time_dimension_candidate_id,
+            start=item.start,
+            end=item.end,
+        )
+        for item in scope.periods
+    )
+
+
+def _direct_ranking(
+    question: ResearchQuestion,
+    metrics: tuple[str, ...],
 ) -> AnalyticalRankingV1 | None:
+    value = question.ranking
     if value is None:
         return None
-    if isinstance(value, AnalyticalRankingInvariant):
+    measure = value.measure_semantic_id
+    if measure is not None:
+        if measure not in set(metrics):
+            raise AnalyticalBoundaryError(
+                "ANALYTICAL_V1_RANKING_METRIC_OUTSIDE_INTENT",
+                measure,
+            )
         return AnalyticalRankingV1(
             kind="native_metric",
-            metric=value.measure,
+            metric=measure,
+            basis=value.basis,
+            direction=value.direction,
+            top_k=value.limit,
+        )
+    if len(metrics) == 1 and value.direction != "unspecified":
+        return AnalyticalRankingV1(
+            kind="native_metric",
+            metric=metrics[0],
             basis=value.basis,
             direction=value.direction,
             top_k=value.limit,
@@ -422,44 +558,128 @@ def _ranking_from_contract(
     )
 
 
-def _filters_from_contract(
-    contract: AnalyticalRequestContract | AnalyticalRequestObservation,
-) -> tuple[AnalyticalFilterV1, ...]:
-    return tuple(
-        AnalyticalFilterV1(
-            semantic_ref=item.semantic_ref,
-            dimension_semantic_id=item.source_candidate_id,
-            value=item.value,
-        )
-        for item in contract.filters
-    )
-
-
-def _periods_for_contract(
-    *,
+def _direct_temporal_observation_dimension(
+    question: ResearchQuestion,
     scope: ResearchScope,
-    contract: AnalyticalRequestContract,
-) -> tuple[AnalyticalPeriodV1, ...]:
-    """Project canonical scope-level temporal authority without reinterpretation.
-
-    The AnalyticalRequestContract may carry material-coverage projections, but it
-    cannot rewrite the accepted temporal meaning. Intake/ScopePatch already
-    canonicalized ResearchScope.periods; AnalyticalIntentV1 transports those
-    exact typed periods to the analytics substrate.
-    """
-
-    del contract
-    return tuple(
-        AnalyticalPeriodV1(
-            role=item.role,
-            time_dimension_semantic_id=item.time_dimension_candidate_id,
-            start=item.start,
-            end=item.end,
+) -> str | None:
+    causal = question.causal_competition
+    if causal is None or causal.effect_observation != CausalEffectObservation.CHANGE:
+        return None
+    values = tuple(dict.fromkeys(scope.temporal_dimension_ids))
+    if len(values) != 1:
+        raise AnalyticalBoundaryError(
+            "ANALYTICAL_V1_TEMPORAL_OBSERVATION_AXIS_AMBIGUOUS",
+            question.goal_id,
         )
-        for item in scope.periods
-    )
+    return values[0]
+
 
 def project_analytical_intent_v1(
+    *,
+    question: ResearchQuestion,
+    scope: ResearchScope,
+    tenant_id: str,
+    principal_id: str,
+    currentness_token: str,
+    security_fingerprint: str,
+    semantic_context_version: str | None = None,
+    scope_lineage_id: str | None = None,
+    scope_fingerprint: str | None = None,
+    expected_resource_entity_ids: tuple[str, ...] = (),
+    contract: AnalyticalRequestContract | None = None,
+) -> AnalyticalIntentV1:
+    """Project canonical WHAT directly from accepted Question + Scope.
+
+    AnalyticalRequestContract may provide legacy governance identifiers only.
+    No business-semantic field is read from it.
+    """
+    operation = _OPERATION_BY_GOAL.get(question.kind)
+    if operation is None:
+        raise AnalyticalBoundaryError(
+            "ANALYTICAL_V1_OPERATION_UNSUPPORTED",
+            question.kind.value,
+        )
+    if contract is not None:
+        semantic_context_version = (
+            semantic_context_version or contract.semantic_context_version
+        )
+        scope_lineage_id = scope_lineage_id or contract.scope_identity.lineage_id
+        scope_fingerprint = scope_fingerprint or contract.scope_fingerprint
+    if not semantic_context_version or not scope_lineage_id:
+        raise AnalyticalBoundaryError(
+            "ANALYTICAL_V1_GOVERNANCE_IDENTITY_REQUIRED",
+            question.goal_id,
+        )
+
+    metrics = _direct_metric_refs(question, scope)
+    if not metrics:
+        raise AnalyticalBoundaryError(
+            "ANALYTICAL_V1_METRIC_REQUIRED",
+            question.goal_id,
+        )
+    dimensions = _direct_dimension_refs(question, scope)
+    dependency = (
+        AnalyticalDependencyV1(
+            source_intent_id=question.result_dependency.source_goal_id
+        )
+        if question.result_dependency is not None
+        else None
+    )
+    return AnalyticalIntentV1(
+        intent_id=question.goal_id,
+        operation=operation,
+        metrics=metrics,
+        dimensions=dimensions,
+        filters=_direct_filters(scope),
+        temporal_periods=_direct_periods(scope),
+        temporal_observation_dimension=(
+            _direct_temporal_observation_dimension(question, scope)
+        ),
+        ranking=_direct_ranking(question, metrics),
+        dependency=dependency,
+        row_grain=dimensions,
+        allowed_semantic_ids=tuple(
+            dict.fromkeys(item.candidate_id for item in scope.semantic_refs)
+        ),
+        semantic_context_version=semantic_context_version,
+        scope_lineage_id=scope_lineage_id,
+        scope_version_id=scope.scope_version.version_id,
+        scope_fingerprint=scope_fingerprint,
+        tenant_id=tenant_id,
+        principal_id=principal_id,
+        expected_resource_entity_ids=expected_resource_entity_ids,
+        currentness_token=currentness_token,
+        security_fingerprint=security_fingerprint,
+    )
+
+
+def planner_analytical_intent_payload(
+    intent: AnalyticalIntentV1,
+) -> dict[str, Any]:
+    """Mechanical privacy-preserving serialization of canonical WHAT."""
+    return intent.model_dump(
+        mode="json",
+        include={
+            "schema_version",
+            "intent_id",
+            "operation",
+            "metrics",
+            "dimensions",
+            "filters",
+            "temporal_periods",
+            "temporal_observation_dimension",
+            "ranking",
+            "dependency",
+            "row_grain",
+            "allowed_semantic_ids",
+            "semantic_context_version",
+            "scope_version_id",
+            "scope_fingerprint",
+        },
+    )
+
+
+def project_compatibility_analytical_intent_v1(
     *,
     question: ResearchQuestion,
     scope: ResearchScope,
@@ -470,49 +690,58 @@ def project_analytical_intent_v1(
     security_fingerprint: str,
     expected_resource_entity_ids: tuple[str, ...] = (),
 ) -> AnalyticalIntentV1:
-    """Project existing Dima typed state into the V1 anti-corruption boundary."""
-
-    operation = _OPERATION_BY_GOAL.get(question.kind)
-    if operation is None:
-        raise AnalyticalBoundaryError(
-            "ANALYTICAL_V1_OPERATION_UNSUPPORTED",
-            question.kind.value,
-        )
-    allowed = tuple(
-        dict.fromkeys(item.candidate_id for item in scope.semantic_refs)
-    )
-    dependency = (
-        AnalyticalDependencyV1(source_intent_id=question.result_dependency.source_goal_id)
-        if question.result_dependency is not None
-        else None
-    )
-    return AnalyticalIntentV1(
-        intent_id=question.goal_id,
-        operation=operation,
-        metrics=contract.metric_refs,
-        dimensions=contract.dimension_refs,
-        filters=_filters_from_contract(contract),
-        temporal_periods=_periods_for_contract(scope=scope, contract=contract),
-        temporal_observation_dimension=(
-            contract.temporal_observation.time_dimension
-            if contract.temporal_observation is not None
-            else None
-        ),
-        ranking=_ranking_from_contract(contract.ranking),
-        dependency=dependency,
-        row_grain=tuple(dict.fromkeys((*contract.dimension_refs, *contract.grain_constraints))),
-        allowed_semantic_ids=allowed,
-        semantic_context_version=contract.semantic_context_version,
-        scope_lineage_id=contract.scope_identity.lineage_id,
-        scope_version_id=scope.scope_version.version_id,
-        scope_fingerprint=contract.scope_fingerprint,
+    """P17/result-dependency adapter only; base P14 must not call this."""
+    direct = project_analytical_intent_v1(
+        question=question,
+        scope=scope,
         tenant_id=tenant_id,
         principal_id=principal_id,
-        expected_resource_entity_ids=expected_resource_entity_ids,
         currentness_token=currentness_token,
         security_fingerprint=security_fingerprint,
+        semantic_context_version=contract.semantic_context_version,
+        scope_lineage_id=contract.scope_identity.lineage_id,
+        scope_fingerprint=contract.scope_fingerprint,
+        expected_resource_entity_ids=expected_resource_entity_ids,
     )
-
+    ranking = contract.ranking
+    if isinstance(ranking, AnalyticalRankingInvariant):
+        projected_ranking = AnalyticalRankingV1(
+            kind="native_metric",
+            metric=ranking.measure,
+            basis=ranking.basis,
+            direction=ranking.direction,
+            top_k=ranking.limit,
+        )
+    elif isinstance(ranking, AnalyticalEvidenceSynthesisRankingInvariant):
+        projected_ranking = AnalyticalRankingV1(
+            kind="evidence_synthesis",
+            metric=None,
+            basis=None,
+            direction=ranking.direction,
+            top_k=ranking.limit,
+        )
+    else:
+        projected_ranking = direct.ranking
+    return direct.model_copy(
+        update={
+            "metrics": contract.metric_refs,
+            "dimensions": contract.dimension_refs,
+            "filters": tuple(
+                AnalyticalFilterV1(
+                    semantic_ref=item.semantic_ref,
+                    dimension_semantic_id=item.source_candidate_id,
+                    value=item.value,
+                )
+                for item in contract.filters
+            ),
+            "ranking": projected_ranking,
+            "row_grain": tuple(
+                dict.fromkeys(
+                    (*contract.dimension_refs, *contract.grain_constraints)
+                )
+            ),
+        }
+    )
 
 def project_execution_manifest_v1(
     *,

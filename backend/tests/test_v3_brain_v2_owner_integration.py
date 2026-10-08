@@ -1782,7 +1782,7 @@ def test_real_owner_adaptive_runs_one_typed_followup_without_duplicate_native() 
         snapshot.evidence_results[0].result_hash
         != snapshot.evidence_results[1].result_hash
     )
-    initial_scope = bridge.metabot_requests[0]["context"]["dima_material_requirement"]
+    initial_scope = bridge.metabot_requests[0]["context"]["dima_analytical_intent"]
     followup_scope = bridge.metabot_requests[1]["context"]["dima_material_requirement"]
     assert "dima_analytical_scope" not in bridge.metabot_requests[0]["context"]
     assert "dima_analytical_scope" not in bridge.metabot_requests[1]["context"]

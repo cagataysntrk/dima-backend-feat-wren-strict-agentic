@@ -28,7 +28,10 @@ from app.v3.analytical_boundary import (
     AnalyticalFilterV1,
     AnalyticalObservedTemporalScopeV1,
     AnalyticalRankingV1,
+    analytical_currentness_token,
+    analytical_security_fingerprint,
     project_analytical_intent_v1,
+    project_compatibility_analytical_intent_v1,
     project_execution_manifest_v1,
     verify_analytical_fulfillment_v1,
 )
@@ -1164,22 +1167,15 @@ class NativeResearchMaterialExecutor:
         temporal_observation_dimension = (
             temporal_ids[0] if len(temporal_ids) == 1 else None
         )
-        currentness_token = (
-            f"{session.lineage_id}:{contract.scope_identity.version_id}"
+        currentness_token = analytical_currentness_token(
+            scope_lineage_id=session.lineage_id,
+            scope_version_id=contract.scope_identity.version_id,
         )
-        native_subject_ref = (
-            f"metabase-user:{observation.authenticated_metabase_subject}"
+        security_fingerprint = analytical_security_fingerprint(
+            tenant_id=session.tenant_binding,
+            principal_id=session.principal_subject,
+            roles=tuple(sorted(principal.roles)),
         )
-        security_fingerprint = hashlib.sha256(
-            "|".join(
-                (
-                    session.tenant_binding,
-                    session.principal_subject,
-                    native_subject_ref,
-                    ",".join(sorted(principal.roles)),
-                )
-            ).encode("utf-8")
-        ).hexdigest()
         return project_execution_manifest_v1(
             execution_id=f"native-occurrence:{execution_link_id}",
             consumer_intent_ids=consumer_ids,
@@ -1474,32 +1470,39 @@ class NativeResearchMaterialExecutor:
                 "ANALYTICAL_V1_INTENT_IDENTITY_MISMATCH",
                 "shared fulfillment references an unknown accepted analytical goal",
             )
-        currentness_token = (
-            f"{session.lineage_id}:{contract.scope_identity.version_id}"
+        currentness_token = analytical_currentness_token(
+            scope_lineage_id=session.lineage_id,
+            scope_version_id=brief.scope.scope_version.version_id,
         )
-        security_fingerprint = hashlib.sha256(
-            "|".join(
-                (
-                    session.tenant_binding,
-                    session.principal_subject,
-                    native_subject_ref,
-                    ",".join(sorted(principal.roles)),
-                )
-            ).encode("utf-8")
-        ).hexdigest()
+        security_fingerprint = analytical_security_fingerprint(
+            tenant_id=session.tenant_binding,
+            principal_id=session.principal_subject,
+            roles=tuple(sorted(principal.roles)),
+        )
         try:
             consumer_intents = tuple(
-                project_analytical_intent_v1(
-                    question=questions_by_id[consumer_id],
-                    scope=brief.scope,
-                    contract=analytical_scope_contract(
-                        session=session,
-                        obligation_id=consumer_id,
-                    ),
-                    tenant_id=session.tenant_binding,
-                    principal_id=session.principal_subject,
-                    currentness_token=currentness_token,
-                    security_fingerprint=security_fingerprint,
+                (
+                    project_compatibility_analytical_intent_v1(
+                        question=questions_by_id[consumer_id],
+                        scope=brief.scope,
+                        contract=contract,
+                        tenant_id=session.tenant_binding,
+                        principal_id=session.principal_subject,
+                        currentness_token=currentness_token,
+                        security_fingerprint=security_fingerprint,
+                    )
+                    if questions_by_id[consumer_id].result_dependency is not None
+                    else project_analytical_intent_v1(
+                        question=questions_by_id[consumer_id],
+                        scope=brief.scope,
+                        tenant_id=session.tenant_binding,
+                        principal_id=session.principal_subject,
+                        currentness_token=currentness_token,
+                        security_fingerprint=security_fingerprint,
+                        semantic_context_version=session.context_version,
+                        scope_lineage_id=session.lineage_id,
+                        scope_fingerprint=brief.scope_fingerprint,
+                    )
                 )
                 for consumer_id in consumer_ids
             )
