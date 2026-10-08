@@ -1774,24 +1774,24 @@ def test_real_owner_adaptive_runs_one_typed_followup_without_duplicate_native() 
         snapshot.evidence_results[0].result_hash
         != snapshot.evidence_results[1].result_hash
     )
-    initial_scope = bridge.metabot_requests[0]["context"]["dima_analytical_scope"]
-    followup_scope = bridge.metabot_requests[1]["context"]["dima_analytical_scope"]
-    assert "dimension.event_date" not in initial_scope["dimension_refs"]
-    assert set(followup_scope["dimension_refs"]) == (
-        set(initial_scope["dimension_refs"]) | {"dimension.event_date"}
+    initial_scope = bridge.metabot_requests[0]["context"]["dima_material_requirement"]
+    followup_scope = bridge.metabot_requests[1]["context"]["dima_material_requirement"]
+    assert "dima_analytical_scope" not in bridge.metabot_requests[0]["context"]
+    assert "dima_analytical_scope" not in bridge.metabot_requests[1]["context"]
+    assert "dimension.event_date" not in initial_scope["required_breakout_refs"]
+    assert set(followup_scope["required_breakout_refs"]) == (
+        set(initial_scope["required_breakout_refs"]) | {"dimension.event_date"}
     )
-    assert followup_scope["grain_constraints"] == followup_scope["dimension_refs"]
     followup_message = bridge.metabot_requests[1]["message"]
     assert followup_message.startswith("[DIMA MATERIAL REQUIREMENT JSON]\n")
-    assert "[DIMA ACCEPTED ANALYTICAL CONTRACT]\n" in followup_message
-    assert "dimensions:" in followup_message
-    assert "\n- dimension.event_date\n" in followup_message
-    assert "grain_constraints:" in followup_message
+    assert "[DIMA ACCEPTED ANALYTICAL CONTRACT]" not in followup_message
+    assert followup_message.count("[DIMA MATERIAL REQUIREMENT JSON]") == 1
+    assert "dimension.event_date" in followup_message
     assert "[USER OBLIGATION]" in followup_message
     assert next_test_steps[0].bounded_objective in followup_message
     assert "[MATERIAL TURN BOUNDARY]" in followup_message
     assert (
-        "- produce exactly one executable native analytical query satisfying that contract"
+        "- produce exactly one executable native analytical query satisfying that requirement"
         in followup_message
     )
     assert len(p19_manager.context_calls) == 2
