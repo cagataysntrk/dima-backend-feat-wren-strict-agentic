@@ -724,7 +724,7 @@ class ResearchSessionStore:
         native_subject_ref: str,
         runtime_identity: dict,
         result_payload: dict,
-        execution_facts: dict | None,
+        execution_facts: dict | None = None,
         result_hash: str,
         executed_at: datetime,
     ) -> ResearchExecutionLink:
