@@ -349,9 +349,10 @@ class AdaptiveIntake(DeterministicIntake):
 
 
 class BridgeFactory:
-    def __init__(self) -> None:
+    def __init__(self, *, distinct_followup_query: bool = False) -> None:
         self.metabot_posts = 0
         self.metabot_requests: list[dict] = []
+        self.distinct_followup_query = distinct_followup_query
 
     def open(
         self,
@@ -423,6 +424,13 @@ class BridgeFactory:
                         "breakout": [["field", 30, None]],
                     },
                 }
+                if self.distinct_followup_query and self.metabot_posts >= 2:
+                    # A positive information-gain fixture must have a genuinely
+                    # different acquisition identity, not the same query with a
+                    # fabricated different result.
+                    native_query["query"]["breakout"].append(
+                        ["field", 40, None]
+                    )
                 generated = {
                     "type": "generated_entity",
                     "value": {
@@ -1601,7 +1609,7 @@ def _adaptive_stack(
 ):
     db = _engine()
     store = ResearchSessionStore(db)
-    bridge = BridgeFactory()
+    bridge = BridgeFactory(distinct_followup_query=True)
     material = DurableMaterialExecutor(
         store,
         repeat_followup_result=repeat_followup_result,
@@ -1816,6 +1824,78 @@ def test_real_owner_adaptive_runs_one_typed_followup_without_duplicate_native() 
     ] == "P19_DISCRIMINATING_TEST_AVAILABLE"
 
 
+
+
+def test_adaptive_exact_query_fingerprint_reuses_verified_evidence_without_native_duplicate() -> None:
+    db = _engine()
+    store = ResearchSessionStore(db)
+    bridge = BridgeFactory(distinct_followup_query=False)
+    material = DurableMaterialExecutor(store)
+    research = ResearchAskOrchestrator(
+        store=store,
+        bridge_factory=bridge,
+        material_executor=material,
+    )
+    principal = _principal()
+    claims = ClaimLineageStore(
+        research_store=store,
+        db_engine=db,
+    )
+    reasoning = ResearchReasoningStore(db)
+    occurrence = NativeResearchOccurrenceRunner(
+        store=store,
+        bridge_factory=bridge,
+        material_executor=material,
+    )
+    investigation = ResearchInvestigationManager(
+        research_store=store,
+        claim_store=claims,
+        reasoning_store=reasoning,
+        followup_executor=NativeResearchFollowupExecutor(
+            store=store,
+            occurrence_runner=occurrence,
+        ),
+        db_engine=db,
+    )
+    p19 = HypothesisRootCauseStore(
+        research_store=store,
+        db_engine=db,
+    )
+    p19_manager = AdaptiveP19Manager()
+    next_test_manager = DeterministicNextTestManager()
+    activities = DimaBrainV2Activities(
+        principal=principal,
+        catalog=_catalog(),
+        intake=AdaptiveIntake(),
+        research=research,
+        investigation=investigation,
+        investigation_manager=next_test_manager,
+        epistemics=p19,
+        epistemic_manager=p19_manager,
+        reports=ReportDocumentStore(
+            research_store=store,
+            db_engine=db,
+        ),
+        native_session_token="provider-free-native-session",
+        engine_identity=ENGINE_IDENTITY,
+    )
+
+    result = BrainV2Service(activities=activities).run(
+        BrainGraphState(
+            thread_id="adaptive-exact-query-reuse",
+            tenant_binding=f"id:{TENANT_ID}",
+            principal_ref=USER_ID,
+            current_user_input="Provider-free ADAPTIVE RCA.",
+        )
+    )
+
+    assert result.workflow_status == BrainWorkflowStatus.COMPLETE
+    assert bridge.metabot_posts == 2
+    assert material.calls == 1
+    assert len(result.evidence_ids) == 1
+    assert next_test_manager.call_count == 1
+    assert p19_manager.call_count == 2
+    assert result.pending_next_test_ref is None
 
 
 def test_adaptive_same_result_hash_never_becomes_fake_information_gain() -> None:
