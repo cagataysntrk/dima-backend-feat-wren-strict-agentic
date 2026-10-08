@@ -2644,6 +2644,75 @@ class ResearchIntakeCompiler:
         return draft.model_copy(update={"time_periods": canonical})
 
     @staticmethod
+    def _canonicalize_redundant_pair_envelope(
+        draft: ModelResearchBriefDraft,
+    ) -> ModelResearchBriefDraft:
+        """Remove only a scope-level window that is exactly the union of one PAIR.
+
+        ResearchScope is the sole temporal owner. A provider can redundantly
+        serialize the same accepted temporal authority as both:
+        - one adjacent BASELINE_PERIOD + COMPARISON_PERIOD pair, and
+        - one MATERIAL_WINDOW covering exactly their contiguous union.
+
+        The envelope adds no distinct temporal fact. Removing it is therefore a
+        deterministic projection collapse, not temporal interpretation. Any
+        gap, overlap, different dimension, different bound, or non-window role
+        remains untouched and continues to fail closed downstream.
+        """
+
+        if (
+            draft.terminal != ResearchIntakeTerminal.READY
+            or len(draft.time_periods) < 3
+        ):
+            return draft
+
+        baselines = tuple(
+            item
+            for item in draft.time_periods
+            if item.role == TemporalRole.BASELINE_PERIOD
+        )
+        comparisons = tuple(
+            item
+            for item in draft.time_periods
+            if item.role == TemporalRole.COMPARISON_PERIOD
+        )
+        if len(baselines) != 1 or len(comparisons) != 1:
+            return draft
+
+        baseline, comparison = baselines[0], comparisons[0]
+        if (
+            baseline.time_dimension_semantic_id
+            != comparison.time_dimension_semantic_id
+        ):
+            return draft
+
+        if baseline.end == comparison.start:
+            union_start, union_end = baseline.start, comparison.end
+        elif comparison.end == baseline.start:
+            union_start, union_end = comparison.start, baseline.end
+        else:
+            return draft
+
+        def redundant_envelope(item: ModelTimePeriodDraft) -> bool:
+            return (
+                item.role == TemporalRole.MATERIAL_WINDOW
+                and item.time_dimension_semantic_id
+                == baseline.time_dimension_semantic_id
+                and item.start == union_start
+                and item.end == union_end
+            )
+
+        if not any(redundant_envelope(item) for item in draft.time_periods):
+            return draft
+
+        periods = tuple(
+            item
+            for item in draft.time_periods
+            if not redundant_envelope(item)
+        )
+        return draft.model_copy(update={"time_periods": periods})
+
+    @staticmethod
     def _canonicalize_exact_period_repeats(
         draft: ModelResearchBriefDraft,
     ) -> ModelResearchBriefDraft:
@@ -3771,6 +3840,7 @@ class ResearchIntakeCompiler:
         draft = self._canonicalize_temporal_comparison_subgoals(draft)
         draft = self._canonicalize_root_temporal_material(draft)
         draft = self._canonicalize_exact_period_repeats(draft)
+        draft = self._canonicalize_redundant_pair_envelope(draft)
         draft = self._derive_standalone_temporal_comparison(draft)
         draft = self._canonicalize_change_ranking_period_roles(draft)
         draft = self._canonicalize_typed_temporal_comparison(draft)
@@ -3925,6 +3995,7 @@ class ResearchIntakeCompiler:
         draft = self._canonicalize_temporal_comparison_subgoals(draft)
         draft = self._canonicalize_root_temporal_material(draft)
         draft = self._canonicalize_exact_period_repeats(draft)
+        draft = self._canonicalize_redundant_pair_envelope(draft)
         draft = self._derive_standalone_temporal_comparison(draft)
         draft = self._canonicalize_change_ranking_period_roles(draft)
         draft = self._canonicalize_typed_temporal_comparison(draft)

@@ -5376,3 +5376,107 @@ def test_change_ranking_adjacent_shared_pair_without_comparison_coalesces_to_spa
     assert span.role == TemporalRole.MATERIAL_WINDOW
     assert span.source_text == "bounded window"
     assert (span.start, span.end) == ("2026-01-01", "2026-03-01")
+
+def test_redundant_pair_envelope_collapses_to_single_scope_temporal_authority():
+    question = "Compare two governed periods."
+    payload = ready_payload(
+        kind="comparison",
+        subject=("metric.downtime",),
+        related=("dimension.department",),
+    )
+    payload["goals"][0].update(
+        {
+            "source_text": question,
+            "source_fragment_text": question,
+            "ranking": None,
+        }
+    )
+    payload["time_periods"] = [
+        {
+            "source_text": "P1",
+            "time_dimension_semantic_id": "dimension.event_date",
+            "start": "2026-01-01",
+            "end": "2026-02-01",
+            "role": "baseline_period",
+        },
+        {
+            "source_text": "P2",
+            "time_dimension_semantic_id": "dimension.event_date",
+            "start": "2026-02-01",
+            "end": "2026-03-01",
+            "role": "comparison_period",
+        },
+        {
+            "source_text": "P1-P2",
+            "time_dimension_semantic_id": "dimension.event_date",
+            "start": "2026-01-01",
+            "end": "2026-03-01",
+            "role": "material_window",
+        },
+    ]
+
+    result = ResearchIntakeCompiler(
+        transport=FakeTransport(payload),
+        calendar_reference_date="2026-04-01",
+    ).compile(
+        question=question,
+        catalog=catalog().model_copy(
+            update={"temporal_dimension_ids": ("dimension.event_date",)}
+        ),
+    )
+
+    assert result.terminal == ResearchIntakeTerminal.READY
+    assert result.brief is not None
+    assert tuple(item.role for item in result.brief.scope.periods) == (
+        TemporalRole.BASELINE_PERIOD,
+        TemporalRole.COMPARISON_PERIOD,
+    )
+    assert [(item.start, item.end) for item in result.brief.scope.periods] == [
+        ("2026-01-01", "2026-02-01"),
+        ("2026-02-01", "2026-03-01"),
+    ]
+
+
+def test_nonredundant_temporal_window_is_not_collapsed_into_pair():
+    payload = ready_payload(
+        kind="comparison",
+        subject=("metric.downtime",),
+        related=("dimension.department",),
+    )
+    payload["time_periods"] = [
+        {
+            "source_text": "P1",
+            "time_dimension_semantic_id": "dimension.event_date",
+            "start": "2026-01-01",
+            "end": "2026-02-01",
+            "role": "baseline_period",
+        },
+        {
+            "source_text": "P2",
+            "time_dimension_semantic_id": "dimension.event_date",
+            "start": "2026-02-01",
+            "end": "2026-03-01",
+            "role": "comparison_period",
+        },
+        {
+            "source_text": "different governed window",
+            "time_dimension_semantic_id": "dimension.event_date",
+            "start": "2026-01-01",
+            "end": "2026-04-01",
+            "role": "material_window",
+        },
+    ]
+
+    result = ResearchIntakeCompiler(
+        transport=FakeTransport(payload),
+        calendar_reference_date="2026-04-01",
+    ).compile(
+        question="Compare two governed periods.",
+        catalog=catalog().model_copy(
+            update={"temporal_dimension_ids": ("dimension.event_date",)}
+        ),
+    )
+
+    assert result.terminal == ResearchIntakeTerminal.CLARIFY
+    assert result.brief is None
+
