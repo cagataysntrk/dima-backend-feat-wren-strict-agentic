@@ -3267,9 +3267,16 @@ def test_span_change_basis_mismatch_is_one_repair_eligible_material_defect() -> 
     assert decision.preserve_scope_identity
     assert decision.preserve_material_contract
 
-    exhausted = decide_material_repair(
+    second = decide_material_repair(
         validation_code=exc.value.code,
         prior_repair_attempts=1,
+    )
+    assert second.disposition == MaterialRepairDisposition.REPAIR
+    assert second.repair_attempt == 2
+
+    exhausted = decide_material_repair(
+        validation_code=exc.value.code,
+        prior_repair_attempts=2,
     )
     assert exhausted.disposition == MaterialRepairDisposition.TERMINAL_LIMIT
 
@@ -3457,9 +3464,16 @@ def test_change_level_first_result_allows_one_repair_then_change_admits() -> Non
         rich_material_bindings(),
     )
 
-    exhausted = decide_material_repair(
+    second = decide_material_repair(
         validation_code="R1_NATIVE_RANKING_BASIS_MISMATCH",
         prior_repair_attempts=1,
+    )
+    assert second.disposition == MaterialRepairDisposition.REPAIR
+    assert second.repair_attempt == 2
+
+    exhausted = decide_material_repair(
+        validation_code="R1_NATIVE_RANKING_BASIS_MISMATCH",
+        prior_repair_attempts=2,
     )
     assert exhausted.disposition == MaterialRepairDisposition.TERMINAL_LIMIT
 

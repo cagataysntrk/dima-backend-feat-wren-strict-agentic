@@ -4576,7 +4576,7 @@ def test_role_bound_pair_is_shared_by_multiple_comparison_goals() -> None:
     )
 
 
-def test_change_ranking_collapsed_pair_fails_closed_after_one_reconsideration() -> None:
+def test_change_ranking_collapsed_pair_delegates_final_frame_to_existing_owner() -> None:
     question = "Compare May and June, then rank departments by change."
     collapsed = _collapsed_change_period_payload(question)
     unresolved = {
@@ -4594,19 +4594,38 @@ def test_change_ranking_collapsed_pair_fails_closed_after_one_reconsideration() 
             role="comparison_period",
         ),
     }
-    transport = SequenceTransport([collapsed, unresolved])
+    resolved_span = {
+        "terminal": "RESOLVED",
+        "frame": "SPAN",
+        "span": _r6_period(
+            "May and June",
+            "2026-05-01",
+            "2026-07-01",
+            role="material_window",
+        ),
+    }
+    transport = SequenceTransport([collapsed, unresolved, resolved_span])
 
-    with pytest.raises(ResearchIntakeError) as exc:
-        ResearchIntakeCompiler(
-            transport=transport,
-            calendar_reference_date="2026-10-04",
-        ).compile(
-            question=question,
-            catalog=_r6_temporal_catalog(),
-        )
+    result = ResearchIntakeCompiler(
+        transport=transport,
+        calendar_reference_date="2026-10-04",
+    ).compile(
+        question=question,
+        catalog=_r6_temporal_catalog(),
+    )
 
-    assert exc.value.code == "INTAKE_CHANGE_RANKING_PERIOD_PAIR_COLLAPSED"
-    assert transport.call_count == 2
+    assert result.terminal == ResearchIntakeTerminal.READY
+    assert result.brief is not None
+    assert transport.call_count == 3
+    assert len(result.brief.scope.periods) == 1
+    period = result.brief.scope.periods[0]
+    assert period.role == TemporalRole.MATERIAL_WINDOW
+    assert (period.start, period.end) == ("2026-05-01", "2026-07-01")
+    third = transport.calls[2]
+    assert third["schema_name"].endswith("_change_frame")
+    issue = third["user"]["change_frame_issue"]
+    assert issue["kind"] == "COLLAPSED_CHANGE_TEMPORAL_FRAME"
+    assert issue["frame_policy"]["invent_additional_comparison_period"] is False
 
 
 def _overlapping_change_period_payload() -> tuple[str, dict]:

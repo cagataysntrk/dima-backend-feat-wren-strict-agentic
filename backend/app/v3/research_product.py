@@ -747,7 +747,7 @@ class ResearchAskOrchestrator:
         failure: ResearchMaterialLimitation,
         analytical_scope: AnalyticalRequestContract | None = None,
     ):
-        """Open at most one P14-owned repair occurrence for material-shape misses.
+        """Open at most two P14-owned repair occurrences for material-shape misses.
 
         The failed exact occurrence stays durable and is never overwritten.
         Repair preserves the accepted analytical contract and delegates query

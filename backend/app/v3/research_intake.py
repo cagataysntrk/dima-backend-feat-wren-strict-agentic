@@ -4023,6 +4023,42 @@ class ResearchIntakeCompiler:
                 missing_change_frame_issue,
             )
 
+        final_change_period_issue = (
+            self._change_ranking_collapsed_period_issue(draft)
+        )
+        if (
+            final_change_period_issue is not None
+            and temporal_authority_reconsidered
+            and self.call_count < 3
+        ):
+            # The narrow PAIR resolver has already spent its one bounded
+            # deliberation but still returned an invalid collapsed pair.
+            # Delegate the final temporal decision to the existing scope-level
+            # SPAN/PAIR owner. This does not create temporal meaning in Dima.
+            draft = resolve_missing_change_frame(
+                draft,
+                {
+                    "kind": "COLLAPSED_CHANGE_TEMPORAL_FRAME",
+                    "governed_time_dimension_id": (
+                        final_change_period_issue[
+                            "time_dimension_semantic_id"
+                        ]
+                    ),
+                    "calendar_reference_date": self._calendar_reference_date,
+                    "source_fragments": [current],
+                    "prior_collapsed_pair": final_change_period_issue,
+                    "frame_policy": {
+                        "bounded_change_without_explicit_pair": (
+                            "SPAN_MATERIAL_WINDOW"
+                        ),
+                        "explicit_two_period_comparison": "PAIR",
+                        "invent_additional_comparison_period": False,
+                    },
+                },
+            )
+            draft = self._canonicalize_change_ranking_period_roles(draft)
+            draft = self._canonicalize_typed_temporal_comparison(draft)
+
         self._assert_change_ranking_temporal_contract(draft)
         final_change_period_issue = (
             self._change_ranking_collapsed_period_issue(draft)

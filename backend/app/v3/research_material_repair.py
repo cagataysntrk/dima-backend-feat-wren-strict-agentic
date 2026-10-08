@@ -25,7 +25,7 @@ class MaterialRepairDecision(Frozen):
     disposition: MaterialRepairDisposition
     validation_code: str = Field(min_length=1)
     validation_detail: str | None = Field(default=None, min_length=1)
-    repair_attempt: int = Field(ge=0, le=1)
+    repair_attempt: int = Field(ge=0, le=2)
     require_new_query_fingerprint: bool = True
     preserve_scope_identity: bool = True
     preserve_material_contract: bool = True
@@ -80,7 +80,7 @@ def decide_material_repair(
 
     repairable = (
         is_repairable_material_validation_code(validation_code)
-        and prior_repair_attempts == 0
+        and prior_repair_attempts < 2
     )
     return MaterialRepairDecision(
         disposition=(
@@ -90,7 +90,11 @@ def decide_material_repair(
         ),
         validation_code=validation_code,
         validation_detail=validation_detail,
-        repair_attempt=1 if repairable else min(prior_repair_attempts, 1),
+        repair_attempt=(
+            min(prior_repair_attempts + 1, 2)
+            if repairable
+            else min(prior_repair_attempts, 2)
+        ),
         expected_semantic_shape=expected_semantic_shape,
         observed_semantic_shape=observed_semantic_shape,
     )

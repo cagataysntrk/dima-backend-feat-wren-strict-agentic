@@ -56,10 +56,21 @@ def test_first_material_coverage_miss_allows_one_planner_repair(code: str) -> No
 
 
 @pytest.mark.parametrize("code", _REPAIRABLE)
-def test_second_material_coverage_miss_is_terminal_limit(code: str) -> None:
+def test_second_material_coverage_miss_allows_final_bounded_repair(code: str) -> None:
     decision = decide_material_repair(
         validation_code=code,
         prior_repair_attempts=1,
+    )
+
+    assert decision.disposition == MaterialRepairDisposition.REPAIR
+    assert decision.repair_attempt == 2
+
+
+@pytest.mark.parametrize("code", _REPAIRABLE)
+def test_third_material_coverage_miss_is_terminal_limit(code: str) -> None:
+    decision = decide_material_repair(
+        validation_code=code,
+        prior_repair_attempts=2,
     )
 
     assert decision.disposition == MaterialRepairDisposition.TERMINAL_LIMIT
