@@ -19,3 +19,4 @@ final_revalidation: explicitly-authorized
 broad_30_case: forbidden
 frontend: forbidden
 automatic_retry: forbidden
+authorization_revision: final-b89-gate-green-v2
