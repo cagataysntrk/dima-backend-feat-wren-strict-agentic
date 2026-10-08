@@ -759,22 +759,20 @@ class ResearchAskOrchestrator:
             obligation_id=obligation_id,
         )
         expected_shape = failure.expected_semantic_shape
-        if (
-            expected_shape is None
-            and failure.code == "NATIVE_MATERIAL_RANKING_TARGET_UNSUPPORTED"
-            and analytical_scope is not None
-            and analytical_scope.ranking is not None
-        ):
-            # The engine error is emitted before Dima can observe the invalid
-            # ranking target, so it cannot return an expected semantic shape.
-            # Re-project only the already accepted WHAT from the immutable
-            # contract into repair feedback; query construction remains
-            # entirely Metabot-owned.
+        if expected_shape is None and analytical_scope is not None:
+            # Repair feedback is a deterministic projection of the already
+            # accepted WHAT. It is not a second semantic judge and contains no
+            # MBQL/SQL/query-shape prescription; Metabot still owns HOW.
             expected_shape = {
-                "ranking": analytical_scope.ranking.model_dump(mode="json"),
-                "temporal_change_frame": (
-                    analytical_scope.temporal_change_frame.model_dump(mode="json")
-                    if analytical_scope.temporal_change_frame is not None
+                "metric_refs": list(analytical_scope.metric_refs),
+                "dimension_refs": list(analytical_scope.dimension_refs),
+                "filters": [
+                    item.model_dump(mode="json")
+                    for item in analytical_scope.filters
+                ],
+                "period": (
+                    analytical_scope.period.model_dump(mode="json")
+                    if analytical_scope.period is not None
                     else None
                 ),
                 "comparison": (
@@ -782,6 +780,22 @@ class ResearchAskOrchestrator:
                     if analytical_scope.comparison is not None
                     else None
                 ),
+                "temporal_observation": (
+                    analytical_scope.temporal_observation.model_dump(mode="json")
+                    if analytical_scope.temporal_observation is not None
+                    else None
+                ),
+                "temporal_change_frame": (
+                    analytical_scope.temporal_change_frame.model_dump(mode="json")
+                    if analytical_scope.temporal_change_frame is not None
+                    else None
+                ),
+                "ranking": (
+                    analytical_scope.ranking.model_dump(mode="json")
+                    if analytical_scope.ranking is not None
+                    else None
+                ),
+                "grain_constraints": list(analytical_scope.grain_constraints),
             }
         decision = decide_material_repair(
             validation_code=failure.code,

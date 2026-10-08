@@ -54,9 +54,9 @@
     "new_duplicate_semantic_owner_forbidden": true
   },
   "runtime_compliance": {
-    "status": "PROVIDER_FREE_CLOSED_B28_FINAL_12CASE_AUTHORIZED",
-    "last_recovery_run_id": 37738806053,
-    "last_recovery_result": "8_OF_12_GREEN__R02_R03_R06_R07_RED",
+    "status": "SOLE_VERIFIER_HOW_REPAIR_PROVIDER_FREE_PENDING",
+    "last_recovery_run_id": 37742438384,
+    "last_recovery_result": "10_OF_12_GREEN__R04_R07_RED",
     "live_closed_roots": {
       "atomic_p18_turn_reset": "CLOSED__R10_R11_R12_GREEN",
       "shared_acquisition_identity": "CLOSED__ONE_ACQUISITION__CONSUMERS_VERIFIED_SEPARATELY",
@@ -102,7 +102,20 @@
         "closure": "Execution now precedes non-veto fact extraction; Product projects observed native/result facts into AnalyticalExecutionManifestV1; only verify_analytical_fulfillment_v1 compares execution facts with AnalyticalIntent."
       }
     ],
-    "blockers": []
+    "blockers": [
+      {
+        "id": "SOLE_VERIFIER_HOW_MISMATCH_REPAIR_GAP",
+        "evidence_run_id": 37742438384,
+        "evidence_slots": [
+          "R04_TEMPORAL_ORIGINAL",
+          "R07_ADAPTIVE_ORIGINAL"
+        ],
+        "root": "Valid exact native executions reach the canonical fulfillment boundary, but post-collapse repair classification still recognizes legacy R1 material-shape codes more completely than ANALYTICAL_V1 sole-verifier HOW-coverage mismatches; optional allowed result time-axis facts can also be over-constrained when not required by the intent.",
+        "correction": "Route only repairable ANALYTICAL_V1 HOW-coverage mismatches to the existing bounded Metabot repair owner using a deterministic projection of accepted AnalyticalRequestContract; keep exact context, correlation, resource identity, foreign scope, dependency and integrity failures terminal. Treat an unrequested result time axis as legal only when it is inside allowed semantic scope.",
+        "semantic_owner_change": false,
+        "provider_free_status": "PENDING"
+      }
+    ]
   },
   "retired_runtime_semantic_vetoes": [
     "app.v3.research_analytical_scope.assert_material_native_scope",

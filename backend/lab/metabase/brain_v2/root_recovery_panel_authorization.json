@@ -1,6 +1,6 @@
 {
   "schema_version": "dima_brain_v2_1_root_recovery_panel_v1",
-  "enabled": true,
+  "enabled": false,
   "candidate_product_sha": "b28e0aa99e57556ffd1625045cca33ef27115715",
   "recovery_baseline": "505caec6e7c3fbd5346dc6a4c310e8f656d324ae",
   "provider_free_status": "GREEN",
@@ -122,22 +122,29 @@
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
   "frontend_allowed": false,
-  "note": "User-directed final closure validation for Product semantic candidate b28e0aa9... after generic temporal fact-role projection fix. Provider-free 37740990588, semantic+192-metamorphic+Wave-A/Wave-B+mutation 37740990661, and frozen-family 37740938076 are GREEN. Exactly one 12-case acceptance wave is authorized for this candidate. Broad 30-case/frontend remain forbidden and no automatic retry is authorized.",
+  "note": "Run 37742438384 completed 10/12 GREEN on b28e0aa9...; only R04/R07 RED. Paid panel is disarmed while the sole-verifier HOW-mismatch repair projection and optional-result-time-axis semantics are provider-free validated. Broad 30-case/frontend remain forbidden.",
   "final_result": {
-    "status": "AUTHORIZED_B28_FINAL_12CASE_PENDING_TRIGGER",
-    "workflow_run_id": null,
+    "status": "COMPLETE_10_OF_12__FINAL_GENERIC_REPAIR_FIX_PROVIDER_FREE_PENDING",
+    "workflow_run_id": 37742438384,
     "candidate_product_sha": "b28e0aa99e57556ffd1625045cca33ef27115715",
-    "thirty_case_execution_ready": false,
-    "paid_scope": "ONE_12_CASE_ACCEPTANCE_ONLY",
-    "prior_run_id": 37738806053,
-    "prior_result": "8_OF_12_GREEN",
-    "prior_red_slots": [
+    "green_slots": [
+      "R01_COMPARISON_ORIGINAL",
       "R02_COMPARISON_SEMANTIC",
       "R03_COMPARISON_WORDING",
+      "R05_TEMPORAL_SEMANTIC",
       "R06_TEMPORAL_WORDING",
+      "R08_ADAPTIVE_SEMANTIC",
+      "R09_ADAPTIVE_WORDING",
+      "R10_CONTINUATION_ORIGINAL",
+      "R11_CONTINUATION_DEEPENING",
+      "R12_CONTINUATION_REPORT_ONLY"
+    ],
+    "red_slots": [
+      "R04_TEMPORAL_ORIGINAL",
       "R07_ADAPTIVE_ORIGINAL"
     ],
-    "generic_fix_sha": "b28e0aa99e57556ffd1625045cca33ef27115715"
+    "thirty_case_execution_ready": false,
+    "paid_scope": "OFF_UNTIL_PROVIDER_FREE_REVALIDATION"
   },
   "prior_final_result": {
     "status": "RED",

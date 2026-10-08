@@ -460,3 +460,27 @@ def test_execution_fact_period_mismatch_fails_only_at_final_verifier() -> None:
     with pytest.raises(AnalyticalBoundaryError) as exc:
         verify_analytical_fulfillment_v1(intent, manifest)
     assert exc.value.code == "ANALYTICAL_V1_TEMPORAL_SCOPE_MISMATCH"
+
+def test_unrequired_allowed_result_time_axis_is_extra_observed_fact_not_a_veto() -> None:
+    intent = _intent().model_copy(
+        update={"temporal_observation_dimension": None}
+    )
+    manifest = _manifest(intent).model_copy(
+        update={"temporal_observation_dimension": "dimension.date"}
+    )
+
+    verify_analytical_fulfillment_v1(intent, manifest)
+
+
+def test_unrequired_foreign_result_time_axis_still_fails_closed() -> None:
+    intent = _intent().model_copy(
+        update={"temporal_observation_dimension": None}
+    )
+    manifest = _manifest(intent).model_copy(
+        update={"temporal_observation_dimension": "dimension.foreign-time"}
+    )
+
+    with pytest.raises(AnalyticalBoundaryError) as exc:
+        verify_analytical_fulfillment_v1(intent, manifest)
+    assert exc.value.code == "ANALYTICAL_V1_FOREIGN_SEMANTIC_ID"
+

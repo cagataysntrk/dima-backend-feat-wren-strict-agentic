@@ -44,10 +44,18 @@ _REPAIRABLE_MATERIAL_VALIDATION_CODES = frozenset(
         "R1_RESULT_CHANGE_TEMPORAL_COLUMN_REQUIRED",
         "R1_NATIVE_RANKING_REQUIRED_MISSING",
         "R1_NATIVE_RANKING_BASIS_MISMATCH",
-        # The frozen native observer uses this code when Metabot produced an
-        # ORDER BY target whose governed metric/change lineage cannot be proven.
-        # This is a planner-output shape miss under an otherwise accepted
-        # contract, so one bounded regeneration is legal.
+        # Semantic-layer-collapse: these are verdicts from the sole canonical
+        # Intent <-> ExecutionManifest judge. They say the Metabot-owned HOW did
+        # not expose enough accepted material; they do not alter WHAT authority.
+        "ANALYTICAL_V1_METRIC_COVERAGE_MISMATCH",
+        "ANALYTICAL_V1_DIMENSION_COVERAGE_MISMATCH",
+        "ANALYTICAL_V1_FILTER_SCOPE_MISMATCH",
+        "ANALYTICAL_V1_TEMPORAL_SCOPE_MISMATCH",
+        "ANALYTICAL_V1_TEMPORAL_OBSERVATION_MISMATCH",
+        "ANALYTICAL_V1_RANKING_MISMATCH",
+        "ANALYTICAL_V1_ROW_GRAIN_MISMATCH",
+        # The native fact extractor uses this code when a Metabot-produced
+        # ranking target has no provable governed metric/change lineage.
         "NATIVE_MATERIAL_RANKING_TARGET_UNSUPPORTED",
     }
 )

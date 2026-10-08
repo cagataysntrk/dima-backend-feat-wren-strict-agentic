@@ -669,6 +669,8 @@ def verify_analytical_fulfillment_v1(
     allowed = set(intent.allowed_semantic_ids)
     observed_semantic_ids = set(manifest.metrics) | set(manifest.dimensions)
     observed_semantic_ids |= {item.dimension_semantic_id for item in manifest.filters}
+    if manifest.temporal_observation_dimension is not None:
+        observed_semantic_ids.add(manifest.temporal_observation_dimension)
     foreign = observed_semantic_ids - allowed
     if foreign:
         raise AnalyticalBoundaryError(
@@ -735,10 +737,14 @@ def verify_analytical_fulfillment_v1(
                 "ANALYTICAL_V1_TEMPORAL_SCOPE_MISMATCH",
                 "execution periods/roles differ from accepted intent",
             )
-    if intent.temporal_observation_dimension != manifest.temporal_observation_dimension:
+    if (
+        intent.temporal_observation_dimension is not None
+        and intent.temporal_observation_dimension
+        != manifest.temporal_observation_dimension
+    ):
         raise AnalyticalBoundaryError(
             "ANALYTICAL_V1_TEMPORAL_OBSERVATION_MISMATCH",
-            "governed temporal observation identity differs",
+            "required governed temporal observation identity differs",
         )
     observed_rankings = manifest.rankings or (
         (manifest.ranking,) if manifest.ranking is not None else ()
