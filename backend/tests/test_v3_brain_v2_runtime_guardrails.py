@@ -253,7 +253,8 @@ def test_native_gateway_projects_execution_facts_without_transitional_semantic_v
         assert forbidden not in source
     assert "project_execution_manifest_v1" in source
     assert "verify_analytical_fulfillment_v1" in source
-    assert source.index("bridge.execute_native_query(") < source.index(
+    execute_source = source[source.index("    def execute("):]
+    assert execute_source.index("bridge.execute_native_query(") < execute_source.index(
         "_execution_fact_observation("
     )
 
