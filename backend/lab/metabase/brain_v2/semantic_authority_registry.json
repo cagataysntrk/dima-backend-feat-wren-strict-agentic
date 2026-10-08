@@ -54,9 +54,9 @@
     "new_duplicate_semantic_owner_forbidden": true
   },
   "runtime_compliance": {
-    "status": "PROVIDER_FREE_CLOSED_C33_FINAL_12CASE_AUTHORIZED",
-    "last_recovery_run_id": 37742438384,
-    "last_recovery_result": "10_OF_12_GREEN__R04_R07_RED",
+    "status": "PROVIDER_FREE_CLOSED_530_FINAL_12CASE_AUTHORIZED",
+    "last_recovery_run_id": 37745125447,
+    "last_recovery_result": "10_OF_12_GREEN__R02_R07_RED",
     "live_closed_roots": {
       "atomic_p18_turn_reset": "CLOSED__R10_R11_R12_GREEN",
       "shared_acquisition_identity": "CLOSED__ONE_ACQUISITION__CONSUMERS_VERIFIED_SEPARATELY",
@@ -65,17 +65,19 @@
       "temporal_pair_envelope_projection": "CLOSED_PROVIDER_FREE__EXACT_UNION_ONLY",
       "unverifiable_native_fact_how_repair": "CLOSED_PROVIDER_FREE__BOUNDED_TYPED_REPAIR_ONLY",
       "temporal_scope_result_axis_role_separation": "CLOSED_PROVIDER_FREE__SCOPE_FACTS_NOT_RESULT_AXIS",
-      "sole_verifier_how_repair_projection": "CLOSED_PROVIDER_FREE__BOUNDED_METABOT_REPAIR"
+      "sole_verifier_how_repair_projection": "CLOSED_PROVIDER_FREE__BOUNDED_METABOT_REPAIR",
+      "second_bounded_how_regeneration": "CLOSED_PROVIDER_FREE__MAX_TWO_REPAIRS",
+      "collapsed_pair_final_frame_delegation": "CLOSED_PROVIDER_FREE__EXISTING_TEMPORAL_FRAME_OWNER"
     },
     "provider_free_validation": {
-      "candidate_product_sha": "c33b1b74d4a94a5f50ef6d2f00ef8f8c740ec5b3",
+      "candidate_product_sha": "530be153e9b65ed8f3a75f872b601c8082ece631",
       "engine_sha": "656a449b46246c46529c9bb83929df17818e2fea",
       "engine_release": "0.63.18-dima.11.3",
       "engine_runtime_tag": "v0.63.18-dima.11.3.1",
       "engine_digest": "sha256:84f20edbc253b6c137b2a7c5c1508e4a9c7873981381f9f60868b5f7cf667a95",
-      "focused_run_id": 37744735149,
-      "frozen_family_run_id": 37744322987,
-      "semantic_metamorphic_wave_a_wave_b_mutation_run_id": 37744735053,
+      "focused_run_id": 37768206037,
+      "frozen_family_run_id": 37768206008,
+      "semantic_metamorphic_wave_a_wave_b_mutation_run_id": 37768206046,
       "generated_metamorphic_scenarios": 192,
       "status": "GREEN"
     },
