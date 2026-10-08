@@ -50,9 +50,6 @@ from app.v3.research_product import (
     ResearchMaterialObservationUnavailable,
     ResearchMaterialOutcome,
 )
-from app.v3.research_material_repair import (
-    is_repairable_material_validation_code,
-)
 from app.v3.research_result_dependency import (
     ResultDependencyProjectionError,
     ResultSelectionResolution,
@@ -760,95 +757,70 @@ class NativeResearchMaterialExecutor:
         self._subjects.assert_engine_identity(observation.runtime_identity)
         return observation
 
-    def _observe_executed_occurrence(
-        self,
-        *,
-        bridge: NativeEngineBridge,
-        native_conversation_id: uuid.UUID,
-        native_query_id: str,
-        metabase_user_id: int,
-    ) -> NativeMaterialObservation:
-        """Read structural facts after exact execution; never execute analytics."""
-
-        try:
-            observation = bridge.observe_native_query_material(
-                conversation_id=native_conversation_id,
-                native_query_id=native_query_id,
-            )
-        except NativeEngineBridgeError as exc:
-            if isinstance(exc, NativeEngineEndpointError):
-                code = exc.error_code or f"P14_NATIVE_FACT_HTTP_{exc.status_code}"
-                detail = self._engine_failure_detail(exc)
-            else:
-                code = "P14_NATIVE_EXECUTION_FACTS_UNAVAILABLE"
-                detail = str(exc)
-            raise ResearchMaterialObservationUnavailable(
-                code,
-                detail,
-                last_valid_boundary="dima.native.execute",
-                first_invalid_boundary="dima.native.observe",
-            ) from exc
-        return self._validate_execution_facts_provenance(
-            observation=observation,
-            native_conversation_id=native_conversation_id,
-            native_query_id=native_query_id,
-            metabase_user_id=metabase_user_id,
-        )
-
     def _execution_fact_observation(
         self,
         *,
-        bridge: NativeEngineBridge,
-        execution_observation,
+        execution_facts: dict[str, Any] | None,
         native_conversation_id: uuid.UUID,
         native_query_id: str,
         metabase_user_id: int,
     ) -> NativeMaterialObservation:
-        facts = execution_observation.execution_facts
-        if isinstance(facts, dict):
-            status = str(facts.get("status") or "")
-            raw_observation = facts.get("observation")
-            if status == "OBSERVED" and isinstance(raw_observation, dict):
-                try:
-                    observation = NativeMaterialObservation.model_validate(
-                        raw_observation
-                    )
-                except ValueError as exc:
-                    raise ResearchMaterialLimitation(
-                        "P14_NATIVE_EXECUTION_FACTS_INVALID",
-                        str(exc),
-                        last_valid_boundary="dima.native.execute",
-                        first_invalid_boundary="dima.native.observe",
-                    ) from exc
-                return self._validate_execution_facts_provenance(
-                    observation=observation,
-                    native_conversation_id=native_conversation_id,
-                    native_query_id=native_query_id,
-                    metabase_user_id=metabase_user_id,
+        """Project facts from the exact execution snapshot only.
+
+        Certified dima.11.3 returns execution facts with the exact occurrence.
+        Product never re-observes the physical query after execution: a missing
+        or incomplete fact snapshot is a bounded HOW/material defect that may
+        open a new repair occurrence, not a reason to reinterpret the same one.
+        """
+
+        if not isinstance(execution_facts, dict):
+            raise ResearchMaterialLimitation(
+                "P14_NATIVE_EXECUTION_FACTS_REQUIRED",
+                "certified exact execution response has no durable execution facts",
+                last_valid_boundary="dima.native.execute",
+                first_invalid_boundary="dima.execution_manifest.project",
+            )
+
+        status = str(execution_facts.get("status") or "")
+        raw_observation = execution_facts.get("observation")
+        if status == "OBSERVED" and isinstance(raw_observation, dict):
+            try:
+                observation = NativeMaterialObservation.model_validate(
+                    raw_observation
                 )
-            if status == "UNAVAILABLE":
-                code = str(
-                    facts.get("error_code")
-                    or "P14_NATIVE_EXECUTION_FACTS_UNAVAILABLE"
-                )
-                error_type = (
-                    ResearchMaterialLimitation
-                    if is_repairable_material_validation_code(code)
-                    else ResearchMaterialObservationUnavailable
-                )
-                raise error_type(
-                    code,
-                    str(facts.get("detail") or "execution facts are unavailable"),
+            except ValueError as exc:
+                raise ResearchMaterialLimitation(
+                    "P14_NATIVE_EXECUTION_FACTS_INVALID",
+                    str(exc),
                     last_valid_boundary="dima.native.execute",
-                    first_invalid_boundary="dima.native.observe",
-                )
-        # Backward-compatible seam for a pre-11.3 engine during provider-free
-        # migration. It is still post-execution and read-only.
-        return self._observe_executed_occurrence(
-            bridge=bridge,
-            native_conversation_id=native_conversation_id,
-            native_query_id=native_query_id,
-            metabase_user_id=metabase_user_id,
+                    first_invalid_boundary="dima.execution_manifest.project",
+                ) from exc
+            return self._validate_execution_facts_provenance(
+                observation=observation,
+                native_conversation_id=native_conversation_id,
+                native_query_id=native_query_id,
+                metabase_user_id=metabase_user_id,
+            )
+
+        if status == "UNAVAILABLE":
+            raise ResearchMaterialLimitation(
+                str(
+                    execution_facts.get("error_code")
+                    or "P14_NATIVE_EXECUTION_FACTS_UNAVAILABLE"
+                ),
+                str(
+                    execution_facts.get("detail")
+                    or "execution facts are unavailable"
+                ),
+                last_valid_boundary="dima.native.execute",
+                first_invalid_boundary="dima.execution_manifest.project",
+            )
+
+        raise ResearchMaterialLimitation(
+            "P14_NATIVE_EXECUTION_FACTS_INVALID",
+            f"unsupported exact execution facts status: {status!r}",
+            last_valid_boundary="dima.native.execute",
+            first_invalid_boundary="dima.execution_manifest.project",
         )
 
     def _projection_bindings(
@@ -1360,6 +1332,7 @@ class NativeResearchMaterialExecutor:
             (
                 result_payload,
                 runtime_payload,
+                persisted_execution_facts,
                 persisted_result_hash,
                 persisted_subject_ref,
                 executed_at,
@@ -1379,8 +1352,8 @@ class NativeResearchMaterialExecutor:
                     "persisted native result hash no longer matches its payload",
                 )
             runtime = RuntimeIdentity.model_validate(runtime_payload)
-            material_observation = self._observe_executed_occurrence(
-                bridge=bridge,
+            material_observation = self._execution_fact_observation(
+                execution_facts=persisted_execution_facts,
                 native_conversation_id=native_conversation_id,
                 native_query_id=native_query_id,
                 metabase_user_id=int(binding.metabase_user_id),
@@ -1462,12 +1435,12 @@ class NativeResearchMaterialExecutor:
                 native_subject_ref=native_subject_ref,
                 runtime_identity=runtime.model_dump(mode="json"),
                 result_payload=result_payload,
+                execution_facts=observed.execution_facts,
                 result_hash=result.result_hash,
                 executed_at=executed_at,
             )
             material_observation = self._execution_fact_observation(
-                bridge=bridge,
-                execution_observation=observed,
+                execution_facts=observed.execution_facts,
                 native_conversation_id=native_conversation_id,
                 native_query_id=native_query_id,
                 metabase_user_id=int(binding.metabase_user_id),
