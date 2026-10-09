@@ -1,6 +1,6 @@
 """Deterministic Requirement -> MaterialGroup execution projection.
 
-Accepted ResearchBrief/AnalyticalRequestContract remain semantic authority.
+Accepted ResearchScope/AnalyticalIntent remain semantic authority.
 MaterialGroup is transient execution metadata only: it binds one minimum
 governed native material need to the USER_MUST analytical requirements that
 consume it. No SQL/MBQL planning or second semantic truth lives here.
@@ -187,23 +187,32 @@ def _ranking_family(contract) -> str | None:
 
 
 def _shared_direct_clusters(session) -> tuple[tuple[str, ...], ...]:
-    """Find exact comparison/ranking siblings that can share one acquisition."""
+    """Find exact direct consumers that can share one acquisition.
+
+    Comparison may borrow one compatible ranking family. Ranking and BREAKDOWN
+    consumers participate only when their accepted projection already contains
+    one native ranking facet. MaterialGroup never invents a semantic relation.
+    """
 
     brief = session.accepted_brief
     assert brief is not None
     by_base: dict[str, list[tuple[str, str | None]]] = {}
     for question in brief.questions:
-        if (
-            question.kind not in {ResearchGoalKind.COMPARISON, ResearchGoalKind.RANKING}
-            or question.result_dependency is not None
-        ):
+        if question.result_dependency is not None:
             continue
         contract = _execution_contract(
             session=session,
             obligation_id=question.goal_id,
         )
         family = _ranking_family(contract)
-        if question.kind == ResearchGoalKind.RANKING and family is None:
+        if question.kind == ResearchGoalKind.COMPARISON:
+            pass
+        elif (
+            question.kind in {ResearchGoalKind.RANKING, ResearchGoalKind.BREAKDOWN}
+            and family is not None
+        ):
+            pass
+        else:
             continue
         by_base.setdefault(_acquisition_base(contract), []).append(
             (question.goal_id, family)
@@ -246,8 +255,7 @@ def _shared_acquisition_contract(*, session, consumers: tuple[str, ...]):
     by_id = {item.goal_id: item for item in brief.questions}
     questions = tuple(by_id[item] for item in consumers)
     if not questions or any(
-        item.kind not in {ResearchGoalKind.COMPARISON, ResearchGoalKind.RANKING}
-        or item.result_dependency is not None
+        item.result_dependency is not None
         for item in questions
     ):
         return None, None
@@ -260,6 +268,16 @@ def _shared_acquisition_contract(*, session, consumers: tuple[str, ...]):
         for item in questions
     }
     if len({_acquisition_base(item) for item in contracts.values()}) != 1:
+        return None, None
+    for question in questions:
+        family = _ranking_family(contracts[question.goal_id])
+        if question.kind == ResearchGoalKind.COMPARISON:
+            continue
+        if (
+            question.kind in {ResearchGoalKind.RANKING, ResearchGoalKind.BREAKDOWN}
+            and family is not None
+        ):
+            continue
         return None, None
 
     ranked = tuple(

@@ -909,24 +909,40 @@ class DimaBrainV2Activities(BrainActivities):
             native_acquisition_count=1,
             dedup_hit=False,
         ):
-            questions_by_id = {
-                item.goal_id: item for item in brief.questions
+            owner_by_requirement = {
+                item.requirement_id: item.owner
+                for item in dispatch_requirements(brief)
             }
-            shared_direct_consumers = (
-                group.consumer_requirement_ids
-                if len(group.consumer_requirement_ids) > 1
-                and all(
-                    questions_by_id[item].kind
-                    in {ResearchGoalKind.COMPARISON, ResearchGoalKind.RANKING}
-                    for item in group.consumer_requirement_ids
+            direct_consumers = tuple(
+                requirement_id
+                for requirement_id in group.consumer_requirement_ids
+                if owner_by_requirement.get(requirement_id)
+                == RequirementOwner.DIRECT_EVIDENCE
+            )
+            if direct_consumers and group.anchor_requirement_id not in set(
+                direct_consumers
+            ):
+                raise BrainV2OwnerError(
+                    "BRAIN_V2_MATERIAL_GROUP_DIRECT_ANCHOR_MISMATCH",
+                    group.material_group_id,
+                    requirement_id=group.anchor_requirement_id,
+                    material_group_id=group.material_group_id,
+                    expected_owner=RequirementOwner.DIRECT_EVIDENCE.value,
+                    observed_owner=(
+                        owner_by_requirement.get(group.anchor_requirement_id).value
+                        if owner_by_requirement.get(group.anchor_requirement_id)
+                        is not None
+                        else "UNKNOWN"
+                    ),
                 )
-                else (group.anchor_requirement_id,)
+            execution_consumers = direct_consumers or (
+                group.anchor_requirement_id,
             )
             response = self._research.run_next(
                 session_id=session.session_id,
                 principal=self._principal,
                 obligation_id=group.anchor_requirement_id,
-                consumer_obligation_ids=shared_direct_consumers,
+                consumer_obligation_ids=execution_consumers,
                 analytical_scope=contract,
                 native_session_token=self._native_session_token,
                 result_dependency_source_obligation_id=(

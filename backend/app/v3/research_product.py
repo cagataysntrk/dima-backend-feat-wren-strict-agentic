@@ -907,13 +907,29 @@ class ResearchAskOrchestrator:
         material_fingerprint: str | None = None,
         expected_semantic_shape: dict[str, Any] | None = None,
         observed_semantic_shape: dict[str, Any] | None = None,
+        obligation_ids: tuple[str, ...] | None = None,
     ) -> ResearchAskResponse:
         prior_revision = session.revision
-        updated = ResearchManager.record_limitation(
-            session,
-            obligation_id=obligation_id,
-            code=code,
-            detail=detail,
+        ids = tuple(dict.fromkeys(obligation_ids or (obligation_id,)))
+        if obligation_id not in set(ids):
+            raise ResearchProductError(
+                "P14_SHARED_ANCHOR_REQUIRED",
+                "limitation consumer set must include the execution anchor",
+            )
+        updated = (
+            ResearchManager.record_shared_limitation(
+                session,
+                obligation_ids=ids,
+                code=code,
+                detail=detail,
+            )
+            if len(ids) > 1
+            else ResearchManager.record_limitation(
+                session,
+                obligation_id=obligation_id,
+                code=code,
+                detail=detail,
+            )
         )
         self._store.save(updated, expected_revision=prior_revision)
         if link_id is not None:
@@ -1284,6 +1300,7 @@ class ResearchAskOrchestrator:
                         material_fingerprint=repair_failure.material_fingerprint,
                         expected_semantic_shape=repair_failure.expected_semantic_shape,
                         observed_semantic_shape=repair_failure.observed_semantic_shape,
+                        obligation_ids=consumer_ids,
                     )
                 session, repair_request, repair_link = repair
                 try:
@@ -1314,6 +1331,7 @@ class ResearchAskOrchestrator:
                         code="P14_NATIVE_TRANSPORT_FAILED",
                         detail=str(repair_exc),
                         link_id=repair_link.id,
+                        obligation_ids=consumer_ids,
                     )
                 except ResearchPersistenceError as repair_exc:
                     return self._limit(
@@ -1322,6 +1340,7 @@ class ResearchAskOrchestrator:
                         code=repair_exc.code,
                         detail=repair_exc.detail,
                         link_id=repair_link.id,
+                        obligation_ids=consumer_ids,
                     )
                 pending = repair_link
                 break
@@ -1332,6 +1351,7 @@ class ResearchAskOrchestrator:
                 code="P14_NATIVE_TRANSPORT_FAILED",
                 detail=str(exc),
                 link_id=pending.id,
+                obligation_ids=consumer_ids,
             )
         except ResearchPersistenceError as exc:
             return self._limit(
@@ -1340,6 +1360,7 @@ class ResearchAskOrchestrator:
                 code=exc.code,
                 detail=exc.detail,
                 link_id=pending.id,
+                obligation_ids=consumer_ids,
             )
 
         pending = self._store.execution_link(

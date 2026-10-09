@@ -355,3 +355,17 @@ def test_base_p14_planner_and_verifier_use_canonical_intent_not_request_contract
     verify_block = gateway[verify_start:verify_end]
     assert "project_analytical_intent_v1(" in verify_block
     assert "analytical_scope_contract(" not in verify_block
+
+def test_material_group_sharing_is_not_rejudged_by_owner_adapter():
+    source = (
+        BACKEND_ROOT / "app" / "v3" / "brain_v2" / "owner_adapter.py"
+    ).read_text(encoding="utf-8")
+    start = source.index("    def acquire_material_group(")
+    end = source.index("    def acquire_material(", start)
+    body = source[start:end]
+    assert "RequirementOwner.DIRECT_EVIDENCE" in body
+    assert "dispatch_requirements(brief)" in body
+    assert "ResearchGoalKind.COMPARISON" not in body
+    assert "ResearchGoalKind.RANKING" not in body
+    assert "ResearchGoalKind.BREAKDOWN" not in body
+

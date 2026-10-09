@@ -227,6 +227,25 @@ def change_ranking(goal_id, *, limit=None, metric_ref=DOWNTIME):
     )
 
 
+def change_breakdown(goal_id, *, metric_ref=DOWNTIME):
+    return ResearchQuestion(
+        goal_id=goal_id,
+        kind=ResearchGoalKind.BREAKDOWN,
+        source_text="Show department absolute change.",
+        source_fragment_identity="fragment-sha256:" + "5" * 64,
+        subject_refs=(DEPT, metric_ref),
+        related_refs=(DATE,),
+        ranking=RankingSurface(
+            text="show governed change by department",
+            direction="desc",
+            limit=None,
+            measure_semantic_id=metric_ref.candidate_id,
+            basis=RankingBasis.CHANGE,
+        ),
+        status=ResearchGoalStatus.RESOLVED,
+    )
+
+
 def test_compatible_ranking_relationship_share_one_material_group():
     groups = project_material_groups(session(brief(ranking(), relationship())))
 
@@ -391,6 +410,35 @@ def test_comparison_change_ranking_and_topk_share_one_acquisition():
         group=group,
     )
     assert contract.comparison is not None
+    assert contract.ranking is not None
+    assert contract.ranking.basis == RankingBasis.CHANGE
+    assert contract.ranking.limit is None
+
+
+
+def test_breakdown_change_and_topk_ranking_share_one_unbounded_acquisition():
+    value = pair_brief(
+        comparison(),
+        change_breakdown("g_change_breakdown"),
+        change_ranking("g_top2", limit=2),
+    )
+    groups = project_material_groups(session(value))
+
+    assert len(groups) == 2
+    shared = next(
+        group
+        for group in groups
+        if "g_change_breakdown" in set(group.consumer_requirement_ids)
+    )
+    assert set(shared.consumer_requirement_ids) == {
+        "g_change_breakdown",
+        "g_top2",
+    }
+    assert shared.anchor_requirement_id == "g_change_breakdown"
+    contract = material_groups_module.material_group_acquisition_contract(
+        session=session(value),
+        group=shared,
+    )
     assert contract.ranking is not None
     assert contract.ranking.basis == RankingBasis.CHANGE
     assert contract.ranking.limit is None

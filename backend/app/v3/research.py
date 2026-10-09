@@ -536,6 +536,51 @@ class ResearchManager:
         return cls.advance(session,now=stamp,obligations=cls.replace(session,item),limitations=(*session.limitations,lim))
 
     @classmethod
+    def record_shared_limitation(
+        cls,
+        session,
+        *,
+        obligation_ids,
+        code,
+        detail,
+        now=None,
+    ):
+        """Atomically terminalize direct consumers of one failed MaterialGroup.
+
+        This is ledger bookkeeping only. The caller supplies the already-sealed
+        direct consumer set; no semantic compatibility is decided here.
+        """
+
+        ids=tuple(dict.fromkeys(obligation_ids))
+        if not ids:
+            raise ResearchStateError(
+                "P14_SHARED_OBLIGATION_REQUIRED",
+                "shared material limitation requires at least one obligation",
+            )
+        items=tuple(cls.obligation(session,oid) for oid in ids)
+        verified=tuple(item.obligation_id for item in items if item.state==ObligationState.VERIFIED)
+        if verified:
+            raise ResearchStateError(
+                "P14_VERIFIED_OBLIGATION_IMMUTABLE",
+                ",".join(verified),
+            )
+        stamp=_now(now)
+        by_id={item.obligation_id:item for item in session.obligations}
+        limitations=[]
+        for oid in ids:
+            item=by_id[oid]
+            lid=_id("lim_",{"session":session.session_id,"obligation":oid,"code":code,"detail":detail,"revision":session.revision+1})
+            limitations.append(ResearchLimitation(limitation_id=lid,obligation_id=oid,code=code,detail=detail,recorded_at=stamp))
+            by_id[oid]=item.model_copy(update={"state":ObligationState.LIMITED,"limitation_refs":(*item.limitation_refs,lid)})
+        obligations=tuple(by_id[item.obligation_id] for item in session.obligations)
+        return cls.advance(
+            session,
+            now=stamp,
+            obligations=obligations,
+            limitations=(*session.limitations,*limitations),
+        )
+
+    @classmethod
     def record_retryable_limitation(cls,session,*,obligation_id,code,detail,now=None):
         """Record transient post-execution observation failure without terminalizing Research."""
         item=cls.obligation(session,obligation_id)

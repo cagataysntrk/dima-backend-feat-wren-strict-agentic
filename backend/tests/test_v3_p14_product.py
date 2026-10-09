@@ -1087,6 +1087,34 @@ def test_later_run_next_observes_same_waiting_occurrence_without_replay():
     assert len(executor.calls) == calls_after_verified
 
 
+
+def test_shared_material_limitation_terminalizes_direct_consumers_atomically():
+    engine = _db_engine()
+    factory = BridgeFactory()
+    executor = MaterialExecutor(limit_first=True)
+    product = _product(engine, factory, executor)
+    session = _start(product, two=True)
+
+    response = product.run_next(
+        session_id=session.session_id,
+        principal=_principal(),
+        obligation_id="g1",
+        consumer_obligation_ids=("g1", "g2"),
+    )
+    restored = product.resume_state(
+        session_id=session.session_id,
+        principal=_principal(),
+    )
+
+    assert response.limitation_code == "NATIVE_QUERY_RUNTIME_REPRESENTATION_UNSUPPORTED"
+    assert {item.obligation_id: item.state for item in restored.obligations} == {
+        "g1": ObligationState.LIMITED,
+        "g2": ObligationState.LIMITED,
+    }
+    assert {item.obligation_id for item in restored.limitations} == {"g1", "g2"}
+    assert restored.stopping.status == StoppingStatus.PARTIAL
+
+
 def test_material_limitation_is_scoped_and_independent_work_continues():
     engine = _db_engine()
     factory = BridgeFactory()
