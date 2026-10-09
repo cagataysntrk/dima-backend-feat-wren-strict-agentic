@@ -1,0 +1,23 @@
+{
+  "schema_version": "dima_brain_v2_1_round3_authorization_v1",
+  "enabled": true,
+  "candidate_product_sha": "01c76f2a28c49939ae74817a4a6d911c340793a1",
+  "product_semantic_anchor": "767d21a4417f8d255d981755df81e34718f13786",
+  "engine_sha": "3492ea2a27ef851be312c0f147514f7d2882b988",
+  "engine_release": "0.63.18-dima.11.5",
+  "engine_runtime_tag": "v0.63.18-dima.11.5.1",
+  "engine_digest": "sha256:c44fb2177375b5d483e428ec5a9f38a96c7053d9b9392431ea169c6115134c52",
+  "certification_run_id": 37949404907,
+  "model_policy": "LUNA_LUNA_NO_CASCADE",
+  "manifest": "backend/eval/dima_neutral_feature_benchmark_round2.json",
+  "fixture": "backend/eval/round2_neutral_machine_fixture.json",
+  "case_count": 30,
+  "broad_paid_allowed": true,
+  "thirty_case_allowed": true,
+  "automatic_retry_allowed": false,
+  "fail_fast": false,
+  "hard_provider_request_ceiling": 240,
+  "provider_cost_ceiling_usd": 1,
+  "authorization_basis": "explicit user authorization 2026-10-09 to run the frozen system and proceed toward 90+",
+  "purpose": "single frozen 30-case corpus proof; no 12-case rerun, no fixes during corpus"
+}
