@@ -1,6 +1,6 @@
 {
   "schema_version": "dima_brain_v2_1_release_validation_v1",
-  "status": "SEMANTIC_LAYER_COLLAPSE_CLOSED__LIVE_ACCEPTANCE_REAUTHORIZED",
+  "status": "A011_MATERIAL_GROUP_COLLAPSE_FINAL_12CASE_AUTHORIZED",
   "frozen_identity": {
     "product_semantic_sha": "ae4e0348601774082b0270f23d6de126e71e6055",
     "engine_sha": "686671fa7e55f715e4fb5ac155f9e66019fd12d8",
@@ -29,17 +29,17 @@
     "ninety_plus_proven": false,
     "eighty_plus_proven": false,
     "final_quality_score": 68.25,
-    "meaning": "Semantic Layer Collapse architecture remains closed on frozen Product 0f84769a... / certified engine dima.11.3. The prior OpenRouter 402 blocker has been cleared by user credit restoration. Harness-only HEAD 075625ef... hardens SQL-ready fixture seeding without Product/engine changes. The same 12-case live acceptance is reauthorized; 12/12 GREEN will freeze this Product identity and set 30-CASE EXECUTION READY = YES.",
+    "meaning": "Product semantic candidate a011a023... closes the remaining R02/R06 execution-group lifecycle debt without adding semantic owners: MaterialGroup alone projects sharing; owner_adapter reads sealed RequirementOwner dispatch; compatible BREAKDOWN(change)+RANKING(change) share one unbounded material acquisition; shared direct terminal limitations update the whole consumer ledger atomically. Provider-free focused 37932418508, frozen-family 37932119534, and semantic+192-metamorphic+Wave-A/Wave-B+mutation 37932418455 are GREEN. Final 12-case acceptance is authorized; broad 30-case remains forbidden until 12/12 GREEN.",
     "historical_last_completed_30_case_score": 68.25,
     "final_quality_score_source": "HISTORICAL_LAST_COMPLETED_30_CASE_RELEASE"
   },
   "provider_free_closure": {
     "status": "GREEN",
-    "candidate_product_sha": "0f84769a76532800f3ed3f26268fa31ccb67639f",
+    "candidate_product_sha": "a011a023b6c413e31f610b8554f18fad9c1a3672",
     "runs": {
-      "focused_brain_v2": 37813400494,
-      "frozen_family": 37803854168,
-      "semantic_conformance_192_metamorphic_wave_a_wave_b_mutation": 37813400464
+      "focused_brain_v2": 37932418508,
+      "frozen_family": 37932119534,
+      "semantic_conformance_192_metamorphic_wave_a_wave_b_mutation": 37932418455
     },
     "generated_metamorphic_scenarios": 192
   },
@@ -79,7 +79,7 @@
     "s3_diagnostic": false,
     "frontend": false,
     "automatic_retry": false,
-    "note": "One user-authorized live revalidation after external credit restoration; no Product/engine semantic change, no automatic retry, broad 30-case remains OFF until 12/12 GREEN.",
+    "note": "One final live 12-case acceptance for a011a023... after provider-free MaterialGroup lifecycle closure. No automatic retry; broad 30-case/frontend remain OFF until 12/12.",
     "root_recovery_retry": true
   },
   "actual_frozen_30_case_protocol": {
@@ -174,23 +174,25 @@
     "adjudication_document": "backend/belgeler/metabase/DIMA_BRAIN_V2_1_ROUND2_FINAL_ADJUDICATION_2026-10-06.md"
   },
   "active_recovery": {
-    "status": "AUTHORIZED_AFTER_OPENROUTER_CREDIT_RESTORE",
-    "candidate_product_sha": "0f84769a76532800f3ed3f26268fa31ccb67639f",
+    "status": "AUTHORIZED_PENDING_TRIGGER",
+    "candidate_product_sha": "a011a023b6c413e31f610b8554f18fad9c1a3672",
     "engine_sha": "656a449b46246c46529c9bb83929df17818e2fea",
+    "prior_recovery_run_id": 37930204787,
+    "prior_result": "10/12 GREEN; only R02/R06 RED",
+    "harness_head": "7684de8332741a933c37f4ad0fe90581de4f9d88",
     "provider_free": {
-      "focused_run_id": 37813400494,
-      "frozen_family_run_id": 37803854168,
-      "semantic_wave_mutation_run_id": 37813400464,
+      "focused_run_id": 37932418508,
+      "frozen_family_run_id": 37932119534,
+      "semantic_wave_mutation_run_id": 37932418455,
       "generated_metamorphic_scenarios": 192,
       "status": "GREEN"
     },
-    "harness_head": "075625ef7fd6871cf6ed5adc3605ee7c079bd6a7",
     "paid_authorization": true,
     "thirty_case_execution_ready": false,
     "actual_30_case_run_authorized": false
   },
   "active_candidate_identity": {
-    "product_semantic_sha": "0f84769a76532800f3ed3f26268fa31ccb67639f",
+    "product_semantic_sha": "a011a023b6c413e31f610b8554f18fad9c1a3672",
     "engine_sha": "656a449b46246c46529c9bb83929df17818e2fea",
     "engine_release": "0.63.18-dima.11.3",
     "engine_runtime_tag": "v0.63.18-dima.11.3.1",

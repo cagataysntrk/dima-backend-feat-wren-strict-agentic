@@ -1,22 +1,23 @@
-DIMA Brain V2.1 live acceptance after OpenRouter credit restore
+DIMA Brain V2.1 final MaterialGroup-collapse acceptance trigger
 
 mode: final-12-case-independent-recovery-panel
-candidate_product_sha: 0f84769a76532800f3ed3f26268fa31ccb67639f
-harness_head: 075625ef7fd6871cf6ed5adc3605ee7c079bd6a7
+candidate_product_sha: a011a023b6c413e31f610b8554f18fad9c1a3672
+harness_head: 7684de8332741a933c37f4ad0fe90581de4f9d88
 engine_sha: 656a449b46246c46529c9bb83929df17818e2fea
 engine_release: 0.63.18-dima.11.3
 engine_runtime_tag: v0.63.18-dima.11.3.1
 engine_certification_run: 37681817311
 engine_digest: sha256:84f20edbc253b6c137b2a7c5c1508e4a9c7873981381f9f60868b5f7cf667a95
-provider_free_focused_run: 37813400494
-provider_free_semantic_run: 37813400464
-provider_free_frozen_run: 37803854168
+provider_free_focused_run: 37932418508
+provider_free_semantic_run: 37932418455
+provider_free_frozen_run: 37932119534
 generated_metamorphic_scenarios: 192
-credit_restore_confirmed: true
+prior_case_executing_run: 37930204787
+prior_red_slots: R02_COMPARISON_SEMANTIC,R06_TEMPORAL_WORDING
 case_count: 12
 hard_provider_case_ceiling: 30
 final_acceptance: explicitly-authorized
 broad_30_case: forbidden
 frontend: forbidden
 automatic_retry: forbidden
-authorization_revision: credit-restored-0f847-v1
+authorization_revision: a011-material-group-collapse-v1
