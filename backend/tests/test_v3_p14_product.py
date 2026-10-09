@@ -340,8 +340,9 @@ class MaterialExecutor:
         native_query,
         query_fingerprint,
         execution_link_id,
+        consumer_obligation_ids=None,
     ) -> ResearchMaterialOutcome:
-        del principal, bridge
+        del principal, bridge, consumer_obligation_ids
         self.calls.append(
             (
                 obligation_id,
