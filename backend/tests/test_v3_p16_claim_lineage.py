@@ -301,6 +301,37 @@ def test_p15_origin_material_does_not_promote_claim_until_eligible_evidence_is_l
     assert supported.evidence_links[0].execution_link_id == str(link.id)
 
 
+def test_shared_evidence_id_resolves_by_claim_obligation_not_global_uniqueness():
+    db = db_engine()
+    store, session, link = setup_verified(db, request_ref="p16-shared")
+    original = session.evidence_refs[0]
+    shared_other_consumer = original.model_copy(
+        update={"obligation_id": "g2"}
+    )
+    session = ResearchManager.advance(
+        session,
+        evidence_refs=(
+            *session.evidence_refs,
+            shared_other_consumer,
+        ),
+    )
+    store.save(session, expected_revision=session.revision - 1)
+
+    claims = ClaimLineageStore(research_store=store, db_engine=db)
+    claim = create_claim(claims, session)
+    supported = claims.link_evidence(
+        session_id=session.session_id,
+        claim_id=claim.claim_id,
+        evidence_id=link.evidence_id,
+        relation=ClaimEvidenceRelation.SUPPORTS,
+        principal=principal(),
+    )
+
+    assert supported.epistemic_state == ClaimEpistemicState.SUPPORTED
+    assert len(supported.evidence_links) == 1
+    assert supported.evidence_links[0].execution_link_id == str(link.id)
+
+
 def test_support_and_challenge_become_contested_and_restart_preserves_lineage():
     db = db_engine()
     store, session, first_link = setup_verified(db)

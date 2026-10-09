@@ -475,29 +475,37 @@ class ClaimLineageStore:
             claim_id=claim_id,
             principal=principal,
         )
-        refs = tuple(
+        evidence_refs = tuple(
             x for x in session.evidence_refs if x.evidence_id == evidence_id
+        )
+        refs = tuple(
+            x
+            for x in evidence_refs
+            if (
+                x.obligation_id == claim.obligation_id
+                and x.authority_id == session.authority_id
+            )
         )
         if len(refs) > 1:
             raise ClaimLineageError(
                 "P16_EVIDENCE_NOT_IN_SESSION",
-                "Evidence is not uniquely present in the current Research session",
+                (
+                    "Evidence is not uniquely bound to the claim obligation "
+                    "inside the current Research session"
+                ),
+            )
+        if evidence_refs and not refs:
+            raise ClaimLineageError(
+                "P16_EVIDENCE_SCOPE_MISMATCH",
+                (
+                    "Evidence exists in the current Research session but is "
+                    "not bound to this claim obligation/authority"
+                ),
             )
 
         with Session(self._engine) as db:
             if refs:
                 evidence_ref = refs[0]
-                if (
-                    evidence_ref.obligation_id != claim.obligation_id
-                    or evidence_ref.authority_id != session.authority_id
-                ):
-                    raise ClaimLineageError(
-                        "P16_EVIDENCE_SCOPE_MISMATCH",
-                        (
-                            "Evidence belongs to another obligation or "
-                            "Research authority"
-                        ),
-                    )
                 executions = db.exec(
                     select(ResearchExecutionLink)
                     .where(ResearchExecutionLink.session_id == session_id)
