@@ -2958,6 +2958,15 @@ class ResearchIntakeCompiler:
         ):
             changed_facets.add(ScopePatchFacet.PERIOD)
 
+        accepted_entity_dimensions = {
+            item.dimension_name
+            for item in accepted_scope.semantic_refs
+            if (
+                item.target_kind == SemanticTargetKind.ENTITY_VALUE
+                and item.dimension_name is not None
+            )
+        }
+
         def keep_or_reject(ref: ResearchSemanticRef) -> bool:
             if ref.candidate_id in accepted_ids:
                 return True
@@ -2966,6 +2975,17 @@ class ResearchIntakeCompiler:
                 temporal_dimension_ids=temporal_ids,
             )
             if facet in changed_facets:
+                return False
+            if (
+                ref.target_kind == SemanticTargetKind.DIMENSION
+                and ref.canonical_name in accepted_entity_dimensions
+            ):
+                # An accepted entity value already carries its governed parent
+                # dimension (for example Assembly -> Department). A provider
+                # may repeat that parent dimension while expressing the filter,
+                # but the typed ENTITY patch did not authorize a new BREAKDOWN
+                # facet. Drop the redundant structural mention instead of
+                # manufacturing a second scope owner or rejecting the turn.
                 return False
             raise ResearchIntakeError(
                 "INTAKE_FOLLOWUP_REF_OUTSIDE_ACCEPTED_SCOPE",

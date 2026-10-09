@@ -1910,6 +1910,52 @@ def test_scope_mutation_patch_owns_negative_entity_mentions() -> None:
     assert result.brief.scope.scope_version.version_id == "scope_v2"
 
 
+def test_entity_patch_treats_parent_dimension_as_structural_not_new_breakdown() -> None:
+    base = catalog()
+    downtime = next(
+        item for item in base.semantic_refs
+        if item.candidate_id == "metric.downtime"
+    )
+    department = next(
+        item for item in base.semantic_refs
+        if item.candidate_id == "dimension.department"
+    )
+    assembly = ResearchSemanticRef(
+        source_mention="Assembly",
+        candidate_id="entity.department.assembly",
+        target_kind=SemanticTargetKind.ENTITY_VALUE,
+        canonical_name="Assembly",
+        dimension_name="Department",
+        value="Assembly",
+        cube_names=("machine_operations",),
+    )
+    prior_scope = ResearchScope(semantic_refs=(downtime,))
+    accepted_scope = ResearchScope(
+        semantic_refs=(downtime, assembly),
+    )
+    question = ResearchQuestion(
+        goal_id="g_entity_parent_projection",
+        kind=ResearchGoalKind.BREAKDOWN,
+        source_text="Focus only Assembly.",
+        subject_refs=(downtime,),
+        related_refs=(department, assembly),
+        status=ResearchGoalStatus.RESOLVED,
+    )
+
+    projected = ResearchIntakeCompiler._project_mutation_questions_to_scope(
+        questions=(question,),
+        prior_scope=prior_scope,
+        accepted_scope=accepted_scope,
+    )
+
+    assert len(projected) == 1
+    related_ids = {
+        item.candidate_id for item in projected[0].related_refs
+    }
+    assert "entity.department.assembly" in related_ids
+    assert "dimension.department" not in related_ids
+
+
 def test_noop_scope_patch_hint_becomes_same_scope_continuation() -> None:
     """A mutation routing hint cannot mint ScopeVersion without material delta."""
 
