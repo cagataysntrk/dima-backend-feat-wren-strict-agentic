@@ -54,7 +54,7 @@
     "new_duplicate_semantic_owner_forbidden": true
   },
   "runtime_compliance": {
-    "status": "PROVIDER_FREE_CLOSED_767D_FINAL_12CASE_AUTHORIZED",
+    "status": "PROVIDER_FREE_CLOSED_11P5_DELTA_ACCEPTANCE_AUTHORIZED",
     "last_recovery_run_id": 37930204787,
     "last_recovery_result": "10_OF_12_GREEN__R02_R06_HOW_REPAIR_BLIND_SPOT",
     "live_closed_roots": {
@@ -80,17 +80,19 @@
       "material_group_single_sharing_owner": "CLOSED_PROVIDER_FREE__NO_OWNER_ADAPTER_KIND_REJUDGMENT",
       "breakdown_ranking_shared_acquisition": "CLOSED_PROVIDER_FREE__ONE_UNBOUNDED_CHANGE_MATERIAL",
       "shared_direct_limitation_ledger": "CLOSED_PROVIDER_FREE__ATOMIC_DIRECT_CONSUMER_TERMINALIZATION",
-      "verifier_how_repair_observed_fact_transport": "CLOSED_PROVIDER_FREE__SOLE_VERIFIER_VERDICT_PROJECTION"
+      "verifier_how_repair_observed_fact_transport": "CLOSED_PROVIDER_FREE__SOLE_VERIFIER_VERDICT_PROJECTION",
+      "offset_absolute_datetime_runtime_compatibility": "CLOSED_ENGINE_11P5__LOSSLESS_HYDRATION_CERTIFIED"
     },
     "provider_free_validation": {
-      "candidate_product_sha": "767d21a4417f8d255d981755df81e34718f13786",
-      "engine_sha": "656a449b46246c46529c9bb83929df17818e2fea",
-      "engine_release": "0.63.18-dima.11.3",
-      "engine_runtime_tag": "v0.63.18-dima.11.3.1",
-      "engine_digest": "sha256:84f20edbc253b6c137b2a7c5c1508e4a9c7873981381f9f60868b5f7cf667a95",
-      "focused_run_id": 37932418508,
-      "frozen_family_run_id": 37932244464,
-      "semantic_metamorphic_wave_a_wave_b_mutation_run_id": 37932418455,
+      "candidate_product_sha": "01c76f2a28c49939ae74817a4a6d911c340793a1",
+      "product_semantic_anchor": "767d21a4417f8d255d981755df81e34718f13786",
+      "engine_sha": "3492ea2a27ef851be312c0f147514f7d2882b988",
+      "engine_release": "0.63.18-dima.11.5",
+      "engine_runtime_tag": "v0.63.18-dima.11.5.1",
+      "engine_digest": "sha256:c44fb2177375b5d483e428ec5a9f38a96c7053d9b9392431ea169c6115134c52",
+      "focused_run_id": 37954417214,
+      "frozen_family_run_id": 37954417163,
+      "semantic_metamorphic_wave_a_wave_b_mutation_run_id": 37954417158,
       "generated_metamorphic_scenarios": 192,
       "status": "GREEN"
     },
@@ -183,6 +185,15 @@
       "exit_condition": "same frozen 12-case acceptance rerun",
       "status": "CLEARED_BY_USER_CREDIT_RESTORE__AWAITING_LIVE_REPROOF",
       "cleared_at": "2026-10-09"
+    },
+    "acceptance_plan": {
+      "mode": "DELTA_RECEIPT",
+      "carried_green_count": 10,
+      "live_delta_slots": [
+        "R02_COMPARISON_SEMANTIC",
+        "R07_ADAPTIVE_ORIGINAL"
+      ],
+      "no_full_12_rerun": true
     }
   },
   "retired_runtime_semantic_vetoes": [

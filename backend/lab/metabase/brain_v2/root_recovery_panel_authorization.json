@@ -1,17 +1,17 @@
 {
   "schema_version": "dima_brain_v2_1_root_recovery_panel_v1",
   "enabled": true,
-  "candidate_product_sha": "767d21a4417f8d255d981755df81e34718f13786",
+  "candidate_product_sha": "01c76f2a28c49939ae74817a4a6d911c340793a1",
   "recovery_baseline": "505caec6e7c3fbd5346dc6a4c310e8f656d324ae",
   "provider_free_status": "GREEN",
-  "provider_free_focused_run_id": 37932418508,
-  "provider_free_semantic_run_id": 37932418455,
-  "provider_free_frozen_run_id": 37932244464,
+  "provider_free_focused_run_id": 37954417214,
+  "provider_free_semantic_run_id": 37954417158,
+  "provider_free_frozen_run_id": 37954417163,
   "generated_metamorphic_scenarios": 192,
-  "engine_sha": "656a449b46246c46529c9bb83929df17818e2fea",
-  "engine_release": "0.63.18-dima.11.3",
-  "engine_runtime_tag": "v0.63.18-dima.11.3.1",
-  "engine_digest": "sha256:84f20edbc253b6c137b2a7c5c1508e4a9c7873981381f9f60868b5f7cf667a95",
+  "engine_sha": "3492ea2a27ef851be312c0f147514f7d2882b988",
+  "engine_release": "0.63.18-dima.11.5",
+  "engine_runtime_tag": "v0.63.18-dima.11.5.1",
+  "engine_digest": "sha256:c44fb2177375b5d483e428ec5a9f38a96c7053d9b9392431ea169c6115134c52",
   "panel_policy": {
     "case_count": 12,
     "minimum_score_each": 3,
@@ -122,25 +122,21 @@
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
   "frontend_allowed": false,
-  "note": "Cost-controlled delta acceptance: never rerun the full 12-case matrix while Product candidate is unchanged. Carry 10 GREEN receipts from run 37933100509 on candidate 767d21a... and live-rerun only R02/R07. Harness diagnostics now expose typed limitation and durable execution-facts snapshots. Full matrix can be explicitly restored only by clearing delta_slots.",
+  "note": "Cost-controlled final acceptance on exact runtime candidate 01c76f2a... / semantic Product anchor 767d21a4... / certified dima.11.5 engine. Full 12-case reruns are forbidden while Product semantics are unchanged. Carry 10 GREEN receipts from 37933100509; live-rerun only R02 and R07 on the new certified engine. R02 revalidates ranking/comparison behavior across the engine delta; R07 proves the offset-aware absolute-datetime compatibility fix. Provider-free 37954417214, frozen-family 37954417163, semantic+192-metamorphic+Wave-A/Wave-B+mutation 37954417158 are GREEN.",
   "final_result": {
-    "status": "AUTHORIZED_767D_FINAL_12CASE_PENDING_TRIGGER",
+    "status": "AUTHORIZED_11P5_DELTA_ACCEPTANCE_PENDING_TRIGGER",
     "workflow_run_id": null,
-    "candidate_product_sha": "767d21a4417f8d255d981755df81e34718f13786",
-    "harness_head": "7684de8332741a933c37f4ad0fe90581de4f9d88",
+    "candidate_product_sha": "01c76f2a28c49939ae74817a4a6d911c340793a1",
+    "product_semantic_anchor": "767d21a4417f8d255d981755df81e34718f13786",
     "thirty_case_execution_ready": false,
-    "prior_run_id": 37930204787,
-    "prior_result": "10_OF_12_GREEN",
-    "prior_red_slots": [
+    "acceptance_mode": "DELTA_RECEIPT",
+    "carried_green_count": 10,
+    "live_delta_slots": [
       "R02_COMPARISON_SEMANTIC",
-      "R06_TEMPORAL_WORDING"
+      "R07_ADAPTIVE_ORIGINAL"
     ],
-    "product_fixes": [
-      "a011a023b6c413e31f610b8554f18fad9c1a3672",
-      "767d21a4417f8d255d981755df81e34718f13786"
-    ],
-    "semantic_authority_change": false,
-    "paid_scope": "ONE_FINAL_12_CASE_REVALIDATION_ONLY",
+    "prior_delta_run_id": 37936207028,
+    "prior_delta_result": "R02_GREEN__R07_RUNTIME_CODEC_RED",
     "automatic_retry_authorized": false
   },
   "prior_final_result": {
@@ -202,7 +198,11 @@
     "fallback_request_max_tokens": 512,
     "on_second_402": "STOP_EXTERNAL_CREDIT_BLOCKER",
     "credit_restore_confirmed_by_user": true,
-    "no_product_change": true
+    "no_product_change": true,
+    "exact_runtime_candidate_sha": "01c76f2a28c49939ae74817a4a6d911c340793a1",
+    "product_semantic_anchor": "767d21a4417f8d255d981755df81e34718f13786",
+    "engine_sha": "3492ea2a27ef851be312c0f147514f7d2882b988",
+    "no_product_semantic_change": true
   },
   "acceptance_mode": "DELTA_RECEIPT",
   "delta_slots": [
@@ -212,6 +212,7 @@
   "carried_green_receipts": {
     "source_run_id": 37933100509,
     "candidate_product_sha": "767d21a4417f8d255d981755df81e34718f13786",
+    "engine_sha": "656a449b46246c46529c9bb83929df17818e2fea",
     "slots": [
       "R01_COMPARISON_ORIGINAL",
       "R03_COMPARISON_WORDING",
@@ -225,6 +226,23 @@
       "R12_CONTINUATION_REPORT_ONLY"
     ],
     "duplicate_native": 0,
-    "stale_evidence": 0
-  }
+    "stale_evidence": 0,
+    "carry_basis": {
+      "engine_delta_kind": "CERTIFIED_STRUCTURAL_COMPATIBILITY_PLUS_PROVIDER_FREE_RANKING_FIXES",
+      "old_engine_sha": "656a449b46246c46529c9bb83929df17818e2fea",
+      "new_engine_sha": "3492ea2a27ef851be312c0f147514f7d2882b988",
+      "new_engine_certification_run": 37949404907,
+      "new_engine_digest": "sha256:c44fb2177375b5d483e428ec5a9f38a96c7053d9b9392431ea169c6115134c52",
+      "required_live_sensitivity_slots": [
+        "R02_COMPARISON_SEMANTIC",
+        "R07_ADAPTIVE_ORIGINAL"
+      ],
+      "provider_free_reproof_runs": [
+        37954417214,
+        37954417163,
+        37954417158
+      ]
+    }
+  },
+  "product_semantic_anchor": "767d21a4417f8d255d981755df81e34718f13786"
 }
