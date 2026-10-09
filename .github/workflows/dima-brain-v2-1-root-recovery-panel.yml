@@ -232,7 +232,21 @@ jobs:
           CORE_B_READONLY_PASSWORD: ${{ env.CORE_B_READONLY_PASSWORD }}
         run: |
           set -euo pipefail
-          python lab/metabase/core_b/runtime/seed_round2_fixture.py             --fixture eval/round2_neutral_machine_fixture.json
+          # pg_isready can briefly pass while a freshly pulled Postgres container
+          # is still stabilizing. Require a real SQL round-trip and retry the
+          # idempotent frozen-fixture seed instead of classifying startup jitter
+          # as a Product failure.
+          for i in $(seq 1 15); do
+            if PGPASSWORD="$PGPASSWORD" psql                 -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE"                 -v ON_ERROR_STOP=1 -Atqc 'select 1' >/dev/null 2>&1               && python lab/metabase/core_b/runtime/seed_round2_fixture.py                 --fixture eval/round2_neutral_machine_fixture.json; then
+              break
+            fi
+            if [ "$i" -eq 15 ]; then
+              echo "Frozen neutral fixture seed failed after 15 SQL-ready attempts" >&2
+              docker logs --tail=250 analytics-db || true
+              exit 1
+            fi
+            sleep 2
+          done
 
       - name: Start exact certified dima.11.2 engine
         shell: bash

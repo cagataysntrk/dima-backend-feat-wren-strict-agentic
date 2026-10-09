@@ -1,8 +1,8 @@
 # DIMA BRAIN V2.1 — CURRENT HANDOFF
 
-Updated: 2026-10-07
+Updated: 2026-10-09
 
-## 0. CURRENT AUTHORITATIVE STATE — SEMANTIC AUTHORITY RECOVERY
+## 0. CURRENT AUTHORITATIVE STATE — SEMANTIC LAYER COLLAPSE CLOSED
 
 This section supersedes every older status/freeze narrative later in this file.
 
@@ -10,28 +10,21 @@ Branch:
 
 `feat/dima-brain-v2-1-specification-closure`
 
-Current semantic Product candidate under recovery:
+Frozen semantic Product candidate:
 
-`eee7583cb67d50779784805c469230ef2b82a5a2`
+`0f84769a76532800f3ed3f26268fa31ccb67639f`
 
-Frozen engine:
+Certified engine:
 
-- SHA: `686671fa7e55f715e4fb5ac155f9e66019fd12d8`
-- release: `0.63.18-dima.11.2`
-- runtime tag: `v0.63.18-dima.11.2.1`
-- certification: `37449462486`
-- digest: `sha256:fe1b6fb67be6dbadea1af5d415f3ba2e033d46f91289f5c3c9844bee20c379bd`
+- SHA: `656a449b46246c46529c9bb83929df17818e2fea`
+- release: `0.63.18-dima.11.3`
+- runtime tag: `v0.63.18-dima.11.3.1`
+- certification: `37681817311`
+- digest: `sha256:84f20edbc253b6c137b2a7c5c1508e4a9c7873981381f9f60868b5f7cf667a95`
 
-Permanent architecture authority:
-
-- `DIMA_BRAIN_V2_1_SEMANTIC_AUTHORITY_CONSTITUTION.md`
-- `backend/lab/metabase/brain_v2/semantic_authority_registry.json`
-- `backend/tests/test_v3_brain_v2_runtime_guardrails.py`
-
-The permanent rule is:
+Permanent semantic law:
 
 ~~~text
-one business-semantic fact -> one canonical owner
 ResearchScope / AnalyticalIntentV1
 -> Metabase / Metabot HOW
 -> AnalyticalExecutionManifestV1
@@ -39,127 +32,99 @@ ResearchScope / AnalyticalIntentV1
 -> Evidence
 ~~~
 
-MaterialGroup is acquisition planning only. LangGraph is orchestration only. Completion is
-ledger only. P20 is synthesis only. Closed V1 grammar is conformance-only and may not be a
-forward-runtime veto. Native attestation/observation is structural provenance and must not
-reconstruct business meaning from physical query representation.
+### Semantic Layer Collapse is CLOSED
 
-### Root fixes closed provider-free
+Runtime closures now include:
 
-Fix B — atomic new-turn P18 reset:
+- `AnalyticalIntentV1` is the sole base analytical WHAT surface.
+- Base P14 no longer derives business semantics from `AnalyticalRequestContract`.
+- `AnalyticalRequestContract` remains compatibility/transport only.
+- Metabot receives one WHAT envelope, not parallel prompt/context contracts.
+- provider-selected temporal source fragments are no longer a shadow authority;
+  immutable current-turn text is the only language provenance.
+- post-execution observer fallback is removed.
+- exact execution carries one durable `execution_facts` snapshot.
+- incomplete execution facts open only bounded HOW repair; the same occurrence is
+  never semantically re-observed/reinterpreted.
+- canonical `AnalyticalIntentV1` survives HOW repair unchanged.
+- `verify_analytical_fulfillment_v1` remains the sole Intent↔Execution semantic judge.
+- MaterialGroup remains acquisition grouping only.
+- LangGraph remains orchestration/checkpoint/resume only.
+- Completion remains ledger/accounting only.
+- P20 remains governed synthesis only.
+- closed grammar remains conformance-only, never a forward-runtime veto.
+- R02 shared acquisition and independent consumer fulfillment are closed.
+- R10/P18 turn-owned atomic reset is closed.
+- duplicate native = 0 and stale Evidence = 0 in the validated closure families.
 
-- implemented;
-- `p18_requirement_ids`, `p18_result_refs`, `p18_claim_refs`,
-  `p18_policy_use_refs` reset as one turn-owned projection;
-- durable historical artifacts remain intact.
+Machine authority:
+`backend/lab/metabase/brain_v2/semantic_authority_registry.json`
 
-Fix A — shared analytical acquisition:
+### Provider-free / metamorphic closure
 
-- requirement identity separated from acquisition identity;
-- compatible comparison/change-ranking/top-k consumers share one governed acquisition;
-- one result is checked independently against N consumers;
-- one shared Evidence package carries explicit consumer identities;
-- result-dependent child work remains a later occurrence.
+Frozen Product `0f84769a...`:
 
-Provider-free closure on the Product candidate:
+- focused provider-free: `37813400494` GREEN
+- frozen-family: `37803854168` GREEN
+- semantic conformance + 192 generated metamorphic + Wave A/B + mutation:
+  `37813400464` GREEN
 
-- focused Brain V2: `37667461124` GREEN;
-- frozen-family: `37667461009` GREEN;
-- semantic conformance + 192 generated metamorphic scenarios + Wave A + Wave B + mutation:
-  `37667461012` GREEN.
+No new semantic owner or Product semantic blocker is open.
 
-Constitution/registry enforcement recertification:
+### Live 12-case acceptance — BLOCKED EXTERNALLY, not Product RED
 
-- focused provider-free: `37669106020` GREEN;
-- semantic conformance + metamorphic + Wave A/B + mutation: `37669106073` GREEN.
+Run `37813851937` completed partially before infrastructure failures:
 
-### Final one-wave recovery — COMPLETE / 10 of 12
+- six slots were live GREEN: R01, R03, R05, R08, R09, R10.
+- five slots were blocked by OpenRouter HTTP 402 / insufficient credit.
+- R12 was blocked by a fixture-seed startup race before Product execution.
+- that fixture-seed race is now hardened in the workflow with real SQL readiness
+  plus up to 15 idempotent seed attempts.
 
-The single authorized recovery run `37668955073` is complete on semantic Product
-`eee7583cb67d50779784805c469230ef2b82a5a2` and frozen engine
-`686671fa7e55f715e4fb5ac155f9e66019fd12d8`.
+Definitive credit proof:
 
-Mechanical result:
+- run: `37832593720`
+- evidence job: `113501951899`
+- first request max_tokens: 2048 -> upstream HTTP 402
+- one audited affordability retry max_tokens: 512 -> upstream HTTP 402
+- prompt/completion/reasoning usage: 0 / 0 / 0
+- native acquisition started: NO
 
-- GREEN: R01, R03, R04, R05, R06, R08, R09, R10, R11, R12.
-- RED: R02, R07.
-- completed = `12/12`.
-- successful = `10/12`.
-- `12/12 GREEN = NO`.
-- `30-CASE EXECUTION READY = NO`.
-- R9 post-recovery certification = NOT AUTHORIZED.
-- actual 30-case = NOT RUN / NOT AUTHORIZED.
-- paid retry = OFF.
-
-### Root adjudication
-
-**Fix B — atomic P18/new-turn reset is CLOSED live.**
-
-R10, R11 and R12 are all GREEN. The prior continuation failure
-`P18 requirement/result refs must be paired` did not recur. Current-turn P18 requirement/result/
-claim/policy refs remain one atomic projection bundle; durable historical P18 artifacts remain
-outside that reset.
-
-**Fix A — acquisition identity vs requirement identity is CLOSED as a Product grouping law.**
-
-The old sibling-fragmentation/provider-ceiling failure is gone: the RED slots have blocked
-provider = 0, duplicate native = 0 and stale Evidence = 0. Comparison/ranking/top-k consumer
-identity no longer forces independent acquisitions merely because fulfillment contracts differ.
-
-The remaining RED is downstream of grouping and upstream of native execution.
-
-### One remaining architecture blocker — R02 and R07 are one root
-
-Both RED slots share the same first wrong boundary:
+Therefore:
 
 ~~~text
-Metabot produces native query
--> exact native attestation HTTP 200
--> native-query-material-observation HTTP 422
--> exact native execution never starts
--> Evidence = 0
+SEMANTIC ARCHITECTURE CLOSED = YES
+PRODUCT SEMANTIC CHANGE REQUIRED = NO
+12/12 LIVE ACCEPTANCE PROVEN = NO
+30-CASE EXECUTION READY = NO
+BLOCKER = EXTERNAL OPENROUTER CREDIT / KEY BUDGET
 ~~~
 
-R02 used 8 provider requests; R07 used 10. Both used one base material attempt plus one bounded
-repair. Neither hit provider blocking, duplicate-native or stale-Evidence limits.
+Do not add another Product/engine/semantic patch to work around HTTP 402.
 
-The downstream R02 `P20_RESEARCH_SESSION_NOT_SEALED` is secondary: Research never reached a
-VERIFIED material state because the pre-execution observer vetoed the occurrence.
+Exit condition:
 
-This is now classified as **semantic-owner debt**, not a new benchmark family. The certified
-material observer reconstructs derived CHANGE/ranking meaning from physical query representation;
-representation ambiguity can therefore reject a legal typed intent before the sole fulfillment
-verifier sees an execution result.
+1. restore OpenRouter credits/key budget;
+2. re-enable the same 12-case authorization;
+3. rerun the identical frozen Product/engine panel;
+4. only `12/12 GREEN` freezes the acceptance receipt and sets
+   `30-CASE EXECUTION READY = YES`;
+5. then run the separately authorized full 30-case corpus to pursue 90+.
 
-Product transitional proof code also duplicates authority:
-`assert_material_native_scope()` checks metric/filter/time/dimension/ranking before final
-fulfillment, while result coverage adds another admission layer.
+### 90+ path after READY
 
-The forbidden response is another query-shape-specific observer patch, prompt/regex/fuzzy fix,
-provider-ceiling increase, Dima/Python CHANGE calculation, Intent echo disguised as observed facts,
-or weakened final fulfillment.
+Do not reopen owner cleanup. The historical 68.25 corpus already shows the quality families to
+attack only after current 12/12 acceptance is proven:
 
-Required exit architecture:
+1. adaptive investigation closure / useful bounded deepening;
+2. evidence-backed reporting and management synthesis coverage;
+3. difficult multi-turn scope/currentness continuation;
+4. remaining hard comparison/temporal robustness only if reproduced on the new frozen Product.
 
-~~~text
-ResearchScope / AnalyticalIntentV1
--> Metabase / Metabot HOW
--> stable execution-semantic facts bound to exact occurrence/result
--> AnalyticalExecutionManifestV1
--> verify_analytical_fulfillment_v1   (sole semantic judge)
--> Evidence
-~~~
+F02 ranking and F09 safety were already 100/100 historically. The next 90+ cycle must be
+corpus-level architecture work, not case IDs, regex/morphology, prompt patches, or a second
+semantic owner.
 
-Tenant/principal, ScopeVersion/currentness, exact occurrence, engine identity, permissions,
-query/result fingerprints, dedup and durable-resume proof remain fail-closed structural checks.
-Observer/coverage layers may extract facts; they must not become second business-semantic owners.
-
-This blocker is machine-registered in
-`backend/lab/metabase/brain_v2/semantic_authority_registry.json`, and CI disarms paid recovery
-while it remains open.
-
-Canonical recovery receipt:
-`backend/belgeler/metabase/DIMA_BRAIN_V2_1_FINAL_12CASE_RECOVERY_2026-10-07.md`.
 
 ## 0H. HISTORICAL STATE BELOW
 
