@@ -106,6 +106,16 @@ def _provider_delta(before: dict[str, Any], after: dict[str, Any]) -> dict[str, 
     return out
 
 
+def _json_or_none(raw: str | None) -> dict[str, Any] | None:
+    if not raw:
+        return None
+    try:
+        value = json.loads(raw)
+    except Exception:
+        return {"_invalid_json": True}
+    return value if isinstance(value, dict) else {"_invalid_json_shape": True}
+
+
 def _native_result(link: Any) -> Any:
     raw = getattr(link, "native_result_json", None)
     if not raw:
@@ -346,6 +356,7 @@ def _collect_turn(
             "lineage_id": getattr(session, "lineage_id", None),
             "obligations": [_safe(x) for x in getattr(session, "obligations", ())],
             "evidence_refs": [_safe(x) for x in getattr(session, "evidence_refs", ())],
+            "limitations": [_safe(x) for x in getattr(session, "limitations", ())],
         } if session is not None else None,
         "native_occurrences": [
             {
@@ -357,6 +368,11 @@ def _collect_turn(
                 "receipt_id": x.receipt_id,
                 "evidence_id": x.evidence_id,
                 "execution_kind": x.execution_kind,
+                "limitation_code": getattr(x, "limitation_code", None),
+                "limitation_detail": getattr(x, "limitation_detail", None),
+                "execution_facts": _json_or_none(
+                    getattr(x, "execution_facts_json", None)
+                ),
                 "native_result": _native_result(x),
             }
             for x in links

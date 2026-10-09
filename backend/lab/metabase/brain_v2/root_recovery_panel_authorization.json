@@ -122,7 +122,7 @@
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
   "frontend_allowed": false,
-  "note": "Corrected exact Product candidate for final revalidation: 767d21a4... includes a011 MaterialGroup atomic lifecycle plus generic sole-verifier expected/observed verdict transport to bounded Metabot HOW repair. Test-only 7684de83... aligns the executor fixture only. Provider-free focused 37932418508 GREEN, frozen-family 37932244464 GREEN, semantic+192-metamorphic+Wave-A/Wave-B+mutation 37932418455 GREEN. Prior live 37930204787 was 10/12 with only R02/R06 RED. Exactly one final 12-case revalidation; broad 30-case/frontend remain forbidden until 12/12.",
+  "note": "Cost-controlled delta acceptance: never rerun the full 12-case matrix while Product candidate is unchanged. Carry 10 GREEN receipts from run 37933100509 on candidate 767d21a... and live-rerun only R02/R07. Harness diagnostics now expose typed limitation and durable execution-facts snapshots. Full matrix can be explicitly restored only by clearing delta_slots.",
   "final_result": {
     "status": "AUTHORIZED_767D_FINAL_12CASE_PENDING_TRIGGER",
     "workflow_run_id": null,
@@ -203,5 +203,28 @@
     "on_second_402": "STOP_EXTERNAL_CREDIT_BLOCKER",
     "credit_restore_confirmed_by_user": true,
     "no_product_change": true
+  },
+  "acceptance_mode": "DELTA_RECEIPT",
+  "delta_slots": [
+    "R02_COMPARISON_SEMANTIC",
+    "R07_ADAPTIVE_ORIGINAL"
+  ],
+  "carried_green_receipts": {
+    "source_run_id": 37933100509,
+    "candidate_product_sha": "767d21a4417f8d255d981755df81e34718f13786",
+    "slots": [
+      "R01_COMPARISON_ORIGINAL",
+      "R03_COMPARISON_WORDING",
+      "R04_TEMPORAL_ORIGINAL",
+      "R05_TEMPORAL_SEMANTIC",
+      "R06_TEMPORAL_WORDING",
+      "R08_ADAPTIVE_SEMANTIC",
+      "R09_ADAPTIVE_WORDING",
+      "R10_CONTINUATION_ORIGINAL",
+      "R11_CONTINUATION_DEEPENING",
+      "R12_CONTINUATION_REPORT_ONLY"
+    ],
+    "duplicate_native": 0,
+    "stale_evidence": 0
   }
 }
