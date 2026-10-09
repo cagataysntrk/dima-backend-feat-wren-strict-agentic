@@ -54,9 +54,9 @@
     "new_duplicate_semantic_owner_forbidden": true
   },
   "runtime_compliance": {
-    "status": "PROVIDER_FREE_CLOSED_11P5_DELTA_ACCEPTANCE_AUTHORIZED",
-    "last_recovery_run_id": 37930204787,
-    "last_recovery_result": "10_OF_12_GREEN__R02_R06_HOW_REPAIR_BLIND_SPOT",
+    "status": "CLOSED__30_CASE_EXECUTION_READY",
+    "last_recovery_run_id": 37954968271,
+    "last_recovery_result": "12_OF_12_GREEN__DELTA_RECEIPT_10_CARRIED_2_LIVE",
     "live_closed_roots": {
       "atomic_p18_turn_reset": "CLOSED__R10_R11_R12_GREEN",
       "shared_acquisition_identity": "CLOSED__ONE_ACQUISITION__CONSUMERS_VERIFIED_SEPARATELY",
@@ -124,35 +124,29 @@
     "exact_product_code_candidate": "e5c91312c3dd0d5acbf4229de723396791bff9a0",
     "semantic_behavior_anchor": "f297b8458031c4aa77adc54414fbf5552dbb4c59",
     "acceptance": {
-      "run_id": 37813851937,
-      "result": "6_OF_12_GREEN",
-      "green_slots": [
-        "R01_COMPARISON_ORIGINAL",
-        "R03_COMPARISON_WORDING",
-        "R05_TEMPORAL_SEMANTIC",
-        "R08_ADAPTIVE_SEMANTIC",
-        "R09_ADAPTIVE_WORDING",
-        "R10_CONTINUATION_ORIGINAL"
-      ],
-      "red_slots": [
+      "status": "GREEN",
+      "mode": "DELTA_RECEIPT",
+      "run_id": 37954968271,
+      "logical_green_slots": 12,
+      "carried_green_count": 10,
+      "carried_green_source_run_id": 37933100509,
+      "live_green_slots": [
         "R02_COMPARISON_SEMANTIC",
-        "R04_TEMPORAL_ORIGINAL",
-        "R06_TEMPORAL_WORDING",
-        "R07_ADAPTIVE_ORIGINAL",
-        "R11_CONTINUATION_DEEPENING",
-        "R12_CONTINUATION_REPORT_ONLY"
+        "R07_ADAPTIVE_ORIGINAL"
       ],
-      "failure_classification": {
-        "R02_COMPARISON_SEMANTIC": "PROVIDER_INFRA_OPENROUTER_402_INSUFFICIENT_CREDITS",
-        "R04_TEMPORAL_ORIGINAL": "PROVIDER_INFRA_OPENROUTER_402_INSUFFICIENT_CREDITS",
-        "R06_TEMPORAL_WORDING": "PROVIDER_INFRA_OPENROUTER_402_INSUFFICIENT_CREDITS",
-        "R07_ADAPTIVE_ORIGINAL": "PROVIDER_INFRA_OPENROUTER_402_INSUFFICIENT_CREDITS",
-        "R11_CONTINUATION_DEEPENING": "PROVIDER_INFRA_OPENROUTER_402_INSUFFICIENT_CREDITS",
-        "R12_CONTINUATION_REPORT_ONLY": "HARNESS_FIXTURE_SEED_FAILURE__NO_ARTIFACT"
+      "live_green_jobs": {
+        "R02_COMPARISON_SEMANTIC": 113903098006,
+        "R07_ADAPTIVE_ORIGINAL": 113903097890
       },
-      "conclusion": "No new duplicate semantic authority or Semantic Layer Collapse production blocker was proven. Acceptance proof is invalid/incomplete because external provider credit failures and one harness fixture-seed failure prevented 12/12."
+      "exact_runtime_candidate_sha": "01c76f2a28c49939ae74817a4a6d911c340793a1",
+      "product_semantic_anchor": "767d21a4417f8d255d981755df81e34718f13786",
+      "engine_sha": "3492ea2a27ef851be312c0f147514f7d2882b988",
+      "duplicate_native": 0,
+      "stale_evidence": 0,
+      "full_12_rerun_performed": false,
+      "thirty_case_execution_ready": true
     },
-    "next_work_category": "LIVE_ACCEPTANCE_THEN_30_CASE_CORPUS__NO_SEMANTIC_OWNER_REOPEN",
+    "next_work_category": "ACTUAL_30_CASE_CORPUS__NO_SEMANTIC_OWNER_REOPEN",
     "infrastructure_revalidation": {
       "prior_run_id": 37831138286,
       "static_7000_openrouter_402": true,
@@ -182,18 +176,16 @@
       "native_acquisition_started": false,
       "semantic_authority_debt": false,
       "product_fix_required": false,
-      "exit_condition": "same frozen 12-case acceptance rerun",
-      "status": "CLEARED_BY_USER_CREDIT_RESTORE__AWAITING_LIVE_REPROOF",
+      "exit_condition": "SATISFIED",
+      "status": "CLOSED__CREDIT_RESTORED_AND_LIVE_REPROOF_GREEN",
       "cleared_at": "2026-10-09"
     },
     "acceptance_plan": {
-      "mode": "DELTA_RECEIPT",
-      "carried_green_count": 10,
-      "live_delta_slots": [
-        "R02_COMPARISON_SEMANTIC",
-        "R07_ADAPTIVE_ORIGINAL"
-      ],
-      "no_full_12_rerun": true
+      "mode": "SEALED",
+      "no_full_12_rerun": true,
+      "no_more_root_recovery_paid_runs": true,
+      "root_recovery_authorization": "OFF",
+      "actual_30_case_authorization": "SEPARATE_EXPLICIT_USER_DECISION"
     }
   },
   "retired_runtime_semantic_vetoes": [

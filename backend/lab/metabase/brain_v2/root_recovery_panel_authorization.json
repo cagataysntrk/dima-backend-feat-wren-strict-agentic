@@ -1,6 +1,6 @@
 {
   "schema_version": "dima_brain_v2_1_root_recovery_panel_v1",
-  "enabled": true,
+  "enabled": false,
   "candidate_product_sha": "01c76f2a28c49939ae74817a4a6d911c340793a1",
   "recovery_baseline": "505caec6e7c3fbd5346dc6a4c310e8f656d324ae",
   "provider_free_status": "GREEN",
@@ -122,22 +122,34 @@
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
   "frontend_allowed": false,
-  "note": "Cost-controlled final acceptance on exact runtime candidate 01c76f2a... / semantic Product anchor 767d21a4... / certified dima.11.5 engine. Full 12-case reruns are forbidden while Product semantics are unchanged. Carry 10 GREEN receipts from 37933100509; live-rerun only R02 and R07 on the new certified engine. R02 revalidates ranking/comparison behavior across the engine delta; R07 proves the offset-aware absolute-datetime compatibility fix. Provider-free 37954417214, frozen-family 37954417163, semantic+192-metamorphic+Wave-A/Wave-B+mutation 37954417158 are GREEN.",
+  "note": "FINAL SEALED: cost-controlled logical 12/12 acceptance is GREEN. Ten carried GREEN receipts plus live R02/R07 GREEN on certified dima.11.5 close the readiness gate. Root-recovery authorization is OFF; no full-12 rerun and no automatic paid retry are authorized. Actual 30-case execution remains a separate explicit authorization.",
   "final_result": {
-    "status": "AUTHORIZED_11P5_DELTA_ACCEPTANCE_PENDING_TRIGGER",
-    "workflow_run_id": null,
+    "status": "GREEN_DELTA_RECEIPT_12_OF_12",
+    "workflow_run_id": 37954968271,
     "candidate_product_sha": "01c76f2a28c49939ae74817a4a6d911c340793a1",
     "product_semantic_anchor": "767d21a4417f8d255d981755df81e34718f13786",
-    "thirty_case_execution_ready": false,
+    "engine_sha": "3492ea2a27ef851be312c0f147514f7d2882b988",
+    "engine_release": "0.63.18-dima.11.5",
+    "engine_runtime_tag": "v0.63.18-dima.11.5.1",
+    "engine_digest": "sha256:c44fb2177375b5d483e428ec5a9f38a96c7053d9b9392431ea169c6115134c52",
+    "thirty_case_execution_ready": true,
     "acceptance_mode": "DELTA_RECEIPT",
+    "logical_green_slots": 12,
     "carried_green_count": 10,
-    "live_delta_slots": [
+    "carried_green_source_run_id": 37933100509,
+    "live_green_slots": [
       "R02_COMPARISON_SEMANTIC",
       "R07_ADAPTIVE_ORIGINAL"
     ],
-    "prior_delta_run_id": 37936207028,
-    "prior_delta_result": "R02_GREEN__R07_RUNTIME_CODEC_RED",
-    "automatic_retry_authorized": false
+    "live_green_jobs": {
+      "R02_COMPARISON_SEMANTIC": 113903098006,
+      "R07_ADAPTIVE_ORIGINAL": 113903097890
+    },
+    "duplicate_native": 0,
+    "stale_evidence": 0,
+    "full_12_rerun_performed": false,
+    "automatic_retry_authorized": false,
+    "actual_30_case_run_authorized": false
   },
   "prior_final_result": {
     "status": "RED",
@@ -204,11 +216,8 @@
     "engine_sha": "3492ea2a27ef851be312c0f147514f7d2882b988",
     "no_product_semantic_change": true
   },
-  "acceptance_mode": "DELTA_RECEIPT",
-  "delta_slots": [
-    "R02_COMPARISON_SEMANTIC",
-    "R07_ADAPTIVE_ORIGINAL"
-  ],
+  "acceptance_mode": "DELTA_RECEIPT_SEALED",
+  "delta_slots": [],
   "carried_green_receipts": {
     "source_run_id": 37933100509,
     "candidate_product_sha": "767d21a4417f8d255d981755df81e34718f13786",
@@ -244,5 +253,14 @@
       ]
     }
   },
-  "product_semantic_anchor": "767d21a4417f8d255d981755df81e34718f13786"
+  "product_semantic_anchor": "767d21a4417f8d255d981755df81e34718f13786",
+  "final_seal": {
+    "sealed_at": "2026-10-09",
+    "logical_result": "12_OF_12_GREEN",
+    "acceptance_run_id": 37954968271,
+    "carried_green_count": 10,
+    "live_green_count": 2,
+    "no_full_12_rerun": true,
+    "root_recovery_closed": true
+  }
 }

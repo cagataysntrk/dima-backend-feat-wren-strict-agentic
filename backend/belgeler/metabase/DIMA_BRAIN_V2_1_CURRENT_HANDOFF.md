@@ -2,7 +2,7 @@
 
 Updated: 2026-10-09
 
-## 0. CURRENT AUTHORITATIVE STATE — SEMANTIC LAYER COLLAPSE CLOSED
+## 0. CURRENT AUTHORITATIVE STATE — 30-CASE EXECUTION READY
 
 This section supersedes every older status/freeze narrative later in this file.
 
@@ -10,17 +10,21 @@ Branch:
 
 `feat/dima-brain-v2-1-specification-closure`
 
-Frozen semantic Product candidate:
+Frozen Product semantic anchor:
 
-`0f84769a76532800f3ed3f26268fa31ccb67639f`
+`767d21a4417f8d255d981755df81e34718f13786`
+
+Exact runtime candidate:
+
+`01c76f2a28c49939ae74817a4a6d911c340793a1`
 
 Certified engine:
 
-- SHA: `656a449b46246c46529c9bb83929df17818e2fea`
-- release: `0.63.18-dima.11.3`
-- runtime tag: `v0.63.18-dima.11.3.1`
-- certification: `37681817311`
-- digest: `sha256:84f20edbc253b6c137b2a7c5c1508e4a9c7873981381f9f60868b5f7cf667a95`
+- SHA: `3492ea2a27ef851be312c0f147514f7d2882b988`
+- release: `0.63.18-dima.11.5`
+- runtime tag: `v0.63.18-dima.11.5.1`
+- certification: `37949404907`
+- digest: `sha256:c44fb2177375b5d483e428ec5a9f38a96c7053d9b9392431ea169c6115134c52`
 
 Permanent semantic law:
 
@@ -32,99 +36,68 @@ ResearchScope / AnalyticalIntentV1
 -> Evidence
 ~~~
 
-### Semantic Layer Collapse is CLOSED
+### Semantic Layer Collapse = CLOSED
 
-Runtime closures now include:
+The runtime has one analytical WHAT authority and one fulfillment judge. `AnalyticalRequestContract` is transport/compatibility only; MaterialGroup is acquisition grouping only; attestation/execution-fact observation is structural/provenance only; LangGraph is orchestration only; completion is ledger/accounting only; P20 is governed synthesis only; closed grammar is conformance-only. Post-execution observer fallback and duplicate Metabot WHAT surfaces are removed. Canonical `AnalyticalIntentV1` survives bounded HOW repair unchanged.
 
-- `AnalyticalIntentV1` is the sole base analytical WHAT surface.
-- Base P14 no longer derives business semantics from `AnalyticalRequestContract`.
-- `AnalyticalRequestContract` remains compatibility/transport only.
-- Metabot receives one WHAT envelope, not parallel prompt/context contracts.
-- provider-selected temporal source fragments are no longer a shadow authority;
-  immutable current-turn text is the only language provenance.
-- post-execution observer fallback is removed.
-- exact execution carries one durable `execution_facts` snapshot.
-- incomplete execution facts open only bounded HOW repair; the same occurrence is
-  never semantically re-observed/reinterpreted.
-- canonical `AnalyticalIntentV1` survives HOW repair unchanged.
-- `verify_analytical_fulfillment_v1` remains the sole Intent↔Execution semantic judge.
-- MaterialGroup remains acquisition grouping only.
-- LangGraph remains orchestration/checkpoint/resume only.
-- Completion remains ledger/accounting only.
-- P20 remains governed synthesis only.
-- closed grammar remains conformance-only, never a forward-runtime veto.
-- R02 shared acquisition and independent consumer fulfillment are closed.
-- R10/P18 turn-owned atomic reset is closed.
-- duplicate native = 0 and stale Evidence = 0 in the validated closure families.
+No semantic-owner cleanup, prompt/regex/morphology patching, or case-specific Product branch is authorized after this seal.
 
-Machine authority:
-`backend/lab/metabase/brain_v2/semantic_authority_registry.json`
+### Provider-free / metamorphic closure = GREEN
 
-### Provider-free / metamorphic closure
+Exact runtime candidate `01c76f2a...` + engine `3492ea2a...`:
 
-Frozen Product `0f84769a...`:
-
-- focused provider-free: `37813400494` GREEN
-- frozen-family: `37803854168` GREEN
+- focused provider-free: `37954417214` GREEN
+- frozen-family: `37954417163` GREEN
 - semantic conformance + 192 generated metamorphic + Wave A/B + mutation:
-  `37813400464` GREEN
+  `37954417158` GREEN
 
-No new semantic owner or Product semantic blocker is open.
+### Final acceptance = logical 12/12 GREEN without a full-panel rerun
 
-### Live 12-case acceptance — BLOCKED EXTERNALLY, not Product RED
+To stop wasting provider spend, acceptance was converted to a cost-controlled delta receipt.
 
-Run `37813851937` completed partially before infrastructure failures:
+Carried GREEN receipts from run `37933100509`:
 
-- six slots were live GREEN: R01, R03, R05, R08, R09, R10.
-- five slots were blocked by OpenRouter HTTP 402 / insufficient credit.
-- R12 was blocked by a fixture-seed startup race before Product execution.
-- that fixture-seed race is now hardened in the workflow with real SQL readiness
-  plus up to 15 idempotent seed attempts.
+- R01
+- R03
+- R04
+- R05
+- R06
+- R08
+- R09
+- R10
+- R11
+- R12
 
-Definitive credit proof:
+Live sensitivity delta on new certified engine, run `37954968271`:
 
-- run: `37832593720`
-- evidence job: `113501951899`
-- first request max_tokens: 2048 -> upstream HTTP 402
-- one audited affordability retry max_tokens: 512 -> upstream HTTP 402
-- prompt/completion/reasoning usage: 0 / 0 / 0
-- native acquisition started: NO
+- R02_COMPARISON_SEMANTIC: GREEN, job `113903098006`
+- R07_ADAPTIVE_ORIGINAL: GREEN, job `113903097890`
+
+Acceptance invariants:
+
+- logical GREEN slots: `12 / 12`
+- full 12-case rerun performed: `NO`
+- duplicate native: `0`
+- stale Evidence: `0`
+- engine runtime codec blocker: CLOSED by certified dima.11.5
+- root-recovery paid authorization: OFF
 
 Therefore:
 
 ~~~text
-SEMANTIC ARCHITECTURE CLOSED = YES
-PRODUCT SEMANTIC CHANGE REQUIRED = NO
-12/12 LIVE ACCEPTANCE PROVEN = NO
-30-CASE EXECUTION READY = NO
-BLOCKER = EXTERNAL OPENROUTER CREDIT / KEY BUDGET
+SEMANTIC LAYER COLLAPSE = CLOSED
+SEMANTIC PRODUCT SHA FROZEN = YES
+LOGICAL 12/12 ACCEPTANCE = GREEN
+30-CASE EXECUTION READY = YES
+ACTUAL NEW 30-CASE EXECUTED = NO
+ACTUAL NEW 30-CASE AUTHORIZED = NO
 ~~~
 
-Do not add another Product/engine/semantic patch to work around HTTP 402.
+READY does not authorize the corpus run by itself. The next paid action, when explicitly authorized, is one frozen actual 30-case corpus — not another 12-case acceptance loop.
 
-Exit condition:
+### Path to 90+
 
-1. restore OpenRouter credits/key budget;
-2. re-enable the same 12-case authorization;
-3. rerun the identical frozen Product/engine panel;
-4. only `12/12 GREEN` freezes the acceptance receipt and sets
-   `30-CASE EXECUTION READY = YES`;
-5. then run the separately authorized full 30-case corpus to pursue 90+.
-
-### 90+ path after READY
-
-Do not reopen owner cleanup. The historical 68.25 corpus already shows the quality families to
-attack only after current 12/12 acceptance is proven:
-
-1. adaptive investigation closure / useful bounded deepening;
-2. evidence-backed reporting and management synthesis coverage;
-3. difficult multi-turn scope/currentness continuation;
-4. remaining hard comparison/temporal robustness only if reproduced on the new frozen Product.
-
-F02 ranking and F09 safety were already 100/100 historically. The next 90+ cycle must be
-corpus-level architecture work, not case IDs, regex/morphology, prompt patches, or a second
-semantic owner.
-
+Do not reopen semantic-owner cleanup. Run one separately authorized actual 30-case corpus on the frozen identity above, adjudicate the complete corpus, then work only on reproduced corpus-level root families. Historical priorities remain adaptive investigation/deepening, evidence-backed management synthesis/reporting, difficult multi-turn scope/currentness continuation, and any hard comparison/temporal weakness that still reproduces. F02 ranking and F09 safety were historically 100/100 and should not be destabilized.
 
 ## 0H. HISTORICAL STATE BELOW
 

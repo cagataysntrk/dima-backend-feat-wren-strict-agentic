@@ -1,6 +1,6 @@
 {
   "schema_version": "dima_brain_v2_1_release_validation_v1",
-  "status": "DIMA11P5_COST_CONTROLLED_DELTA_ACCEPTANCE_AUTHORIZED",
+  "status": "30_CASE_EXECUTION_READY__DELTA_12_OF_12_GREEN",
   "frozen_identity": {
     "product_semantic_sha": "ae4e0348601774082b0270f23d6de126e71e6055",
     "engine_sha": "686671fa7e55f715e4fb5ac155f9e66019fd12d8",
@@ -23,13 +23,13 @@
     "role": "HISTORICAL_LAST_COMPLETED_30_CASE_RELEASE"
   },
   "readiness": {
-    "thirty_case_execution_ready": false,
+    "thirty_case_execution_ready": true,
     "thirty_case_execution_completed": false,
     "ninety_plus_high_confidence_quality_ready": false,
     "ninety_plus_proven": false,
     "eighty_plus_proven": false,
     "final_quality_score": 68.25,
-    "meaning": "Semantic Layer Collapse is closed. Exact runtime candidate 01c76f2a... pins certified dima.11.5 engine 3492ea2a.../sha256:c44fb217... over unchanged Product semantic anchor 767d21a4.... Provider-free focused 37954417214, frozen-family 37954417163, and semantic+192 metamorphic+Wave-A/Wave-B+mutation 37954417158 are GREEN. Cost-controlled acceptance carries 10 prior GREEN receipts and reruns only R02/R07; no full-12 rerun.",
+    "meaning": "READY SEALED. Semantic Layer Collapse is closed. Product semantic anchor 767d21a4... with exact runtime candidate 01c76f2a... and certified dima.11.5 engine 3492ea2a... passed provider-free focused/frozen/semantic+192-metamorphic closure. Cost-controlled acceptance uses 10 carried GREEN receipts plus live R02/R07 GREEN from run 37954968271, giving logical 12/12 GREEN without rerunning the full panel. 30-CASE EXECUTION READY = YES. Actual 30-case execution remains not run and not authorized on this candidate.",
     "historical_last_completed_30_case_score": 68.25,
     "final_quality_score_source": "HISTORICAL_LAST_COMPLETED_30_CASE_RELEASE"
   },
@@ -81,8 +81,8 @@
     "s3_diagnostic": false,
     "frontend": false,
     "automatic_retry": false,
-    "note": "Cost-controlled two-slot delta acceptance only. Full 12-case rerun, broad 30-case and frontend remain OFF until delta seal completes.",
-    "root_recovery_retry": true
+    "note": "Root-recovery acceptance is CLOSED after logical 12/12 GREEN. No more 12-case retries. Actual 30-case corpus requires separate explicit authorization.",
+    "root_recovery_retry": false
   },
   "actual_frozen_30_case_protocol": {
     "required_identity_match": true,
@@ -176,18 +176,17 @@
     "adjudication_document": "backend/belgeler/metabase/DIMA_BRAIN_V2_1_ROUND2_FINAL_ADJUDICATION_2026-10-06.md"
   },
   "active_recovery": {
-    "status": "AUTHORIZED_DELTA_PENDING_TRIGGER",
+    "status": "COMPLETE_12_OF_12_GREEN",
     "candidate_product_sha": "01c76f2a28c49939ae74817a4a6d911c340793a1",
     "product_semantic_anchor": "767d21a4417f8d255d981755df81e34718f13786",
     "engine_sha": "3492ea2a27ef851be312c0f147514f7d2882b988",
     "engine_release": "0.63.18-dima.11.5",
     "engine_runtime_tag": "v0.63.18-dima.11.5.1",
     "engine_digest": "sha256:c44fb2177375b5d483e428ec5a9f38a96c7053d9b9392431ea169c6115134c52",
-    "prior_delta_run_id": 37936207028,
-    "prior_delta_result": "R02 GREEN; R07 RED only on old engine runtime codec",
     "acceptance_mode": "DELTA_RECEIPT",
+    "acceptance_run_id": 37954968271,
     "carried_green_count": 10,
-    "live_delta_slots": [
+    "live_green_slots": [
       "R02_COMPARISON_SEMANTIC",
       "R07_ADAPTIVE_ORIGINAL"
     ],
@@ -198,8 +197,8 @@
       "generated_metamorphic_scenarios": 192,
       "status": "GREEN"
     },
-    "paid_authorization": true,
-    "thirty_case_execution_ready": false,
+    "paid_authorization": false,
+    "thirty_case_execution_ready": true,
     "actual_30_case_run_authorized": false
   },
   "active_candidate_identity": {
@@ -210,7 +209,50 @@
     "engine_runtime_tag": "v0.63.18-dima.11.5.1",
     "engine_digest": "sha256:c44fb2177375b5d483e428ec5a9f38a96c7053d9b9392431ea169c6115134c52",
     "engine_certification_run": 37949404907,
-    "recovery_semantic_product_frozen": false,
+    "recovery_semantic_product_frozen": true,
     "broad_30_case_executed_on_this_candidate": false
+  },
+  "semantic_freeze": {
+    "status": "FROZEN_AFTER_12_OF_12_GREEN",
+    "product_semantic_sha": "767d21a4417f8d255d981755df81e34718f13786",
+    "exact_runtime_candidate_sha": "01c76f2a28c49939ae74817a4a6d911c340793a1",
+    "engine_sha": "3492ea2a27ef851be312c0f147514f7d2882b988",
+    "engine_release": "0.63.18-dima.11.5",
+    "engine_runtime_tag": "v0.63.18-dima.11.5.1",
+    "engine_digest": "sha256:c44fb2177375b5d483e428ec5a9f38a96c7053d9b9392431ea169c6115134c52",
+    "engine_certification_run": 37949404907,
+    "acceptance_mode": "DELTA_RECEIPT",
+    "acceptance_run_id": 37954968271,
+    "logical_green_slots": 12,
+    "carried_green_slots": 10,
+    "live_green_slots": [
+      "R02_COMPARISON_SEMANTIC",
+      "R07_ADAPTIVE_ORIGINAL"
+    ],
+    "duplicate_native": 0,
+    "stale_evidence": 0,
+    "full_12_rerun_performed": false
+  },
+  "current_acceptance_result": {
+    "status": "COMPLETE",
+    "mode": "DELTA_RECEIPT",
+    "logical_slots": 12,
+    "logical_green": 12,
+    "carried_green": 10,
+    "carried_source_run_id": 37933100509,
+    "live_run_id": 37954968271,
+    "live_slots": {
+      "R02_COMPARISON_SEMANTIC": {
+        "status": "GREEN",
+        "job_id": 113903098006
+      },
+      "R07_ADAPTIVE_ORIGINAL": {
+        "status": "GREEN",
+        "job_id": 113903097890
+      }
+    },
+    "duplicate_native": 0,
+    "stale_evidence": 0,
+    "thirty_case_execution_ready": true
   }
 }
