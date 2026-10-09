@@ -1,6 +1,6 @@
 {
   "schema_version": "dima_brain_v2_1_release_validation_v1",
-  "status": "A011_MATERIAL_GROUP_COLLAPSE_FINAL_12CASE_AUTHORIZED",
+  "status": "767D_FINAL_12CASE_AUTHORIZED",
   "frozen_identity": {
     "product_semantic_sha": "ae4e0348601774082b0270f23d6de126e71e6055",
     "engine_sha": "686671fa7e55f715e4fb5ac155f9e66019fd12d8",
@@ -29,16 +29,16 @@
     "ninety_plus_proven": false,
     "eighty_plus_proven": false,
     "final_quality_score": 68.25,
-    "meaning": "Product semantic candidate a011a023... closes the remaining R02/R06 execution-group lifecycle debt without adding semantic owners: MaterialGroup alone projects sharing; owner_adapter reads sealed RequirementOwner dispatch; compatible BREAKDOWN(change)+RANKING(change) share one unbounded material acquisition; shared direct terminal limitations update the whole consumer ledger atomically. Provider-free focused 37932418508, frozen-family 37932119534, and semantic+192-metamorphic+Wave-A/Wave-B+mutation 37932418455 are GREEN. Final 12-case acceptance is authorized; broad 30-case remains forbidden until 12/12 GREEN.",
+    "meaning": "Semantic Layer Collapse remains closed. Exact Product candidate 767d21a4... contains atomic MaterialGroup lifecycle and transport-only projection of the sole verifier's expected/observed verdict into bounded Metabot HOW repair. No new semantic owner and no verifier weakening. Provider-free focused 37932418508, frozen-family 37932244464, semantic+192-metamorphic+Wave-A/Wave-B+mutation 37932418455 are GREEN. Prior live 37930204787 was 10/12 (R02/R06 RED). Final 12-case revalidation is authorized; broad 30-case remains forbidden until 12/12 GREEN.",
     "historical_last_completed_30_case_score": 68.25,
     "final_quality_score_source": "HISTORICAL_LAST_COMPLETED_30_CASE_RELEASE"
   },
   "provider_free_closure": {
     "status": "GREEN",
-    "candidate_product_sha": "a011a023b6c413e31f610b8554f18fad9c1a3672",
+    "candidate_product_sha": "767d21a4417f8d255d981755df81e34718f13786",
     "runs": {
       "focused_brain_v2": 37932418508,
-      "frozen_family": 37932119534,
+      "frozen_family": 37932244464,
       "semantic_conformance_192_metamorphic_wave_a_wave_b_mutation": 37932418455
     },
     "generated_metamorphic_scenarios": 192
@@ -79,7 +79,7 @@
     "s3_diagnostic": false,
     "frontend": false,
     "automatic_retry": false,
-    "note": "One final live 12-case acceptance for a011a023... after provider-free MaterialGroup lifecycle closure. No automatic retry; broad 30-case/frontend remain OFF until 12/12.",
+    "note": "Exactly one final 12-case revalidation on Product 767d21a4...; no automatic retry; broad 30-case remains OFF until 12/12 GREEN.",
     "root_recovery_retry": true
   },
   "actual_frozen_30_case_protocol": {
@@ -175,14 +175,14 @@
   },
   "active_recovery": {
     "status": "AUTHORIZED_PENDING_TRIGGER",
-    "candidate_product_sha": "a011a023b6c413e31f610b8554f18fad9c1a3672",
+    "candidate_product_sha": "767d21a4417f8d255d981755df81e34718f13786",
     "engine_sha": "656a449b46246c46529c9bb83929df17818e2fea",
     "prior_recovery_run_id": 37930204787,
-    "prior_result": "10/12 GREEN; only R02/R06 RED",
+    "prior_result": "10/12 GREEN; R02/R06 RED",
     "harness_head": "7684de8332741a933c37f4ad0fe90581de4f9d88",
     "provider_free": {
       "focused_run_id": 37932418508,
-      "frozen_family_run_id": 37932119534,
+      "frozen_family_run_id": 37932244464,
       "semantic_wave_mutation_run_id": 37932418455,
       "generated_metamorphic_scenarios": 192,
       "status": "GREEN"
@@ -192,7 +192,7 @@
     "actual_30_case_run_authorized": false
   },
   "active_candidate_identity": {
-    "product_semantic_sha": "a011a023b6c413e31f610b8554f18fad9c1a3672",
+    "product_semantic_sha": "767d21a4417f8d255d981755df81e34718f13786",
     "engine_sha": "656a449b46246c46529c9bb83929df17818e2fea",
     "engine_release": "0.63.18-dima.11.3",
     "engine_runtime_tag": "v0.63.18-dima.11.3.1",
