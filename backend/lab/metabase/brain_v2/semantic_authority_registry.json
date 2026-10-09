@@ -54,7 +54,7 @@
     "new_duplicate_semantic_owner_forbidden": true
   },
   "runtime_compliance": {
-    "status": "SEMANTIC_AUTHORITY_CLOSED__LIVE_ACCEPTANCE_BLOCKED_EXTERNAL_PROVIDER_CREDIT",
+    "status": "SEMANTIC_AUTHORITY_CLOSED__LIVE_ACCEPTANCE_REAUTHORIZED_AFTER_CREDIT_RESTORE",
     "last_recovery_run_id": 37813851937,
     "last_recovery_result": "6_OF_12_GREEN__5_PROVIDER_402__1_FIXTURE_SEED_FAILURE",
     "live_closed_roots": {
@@ -146,7 +146,7 @@
       },
       "conclusion": "No new duplicate semantic authority or Semantic Layer Collapse production blocker was proven. Acceptance proof is invalid/incomplete because external provider credit failures and one harness fixture-seed failure prevented 12/12."
     },
-    "next_work_category": "SEPARATE_METABOT_PROVIDER_AND_HOW_RELIABILITY_WORK__NOT_SEMANTIC_LAYER_COLLAPSE",
+    "next_work_category": "LIVE_ACCEPTANCE_THEN_30_CASE_CORPUS__NO_SEMANTIC_OWNER_REOPEN",
     "infrastructure_revalidation": {
       "prior_run_id": 37831138286,
       "static_7000_openrouter_402": true,
@@ -176,7 +176,9 @@
       "native_acquisition_started": false,
       "semantic_authority_debt": false,
       "product_fix_required": false,
-      "exit_condition": "OpenRouter credits/key budget restored; same 12-case acceptance rerun without Product/engine changes."
+      "exit_condition": "same frozen 12-case acceptance rerun",
+      "status": "CLEARED_BY_USER_CREDIT_RESTORE__AWAITING_LIVE_REPROOF",
+      "cleared_at": "2026-10-09"
     }
   },
   "retired_runtime_semantic_vetoes": [

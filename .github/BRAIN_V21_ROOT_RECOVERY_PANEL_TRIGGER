@@ -1,21 +1,22 @@
-DIMA Brain V2.1 acceptance stop trigger
+DIMA Brain V2.1 live acceptance after OpenRouter credit restore
 
-mode: external-provider-credit-blocker-stop
+mode: final-12-case-independent-recovery-panel
 candidate_product_sha: 0f84769a76532800f3ed3f26268fa31ccb67639f
+harness_head: 075625ef7fd6871cf6ed5adc3605ee7c079bd6a7
 engine_sha: 656a449b46246c46529c9bb83929df17818e2fea
-blocked_run: 37832593720
-evidence_job: 113501951899
-first_max_tokens: 2048
-first_upstream_status: 402
-fallback_max_tokens: 512
-fallback_upstream_status: 402
-prompt_tokens: 0
-completion_tokens: 0
-reasoning_tokens: 0
-native_acquisition_started: false
-semantic_architecture_closed: true
-product_fix_required: false
-thirty_case_execution_ready: false
+engine_release: 0.63.18-dima.11.3
+engine_runtime_tag: v0.63.18-dima.11.3.1
+engine_certification_run: 37681817311
+engine_digest: sha256:84f20edbc253b6c137b2a7c5c1508e4a9c7873981381f9f60868b5f7cf667a95
+provider_free_focused_run: 37813400494
+provider_free_semantic_run: 37813400464
+provider_free_frozen_run: 37803854168
+generated_metamorphic_scenarios: 192
+credit_restore_confirmed: true
+case_count: 12
+hard_provider_case_ceiling: 30
+final_acceptance: explicitly-authorized
+broad_30_case: forbidden
+frontend: forbidden
 automatic_retry: forbidden
-resume_condition: restore-openrouter-credits-or-key-budget
-authorization_revision: stop-external-openrouter-credit-v1
+authorization_revision: credit-restored-0f847-v1

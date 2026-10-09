@@ -1,6 +1,6 @@
 {
   "schema_version": "dima_brain_v2_1_root_recovery_panel_v1",
-  "enabled": false,
+  "enabled": true,
   "candidate_product_sha": "0f84769a76532800f3ed3f26268fa31ccb67639f",
   "recovery_baseline": "505caec6e7c3fbd5346dc6a4c310e8f656d324ae",
   "provider_free_status": "GREEN",
@@ -122,29 +122,19 @@
   "broad_paid_allowed": false,
   "thirty_case_allowed": false,
   "frontend_allowed": false,
-  "note": "Semantic Layer Collapse Product remains frozen at 0f84769a... with certified engine dima.11.3. Final infrastructure validation proved OpenRouter external credit rejection: run 37832593720 R02 first request max_tokens=2048 returned upstream 402; the single audited fallback max_tokens=512 also returned upstream 402; prompt/completion/reasoning usage all remained zero and native acquisition never began. Further repository retries/token reductions are forbidden because they would no longer be a faithful acceptance proof. Re-enable only after OpenRouter credits/key budget are restored; then rerun the same 12-case panel with no Product/engine change.",
+  "note": "OpenRouter credits/key budget were explicitly restored by the user on 2026-10-09. Re-run the same frozen Semantic Layer Collapse acceptance with Product 0f84769a... and certified engine dima.11.3; no Product/engine change is authorized. Harness-only HEAD 075625ef... differs from Product candidate only in validation/docs/tests and hardened fixture readiness. Exactly one 12-case live acceptance wave is authorized. Broad 30-case/frontend remain forbidden until 12/12 GREEN.",
   "final_result": {
-    "status": "BLOCKED_EXTERNAL_OPENROUTER_CREDITS",
-    "workflow_run_id": 37832593720,
-    "evidence_job_id": 113501951899,
+    "status": "AUTHORIZED_AFTER_OPENROUTER_CREDIT_RESTORE",
+    "workflow_run_id": null,
     "candidate_product_sha": "0f84769a76532800f3ed3f26268fa31ccb67639f",
     "engine_sha": "656a449b46246c46529c9bb83929df17818e2fea",
     "thirty_case_execution_ready": false,
     "semantic_architecture_closed": true,
     "product_semantic_change_required": false,
-    "evidence": {
-      "source": "research_intake",
-      "first_request_max_tokens": 2048,
-      "first_upstream_status": 402,
-      "fallback_request_max_tokens": 512,
-      "fallback_upstream_status": 402,
-      "transport_affordability_retry_count": 1,
-      "prompt_tokens": 0,
-      "completion_tokens": 0,
-      "reasoning_tokens": 0,
-      "native_acquisition_started": false
-    },
-    "required_external_action": "RESTORE_OPENROUTER_CREDITS_OR_KEY_BUDGET_THEN_RERUN_SAME_12_CASE",
+    "prior_external_blocker_run_id": 37832593720,
+    "prior_external_blocker": "OPENROUTER_HTTP_402_CREDIT_OR_KEY_BUDGET",
+    "infrastructure_harness_head": "075625ef7fd6871cf6ed5adc3605ee7c079bd6a7",
+    "paid_scope": "ONE_12_CASE_ACCEPTANCE_ONLY",
     "automatic_retry_authorized": false
   },
   "prior_final_result": {
@@ -204,6 +194,8 @@
     "same_product_sha": "0f84769a76532800f3ed3f26268fa31ccb67639f",
     "same_engine_sha": "656a449b46246c46529c9bb83929df17818e2fea",
     "fallback_request_max_tokens": 512,
-    "on_second_402": "STOP_EXTERNAL_CREDIT_BLOCKER"
+    "on_second_402": "STOP_EXTERNAL_CREDIT_BLOCKER",
+    "credit_restore_confirmed_by_user": true,
+    "no_product_change": true
   }
 }
