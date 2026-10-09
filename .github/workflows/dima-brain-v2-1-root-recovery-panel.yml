@@ -101,10 +101,10 @@ jobs:
           assert auth["broad_paid_allowed"] is False
           assert auth["thirty_case_allowed"] is False
           assert auth["frontend_allowed"] is False
-          assert auth["engine_sha"] == "656a449b46246c46529c9bb83929df17818e2fea"
-          assert auth["engine_release"] == "0.63.18-dima.11.3"
-          assert auth["engine_runtime_tag"] == "v0.63.18-dima.11.3.1"
-          assert auth["engine_digest"] == "sha256:84f20edbc253b6c137b2a7c5c1508e4a9c7873981381f9f60868b5f7cf667a95"
+          assert auth["engine_sha"] == "3492ea2a27ef851be312c0f147514f7d2882b988"
+          assert auth["engine_release"] == "0.63.18-dima.11.5"
+          assert auth["engine_runtime_tag"] == "v0.63.18-dima.11.5.1"
+          assert auth["engine_digest"] == "sha256:c44fb2177375b5d483e428ec5a9f38a96c7053d9b9392431ea169c6115134c52"
           for key in (
               "provider_free_focused_run_id",
               "provider_free_semantic_run_id",
@@ -198,10 +198,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$ENGINE_SHA" = "656a449b46246c46529c9bb83929df17818e2fea"
-          test "$CERTIFICATION_RUN_ID" = "37681817311"
-          test "$RUNTIME_TAG" = "v0.63.18-dima.11.3.1"
-          test "$REGISTRY_DIGEST" = "sha256:84f20edbc253b6c137b2a7c5c1508e4a9c7873981381f9f60868b5f7cf667a95"
+          test "$ENGINE_SHA" = "3492ea2a27ef851be312c0f147514f7d2882b988"
+          test "$CERTIFICATION_RUN_ID" = "37949404907"
+          test "$RUNTIME_TAG" = "v0.63.18-dima.11.5.1"
+          test "$REGISTRY_DIGEST" = "sha256:c44fb2177375b5d483e428ec5a9f38a96c7053d9b9392431ea169c6115134c52"
           docker pull "$IMMUTABLE_IMAGE_REF"
           docker image inspect -f '{{range .RepoDigests}}{{println .}}{{end}}' "$IMMUTABLE_IMAGE_REF" | grep -Fx "$IMMUTABLE_IMAGE_REF"
 
@@ -361,7 +361,7 @@ jobs:
           r=json.loads(Path(f"eval/brain_v2_root_recovery/{slot}.json").read_text())
           assert r["schema_version"]=="dima_brain_v2_1_recovery_live_v1"
           assert r["candidate_product_sha"]==candidate
-          assert r["engine_sha"]=="656a449b46246c46529c9bb83929df17818e2fea"
+          assert r["engine_sha"]=="3492ea2a27ef851be312c0f147514f7d2882b988"
           assert r["selected_case_ids"]==[case_id]
           assert r["case_count"]==1
           assert r["raw_harness_passed"]==1, r
