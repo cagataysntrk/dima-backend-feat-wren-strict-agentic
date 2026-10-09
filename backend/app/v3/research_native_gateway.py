@@ -25,11 +25,13 @@ from sqlmodel import Session, select
 from app.v3.analytical_boundary import (
     AnalyticalBoundaryError,
     AnalyticalEngineIdentityV1,
+    AnalyticalExecutionManifestV1,
     AnalyticalFilterV1,
     AnalyticalObservedTemporalScopeV1,
     AnalyticalRankingV1,
     analytical_currentness_token,
     analytical_security_fingerprint,
+    planner_analytical_intent_payload,
     project_analytical_intent_v1,
     project_compatibility_analytical_intent_v1,
     project_execution_manifest_v1,
@@ -73,6 +75,34 @@ from app.v3.substrate.metabase.native_models import (
 from control_plane.authorize import Principal
 from control_plane.db import engine as control_plane_engine
 from control_plane.models import NativeResourceBinding, NativeSubjectBinding
+
+
+_REPAIR_OBSERVED_EXECUTION_FIELDS = {
+    "metrics",
+    "dimensions",
+    "filters",
+    "observed_temporal_scopes",
+    "temporal_observation_dimension",
+    "rankings",
+    "row_grain",
+}
+
+
+def _repair_observed_execution_shape(
+    manifest: AnalyticalExecutionManifestV1,
+) -> dict[str, Any]:
+    """Transport observed semantic facts to the existing HOW-repair turn.
+
+    This projection makes no fulfillment decision and deliberately excludes
+    result rows, physical query material, security/principal identity,
+    resource identity, fingerprints, and runtime provenance. The sole
+    semantic verdict remains verify_analytical_fulfillment_v1.
+    """
+
+    return manifest.model_dump(
+        mode="json",
+        include=_REPAIR_OBSERVED_EXECUTION_FIELDS,
+    )
 
 
 def _uuid(value: str, code: str) -> uuid.UUID:
@@ -1506,20 +1536,40 @@ class NativeResearchMaterialExecutor:
                 )
                 for consumer_id in consumer_ids
             )
-            for consumer_intent in consumer_intents:
-                verify_analytical_fulfillment_v1(
-                    consumer_intent,
-                    execution_manifest,
-                )
         except AnalyticalBoundaryError as exc:
             raise ResearchMaterialLimitation(
                 exc.code,
                 exc.detail,
-                last_valid_boundary="dima.execution_manifest.project",
-                first_invalid_boundary="dima.evidence.admit",
+                last_valid_boundary="dima.scope.resolve",
+                first_invalid_boundary="dima.analytical_intent.project",
                 scope_fingerprint=contract.scope_fingerprint,
                 material_fingerprint=contract.material_fingerprint,
             ) from exc
+
+        for consumer_intent in consumer_intents:
+            try:
+                verify_analytical_fulfillment_v1(
+                    consumer_intent,
+                    execution_manifest,
+                )
+            except AnalyticalBoundaryError as exc:
+                # No new judge is introduced here. The sole verifier has
+                # already rejected the Metabot-owned HOW; carry that existing
+                # verdict's expected/observed sides to the bounded repair turn.
+                raise ResearchMaterialLimitation(
+                    exc.code,
+                    exc.detail,
+                    last_valid_boundary="dima.execution_manifest.project",
+                    first_invalid_boundary="dima.evidence.admit",
+                    scope_fingerprint=contract.scope_fingerprint,
+                    material_fingerprint=contract.material_fingerprint,
+                    expected_semantic_shape=(
+                        planner_analytical_intent_payload(consumer_intent)
+                    ),
+                    observed_semantic_shape=(
+                        _repair_observed_execution_shape(execution_manifest)
+                    ),
+                ) from exc
 
         provenance_base = f"research-execution-link:{execution_link_id}"
         event = ExecutionEventIdentity(

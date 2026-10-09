@@ -4402,3 +4402,60 @@ def test_a3_frozen_artifact_vertical_replay_opens_result_dependent_child():
     assert next_group.material_group_id == child_group.material_group_id
     assert child_id in next_group.consumer_requirement_ids
     assert ranking_id in next_group.dependency_requirement_ids
+
+def test_final_verifier_mismatch_projects_existing_verdict_into_how_repair_transport():
+    source = inspect.getsource(NativeResearchMaterialExecutor.execute)
+
+    assert "verify_analytical_fulfillment_v1(" in source
+    assert "expected_semantic_shape=(" in source
+    assert "planner_analytical_intent_payload(consumer_intent)" in source
+    assert "observed_semantic_shape=(" in source
+    assert "_repair_observed_execution_shape(execution_manifest)" in source
+
+
+def test_repair_observed_execution_projection_excludes_data_identity_and_provenance():
+    class ManifestSpy:
+        def model_dump(self, *, mode, include):
+            assert mode == "json"
+            assert include == {
+                "metrics",
+                "dimensions",
+                "filters",
+                "observed_temporal_scopes",
+                "temporal_observation_dimension",
+                "rankings",
+                "row_grain",
+            }
+            return {
+                "metrics": ["metric.symbolic"],
+                "dimensions": ["dimension.symbolic"],
+                "filters": [],
+                "observed_temporal_scopes": [],
+                "temporal_observation_dimension": None,
+                "rankings": [],
+                "row_grain": ["dimension.symbolic"],
+            }
+
+    projected = gateway_module._repair_observed_execution_shape(ManifestSpy())
+
+    assert projected == {
+        "metrics": ["metric.symbolic"],
+        "dimensions": ["dimension.symbolic"],
+        "filters": [],
+        "observed_temporal_scopes": [],
+        "temporal_observation_dimension": None,
+        "rankings": [],
+        "row_grain": ["dimension.symbolic"],
+    }
+    for forbidden in (
+        "data",
+        "tenant_id",
+        "principal_id",
+        "security_fingerprint",
+        "resource_entity_ids",
+        "query_fingerprint",
+        "result_hash",
+        "engine_identity",
+    ):
+        assert forbidden not in projected
+
